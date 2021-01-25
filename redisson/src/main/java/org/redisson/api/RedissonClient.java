@@ -497,7 +497,7 @@ public interface RedissonClient {
      * @param name - name of object
      * @return Lock object
      */
-    RLock getSpinLock(String name, LockOptions.BackOffOptions backOffOptions);
+    RLock getSpinLock(String name, LockOptions.BackOff backOff);
 
     /**
      * Returns MultiLock instance associated with specified <code>locks</code>

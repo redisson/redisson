@@ -9,12 +9,12 @@ public class LockOptionsTest {
 
     @Test
     public void testExponentialBackoff() {
-        LockOptions.BackOffOptions backOffOptions = new LockOptions.ExponentialBackOffOptions()
+        LockOptions.BackOff backOff = new LockOptions.ExponentialBackOff()
                 .initialDelay(10)
                 .maxDelay(100)
                 .multiplier(3);
 
-        LockOptions.BackOffPolicy backOffPolicy = backOffOptions.create();
+        LockOptions.BackOffPolicy backOffPolicy = backOff.create();
 
 
         assertThat(backOffPolicy.getNextSleepPeriod()).isBetween(10L, 10L);
@@ -26,7 +26,7 @@ public class LockOptionsTest {
 
     @Test
     public void testConstantBackoff() {
-        LockOptions.ConstantBackOffOptions backOffOptions = new LockOptions.ConstantBackOffOptions()
+        LockOptions.ConstantBackOff backOffOptions = new LockOptions.ConstantBackOff()
                 .delay(30);
 
         LockOptions.BackOffPolicy backOffPolicy = backOffOptions.create();

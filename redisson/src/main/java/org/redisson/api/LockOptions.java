@@ -27,7 +27,7 @@ public class LockOptions {
     /**
      * Factory for {@linkplain BackOffPolicy} class.
      */
-    public interface BackOffOptions {
+    public interface BackOff {
         BackOffPolicy create();
     }
 
@@ -48,7 +48,7 @@ public class LockOptions {
      * Back off algorithm, where sleep period starts with {@linkplain #initialDelay}, each time increases
      * {@linkplain #multiplier} times but doesn't exceed {@linkplain #maxDelay}
      */
-    public static class ExponentialBackOffOptions implements BackOffOptions {
+    public static class ExponentialBackOff implements BackOff {
         private long maxDelay = 128;
         private long initialDelay = 1;
         private int multiplier = 2;
@@ -66,7 +66,7 @@ public class LockOptions {
          * @param maxDelay - max sleep period. Has to be positive
          * @return ExponentialBackOffOptions instance
          */
-        public ExponentialBackOffOptions maxDelay(long maxDelay) {
+        public ExponentialBackOff maxDelay(long maxDelay) {
             if (maxDelay <= 0) {
                 throw new IllegalArgumentException("maxDelay should be positive");
             }
@@ -86,7 +86,7 @@ public class LockOptions {
          * @param initialDelay - initial sleep period. Has to be positive
          * @return ExponentialBackOffOptions instance
          */
-        public ExponentialBackOffOptions initialDelay(long initialDelay) {
+        public ExponentialBackOff initialDelay(long initialDelay) {
             if (initialDelay <= 0) {
                 throw new IllegalArgumentException("initialDelay should be positive");
             }
@@ -106,7 +106,7 @@ public class LockOptions {
          * @param multiplier - sleep period multiplier. Has to be positive
          * @return ExponentialBackOffOptions instance
          */
-        public ExponentialBackOffOptions multiplier(int multiplier) {
+        public ExponentialBackOff multiplier(int multiplier) {
             if (multiplier <= 0) {
                 throw new IllegalArgumentException("multiplier should be positive");
             }
@@ -152,7 +152,7 @@ public class LockOptions {
      * To reduce possible negative effects of many threads simultaneously sending requests, a small random value is
      * added to all sleep periods.
      */
-    public static class ConstantBackOffOptions implements BackOffOptions {
+    public static class ConstantBackOff implements BackOff {
         private long delay = 64;
 
         @Override
@@ -168,7 +168,7 @@ public class LockOptions {
          * @param delay - sleep period value. Has to be positive
          * @return ConstantBackOffOptions instance
          */
-        public ConstantBackOffOptions delay(long delay) {
+        public ConstantBackOff delay(long delay) {
             if (delay <= 0) {
                 throw new IllegalArgumentException("delay should be positive");
             }
@@ -203,7 +203,7 @@ public class LockOptions {
      *
      * @return BackOffOptions instance
      */
-    public static BackOffOptions defaults() {
-        return new ExponentialBackOffOptions();
+    public static BackOff defaults() {
+        return new ExponentialBackOff();
     }
 }

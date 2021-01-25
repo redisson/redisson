@@ -352,8 +352,8 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
-    public RLock getSpinLock(String name, LockOptions.BackOffOptions backOffOptions) {
-        return new RedissonSpinLock(connectionManager.getCommandExecutor(), name, backOffOptions);
+    public RLock getSpinLock(String name, LockOptions.BackOff backOff) {
+        return new RedissonSpinLock(connectionManager.getCommandExecutor(), name, backOff);
     }
 
     @Override

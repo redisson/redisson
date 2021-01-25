@@ -133,8 +133,8 @@ public class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
-    public RLockReactive getSpinLock(String name, LockOptions.BackOffOptions backOffOptions) {
-        RedissonSpinLock spinLock = new RedissonSpinLock(commandExecutor, name, backOffOptions);
+    public RLockReactive getSpinLock(String name, LockOptions.BackOff backOff) {
+        RedissonSpinLock spinLock = new RedissonSpinLock(commandExecutor, name, backOff);
         return ReactiveProxyBuilder.create(commandExecutor, spinLock, RLockReactive.class);
     }
 

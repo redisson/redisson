@@ -44,16 +44,16 @@ public class RedissonSpinLock extends RedissonBaseLock {
 
     protected long internalLockLeaseTime;
 
-    protected final LockOptions.BackOffOptions backOffOptions;
+    protected final LockOptions.BackOff backOff;
 
     final CommandAsyncExecutor commandExecutor;
 
     public RedissonSpinLock(CommandAsyncExecutor commandExecutor, String name,
-                            LockOptions.BackOffOptions backOffOptions) {
+                            LockOptions.BackOff backOff) {
         super(commandExecutor, name);
         this.commandExecutor = commandExecutor;
         this.internalLockLeaseTime = commandExecutor.getConnectionManager().getCfg().getLockWatchdogTimeout();
-        this.backOffOptions = backOffOptions;
+        this.backOff = backOff;
     }
 
     @Override
@@ -87,7 +87,7 @@ public class RedissonSpinLock extends RedissonBaseLock {
         if (ttl == null) {
             return;
         }
-        LockOptions.BackOffPolicy backOffPolicy = backOffOptions.create();
+        LockOptions.BackOffPolicy backOffPolicy = backOff.create();
         while (ttl != null) {
             long nextSleepPeriod = backOffPolicy.getNextSleepPeriod();
             Thread.sleep(nextSleepPeriod);
@@ -158,7 +158,7 @@ public class RedissonSpinLock extends RedissonBaseLock {
             return false;
         }
 
-        LockOptions.BackOffPolicy backOffPolicy = backOffOptions.create();
+        LockOptions.BackOffPolicy backOffPolicy = backOff.create();
         while (ttl != null) {
             current = System.currentTimeMillis();
             Thread.sleep(backOffPolicy.getNextSleepPeriod());
@@ -244,7 +244,7 @@ public class RedissonSpinLock extends RedissonBaseLock {
     @Override
     public RFuture<Void> lockAsync(long leaseTime, TimeUnit unit, long currentThreadId) {
         RPromise<Void> result = new RedissonPromise<>();
-        LockOptions.BackOffPolicy backOffPolicy = backOffOptions.create();
+        LockOptions.BackOffPolicy backOffPolicy = backOff.create();
 
         lockAsync(leaseTime, unit, currentThreadId, result, backOffPolicy);
         return result;
@@ -313,7 +313,7 @@ public class RedissonSpinLock extends RedissonBaseLock {
         RPromise<Boolean> result = new RedissonPromise<>();
 
         AtomicLong time = new AtomicLong(unit.toMillis(waitTime));
-        LockOptions.BackOffPolicy backOffPolicy = backOffOptions.create();
+        LockOptions.BackOffPolicy backOffPolicy = backOff.create();
 
         tryLock(leaseTime, unit, currentThreadId, result, time, backOffPolicy);
         return result;

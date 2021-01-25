@@ -186,7 +186,7 @@ public interface RedissonRxClient {
      * @param name - name of object
      * @return Lock object
      */
-    RLockRx getSpinLock(String name, LockOptions.BackOffOptions backOffOptions);
+    RLockRx getSpinLock(String name, LockOptions.BackOff backOff);
     
     /**
      * Returns MultiLock instance associated with specified <code>locks</code>
