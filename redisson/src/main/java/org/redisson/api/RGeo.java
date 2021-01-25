@@ -59,7 +59,7 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * @param member - object itself
      * @return number of elements added to the sorted set
      */
-    long addIfExists(double longitude, double latitude, V member);
+    Boolean addIfExists(double longitude, double latitude, V member);
 
     /**
      * Adds geospatial members only if it's already exists.
@@ -70,6 +70,28 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * @return number of elements added to the sorted set
      */
     long addIfExists(GeoEntry... entries);
+
+    /**
+     * Adds geospatial member only if has not been added before.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param member - object itself
+     * @return number of elements added to the sorted set
+     */
+    boolean tryAdd(double longitude, double latitude, V member);
+
+    /**
+     * Adds geospatial members only if has not been added before.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param entries - objects
+     * @return number of elements added to the sorted set
+     */
+    long tryAdd(GeoEntry... entries);
 
     /**
      * Returns distance between members in <code>GeoUnit</code> units.

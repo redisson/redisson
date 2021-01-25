@@ -37,6 +37,28 @@ public class RedissonGeoTest extends BaseTest {
     }
 
     @Test
+    public void testAddIfExists() {
+        RGeo<String> geo = redisson.getGeo("test");
+
+        assertThat(geo.add(2.51, 3.12, "city1")).isEqualTo(1);
+        assertThat(geo.addIfExists(2.9, 3.9, "city1")).isTrue();
+        Map<String, GeoPosition> pos = geo.pos("city1");
+        System.out.println("" + pos.get("city1"));
+        assertThat(pos.get("city1").getLatitude()).isBetween(3.8, 3.9);
+        assertThat(pos.get("city1").getLongitude()).isBetween(2.8, 3.0);
+
+        assertThat(geo.addIfExists(2.12, 3.5, "city2")).isFalse();
+    }
+
+    @Test
+    public void testTryAdd() {
+        RGeo<String> geo = redisson.getGeo("test");
+        assertThat(geo.add(2.51, 3.12, "city1")).isEqualTo(1);
+        assertThat(geo.tryAdd(2.5, 3.1, "city1")).isFalse();
+        assertThat(geo.tryAdd(2.12, 3.5, "city2")).isTrue();
+    }
+
+    @Test
     public void testAddEntries() {
         RGeo<String> geo = redisson.getGeo("test");
         assertThat(geo.add(new GeoEntry(3.11, 9.10321, "city1"), new GeoEntry(81.1231, 38.65478, "city2"))).isEqualTo(2);

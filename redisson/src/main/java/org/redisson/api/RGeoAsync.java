@@ -59,7 +59,7 @@ public interface RGeoAsync<V> extends RScoredSortedSetAsync<V> {
      * @param member - object itself
      * @return number of elements added to the sorted set
      */
-    RFuture<Long> addIfExistsAsync(double longitude, double latitude, V member);
+    RFuture<Boolean> addIfExistsAsync(double longitude, double latitude, V member);
 
     /**
      * Adds geospatial members only if it's already exists.
@@ -70,6 +70,28 @@ public interface RGeoAsync<V> extends RScoredSortedSetAsync<V> {
      * @return number of elements added to the sorted set
      */
     RFuture<Long> addIfExistsAsync(GeoEntry... entries);
+
+    /**
+     * Adds geospatial member only if has not been added before.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param member - object itself
+     * @return number of elements added to the sorted set
+     */
+    RFuture<Boolean> tryAddAsync(double longitude, double latitude, V member);
+
+    /**
+     * Adds geospatial members only if has not been added before.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param entries - objects
+     * @return number of elements added to the sorted set
+     */
+    RFuture<Long> tryAddAsync(GeoEntry... entries);
 
     /**
      * Returns distance between members in <code>GeoUnit</code> units.

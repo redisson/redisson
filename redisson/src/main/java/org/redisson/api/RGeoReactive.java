@@ -18,6 +18,7 @@ package org.redisson.api;
 import java.util.List;
 import java.util.Map;
 
+import io.reactivex.rxjava3.core.Single;
 import reactor.core.publisher.Mono;
 
 /**
@@ -72,6 +73,28 @@ public interface RGeoReactive<V> extends RScoredSortedSetReactive<V> {
      * @return number of elements added to the sorted set
      */
     Mono<Long> addIfExists(GeoEntry... entries);
+
+    /**
+     * Adds geospatial member only if has not been added before.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param member - object itself
+     * @return number of elements added to the sorted set
+     */
+    Mono<Boolean> tryAdd(double longitude, double latitude, V member);
+
+    /**
+     * Adds geospatial members only if has not been added before.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param entries - objects
+     * @return number of elements added to the sorted set
+     */
+    Mono<Long> tryAdd(GeoEntry... entries);
 
     /**
      * Returns distance between members in <code>GeoUnit</code> units.

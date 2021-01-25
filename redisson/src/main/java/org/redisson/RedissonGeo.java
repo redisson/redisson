@@ -16,10 +16,7 @@
 package org.redisson;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.redisson.api.GeoEntry;
 import org.redisson.api.GeoOrder;
@@ -118,7 +115,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
     }
 
     @Override
-    public long addIfExists(double longitude, double latitude, V member) {
+    public Boolean addIfExists(double longitude, double latitude, V member) {
         return get(addIfExistsAsync(longitude, latitude, member));
     }
 
@@ -128,14 +125,42 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
     }
 
     @Override
-    public RFuture<Long> addIfExistsAsync(double longitude, double latitude, V member) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.GEOADD, getName(), "XX", convert(longitude),
-                convert(latitude), encode(member));
+    public RFuture<Boolean> addIfExistsAsync(double longitude, double latitude, V member) {
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+            "local value = redis.call('geopos', KEYS[1], ARGV[3]); "
+                + "if value[1] ~= false then "
+                    + "redis.call('geoadd', KEYS[1], ARGV[1], ARGV[2], ARGV[3]); "
+                    + "return 1; "
+                + "end; "
+                + "return 0; ",
+                Collections.singletonList(getName()),
+                convert(longitude), convert(latitude), encode(member));
     }
 
     @Override
     public RFuture<Long> addIfExistsAsync(GeoEntry... entries) {
         return addAsync("XX", entries);
+    }
+
+    @Override
+    public boolean tryAdd(double longitude, double latitude, V member) {
+        return get(tryAddAsync(longitude, latitude, member));
+    }
+
+    @Override
+    public long tryAdd(GeoEntry... entries) {
+        return get(tryAddAsync(entries));
+    }
+
+    @Override
+    public RFuture<Boolean> tryAddAsync(double longitude, double latitude, V member) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.GEOADD_BOOLEAN, getName(), "NX", convert(longitude),
+                convert(latitude), encode(member));
+    }
+
+    @Override
+    public RFuture<Long> tryAddAsync(GeoEntry... entries) {
+        return addAsync("NX", entries);
     }
 
     @Override
