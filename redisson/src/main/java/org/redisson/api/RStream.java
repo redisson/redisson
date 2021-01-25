@@ -59,6 +59,16 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
     void removeGroup(String groupName);
 
     /**
+     * Creates consumer of the group by name.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param groupName - name of group
+     * @param consumerName - name of consumer
+     */
+    void createConsumer(String groupName, String consumerName);
+
+    /**
      * Removes consumer of the group by name.
      * 
      * @param groupName - name of group

@@ -973,6 +973,16 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
 
     @Override
+    public void createConsumer(String groupName, String consumerName) {
+        get(createConsumerAsync(groupName, consumerName));
+    }
+
+    @Override
+    public RFuture<Void> createConsumerAsync(String groupName, String consumerName) {
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XGROUP, "CREATECONSUMER", getName(), groupName, consumerName);
+    }
+
+    @Override
     public RFuture<Long> removeConsumerAsync(String groupName, String consumerName) {
         return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XGROUP_LONG, "DELCONSUMER", getName(), groupName, consumerName);
     }

@@ -60,6 +60,16 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
     RFuture<Void> removeGroupAsync(String groupName);
 
     /**
+     * Creates consumer of the group by name.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param groupName - name of group
+     * @param consumerName - name of consumer
+     */
+    RFuture<Void> createConsumerAsync(String groupName, String consumerName);
+
+    /**
      * Removes consumer of the group by name.
      * 
      * @param groupName - name of group
