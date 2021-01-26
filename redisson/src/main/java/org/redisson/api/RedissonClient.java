@@ -476,6 +476,30 @@ public interface RedissonClient {
     RLock getLock(String name);
 
     /**
+     * Returns Spin lock instance by name.
+     * <p>
+     * Implements a <b>non-fair</b> locking so doesn't guarantees an acquire order by threads.
+     * <p>
+     * Lock doesn't use a pub/sub mechanism
+     *
+     * @param name - name of object
+     * @return Lock object
+     */
+    RLock getSpinLock(String name);
+
+    /**
+     * Returns Spin lock instance by name with specified back off options.
+     * <p>
+     * Implements a <b>non-fair</b> locking so doesn't guarantees an acquire order by threads.
+     * <p>
+     * Lock doesn't use a pub/sub mechanism
+     *
+     * @param name - name of object
+     * @return Lock object
+     */
+    RLock getSpinLock(String name, LockOptions.BackOff backOff);
+
+    /**
      * Returns MultiLock instance associated with specified <code>locks</code>
      * 
      * @param locks - collection of locks

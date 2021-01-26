@@ -114,6 +114,17 @@ public class RedissonRx implements RedissonRxClient {
     public RLockRx getLock(String name) {
         return RxProxyBuilder.create(commandExecutor, new RedissonLock(commandExecutor, name), RLockRx.class);
     }
+
+    @Override
+    public RLockRx getSpinLock(String name) {
+        return getSpinLock(name, LockOptions.defaults());
+    }
+
+    @Override
+    public RLockRx getSpinLock(String name, LockOptions.BackOff backOff) {
+        RedissonSpinLock spinLock = new RedissonSpinLock(commandExecutor, name, backOff);
+        return RxProxyBuilder.create(commandExecutor, spinLock, RLockRx.class);
+    }
     
     @Override
     public RLockRx getMultiLock(RLock... locks) {
