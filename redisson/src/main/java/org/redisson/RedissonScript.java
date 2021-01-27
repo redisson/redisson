@@ -82,12 +82,20 @@ public class RedissonScript implements RScript {
 
     @Override
     public <R> R eval(Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values) {
-        return eval(null, mode, luaScript, returnType, keys, values);
+        String key = null;
+        if (!keys.isEmpty()) {
+            key = (String) keys.get(0);
+        }
+        return eval(key, mode, luaScript, returnType, keys, values);
     }
 
     @Override
     public <R> RFuture<R> evalAsync(Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values) {
-        return evalAsync(null, mode, luaScript, returnType, keys, values);
+        String key = null;
+        if (!keys.isEmpty()) {
+            key = (String) keys.get(0);
+        }
+        return evalAsync(key, mode, luaScript, returnType, keys, values);
     }
 
     @Override
