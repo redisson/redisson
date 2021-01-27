@@ -156,11 +156,11 @@ public class RedisExecutor<V, R> {
                     checkWriteFuture(writeFuture, attemptPromise, connection);
                 }
             });
-
-            releaseConnection(attemptPromise, connectionFuture);
         });
 
         attemptPromise.onComplete((r, e) -> {
+            releaseConnection(attemptPromise, connectionFuture);
+
             checkAttemptPromise(attemptPromise, connectionFuture);
         });
     }
@@ -624,24 +624,22 @@ public class RedisExecutor<V, R> {
     }
     
     protected void releaseConnection(RPromise<R> attemptPromise, RFuture<RedisConnection> connectionFuture) {
-        attemptPromise.onComplete((res, e) -> {
-            if (!connectionFuture.isSuccess()) {
-                return;
-            }
+        if (!connectionFuture.isSuccess()) {
+            return;
+        }
 
-            RedisConnection connection = connectionFuture.getNow();
-            connectionManager.getShutdownLatch().release();
-            if (readOnlyMode) {
-                connectionManager.releaseRead(source, connection);
-            } else {
-                connectionManager.releaseWrite(source, connection);
-            }
+        RedisConnection connection = connectionFuture.getNow();
+        connectionManager.getShutdownLatch().release();
+        if (readOnlyMode) {
+            connectionManager.releaseRead(source, connection);
+        } else {
+            connectionManager.releaseWrite(source, connection);
+        }
 
-            if (log.isDebugEnabled()) {
-                log.debug("connection released for command {} and params {} from slot {} using connection {}",
-                        command, LogHelper.toString(params), source, connection);
-            }
-        });
+        if (log.isDebugEnabled()) {
+            log.debug("connection released for command {} and params {} from slot {} using connection {}",
+                    command, LogHelper.toString(params), source, connection);
+        }
     }
 
     public RedisClient getRedisClient() {
