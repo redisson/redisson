@@ -6,7 +6,7 @@ Redisson Releases History
 ### 28-Jan-2021 - 3.15.0 released
 
 Feature - **Apache Tomcat 10** support added  
-Feature - Spin Lock added (thanks to @Vorotyntsev)  
+Feature - **Spin Lock** added (thanks to @Vorotyntsev)  
 Feature - `sentinelPassword` setting added (thanks to @ghollies)  
 Feature - `RedisNode.getMemoryStatistics()` method added  
 Feature - `setAndKeepTTL()` method added to `RBucket` object  
