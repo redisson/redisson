@@ -3,6 +3,35 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 28-Jan-2021 - 3.15.0 released
+
+Feature - **Apache Tomcat 10** support added  
+Feature - **Spin Lock** added. Please refer to [documentation](https://github.com/redisson/redisson/wiki/8.-Distributed-locks-and-synchronizers#89-spin-lock) for more details (thanks to @Vorotyntsev)  
+Feature - `sentinelPassword` setting added (thanks to @ghollies)  
+Feature - `RedisNode.getMemoryStatistics()` method added  
+Feature - `setAndKeepTTL()` method added to `RBucket` object  
+Feature - min idle time parameter added to `listPending()` and `pendingRange()` methods of `RStream` object  
+Feature - `autoClaim()`, `fastAutoClaim()` and `createConsumer()` methods added to `RStream` object  
+Feature - `addIfExists()`, `addIfGreater()` and `addIfLess()` methods added to `RScoredSortedSet` object  
+Feature - `putIfExists()` and `fastPutIfExists()` methods added to `RMap` object  
+Feature - `tryAdd()` and `addIfExists()` methods added to `RGeo` object  
+Feature - `readUnion()`, `readIntersection()`, `diff()`, `readDiff()`, `rangeTo()`, `revRangeTo()` methods added to `RScoredSortedSet` object  
+Feature - `ScoredSortedSetAddListener` added to `RScoredSortedSet` object  
+
+Improvement - use `System.nanoTime()` in `IdleConnectionWatcher` to avoid clock drifting  
+
+Fixed - eval command executed on Redis cluster doesn't use key for master/slave selection  
+Fixed - `MOVED` or `ASK` response from Redis causes `Unable to acquire connection!` error  
+Fixed - Spring Redis Data PatternTopic listeners are invoked multiple times per message  
+Fixed - don't add Redis Slave as active if connections can't be established (thanks to @yann9)  
+Fixed - `RBatch` object throws Exception if not all slots are covered in Redis Cluster  
+Fixed - stream and queue object may lost entry during execution of any blocking poll operation  
+Fixed - Redis `BUSY` response handling (thanks to @wuqian0808)  
+Fixed - InterruptedExceptions are hidden by RedisException  
+Fixed - primitive class numbers aren't indexed correctly in LiveObject search engine  
+Fixed - NPE is thrown if LiveObject index stored for the first time in Redis cluster  
+Fixed - NPE is thrown if Redis node doesn't return "flags" parameter  
+
 ### 22-Dec-2020 - 3.14.1 released
 
 Feature - added option `LocalCachedMapOptions.storeCacheMiss` to store cache miss in a local cache (thanks to @ipalbeniz)  
