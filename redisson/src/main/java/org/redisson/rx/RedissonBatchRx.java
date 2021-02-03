@@ -100,15 +100,15 @@ public class RedissonBatchRx implements RBatchRx {
     @Override
     public <K, V> RMapCacheRx<K, V> getMapCache(String name, Codec codec) {
         RMapCache<K, V> map = new RedissonMapCache<K, V>(codec, evictionScheduler, executorService, name, null, null, null);
-        return RxProxyBuilder.create(executorService, map, 
-                new RedissonMapCacheRx<K, V>(map), RMapCacheRx.class);
+        return RxProxyBuilder.create(executorService, map,
+                new RedissonMapCacheRx<>(map, commandExecutor), RMapCacheRx.class);
     }
 
     @Override
     public <K, V> RMapCacheRx<K, V> getMapCache(String name) {
         RMapCache<K, V> map = new RedissonMapCache<K, V>(evictionScheduler, executorService, name, null, null, null);
-        return RxProxyBuilder.create(executorService, map, 
-                new RedissonMapCacheRx<K, V>(map), RMapCacheRx.class);
+        return RxProxyBuilder.create(executorService, map,
+                new RedissonMapCacheRx<>(map, commandExecutor), RMapCacheRx.class);
     }
 
     @Override

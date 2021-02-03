@@ -21,12 +21,8 @@ import java.util.Map.Entry;
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonMap;
 import org.redisson.RedissonRx;
-import org.redisson.api.RLockRx;
-import org.redisson.api.RMap;
-import org.redisson.api.RPermitExpirableSemaphoreRx;
-import org.redisson.api.RReadWriteLockRx;
-import org.redisson.api.RSemaphoreRx;
-import org.redisson.api.RedissonRxClient;
+import org.redisson.api.*;
+import org.redisson.reactive.ReactiveProxyBuilder;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.concurrent.ConcurrentMap}
@@ -39,12 +35,12 @@ import org.redisson.api.RedissonRxClient;
  */
 public class RedissonMapRx<K, V> {
 
-    private final RedissonMap<K, V> instance;
-    private final RedissonRxClient redisson;
+    private final RMap<K, V> instance;
+    private final CommandRxExecutor executor;
 
-    public RedissonMapRx(RMap<K, V> instance, RedissonRx redisson) {
-        this.instance = (RedissonMap<K, V>) instance;
-        this.redisson = redisson;
+    public RedissonMapRx(RMap<K, V> instance, CommandRxExecutor executor) {
+        this.instance = instance;
+        this.executor = executor;
     }
 
     public Publisher<Map.Entry<K, V>> entryIterator() {
@@ -60,7 +56,7 @@ public class RedissonMapRx<K, V> {
     }
     
     public Publisher<Map.Entry<K, V>> entryIterator(String pattern, int count) {
-        return new RedissonMapRxIterator<K, V, Map.Entry<K, V>>(instance, pattern, count).create();
+        return new RedissonMapRxIterator<K, V, Map.Entry<K, V>>((RedissonMap<K, V>) instance, pattern, count).create();
     }
 
     public Publisher<V> valueIterator() {
@@ -76,7 +72,7 @@ public class RedissonMapRx<K, V> {
     }
     
     public Publisher<V> valueIterator(String pattern, int count) {
-        return new RedissonMapRxIterator<K, V, V>(instance, pattern, count) {
+        return new RedissonMapRxIterator<K, V, V>((RedissonMap<K, V>) instance, pattern, count) {
             @Override
             V getValue(Entry<Object, Object> entry) {
                 return (V) entry.getValue();
@@ -97,7 +93,7 @@ public class RedissonMapRx<K, V> {
     }
     
     public Publisher<K> keyIterator(String pattern, int count) {
-        return new RedissonMapRxIterator<K, V, K>(instance, pattern, count) {
+        return new RedissonMapRxIterator<K, V, K>((RedissonMap<K, V>) instance, pattern, count) {
             @Override
             K getValue(Entry<Object, Object> entry) {
                 return (K) entry.getKey();
@@ -106,28 +102,28 @@ public class RedissonMapRx<K, V> {
     }
 
     public RPermitExpirableSemaphoreRx getPermitExpirableSemaphore(K key) {
-        String name = ((RedissonMap<K, V>) instance).getLockByMapKey(key, "permitexpirablesemaphore");
-        return redisson.getPermitExpirableSemaphore(name);
+        RPermitExpirableSemaphore s = instance.getPermitExpirableSemaphore(key);
+        return RxProxyBuilder.create(executor, s, RPermitExpirableSemaphoreRx.class);
     }
 
     public RSemaphoreRx getSemaphore(K key) {
-        String name = ((RedissonMap<K, V>) instance).getLockByMapKey(key, "semaphore");
-        return redisson.getSemaphore(name);
+        RSemaphore s = instance.getSemaphore(key);
+        return RxProxyBuilder.create(executor, s, RSemaphoreRx.class);
     }
     
     public RLockRx getFairLock(K key) {
-        String name = ((RedissonMap<K, V>) instance).getLockByMapKey(key, "fairlock");
-        return redisson.getFairLock(name);
+        RLock lock = instance.getFairLock(key);
+        return RxProxyBuilder.create(executor, lock, RLockRx.class);
     }
     
     public RReadWriteLockRx getReadWriteLock(K key) {
-        String name = ((RedissonMap<K, V>) instance).getLockByMapKey(key, "rw_lock");
-        return redisson.getReadWriteLock(name);
+        RReadWriteLock lock = instance.getReadWriteLock(key);
+        return RxProxyBuilder.create(executor, lock, RReadWriteLockRx.class);
     }
     
     public RLockRx getLock(K key) {
-        String name = ((RedissonMap<K, V>) instance).getLockByMapKey(key, "lock");
-        return redisson.getLock(name);
+        RLock lock = instance.getLock(key);
+        return RxProxyBuilder.create(executor, lock, RLockRx.class);
     }
 
 }

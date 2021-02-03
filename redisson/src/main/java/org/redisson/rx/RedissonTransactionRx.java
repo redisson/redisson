@@ -76,14 +76,14 @@ public class RedissonTransactionRx implements RTransactionRx {
     public <K, V> RMapCacheRx<K, V> getMapCache(String name, Codec codec) {
         RMapCache<K, V> map = transaction.<K, V>getMapCache(name, codec);
         return RxProxyBuilder.create(executorService, map, 
-                new RedissonMapCacheRx<K, V>(map), RMapCacheRx.class);
+                new RedissonMapCacheRx<K, V>(map, executorService), RMapCacheRx.class);
     }
 
     @Override
     public <K, V> RMapCacheRx<K, V> getMapCache(String name) {
         RMapCache<K, V> map = transaction.<K, V>getMapCache(name);
         return RxProxyBuilder.create(executorService, map, 
-                new RedissonMapCacheRx<K, V>(map), RMapCacheRx.class);
+                new RedissonMapCacheRx<K, V>(map, executorService), RMapCacheRx.class);
     }
 
     @Override
