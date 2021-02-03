@@ -29,6 +29,7 @@ import org.redisson.transaction.operation.TransactionalOperation;
 import org.redisson.transaction.operation.UnlinkOperation;
 import org.redisson.transaction.operation.bucket.*;
 
+import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -80,7 +81,12 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
     public RFuture<Boolean> expireAtAsync(long timestamp) {
         throw new UnsupportedOperationException("expireAt method is not supported in transaction");
     }
-    
+
+    @Override
+    public RFuture<Boolean> expireAtAsync(Instant timestamp) {
+        throw new UnsupportedOperationException("expireAt method is not supported in transaction");
+    }
+
     @Override
     public RFuture<Boolean> clearExpireAsync() {
         throw new UnsupportedOperationException("clearExpire method is not supported in transaction");

@@ -15,6 +15,7 @@
  */
 package org.redisson.transaction;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -78,7 +79,12 @@ public class RedissonTransactionalSet<V> extends RedissonSet<V> {
     public RFuture<Boolean> expireAtAsync(long timestamp) {
         throw new UnsupportedOperationException("expireAt method is not supported in transaction");
     }
-    
+
+    @Override
+    public RFuture<Boolean> expireAtAsync(Instant timestamp) {
+        throw new UnsupportedOperationException("expireAt method is not supported in transaction");
+    }
+
     @Override
     public RFuture<Boolean> clearExpireAsync() {
         throw new UnsupportedOperationException("clearExpire method is not supported in transaction");

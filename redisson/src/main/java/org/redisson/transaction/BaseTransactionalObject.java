@@ -15,6 +15,7 @@
  */
 package org.redisson.transaction;
 
+import java.time.Instant;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
@@ -34,7 +35,11 @@ public class BaseTransactionalObject {
     public RFuture<Boolean> expireAtAsync(Date timestamp) {
         throw new UnsupportedOperationException("expireAt method is not supported in transaction");
     }
-    
+
+    public RFuture<Boolean> expireAtAsync(Instant timestamp) {
+        throw new UnsupportedOperationException("expireAt method is not supported in transaction");
+    }
+
     public RFuture<Boolean> expireAtAsync(long timestamp) {
         throw new UnsupportedOperationException("expireAt method is not supported in transaction");
     }
