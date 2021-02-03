@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.api.RLockReactive;
 import org.redisson.api.RMapCacheReactive;
 import org.redisson.api.RMapReactive;
 import org.redisson.codec.MsgPackJacksonCodec;
@@ -120,6 +121,17 @@ public class RedissonMapCacheReactiveTest extends BaseReactiveTest {
             return true;
         }
 
+    }
+
+    @Test
+    public void testLock() {
+        RMapCacheReactive<Integer, Integer> map = redisson.getMapCache("getAll");
+        RLockReactive lock = map.getLock(123);
+        assertThat(sync(lock.isLocked())).isFalse();
+        sync(lock.lock());
+        assertThat(sync(lock.isLocked())).isTrue();
+        sync(lock.unlock());
+        assertThat(sync(lock.isLocked())).isFalse();
     }
 
     @Test

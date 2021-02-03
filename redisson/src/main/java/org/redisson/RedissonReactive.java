@@ -157,14 +157,14 @@ public class RedissonReactive implements RedissonReactiveClient {
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec) {
         RMapCache<K, V> map = new RedissonMapCache<K, V>(codec, evictionScheduler, commandExecutor, name, null, null, null);
         return ReactiveProxyBuilder.create(commandExecutor, map, 
-                new RedissonMapCacheReactive<K, V>(map), RMapCacheReactive.class);
+                new RedissonMapCacheReactive<K, V>(map, commandExecutor), RMapCacheReactive.class);
     }
 
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name) {
         RMapCache<K, V> map = new RedissonMapCache<K, V>(evictionScheduler, commandExecutor, name, null, null, null);
         return ReactiveProxyBuilder.create(commandExecutor, map, 
-                new RedissonMapCacheReactive<K, V>(map), RMapCacheReactive.class);
+                new RedissonMapCacheReactive<K, V>(map, commandExecutor), RMapCacheReactive.class);
     }
 
     @Override
@@ -256,14 +256,14 @@ public class RedissonReactive implements RedissonReactiveClient {
     public <K, V> RMapReactive<K, V> getMap(String name) {
         RedissonMap<K, V> map = new RedissonMap<K, V>(commandExecutor, name, null, null, null);
         return ReactiveProxyBuilder.create(commandExecutor, map, 
-                new RedissonMapReactive<K, V>(map, this), RMapReactive.class);
+                new RedissonMapReactive<K, V>(map, commandExecutor), RMapReactive.class);
     }
 
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name, Codec codec) {
         RedissonMap<K, V> map = new RedissonMap<K, V>(codec, commandExecutor, name, null, null, null);
         return ReactiveProxyBuilder.create(commandExecutor, map, 
-                new RedissonMapReactive<K, V>(map, this), RMapReactive.class);
+                new RedissonMapReactive<K, V>(map, commandExecutor), RMapReactive.class);
     }
 
     @Override
@@ -521,31 +521,31 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec, MapOptions<K, V> options) {
-        RMapCache<K, V> map = new RedissonMapCache<K, V>(codec, evictionScheduler, commandExecutor, name, null, options, writeBehindService);
-        return ReactiveProxyBuilder.create(commandExecutor, map, 
-                new RedissonMapCacheReactive<K, V>(map), RMapCacheReactive.class);
+        RMapCache<K, V> map = new RedissonMapCache<>(codec, evictionScheduler, commandExecutor, name, null, options, writeBehindService);
+        return ReactiveProxyBuilder.create(commandExecutor, map,
+                new RedissonMapCacheReactive<>(map, commandExecutor), RMapCacheReactive.class);
     }
 
 
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name, MapOptions<K, V> options) {
         RMapCache<K, V> map = new RedissonMapCache<K, V>(evictionScheduler, commandExecutor, name, null, options, writeBehindService);
-        return ReactiveProxyBuilder.create(commandExecutor, map, 
-                new RedissonMapCacheReactive<K, V>(map), RMapCacheReactive.class);
+        return ReactiveProxyBuilder.create(commandExecutor, map,
+                new RedissonMapCacheReactive<>(map, commandExecutor), RMapCacheReactive.class);
     }
 
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name, MapOptions<K, V> options) {
-        RedissonMap<K, V> map = new RedissonMap<K, V>(commandExecutor, name, null, options, writeBehindService);
+        RMap<K, V> map = new RedissonMap<K, V>(commandExecutor, name, null, options, writeBehindService);
         return ReactiveProxyBuilder.create(commandExecutor, map, 
-                new RedissonMapReactive<K, V>(map, this), RMapReactive.class);
+                new RedissonMapReactive<K, V>(map, commandExecutor), RMapReactive.class);
     }
 
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name, Codec codec, MapOptions<K, V> options) {
-        RedissonMap<K, V> map = new RedissonMap<K, V>(codec, commandExecutor, name, null, options, writeBehindService);
-        return ReactiveProxyBuilder.create(commandExecutor, map, 
-                new RedissonMapReactive<K, V>(map, this), RMapReactive.class);
+        RMap<K, V> map = new RedissonMap<>(codec, commandExecutor, name, null, options, writeBehindService);
+        return ReactiveProxyBuilder.create(commandExecutor, map,
+                new RedissonMapReactive<>(map, commandExecutor), RMapReactive.class);
     }
 
     @Override

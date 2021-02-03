@@ -15,23 +15,14 @@
  */
 package org.redisson.reactive;
 
-import java.util.Map;
-import java.util.Map.Entry;
-
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonMap;
-import org.redisson.api.RLockReactive;
-import org.redisson.api.RMap;
-import org.redisson.api.RPermitExpirableSemaphoreReactive;
-import org.redisson.api.RReadWriteLockReactive;
-import org.redisson.api.RSemaphoreReactive;
-import org.redisson.api.RedissonReactiveClient;
-
+import org.redisson.api.*;
 import reactor.core.publisher.Flux;
 
+import java.util.Map.Entry;
+
 /**
- * Distributed and concurrent implementation of {@link java.util.concurrent.ConcurrentMap}
- * and {@link java.util.Map}
  *
  * @author Nikita Koksharov
  *
@@ -40,15 +31,15 @@ import reactor.core.publisher.Flux;
  */
 public class RedissonMapReactive<K, V> {
 
-    private final RMap<K, V> instance;
-    private final RedissonReactiveClient redisson;
+    private final RMap<K, V> map;
+    private final CommandReactiveExecutor commandExecutor;
 
-    public RedissonMapReactive(RMap<K, V> instance, RedissonReactiveClient redisson) {
-        this.instance = instance;
-        this.redisson = redisson;
+    public RedissonMapReactive(RMap<K, V> map, CommandReactiveExecutor commandExecutor) {
+        this.map = map;
+        this.commandExecutor = commandExecutor;
     }
-
-    public Publisher<Map.Entry<K, V>> entryIterator() {
+    
+    public Publisher<Entry<K, V>> entryIterator() {
         return entryIterator(null);
     }
     
@@ -60,24 +51,24 @@ public class RedissonMapReactive<K, V> {
         return entryIterator(pattern, 10);
     }
     
-    public Publisher<Map.Entry<K, V>> entryIterator(String pattern, int count) {
-        return Flux.create(new MapReactiveIterator<K, V, Map.Entry<K, V>>((RedissonMap<K, V>) instance, pattern, count));
+    public Publisher<Entry<K, V>> entryIterator(String pattern, int count) {
+        return Flux.create(new MapReactiveIterator<>((RedissonMap<K, V>) map, pattern, count));
     }
 
     public Publisher<V> valueIterator() {
         return valueIterator(null);
     }
-
+    
     public Publisher<V> valueIterator(String pattern) {
         return valueIterator(pattern, 10);
     }
-
+    
     public Publisher<V> valueIterator(int count) {
         return valueIterator(null, count);
     }
     
     public Publisher<V> valueIterator(String pattern, int count) {
-        return Flux.create(new MapReactiveIterator<K, V, V>((RedissonMap<K, V>) instance, pattern, count) {
+        return Flux.create(new MapReactiveIterator<K, V, V>((RedissonMap<K, V>) map, pattern, count) {
             @Override
             V getValue(Entry<Object, Object> entry) {
                 return (V) entry.getValue();
@@ -88,7 +79,7 @@ public class RedissonMapReactive<K, V> {
     public Publisher<K> keyIterator() {
         return keyIterator(null);
     }
-
+    
     public Publisher<K> keyIterator(String pattern) {
         return keyIterator(pattern, 10);
     }
@@ -98,37 +89,37 @@ public class RedissonMapReactive<K, V> {
     }
     
     public Publisher<K> keyIterator(String pattern, int count) {
-        return Flux.create(new MapReactiveIterator<K, V, K>((RedissonMap<K, V>) instance, pattern, count) {
+        return Flux.create(new MapReactiveIterator<K, V, K>((RedissonMap<K, V>) map, pattern, count) {
             @Override
             K getValue(Entry<Object, Object> entry) {
                 return (K) entry.getKey();
             }
         });
     }
-    
+
     public RPermitExpirableSemaphoreReactive getPermitExpirableSemaphore(K key) {
-        String name = ((RedissonMap<K, V>) instance).getLockByMapKey(key, "permitexpirablesemaphore");
-        return redisson.getPermitExpirableSemaphore(name);
+        RPermitExpirableSemaphore s = map.getPermitExpirableSemaphore(key);
+        return ReactiveProxyBuilder.create(commandExecutor, s, RPermitExpirableSemaphoreReactive.class);
     }
 
     public RSemaphoreReactive getSemaphore(K key) {
-        String name = ((RedissonMap<K, V>) instance).getLockByMapKey(key, "semaphore");
-        return redisson.getSemaphore(name);
-    }
-    
-    public RLockReactive getFairLock(K key) {
-        String name = ((RedissonMap<K, V>) instance).getLockByMapKey(key, "fairlock");
-        return redisson.getFairLock(name);
-    }
-    
-    public RReadWriteLockReactive getReadWriteLock(K key) {
-        String name = ((RedissonMap<K, V>) instance).getLockByMapKey(key, "rw_lock");
-        return redisson.getReadWriteLock(name);
-    }
-    
-    public RLockReactive getLock(K key) {
-        String name = ((RedissonMap<K, V>) instance).getLockByMapKey(key, "lock");
-        return redisson.getLock(name);
+        RSemaphore s = map.getSemaphore(key);
+        return ReactiveProxyBuilder.create(commandExecutor, s, RSemaphoreReactive.class);
     }
 
-            }
+    public RLockReactive getFairLock(K key) {
+        RLock lock = map.getFairLock(key);
+        return ReactiveProxyBuilder.create(commandExecutor, lock, RLockReactive.class);
+    }
+
+    public RReadWriteLockReactive getReadWriteLock(K key)  {
+        RReadWriteLock lock = map.getReadWriteLock(key);
+        return ReactiveProxyBuilder.create(commandExecutor, lock, RReadWriteLockReactive.class);
+    }
+
+    public RLockReactive getLock(K key) {
+        RLock lock = map.getLock(key);
+        return ReactiveProxyBuilder.create(commandExecutor, lock, RLockReactive.class);
+    }
+
+}

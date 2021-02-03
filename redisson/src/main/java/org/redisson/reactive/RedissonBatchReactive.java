@@ -83,30 +83,30 @@ public class RedissonBatchReactive implements RBatchReactive {
 
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name) {
-        RedissonMap<K, V> map = new RedissonMap<K, V>(executorService, name, null, null, null);
-        return ReactiveProxyBuilder.create(executorService, map, 
-                new RedissonMapReactive<K, V>(map, null), RMapReactive.class);
+        RMap<K, V> map = new RedissonMap<K, V>(executorService, name, null, null, null);
+        return ReactiveProxyBuilder.create(executorService, map,
+                new RedissonMapReactive<>(map, executorService), RMapReactive.class);
     }
 
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name, Codec codec) {
-        RedissonMap<K, V> map = new RedissonMap<K, V>(codec, executorService, name, null, null, null);
-        return ReactiveProxyBuilder.create(executorService, map, 
-                new RedissonMapReactive<K, V>(map, null), RMapReactive.class);
+        RedissonMap<K, V> map = new RedissonMap<>(codec, executorService, name, null, null, null);
+        return ReactiveProxyBuilder.create(executorService, map,
+                new RedissonMapReactive<>(map, executorService), RMapReactive.class);
     }
 
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec) {
         RMapCache<K, V> map = new RedissonMapCache<K, V>(codec, evictionScheduler, executorService, name, null, null, null);
         return ReactiveProxyBuilder.create(executorService, map, 
-                new RedissonMapCacheReactive<K, V>(map), RMapCacheReactive.class);
+                new RedissonMapCacheReactive<K, V>(map, commandExecutor), RMapCacheReactive.class);
     }
 
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name) {
         RMapCache<K, V> map = new RedissonMapCache<K, V>(evictionScheduler, executorService, name, null, null, null);
         return ReactiveProxyBuilder.create(executorService, map, 
-                new RedissonMapCacheReactive<K, V>(map), RMapCacheReactive.class);
+                new RedissonMapCacheReactive<K, V>(map, commandExecutor), RMapCacheReactive.class);
     }
 
     @Override

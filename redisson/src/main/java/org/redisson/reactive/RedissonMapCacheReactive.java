@@ -15,14 +15,7 @@
  */
 package org.redisson.reactive;
 
-import java.util.Map;
-import java.util.Map.Entry;
-
-import org.reactivestreams.Publisher;
-import org.redisson.RedissonMap;
 import org.redisson.api.RMapCache;
-
-import reactor.core.publisher.Flux;
 
 /**
  *
@@ -31,70 +24,10 @@ import reactor.core.publisher.Flux;
  * @param <K> key
  * @param <V> value
  */
-public class RedissonMapCacheReactive<K, V> {
+public class RedissonMapCacheReactive<K, V> extends RedissonMapReactive<K, V> {
 
-    private final RMapCache<K, V> mapCache;
-
-    public RedissonMapCacheReactive(RMapCache<K, V> mapCache) {
-        this.mapCache = mapCache;
-    }
-    
-    public Publisher<Map.Entry<K, V>> entryIterator() {
-        return entryIterator(null);
-    }
-    
-    public Publisher<Map.Entry<K, V>> entryIterator(int count) {
-        return entryIterator(null, count);
-    }
-    
-    public Publisher<Map.Entry<K, V>> entryIterator(String pattern) {
-        return entryIterator(pattern, 10);
-    }
-    
-    public Publisher<Map.Entry<K, V>> entryIterator(String pattern, int count) {
-        return Flux.create(new MapReactiveIterator<K, V, Map.Entry<K, V>>((RedissonMap<K, V>) mapCache, pattern, count));
+    public RedissonMapCacheReactive(RMapCache<K, V> map, CommandReactiveExecutor commandExecutor) {
+        super(map, commandExecutor);
     }
 
-    public Publisher<V> valueIterator() {
-        return valueIterator(null);
-    }
-    
-    public Publisher<V> valueIterator(String pattern) {
-        return valueIterator(pattern, 10);
-    }
-    
-    public Publisher<V> valueIterator(int count) {
-        return valueIterator(null, count);
-    }
-    
-    public Publisher<V> valueIterator(String pattern, int count) {
-        return Flux.create(new MapReactiveIterator<K, V, V>((RedissonMap<K, V>) mapCache, pattern, count) {
-            @Override
-            V getValue(Entry<Object, Object> entry) {
-                return (V) entry.getValue();
-            }
-        });
-    }
-
-    public Publisher<K> keyIterator() {
-        return keyIterator(null);
-    }
-    
-    public Publisher<K> keyIterator(String pattern) {
-        return keyIterator(pattern, 10);
-    }
-
-    public Publisher<K> keyIterator(int count) {
-        return keyIterator(null, count);
-    }
-    
-    public Publisher<K> keyIterator(String pattern, int count) {
-        return Flux.create(new MapReactiveIterator<K, V, K>((RedissonMap<K, V>) mapCache, pattern, count) {
-            @Override
-            K getValue(Entry<Object, Object> entry) {
-                return (K) entry.getKey();
-            }
-        });
-    }
-
-            }
+}

@@ -66,23 +66,23 @@ public class RedissonTransactionReactive implements RTransactionReactive {
 
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name, Codec codec) {
-        RMap<K, V> map = transaction.<K, V>getMap(name, codec);
-        return ReactiveProxyBuilder.create(executorService, map, 
-                new RedissonMapReactive<K, V>(map, null), RMapReactive.class);
+        RMap<K, V> map = transaction.getMap(name, codec);
+        return ReactiveProxyBuilder.create(executorService, map,
+                new RedissonMapReactive<>(map, null), RMapReactive.class);
     }
 
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec) {
-        RMapCache<K, V> map = transaction.<K, V>getMapCache(name, codec);
-        return ReactiveProxyBuilder.create(executorService, map, 
-                new RedissonMapCacheReactive<K, V>(map), RMapCacheReactive.class);
+        RMapCache<K, V> map = transaction.getMapCache(name, codec);
+        return ReactiveProxyBuilder.create(executorService, map,
+                new RedissonMapCacheReactive<>(map, executorService), RMapCacheReactive.class);
     }
 
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name) {
-        RMapCache<K, V> map = transaction.<K, V>getMapCache(name);
-        return ReactiveProxyBuilder.create(executorService, map, 
-                new RedissonMapCacheReactive<K, V>(map), RMapCacheReactive.class);
+        RMapCache<K, V> map = transaction.getMapCache(name);
+        return ReactiveProxyBuilder.create(executorService, map,
+                new RedissonMapCacheReactive<>(map, executorService), RMapCacheReactive.class);
     }
 
     @Override
