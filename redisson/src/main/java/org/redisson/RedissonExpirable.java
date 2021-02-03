@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
@@ -59,7 +60,17 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
 
     @Override
     public RFuture<Boolean> expireAtAsync(long timestamp) {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.PEXPIREAT, getName(), timestamp);
+        return expireAtAsync(Instant.ofEpochMilli(timestamp));
+    }
+
+    @Override
+    public boolean expireAt(Instant instant) {
+        return get(expireAtAsync(instant));
+    }
+
+    @Override
+    public RFuture<Boolean> expireAtAsync(Instant instant) {
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.PEXPIREAT, getName(), instant.toEpochMilli());
     }
 
     @Override
