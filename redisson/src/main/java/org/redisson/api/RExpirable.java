@@ -39,7 +39,7 @@ public interface RExpirable extends RObject, RExpirableAsync {
     boolean expire(long timeToLive, TimeUnit timeUnit);
 
     /**
-     * Use {@link #expireAt(Instant)} instead
+     * Use {@link #expire(Instant)} instead
      *
      * @param timestamp - expire date in milliseconds (Unix timestamp)
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
@@ -48,7 +48,7 @@ public interface RExpirable extends RObject, RExpirableAsync {
     boolean expireAt(long timestamp);
 
     /**
-     * Use {@link #expireAt(Instant)} instead
+     * Use {@link #expire(Instant)} instead
      *
      * @param timestamp - expire date
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
@@ -63,7 +63,7 @@ public interface RExpirable extends RObject, RExpirableAsync {
      * @param instant - expire date
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
-    boolean expireAt(Instant instant);
+    boolean expire(Instant instant);
 
     /**
      * Clear an expire timeout or expire date for object.

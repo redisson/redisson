@@ -33,15 +33,15 @@ public class BaseTransactionalObject {
     }
     
     public RFuture<Boolean> expireAtAsync(Date timestamp) {
-        throw new UnsupportedOperationException("expireAt method is not supported in transaction");
+        throw new UnsupportedOperationException("expire method is not supported in transaction");
     }
 
     public RFuture<Boolean> expireAtAsync(Instant timestamp) {
-        throw new UnsupportedOperationException("expireAt method is not supported in transaction");
+        throw new UnsupportedOperationException("expire method is not supported in transaction");
     }
 
     public RFuture<Boolean> expireAtAsync(long timestamp) {
-        throw new UnsupportedOperationException("expireAt method is not supported in transaction");
+        throw new UnsupportedOperationException("expire method is not supported in transaction");
     }
     
     public RFuture<Boolean> clearExpireAsync() {

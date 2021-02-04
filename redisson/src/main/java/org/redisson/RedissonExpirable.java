@@ -64,7 +64,7 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
     }
 
     @Override
-    public boolean expireAt(Instant instant) {
+    public boolean expire(Instant instant) {
         return get(expireAtAsync(instant));
     }
 
