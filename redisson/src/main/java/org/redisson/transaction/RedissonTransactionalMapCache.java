@@ -82,7 +82,7 @@ public class RedissonTransactionalMapCache<K, V> extends RedissonMapCache<K, V> 
     }
 
     @Override
-    public RFuture<Boolean> expireAtAsync(Instant timestamp) {
+    public RFuture<Boolean> expireAsync(Instant timestamp) {
         throw new UnsupportedOperationException("expire method is not supported in transaction");
     }
 

@@ -39,7 +39,7 @@ public interface RExpirableAsync extends RObjectAsync {
     RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit);
 
     /**
-     * Use {@link #expireAtAsync(Instant)} instead
+     * Use {@link #expireAsync(Instant)} instead
      *
      * @param timestamp - expire date
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
@@ -48,7 +48,7 @@ public interface RExpirableAsync extends RObjectAsync {
     RFuture<Boolean> expireAtAsync(Date timestamp);
 
     /**
-     * Use {@link #expireAtAsync(Instant)} instead
+     * Use {@link #expireAsync(Instant)} instead
      *
      * @param timestamp - expire date in milliseconds (Unix timestamp)
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
@@ -63,7 +63,7 @@ public interface RExpirableAsync extends RObjectAsync {
      * @param instant - expire date
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
-    RFuture<Boolean> expireAtAsync(Instant instant);
+    RFuture<Boolean> expireAsync(Instant instant);
 
     /**
      * Clear an expire timeout or expire date for object in async mode.
