@@ -155,7 +155,22 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      * @return the tail element or {@code null} if this sorted set is empty
      */
     Maybe<Double> lastScore();
-    
+
+    /**
+     * Returns random element from this sorted set
+     *
+     * @return random element
+     */
+    Maybe<V> random();
+
+    /**
+     * Returns random elements from this sorted set limited by <code>count</code>
+     *
+     * @param count - values amount to return
+     * @return random elements
+     */
+    Single<Collection<V>> random(int count);
+
     /**
      * Returns an iterator over elements in this set.
      * If <code>pattern</code> is not null then only elements match this pattern are loaded.

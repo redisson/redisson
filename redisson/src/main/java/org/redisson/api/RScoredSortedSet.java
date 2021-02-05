@@ -205,6 +205,21 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Double lastScore();
 
     /**
+     * Returns random element from this sorted set
+     *
+     * @return random element
+     */
+    V random();
+
+    /**
+     * Returns random elements from this sorted set limited by <code>count</code>
+     *
+     * @param count - values amount to return
+     * @return random elements
+     */
+    Collection<V> random(int count);
+
+    /**
      * Adds all elements contained in the specified map to this sorted set.
      * Map contains of score mapped by object. 
      * 

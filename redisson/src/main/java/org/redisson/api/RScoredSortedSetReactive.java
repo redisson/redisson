@@ -21,6 +21,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import io.reactivex.rxjava3.core.Maybe;
+import io.reactivex.rxjava3.core.Single;
 import org.redisson.api.RScoredSortedSet.Aggregate;
 import org.redisson.client.protocol.ScoredEntry;
 
@@ -154,7 +156,22 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      * @return the tail element or {@code null} if this sorted set is empty
      */
     Mono<Double> lastScore();
-    
+
+    /**
+     * Returns random element from this sorted set
+     *
+     * @return random element
+     */
+    Mono<V> random();
+
+    /**
+     * Returns random elements from this sorted set limited by <code>count</code>
+     *
+     * @param count - values amount to return
+     * @return random elements
+     */
+    Mono<Collection<V>> random(int count);
+
     /**
      * Returns an iterator over elements in this set.
      * If <code>pattern</code> is not null then only elements match this pattern are loaded.

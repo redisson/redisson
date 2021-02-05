@@ -95,6 +95,8 @@ public interface RedisCommands {
     RedisStrictCommand<Void> ASKING = new RedisStrictCommand<Void>("ASKING", new VoidReplayConvertor());
     RedisStrictCommand<Void> READONLY = new RedisStrictCommand<Void>("READONLY", new VoidReplayConvertor());
 
+    RedisCommand<Set<Object>> ZRANDMEMBER = new RedisCommand<>("ZRANDMEMBER", new ObjectSetReplayDecoder<>());
+    RedisCommand<Object> ZRANDMEMBER_SINGLE = new RedisCommand<>("ZRANDMEMBER");
     RedisStrictCommand<List<Object>> ZDIFF = new RedisStrictCommand<>("ZDIFF", new ObjectListReplayDecoder<>());
     RedisCommand<List<Object>> ZUNION = new RedisCommand<>("ZUNION", new ObjectListReplayDecoder<>());
     RedisCommand<List<Object>> ZINTER = new RedisCommand<>("ZINTER", new ObjectListReplayDecoder<>());

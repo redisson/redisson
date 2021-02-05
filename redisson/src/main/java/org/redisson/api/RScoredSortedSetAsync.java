@@ -166,6 +166,21 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Double> lastScoreAsync();
 
     /**
+     * Returns random element from this sorted set
+     *
+     * @return value
+     */
+    RFuture<V> randomAsync();
+
+    /**
+     * Returns random elements from this sorted set limited by <code>count</code>
+     *
+     * @param count - values amount to return
+     * @return value
+     */
+    RFuture<Collection<V>> randomAsync(int count);
+
+    /**
      * Adds all elements contained in the specified map to this sorted set.
      * Map contains of score mapped by object. 
      * 

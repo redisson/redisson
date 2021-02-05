@@ -32,6 +32,17 @@ import org.redisson.config.Config;
 public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
+    public void testRandom() {
+        RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("test");
+        set.add(1, 10);
+        set.add(2, 20);
+        set.add(3, 30);
+
+        assertThat(set.random()).isIn(10, 20, 30);
+        assertThat(set.random(2)).containsAnyOf(10, 20, 30).hasSize(2);
+    }
+
+    @Test
     public void testTakeFirst() {
         Assume.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("5.0.0") > 0);
 

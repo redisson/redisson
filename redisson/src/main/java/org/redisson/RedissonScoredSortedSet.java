@@ -183,6 +183,26 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public V random() {
+        return get(randomAsync());
+    }
+
+    @Override
+    public Collection<V> random(int count) {
+        return get(randomAsync(count));
+    }
+
+    @Override
+    public RFuture<V> randomAsync() {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZRANDMEMBER_SINGLE, getName());
+    }
+
+    @Override
+    public RFuture<Collection<V>> randomAsync(int count) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZRANDMEMBER, getName(), count);
+    }
+
+    @Override
     public boolean add(double score, V object) {
         return get(addAsync(score, object));
     }
