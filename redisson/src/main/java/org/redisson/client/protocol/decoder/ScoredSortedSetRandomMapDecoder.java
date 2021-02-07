@@ -15,11 +15,6 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
