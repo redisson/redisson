@@ -203,6 +203,16 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public Map<V, Double> randomEntries(int count) {
+        return get(randomEntriesAsync(count));
+    }
+
+    @Override
+    public RFuture<Map<V, Double>> randomEntriesAsync(int count) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZRANDMEMBER_ENTRIES, getName(), count, "WITHSCORES");
+    }
+
+    @Override
     public boolean add(double score, V object) {
         return get(addAsync(score, object));
     }

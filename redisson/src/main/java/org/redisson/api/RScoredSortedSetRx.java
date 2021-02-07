@@ -158,6 +158,8 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
 
     /**
      * Returns random element from this sorted set
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
      *
      * @return random element
      */
@@ -165,11 +167,24 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
 
     /**
      * Returns random elements from this sorted set limited by <code>count</code>
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
      *
      * @param count - values amount to return
      * @return random elements
      */
     Single<Collection<V>> random(int count);
+
+    /**
+     * Returns random entries from this sorted set limited by <code>count</code>.
+     * Each map entry uses element as key and score as value.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param count - entries amount to return
+     * @return random entries
+     */
+    Single<Map<V, Double>> randomEntries(int count);
 
     /**
      * Returns an iterator over elements in this set.

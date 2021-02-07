@@ -1,6 +1,7 @@
 package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -40,6 +41,9 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
         assertThat(set.random()).isIn(10, 20, 30);
         assertThat(set.random(2)).containsAnyOf(10, 20, 30).hasSize(2);
+
+        Map<Integer, Double> map = set.randomEntries(2);
+        assertThat(map).containsAnyOf(entry(10, 1D), entry(20, 2D), entry(30, 3D)).hasSize(2);
     }
 
     @Test

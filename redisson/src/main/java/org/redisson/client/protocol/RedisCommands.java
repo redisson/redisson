@@ -95,6 +95,7 @@ public interface RedisCommands {
     RedisStrictCommand<Void> ASKING = new RedisStrictCommand<Void>("ASKING", new VoidReplayConvertor());
     RedisStrictCommand<Void> READONLY = new RedisStrictCommand<Void>("READONLY", new VoidReplayConvertor());
 
+    RedisCommand<Map<Object, Object>> ZRANDMEMBER_ENTRIES = new RedisCommand<>("ZRANDMEMBER", new ScoredSortedSetRandomMapDecoder());
     RedisCommand<Set<Object>> ZRANDMEMBER = new RedisCommand<>("ZRANDMEMBER", new ObjectSetReplayDecoder<>());
     RedisCommand<Object> ZRANDMEMBER_SINGLE = new RedisCommand<>("ZRANDMEMBER");
     RedisStrictCommand<List<Object>> ZDIFF = new RedisStrictCommand<>("ZDIFF", new ObjectListReplayDecoder<>());

@@ -167,6 +167,8 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
 
     /**
      * Returns random element from this sorted set
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
      *
      * @return value
      */
@@ -174,11 +176,24 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
 
     /**
      * Returns random elements from this sorted set limited by <code>count</code>
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
      *
      * @param count - values amount to return
      * @return value
      */
     RFuture<Collection<V>> randomAsync(int count);
+
+    /**
+     * Returns random entries from this sorted set limited by <code>count</code>.
+     * Each map entry uses element as key and score as value.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param count - entries amount to return
+     * @return random entries
+     */
+    RFuture<Map<V, Double>> randomEntriesAsync(int count);
 
     /**
      * Adds all elements contained in the specified map to this sorted set.

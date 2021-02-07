@@ -206,6 +206,8 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
 
     /**
      * Returns random element from this sorted set
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
      *
      * @return random element
      */
@@ -213,11 +215,24 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
 
     /**
      * Returns random elements from this sorted set limited by <code>count</code>
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
      *
      * @param count - values amount to return
      * @return random elements
      */
     Collection<V> random(int count);
+
+    /**
+     * Returns random entries from this sorted set limited by <code>count</code>.
+     * Each map entry uses element as key and score as value.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param count - entries amount to return
+     * @return random entries
+     */
+    Map<V, Double> randomEntries(int count);
 
     /**
      * Adds all elements contained in the specified map to this sorted set.

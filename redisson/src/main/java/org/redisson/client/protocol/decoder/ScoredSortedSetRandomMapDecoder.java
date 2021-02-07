@@ -29,32 +29,14 @@ import org.redisson.client.protocol.Decoder;
  * @author Nikita Koksharov
  *
  */
-public class GeoDistanceMapDecoder implements MultiDecoder<Map<Object, Object>> {
+public class ScoredSortedSetRandomMapDecoder extends ObjectMapReplayDecoder<Object, Object> {
 
-    private final Codec codec;
-    
-    public GeoDistanceMapDecoder(Codec codec) {
-        super();
-        this.codec = codec;
-    }
-    
     @Override
     public Decoder<Object> getDecoder(int paramNum, State state) {
         if (paramNum % 2 == 0) {
-            return codec.getValueDecoder();
+            return super.getDecoder(paramNum, state);
         }
         return DoubleCodec.INSTANCE.getValueDecoder();
-    }
-
-    @Override
-    public Map<Object, Object> decode(List<Object> parts, State state) {
-        Map<Object, Object> result = new HashMap<Object, Object>(parts.size()/2);
-        for (int i = 0; i < parts.size(); i++) {
-            if (i % 2 != 0) {
-                result.put(parts.get(i-1), parts.get(i));
-           }
-        }
-        return result;
     }
 
 }
