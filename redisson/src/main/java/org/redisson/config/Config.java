@@ -57,24 +57,14 @@ public class Config {
 
     private ConnectionManager connectionManager;
 
-    /**
-     * Threads amount shared between all redis node clients
-     */
     private int threads = 16;
 
     private int nettyThreads = 32;
 
-    /**
-     * Redis key/value codec. FST codec is used by default
-     */
     private Codec codec;
 
     private ExecutorService executor;
 
-    /**
-     * Config option for enabling Redisson Reference feature.
-     * Default value is TRUE
-     */
     private boolean referenceEnabled = true;
 
     private TransportMode transportMode = TransportMode.NIO;
@@ -99,9 +89,6 @@ public class Config {
 
     private boolean useThreadClassLoader = true;
 
-    /**
-     * AddressResolverGroupFactory switch between default and round robin
-     */
     private AddressResolverGroupFactory addressResolverGroupFactory = new DnsAddressResolverGroupFactory();
 
     public Config() {
@@ -169,9 +156,10 @@ public class Config {
     }
 
     /**
-     * Redis key/value codec. Default is FST codec
+     * Redis data codec. Default is MarshallingCodec codec
      *
      * @see org.redisson.client.codec.Codec
+     * @see org.redisson.codec.MarshallingCodec
      * 
      * @param codec object
      * @return config
