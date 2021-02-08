@@ -7,6 +7,7 @@ import java.io.NotSerializableException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -28,7 +29,6 @@ import org.redisson.api.RemoteInvocationOptions;
 import org.redisson.api.annotation.RRemoteAsync;
 import org.redisson.api.annotation.RRemoteReactive;
 import org.redisson.api.annotation.RRemoteRx;
-import org.redisson.codec.FstCodec;
 import org.redisson.codec.SerializationCodec;
 import org.redisson.remote.RemoteServiceAckTimeoutException;
 import org.redisson.remote.RemoteServiceTimeoutException;
@@ -151,7 +151,9 @@ public class RedissonRemoteServiceTest extends BaseTest {
 
     
     public interface RemoteInterface {
-        
+
+        Optional<Integer> optionalResult(Integer value);
+
         void cancelMethod() throws InterruptedException;
         
         void voidMethod(String name, Long param);
@@ -188,6 +190,14 @@ public class RedissonRemoteServiceTest extends BaseTest {
         public RemoteImpl(AtomicInteger iterations) {
             super();
             this.iterations = iterations;
+        }
+
+        @Override
+        public Optional<Integer> optionalResult(Integer value) {
+            if (value == null) {
+                return Optional.empty();
+            }
+            return Optional.of(value);
         }
 
         @Override
@@ -260,6 +270,19 @@ public class RedissonRemoteServiceTest extends BaseTest {
             return "methodOverload(String str, Long lng)";
         }
         
+    }
+
+    @Test
+    public void testOptional() {
+        RRemoteService remoteService = redisson.getRemoteService();
+        remoteService.register(RemoteInterface.class, new RemoteImpl());
+        RemoteInterface service = redisson.getRemoteService().get(RemoteInterface.class);
+
+        Optional<Integer> r1 = service.optionalResult(null);
+        assertThat(r1.isPresent()).isFalse();
+        Optional<Integer> r2 = service.optionalResult(2);
+        assertThat(r2.get()).isEqualTo(2);
+        remoteService.deregister(RemoteInterface.class);
     }
 
     @Test
@@ -662,36 +685,6 @@ public class RedissonRemoteServiceTest extends BaseTest {
 
         } finally {
             client.shutdown();
-        }
-    }
-
-    @Test
-    public void testInvocationWithFstCodec() {
-        RedissonClient server = Redisson.create(createConfig().setCodec(new FstCodec()));
-        RedissonClient client = Redisson.create(createConfig().setCodec(new FstCodec()));
-        try {
-            server.getRemoteService().register(RemoteInterface.class, new RemoteImpl());
-
-            RemoteInterface service = client.getRemoteService().get(RemoteInterface.class);
-
-            assertThat(service.resultMethod(21L)).as("Should be compatible with FstCodec").isEqualTo(42L);
-
-            try {
-                assertThat(service.doSomethingWithSerializablePojo(new SerializablePojo("test")).getStringField()).isEqualTo("test");
-            } catch (Exception e) {
-                Assert.fail("Should be compatible with FstCodec");
-            }
-
-            try {
-                assertThat(service.doSomethingWithPojo(new Pojo("test")).getStringField()).isEqualTo("test");
-                Assert.fail("FstCodec should not be able to serialize a not serializable class");
-            } catch (Exception e) {
-                assertThat(e).isInstanceOf(RuntimeException.class);
-                assertThat(e.getMessage()).contains("Pojo does not implement Serializable");
-            }
-        } finally {
-            client.shutdown();
-            server.shutdown();
         }
     }
 

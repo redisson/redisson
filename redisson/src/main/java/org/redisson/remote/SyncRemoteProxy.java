@@ -18,6 +18,7 @@ package org.redisson.remote;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentMap;
 
 import org.redisson.RedissonBucket;
@@ -133,6 +134,12 @@ public class SyncRemoteProxy extends BaseRemoteProxy {
                     }
                     if (response.getError() != null) {
                         throw response.getError();
+                    }
+                    if (method.getReturnType().equals(Optional.class)) {
+                        if (response.getResult() == null) {
+                            return Optional.empty();
+                        }
+                        return Optional.of(response.getResult());
                     }
                     return response.getResult();
                 }

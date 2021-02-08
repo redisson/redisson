@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
@@ -415,7 +416,15 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
 
                 RBlockingQueueAsync<RRemoteServiceResponse> queue = getBlockingQueue(responseName, codec);
                 try {
-                    RFuture<Void> clientsFuture = queue.putAsync(result);
+                    RRemoteServiceResponse response;
+                    if (result instanceof RemoteServiceResponse
+                            && ((RemoteServiceResponse) result).getResult() instanceof Optional) {
+                        Optional<?> o = (Optional<?>) ((RemoteServiceResponse) result).getResult();
+                        response = new RemoteServiceResponse(result.getId(), o.orElse(null));
+                    } else {
+                        response = result;
+                    }
+                    RFuture<Void> clientsFuture = queue.putAsync(response);
                     queue.expireAsync(timeout, TimeUnit.MILLISECONDS);
 
                     clientsFuture.onComplete((res, exc) -> {
@@ -423,13 +432,13 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                             if (exc instanceof RedissonShutdownException) {
                                 return;
                             }
-                            log.error("Can't send response: " + result + " for request: " + request, exc);
+                            log.error("Can't send response: " + response + " for request: " + request, exc);
                         }
 
                         resubscribe(remoteInterface, requestQueue, executor, method.getBean());
                     });
                 } catch (Exception ex) {
-                    log.error("Can't send response: " + result + " for request: " + request, e);
+                    log.error("Can't send response: " + result + " for request: " + request, ex);
                 }
             } else {
                 resubscribe(remoteInterface, requestQueue, executor, method.getBean());
