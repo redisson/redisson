@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
+import io.netty.util.concurrent.FastThreadLocalThread;
 import org.redisson.RedissonReference;
 import org.redisson.SlotCallback;
 import org.redisson.api.*;
@@ -136,6 +137,10 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     @Override
     public <V> V get(RFuture<V> future) {
+        if (Thread.currentThread() instanceof FastThreadLocalThread) {
+            throw new IllegalStateException("Sync methods can't be invoked from async/rx/reactive listeners");
+        }
+
         try {
             future.await();
         } catch (InterruptedException e) {
