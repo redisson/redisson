@@ -72,7 +72,7 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
         config.getTimer().newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
-                if (connection.isClosed()) {
+                if (connection.isClosed() || ctx.isRemoved()) {
                     return;
                 }
 
