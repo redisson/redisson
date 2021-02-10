@@ -144,7 +144,23 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
      * @return void
      */
     RFuture<Void> putAllAsync(Map<? extends K, ? extends V> map, int batchSize);
-    
+
+    /**
+     * Returns random keys from this map limited by <code>count</code>
+     *
+     * @param count - keys amount to return
+     * @return random keys
+     */
+    RFuture<Set<K>> randomKeysAsync(int count);
+
+    /**
+     * Returns random map entries from this map limited by <code>count</code>
+     *
+     * @param count - entries amount to return
+     * @return random entries
+     */
+    RFuture<Map<K, V>> randomEntriesAsync(int count);
+
     /**
      * Adds the given <code>delta</code> to the current value
      * by mapped <code>key</code>.

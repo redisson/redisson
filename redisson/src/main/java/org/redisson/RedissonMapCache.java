@@ -2368,6 +2368,97 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
+    public RFuture<Set<K>> randomKeysAsync(int count) {
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_MAP_KEY_SET,
+            "local s = redis.call('hrandfield', KEYS[1], ARGV[2], 'withvalues'); " +
+                  "if s == false then " +
+                       "return {};" +
+                  "end; " +
+                  "local maxSize = tonumber(redis.call('hget', KEYS[5], 'max-size'));"
+                        + "local result = {}; "
+                        + "for i, v in ipairs(s) do "
+                            + "if i % 2 == 0 then "
+                                + "local t, val = struct.unpack('dLc0', v); "
+                                + "local key = s[i-1];" +
+                                "local expireDate = 92233720368547758; " +
+                                "local expireDateScore = redis.call('zscore', KEYS[2], key); "
+                                + "if expireDateScore ~= false then "
+                                + "expireDate = tonumber(expireDateScore) "
+                                + "end; "
+                                + "if t ~= 0 then "
+                                + "local expireIdle = redis.call('zscore', KEYS[3], key); "
+                                + "if expireIdle ~= false then "
+                                + "if tonumber(expireIdle) > tonumber(ARGV[1]) then "
+                                    + "redis.call('zadd', KEYS[3], t + tonumber(ARGV[1]), key); "
+                                    + "if maxSize ~= nil and maxSize ~= 0 then " +
+                                        "local mode = redis.call('hget', KEYS[5], 'mode'); " +
+                                        "if mode == false or mode == 'LRU' then " +
+                                            "redis.call('zadd', KEYS[4], tonumber(ARGV[1]), key); " +
+                                        "else " +
+                                            "redis.call('zincrby', KEYS[4], 1, key); " +
+                                        "end; "
+                                    + "end; "
+                                + "end; "
+                                + "expireDate = math.min(expireDate, tonumber(expireIdle)) "
+                                + "end; "
+                                + "end; "
+                                + "if expireDate > tonumber(ARGV[1]) then "
+                                    + "table.insert(result, key); "
+                                + "end; "
+                            + "end; "
+                        + "end;" +
+                        "return result;",
+                Arrays.asList(getName(), getTimeoutSetName(), getIdleSetName(), getLastAccessTimeSetName(), getOptionsName()),
+                System.currentTimeMillis(), count);
+    }
+
+    @Override
+    public RFuture<Map<K, V>> randomEntriesAsync(int count) {
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_MAP,
+            "local s = redis.call('hrandfield', KEYS[1], ARGV[2], 'withvalues'); " +
+                "if s == false then " +
+                    "return {};" +
+                "end; "
+                + "local result = {}; "
+                + "local maxSize = tonumber(redis.call('hget', KEYS[5], 'max-size'));"
+                + "for i, v in ipairs(s) do "
+                    + "if i % 2 == 0 then "
+                      + "local t, val = struct.unpack('dLc0', v); "
+                      + "local key = s[i-1];" +
+                        "local expireDate = 92233720368547758; " +
+                        "local expireDateScore = redis.call('zscore', KEYS[2], key); "
+                        + "if expireDateScore ~= false then "
+                            + "expireDate = tonumber(expireDateScore) "
+                        + "end; "
+                        + "if t ~= 0 then "
+                            + "local expireIdle = redis.call('zscore', KEYS[3], key); "
+                            + "if expireIdle ~= false then "
+                                + "if tonumber(expireIdle) > tonumber(ARGV[1]) then "
+                                    + "redis.call('zadd', KEYS[3], t + tonumber(ARGV[1]), key); "
+                                            + "if maxSize ~= nil and maxSize ~= 0 then " +
+                                                    "local mode = redis.call('hget', KEYS[5], 'mode'); " +
+                                                    "if mode == false or mode == 'LRU' then " +
+                                                        "redis.call('zadd', KEYS[4], tonumber(ARGV[1]), key); " +
+                                                    "else " +
+                                                        "redis.call('zincrby', KEYS[4], 1, key); " +
+                                                    "end; "
+                                            + "end; "
+                                        + "end; "
+                                        + "expireDate = math.min(expireDate, tonumber(expireIdle)) "
+                                    + "end; "
+                                + "end; "
+                                + "if expireDate > tonumber(ARGV[1]) then "
+                                    + "table.insert(result, key); "
+                                    + "table.insert(result, val); "
+                                + "end; "
+                            + "end; "
+                        + "end;" +
+                        "return result;",
+                Arrays.asList(getName(), getTimeoutSetName(), getIdleSetName(), getLastAccessTimeSetName(), getOptionsName()),
+                System.currentTimeMillis(), count);
+    }
+
+    @Override
     public RFuture<Set<java.util.Map.Entry<K, V>>> readAllEntrySetAsync() {
         return readAll(RedisCommands.EVAL_MAP_ENTRY);
     }

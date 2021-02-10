@@ -133,6 +133,32 @@ public abstract class BaseMapTest extends BaseTest {
     }
 
     @Test
+    public void testRandomKeys() {
+        RMap<Integer, Integer> map = getMap("map");
+        Set<Integer> e1 = map.randomKeys(1);
+        assertThat(e1).isEmpty();
+        map.put(1, 11);
+        map.put(2, 21);
+        map.put(3, 31);
+        map.put(4, 41);
+        Set<Integer> e = map.randomKeys(2);
+        assertThat(e).containsAnyOf(1, 2, 3, 4).hasSize(2);
+    }
+
+    @Test
+    public void testRandomEntries() {
+        RMap<Integer, Integer> map = getMap("map");
+        Map<Integer, Integer> e1 = map.randomEntries(1);
+        assertThat(e1).isEmpty();
+        map.put(1, 11);
+        map.put(2, 21);
+        map.put(3, 31);
+        map.put(4, 41);
+        Map<Integer, Integer> e = map.randomEntries(2);
+        assertThat(e.keySet()).containsAnyOf(1, 2, 3, 4).hasSize(2);
+    }
+
+    @Test
     public void testComputeIfPresent() {
         RMap<String, String> map = getMap("map");
         map.computeIfPresent("1", (key, value) -> {

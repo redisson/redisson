@@ -351,6 +351,22 @@ public interface RMapRx<K, V> extends RExpirableRx {
     Maybe<V> putIfExists(K key, V value);
 
     /**
+     * Returns random keys from this map limited by <code>count</code>
+     *
+     * @param count - keys amount to return
+     * @return random keys
+     */
+    Single<Set<K>> randomKeys(int count);
+
+    /**
+     * Returns random map entries from this map limited by <code>count</code>
+     *
+     * @param count - entries amount to return
+     * @return random entries
+     */
+    Single<Map<K, V>> randomEntries(int count);
+
+    /**
      * Stores the specified <code>value</code> mapped by <code>key</code>
      * only if mapping already exists.
      * <p>

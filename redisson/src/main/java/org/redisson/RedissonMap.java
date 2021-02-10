@@ -569,6 +569,26 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
+    public Set<K> randomKeys(int count) {
+        return get(randomKeysAsync(count));
+    }
+
+    @Override
+    public Map<K, V> randomEntries(int count) {
+        return get(randomEntriesAsync(count));
+    }
+
+    @Override
+    public RFuture<Set<K>> randomKeysAsync(int count) {
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.HRANDFIELD_KEYS, getName(), count);
+    }
+
+    @Override
+    public RFuture<Map<K, V>> randomEntriesAsync(int count) {
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.HRANDFIELD, getName(), count, "WITHVALUES");
+    }
+
+    @Override
     public RFuture<Map<K, V>> getAllAsync(Set<K> keys) {
         if (keys.isEmpty()) {
             return RedissonPromise.newSucceededFuture(Collections.emptyMap());

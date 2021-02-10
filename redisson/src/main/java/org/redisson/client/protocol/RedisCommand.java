@@ -87,7 +87,7 @@ public class RedisCommand<R> {
     }
 
     public RedisCommand(String name, Convertor<R> convertor) {
-        this(name, null, null, null);
+        this(name, (String) null, null, null);
         this.convertor = convertor;
     }
 
@@ -102,6 +102,12 @@ public class RedisCommand<R> {
     public RedisCommand(String name, MultiDecoder<R> replayMultiDecoder, ValueType outParamType) {
         this(name, null, replayMultiDecoder);
         this.outParamType = outParamType;
+    }
+
+    public RedisCommand(String name, MultiDecoder<R> replayMultiDecoder, ValueType outParamType, Convertor convertor) {
+        this(name, null, replayMultiDecoder);
+        this.outParamType = outParamType;
+        this.convertor = convertor;
     }
 
     public RedisCommand(String name, MultiDecoder<R> replayMultiDecoder) {

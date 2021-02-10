@@ -106,7 +106,23 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      *         Previous value if key already exists in the hash and new value has been stored.
      */
     V putIfExists(K key, V value);
-    
+
+    /**
+     * Returns random keys from this map limited by <code>count</code>
+     *
+     * @param count - keys amount to return
+     * @return random keys
+     */
+    Set<K> randomKeys(int count);
+
+    /**
+     * Returns random map entries from this map limited by <code>count</code>
+     *
+     * @param count - entries amount to return
+     * @return random entries
+     */
+    Map<K, V> randomEntries(int count);
+
     /**
      * Returns <code>RMapReduce</code> object associated with this map
      * 
