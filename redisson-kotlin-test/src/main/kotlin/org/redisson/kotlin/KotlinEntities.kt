@@ -7,7 +7,6 @@ import org.redisson.api.annotation.REntity
 import org.redisson.api.annotation.RFieldAccessor
 import org.redisson.api.annotation.RId
 import org.redisson.api.annotation.RIndex
-import org.redisson.api.annotation.RKotlinMember
 import org.redisson.liveobject.resolver.LongGenerator
 import org.redisson.liveobject.resolver.UUIDGenerator
 import java.io.Serializable
