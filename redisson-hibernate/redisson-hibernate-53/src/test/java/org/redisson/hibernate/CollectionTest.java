@@ -74,7 +74,7 @@ public class CollectionTest extends BaseCoreFunctionalTestCase {
     
     @Before
     public void before() {
-        sessionFactory().getCache().evictEntityRegions();
+        sessionFactory().getCache().evictEntityData();
         sessionFactory().getStatistics().clear();
     }
 
@@ -103,7 +103,7 @@ public class CollectionTest extends BaseCoreFunctionalTestCase {
         assertThat(a1.bs).hasSize(1);
         s.getTransaction().commit();
 
-        Assert.assertEquals(0, stats.getSecondLevelCacheStatistics("org.redisson.hibernate.CollectionTest$A.bs").getHitCount());
+        Assert.assertEquals(0, stats.getDomainDataRegionStatistics("org.redisson.hibernate.CollectionTest$A.bs").getHitCount());
 
         s = openSession();
         s.beginTransaction();
@@ -114,7 +114,7 @@ public class CollectionTest extends BaseCoreFunctionalTestCase {
 
         s.close();
 
-        Assert.assertEquals(1, stats.getSecondLevelCacheStatistics("org.redisson.hibernate.CollectionTest$A.bs").getHitCount());
+        Assert.assertEquals(1, stats.getDomainDataRegionStatistics("org.redisson.hibernate.CollectionTest$A.bs").getHitCount());
 
         stats.logSummary();
         

@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
 
-import org.hibernate.Query;
+import org.hibernate.query.Query;
 import org.hibernate.Session;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.Environment;
@@ -13,7 +13,6 @@ import org.hibernate.testing.junit4.BaseCoreFunctionalTestCase;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.redisson.hibernate.RedissonRegionFactory;
 
 /**
  * 
@@ -48,7 +47,7 @@ public class ReadWriteTest extends BaseCoreFunctionalTestCase {
     
     @Before
     public void before() {
-        sessionFactory().getCache().evictEntityRegions();
+        sessionFactory().getCache().evictAllRegions();
         sessionFactory().getStatistics().clear();
     }
 
@@ -56,7 +55,7 @@ public class ReadWriteTest extends BaseCoreFunctionalTestCase {
     public void testTimeToLive() throws InterruptedException {
         Statistics stats = sessionFactory().getStatistics();
         
-        Long id = null;
+        Long id;
         Session s = openSession();
         s.beginTransaction();
         ItemReadWrite item = new ItemReadWrite( "data" );
@@ -69,7 +68,7 @@ public class ReadWriteTest extends BaseCoreFunctionalTestCase {
         
         s = openSession();
         s.beginTransaction();
-        item = (ItemReadWrite) s.get(ItemReadWrite.class, id);
+        item = s.get(ItemReadWrite.class, id);
         Assert.assertEquals("data", item.getName());
         s.getTransaction().commit();
         s.close();
@@ -81,7 +80,7 @@ public class ReadWriteTest extends BaseCoreFunctionalTestCase {
         
         s = openSession();
         s.beginTransaction();
-        item = (ItemReadWrite) s.get(ItemReadWrite.class, id);
+        item = s.get(ItemReadWrite.class, id);
         Assert.assertEquals("data", item.getName());
         s.delete(item);
         s.getTransaction().commit();
@@ -105,11 +104,11 @@ public class ReadWriteTest extends BaseCoreFunctionalTestCase {
         
         s = openSession();
         s.beginTransaction();
-        Query query = s.getNamedQuery("testQuery");
+        Query<ItemReadWrite> query = s.getNamedQuery("testQuery");
         query.setCacheable(true);
         query.setCacheRegion("myTestQuery");
         query.setParameter("name", "data");
-        item = (ItemReadWrite) query.uniqueResult();
+        item = query.uniqueResult();
         s.getTransaction().commit();
         s.close();
         
@@ -117,11 +116,11 @@ public class ReadWriteTest extends BaseCoreFunctionalTestCase {
 
         s = openSession();
         s.beginTransaction();
-        Query query2 = s.getNamedQuery("testQuery");
+        Query<ItemReadWrite> query2 = s.getNamedQuery("testQuery");
         query2.setCacheable(true);
         query2.setCacheRegion("myTestQuery");
         query2.setParameter("name", "data");
-        item = (ItemReadWrite) query2.uniqueResult();
+        item = query2.uniqueResult();
         s.delete(item);
         s.getTransaction().commit();
         s.close();
@@ -147,7 +146,7 @@ public class ReadWriteTest extends BaseCoreFunctionalTestCase {
 
         s = openSession();
         s.beginTransaction();
-        item = (ItemReadWrite) s.get(ItemReadWrite.class, id);
+        item = s.get(ItemReadWrite.class, id);
         assertThat(item.getEntries()).containsExactly("a", "b", "c");
         s.getTransaction().commit();
         s.close();
@@ -156,7 +155,7 @@ public class ReadWriteTest extends BaseCoreFunctionalTestCase {
         
         s = openSession();
         s.beginTransaction();
-        item = (ItemReadWrite) s.get(ItemReadWrite.class, id);
+        item = s.get(ItemReadWrite.class, id);
         assertThat(item.getEntries()).containsExactly("a", "b", "c");
         s.delete(item);
         s.getTransaction().commit();
@@ -177,7 +176,7 @@ public class ReadWriteTest extends BaseCoreFunctionalTestCase {
         s.getTransaction().commit();
 
         Assert.assertEquals(1, stats.getDomainDataRegionStatistics("item").getPutCount());
-        Assert.assertEquals(1, stats.getNaturalIdCacheStatistics("item##NaturalId").getPutCount());
+        Assert.assertEquals(1, stats.getNaturalIdStatistics(ItemReadWrite.class.getName()).getCachePutCount());
         
         s = openSession();
         s.beginTransaction();
@@ -188,7 +187,7 @@ public class ReadWriteTest extends BaseCoreFunctionalTestCase {
         s.close();
         
         Assert.assertEquals(1, stats.getDomainDataRegionStatistics("item").getHitCount());
-        Assert.assertEquals(1, stats.getNaturalIdCacheStatistics("item##NaturalId").getHitCount());
+        Assert.assertEquals(1, stats.getNaturalIdStatistics(ItemReadWrite.class.getName()).getCacheHitCount());
 
         sessionFactory().getStatistics().logSummary();
     }
@@ -208,7 +207,7 @@ public class ReadWriteTest extends BaseCoreFunctionalTestCase {
 
         s = openSession();
         s.beginTransaction();
-        item = (ItemReadWrite) s.get(ItemReadWrite.class, id);
+        item = s.get(ItemReadWrite.class, id);
         item.setName("newdata");
         s.update(item);
         s.flush();
@@ -219,7 +218,7 @@ public class ReadWriteTest extends BaseCoreFunctionalTestCase {
 
         s = openSession();
         s.beginTransaction();
-        item = (ItemReadWrite) s.get(ItemReadWrite.class, id);
+        item = s.get(ItemReadWrite.class, id);
         Assert.assertEquals("data", item.getName());
         s.delete(item);
         s.getTransaction().commit();

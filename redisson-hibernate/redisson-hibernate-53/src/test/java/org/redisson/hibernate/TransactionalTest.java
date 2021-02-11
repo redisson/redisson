@@ -44,7 +44,7 @@ public class TransactionalTest extends BaseCoreFunctionalTestCase {
     
     @Before
     public void before() {
-        sessionFactory().getCache().evictEntityRegions();
+        sessionFactory().getCache().evictAllRegions();
         sessionFactory().getStatistics().clear();
     }
 
@@ -70,7 +70,7 @@ public class TransactionalTest extends BaseCoreFunctionalTestCase {
         s.getTransaction().commit();
         s.close();
         
-        Assert.assertEquals(1, stats.getSecondLevelCacheStatistics("myTestQuery").getPutCount());
+        Assert.assertEquals(1, stats.getDomainDataRegionStatistics("myTestQuery").getPutCount());
 
         s = openSession();
         s.beginTransaction();
@@ -83,7 +83,7 @@ public class TransactionalTest extends BaseCoreFunctionalTestCase {
         s.getTransaction().commit();
         s.close();
         
-        Assert.assertEquals(1, stats.getSecondLevelCacheStatistics("myTestQuery").getHitCount());
+        Assert.assertEquals(1, stats.getDomainDataRegionStatistics("myTestQuery").getHitCount());
         
         stats.logSummary();
         
@@ -109,7 +109,7 @@ public class TransactionalTest extends BaseCoreFunctionalTestCase {
         s.getTransaction().commit();
         s.close();
 
-        Assert.assertEquals(1, stats.getSecondLevelCacheStatistics("item_entries").getPutCount());
+        Assert.assertEquals(1, stats.getDomainDataRegionStatistics("item_entries").getPutCount());
         
         s = openSession();
         s.beginTransaction();
@@ -119,7 +119,7 @@ public class TransactionalTest extends BaseCoreFunctionalTestCase {
         s.getTransaction().commit();
         s.close();
         
-        Assert.assertEquals(1, stats.getSecondLevelCacheStatistics("item_entries").getHitCount());
+        Assert.assertEquals(1, stats.getDomainDataRegionStatistics("item_entries").getHitCount());
     }
     
     @Test
@@ -133,8 +133,8 @@ public class TransactionalTest extends BaseCoreFunctionalTestCase {
         s.flush();
         s.getTransaction().commit();
 
-        Assert.assertEquals(1, stats.getSecondLevelCacheStatistics("item").getPutCount());
-        Assert.assertEquals(1, stats.getNaturalIdCacheStatistics("item##NaturalId").getPutCount());
+        Assert.assertEquals(1, stats.getDomainDataRegionStatistics("item").getPutCount());
+        Assert.assertEquals(1, stats.getNaturalIdStatistics(ItemTransactional.class.getName()).getCachePutCount());
         
         s = openSession();
         s.beginTransaction();
@@ -144,8 +144,8 @@ public class TransactionalTest extends BaseCoreFunctionalTestCase {
         s.getTransaction().commit();
         s.close();
         
-        Assert.assertEquals(1, stats.getSecondLevelCacheStatistics("item").getHitCount());
-        Assert.assertEquals(1, stats.getNaturalIdCacheStatistics("item##NaturalId").getHitCount());
+        Assert.assertEquals(1, stats.getDomainDataRegionStatistics("item").getHitCount());
+        Assert.assertEquals(1, stats.getNaturalIdStatistics(ItemTransactional.class.getName()).getCacheHitCount());
 
         sessionFactory().getStatistics().logSummary();
     }
@@ -161,7 +161,7 @@ public class TransactionalTest extends BaseCoreFunctionalTestCase {
         s.flush();
         s.getTransaction().commit();
 
-        Assert.assertEquals(1, stats.getSecondLevelCacheStatistics("item").getPutCount());
+        Assert.assertEquals(1, stats.getDomainDataRegionStatistics("item").getPutCount());
 
         s = openSession();
         s.beginTransaction();
@@ -174,7 +174,7 @@ public class TransactionalTest extends BaseCoreFunctionalTestCase {
         s.clear();
         s.close();
 
-        Assert.assertEquals(1, stats.getSecondLevelCacheStatistics("item").getHitCount());
+        Assert.assertEquals(1, stats.getDomainDataRegionStatistics("item").getHitCount());
     }
 
     
