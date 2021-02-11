@@ -328,11 +328,18 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
     }
 
     @Override
+    public RFuture<Boolean> isExistsAsync() {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.EXISTS, getName(), configName);
+    }
+
+    @Override
     public RFuture<Void> renameAsync(String newName) {
         String newConfigName = suffixName(newName, "config");
         RFuture<Void> f = commandExecutor.evalWriteAsync(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
-                "redis.call('rename', KEYS[1], ARGV[1]); "
-                        + " return redis.call('rename', KEYS[2], ARGV[2]); ",
+                     "if redis.call('exists', KEYS[1]) == 1 then " +
+                              "redis.call('rename', KEYS[1], ARGV[1]); " +
+                          "end; " +
+                          "return redis.call('rename', KEYS[2], ARGV[2]); ",
                 Arrays.<Object>asList(getName(), configName), newName, newConfigName);
         f.onComplete((value, e) -> {
             if (e == null) {

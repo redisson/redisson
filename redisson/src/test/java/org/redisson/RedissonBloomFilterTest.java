@@ -3,7 +3,7 @@ package org.redisson;
 import org.junit.Test;
 import org.redisson.api.RBloomFilter;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonBloomFilterTest extends BaseTest {
 
@@ -66,6 +66,15 @@ public class RedissonBloomFilterTest extends BaseTest {
         RBloomFilter<String> filter = redisson.getBloomFilter("filter");
 
         filter.add("123");
+    }
+
+    @Test
+    public void testEmptyRename() {
+        RBloomFilter<String> bloomFilter = redisson.getBloomFilter("test");
+        bloomFilter.tryInit(1000, 0.01);
+        bloomFilter.rename("test1");
+        assertThat(bloomFilter.isExists()).isTrue();
+        assertThat(redisson.getBloomFilter("test").isExists()).isFalse();
     }
 
     @Test
