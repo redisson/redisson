@@ -105,21 +105,6 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
         });
     }
 
-    private static final RedisCommand<Object> GET = new RedisCommand<Object>("GET", new Decoder<Object>() {
-        @Override
-        public Object decode(ByteBuf buf, State state) throws IOException {
-            if (buf.readableBytes() == 0) {
-                System.out.println("null:");
-                return null;
-            }
-            
-            byte[] result = new byte[buf.readableBytes()];
-            buf.readBytes(result);
-            return result;
-        }
-        
-    });
-    
     @Override
     public Flux<ByteBufferResponse<KeyCommand>> get(Publisher<KeyCommand> keys) {
         return execute(keys, command -> {
@@ -127,7 +112,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
             Assert.notNull(command.getKey(), "Key must not be null!");
 
             byte[] keyBuf = toByteArray(command.getKey());
-            Mono<byte[]> m = read(keyBuf, ByteArrayCodec.INSTANCE, GET, keyBuf);
+            Mono<byte[]> m = read(keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.GET, keyBuf);
             return m.map(v -> new ByteBufferResponse<>(command, ByteBuffer.wrap(v)))
                     .defaultIfEmpty(new AbsentByteBufferResponse<>(command));
         });
