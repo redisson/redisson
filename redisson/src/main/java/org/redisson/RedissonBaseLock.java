@@ -45,6 +45,7 @@ import java.util.concurrent.locks.Condition;
  * Base class for implementing distributed locks
  *
  * @author Danila Varatyntsev
+ * @author Nikita Koksharov
  */
 public abstract class RedissonBaseLock extends RedissonExpirable implements RLock {
 
@@ -256,11 +257,6 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
     @Override
     public RFuture<Boolean> isLockedAsync() {
         return isExistsAsync();
-    }
-
-    @Override
-    public RFuture<Boolean> isExistsAsync() {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.EXISTS, getName());
     }
 
     @Override
