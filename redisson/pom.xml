@@ -74,12 +74,12 @@
         <dependency>
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-core</artifactId>
-            <version>3.3.9.RELEASE</version>
+            <version>3.4.2</version>
         </dependency>
         <dependency>
             <groupId>io.reactivex.rxjava3</groupId>
             <artifactId>rxjava</artifactId>
-            <version>3.0.7</version>
+            <version>3.0.10</version>
         </dependency>
 
         <dependency>
