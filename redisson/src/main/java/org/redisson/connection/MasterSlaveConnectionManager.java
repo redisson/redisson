@@ -275,7 +275,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         RFuture<RedisConnection> future = client.connectAsync();
         future.onComplete((connection, e) -> {
             if (e != null) {
-                connection.closeAsync();
                 result.tryFailure(e);
                 return;
             }
