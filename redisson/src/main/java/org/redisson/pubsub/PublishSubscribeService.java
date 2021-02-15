@@ -572,10 +572,12 @@ public class PublishSubscribeService {
 
     private void subscribe(ChannelName channelName, Collection<RedisPubSubListener<?>> listeners,
             Codec subscribeCodec) {
-        RFuture<PubSubConnectionEntry> subscribeFuture = subscribe(subscribeCodec, channelName, listeners.toArray(new RedisPubSubListener[listeners.size()]));
+        RFuture<PubSubConnectionEntry> subscribeFuture = subscribe(subscribeCodec, channelName, listeners.toArray(new RedisPubSubListener[0]));
         subscribeFuture.onComplete((res, e) -> {
             if (e != null) {
-                subscribe(channelName, listeners, subscribeCodec);
+                connectionManager.newTimeout(task -> {
+                    subscribe(channelName, listeners, subscribeCodec);
+                }, 1, TimeUnit.SECONDS);
                 return;
             }
 
@@ -585,10 +587,12 @@ public class PublishSubscribeService {
 
     private void psubscribe(ChannelName channelName, Collection<RedisPubSubListener<?>> listeners,
             Codec subscribeCodec) {
-        RFuture<PubSubConnectionEntry> subscribeFuture = psubscribe(channelName, subscribeCodec, listeners.toArray(new RedisPubSubListener[listeners.size()]));
+        RFuture<PubSubConnectionEntry> subscribeFuture = psubscribe(channelName, subscribeCodec, listeners.toArray(new RedisPubSubListener[0]));
         subscribeFuture.onComplete((res, e) -> {
             if (e != null) {
-                psubscribe(channelName, listeners, subscribeCodec);
+                connectionManager.newTimeout(task -> {
+                    psubscribe(channelName, listeners, subscribeCodec);
+                }, 1, TimeUnit.SECONDS);
                 return;
             }
 
