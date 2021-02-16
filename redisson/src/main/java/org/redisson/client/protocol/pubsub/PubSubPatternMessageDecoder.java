@@ -18,6 +18,7 @@ package org.redisson.client.protocol.pubsub;
 import java.util.List;
 
 import org.redisson.client.ChannelName;
+import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
@@ -37,7 +38,7 @@ public class PubSubPatternMessageDecoder implements MultiDecoder<Object> {
     }
 
     @Override
-    public Decoder<Object> getDecoder(int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
         return decoder;
     }
     

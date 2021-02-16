@@ -33,14 +33,9 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.NumberConvertor;
-import org.redisson.client.protocol.decoder.ListMultiDecoder2;
-import org.redisson.client.protocol.decoder.MapCacheScanResult;
-import org.redisson.client.protocol.decoder.MapCacheScanResultReplayDecoder;
-import org.redisson.client.protocol.decoder.MapScanResult;
-import org.redisson.client.protocol.decoder.ObjectMapDecoder;
+import org.redisson.client.protocol.decoder.*;
 import org.redisson.codec.BaseEventCodec;
 import org.redisson.codec.MapCacheEventCodec;
 import org.redisson.command.CommandAsyncExecutor;
@@ -248,7 +243,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             args.add(encodeMapKey(key));
         }
 
-        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Map<Object, Object>>("EVAL", new MapGetAllDecoder(plainKeys, 0), ValueType.MAP_VALUE),
+        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Map<Object, Object>>("EVAL",
+                        new MapValueDecoder(new MapGetAllDecoder(plainKeys, 0))),
             "local expireHead = redis.call('zrange', KEYS[2], 0, 0, 'withscores'); " +
             "local currentTime = tonumber(table.remove(ARGV, 1)); " + // index is the first parameter
             "local hasExpire = #expireHead == 2 and tonumber(expireHead[2]) <= currentTime; " +
@@ -1409,7 +1405,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         RedisCommand<MapCacheScanResult<Object, Object>> command = new RedisCommand<MapCacheScanResult<Object, Object>>("EVAL",
                 new ListMultiDecoder2(
                         new MapCacheScanResultReplayDecoder(),
-                        new ObjectMapDecoder(codec, true)), ValueType.MAP);
+                        new MapEntriesDecoder(new ObjectMapDecoder(codec, true))));
         RFuture<MapCacheScanResult<Object, Object>> f = commandExecutor.evalReadAsync(client, name, codec, command,
                 "local result = {}; "
                 + "local idleKeys = {}; "
@@ -1460,7 +1456,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 args.add(System.currentTimeMillis());
                 encodeMapKeys(args, res.getIdleKeys());
 
-                commandExecutor.evalWriteAsync(name, codec, new RedisCommand<Map<Object, Object>>("EVAL", new MapGetAllDecoder(args, 1), ValueType.MAP_VALUE),
+                commandExecutor.evalWriteAsync(name, codec, new RedisCommand<Map<Object, Object>>("EVAL",
+                                new MapValueDecoder(new MapGetAllDecoder(args, 1))),
                                 "local currentTime = tonumber(table.remove(ARGV, 1)); " // index is the first parameter
                               + "local map = redis.call('hmget', KEYS[1], unpack(ARGV)); "
                               + "for i = #map, 1, -1 do "

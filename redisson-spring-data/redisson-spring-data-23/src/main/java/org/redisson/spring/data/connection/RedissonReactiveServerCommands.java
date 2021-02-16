@@ -24,6 +24,7 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
+import org.redisson.client.protocol.decoder.ObjectDecoder;
 import org.redisson.client.protocol.decoder.TimeLongObjectDecoder;
 import org.redisson.reactive.CommandReactiveExecutor;
 import org.springframework.data.redis.connection.ReactiveServerCommands;
@@ -107,8 +108,8 @@ public class RedissonReactiveServerCommands extends RedissonBaseReactive impleme
         });
     }
 
-    static final RedisStrictCommand<Properties> INFO_DEFAULT = new RedisStrictCommand<Properties>("INFO", "DEFAULT", new PropertiesDecoder());
-    static final RedisStrictCommand<Properties> INFO = new RedisStrictCommand<Properties>("INFO", new PropertiesDecoder());
+    static final RedisStrictCommand<Properties> INFO_DEFAULT = new RedisStrictCommand<Properties>("INFO", "DEFAULT", new ObjectDecoder(new PropertiesDecoder()));
+    static final RedisStrictCommand<Properties> INFO = new RedisStrictCommand<Properties>("INFO", new ObjectDecoder(new PropertiesDecoder()));
     
     @Override
     public Mono<Properties> info() {

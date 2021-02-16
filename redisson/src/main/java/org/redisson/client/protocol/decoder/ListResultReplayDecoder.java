@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
@@ -31,7 +32,7 @@ import org.redisson.client.protocol.Decoder;
 public class ListResultReplayDecoder implements MultiDecoder<List<Map<Object, Object>>> {
 
     @Override
-    public Decoder<Object> getDecoder(int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
         return StringCodec.INSTANCE.getValueDecoder();
     }
     

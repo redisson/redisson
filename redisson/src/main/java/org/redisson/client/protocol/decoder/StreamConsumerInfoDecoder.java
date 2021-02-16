@@ -15,11 +15,10 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import java.util.List;
-
 import org.redisson.api.StreamConsumer;
 import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Decoder;
+
+import java.util.List;
 
 /**
  * 
@@ -27,11 +26,6 @@ import org.redisson.client.protocol.Decoder;
  *
  */
 public class StreamConsumerInfoDecoder implements MultiDecoder<StreamConsumer> {
-
-    @Override
-    public Decoder<Object> getDecoder(int paramNum, State state) {
-        return null;
-    }
 
     @Override
     public StreamConsumer decode(List<Object> parts, State state) {

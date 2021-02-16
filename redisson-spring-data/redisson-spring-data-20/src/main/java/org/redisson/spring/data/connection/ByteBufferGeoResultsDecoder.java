@@ -16,7 +16,6 @@
 package org.redisson.spring.data.connection;
 
 import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.springframework.data.geo.*;
 import org.springframework.data.redis.connection.RedisGeoCommands.GeoLocation;
@@ -43,11 +42,6 @@ public class ByteBufferGeoResultsDecoder implements MultiDecoder<GeoResults<GeoL
         this.metric = metric;
     }
 
-    @Override
-    public Decoder<Object> getDecoder(int paramNum, State state) {
-        return null;
-    }
-    
     @Override
     public GeoResults<GeoLocation<ByteBuffer>> decode(List<Object> parts, State state) {
         List<GeoResult<GeoLocation<ByteBuffer>>> result = new ArrayList<GeoResult<GeoLocation<ByteBuffer>>>();

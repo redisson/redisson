@@ -15,12 +15,11 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import java.util.List;
-
 import org.redisson.api.StreamGroup;
 import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.convertor.StreamIdConvertor;
+
+import java.util.List;
 
 /**
  * 
@@ -28,11 +27,6 @@ import org.redisson.client.protocol.convertor.StreamIdConvertor;
  *
  */
 public class StreamGroupInfoDecoder implements MultiDecoder<StreamGroup> {
-
-    @Override
-    public Decoder<Object> getDecoder(int paramNum, State state) {
-        return null;
-    }
 
     @Override
     public StreamGroup decode(List<Object> parts, State state) {

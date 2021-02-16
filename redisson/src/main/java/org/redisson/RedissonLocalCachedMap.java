@@ -27,12 +27,9 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.NumberConvertor;
-import org.redisson.client.protocol.decoder.ObjectMapEntryReplayDecoder;
-import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder;
-import org.redisson.client.protocol.decoder.ObjectSetReplayDecoder;
+import org.redisson.client.protocol.decoder.*;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.eviction.EvictionScheduler;
 import org.redisson.misc.RPromise;
@@ -51,9 +48,9 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     public static final String DISABLED_KEYS_SUFFIX = "disabled-keys";
     public static final String DISABLED_ACK_SUFFIX = ":topic";
 
-    private static final RedisCommand<Set<Object>> ALL_KEYS = new RedisCommand<Set<Object>>("EVAL", new ObjectSetReplayDecoder<Object>(), ValueType.MAP_KEY);
-    private static final RedisCommand<Set<Entry<Object, Object>>> ALL_ENTRIES = new RedisCommand<Set<Entry<Object, Object>>>("EVAL", new ObjectMapEntryReplayDecoder(), ValueType.MAP);
-    private static final RedisCommand<Map<Object, Object>> ALL_MAP = new RedisCommand<Map<Object, Object>>("EVAL", new ObjectMapReplayDecoder(), ValueType.MAP);
+    private static final RedisCommand<Set<Object>> ALL_KEYS = new RedisCommand<Set<Object>>("EVAL", new MapKeyDecoder(new ObjectSetReplayDecoder<Object>()));
+    private static final RedisCommand<Set<Entry<Object, Object>>> ALL_ENTRIES = new RedisCommand<Set<Entry<Object, Object>>>("EVAL", new MapEntriesDecoder(new ObjectMapEntryReplayDecoder()));
+    private static final RedisCommand<Map<Object, Object>> ALL_MAP = new RedisCommand<Map<Object, Object>>("EVAL", new MapEntriesDecoder(new ObjectMapReplayDecoder()));
     
     private long cacheUpdateLogTime = TimeUnit.MINUTES.toMillis(10);
     private byte[] instanceId;

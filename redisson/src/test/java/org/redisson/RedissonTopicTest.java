@@ -1293,7 +1293,9 @@ public class RedissonTopicTest {
                 .addNode(master2, slave2)
                 .addNode(master3, slave3);
         ClusterProcesses process = clusterRunner.run();
-        
+
+        Thread.sleep(1000);
+
         Config config = new Config();
         config.useClusterServers()
         .setSubscriptionMode(SubscriptionMode.SLAVE)

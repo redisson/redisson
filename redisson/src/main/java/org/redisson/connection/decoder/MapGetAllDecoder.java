@@ -15,14 +15,13 @@
  */
 package org.redisson.connection.decoder;
 
+import org.redisson.client.handler.State;
+import org.redisson.client.protocol.decoder.MultiDecoder;
+
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Decoder;
-import org.redisson.client.protocol.decoder.MultiDecoder;
 
 /**
  * 
@@ -43,11 +42,6 @@ public class MapGetAllDecoder implements MultiDecoder<Map<Object, Object>> {
         this.args = args;
         this.shiftIndex = shiftIndex;
         this.allowNulls = allowNulls;
-    }
-
-    @Override
-    public Decoder<Object> getDecoder(int paramNum, State state) {
-        return null;
     }
 
     @Override

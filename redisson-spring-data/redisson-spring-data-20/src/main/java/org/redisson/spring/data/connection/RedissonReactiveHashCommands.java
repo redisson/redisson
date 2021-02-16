@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 
 import org.reactivestreams.Publisher;
 import org.redisson.client.codec.ByteArrayCodec;
+import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
@@ -89,10 +90,6 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
     }
     
     private static final RedisCommand<List<Object>> HMGET = new RedisCommand<List<Object>>("HMGET", new MultiDecoder<List<Object>>() {
-        @Override
-        public Decoder<Object> getDecoder(int paramNum, State state) {
-            return null;
-        }
 
         @Override
         public List<Object> decode(List<Object> parts, State state) {

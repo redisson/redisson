@@ -15,13 +15,12 @@
  */
 package org.redisson.client.protocol.decoder;
 
+import org.redisson.client.handler.State;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Decoder;
 
 /**
  * 
@@ -36,11 +35,6 @@ public class GeoPositionMapDecoder implements MultiDecoder<Map<Object, Object>> 
         this.args = args;
     }
 
-    @Override
-    public Decoder<Object> getDecoder(int paramNum, State state) {
-        return null;
-    }
-    
     @Override
     public Map<Object, Object> decode(List<Object> parts, State state) {
         if (parts.isEmpty()) {

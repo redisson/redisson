@@ -19,10 +19,9 @@ import org.redisson.api.*;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.decoder.MapEntriesDecoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
@@ -259,11 +258,7 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
                 Arrays.asList(getName(), getValueName(), getPermitsName()), rate, unit.toMillis(rateInterval), type.ordinal());
     }
     
-    private static final RedisCommand HGETALL = new RedisCommand("HGETALL", new MultiDecoder<RateLimiterConfig>() {
-        @Override
-        public Decoder<Object> getDecoder(int paramNum, State state) {
-            return null;
-        }
+    private static final RedisCommand HGETALL = new RedisCommand("HGETALL", new MapEntriesDecoder(new MultiDecoder<RateLimiterConfig>() {
 
         @Override
         public RateLimiterConfig decode(List<Object> parts, State state) {
@@ -280,7 +275,7 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
             return new RateLimiterConfig(type, rateInterval, rate);
         }
         
-    }, ValueType.MAP);
+    }));
     
     @Override
     public RateLimiterConfig getConfig() {

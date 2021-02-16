@@ -20,7 +20,6 @@ import org.redisson.api.RType;
 import org.redisson.api.StreamInfo;
 import org.redisson.api.StreamMessageId;
 import org.redisson.client.codec.StringCodec;
-import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.convertor.*;
 import org.redisson.client.protocol.decoder.*;
 import org.redisson.client.protocol.pubsub.PubSubStatusDecoder;
@@ -211,7 +210,7 @@ public interface RedisCommands {
     RedisCommand<Boolean> RPUSH_BOOLEAN = new RedisCommand<Boolean>("RPUSH", new TrueReplayConvertor());
     RedisCommand<Void> RPUSH_VOID = new RedisCommand<Void>("RPUSH", new VoidReplayConvertor());
 
-    RedisStrictCommand<String> SCRIPT_LOAD = new RedisStrictCommand<String>("SCRIPT", "LOAD", new StringDataDecoder());
+    RedisStrictCommand<String> SCRIPT_LOAD = new RedisStrictCommand<String>("SCRIPT", "LOAD", new ObjectDecoder(new StringDataDecoder()));
     RedisStrictCommand<Boolean> SCRIPT_KILL = new RedisStrictCommand<Boolean>("SCRIPT", "KILL", new BooleanReplayConvertor());
     RedisStrictCommand<Boolean> SCRIPT_FLUSH = new RedisStrictCommand<Boolean>("SCRIPT", "FLUSH", new BooleanReplayConvertor());
     RedisStrictCommand<List<Boolean>> SCRIPT_EXISTS = new RedisStrictCommand<List<Boolean>>("SCRIPT", "EXISTS", new ObjectListReplayDecoder<Boolean>(), new BooleanReplayConvertor());
@@ -220,8 +219,10 @@ public interface RedisCommands {
     RedisStrictCommand<Boolean> EVAL_BOOLEAN = new RedisStrictCommand<Boolean>("EVAL", new BooleanReplayConvertor());
     RedisStrictCommand<Boolean> EVAL_BOOLEAN_SAFE = new RedisStrictCommand<Boolean>("EVAL", new BooleanNullSafeReplayConvertor());
     RedisStrictCommand<Boolean> EVAL_NULL_BOOLEAN = new RedisStrictCommand<Boolean>("EVAL", new BooleanNullReplayConvertor());
-    RedisStrictCommand<String> EVAL_STRING = new RedisStrictCommand<String>("EVAL", new StringReplayDecoder());
-    RedisStrictCommand<String> EVAL_STRING_DATA = new RedisStrictCommand<String>("EVAL", new StringDataDecoder());
+    RedisStrictCommand<String> EVAL_STRING = new RedisStrictCommand("EVAL",
+            new ObjectDecoder(new StringReplayDecoder()));
+    RedisStrictCommand<String> EVAL_STRING_DATA = new RedisStrictCommand("EVAL",
+            new ObjectDecoder(new StringDataDecoder()));
     RedisStrictCommand<Integer> EVAL_INTEGER = new RedisStrictCommand<Integer>("EVAL", new IntegerReplayConvertor());
     RedisStrictCommand<Double> EVAL_DOUBLE = new RedisStrictCommand<Double>("EVAL", new DoubleNullSafeReplayConvertor());
     RedisStrictCommand<Long> EVAL_LONG = new RedisStrictCommand<Long>("EVAL");
@@ -233,12 +234,17 @@ public interface RedisCommands {
     RedisCommand<List<Integer>> EVAL_INT_LIST = new RedisCommand("EVAL", new ObjectListReplayDecoder<Integer>(), new IntegerReplayConvertor());
     RedisCommand<Set<Object>> EVAL_SET = new RedisCommand<Set<Object>>("EVAL", new ObjectSetReplayDecoder<Object>());
     RedisCommand<Object> EVAL_OBJECT = new RedisCommand<Object>("EVAL");
-    RedisCommand<Object> EVAL_MAP_VALUE = new RedisCommand<Object>("EVAL", ValueType.MAP_VALUE);
-    RedisCommand<Set<Entry<Object, Object>>> EVAL_MAP_ENTRY = new RedisCommand<Set<Entry<Object, Object>>>("EVAL", new ObjectMapEntryReplayDecoder(), ValueType.MAP);
-    RedisCommand<Map<Object, Object>> EVAL_MAP = new RedisCommand<Map<Object, Object>>("EVAL", new ObjectMapReplayDecoder(), ValueType.MAP);
-    RedisCommand<List<Object>> EVAL_MAP_VALUE_LIST = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<Object>(), ValueType.MAP_VALUE);
-    RedisCommand<Set<Object>> EVAL_MAP_VALUE_SET = new RedisCommand<Set<Object>>("EVAL", new ObjectSetReplayDecoder<Object>(), ValueType.MAP_VALUE);
-    RedisCommand<Set<Object>> EVAL_MAP_KEY_SET = new RedisCommand<Set<Object>>("EVAL", new ObjectSetReplayDecoder<Object>(), ValueType.MAP_KEY);
+    RedisCommand<Object> EVAL_MAP_VALUE = new RedisCommand<Object>("EVAL", new MapValueDecoder());
+    RedisCommand<Set<Entry<Object, Object>>> EVAL_MAP_ENTRY = new RedisCommand<Set<Entry<Object, Object>>>("EVAL",
+            new MapEntriesDecoder(new ObjectMapEntryReplayDecoder()));
+    RedisCommand<Map<Object, Object>> EVAL_MAP = new RedisCommand<Map<Object, Object>>("EVAL",
+            new MapEntriesDecoder(new ObjectMapReplayDecoder()));
+    RedisCommand<List<Object>> EVAL_MAP_VALUE_LIST = new RedisCommand<List<Object>>("EVAL",
+            new MapValueDecoder(new ObjectListReplayDecoder<>()));
+    RedisCommand<Set<Object>> EVAL_MAP_VALUE_SET = new RedisCommand<Set<Object>>("EVAL",
+            new MapValueDecoder(new ObjectSetReplayDecoder<>()));
+    RedisCommand<Set<Object>> EVAL_MAP_KEY_SET = new RedisCommand<Set<Object>>("EVAL",
+            new MapValueDecoder(new ObjectSetReplayDecoder<>()));
 
     RedisStrictCommand<Long> INCR = new RedisStrictCommand<Long>("INCR");
     RedisStrictCommand<Long> INCRBY = new RedisStrictCommand<Long>("INCRBY");
@@ -248,7 +254,7 @@ public interface RedisCommands {
     RedisStrictCommand<Void> AUTH = new RedisStrictCommand<Void>("AUTH", new VoidReplayConvertor());
     RedisStrictCommand<Void> SELECT = new RedisStrictCommand<Void>("SELECT", new VoidReplayConvertor());
     RedisStrictCommand<Void> CLIENT_SETNAME = new RedisStrictCommand<Void>("CLIENT", "SETNAME", new VoidReplayConvertor());
-    RedisStrictCommand<String> CLIENT_GETNAME = new RedisStrictCommand<String>("CLIENT", "GETNAME", new StringDataDecoder());
+    RedisStrictCommand<String> CLIENT_GETNAME = new RedisStrictCommand<String>("CLIENT", "GETNAME", new ObjectDecoder(new StringDataDecoder()));
     RedisStrictCommand<Void> FLUSHDB = new RedisStrictCommand<Void>("FLUSHDB", new VoidReplayConvertor());
     RedisStrictCommand<Void> SWAPDB = new RedisStrictCommand<Void>("SWAPDB", new VoidReplayConvertor());
     RedisStrictCommand<Void> FLUSHALL = new RedisStrictCommand<Void>("FLUSHALL", new VoidReplayConvertor());
@@ -269,20 +275,28 @@ public interface RedisCommands {
     RedisStrictCommand<Boolean> HSETNX = new RedisStrictCommand<Boolean>("HSETNX", new BooleanReplayConvertor());
     RedisStrictCommand<Boolean> HSET = new RedisStrictCommand<Boolean>("HSET", new BooleanReplayConvertor());
     RedisStrictCommand<Void> HSET_VOID = new RedisStrictCommand<Void>("HSET", new VoidReplayConvertor());
-    RedisCommand<MapScanResult<Object, Object>> HSCAN = new RedisCommand<MapScanResult<Object, Object>>("HSCAN", 
-            new ListMultiDecoder2(new MapScanResultReplayDecoder(), new ObjectMapReplayDecoder()), ValueType.MAP);
-    RedisCommand<Map<Object, Object>> HRANDFIELD = new RedisCommand<Map<Object, Object>>("HRANDFIELD", new ObjectMapReplayDecoder(), ValueType.MAP, new EmptyMapConvertor());
-    RedisCommand<Set<Object>> HRANDFIELD_KEYS = new RedisCommand<>("HRANDFIELD", new ObjectSetReplayDecoder<>(), ValueType.MAP_KEY, new EmptySetConvertor());
-    RedisCommand<Map<Object, Object>> HGETALL = new RedisCommand<Map<Object, Object>>("HGETALL", new ObjectMapReplayDecoder(), ValueType.MAP);
-    RedisCommand<Set<Entry<Object, Object>>> HGETALL_ENTRY = new RedisCommand<Set<Entry<Object, Object>>>("HGETALL", new ObjectMapEntryReplayDecoder(), ValueType.MAP);
-    RedisCommand<List<Object>> HVALS = new RedisCommand<List<Object>>("HVALS", new ObjectListReplayDecoder<Object>(), ValueType.MAP_VALUE);
+    RedisCommand<MapScanResult<Object, Object>> HSCAN =
+            new RedisCommand<MapScanResult<Object, Object>>("HSCAN",
+                        new ListMultiDecoder2(new MapScanResultReplayDecoder(),
+                                new MapEntriesDecoder(new ObjectMapReplayDecoder())));
+    RedisCommand<Map<Object, Object>> HRANDFIELD = new RedisCommand<>("HRANDFIELD",
+                        new MapEntriesDecoder(new ObjectMapReplayDecoder()), new EmptyMapConvertor());
+    RedisCommand<Set<Object>> HRANDFIELD_KEYS = new RedisCommand<>("HRANDFIELD",
+                        new MapKeyDecoder(new ObjectSetReplayDecoder<>()), new EmptySetConvertor());
+    RedisCommand<Map<Object, Object>> HGETALL = new RedisCommand<Map<Object, Object>>("HGETALL",
+                        new MapEntriesDecoder(new ObjectMapReplayDecoder()));
+    RedisCommand<Set<Entry<Object, Object>>> HGETALL_ENTRY = new RedisCommand<Set<Entry<Object, Object>>>("HGETALL",
+                        new MapEntriesDecoder(new ObjectMapEntryReplayDecoder()));
+    RedisCommand<List<Object>> HVALS = new RedisCommand<List<Object>>("HVALS",
+                        new MapValueDecoder(new ObjectListReplayDecoder<>()));
     RedisCommand<Boolean> HEXISTS = new RedisCommand<Boolean>("HEXISTS", new BooleanReplayConvertor());
     RedisStrictCommand<Integer> HLEN = new RedisStrictCommand<Integer>("HLEN", new IntegerReplayConvertor());
     RedisCommand<Integer> HSTRLEN = new RedisCommand<Integer>("HSTRLEN", new IntegerReplayConvertor());
     RedisStrictCommand<Long> HLEN_LONG = new RedisStrictCommand<Long>("HLEN");
-    RedisCommand<Set<Object>> HKEYS = new RedisCommand<Set<Object>>("HKEYS", new ObjectSetReplayDecoder(), ValueType.MAP_KEY);
+    RedisCommand<Set<Object>> HKEYS = new RedisCommand<Set<Object>>("HKEYS",
+                        new MapKeyDecoder(new ObjectSetReplayDecoder()));
     RedisCommand<Void> HMSET = new RedisCommand<Void>("HMSET", new VoidReplayConvertor());
-    RedisCommand<Object> HGET = new RedisCommand<Object>("HGET", ValueType.MAP_VALUE);
+    RedisCommand<Object> HGET = new RedisCommand<Object>("HGET", new MapValueDecoder());
     RedisCommand<Long> HDEL = new RedisStrictCommand<Long>("HDEL");
 
     RedisStrictCommand<Long> DEL = new RedisStrictCommand<Long>("DEL");
@@ -316,10 +330,10 @@ public interface RedisCommands {
             new ListMultiDecoder2(
                     new ObjectMapReplayDecoder2(),
                     new ObjectDecoder(new StreamIdDecoder()),
-                    new StreamObjectMapReplayDecoder()), ValueType.MAP);
+                    new MapEntriesDecoder(new StreamObjectMapReplayDecoder())));
 
     RedisCommand<Map<StreamMessageId, Map<Object, Object>>> XREVRANGE =
-                new RedisCommand<>("XREVRANGE", XRANGE.getReplayMultiDecoder(), ValueType.MAP);
+                new RedisCommand<>("XREVRANGE", XRANGE.getReplayMultiDecoder());
     
     RedisCommand<Map<String, Map<StreamMessageId, Map<Object, Object>>>> XREAD = new RedisCommand<>("XREAD",
             new ListMultiDecoder2(
@@ -327,9 +341,9 @@ public interface RedisCommands {
                     new ObjectDecoder(StringCodec.INSTANCE.getValueDecoder()),
                     new ObjectDecoder(new StreamIdDecoder()),
                     new ObjectDecoder(new StreamIdDecoder()),
-                    new StreamObjectMapReplayDecoder()), ValueType.MAP);
+                    new MapEntriesDecoder(new StreamObjectMapReplayDecoder())));
             
-    RedisCommand<Map<String, Map<StreamMessageId, Map<Object, Object>>>> XREAD_BLOCKING = new RedisCommand<>("XREAD", XREAD.getReplayMultiDecoder(), ValueType.MAP);
+    RedisCommand<Map<String, Map<StreamMessageId, Map<Object, Object>>>> XREAD_BLOCKING = new RedisCommand<>("XREAD", XREAD.getReplayMultiDecoder());
 
     RedisCommand<Map<StreamMessageId, Map<Object, Object>>> XREAD_SINGLE = new RedisCommand<>("XREAD",
             new ListMultiDecoder2(
@@ -337,16 +351,16 @@ public interface RedisCommands {
                     new ObjectDecoder(StringCodec.INSTANCE.getValueDecoder()),
                     new ObjectDecoder(new StreamIdDecoder()),
                     new ObjectDecoder(new StreamIdDecoder()),
-                    new StreamObjectMapReplayDecoder()), ValueType.MAP);
+                    new MapEntriesDecoder(new StreamObjectMapReplayDecoder())));
     
     RedisCommand<Map<StreamMessageId, Map<Object, Object>>> XREAD_BLOCKING_SINGLE = 
-                new RedisCommand<>("XREAD", XREAD_SINGLE.getReplayMultiDecoder(), ValueType.MAP);
+                new RedisCommand<>("XREAD", XREAD_SINGLE.getReplayMultiDecoder());
 
     RedisCommand<Map<String, Map<StreamMessageId, Map<Object, Object>>>> XREADGROUP =
-            new RedisCommand<>("XREADGROUP", XREAD.getReplayMultiDecoder(), ValueType.MAP);
+            new RedisCommand<>("XREADGROUP", XREAD.getReplayMultiDecoder());
 
     RedisCommand<Map<String, Map<StreamMessageId, Map<Object, Object>>>> XREADGROUP_BLOCKING = 
-                new RedisCommand<>("XREADGROUP", XREADGROUP.getReplayMultiDecoder(), ValueType.MAP);
+                new RedisCommand<>("XREADGROUP", XREADGROUP.getReplayMultiDecoder());
             
     RedisCommand<Map<StreamMessageId, Map<Object, Object>>> XREADGROUP_SINGLE = new RedisCommand<>("XREADGROUP",
             new ListMultiDecoder2(
@@ -354,7 +368,7 @@ public interface RedisCommands {
                     new ObjectDecoder(StringCodec.INSTANCE.getValueDecoder()),
                     new ObjectDecoder(new StreamIdDecoder()),
                     new ObjectDecoder(new StreamIdDecoder()),
-                    new StreamObjectMapReplayDecoder()), ValueType.MAP);
+                    new MapEntriesDecoder(new StreamObjectMapReplayDecoder())));
 
     RedisCommand<StreamInfo<Object, Object>> XINFO_GROUPS = new RedisCommand<>("XINFO", "GROUPS",
             new ListMultiDecoder2(new ObjectListReplayDecoder(), new StreamGroupInfoDecoder()));
@@ -368,7 +382,7 @@ public interface RedisCommands {
             new ListMultiDecoder2(
                     new ObjectMapReplayDecoder2(),
                     new ObjectDecoder(new StreamIdDecoder()),
-                    new StreamObjectMapReplayDecoder()), ValueType.MAP);
+                    new MapEntriesDecoder(new StreamObjectMapReplayDecoder())));
 
     RedisCommand<FastAutoClaimResult> XAUTOCLAIM_IDS = new RedisCommand<>("XAUTOCLAIM",
             new ListMultiDecoder2(new FastAutoClaimDecoder(), new ObjectListReplayDecoder(false, new StreamIdDecoder())));
@@ -378,7 +392,7 @@ public interface RedisCommands {
                     new AutoClaimDecoder(),
                     new ObjectMapReplayDecoder2(),
                     new ObjectDecoder(new StreamIdDecoder()),
-                    new StreamObjectMapReplayDecoder()), ValueType.MAP);
+                    new MapEntriesDecoder(new StreamObjectMapReplayDecoder())));
 
     RedisCommand<Map<StreamMessageId, Map<Object, Object>>> XREADGROUP_BLOCKING_SINGLE = new RedisCommand<>("XREADGROUP",
             XREADGROUP_SINGLE.getReplayMultiDecoder());
@@ -426,8 +440,10 @@ public interface RedisCommands {
     Set<String> PUBSUB_COMMANDS = new HashSet<String>(
             Arrays.asList(PSUBSCRIBE.getName(), SUBSCRIBE.getName(), PUNSUBSCRIBE.getName(), UNSUBSCRIBE.getName()));
 
-    RedisStrictCommand<List<ClusterNodeInfo>> CLUSTER_NODES = new RedisStrictCommand<List<ClusterNodeInfo>>("CLUSTER", "NODES", new ClusterNodesDecoder(false));
-    RedisStrictCommand<List<ClusterNodeInfo>> CLUSTER_NODES_SSL = new RedisStrictCommand<List<ClusterNodeInfo>>("CLUSTER", "NODES", new ClusterNodesDecoder(true));
+    RedisStrictCommand<List<ClusterNodeInfo>> CLUSTER_NODES = new RedisStrictCommand<List<ClusterNodeInfo>>("CLUSTER", "NODES",
+            new ObjectDecoder(new ClusterNodesDecoder(false)));
+    RedisStrictCommand<List<ClusterNodeInfo>> CLUSTER_NODES_SSL = new RedisStrictCommand<List<ClusterNodeInfo>>("CLUSTER", "NODES",
+            new ObjectDecoder(new ClusterNodesDecoder(true)));
     RedisStrictCommand<Long> TIME_LONG = new RedisStrictCommand<Long>("TIME", new TimeLongObjectDecoder());
     RedisStrictCommand<Time> TIME = new RedisStrictCommand<Time>("TIME", new TimeObjectDecoder());
     RedisStrictCommand<Map<String, String>> CLUSTER_INFO = new RedisStrictCommand<Map<String, String>>("CLUSTER", "INFO", new StringMapDataDecoder());

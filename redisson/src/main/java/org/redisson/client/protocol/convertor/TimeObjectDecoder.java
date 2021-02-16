@@ -15,12 +15,11 @@
  */
 package org.redisson.client.protocol.convertor;
 
-import java.util.List;
-
 import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Time;
 import org.redisson.client.protocol.decoder.MultiDecoder;
+
+import java.util.List;
 
 /**
  * 
@@ -29,11 +28,6 @@ import org.redisson.client.protocol.decoder.MultiDecoder;
  */
 
 public class TimeObjectDecoder implements MultiDecoder<Time> {
-
-    @Override
-    public Decoder<Object> getDecoder(int paramNum, State state) {
-        return null;
-    }
 
     @Override
     public Time decode(List<Object> parts, State state) {

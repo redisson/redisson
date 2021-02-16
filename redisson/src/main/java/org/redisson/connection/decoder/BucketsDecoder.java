@@ -15,14 +15,13 @@
  */
 package org.redisson.connection.decoder;
 
+import org.redisson.client.handler.State;
+import org.redisson.client.protocol.decoder.MultiDecoder;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Decoder;
-import org.redisson.client.protocol.decoder.MultiDecoder;
 
 /**
  * 
@@ -35,11 +34,6 @@ public class BucketsDecoder implements MultiDecoder<Map<Object, Object>> {
     
     public BucketsDecoder(String key) {
         this.key = key;
-    }
-
-    @Override
-    public Decoder<Object> getDecoder(int paramNum, State state) {
-        return null;
     }
 
     @Override

@@ -17,6 +17,7 @@ package org.redisson.client.protocol.decoder;
 
 import java.util.List;
 
+import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
@@ -35,9 +36,9 @@ public class ListMultiDecoder2<T> implements MultiDecoder<Object> {
     }
     
     @Override
-    public Decoder<Object> getDecoder(int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
         int index = state.getLevel();
-        return decoders[index].getDecoder(paramNum, state);
+        return decoders[index].getDecoder(codec, paramNum, state);
     }
     
     @Override

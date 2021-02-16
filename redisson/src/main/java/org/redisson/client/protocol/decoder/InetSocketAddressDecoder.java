@@ -15,6 +15,7 @@
  */
 package org.redisson.client.protocol.decoder;
 
+import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
@@ -32,7 +33,7 @@ import java.util.List;
 public class InetSocketAddressDecoder implements MultiDecoder<InetSocketAddress> {
 
     @Override
-    public Decoder<Object> getDecoder(int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
         return StringCodec.INSTANCE.getValueDecoder();
     }
     

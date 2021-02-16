@@ -15,6 +15,7 @@
  */
 package org.redisson.client.protocol.decoder;
 
+import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
@@ -27,9 +28,9 @@ import org.redisson.client.protocol.Decoder;
 public class ScoredSortedSetRandomMapDecoder extends ObjectMapReplayDecoder<Object, Object> {
 
     @Override
-    public Decoder<Object> getDecoder(int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
         if (paramNum % 2 == 0) {
-            return super.getDecoder(paramNum, state);
+            return super.getDecoder(codec, paramNum, state);
         }
         return DoubleCodec.INSTANCE.getValueDecoder();
     }

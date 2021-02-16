@@ -16,7 +16,6 @@
 package org.redisson.client.protocol.decoder;
 
 import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Decoder;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -38,11 +37,6 @@ public class StringMapReplayDecoder implements MultiDecoder<Map<String, String>>
             }
         }
         return result;
-    }
-
-    @Override
-    public Decoder<Object> getDecoder(int paramNum, State state) {
-        return null;
     }
 
 }

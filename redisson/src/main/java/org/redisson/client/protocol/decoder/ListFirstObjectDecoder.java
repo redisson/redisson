@@ -15,10 +15,9 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import java.util.List;
-
 import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Decoder;
+
+import java.util.List;
 
 /**
  * 
@@ -32,11 +31,6 @@ public class ListFirstObjectDecoder implements MultiDecoder<Object> {
         if (!parts.isEmpty()) {
             return parts.get(0);
         }
-        return null;
-    }
-
-    @Override
-    public Decoder<Object> getDecoder(int paramNum, State state) {
         return null;
     }
 

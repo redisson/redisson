@@ -15,12 +15,11 @@
  */
 package org.redisson.client.protocol.decoder;
 
+import org.redisson.client.handler.State;
+
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-
-import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Decoder;
 
 /**
  * 
@@ -33,11 +32,6 @@ public class ObjectSetReplayDecoder<T> implements MultiDecoder<Set<T>> {
     @Override
     public Set<T> decode(List<Object> parts, State state) {
         return new LinkedHashSet(parts);
-    }
-
-    @Override
-    public Decoder<Object> getDecoder(int paramNum, State state) {
-        return null;
     }
 
 }

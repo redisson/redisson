@@ -15,13 +15,12 @@
  */
 package org.redisson.connection.decoder;
 
+import org.redisson.client.handler.State;
+import org.redisson.client.protocol.decoder.MultiDecoder;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Decoder;
-import org.redisson.client.protocol.decoder.MultiDecoder;
 
 /**
  * 
@@ -44,11 +43,6 @@ public class MapCacheGetAllDecoder implements MultiDecoder<List<Object>> {
         this.allowNulls = allowNulls;
     }
 
-    @Override
-    public Decoder<Object> getDecoder(int paramNum, State state) {
-        return null;
-    }
-    
     @Override
     public List<Object> decode(List<Object> parts, State state) {
         if (parts.isEmpty()) {

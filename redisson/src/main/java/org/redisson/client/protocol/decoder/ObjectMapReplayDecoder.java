@@ -15,12 +15,11 @@
  */
 package org.redisson.client.protocol.decoder;
 
+import org.redisson.client.handler.State;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Decoder;
 
 /**
  * 
@@ -38,11 +37,6 @@ public class ObjectMapReplayDecoder<K, V> implements MultiDecoder<Map<K, V>> {
             }
         }
         return result;
-    }
-
-    @Override
-    public Decoder<Object> getDecoder(int paramNum, State state) {
-        return null;
     }
 
 }

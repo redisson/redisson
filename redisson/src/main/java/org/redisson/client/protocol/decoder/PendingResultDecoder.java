@@ -15,15 +15,14 @@
  */
 package org.redisson.client.protocol.decoder;
 
+import org.redisson.api.PendingResult;
+import org.redisson.client.handler.State;
+import org.redisson.client.protocol.convertor.StreamIdConvertor;
+
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.redisson.api.PendingResult;
-import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Decoder;
-import org.redisson.client.protocol.convertor.StreamIdConvertor;
 
 /**
  * 
@@ -33,11 +32,6 @@ import org.redisson.client.protocol.convertor.StreamIdConvertor;
 public class PendingResultDecoder implements MultiDecoder<Object> {
 
     private final StreamIdConvertor convertor = new StreamIdConvertor();
-    
-    @Override
-    public Decoder<Object> getDecoder(int paramNum, State state) {
-        return null;
-    }
 
     @Override
     public Object decode(List<Object> parts, State state) {

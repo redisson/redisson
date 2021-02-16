@@ -19,6 +19,7 @@ import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
+import org.redisson.client.protocol.decoder.ObjectDecoder;
 import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.reactive.CommandReactiveExecutor;
 import org.springframework.data.redis.connection.*;
@@ -102,7 +103,7 @@ public class RedissonReactiveRedisClusterConnection extends RedissonReactiveRedi
     }
 
     private static final RedisStrictCommand<List<RedisClusterNode>> CLUSTER_NODES =
-                            new RedisStrictCommand<>("CLUSTER", "NODES", new RedisClusterNodeDecoder());
+                            new RedisStrictCommand<>("CLUSTER", "NODES", new ObjectDecoder(new RedisClusterNodeDecoder()));
 
     @Override
     public Flux<RedisClusterNode> clusterGetNodes() {

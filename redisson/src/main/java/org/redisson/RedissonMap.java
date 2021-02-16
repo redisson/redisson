@@ -37,10 +37,10 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.NumberConvertor;
 import org.redisson.client.protocol.decoder.MapScanResult;
+import org.redisson.client.protocol.decoder.MapValueDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.iterator.RedissonMapIterator;
@@ -628,7 +628,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         List<Object> args = new ArrayList<>(keys.size() + 1);
         args.add(getName());
         encodeMapKeys(args, keys);
-        RFuture<Map<K, V>> future = commandExecutor.readAsync(getName(), codec, new RedisCommand<>("HMGET", new MapGetAllDecoder(new ArrayList<>(keys), 0), ValueType.MAP_VALUE), 
+        RFuture<Map<K, V>> future = commandExecutor.readAsync(getName(), codec, new RedisCommand<>("HMGET",
+                        new MapValueDecoder(new MapGetAllDecoder(new ArrayList<>(keys), 0))),
                 args.toArray());
         return future;
     }

@@ -15,12 +15,11 @@
  */
 package org.redisson.client.protocol.pubsub;
 
-import java.util.List;
-
 import org.redisson.client.ChannelName;
 import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
+
+import java.util.List;
 
 /**
  * 
@@ -29,11 +28,6 @@ import org.redisson.client.protocol.decoder.MultiDecoder;
  */
 public class PubSubStatusDecoder implements MultiDecoder<Object> {
 
-    @Override
-    public Decoder<Object> getDecoder(int paramNum, State state) {
-        return null;
-    }
-    
     @Override
     public PubSubStatusMessage decode(List<Object> parts, State state) {
         PubSubType type = PubSubType.valueOf(parts.get(0).toString().toUpperCase());

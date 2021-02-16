@@ -21,6 +21,7 @@ import org.redisson.client.ChannelName;
 import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.codec.ByteArrayCodec;
+import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.Decoder;
@@ -243,11 +244,11 @@ public class CommandPubSubDecoder extends CommandDecoder {
             
             if (parts.size() == 2 && "message".equals(parts.get(0))) {
                 byte[] channelName = (byte[]) parts.get(1);
-                return getDecoder(parts, channelName);
+                return getDecoder(null, parts, channelName);
             }
             if (parts.size() == 3 && "pmessage".equals(parts.get(0))) {
                 byte[] patternName = (byte[]) parts.get(1);
-                return getDecoder(parts, patternName);
+                return getDecoder(null, parts, patternName);
             }
         }
         
@@ -258,10 +259,10 @@ public class CommandPubSubDecoder extends CommandDecoder {
         return super.selectDecoder(data, parts);
     }
 
-    private Decoder<Object> getDecoder(List<Object> parts, byte[] name) {
+    private Decoder<Object> getDecoder(Codec codec, List<Object> parts, byte[] name) {
         PubSubEntry entry = entries.get(new ChannelName(name));
         if (entry != null) {
-            return entry.getDecoder().getDecoder(parts.size(), state());
+            return entry.getDecoder().getDecoder(codec, parts.size(), state());
         }
         return ByteArrayCodec.INSTANCE.getValueDecoder();
     }

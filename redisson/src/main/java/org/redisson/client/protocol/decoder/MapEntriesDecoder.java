@@ -15,32 +15,39 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import java.util.List;
-
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.LongCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
+import java.util.List;
+
 /**
- * 
  * @author Nikita Koksharov
- *
  */
-public class ScoredSortedSetScanReplayDecoder implements MultiDecoder<ListScanResult<Object>> {
+public class MapEntriesDecoder<T> implements MultiDecoder<Object> {
+
+    private final MultiDecoder<Object> decoder;
+
+    public MapEntriesDecoder(MultiDecoder<Object> decoder) {
+        this.decoder = decoder;
+    }
+
+    public MapEntriesDecoder() {
+        this(null);
+    }
 
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
-        return LongCodec.INSTANCE.getValueDecoder();
-    }
-    
-    @Override
-    public ListScanResult<Object> decode(List<Object> parts, State state) {
-        List<Object> values = (List<Object>) parts.get(1);
-        for (int i = 1; i < values.size(); i++) {
-            values.remove(i);
+        if (paramNum % 2 != 0) {
+            return codec.getMapValueDecoder();
+        } else {
+            return codec.getMapKeyDecoder();
         }
-        return new ListScanResult<Object>((Long) parts.get(0), values);
+    }
+
+    @Override
+    public T decode(List<Object> parts, State state) {
+        return (T) decoder.decode(parts, state);
     }
 
 }

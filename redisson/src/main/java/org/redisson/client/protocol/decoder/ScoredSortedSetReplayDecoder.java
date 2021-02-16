@@ -18,6 +18,7 @@ package org.redisson.client.protocol.decoder;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
@@ -32,11 +33,11 @@ import org.redisson.client.protocol.ScoredEntry;
 public class ScoredSortedSetReplayDecoder<T> implements MultiDecoder<List<ScoredEntry<T>>> {
 
     @Override
-    public Decoder<Object> getDecoder(int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
         if (paramNum % 2 != 0) {
             return DoubleCodec.INSTANCE.getValueDecoder();
         }
-        return null;
+        return MultiDecoder.super.getDecoder(codec, paramNum, state);
     }
     
     @Override

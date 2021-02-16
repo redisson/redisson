@@ -41,6 +41,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
+import org.redisson.client.protocol.decoder.ObjectDecoder;
 import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.client.protocol.decoder.StringMapDataDecoder;
 import org.redisson.command.CommandBatchService;
@@ -66,7 +67,7 @@ import io.netty.util.CharsetUtil;
 public class RedissonClusterConnection extends RedissonConnection implements RedisClusterConnection {
 
     private static final RedisStrictCommand<List<RedisClusterNode>> CLUSTER_NODES = 
-                            new RedisStrictCommand<List<RedisClusterNode>>("CLUSTER", "NODES", new RedisClusterNodeDecoder());
+                            new RedisStrictCommand<List<RedisClusterNode>>("CLUSTER", "NODES", new ObjectDecoder(new RedisClusterNodeDecoder()));
     
     public RedissonClusterConnection(RedissonClient redisson) {
         super(redisson);

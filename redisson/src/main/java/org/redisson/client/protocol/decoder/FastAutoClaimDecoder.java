@@ -17,6 +17,7 @@ package org.redisson.client.protocol.decoder;
 
 import org.redisson.api.FastAutoClaimResult;
 import org.redisson.api.StreamMessageId;
+import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
@@ -30,7 +31,7 @@ import java.util.List;
 public class FastAutoClaimDecoder implements MultiDecoder<FastAutoClaimResult> {
 
     @Override
-    public Decoder<Object> getDecoder(int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
         return new StreamIdDecoder();
     }
 

@@ -51,7 +51,7 @@ public class RedissonSubscribeTest extends BaseConnectionTest {
         RedisConnection c = factory.getConnection();
         c.publish("test".getBytes(), "sdfdsf".getBytes());
 
-        Awaitility.await().atMost(Duration.ONE_SECOND).until(() -> {
+        Awaitility.await().atMost(Duration.FIVE_SECONDS).until(() -> {
             return counterTest.get() == 2;
         });
         Assertions.assertThat(counterTest2.get()).isZero();

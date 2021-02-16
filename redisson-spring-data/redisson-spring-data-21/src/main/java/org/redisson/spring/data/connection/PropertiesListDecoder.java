@@ -18,6 +18,7 @@ package org.redisson.spring.data.connection;
 import java.util.List;
 import java.util.Properties;
 
+import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
@@ -28,11 +29,6 @@ import org.redisson.client.protocol.decoder.MultiDecoder;
  *
  */
 public class PropertiesListDecoder implements MultiDecoder<Properties> {
-
-    @Override
-    public Decoder<Object> getDecoder(int paramNum, State state) {
-        return null;
-    }
 
     @Override
     public Properties decode(List<Object> parts, State state) {

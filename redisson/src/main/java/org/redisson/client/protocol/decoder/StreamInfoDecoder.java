@@ -15,16 +15,15 @@
  */
 package org.redisson.client.protocol.decoder;
 
+import org.redisson.api.StreamInfo;
+import org.redisson.api.StreamMessageId;
+import org.redisson.client.handler.State;
+import org.redisson.client.protocol.convertor.StreamIdConvertor;
+
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import org.redisson.api.StreamInfo;
-import org.redisson.api.StreamMessageId;
-import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Decoder;
-import org.redisson.client.protocol.convertor.StreamIdConvertor;
 
 /**
  *
@@ -39,11 +38,6 @@ public class StreamInfoDecoder implements MultiDecoder<StreamInfo<Object, Object
     private static final String LAST_GENERATED_ID_KEY = "last-generated-id";
     private static final String FIRST_ENTRY_KEY = "first-entry";
     private static final String LAST_ENTRY_KEY = "last-entry";
-
-    @Override
-    public Decoder<Object> getDecoder(int paramNum, State state) {
-        return null;
-    }
 
     @Override
     public StreamInfo<Object, Object> decode(List<Object> parts, State state) {

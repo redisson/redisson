@@ -15,12 +15,11 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import java.util.List;
-
 import org.redisson.api.PendingEntry;
 import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.convertor.StreamIdConvertor;
+
+import java.util.List;
 
 /**
  * 
@@ -30,11 +29,6 @@ import org.redisson.client.protocol.convertor.StreamIdConvertor;
 public class PendingEntryDecoder implements MultiDecoder<Object> {
 
     private final StreamIdConvertor convertor = new StreamIdConvertor();
-    
-    @Override
-    public Decoder<Object> getDecoder(int paramNum, State state) {
-        return null;
-    }
 
     @Override
     public Object decode(List<Object> parts, State state) {

@@ -17,7 +17,6 @@ package org.redisson.client.protocol.decoder;
 
 import org.redisson.api.StreamMessageId;
 import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Decoder;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -59,11 +58,6 @@ public class StreamResultDecoder implements MultiDecoder<Object> {
             }
         }
         return result;
-    }
-
-    @Override
-    public Decoder<Object> getDecoder(int paramNum, State state) {
-        return null;
     }
 
 }

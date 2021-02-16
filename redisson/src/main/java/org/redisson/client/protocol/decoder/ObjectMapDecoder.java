@@ -43,15 +43,15 @@ public class ObjectMapDecoder implements MultiDecoder<Object> {
     private boolean mapDecoded;
     
     @Override
-    public Decoder<Object> getDecoder(int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
         if (mapDecoded) {
-            return codec.getMapKeyDecoder();
+            return this.codec.getMapKeyDecoder();
         }
         
         if (pos++ % 2 == 0) {
-            return codec.getMapKeyDecoder();
+            return this.codec.getMapKeyDecoder();
         }
-        return codec.getMapValueDecoder();
+        return this.codec.getMapValueDecoder();
     }
     
     @Override

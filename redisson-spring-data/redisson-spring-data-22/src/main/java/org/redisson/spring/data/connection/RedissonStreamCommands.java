@@ -16,6 +16,7 @@
 package org.redisson.spring.data.connection;
 
 import org.redisson.client.codec.ByteArrayCodec;
+import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
@@ -168,11 +169,6 @@ public class RedissonStreamCommands implements RedisStreamCommands {
         }
 
         @Override
-        public Decoder<Object> getDecoder(int paramNum, State state) {
-            return null;
-        }
-
-        @Override
         public List<ByteRecord> decode(List<Object> parts, State state) {
             List<List<Object>> list = (List<List<Object>>) (Object) parts;
             List<ByteRecord> result = new ArrayList<>(parts.size()/2);
@@ -193,16 +189,11 @@ public class RedissonStreamCommands implements RedisStreamCommands {
             new ListMultiDecoder2(
                     new ByteRecordReplayDecoder(key),
                     new ObjectDecoder(new StreamIdDecoder()),
-                    new StreamObjectMapReplayDecoder()), RedisCommand.ValueType.MAP),
+                    new MapEntriesDecoder(new StreamObjectMapReplayDecoder()))),
                 key, range, limit);
     }
 
     private static class ByteRecordReplayDecoder2 implements MultiDecoder<List<ByteRecord>> {
-
-        @Override
-        public Decoder<Object> getDecoder(int paramNum, State state) {
-            return null;
-        }
 
         @Override
         public List<ByteRecord> decode(List<Object> parts, State state) {
@@ -235,16 +226,16 @@ public class RedissonStreamCommands implements RedisStreamCommands {
                     new ObjectDecoder(StringCodec.INSTANCE.getValueDecoder()),
                     new ObjectDecoder(new StreamIdDecoder()),
                     new ObjectDecoder(new StreamIdDecoder()),
-                    new StreamObjectMapReplayDecoder()), RedisCommand.ValueType.MAP);
+                    new MapEntriesDecoder(new StreamObjectMapReplayDecoder())));
 
     private static final RedisCommand<List<ByteRecord>> XREAD_BLOCKING =
-            new RedisCommand<>("XREAD", XREAD.getReplayMultiDecoder(), RedisCommand.ValueType.MAP);
+            new RedisCommand<>("XREAD", XREAD.getReplayMultiDecoder());
 
     private static final RedisCommand<List<ByteRecord>> XREADGROUP =
-            new RedisCommand<>("XREADGROUP", XREAD.getReplayMultiDecoder(), RedisCommand.ValueType.MAP);
+            new RedisCommand<>("XREADGROUP", XREAD.getReplayMultiDecoder());
 
     private static final RedisCommand<List<ByteRecord>> XREADGROUP_BLOCKING =
-            new RedisCommand<>("XREADGROUP", XREADGROUP.getReplayMultiDecoder(), RedisCommand.ValueType.MAP);
+            new RedisCommand<>("XREADGROUP", XREADGROUP.getReplayMultiDecoder());
 
 
     static {
@@ -327,7 +318,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
             new ListMultiDecoder2(
                     new ByteRecordReplayDecoder(key),
                     new ObjectDecoder(new StreamIdDecoder()),
-                    new StreamObjectMapReplayDecoder()), RedisCommand.ValueType.MAP),
+                    new MapEntriesDecoder(new StreamObjectMapReplayDecoder()))),
                 key, range, limit);
     }
 

@@ -25,9 +25,9 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.MapScanResult;
+import org.redisson.client.protocol.decoder.MapValueDecoder;
 import org.redisson.codec.BaseEventCodec;
 import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.iterator.RedissonBaseMapIterator;
@@ -847,7 +847,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         
         RFuture<Map<K, V>> res;
         if (accessTimeout == -1) {
-            res = commandExecutor.evalReadAsync(getName(), codec, new RedisCommand<Map<Object, Object>>("EVAL", new MapGetAllDecoder(new ArrayList<Object>(keys), 0, true), ValueType.MAP_VALUE),
+            res = commandExecutor.evalReadAsync(getName(), codec, new RedisCommand<Map<Object, Object>>("EVAL",
+                            new MapValueDecoder(new MapGetAllDecoder(new ArrayList<Object>(keys), 0, true))),
                     "local expireHead = redis.call('zrange', KEYS[2], 0, 0, 'withscores');"
                   + "local accessTimeout = ARGV[1]; "
                   + "local currentTime = tonumber(ARGV[2]); "
@@ -877,7 +878,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                   + "return result;",
             Arrays.<Object>asList(getName(), getTimeoutSetName(), getRemovedChannelName()), args.toArray());
         } else {
-            res = commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Map<Object, Object>>("EVAL", new MapGetAllDecoder(new ArrayList<Object>(keys), 0, true), ValueType.MAP_VALUE),
+            res = commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Map<Object, Object>>("EVAL",
+                            new MapValueDecoder(new MapGetAllDecoder(new ArrayList<Object>(keys), 0, true))),
                             "local expireHead = redis.call('zrange', KEYS[2], 0, 0, 'withscores');"
                           + "local accessTimeout = ARGV[1]; "
                           + "local currentTime = tonumber(ARGV[2]); "

@@ -65,7 +65,7 @@ public class RedissonSubscribeTest extends BaseConnectionTest {
         c.set("mykey".getBytes(), "2".getBytes());
         c.del("mykey".getBytes());
 
-        Awaitility.await().atMost(Duration.ONE_SECOND).until(() -> {
+        Awaitility.await().atMost(Duration.FIVE_SECONDS).until(() -> {
             return counterTest.get() == 3;
         });
 

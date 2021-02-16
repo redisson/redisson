@@ -37,10 +37,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ReplayingDecoder;
 import io.netty.util.CharsetUtil;
 import org.redisson.client.*;
-import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.*;
-import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.misc.LogHelper;
 import org.redisson.misc.RPromise;
@@ -52,6 +50,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Redis protocol command decoder
@@ -451,37 +450,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             return StringCodec.INSTANCE.getValueDecoder();
         }
 
-        if (parts != null) {
-            MultiDecoder<Object> multiDecoder = data.getCommand().getReplayMultiDecoder();
-            if (multiDecoder != null) {
-                Decoder<Object> mDecoder = multiDecoder.getDecoder(parts.size(), state());
-                if (mDecoder != null) {
-                    return mDecoder;
-                }
-            }
-        }
-
-        Codec codec = data.getCodec();
-        Decoder<Object> decoder = data.getCommand().getReplayDecoder();
-        if (decoder == null) {
-            if (codec == null) {
-                return StringCodec.INSTANCE.getValueDecoder();
-            }
-            if (data.getCommand().getOutParamType() == ValueType.MAP) {
-                if (parts != null && parts.size() % 2 != 0) {
-                    return codec.getMapValueDecoder();
-                } else {
-                    return codec.getMapKeyDecoder();
-                }
-            } else if (data.getCommand().getOutParamType() == ValueType.MAP_KEY) {
-                return codec.getMapKeyDecoder();
-            } else if (data.getCommand().getOutParamType() == ValueType.MAP_VALUE) {
-                return codec.getMapValueDecoder();
-            } else {
-                return codec.getValueDecoder();
-            }
-        }
-        return decoder;
+        MultiDecoder<Object> multiDecoder = data.getCommand().getReplayMultiDecoder();
+        Integer size = Optional.ofNullable(parts).map(List::size).orElse(0);
+        return multiDecoder.getDecoder(data.getCodec(), size, state());
     }
 
     private ByteBuf readBytes(ByteBuf is) throws IOException {

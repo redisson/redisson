@@ -15,6 +15,7 @@
  */
 package org.redisson.spring.data.connection;
 
+import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
@@ -42,11 +43,6 @@ public class GeoResultsDecoder implements MultiDecoder<GeoResults<GeoLocation<by
         this.metric = metric;
     }
 
-    @Override
-    public Decoder<Object> getDecoder(int paramNum, State state) {
-        return null;
-    }
-    
     @Override
     public GeoResults<GeoLocation<byte[]>> decode(List<Object> parts, State state) {
         List<GeoResult<GeoLocation<byte[]>>> result = new ArrayList<GeoResult<GeoLocation<byte[]>>>();

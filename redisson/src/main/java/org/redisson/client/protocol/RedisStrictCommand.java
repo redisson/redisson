@@ -55,12 +55,4 @@ public class RedisStrictCommand<T> extends RedisCommand<T> {
         this.convertor = convertor;
     }
 
-    public RedisStrictCommand(String name, String subName, Decoder<T> reponseDecoder) {
-        super(name, subName, null, reponseDecoder);
-    }
-
-    public RedisStrictCommand(String name, Decoder<T> reponseDecoder) {
-        super(name, reponseDecoder);
-    }
-
 }

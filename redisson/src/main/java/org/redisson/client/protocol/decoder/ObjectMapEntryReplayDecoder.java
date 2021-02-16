@@ -15,14 +15,13 @@
  */
 package org.redisson.client.protocol.decoder;
 
+import org.redisson.client.handler.State;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-
-import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Decoder;
 
 /**
  * 
@@ -30,11 +29,6 @@ import org.redisson.client.protocol.Decoder;
  *
  */
 public class ObjectMapEntryReplayDecoder implements MultiDecoder<Set<Entry<Object, Object>>> {
-
-    @Override
-    public Decoder<Object> getDecoder(int paramNum, State state) {
-        return null;
-    }
 
     @Override
     public Set<Entry<Object, Object>> decode(List<Object> parts, State state) {
