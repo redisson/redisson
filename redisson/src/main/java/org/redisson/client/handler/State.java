@@ -26,7 +26,17 @@ public class State {
 
     private int level = -1;
 
+    private Object value;
+
     public State() {
+    }
+
+    public <T> T getValue() {
+        return (T) value;
+    }
+
+    public void setValue(Object value) {
+        this.value = value;
     }
 
     public int getLevel() {

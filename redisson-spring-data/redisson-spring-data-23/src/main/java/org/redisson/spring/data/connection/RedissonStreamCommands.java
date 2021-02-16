@@ -156,17 +156,18 @@ public class RedissonStreamCommands implements RedisStreamCommands {
         }
     }
 
+    private static final RedisCommand<org.redisson.api.StreamInfo<Object, Object>> XINFO_STREAM = new RedisCommand<>("XINFO", "STREAM",
+            new ListMultiDecoder2(
+                    new XInfoStreamReplayDecoder(),
+                    new ObjectDecoder(StringCodec.INSTANCE.getValueDecoder()),
+                    new ObjectMapDecoder(false)));
+
     @Override
     public StreamInfo.XInfoStream xInfo(byte[] key) {
         Assert.notNull(key, "Key must not be null!");
 
-        RedisCommand<org.redisson.api.StreamInfo<Object, Object>> xinfoStreamCommand = new RedisCommand<>("XINFO", "STREAM",
-            new ListMultiDecoder2(
-                    new XInfoStreamReplayDecoder(),
-                    new CodecDecoder(),
-                    new ObjectMapDecoder(ByteArrayCodec.INSTANCE, false)));
 
-        return connection.write(key, StringCodec.INSTANCE, xinfoStreamCommand, key);
+        return connection.write(key, ByteArrayCodec.INSTANCE, XINFO_STREAM, key);
     }
 
     private static class XInfoGroupsReplayDecoder implements MultiDecoder<StreamInfo.XInfoGroups> {

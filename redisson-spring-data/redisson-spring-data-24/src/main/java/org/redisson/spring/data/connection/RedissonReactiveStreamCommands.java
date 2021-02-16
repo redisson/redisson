@@ -22,10 +22,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
-import org.redisson.client.protocol.decoder.CodecDecoder;
-import org.redisson.client.protocol.decoder.ListMultiDecoder2;
-import org.redisson.client.protocol.decoder.ObjectMapDecoder;
-import org.redisson.client.protocol.decoder.StreamInfoDecoder;
+import org.redisson.client.protocol.decoder.*;
 import org.redisson.reactive.CommandReactiveExecutor;
 import org.springframework.data.domain.Range;
 import org.springframework.data.redis.connection.ReactiveRedisConnection;
@@ -166,6 +163,12 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
         });
     }
 
+    private static final RedisCommand<org.redisson.api.StreamInfo<Object, Object>> XINFO_STREAM = new RedisCommand<>("XINFO", "STREAM",
+                new ListMultiDecoder2(
+                        new StreamInfoDecoder(),
+                        new ObjectDecoder(StringCodec.INSTANCE.getValueDecoder()),
+                        new ObjectMapDecoder(false)));
+
     @Override
     public Flux<ReactiveRedisConnection.CommandResponse<XInfoCommand, StreamInfo.XInfoStream>> xInfo(Publisher<XInfoCommand> publisher) {
         return execute(publisher, command -> {
@@ -174,13 +177,7 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
 
             byte[] k = toByteArray(command.getKey());
 
-            RedisCommand<org.redisson.api.StreamInfo<Object, Object>> xinfoStreamCommand = new RedisCommand<>("XINFO", "STREAM",
-                new ListMultiDecoder2(
-                        new StreamInfoDecoder(),
-                        new CodecDecoder(),
-                        new ObjectMapDecoder(ByteArrayCodec.INSTANCE, false)));
-
-            Mono<org.redisson.api.StreamInfo<byte[], byte[]>> m = write(k, StringCodec.INSTANCE, xinfoStreamCommand, k);
+            Mono<org.redisson.api.StreamInfo<byte[], byte[]>> m = write(k, ByteArrayCodec.INSTANCE, XINFO_STREAM, k);
             return m.map(i -> {
 
                 Map<String, Object> res = new HashMap<>();
