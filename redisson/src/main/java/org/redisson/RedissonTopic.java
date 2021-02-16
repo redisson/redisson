@@ -163,93 +163,22 @@ public class RedissonTopic implements RTopic {
     @Override
     public void removeListener(MessageListener<?> listener) {
         RFuture<Void> future = removeListenerAsync(listener);
-        MasterSlaveServersConfig config = commandExecutor.getConnectionManager().getConfig();
-        int timeout = config.getTimeout() + config.getRetryInterval() * config.getRetryAttempts();
-        if (!future.awaitUninterruptibly(timeout)) {
-            throw new RedisTimeoutException("Remove listeners operation timeout: (" + timeout + "ms) for " + name + " topic");
-        }
+        commandExecutor.syncSubscription(future);
     }
 
     @Override
     public RFuture<Void> removeListenerAsync(MessageListener<?> listener) {
-        return removeListenerAsync(channelName, listener);
-    }
-
-    protected RFuture<Void> removeListenerAsync(ChannelName channelName, MessageListener<?> listener) {
-        RPromise<Void> promise = new RedissonPromise<Void>();
-        AsyncSemaphore semaphore = subscribeService.getSemaphore(channelName);
-        semaphore.acquire(new Runnable() {
-            @Override
-            public void run() {
-                PubSubConnectionEntry entry = subscribeService.getPubSubEntry(channelName);
-                if (entry == null) {
-                    semaphore.release();
-                    promise.trySuccess(null);
-                    return;
-                }
-
-                entry.removeListener(channelName, listener);
-                if (!entry.hasListeners(channelName)) {
-                    subscribeService.unsubscribe(PubSubType.UNSUBSCRIBE, channelName, semaphore)
-                        .onComplete(new TransferListener<Void>(promise));
-                } else {
-                    semaphore.release();
-                    promise.trySuccess(null);
-                }
-
-            }
-        });
-        return promise;
+        return subscribeService.removeListenerAsync(PubSubType.UNSUBSCRIBE, channelName, listener);
     }
 
     @Override
     public RFuture<Void> removeListenerAsync(Integer... listenerIds) {
-        RPromise<Void> promise = new RedissonPromise<Void>();
-        AsyncSemaphore semaphore = subscribeService.getSemaphore(channelName);
-        semaphore.acquire(new Runnable() {
-            @Override
-            public void run() {
-                PubSubConnectionEntry entry = subscribeService.getPubSubEntry(channelName);
-                if (entry == null) {
-                    semaphore.release();
-                    promise.trySuccess(null);
-                    return;
-                }
-
-                for (int id : listenerIds) {
-                    entry.removeListener(channelName, id);
-                }
-                if (!entry.hasListeners(channelName)) {
-                    subscribeService.unsubscribe(PubSubType.UNSUBSCRIBE, channelName, semaphore)
-                        .onComplete(new TransferListener<Void>(promise));
-                } else {
-                    semaphore.release();
-                    promise.trySuccess(null);
-                }
-            }
-        });
-        return promise;
+        return subscribeService.removeListenerAsync(PubSubType.UNSUBSCRIBE, channelName, listenerIds);
     }
 
     @Override
     public void removeListener(Integer... listenerIds) {
-        AsyncSemaphore semaphore = subscribeService.getSemaphore(channelName);
-        acquire(semaphore);
-
-        PubSubConnectionEntry entry = subscribeService.getPubSubEntry(channelName);
-        if (entry == null) {
-            semaphore.release();
-            return;
-        }
-
-        for (int id : listenerIds) {
-            entry.removeListener(channelName, id);
-        }
-        if (!entry.hasListeners(channelName)) {
-            subscribeService.unsubscribe(PubSubType.UNSUBSCRIBE, channelName, semaphore).syncUninterruptibly();
-        } else {
-            semaphore.release();
-        }
+        commandExecutor.syncSubscription(removeListenerAsync(listenerIds));
     }
 
     @Override

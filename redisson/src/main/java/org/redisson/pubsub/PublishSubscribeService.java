@@ -16,6 +16,7 @@
 package org.redisson.pubsub;
 
 import java.util.Collection;
+import java.util.EventListener;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.redisson.api.RFuture;
+import org.redisson.api.listener.MessageListener;
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.ChannelName;
 import org.redisson.client.RedisNodeNotFoundException;
@@ -39,6 +41,7 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.TransferListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -573,6 +576,54 @@ public class PublishSubscribeService {
 
             log.info("listeners of '{}' channel-pattern to '{}' have been resubscribed", channelName, res.getConnection().getRedisClient());
         });
+    }
+
+    public RFuture<Void> removeListenerAsync(PubSubType type, ChannelName channelName, EventListener listener) {
+        RPromise<Void> promise = new RedissonPromise<>();
+        AsyncSemaphore semaphore = getSemaphore(channelName);
+        semaphore.acquire(() -> {
+            PubSubConnectionEntry entry = getPubSubEntry(channelName);
+            if (entry == null) {
+                semaphore.release();
+                promise.trySuccess(null);
+                return;
+            }
+
+            entry.removeListener(channelName, listener);
+            if (!entry.hasListeners(channelName)) {
+                unsubscribe(type, channelName, semaphore)
+                    .onComplete(new TransferListener<>(promise));
+            } else {
+                semaphore.release();
+                promise.trySuccess(null);
+            }
+        });
+        return promise;
+    }
+
+    public RFuture<Void> removeListenerAsync(PubSubType type, ChannelName channelName, Integer... listenerIds) {
+        RPromise<Void> promise = new RedissonPromise<>();
+        AsyncSemaphore semaphore = getSemaphore(channelName);
+        semaphore.acquire(() -> {
+            PubSubConnectionEntry entry = getPubSubEntry(channelName);
+            if (entry == null) {
+                semaphore.release();
+                promise.trySuccess(null);
+                return;
+            }
+
+            for (int id : listenerIds) {
+                entry.removeListener(channelName, id);
+            }
+            if (!entry.hasListeners(channelName)) {
+                unsubscribe(type, channelName, semaphore)
+                        .onComplete(new TransferListener<>(promise));
+            } else {
+                semaphore.release();
+                promise.trySuccess(null);
+            }
+        });
+        return promise;
     }
 
     @Override

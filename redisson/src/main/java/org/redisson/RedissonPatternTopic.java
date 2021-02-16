@@ -113,33 +113,14 @@ public class RedissonPatternTopic implements RPatternTopic {
         }
     }
     
-    
+    @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
-        RPromise<Void> result = new RedissonPromise<>();
-        AsyncSemaphore semaphore = subscribeService.getSemaphore(channelName);
-        semaphore.acquire(() -> {
-            PubSubConnectionEntry entry = subscribeService.getPubSubEntry(channelName);
-            if (entry == null) {
-                semaphore.release();
-                result.trySuccess(null);
-                return;
-            }
-            
-            entry.removeListener(channelName, listenerId);
-            if (!entry.hasListeners(channelName)) {
-                subscribeService.unsubscribe(PubSubType.PUNSUBSCRIBE, channelName, semaphore)
-                        .onComplete(new TransferListener<>(result));
-            } else {
-                semaphore.release();
-                result.trySuccess(null);
-            }
-        });
-        return result;
+        return subscribeService.removeListenerAsync(PubSubType.PUNSUBSCRIBE, channelName, listenerId);
     }
     
     @Override
     public void removeListener(int listenerId) {
-        removeListenerAsync(listenerId).syncUninterruptibly();
+        commandExecutor.syncSubscription(removeListenerAsync(listenerId));
     }
     
     @Override
@@ -162,22 +143,8 @@ public class RedissonPatternTopic implements RPatternTopic {
 
     @Override
     public void removeListener(PatternMessageListener<?> listener) {
-        AsyncSemaphore semaphore = subscribeService.getSemaphore(channelName);
-        acquire(semaphore);
-        
-        PubSubConnectionEntry entry = subscribeService.getPubSubEntry(channelName);
-        if (entry == null) {
-            semaphore.release();
-            return;
-        }
-
-        entry.removeListener(channelName, listener);
-        if (!entry.hasListeners(channelName)) {
-            subscribeService.unsubscribe(PubSubType.PUNSUBSCRIBE, channelName, semaphore).syncUninterruptibly();
-        } else {
-            semaphore.release();
-        }
-
+        RFuture<Void> future = subscribeService.removeListenerAsync(PubSubType.PUNSUBSCRIBE, channelName, listener);
+        commandExecutor.syncSubscription(future);
     }
     
     @Override
