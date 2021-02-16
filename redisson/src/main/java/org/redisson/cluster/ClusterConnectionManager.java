@@ -443,7 +443,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         RFuture<List<ClusterNodeInfo>> future = connection.async(clusterNodesCommand);
         future.onComplete((nodes, e) -> {
                 if (e != null) {
-                    log.error("Can't execute CLUSTER_NODES with " + connection.getRedisClient().getAddr(), e);
                     closeNodeConnection(connection);
                     lastException.set(e);
                     getShutdownLatch().release();
