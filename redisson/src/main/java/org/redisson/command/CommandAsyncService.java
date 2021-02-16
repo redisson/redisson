@@ -15,26 +15,16 @@
  */
 package org.redisson.command;
 
-import java.io.IOException;
-import java.security.MessageDigest;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
-
-import io.netty.util.concurrent.FastThreadLocalThread;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.ByteBufUtil;
+import io.netty.util.ReferenceCountUtil;
 import org.redisson.RedissonReference;
 import org.redisson.SlotCallback;
-import org.redisson.api.*;
+import org.redisson.api.RFuture;
+import org.redisson.api.RedissonClient;
+import org.redisson.api.RedissonReactiveClient;
+import org.redisson.api.RedissonRxClient;
 import org.redisson.cache.LRUCacheMap;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisException;
@@ -56,10 +46,14 @@ import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.ByteBufUtil;
-import io.netty.util.ReferenceCountUtil;
+import java.io.IOException;
+import java.security.MessageDigest;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 
 /**
  *
@@ -137,7 +131,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     @Override
     public <V> V get(RFuture<V> future) {
-        if (Thread.currentThread() instanceof FastThreadLocalThread) {
+        if (Thread.currentThread().getName().startsWith("redisson-netty")) {
             throw new IllegalStateException("Sync methods can't be invoked from async/rx/reactive listeners");
         }
 
