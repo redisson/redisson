@@ -237,7 +237,7 @@ public class PublishSubscribeService {
                     connEntry.removeListener(channelName, listener);
                 }
                 if (!connEntry.hasListeners(channelName)) {
-                    unsubscribe(channelName, lock);
+                    unsubscribe(type, channelName, lock);
                 } else {
                     lock.release();
                 }
@@ -332,7 +332,7 @@ public class PublishSubscribeService {
         });
     }
 
-    public RFuture<Void> unsubscribe(ChannelName channelName, AsyncSemaphore lock) {
+    public RFuture<Void> unsubscribe(PubSubType topicType, ChannelName channelName, AsyncSemaphore lock) {
         PubSubConnectionEntry entry = name2PubSubConnection.remove(channelName);
         if (entry == null || connectionManager.isShuttingDown()) {
             lock.release();
@@ -340,12 +340,12 @@ public class PublishSubscribeService {
         }
 
         AtomicBoolean executed = new AtomicBoolean();
-        RedissonPromise<Void> result = new RedissonPromise<Void>();
-        ChannelFuture future = entry.unsubscribe(channelName, new BaseRedisPubSubListener() {
+        RedissonPromise<Void> result = new RedissonPromise<>();
+        BaseRedisPubSubListener listener = new BaseRedisPubSubListener() {
 
             @Override
             public boolean onStatus(PubSubType type, CharSequence channel) {
-                if (type == PubSubType.UNSUBSCRIBE && channel.equals(channelName)) {
+                if (type == topicType && channel.equals(channelName)) {
                     executed.set(true);
 
                     if (entry.release() == 1) {
@@ -359,25 +359,26 @@ public class PublishSubscribeService {
                 return false;
             }
 
-        });
+        };
 
-        future.addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-                if (!future.isSuccess()) {
+        ChannelFuture future;
+        if (topicType == PubSubType.UNSUBSCRIBE) {
+            future = entry.unsubscribe(channelName, listener);
+        } else {
+            future = entry.punsubscribe(channelName, listener);
+        }
+
+        future.addListener((ChannelFutureListener) f -> {
+            if (!f.isSuccess()) {
+                return;
+            }
+
+            connectionManager.newTimeout(timeout -> {
+                if (executed.get()) {
                     return;
                 }
-
-                connectionManager.newTimeout(new TimerTask() {
-                    @Override
-                    public void run(Timeout timeout) throws Exception {
-                        if (executed.get()) {
-                            return;
-                        }
-                        entry.getConnection().onMessage(new PubSubStatusMessage(PubSubType.UNSUBSCRIBE, channelName));
-                    }
-                }, config.getTimeout(), TimeUnit.MILLISECONDS);
-            }
+                entry.getConnection().onMessage(new PubSubStatusMessage(topicType, channelName));
+            }, config.getTimeout(), TimeUnit.MILLISECONDS);
         });
 
         return result;
@@ -466,32 +467,6 @@ public class PublishSubscribeService {
         });
 
         return result;
-    }
-
-    public void punsubscribe(ChannelName channelName, AsyncSemaphore lock) {
-        PubSubConnectionEntry entry = name2PubSubConnection.remove(channelName);
-        if (entry == null || connectionManager.isShuttingDown()) {
-            lock.release();
-            return;
-        }
-
-        entry.punsubscribe(channelName, new BaseRedisPubSubListener() {
-
-            @Override
-            public boolean onStatus(PubSubType type, CharSequence channel) {
-                if (type == PubSubType.PUNSUBSCRIBE && channel.equals(channelName)) {
-
-                    if (entry.release() == 1) {
-                        addFreeConnectionEntry(channelName, entry);
-                    }
-
-                    lock.release();
-                    return true;
-                }
-                return false;
-            }
-
-        });
     }
 
     private void addFreeConnectionEntry(ChannelName channelName, PubSubConnectionEntry entry) {

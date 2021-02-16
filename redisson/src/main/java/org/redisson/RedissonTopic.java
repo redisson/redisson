@@ -26,6 +26,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.misc.RPromise;
@@ -145,7 +146,7 @@ public class RedissonTopic implements RTopic {
         }
 
         if (entry.hasListeners(channelName)) {
-            subscribeService.unsubscribe(channelName, semaphore).syncUninterruptibly();
+            subscribeService.unsubscribe(PubSubType.UNSUBSCRIBE, channelName, semaphore).syncUninterruptibly();
         } else {
             semaphore.release();
         }
@@ -189,7 +190,7 @@ public class RedissonTopic implements RTopic {
 
                 entry.removeListener(channelName, listener);
                 if (!entry.hasListeners(channelName)) {
-                    subscribeService.unsubscribe(channelName, semaphore)
+                    subscribeService.unsubscribe(PubSubType.UNSUBSCRIBE, channelName, semaphore)
                         .onComplete(new TransferListener<Void>(promise));
                 } else {
                     semaphore.release();
@@ -219,7 +220,7 @@ public class RedissonTopic implements RTopic {
                     entry.removeListener(channelName, id);
                 }
                 if (!entry.hasListeners(channelName)) {
-                    subscribeService.unsubscribe(channelName, semaphore)
+                    subscribeService.unsubscribe(PubSubType.UNSUBSCRIBE, channelName, semaphore)
                         .onComplete(new TransferListener<Void>(promise));
                 } else {
                     semaphore.release();
@@ -245,7 +246,7 @@ public class RedissonTopic implements RTopic {
             entry.removeListener(channelName, id);
         }
         if (!entry.hasListeners(channelName)) {
-            subscribeService.unsubscribe(channelName, semaphore).syncUninterruptibly();
+            subscribeService.unsubscribe(PubSubType.UNSUBSCRIBE, channelName, semaphore).syncUninterruptibly();
         } else {
             semaphore.release();
         }

@@ -26,10 +26,12 @@ import org.redisson.client.ChannelName;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.TransferListener;
 import org.redisson.pubsub.AsyncSemaphore;
 import org.redisson.pubsub.PubSubConnectionEntry;
 import org.redisson.pubsub.PublishSubscribeService;
@@ -125,7 +127,8 @@ public class RedissonPatternTopic implements RPatternTopic {
             
             entry.removeListener(channelName, listenerId);
             if (!entry.hasListeners(channelName)) {
-                subscribeService.punsubscribe(channelName, semaphore);
+                subscribeService.unsubscribe(PubSubType.PUNSUBSCRIBE, channelName, semaphore)
+                        .onComplete(new TransferListener<>(result));
             } else {
                 semaphore.release();
                 result.trySuccess(null);
@@ -136,21 +139,7 @@ public class RedissonPatternTopic implements RPatternTopic {
     
     @Override
     public void removeListener(int listenerId) {
-        AsyncSemaphore semaphore = subscribeService.getSemaphore(channelName);
-        acquire(semaphore);
-
-        PubSubConnectionEntry entry = subscribeService.getPubSubEntry(channelName);
-        if (entry == null) {
-            semaphore.release();
-            return;
-        }
-        
-        entry.removeListener(channelName, listenerId);
-        if (!entry.hasListeners(channelName)) {
-            subscribeService.punsubscribe(channelName, semaphore);
-        } else {
-            semaphore.release();
-        }
+        removeListenerAsync(listenerId).syncUninterruptibly();
     }
     
     @Override
@@ -165,7 +154,7 @@ public class RedissonPatternTopic implements RPatternTopic {
         }
 
         if (entry.hasListeners(channelName)) {
-            subscribeService.punsubscribe(channelName, semaphore);
+            subscribeService.unsubscribe(PubSubType.PUNSUBSCRIBE, channelName, semaphore).syncUninterruptibly();
         } else {
             semaphore.release();
         }
@@ -184,7 +173,7 @@ public class RedissonPatternTopic implements RPatternTopic {
 
         entry.removeListener(channelName, listener);
         if (!entry.hasListeners(channelName)) {
-            subscribeService.punsubscribe(channelName, semaphore);
+            subscribeService.unsubscribe(PubSubType.PUNSUBSCRIBE, channelName, semaphore).syncUninterruptibly();
         } else {
             semaphore.release();
         }
