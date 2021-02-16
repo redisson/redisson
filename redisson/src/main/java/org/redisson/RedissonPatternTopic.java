@@ -15,9 +15,6 @@
  */
 package org.redisson;
 
-import java.util.Collections;
-import java.util.List;
-
 import org.redisson.api.RFuture;
 import org.redisson.api.RPatternTopic;
 import org.redisson.api.listener.PatternMessageListener;
@@ -31,10 +28,12 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
-import org.redisson.misc.TransferListener;
 import org.redisson.pubsub.AsyncSemaphore;
 import org.redisson.pubsub.PubSubConnectionEntry;
 import org.redisson.pubsub.PublishSubscribeService;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Distributed topic implementation. Messages are delivered to all message listeners across Redis cluster.

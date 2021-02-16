@@ -15,24 +15,12 @@
  */
 package org.redisson.pubsub;
 
-import java.util.Collection;
-import java.util.EventListener;
-import java.util.LinkedList;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.util.Timeout;
+import io.netty.util.TimerTask;
 import org.redisson.api.RFuture;
-import org.redisson.api.listener.MessageListener;
-import org.redisson.client.BaseRedisPubSubListener;
-import org.redisson.client.ChannelName;
-import org.redisson.client.RedisNodeNotFoundException;
-import org.redisson.client.RedisPubSubConnection;
-import org.redisson.client.RedisPubSubListener;
-import org.redisson.client.SubscribeListener;
+import org.redisson.client.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 import org.redisson.client.protocol.pubsub.PubSubType;
@@ -45,10 +33,15 @@ import org.redisson.misc.TransferListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
+import java.util.Collection;
+import java.util.EventListener;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  *

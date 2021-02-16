@@ -31,7 +31,6 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
-import org.redisson.misc.TransferListener;
 import org.redisson.pubsub.AsyncSemaphore;
 import org.redisson.pubsub.PubSubConnectionEntry;
 import org.redisson.pubsub.PublishSubscribeService;
