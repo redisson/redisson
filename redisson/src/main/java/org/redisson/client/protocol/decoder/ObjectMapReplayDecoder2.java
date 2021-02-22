@@ -20,6 +20,8 @@ import org.redisson.client.handler.State;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * 
@@ -31,11 +33,10 @@ public class ObjectMapReplayDecoder2 implements MultiDecoder<Map<Object, Object>
     @Override
     public Map<Object, Object> decode(List<Object> parts, State state) {
         List<List<Object>> list = (List<List<Object>>) (Object) parts;
-        Map<Object, Object> result = new LinkedHashMap<Object, Object>(parts.size()/2);
-        for (List<Object> entry : list) {
-            result.put(entry.get(0), entry.get(1));
-        }
-        return result;
+        return list.stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(e -> e.get(0), e -> e.get(1),
+                        (a, b) -> a, LinkedHashMap::new));
     }
 
 }

@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.redisson.api.*;
 import org.redisson.client.RedisException;
@@ -169,7 +170,34 @@ public class RedissonStreamTest extends BaseTest {
         assertThat(stream.remove(id1, id2)).isEqualTo(2);
         assertThat(stream.size()).isZero();
     }
-    
+
+    @Test
+    public void testClaimRemove() {
+        RStream<String, String> stream = redisson.getStream("test");
+
+        stream.add("0", "0");
+
+        stream.createGroup("testGroup");
+
+        StreamMessageId id1 = stream.add("1", "1");
+        StreamMessageId id2 = stream.add("2", "2");
+
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1");
+        assertThat(s.size()).isEqualTo(2);
+
+        StreamMessageId id3 = stream.add("3", "33");
+        StreamMessageId id4 = stream.add("4", "44");
+
+        Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup", "consumer2");
+        assertThat(s2.size()).isEqualTo(2);
+
+        stream.remove(id3);
+
+        Map<StreamMessageId, Map<String, String>> res = stream.claim("testGroup", "consumer1", 1, TimeUnit.MILLISECONDS, id3, id4);
+        assertThat(res.size()).isEqualTo(1);
+        assertThat(res.keySet()).containsExactly(id4);
+    }
+
     @Test
     public void testClaim() {
         RStream<String, String> stream = redisson.getStream("test");
