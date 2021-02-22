@@ -33,6 +33,11 @@ public class PubSubPatternStatusListener implements RedisPubSubListener<Object> 
         return name;
     }
 
+    public PubSubPatternStatusListener(PubSubPatternStatusListener l) {
+        this.listener = l.listener;
+        this.name = l.name;
+    }
+
     public PubSubPatternStatusListener(PatternStatusListener listener, String name) {
         super();
         this.listener = listener;

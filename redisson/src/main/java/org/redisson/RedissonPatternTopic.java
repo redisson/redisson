@@ -32,6 +32,7 @@ import org.redisson.pubsub.AsyncSemaphore;
 import org.redisson.pubsub.PubSubConnectionEntry;
 import org.redisson.pubsub.PublishSubscribeService;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -73,7 +74,7 @@ public class RedissonPatternTopic implements RPatternTopic {
     }
 
     private int addListener(RedisPubSubListener<?> pubSubListener) {
-        RFuture<PubSubConnectionEntry> future = subscribeService.psubscribe(channelName, codec, pubSubListener);
+        RFuture<Collection<PubSubConnectionEntry>> future = subscribeService.psubscribe(channelName, codec, pubSubListener);
         commandExecutor.syncSubscription(future);
         return System.identityHashCode(pubSubListener);
     }
@@ -91,7 +92,7 @@ public class RedissonPatternTopic implements RPatternTopic {
     }
     
     private RFuture<Integer> addListenerAsync(RedisPubSubListener<?> pubSubListener) {
-        RFuture<PubSubConnectionEntry> future = subscribeService.psubscribe(channelName, codec, pubSubListener);
+        RFuture<Collection<PubSubConnectionEntry>> future = subscribeService.psubscribe(channelName, codec, pubSubListener);
         RPromise<Integer> result = new RedissonPromise<Integer>();
         future.onComplete((res, e) -> {
             if (e != null) {
@@ -134,10 +135,9 @@ public class RedissonPatternTopic implements RPatternTopic {
         }
 
         if (entry.hasListeners(channelName)) {
-            subscribeService.unsubscribe(PubSubType.PUNSUBSCRIBE, channelName, semaphore).syncUninterruptibly();
-        } else {
-            semaphore.release();
+            subscribeService.unsubscribe(PubSubType.PUNSUBSCRIBE, channelName).syncUninterruptibly();
         }
+        semaphore.release();
     }
 
     @Override

@@ -1,9 +1,11 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -16,6 +18,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.awaitility.Awaitility;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.RedisRunner.RedisProcess;
@@ -25,7 +28,9 @@ import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.BasePatternStatusListener;
 import org.redisson.api.listener.PatternMessageListener;
 import org.redisson.api.listener.PatternStatusListener;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
+import org.redisson.connection.balancer.RandomLoadBalancer;
 
 public class RedissonTopicPatternTest extends BaseTest {
 
@@ -66,7 +71,131 @@ public class RedissonTopicPatternTest extends BaseTest {
             return "Message{" + "name='" + name + '\'' + '}';
         }
     }
-    
+
+    @Test
+    public void testCluster() throws IOException, InterruptedException {
+        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave().notifyKeyspaceEvents(
+                                    RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
+                                    RedisRunner.KEYSPACE_EVENTS_OPTIONS.g);
+        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave().notifyKeyspaceEvents(
+                                    RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
+                                    RedisRunner.KEYSPACE_EVENTS_OPTIONS.g);
+        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave().notifyKeyspaceEvents(
+                                    RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
+                                    RedisRunner.KEYSPACE_EVENTS_OPTIONS.g);
+        RedisRunner slave1 = new RedisRunner().randomPort().randomDir().nosave().notifyKeyspaceEvents(
+                                    RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
+                                    RedisRunner.KEYSPACE_EVENTS_OPTIONS.g);
+        RedisRunner slave2 = new RedisRunner().randomPort().randomDir().nosave().notifyKeyspaceEvents(
+                                    RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
+                                    RedisRunner.KEYSPACE_EVENTS_OPTIONS.g);
+        RedisRunner slave3 = new RedisRunner().randomPort().randomDir().nosave().notifyKeyspaceEvents(
+                                    RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
+                                    RedisRunner.KEYSPACE_EVENTS_OPTIONS.g);
+
+        ClusterRunner clusterRunner = new ClusterRunner()
+                .addNode(master1, slave1)
+                .addNode(master2, slave2)
+                .addNode(master3, slave3);
+        ClusterRunner.ClusterProcesses process = clusterRunner.run();
+
+        Thread.sleep(3000);
+
+        Config config = new Config();
+        config.useClusterServers()
+                .setPingConnectionInterval(0)
+        .setLoadBalancer(new RandomLoadBalancer())
+        .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+
+        AtomicInteger subscribeCounter = new AtomicInteger();
+        RPatternTopic topic = redisson.getPatternTopic("__keyevent@*", StringCodec.INSTANCE);
+        topic.addListener(new PatternStatusListener() {
+            @Override
+            public void onPSubscribe(String pattern) {
+                subscribeCounter.incrementAndGet();
+            }
+
+            @Override
+            public void onPUnsubscribe(String pattern) {
+                System.out.println("onPUnsubscribe: " + pattern);
+            }
+        });
+
+        AtomicInteger counter = new AtomicInteger();
+
+        PatternMessageListener<String> listener = (pattern, channel, msg) -> {
+            System.out.println("mes " + channel + " counter " + counter.get());
+            counter.incrementAndGet();
+        };
+        topic.addListener(String.class, listener);
+
+        for (int i = 0; i < 10; i++) {
+            redisson.getBucket("" + i).set(i);
+            redisson.getBucket("" + i).delete();
+            Thread.sleep(7);
+        }
+
+        Awaitility.await().atMost(Duration.ofSeconds(2)).until(() -> counter.get() > 9);
+        assertThat(subscribeCounter.get()).isEqualTo(1);
+
+        redisson.shutdown();
+        process.shutdown();
+    }
+
+    @Test
+    public void testNonEventMessagesInCluster() throws IOException, InterruptedException {
+        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave1 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave2 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave3 = new RedisRunner().randomPort().randomDir().nosave();
+
+        ClusterRunner clusterRunner = new ClusterRunner()
+                .addNode(master1, slave1)
+                .addNode(master2, slave2)
+                .addNode(master3, slave3);
+        ClusterRunner.ClusterProcesses process = clusterRunner.run();
+
+        Config config = new Config();
+        config.useClusterServers()
+        .setLoadBalancer(new RandomLoadBalancer())
+        .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+
+        AtomicInteger subscribeCounter = new AtomicInteger();
+        RPatternTopic topic = redisson.getPatternTopic("my*", StringCodec.INSTANCE);
+        topic.addListener(new PatternStatusListener() {
+            @Override
+            public void onPSubscribe(String pattern) {
+                subscribeCounter.incrementAndGet();
+            }
+
+            @Override
+            public void onPUnsubscribe(String pattern) {
+                System.out.println("onPUnsubscribe: " + pattern);
+            }
+        });
+
+        AtomicInteger counter = new AtomicInteger();
+
+        PatternMessageListener<String> listener = (pattern, channel, msg) -> {
+            counter.incrementAndGet();
+        };
+        topic.addListener(String.class, listener);
+
+        for (int i = 0; i < 100; i++) {
+            redisson.getTopic("my" + i).publish(123);
+        }
+
+        Awaitility.await().atMost(Duration.ofSeconds(2)).until(() -> counter.get() == 100);
+        assertThat(subscribeCounter.get()).isEqualTo(1);
+
+        redisson.shutdown();
+        process.shutdown();
+    }
+
     @Test
     public void testMultiType() throws InterruptedException {
         RPatternTopic topic1 = redisson.getPatternTopic("topic1.*");

@@ -17,8 +17,7 @@ package org.redisson.pubsub;
 
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
-import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
+import org.redisson.PubSubPatternStatusListener;
 import org.redisson.api.RFuture;
 import org.redisson.client.*;
 import org.redisson.client.codec.Codec;
@@ -29,19 +28,16 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
-import org.redisson.misc.TransferListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.EventListener;
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  *
@@ -49,6 +45,53 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  */
 public class PublishSubscribeService {
+
+    public static class PubSubKey {
+
+        private final ChannelName channelName;
+        private final MasterSlaveEntry entry;
+
+        public PubSubKey(ChannelName channelName, MasterSlaveEntry entry) {
+            this.channelName = channelName;
+            this.entry = entry;
+        }
+
+        public ChannelName getChannelName() {
+            return channelName;
+        }
+
+        public MasterSlaveEntry getEntry() {
+            return entry;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            PubSubKey key = (PubSubKey) o;
+            return Objects.equals(channelName, key.channelName) && Objects.equals(entry, key.entry);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(channelName, entry);
+        }
+    }
+
+    public static class PubSubEntry {
+
+        Set<PubSubKey> keys = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+        Queue<PubSubConnectionEntry> entries = new ConcurrentLinkedQueue<>();
+
+        public Set<PubSubKey> getKeys() {
+            return keys;
+        }
+
+        public Queue<PubSubConnectionEntry> getEntries() {
+            return entries;
+        }
+    }
 
     private static final Logger log = LoggerFactory.getLogger(PublishSubscribeService.class);
 
@@ -60,9 +103,9 @@ public class PublishSubscribeService {
 
     private final AsyncSemaphore freePubSubLock = new AsyncSemaphore(1);
 
-    private final ConcurrentMap<ChannelName, PubSubConnectionEntry> name2PubSubConnection = new ConcurrentHashMap<>();
+    private final ConcurrentMap<PubSubKey, PubSubConnectionEntry> name2PubSubConnection = new ConcurrentHashMap<>();
 
-    private final ConcurrentMap<MasterSlaveEntry, Queue<PubSubConnectionEntry>> entry2PubSubConnection = new ConcurrentHashMap<>();
+    private final ConcurrentMap<MasterSlaveEntry, PubSubEntry> entry2PubSubConnection = new ConcurrentHashMap<>();
 
     private final Queue<PubSubConnectionEntry> emptyQueue = new LinkedList<>();
 
@@ -94,24 +137,72 @@ public class PublishSubscribeService {
     }
 
     public PubSubConnectionEntry getPubSubEntry(ChannelName channelName) {
-        return name2PubSubConnection.get(channelName);
+        return name2PubSubConnection.get(createKey(channelName));
     }
 
-    public RFuture<PubSubConnectionEntry> psubscribe(ChannelName channelName, Codec codec, RedisPubSubListener<?>... listeners) {
-        return subscribe(PubSubType.PSUBSCRIBE, codec, channelName, listeners);
+    public RFuture<Collection<PubSubConnectionEntry>> psubscribe(ChannelName channelName, Codec codec, RedisPubSubListener<?>... listeners) {
+        if (isMultiEntity(channelName)) {
+            Collection<MasterSlaveEntry> entrySet = connectionManager.getEntrySet();
+
+            AtomicInteger statusCounter = new AtomicInteger(entrySet.size());
+            RedisPubSubListener[] ls = Arrays.stream(listeners).map(l -> {
+                if (l instanceof PubSubPatternStatusListener) {
+                    return new PubSubPatternStatusListener((PubSubPatternStatusListener) l) {
+                        @Override
+                        public boolean onStatus(PubSubType type, CharSequence channel) {
+                            if (statusCounter.decrementAndGet() == 0) {
+                                return super.onStatus(type, channel);
+                            }
+                            return true;
+                        }
+                    };
+                }
+                return l;
+            }).toArray(RedisPubSubListener[]::new);
+
+            RPromise<Collection<PubSubConnectionEntry>> result = new RedissonPromise<>();
+            Collection<PubSubConnectionEntry> entries = new ConcurrentLinkedQueue<>();
+            AtomicInteger counter = new AtomicInteger(entrySet.size());
+            for (MasterSlaveEntry entry : entrySet) {
+                RFuture<PubSubConnectionEntry> future = subscribe(PubSubType.PSUBSCRIBE, codec, channelName, entry, ls);
+                future.onComplete((res, e) -> {
+                    if (e != null) {
+                        result.tryFailure(e);
+                        return;
+                    }
+                    entries.add(res);
+                    if (counter.decrementAndGet() == 0) {
+                        result.trySuccess(entries);
+                    }
+                });
+            }
+            return result;
+        }
+
+        RPromise<Collection<PubSubConnectionEntry>> result = new RedissonPromise<>();
+        RFuture<PubSubConnectionEntry> f = subscribe(PubSubType.PSUBSCRIBE, codec, channelName, getEntry(channelName), listeners);
+        f.onComplete((res, e) -> {
+            if (e != null) {
+                result.tryFailure(e);
+                return;
+            }
+
+            result.trySuccess(Collections.singletonList(res));
+        });
+        return result;
     }
 
-    public RFuture<PubSubConnectionEntry> psubscribe(String channelName, Codec codec, AsyncSemaphore semaphore, RedisPubSubListener<?>... listeners) {
-        RPromise<PubSubConnectionEntry> promise = new RedissonPromise<>();
-        subscribe(codec, new ChannelName(channelName), promise, PubSubType.PSUBSCRIBE, semaphore, listeners);
-        return promise;
+    private boolean isMultiEntity(ChannelName channelName) {
+        return connectionManager.isClusterMode()
+                && (channelName.toString().startsWith("__keyspace@")
+                || channelName.toString().startsWith("__keyevent@"));
     }
 
     public RFuture<PubSubConnectionEntry> subscribe(Codec codec, ChannelName channelName, RedisPubSubListener<?>... listeners) {
-        return subscribe(PubSubType.SUBSCRIBE, codec, channelName, listeners);
+        return subscribe(PubSubType.SUBSCRIBE, codec, channelName, getEntry(channelName), listeners);
     }
 
-    private RFuture<PubSubConnectionEntry> subscribe(PubSubType type, Codec codec, ChannelName channelName, RedisPubSubListener<?>... listeners) {
+    private RFuture<PubSubConnectionEntry> subscribe(PubSubType type, Codec codec, ChannelName channelName, MasterSlaveEntry entry, RedisPubSubListener<?>... listeners) {
         RPromise<PubSubConnectionEntry> promise = new RedissonPromise<>();
         AsyncSemaphore lock = getSemaphore(channelName);
         lock.acquire(() -> {
@@ -120,14 +211,14 @@ public class PublishSubscribeService {
                 return;
             }
 
-            subscribe(codec, channelName, promise, type, lock, listeners);
+            subscribe(codec, channelName, entry, promise, type, lock, listeners);
         });
         return promise;
     }
 
     public RFuture<PubSubConnectionEntry> subscribe(Codec codec, String channelName, AsyncSemaphore semaphore, RedisPubSubListener<?>... listeners) {
-        RPromise<PubSubConnectionEntry> promise = new RedissonPromise<PubSubConnectionEntry>();
-        subscribe(codec, new ChannelName(channelName), promise, PubSubType.SUBSCRIBE, semaphore, listeners);
+        RPromise<PubSubConnectionEntry> promise = new RedissonPromise<>();
+        subscribe(codec, new ChannelName(channelName), getEntry(new ChannelName(channelName)), promise, PubSubType.SUBSCRIBE, semaphore, listeners);
         return promise;
     }
 
@@ -135,87 +226,84 @@ public class PublishSubscribeService {
         return locks[Math.abs(channelName.hashCode() % locks.length)];
     }
 
-    private void subscribe(Codec codec, ChannelName channelName,
-            RPromise<PubSubConnectionEntry> promise, PubSubType type, AsyncSemaphore lock, RedisPubSubListener<?>... listeners) {
-        PubSubConnectionEntry connEntry = name2PubSubConnection.get(channelName);
+    private PubSubKey createKey(ChannelName channelName) {
+        MasterSlaveEntry entry = getEntry(channelName);
+        return new PubSubKey(channelName, entry);
+    }
+
+    private void subscribe(Codec codec, ChannelName channelName, MasterSlaveEntry entry,
+                            RPromise<PubSubConnectionEntry> promise, PubSubType type,
+                            AsyncSemaphore lock, RedisPubSubListener<?>... listeners) {
+        PubSubConnectionEntry connEntry = name2PubSubConnection.get(new PubSubKey(channelName, entry));
         if (connEntry != null) {
             addListeners(channelName, promise, type, lock, connEntry, listeners);
             return;
         }
 
-        freePubSubLock.acquire(new Runnable() {
-
-            @Override
-            public void run() {
-                if (promise.isDone()) {
-                    lock.release();
-                    freePubSubLock.release();
-                    return;
-                }
-
-                Queue<PubSubConnectionEntry> freePubSubConnections = getConnectionsQueue(channelName);
-
-                PubSubConnectionEntry freeEntry = freePubSubConnections.peek();
-                if (freeEntry == null) {
-                    connect(codec, channelName, promise, type, lock, listeners);
-                    return;
-                }
-
-                int remainFreeAmount = freeEntry.tryAcquire();
-                if (remainFreeAmount == -1) {
-                    throw new IllegalStateException();
-                }
-
-                PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, freeEntry);
-                if (oldEntry != null) {
-                    freeEntry.release();
-                    freePubSubLock.release();
-
-                    addListeners(channelName, promise, type, lock, oldEntry, listeners);
-                    return;
-                }
-
-                if (remainFreeAmount == 0) {
-                    freePubSubConnections.poll();
-                }
+        freePubSubLock.acquire(() -> {
+            if (promise.isDone()) {
+                lock.release();
                 freePubSubLock.release();
-
-                RFuture<Void> subscribeFuture = addListeners(channelName, promise, type, lock, freeEntry, listeners);
-
-                ChannelFuture future;
-                if (PubSubType.PSUBSCRIBE == type) {
-                    future = freeEntry.psubscribe(codec, channelName);
-                } else {
-                    future = freeEntry.subscribe(codec, channelName);
-                }
-
-                future.addListener(new ChannelFutureListener() {
-                    @Override
-                    public void operationComplete(ChannelFuture future) throws Exception {
-                        if (!future.isSuccess()) {
-                            if (!promise.isDone()) {
-                                subscribeFuture.cancel(false);
-                            }
-                            return;
-                        }
-
-                        connectionManager.newTimeout(new TimerTask() {
-                            @Override
-                            public void run(Timeout timeout) throws Exception {
-                                subscribeFuture.cancel(false);
-                            }
-                        }, config.getTimeout(), TimeUnit.MILLISECONDS);
-                    }
-                });
+                return;
             }
 
+            MasterSlaveEntry msEntry = Optional.of(connectionManager.getEntry(entry.getClient()))
+                                                .filter(e -> e != entry).orElse(entry);
+            PubSubEntry freePubSubConnections = entry2PubSubConnection.getOrDefault(msEntry, new PubSubEntry());
+
+            PubSubConnectionEntry freeEntry = freePubSubConnections.getEntries().peek();
+            if (freeEntry == null) {
+                connect(codec, channelName, msEntry, promise, type, lock, listeners);
+                return;
+            }
+
+            int remainFreeAmount = freeEntry.tryAcquire();
+            if (remainFreeAmount == -1) {
+                throw new IllegalStateException();
+            }
+
+            PubSubKey key = new PubSubKey(channelName, msEntry);
+            PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(key, freeEntry);
+            if (oldEntry != null) {
+                freeEntry.release();
+                freePubSubLock.release();
+
+                addListeners(channelName, promise, type, lock, oldEntry, listeners);
+                return;
+            }
+
+            if (remainFreeAmount == 0) {
+                freePubSubConnections.getEntries().poll();
+            }
+            freePubSubLock.release();
+
+            RFuture<Void> subscribeFuture = addListeners(channelName, promise, type, lock, freeEntry, listeners);
+
+            ChannelFuture future;
+            if (PubSubType.PSUBSCRIBE == type) {
+                future = freeEntry.psubscribe(codec, channelName);
+            } else {
+                future = freeEntry.subscribe(codec, channelName);
+            }
+
+            future.addListener((ChannelFutureListener) f -> {
+                if (!f.isSuccess()) {
+                    if (!promise.isDone()) {
+                        subscribeFuture.cancel(false);
+                    }
+                    return;
+                }
+
+                connectionManager.newTimeout(timeout ->
+                        subscribeFuture.cancel(false),
+                        config.getTimeout(), TimeUnit.MILLISECONDS);
+            });
         });
     }
 
-    private Queue<PubSubConnectionEntry> getConnectionsQueue(ChannelName channelName) {
+    private MasterSlaveEntry getEntry(ChannelName channelName) {
         int slot = connectionManager.calcSlot(channelName.getName());
-        MasterSlaveEntry entry = connectionManager.getEntry(slot);
-        return entry2PubSubConnection.getOrDefault(entry, emptyQueue);
+        return connectionManager.getEntry(slot);
     }
 
     private RFuture<Void> addListeners(ChannelName channelName, RPromise<PubSubConnectionEntry> promise,
@@ -233,7 +321,10 @@ public class PublishSubscribeService {
                     connEntry.removeListener(channelName, listener);
                 }
                 if (!connEntry.hasListeners(channelName)) {
-                    unsubscribe(type, channelName, lock);
+                    unsubscribe(type, channelName)
+                        .onComplete((r, ex) -> {
+                            lock.release();
+                        });
                 } else {
                     lock.release();
                 }
@@ -245,18 +336,9 @@ public class PublishSubscribeService {
         return subscribeFuture;
     }
 
-    private void releaseSubscribeConnection(int slot, PubSubConnectionEntry pubSubEntry) {
-        MasterSlaveEntry entry = connectionManager.getEntry(slot);
+    private RFuture<RedisPubSubConnection> nextPubSubConnection(MasterSlaveEntry entry, ChannelName channelName) {
         if (entry == null) {
-            log.error("Node for slot: " + slot + " can't be found");
-        } else {
-            entry.returnPubSubConnection(pubSubEntry);
-        }
-    }
-
-    private RFuture<RedisPubSubConnection> nextPubSubConnection(int slot) {
-        MasterSlaveEntry entry = connectionManager.getEntry(slot);
-        if (entry == null) {
+            int slot = connectionManager.calcSlot(channelName.getName());
             RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node for slot: " + slot + " hasn't been discovered yet. Check cluster slots coverage using CLUSTER NODES command. Increase value of retryAttempts and/or retryInterval settings.");
             return RedissonPromise.newFailedFuture(ex);
         }
@@ -264,9 +346,8 @@ public class PublishSubscribeService {
     }
 
     private void connect(Codec codec, ChannelName channelName,
-            RPromise<PubSubConnectionEntry> promise, PubSubType type, AsyncSemaphore lock, RedisPubSubListener<?>... listeners) {
-        int slot = connectionManager.calcSlot(channelName.getName());
-        RFuture<RedisPubSubConnection> connFuture = nextPubSubConnection(slot);
+                         MasterSlaveEntry msEntry, RPromise<PubSubConnectionEntry> promise, PubSubType type, AsyncSemaphore lock, RedisPubSubListener<?>... listeners) {
+        RFuture<RedisPubSubConnection> connFuture = nextPubSubConnection(msEntry, channelName);
         promise.onComplete((res, e) -> {
             if (e != null) {
                 ((RPromise<RedisPubSubConnection>) connFuture).tryFailure(e);
@@ -283,9 +364,10 @@ public class PublishSubscribeService {
             PubSubConnectionEntry entry = new PubSubConnectionEntry(conn, config.getSubscriptionsPerConnection());
             int remainFreeAmount = entry.tryAcquire();
 
-            PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
+            PubSubKey key = new PubSubKey(channelName, msEntry);
+            PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(key, entry);
             if (oldEntry != null) {
-                releaseSubscribeConnection(slot, entry);
+                msEntry.returnPubSubConnection(entry);
 
                 freePubSubLock.release();
 
@@ -307,31 +389,24 @@ public class PublishSubscribeService {
                 future = entry.subscribe(codec, channelName);
             }
 
-            future.addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture future) throws Exception {
-                    if (!future.isSuccess()) {
-                        if (!promise.isDone()) {
-                            subscribeFuture.cancel(false);
-                        }
-                        return;
+            future.addListener((ChannelFutureListener) future1 -> {
+                if (!future1.isSuccess()) {
+                    if (!promise.isDone()) {
+                        subscribeFuture.cancel(false);
                     }
-
-                    connectionManager.newTimeout(new TimerTask() {
-                        @Override
-                        public void run(Timeout timeout) throws Exception {
-                            subscribeFuture.cancel(false);
-                        }
-                    }, config.getTimeout(), TimeUnit.MILLISECONDS);
+                    return;
                 }
+
+                connectionManager.newTimeout(timeout ->
+                        subscribeFuture.cancel(false),
+                        config.getTimeout(), TimeUnit.MILLISECONDS);
             });
         });
     }
 
-    public RFuture<Void> unsubscribe(PubSubType topicType, ChannelName channelName, AsyncSemaphore lock) {
-        PubSubConnectionEntry entry = name2PubSubConnection.remove(channelName);
+    public RFuture<Void> unsubscribe(PubSubType topicType, ChannelName channelName) {
+        PubSubConnectionEntry entry = name2PubSubConnection.remove(createKey(channelName));
         if (entry == null || connectionManager.isShuttingDown()) {
-            lock.release();
             return RedissonPromise.newSucceededFuture(null);
         }
 
@@ -348,7 +423,6 @@ public class PublishSubscribeService {
                         addFreeConnectionEntry(channelName, entry);
                     }
 
-                    lock.release();
                     result.trySuccess(null);
                     return true;
                 }
@@ -385,81 +459,74 @@ public class PublishSubscribeService {
     }
 
     public RFuture<Codec> unsubscribe(ChannelName channelName, PubSubType topicType) {
+        return unsubscribe(channelName, getEntry(channelName), topicType);
+    }
+
+    private RFuture<Codec> unsubscribe(ChannelName channelName, MasterSlaveEntry e, PubSubType topicType) {
         if (connectionManager.isShuttingDown()) {
             return RedissonPromise.newSucceededFuture(null);
         }
 
         RPromise<Codec> result = new RedissonPromise<>();
         AsyncSemaphore lock = getSemaphore(channelName);
-        lock.acquire(new Runnable() {
-            @Override
-            public void run() {
-                PubSubConnectionEntry entry = name2PubSubConnection.remove(channelName);
-                if (entry == null) {
-                    lock.release();
-                    result.trySuccess(null);
-                    return;
+        lock.acquire(() -> {
+            PubSubConnectionEntry entry = name2PubSubConnection.remove(new PubSubKey(channelName, e));
+            if (entry == null) {
+                lock.release();
+                result.trySuccess(null);
+                return;
+            }
+
+            freePubSubLock.acquire(() -> {
+                PubSubEntry ee = entry2PubSubConnection.getOrDefault(e, new PubSubEntry());
+                Queue<PubSubConnectionEntry> freePubSubConnections = ee.getEntries();
+                freePubSubConnections.remove(entry);
+                freePubSubLock.release();
+
+                Codec entryCodec;
+                if (topicType == PubSubType.PUNSUBSCRIBE) {
+                    entryCodec = entry.getConnection().getPatternChannels().get(channelName);
+                } else {
+                    entryCodec = entry.getConnection().getChannels().get(channelName);
                 }
 
-                freePubSubLock.acquire(new Runnable() {
+                AtomicBoolean executed = new AtomicBoolean();
+                RedisPubSubListener<Object> listener = new BaseRedisPubSubListener() {
+
                     @Override
-                    public void run() {
-                        Queue<PubSubConnectionEntry> freePubSubConnections = getConnectionsQueue(channelName);
-                        freePubSubConnections.remove(entry);
-                        freePubSubLock.release();
+                    public boolean onStatus(PubSubType type, CharSequence channel) {
+                        if (type == topicType && channel.equals(channelName)) {
+                            executed.set(true);
 
-                        Codec entryCodec;
-                        if (topicType == PubSubType.PUNSUBSCRIBE) {
-                            entryCodec = entry.getConnection().getPatternChannels().get(channelName);
-                        } else {
-                            entryCodec = entry.getConnection().getChannels().get(channelName);
+                            lock.release();
+                            result.trySuccess(entryCodec);
+                            return true;
                         }
-
-                        AtomicBoolean executed = new AtomicBoolean();
-                        RedisPubSubListener<Object> listener = new BaseRedisPubSubListener() {
-
-                            @Override
-                            public boolean onStatus(PubSubType type, CharSequence channel) {
-                                if (type == topicType && channel.equals(channelName)) {
-                                    executed.set(true);
-
-                                    lock.release();
-                                    result.trySuccess(entryCodec);
-                                    return true;
-                                }
-                                return false;
-                            }
-
-                        };
-
-                        ChannelFuture future;
-                        if (topicType == PubSubType.PUNSUBSCRIBE) {
-                            future = entry.punsubscribe(channelName, listener);
-                        } else {
-                            future = entry.unsubscribe(channelName, listener);
-                        }
-
-                        future.addListener(new ChannelFutureListener() {
-                            @Override
-                            public void operationComplete(ChannelFuture future) throws Exception {
-                                if (!future.isSuccess()) {
-                                    return;
-                                }
-
-                                connectionManager.newTimeout(new TimerTask() {
-                                    @Override
-                                    public void run(Timeout timeout) throws Exception {
-                                        if (executed.get()) {
-                                            return;
-                                        }
-                                        entry.getConnection().onMessage(new PubSubStatusMessage(topicType, channelName));
-                                    }
-                                }, config.getTimeout(), TimeUnit.MILLISECONDS);
-                            }
-                        });
+                        return false;
                     }
+
+                };
+
+                ChannelFuture future;
+                if (topicType == PubSubType.PUNSUBSCRIBE) {
+                    future = entry.punsubscribe(channelName, listener);
+                } else {
+                    future = entry.unsubscribe(channelName, listener);
+                }
+
+                future.addListener((ChannelFutureListener) f -> {
+                    if (!f.isSuccess()) {
+                        return;
+                    }
+
+                    connectionManager.newTimeout(timeout -> {
+                        if (executed.get()) {
+                            return;
+                        }
+                        entry.getConnection().onMessage(new PubSubStatusMessage(topicType, channelName));
+                    }, config.getTimeout(), TimeUnit.MILLISECONDS);
                 });
-            }
+            });
         });
 
         return result;
@@ -468,62 +535,62 @@ public class PublishSubscribeService {
     private void addFreeConnectionEntry(ChannelName channelName, PubSubConnectionEntry entry) {
         int slot = connectionManager.calcSlot(channelName.getName());
         MasterSlaveEntry me = connectionManager.getEntry(slot);
-        Queue<PubSubConnectionEntry> freePubSubConnections = entry2PubSubConnection.computeIfAbsent(me, e -> new ConcurrentLinkedQueue<>());
-        freePubSubConnections.add(entry);
+        PubSubEntry psEntry = entry2PubSubConnection.computeIfAbsent(me, e -> new PubSubEntry());
+        psEntry.getEntries().add(entry);
     }
 
     public void reattachPubSub(int slot) {
         name2PubSubConnection.entrySet().stream()
-            .filter(e -> connectionManager.calcSlot(e.getKey().getName()) == slot)
+            .filter(e -> connectionManager.calcSlot(e.getKey().getChannelName().getName()) == slot)
             .forEach(entry -> {
                 PubSubConnectionEntry pubSubEntry = entry.getValue();
-                Codec codec = pubSubEntry.getConnection().getChannels().get(entry.getKey());
+                MasterSlaveEntry ee = entry.getKey().getEntry();
+
+                Codec codec = pubSubEntry.getConnection().getChannels().get(entry.getKey().getChannelName());
                 if (codec != null) {
-                    Queue<RedisPubSubListener<?>> listeners = pubSubEntry.getListeners(entry.getKey());
-                    unsubscribe(entry.getKey(), PubSubType.UNSUBSCRIBE);
-                    subscribe(codec, entry.getKey(), listeners.toArray(new RedisPubSubListener[0]));
+                    Queue<RedisPubSubListener<?>> listeners = pubSubEntry.getListeners(entry.getKey().getChannelName());
+                    unsubscribe(entry.getKey().getChannelName(), ee, PubSubType.UNSUBSCRIBE);
+                    subscribe(codec, entry.getKey().getChannelName(), listeners.toArray(new RedisPubSubListener[0]));
                 }
 
-                Codec patternCodec = pubSubEntry.getConnection().getPatternChannels().get(entry.getKey());
+                Codec patternCodec = pubSubEntry.getConnection().getPatternChannels().get(entry.getKey().getChannelName());
                 if (patternCodec != null) {
-                    Queue<RedisPubSubListener<?>> listeners = pubSubEntry.getListeners(entry.getKey());
-                    unsubscribe(entry.getKey(), PubSubType.PUNSUBSCRIBE);
-                    psubscribe(entry.getKey(), patternCodec, listeners.toArray(new RedisPubSubListener[0]));
+                    Queue<RedisPubSubListener<?>> listeners = pubSubEntry.getListeners(entry.getKey().getChannelName());
+                    unsubscribe(entry.getKey().getChannelName(), ee, PubSubType.PUNSUBSCRIBE);
+                    psubscribe(entry.getKey().getChannelName(), patternCodec, listeners.toArray(new RedisPubSubListener[0]));
                 }
             });
     }
 
     public void reattachPubSub(RedisPubSubConnection redisPubSubConnection) {
-        for (Queue<PubSubConnectionEntry> queue : entry2PubSubConnection.values()) {
-            for (PubSubConnectionEntry entry : queue) {
-                if (entry.getConnection().equals(redisPubSubConnection)) {
-                    freePubSubLock.acquire(new Runnable() {
-                        @Override
-                        public void run() {
-                            queue.remove(entry);
-                            freePubSubLock.release();
-                        }
-                    });
-                    break;
+        for (Map.Entry<MasterSlaveEntry, PubSubEntry> e : entry2PubSubConnection.entrySet()) {
+            for (PubSubConnectionEntry entry : e.getValue().getEntries()) {
+                if (!entry.getConnection().equals(redisPubSubConnection)) {
+                    continue;
                 }
+
+                freePubSubLock.acquire(() -> {
+                    e.getValue().getEntries().remove(entry);
+                    freePubSubLock.release();
+                });
+
+                for (ChannelName channelName : redisPubSubConnection.getChannels().keySet()) {
+                    Collection<RedisPubSubListener<?>> listeners = entry.getListeners(channelName);
+                    reattachPubSubListeners(channelName, e.getKey(), listeners, PubSubType.UNSUBSCRIBE);
+                }
+
+                for (ChannelName channelName : redisPubSubConnection.getPatternChannels().keySet()) {
+                    Collection<RedisPubSubListener<?>> listeners = entry.getListeners(channelName);
+                    reattachPubSubListeners(channelName, e.getKey(), listeners, PubSubType.PUNSUBSCRIBE);
+                }
+
+                return;
             }
-        }
-
-        for (ChannelName channelName : redisPubSubConnection.getChannels().keySet()) {
-            PubSubConnectionEntry pubSubEntry = getPubSubEntry(channelName);
-            Collection<RedisPubSubListener<?>> listeners = pubSubEntry.getListeners(channelName);
-            reattachPubSubListeners(channelName, listeners, PubSubType.UNSUBSCRIBE);
-        }
-
-        for (ChannelName channelName : redisPubSubConnection.getPatternChannels().keySet()) {
-            PubSubConnectionEntry pubSubEntry = getPubSubEntry(channelName);
-            Collection<RedisPubSubListener<?>> listeners = pubSubEntry.getListeners(channelName);
-            reattachPubSubListeners(channelName, listeners, PubSubType.PUNSUBSCRIBE);
         }
     }
 
-    private void reattachPubSubListeners(ChannelName channelName, Collection<RedisPubSubListener<?>> listeners, PubSubType topicType) {
-        RFuture<Codec> subscribeCodecFuture = unsubscribe(channelName, topicType);
+    private void reattachPubSubListeners(ChannelName channelName, MasterSlaveEntry en, Collection<RedisPubSubListener<?>> listeners, PubSubType topicType) {
+        RFuture<Codec> subscribeCodecFuture = unsubscribe(channelName, en, topicType);
         if (listeners.isEmpty()) {
             return;
         }
@@ -558,7 +625,8 @@ public class PublishSubscribeService {
 
     private void psubscribe(ChannelName channelName, Collection<RedisPubSubListener<?>> listeners,
             Codec subscribeCodec) {
-        RFuture<PubSubConnectionEntry> subscribeFuture = psubscribe(channelName, subscribeCodec, listeners.toArray(new RedisPubSubListener[0]));
+        RFuture<Collection<PubSubConnectionEntry>> subscribeFuture =
+                            psubscribe(channelName, subscribeCodec, listeners.toArray(new RedisPubSubListener[0]));
         subscribeFuture.onComplete((res, e) -> {
             if (e != null) {
                 connectionManager.newTimeout(task -> {
@@ -567,7 +635,7 @@ public class PublishSubscribeService {
                 return;
             }
 
-            log.info("listeners of '{}' channel-pattern to '{}' have been resubscribed", channelName, res.getConnection().getRedisClient());
+            log.info("listeners of '{}' channel-pattern to '{}' have been resubscribed", channelName, res);
         });
     }
 
@@ -575,20 +643,37 @@ public class PublishSubscribeService {
         RPromise<Void> promise = new RedissonPromise<>();
         AsyncSemaphore semaphore = getSemaphore(channelName);
         semaphore.acquire(() -> {
-            PubSubConnectionEntry entry = getPubSubEntry(channelName);
-            if (entry == null) {
-                semaphore.release();
-                promise.trySuccess(null);
-                return;
+            Collection<MasterSlaveEntry> entries = Collections.singletonList(getEntry(channelName));
+            if (isMultiEntity(channelName)) {
+                entries = connectionManager.getEntrySet();
             }
 
-            entry.removeListener(channelName, listener);
-            if (!entry.hasListeners(channelName)) {
-                unsubscribe(type, channelName, semaphore)
-                    .onComplete(new TransferListener<>(promise));
-            } else {
-                semaphore.release();
-                promise.trySuccess(null);
+            AtomicInteger counter = new AtomicInteger(entries.size());
+            for (MasterSlaveEntry e : entries) {
+                PubSubConnectionEntry entry = name2PubSubConnection.get(new PubSubKey(channelName, e));
+                if (entry == null) {
+                    if (counter.decrementAndGet() == 0) {
+                        semaphore.release();
+                        promise.trySuccess(null);
+                    }
+                    continue;
+                }
+
+                entry.removeListener(channelName, listener);
+                if (!entry.hasListeners(channelName)) {
+                    unsubscribe(type, channelName)
+                        .onComplete((r, ex) -> {
+                            if (counter.decrementAndGet() == 0) {
+                                semaphore.release();
+                                promise.trySuccess(null);
+                            }
+                        });
+                } else {
+                    if (counter.decrementAndGet() == 0) {
+                        semaphore.release();
+                        promise.trySuccess(null);
+                    }
+                }
             }
         });
         return promise;
@@ -598,22 +683,39 @@ public class PublishSubscribeService {
         RPromise<Void> promise = new RedissonPromise<>();
         AsyncSemaphore semaphore = getSemaphore(channelName);
         semaphore.acquire(() -> {
-            PubSubConnectionEntry entry = getPubSubEntry(channelName);
-            if (entry == null) {
-                semaphore.release();
-                promise.trySuccess(null);
-                return;
+            Collection<MasterSlaveEntry> entries = Collections.singletonList(getEntry(channelName));
+            if (isMultiEntity(channelName)) {
+                entries = connectionManager.getEntrySet();
             }
 
-            for (int id : listenerIds) {
-                entry.removeListener(channelName, id);
-            }
-            if (!entry.hasListeners(channelName)) {
-                unsubscribe(type, channelName, semaphore)
-                        .onComplete(new TransferListener<>(promise));
-            } else {
-                semaphore.release();
-                promise.trySuccess(null);
+            AtomicInteger counter = new AtomicInteger(entries.size());
+            for (MasterSlaveEntry e : entries) {
+                PubSubConnectionEntry entry = name2PubSubConnection.get(new PubSubKey(channelName, e));
+                if (entry == null) {
+                    if (counter.decrementAndGet() == 0) {
+                        semaphore.release();
+                        promise.trySuccess(null);
+                    }
+                    return;
+                }
+
+                for (int id : listenerIds) {
+                    entry.removeListener(channelName, id);
+                }
+                if (!entry.hasListeners(channelName)) {
+                    unsubscribe(type, channelName)
+                        .onComplete((r, ex) -> {
+                            if (counter.decrementAndGet() == 0) {
+                                semaphore.release();
+                                promise.trySuccess(null);
+                            }
+                        });
+                } else {
+                    if (counter.decrementAndGet() == 0) {
+                        semaphore.release();
+                        promise.trySuccess(null);
+                    }
+                }
             }
         });
         return promise;

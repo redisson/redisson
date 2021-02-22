@@ -18,7 +18,6 @@ package org.redisson.spring.data.connection;
 import org.redisson.api.RFuture;
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.ChannelName;
-import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.connection.ConnectionManager;
@@ -30,6 +29,7 @@ import org.springframework.data.redis.connection.util.AbstractSubscription;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -50,7 +50,7 @@ public class RedissonSubscription extends AbstractSubscription {
 
     @Override
     protected void doSubscribe(byte[]... channels) {
-        List<RFuture<?>> list = new ArrayList<RFuture<?>>();
+        List<RFuture<?>> list = new ArrayList<>();
         for (byte[] channel : channels) {
             RFuture<PubSubConnectionEntry> f = subscribeService.subscribe(ByteArrayCodec.INSTANCE, new ChannelName(channel), new BaseRedisPubSubListener() {
                 @Override
@@ -74,15 +74,15 @@ public class RedissonSubscription extends AbstractSubscription {
     @Override
     protected void doUnsubscribe(boolean all, byte[]... channels) {
         for (byte[] channel : channels) {
-            subscribeService.unsubscribe(new ChannelName(channel), PubSubType.UNSUBSCRIBE);
+            subscribeService.unsubscribe(new ChannelName(channel),  PubSubType.UNSUBSCRIBE);
         }
     }
 
     @Override
     protected void doPsubscribe(byte[]... patterns) {
-        List<RFuture<?>> list = new ArrayList<RFuture<?>>();
+        List<RFuture<?>> list = new ArrayList<>();
         for (byte[] channel : patterns) {
-            RFuture<PubSubConnectionEntry> f = subscribeService.psubscribe(new ChannelName(channel), ByteArrayCodec.INSTANCE, new BaseRedisPubSubListener() {
+            RFuture<Collection<PubSubConnectionEntry>> f = subscribeService.psubscribe(new ChannelName(channel), ByteArrayCodec.INSTANCE, new BaseRedisPubSubListener() {
                 @Override
                 public void onPatternMessage(CharSequence pattern, CharSequence ch, Object message) {
                     if (!Arrays.equals(((ChannelName) pattern).getName(), channel)) {
@@ -117,8 +117,8 @@ public class RedissonSubscription extends AbstractSubscription {
 
     @Override
     protected void doClose() {
-        doUnsubscribe(false, (byte[][]) getChannels().toArray(new byte[getChannels().size()][]));
-        doPUnsubscribe(false, (byte[][]) getPatterns().toArray(new byte[getPatterns().size()][]));
+        doUnsubscribe(false, getChannels().toArray(new byte[getChannels().size()][]));
+        doPUnsubscribe(false, getPatterns().toArray(new byte[getPatterns().size()][]));
     }
 
 }

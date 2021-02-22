@@ -32,6 +32,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -84,7 +85,7 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
     }
 
     private final Map<ChannelName, PubSubConnectionEntry> channels = new ConcurrentHashMap<>();
-    private final Map<ChannelName, PubSubConnectionEntry> patterns = new ConcurrentHashMap<>();
+    private final Map<ChannelName, Collection<PubSubConnectionEntry>> patterns = new ConcurrentHashMap<>();
 
     private final ListenableCounter monosListener = new ListenableCounter();
 
@@ -129,7 +130,7 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
             CountableListener<Void> listener = new CountableListener<>(result, null, patterns.length);
             for (ByteBuffer channel : patterns) {
                 ChannelName cn = toChannelName(channel);
-                RFuture<PubSubConnectionEntry> f = subscribeService.psubscribe(cn, ByteArrayCodec.INSTANCE);
+                RFuture<Collection<PubSubConnectionEntry>> f = subscribeService.psubscribe(cn, ByteArrayCodec.INSTANCE);
                 f.onComplete((res, e) -> RedissonReactiveSubscription.this.patterns.put(cn, res));
                 f.onComplete(listener);
             }
@@ -187,10 +188,10 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
                 RFuture<Codec> f = subscribeService.unsubscribe(cn, PubSubType.PUNSUBSCRIBE);
                 f.onComplete((res, e) -> {
                     synchronized (RedissonReactiveSubscription.this.patterns) {
-                        PubSubConnectionEntry entry = RedissonReactiveSubscription.this.patterns.get(cn);
-                        if (!entry.hasListeners(cn)) {
-                            RedissonReactiveSubscription.this.patterns.remove(cn);
-                        }
+                        Collection<PubSubConnectionEntry> entries = RedissonReactiveSubscription.this.patterns.get(cn);
+                        entries.stream()
+                                .filter(en -> en.hasListeners(cn))
+                                .forEach(ee -> RedissonReactiveSubscription.this.patterns.remove(cn));
                     }
                 });
                 f.onComplete(listener);
@@ -218,7 +219,7 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
             return flux.get();
         }
 
-        Flux<Message<ByteBuffer, ByteBuffer>> f = Flux.<Message<ByteBuffer, ByteBuffer>>create(emitter -> {
+        Flux<Message<ByteBuffer, ByteBuffer>> f = Flux.create(emitter -> {
             emitter.onRequest(n -> {
 
                 monosListener.addListener(() -> {
@@ -259,16 +260,20 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
                         for (Entry<ChannelName, PubSubConnectionEntry> entry : channels.entrySet()) {
                             entry.getValue().removeListener(entry.getKey(), listener);
                         }
-                        for (Entry<ChannelName, PubSubConnectionEntry> entry : patterns.entrySet()) {
-                            entry.getValue().removeListener(entry.getKey(), listener);
+                        for (Entry<ChannelName, Collection<PubSubConnectionEntry>> entry : patterns.entrySet()) {
+                            for (PubSubConnectionEntry pubSubConnectionEntry : entry.getValue()) {
+                                pubSubConnectionEntry.removeListener(entry.getKey(), listener);
+                            }
                         }
                     };
 
                     for (Entry<ChannelName, PubSubConnectionEntry> entry : channels.entrySet()) {
                         entry.getValue().addListener(entry.getKey(), listener);
                     }
-                    for (Entry<ChannelName, PubSubConnectionEntry> entry : patterns.entrySet()) {
-                        entry.getValue().addListener(entry.getKey(), listener);
+                    for (Entry<ChannelName, Collection<PubSubConnectionEntry>> entry : patterns.entrySet()) {
+                            for (PubSubConnectionEntry pubSubConnectionEntry : entry.getValue()) {
+                                pubSubConnectionEntry.addListener(entry.getKey(), listener);
+                            }
                     }
 
                     emitter.onDispose(disposable);
