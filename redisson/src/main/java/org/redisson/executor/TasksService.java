@@ -196,8 +196,8 @@ public class TasksService extends BaseRemoteService {
         return new RequestId(id);
     }
 
-    public RFuture<Boolean> cancelExecutionAsync(final RequestId requestId) {
-        final RPromise<Boolean> result = new RedissonPromise<Boolean>();
+    public RFuture<Boolean> cancelExecutionAsync(RequestId requestId) {
+        RPromise<Boolean> result = new RedissonPromise<>();
         
         String requestQueueName = getRequestQueueName(RemoteExecutorService.class);
         RFuture<Boolean> removeFuture = removeAsync(requestQueueName, requestId);
@@ -215,9 +215,13 @@ public class TasksService extends BaseRemoteService {
             RMap<String, RemoteServiceCancelRequest> canceledRequests = getMap(cancelRequestMapName);
             canceledRequests.putAsync(requestId.toString(), new RemoteServiceCancelRequest(true, true));
             canceledRequests.expireAsync(60, TimeUnit.SECONDS);
-            
-            final RPromise<RemoteServiceCancelResponse> response = new RedissonPromise<RemoteServiceCancelResponse>();
-            scheduleCheck(cancelResponseMapName, requestId, response);
+
+            commandExecutor.getConnectionManager().newTimeout(timeout -> {
+                result.trySuccess(false);
+            }, 60, TimeUnit.SECONDS);
+
+            RPromise<RemoteServiceCancelResponse> response = new RedissonPromise<>();
+            scheduleCancelResponseCheck(cancelResponseMapName, requestId, response);
             response.onComplete((r, ex) -> {
                 if (ex != null) {
                     result.tryFailure(ex);
@@ -234,5 +238,41 @@ public class TasksService extends BaseRemoteService {
 
         return result;
     }
-    
+
+    private void scheduleCancelResponseCheck(String mapName, RequestId requestId, RPromise<RemoteServiceCancelResponse> cancelResponse) {
+        commandExecutor.getConnectionManager().newTimeout(timeout -> {
+            if (cancelResponse.isDone()) {
+                return;
+            }
+
+            RMap<String, RemoteServiceCancelResponse> canceledResponses = getMap(mapName);
+            RFuture<RemoteServiceCancelResponse> future = canceledResponses.removeAsync(requestId.toString());
+            future.onComplete((response, ex) -> {
+                if (ex != null) {
+                    scheduleCancelResponseCheck(mapName, requestId, cancelResponse);
+                    return;
+                }
+
+                if (response == null) {
+                    RFuture<Boolean> f = hasTaskAsync(requestId.toString());
+                    f.onComplete((r, e) -> {
+                        if (e != null || r) {
+                            scheduleCancelResponseCheck(mapName, requestId, cancelResponse);
+                            return;
+                        }
+
+                        RemoteServiceCancelResponse resp = new RemoteServiceCancelResponse(requestId.toString(), false);
+                        cancelResponse.trySuccess(resp);
+                    });
+                } else {
+                    cancelResponse.trySuccess(response);
+                }
+            });
+        }, 3000, TimeUnit.MILLISECONDS);
+    }
+
+    public RFuture<Boolean> hasTaskAsync(String taskId) {
+        return commandExecutor.writeAsync(tasksName, LongCodec.INSTANCE, RedisCommands.HEXISTS, tasksName, taskId);
+    }
+
 }

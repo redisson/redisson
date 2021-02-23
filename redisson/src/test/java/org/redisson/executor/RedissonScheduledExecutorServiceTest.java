@@ -273,7 +273,29 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         assertThat(redisson.getAtomicLong("executed2").get()).isEqualTo(30);
     }
 
-    
+    public static class RunnableTask2 implements Runnable, Serializable {
+
+        @Override
+        public void run() {
+            try {
+                Thread.sleep(4000);
+            } catch (InterruptedException interruptedException) {
+                interruptedException.printStackTrace();
+            }
+        }
+
+    }
+
+    @Test(timeout = 15000)
+    public void testCancel2() throws InterruptedException {
+        RScheduledExecutorService e = redisson.getExecutorService("myExecutor");
+        e.registerWorkers(WorkerOptions.defaults());
+        String taskId = redisson.getExecutorService("myExecutor").schedule(new RunnableTask2(), 2000, TimeUnit.MILLISECONDS).getTaskId();
+        Thread.sleep(5500);
+
+        assertThat(e.cancelTask(taskId)).isFalse();
+    }
+
     @Test
     public void testCancel() throws InterruptedException, ExecutionException {
         RScheduledExecutorService executor = redisson.getExecutorService("test");
