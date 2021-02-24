@@ -249,6 +249,9 @@ public class RedissonSession extends StandardSession {
     }
 
     private void fastPut(String name, Object value) {
+        if (map == null) {
+            return;
+        }
         map.fastPut(name, value);
         if (readMode == ReadMode.MEMORY) {
             try {
@@ -263,7 +266,9 @@ public class RedissonSession extends StandardSession {
     public void setPrincipal(Principal principal) {
         super.setPrincipal(principal);
 
-        if (map != null) {
+        if (principal == null) {
+            removeRedisAttribute(PRINCIPAL_ATTR);
+        } else {
             fastPut(PRINCIPAL_ATTR, principal);
         }
     }
@@ -272,7 +277,9 @@ public class RedissonSession extends StandardSession {
     public void setAuthType(String authType) {
         super.setAuthType(authType);
 
-        if (map != null && authType != null) {
+        if (authType == null) {
+            removeRedisAttribute(AUTHTYPE_ATTR);
+        } else {
             fastPut(AUTHTYPE_ATTR, authType);
         }
     }
@@ -305,11 +312,10 @@ public class RedissonSession extends StandardSession {
         super.endAccess();
 
         if (map != null) {
+            Map<String, Object> newMap = new HashMap<>(3);
             if (isNew != oldValue) {
-                fastPut(IS_NEW_ATTR, isNew);
+                newMap.put(IS_NEW_ATTR, isNew);
             }
-
-            Map<String, Object> newMap = new HashMap<>(2);
             newMap.put(LAST_ACCESSED_TIME_ATTR, lastAccessedTime);
             newMap.put(THIS_ACCESSED_TIME_ATTR, thisAccessedTime);
             map.putAll(newMap);
@@ -386,7 +392,11 @@ public class RedissonSession extends StandardSession {
     @Override
     protected void removeAttributeInternal(String name, boolean notify) {
         super.removeAttributeInternal(name, notify);
-        
+
+        removeRedisAttribute(name);
+    }
+
+    private void removeRedisAttribute(String name) {
         if (updateMode == UpdateMode.DEFAULT && map != null) {
             map.fastRemove(name);
             if (readMode == ReadMode.MEMORY) {
@@ -401,7 +411,7 @@ public class RedissonSession extends StandardSession {
             removedAttributes.add(name);
         }
     }
-    
+
     public void save() {
         if (map == null) {
             map = redissonManager.getMap(id);
