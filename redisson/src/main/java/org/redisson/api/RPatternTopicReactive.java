@@ -64,6 +64,6 @@ public interface RPatternTopicReactive {
      *
      * @param listenerId - message listener id
      */
-    void removeListener(int listenerId);
+    Mono<Void> removeListener(int listenerId);
 
 }
