@@ -696,7 +696,7 @@ public class PublishSubscribeService {
                         semaphore.release();
                         promise.trySuccess(null);
                     }
-                    return;
+                    continue;
                 }
 
                 for (int id : listenerIds) {
