@@ -91,7 +91,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         List<String> failedMasters = new ArrayList<String>();
         for (String address : cfg.getNodeAddresses()) {
             RedisURI addr = new RedisURI(address);
-            RFuture<RedisConnection> connectionFuture = connectToNode(cfg, addr, null, addr.getHost());
+            RFuture<RedisConnection> connectionFuture = connectToNode(cfg, addr, addr.getHost());
             try {
                 RedisConnection connection = connectionFuture.syncUninterruptibly().getNow();
 
@@ -276,7 +276,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }
 
         RPromise<Void> result = new RedissonPromise<>();
-        RFuture<RedisConnection> connectionFuture = connectToNode(cfg, partition.getMasterAddress(), null, configEndpointHostName);
+        RFuture<RedisConnection> connectionFuture = connectToNode(cfg, partition.getMasterAddress(), configEndpointHostName);
         connectionFuture.onComplete((connection, ex1) -> {
             if (ex1 != null) {
                 log.error("Can't connect to master: {} with slot ranges: {}", partition.getMasterAddress(), partition.getSlotRanges());
@@ -425,7 +425,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             return;
         }
         RedisURI uri = iterator.next();
-        RFuture<RedisConnection> connectionFuture = connectToNode(cfg, uri, null, configEndpointHostName);
+        RFuture<RedisConnection> connectionFuture = connectToNode(cfg, uri, configEndpointHostName);
         connectionFuture.onComplete((connection, e) -> {
             if (e != null) {
                 lastException.set(e);

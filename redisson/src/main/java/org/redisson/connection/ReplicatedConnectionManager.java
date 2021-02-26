@@ -71,7 +71,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
 
         for (String address : cfg.getNodeAddresses()) {
             RedisURI addr = new RedisURI(address);
-            RFuture<RedisConnection> connectionFuture = connectToNode(cfg, addr, null, addr.getHost());
+            RFuture<RedisConnection> connectionFuture = connectToNode(cfg, addr, addr.getHost());
             connectionFuture.awaitUninterruptibly();
             RedisConnection connection = connectionFuture.getNow();
             if (connection == null) {
@@ -131,7 +131,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                 AtomicInteger count = new AtomicInteger(cfg.getNodeAddresses().size());
                 for (String address : cfg.getNodeAddresses()) {
                     RedisURI addr = new RedisURI(address);
-                    RFuture<RedisConnection> connectionFuture = connectToNode(cfg, addr, null, addr.getHost());
+                    RFuture<RedisConnection> connectionFuture = connectToNode(cfg, addr, addr.getHost());
                     connectionFuture.onComplete((connection, exc) -> {
                         if (exc != null) {
                             log.error(exc.getMessage(), exc);

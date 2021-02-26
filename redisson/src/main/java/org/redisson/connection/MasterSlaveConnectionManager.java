@@ -36,10 +36,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.command.CommandSyncService;
-import org.redisson.config.BaseMasterSlaveServersConfig;
-import org.redisson.config.Config;
-import org.redisson.config.MasterSlaveServersConfig;
-import org.redisson.config.TransportMode;
+import org.redisson.config.*;
 import org.redisson.misc.CountableListener;
 import org.redisson.misc.InfinitySemaphoreLatch;
 import org.redisson.misc.RPromise;
@@ -149,7 +146,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected PublishSubscribeService subscribeService;
     
-    private final Map<Object, RedisConnection> nodeConnections = new ConcurrentHashMap<>();
+    private final Map<RedisURI, RedisConnection> nodeConnections = new ConcurrentHashMap<>();
     
     public MasterSlaveConnectionManager(MasterSlaveServersConfig cfg, Config config, UUID id) {
         this(config, id);
@@ -244,34 +241,19 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     }
 
-    protected final void disconnectNode(RedisClient client) {
-        RedisConnection conn = nodeConnections.remove(client);
-        if (conn != null) {
-            conn.closeAsync();
-        }
-    }
-
-    protected final RFuture<RedisConnection> connectToNode(BaseMasterSlaveServersConfig<?> cfg, RedisURI addr, RedisClient client, String sslHostname) {
-        final Object key;
-        if (client != null) {
-            key = client;
-        } else {
-            key = addr;
-        }
-        RedisConnection conn = nodeConnections.get(key);
+    protected final RFuture<RedisConnection> connectToNode(BaseConfig<?> cfg, RedisURI addr, String sslHostname) {
+        RedisConnection conn = nodeConnections.get(addr);
         if (conn != null) {
             if (!conn.isActive()) {
-                nodeConnections.remove(key);
+                nodeConnections.remove(addr);
                 conn.closeAsync();
             } else {
                 return RedissonPromise.newSucceededFuture(conn);
             }
         }
 
-        if (addr != null) {
-            client = createClient(NodeType.MASTER, addr, cfg.getConnectTimeout(), cfg.getTimeout(), sslHostname);
-        }
-        final RPromise<RedisConnection> result = new RedissonPromise<RedisConnection>();
+        RedisClient client = createClient(NodeType.MASTER, addr, cfg.getConnectTimeout(), cfg.getTimeout(), sslHostname);
+        RPromise<RedisConnection> result = new RedissonPromise<>();
         RFuture<RedisConnection> future = client.connectAsync();
         future.onComplete((connection, e) -> {
             if (e != null) {
@@ -280,7 +262,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
 
             if (connection.isActive()) {
-                nodeConnections.put(key, connection);
+                nodeConnections.put(addr, connection);
                 result.trySuccess(connection);
             } else {
                 connection.closeAsync();

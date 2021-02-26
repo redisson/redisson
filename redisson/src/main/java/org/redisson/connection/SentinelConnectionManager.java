@@ -296,7 +296,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     }
 
                     Set<RedisURI> newUris = future.getNow().stream()
-                            .map(addr -> toURI(addr.getAddress().getHostAddress(), "" + addr.getPort()))
+                            .map(addr -> getIpAddr(addr))
                             .collect(Collectors.toSet());
 
                     for (RedisURI uri : newUris) {
@@ -343,7 +343,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         }
 
         RedisClient client = iterator.next();
-        RFuture<RedisConnection> connectionFuture = connectToNode(null, null, client, null);
+        RedisURI addr = getIpAddr(client.getAddr());
+        RFuture<RedisConnection> connectionFuture = connectToNode(cfg, addr, null);
         connectionFuture.onComplete((connection, e) -> {
             if (e != null) {
                 lastException.set(e);
@@ -484,7 +485,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             }).collect(Collectors.toSet());
             
             InetSocketAddress addr = connection.getRedisClient().getAddr();
-            RedisURI currentAddr = toURI(addr.getAddress().getHostAddress(), "" + addr.getPort());
+            RedisURI currentAddr = getIpAddr(addr);
             newUris.add(currentAddr);
             
             updateSentinels(newUris);
@@ -505,7 +506,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         for (RedisURI uri : currentUris) {
             RedisClient sentinel = SentinelConnectionManager.this.sentinels.remove(uri);
             if (sentinel != null) {
-                disconnectNode(sentinel);
+                disconnectNode(uri);
                 sentinel.shutdownAsync();
                 log.warn("sentinel: {} is down", uri);
             }
@@ -540,7 +541,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 return;
             }
 
-            RedisURI ipAddr = toURI(client.getAddr().getAddress().getHostAddress(), "" + client.getAddr().getPort());
+            RedisURI ipAddr = getIpAddr(client.getAddr());
             if (isHostname) {
                 RedisClient sentinel = sentinels.get(ipAddr);
                 if (sentinel != null) {
@@ -572,6 +573,10 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
         });
         return result;
+    }
+
+    private RedisURI getIpAddr(InetSocketAddress addr) {
+        return toURI(addr.getAddress().getHostAddress(), "" + addr.getPort());
     }
 
     private RFuture<Void> addSlave(RedisURI uri) {
