@@ -23,6 +23,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import io.netty.util.*;
+import io.netty.util.Timer;
+import io.netty.util.TimerTask;
 import org.redisson.ElementsSubscribeService;
 import org.redisson.Version;
 import org.redisson.api.NodeType;
@@ -60,10 +63,6 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.resolver.AddressResolverGroup;
 import io.netty.resolver.DefaultAddressResolverGroup;
 import io.netty.resolver.dns.DnsServerAddressStreamProviders;
-import io.netty.util.HashedWheelTimer;
-import io.netty.util.Timeout;
-import io.netty.util.Timer;
-import io.netty.util.TimerTask;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.ImmediateEventExecutor;
@@ -262,7 +261,14 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
 
             if (connection.isActive()) {
-                nodeConnections.put(addr, connection);
+                boolean isHostname = NetUtil.createByteArrayFromIpAddressString(addr.getHost()) == null;
+                RedisURI address = addr;
+                if (isHostname) {
+                    address = new RedisURI(addr.getScheme()
+                                 + "://" + connection.getRedisClient().getAddr().getAddress().getHostAddress()
+                                 + ":" + connection.getRedisClient().getAddr().getPort());
+                }
+                nodeConnections.put(address, connection);
                 result.trySuccess(connection);
             } else {
                 connection.closeAsync();
