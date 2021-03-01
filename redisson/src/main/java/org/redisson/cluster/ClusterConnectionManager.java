@@ -492,25 +492,24 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void upDownSlaves(MasterSlaveEntry entry, ClusterPartition currentPart, ClusterPartition newPart, Set<RedisURI> addedSlaves) {
-        Set<RedisURI> aliveSlaves = new HashSet<>(currentPart.getFailedSlaveAddresses());
-        aliveSlaves.removeAll(addedSlaves);
-        aliveSlaves.removeAll(newPart.getFailedSlaveAddresses());
-        for (RedisURI uri : aliveSlaves) {
-            currentPart.removeFailedSlaveAddress(uri);
-            if (entry.hasSlave(uri) && entry.slaveUp(uri, FreezeReason.MANAGER)) {
-                log.info("slave: {} is up for slot ranges: {}", uri, currentPart.getSlotRanges());
-            }
-        }
+        currentPart.getFailedSlaveAddresses().stream()
+                .filter(uri -> !addedSlaves.contains(uri) && !newPart.getFailedSlaveAddresses().contains(uri))
+                .forEach(uri -> {
+                    currentPart.removeFailedSlaveAddress(uri);
+                    if (entry.hasSlave(uri) && entry.slaveUp(uri, FreezeReason.MANAGER)) {
+                        log.info("slave: {} is up for slot ranges: {}", uri, currentPart.getSlotRanges());
+                    }
+                });
 
-        Set<RedisURI> failedSlaves = new HashSet<>(newPart.getFailedSlaveAddresses());
-        failedSlaves.removeAll(currentPart.getFailedSlaveAddresses());
-        for (RedisURI uri : failedSlaves) {
-            currentPart.addFailedSlaveAddress(uri);
-            if (entry.slaveDown(uri, FreezeReason.MANAGER)) {
-                disconnectNode(uri);
-                log.warn("slave: {} has down for slot ranges: {}", uri, currentPart.getSlotRanges());
-            }
-        }
+        newPart.getFailedSlaveAddresses().stream()
+                .filter(uri -> !currentPart.getFailedSlaveAddresses().contains(uri))
+                .forEach(uri -> {
+                    currentPart.addFailedSlaveAddress(uri);
+                    if (entry.slaveDown(uri, FreezeReason.MANAGER)) {
+                        disconnectNode(uri);
+                        log.warn("slave: {} has down for slot ranges: {}", uri, currentPart.getSlotRanges());
+                    }
+                });
     }
 
     private Set<RedisURI> addRemoveSlaves(MasterSlaveEntry entry, ClusterPartition currentPart, ClusterPartition newPart) {
@@ -543,21 +542,10 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return addedSlaves;
     }
 
-    private int slotsAmount(Collection<ClusterPartition> partitions) {
-        int result = 0;
-        for (ClusterPartition clusterPartition : partitions) {
-            result += clusterPartition.getSlotsAmount();
-        }
-        return result;
-    }
-
     private ClusterPartition find(Collection<ClusterPartition> partitions, Integer slot) {
-        for (ClusterPartition clusterPartition : partitions) {
-            if (clusterPartition.hasSlot(slot)) {
-                return clusterPartition;
-            }
-        }
-        return null;
+        return partitions.stream().filter(p -> p.hasSlot(slot)).findFirst().orElseThrow(() -> {
+            return new IllegalStateException("Unable to find partition with slot " + slot);
+        });
     }
 
     private RFuture<Void> checkMasterNodesChange(ClusterServersConfig cfg, Collection<ClusterPartition> newPartitions) {
@@ -622,24 +610,17 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void checkSlotsChange(Collection<ClusterPartition> newPartitions) {
-        int newSlotsAmount = slotsAmount(newPartitions);
+        int newSlotsAmount = newPartitions.stream()
+                                .mapToInt(ClusterPartition::getSlotsAmount)
+                                .sum();
         if (newSlotsAmount == lastPartitions.size() && lastPartitions.size() == MAX_SLOT) {
             return;
         }
 
-        Set<Integer> removedSlots = new HashSet<>();
-        for (Integer slot : lastPartitions.keySet()) {
-            boolean found = false;
-            for (ClusterPartition clusterPartition : newPartitions) {
-                if (clusterPartition.hasSlot(slot)) {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                removedSlots.add(slot);
-            }
-        }
+        Set<Integer> removedSlots = lastPartitions.keySet().stream()
+                .filter(s -> newPartitions.stream().noneMatch(p -> p.hasSlot(s)))
+                .collect(Collectors.toSet());
+
         lastPartitions.keySet().removeAll(removedSlots);
         if (!removedSlots.isEmpty()) {
             log.info("{} slots found to remove", removedSlots.size());
