@@ -216,15 +216,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
     
     protected void closeNodeConnections() {
-        List<RFuture<Void>> futures = new ArrayList<RFuture<Void>>();
-        for (RedisConnection connection : nodeConnections.values()) {
-            RFuture<Void> future = connection.getRedisClient().shutdownAsync();
-            futures.add(future);
-        }
-        
-        for (RFuture<Void> future : futures) {
-            future.syncUninterruptibly();
-        }
+        nodeConnections.values().stream()
+                .map(c -> c.getRedisClient().shutdownAsync())
+                .forEach(f -> f.syncUninterruptibly());
     }
     
     protected void closeNodeConnection(RedisConnection conn) {

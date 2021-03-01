@@ -27,6 +27,7 @@ import java.util.concurrent.locks.Condition;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
+import org.redisson.api.RLockAsync;
 import org.redisson.client.RedisResponseTimeoutException;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
@@ -308,14 +309,9 @@ public class RedissonMultiLock implements RLock {
     }
 
     protected void unlockInner(Collection<RLock> locks) {
-        List<RFuture<Void>> futures = new ArrayList<>(locks.size());
-        for (RLock lock : locks) {
-            futures.add(lock.unlockAsync());
-        }
-
-        for (RFuture<Void> unlockFuture : futures) {
-            unlockFuture.awaitUninterruptibly();
-        }
+        locks.stream()
+                .map(RLockAsync::unlockAsync)
+                .forEach(RFuture::awaitUninterruptibly);
     }
     
     protected RFuture<Void> unlockInnerAsync(Collection<RLock> locks, long threadId) {
@@ -425,15 +421,10 @@ public class RedissonMultiLock implements RLock {
         }
 
         if (leaseTime != -1) {
-            List<RFuture<Boolean>> futures = new ArrayList<>(acquiredLocks.size());
-            for (RLock rLock : acquiredLocks) {
-                RFuture<Boolean> future = ((RedissonLock) rLock).expireAsync(unit.toMillis(leaseTime), TimeUnit.MILLISECONDS);
-                futures.add(future);
-            }
-            
-            for (RFuture<Boolean> rFuture : futures) {
-                rFuture.syncUninterruptibly();
-            }
+            acquiredLocks.stream()
+                    .map(l -> (RedissonLock)l)
+                    .map(l -> l.expireAsync(unit.toMillis(leaseTime), TimeUnit.MILLISECONDS))
+                    .forEach(f -> f.syncUninterruptibly());
         }
         
         return true;
