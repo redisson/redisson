@@ -15,8 +15,6 @@
  */
 package org.redisson.connection.pool;
 
-import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
 import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisConnection;
