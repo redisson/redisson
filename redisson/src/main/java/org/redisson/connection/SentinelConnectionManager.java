@@ -270,16 +270,11 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             @Override
             public void run() {
                 AtomicInteger sentinelsCounter = new AtomicInteger(sentinelHosts.size());
-                FutureListener<List<InetSocketAddress>> commonListener = new FutureListener<List<InetSocketAddress>>() {
-                    @Override
-                    public void operationComplete(Future<List<InetSocketAddress>> future) throws Exception {
-                        if (sentinelsCounter.decrementAndGet() == 0) {
-                            scheduleSentinelDNSCheck();
-                        }
+                performSentinelDNSCheck(future -> {
+                    if (sentinelsCounter.decrementAndGet() == 0) {
+                        scheduleSentinelDNSCheck();
                     }
-                };
-
-                performSentinelDNSCheck(commonListener);
+                });
             }
         }, config.getDnsMonitoringInterval(), TimeUnit.MILLISECONDS);
     }
