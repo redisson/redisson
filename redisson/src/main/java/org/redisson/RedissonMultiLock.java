@@ -422,7 +422,7 @@ public class RedissonMultiLock implements RLock {
 
         if (leaseTime != -1) {
             acquiredLocks.stream()
-                    .map(l -> (RedissonLock)l)
+                    .map(l -> (RedissonLock) l)
                     .map(l -> l.expireAsync(unit.toMillis(leaseTime), TimeUnit.MILLISECONDS))
                     .forEach(f -> f.syncUninterruptibly());
         }
