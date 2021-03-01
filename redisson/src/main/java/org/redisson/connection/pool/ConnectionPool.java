@@ -361,56 +361,53 @@ abstract class ConnectionPool<T extends RedisConnection> {
 
         connectionManager.getConnectionEventsHub().fireDisconnect(entry.getClient().getAddr());
 
-        connectionManager.newTimeout(new TimerTask() {
-            @Override
-            public void run(Timeout timeout) throws Exception {
-                synchronized (entry) {
-                    if (entry.getFreezeReason() != FreezeReason.RECONNECT
-                            || connectionManager.isShuttingDown()) {
+        connectionManager.newTimeout(timeout -> {
+            synchronized (entry) {
+                if (entry.getFreezeReason() != FreezeReason.RECONNECT
+                        || connectionManager.isShuttingDown()) {
+                    return;
+                }
+            }
+
+            RFuture<RedisConnection> connectionFuture = entry.getClient().connectAsync();
+            connectionFuture.onComplete((c, e) -> {
+                    synchronized (entry) {
+                        if (entry.getFreezeReason() != FreezeReason.RECONNECT) {
+                            return;
+                        }
+                    }
+
+                    if (e != null) {
+                        scheduleCheck(entry);
                         return;
                     }
-                }
+                    if (!c.isActive()) {
+                        c.closeAsync();
+                        scheduleCheck(entry);
+                        return;
+                    }
 
-                RFuture<RedisConnection> connectionFuture = entry.getClient().connectAsync();
-                connectionFuture.onComplete((c, e) -> {
-                        synchronized (entry) {
-                            if (entry.getFreezeReason() != FreezeReason.RECONNECT) {
-                                return;
+                    RFuture<String> f = c.async(RedisCommands.PING);
+                    f.onComplete((t, ex) -> {
+                        try {
+                            synchronized (entry) {
+                                if (entry.getFreezeReason() != FreezeReason.RECONNECT) {
+                                    return;
+                                }
                             }
-                        }
 
-                        if (e != null) {
-                            scheduleCheck(entry);
-                            return;
-                        }
-                        if (!c.isActive()) {
+                            if ("PONG".equals(t)) {
+                                if (masterSlaveEntry.slaveUp(entry, FreezeReason.RECONNECT)) {
+                                    log.info("slave {} has been successfully reconnected", entry.getClient().getAddr());
+                                }
+                            } else {
+                                scheduleCheck(entry);
+                            }
+                        } finally {
                             c.closeAsync();
-                            scheduleCheck(entry);
-                            return;
                         }
-
-                        RFuture<String> f = c.async(RedisCommands.PING);
-                        f.onComplete((t, ex) -> {
-                            try {
-                                synchronized (entry) {
-                                    if (entry.getFreezeReason() != FreezeReason.RECONNECT) {
-                                        return;
-                                    }
-                                }
-
-                                if ("PONG".equals(t)) {
-                                    if (masterSlaveEntry.slaveUp(entry, FreezeReason.RECONNECT)) {
-                                        log.info("slave {} has been successfully reconnected", entry.getClient().getAddr());
-                                    }
-                                } else {
-                                    scheduleCheck(entry);
-                                }
-                            } finally {
-                                c.closeAsync();
-                            }
-                        });
-                });
-            }
+                    });
+            });
         }, config.getFailedSlaveReconnectionInterval(), TimeUnit.MILLISECONDS);
     }
 
