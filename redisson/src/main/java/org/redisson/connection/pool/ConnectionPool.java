@@ -389,31 +389,26 @@ abstract class ConnectionPool<T extends RedisConnection> {
                             return;
                         }
 
-                        BiConsumer<String, Throwable> pingListener = new BiConsumer<String, Throwable>() {
-                            @Override
-                            public void accept(String t, Throwable u) {
-                                try {
-                                    synchronized (entry) {
-                                        if (entry.getFreezeReason() != FreezeReason.RECONNECT) {
-                                            return;
-                                        }
-                                    }
-
-                                    if (u == null && "PONG".equals(t)) {
-                                        if (masterSlaveEntry.slaveUp(entry, FreezeReason.RECONNECT)) {
-                                            log.info("slave {} has been successfully reconnected", entry.getClient().getAddr());
-                                        }
-                                    } else {
-                                        scheduleCheck(entry);
-                                    }
-                                } finally {
-                                    c.closeAsync();
-                                }
-                            }
-                        };
-
                         RFuture<String> f = c.async(RedisCommands.PING);
-                        f.onComplete(pingListener);
+                        f.onComplete((t, ex) -> {
+                            try {
+                                synchronized (entry) {
+                                    if (entry.getFreezeReason() != FreezeReason.RECONNECT) {
+                                        return;
+                                    }
+                                }
+
+                                if ("PONG".equals(t)) {
+                                    if (masterSlaveEntry.slaveUp(entry, FreezeReason.RECONNECT)) {
+                                        log.info("slave {} has been successfully reconnected", entry.getClient().getAddr());
+                                    }
+                                } else {
+                                    scheduleCheck(entry);
+                                }
+                            } finally {
+                                c.closeAsync();
+                            }
+                        });
                 });
             }
         }, config.getFailedSlaveReconnectionInterval(), TimeUnit.MILLISECONDS);
