@@ -3,6 +3,35 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 03-Mar-2021 - 3.15.1 released
+
+Feature - `expireAt(Instant)` method added to `RExpirable` object  
+Feature - `random()` method added to `RScoredSortedSet` object  
+Feature - `randomKeys()` and `randomEntries()` methods added to `RMap` object  
+Feature - count with any parameter added for search in `RGeo` object  
+Feature - ability to search in box added for `RGeo` object
+
+Improvement - simplified RGeo API with `search` methods  
+Improvement - added check for invocation of sync methods in async/rx/reactive listeners  
+
+Fixed - continuous reconnecting to broken host if it was defined as hostname in Redisson Cluster config  
+Fixed - `WeightedRoundRobinBalancer` filters master node in readMode=ReadMode.MASTER_SLAVE  
+Fixed - `RPatternTopicReactive.removeListener()` method should return `Mono<Void>`  
+Fixed - remove `authType` and `principal` attributes on Apache Tomcat logout  
+Fixed - scheduled tasks via `RScheduledExecutorService` object can't be canceled  
+Fixed - `RStream.claim()` method throws NPE if given id does not exist  
+Fixed - `RPatternTopic` on keyspace/keyevent notification subscribes only to single master node in Redis cluster  
+Fixed - Class cast exception is thrown during iteration of `RMapCache` entries  
+Fixed - internal `RedissonBaseLock.evalWriteAsync()` method isn't executed again if cluster slaves amount > 0  
+Fixed - CPU spike after Slave failover if `subscriptionMode=SLAVE`  
+Fixed - `rename()` method throws throws RedisException if `RBloomFilter` is empty  
+Fixed - output full exception stacktrace if unable connect to sentinel server  
+Fixed - duplicated `PING` sent when Redis connection got reconnected  
+Fixed - Optional class can't be used as a result object in RemoteService interface  
+Fixed - `redisson-spring-boot-starter` should use `redisson-spring-data-24` module  
+Fixed - `RMapCacheRx.getLock()` returns `org.redisson.RedissonLock` instead of `org.redisson.api.RLockRx`  
+Fixed - `RMapCacheReactive.getLock()` returns `org.redisson.RedissonLock` instead of `org.redisson.api.RLockReactive`  
+
 ### 28-Jan-2021 - 3.15.0 released
 
 Feature - **Apache Tomcat 10** support added  
