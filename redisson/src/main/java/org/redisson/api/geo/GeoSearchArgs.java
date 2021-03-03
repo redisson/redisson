@@ -19,7 +19,9 @@ package org.redisson.api.geo;
  * Arguments object for RGeo search method.
  * <p>
  * {@link org.redisson.api.RGeo#search(GeoSearchArgs)}
- * {@link org.redisson.api.RGeo#searchAsync(GeoSearchArgs)}
+ * {@link org.redisson.api.RGeoAsync#searchAsync(GeoSearchArgs)}
+ * {@link org.redisson.api.RGeoRx#search(GeoSearchArgs)}
+ * {@link org.redisson.api.RGeoReactive#search(GeoSearchArgs)}
  *
  * @author Nikita Koksharov
  */
