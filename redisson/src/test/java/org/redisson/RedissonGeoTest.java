@@ -15,6 +15,7 @@ import org.redisson.api.GeoOrder;
 import org.redisson.api.GeoPosition;
 import org.redisson.api.GeoUnit;
 import org.redisson.api.RGeo;
+import org.redisson.api.geo.GeoSearchArgs;
 
 public class RedissonGeoTest extends BaseTest {
 
@@ -84,7 +85,7 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
         
-        Map<String, String> expected = new LinkedHashMap<String, String>();
+        Map<String, String> expected = new LinkedHashMap<>();
         expected.put("Palermo", "sqc8b49rny0");
         expected.put("Catania", "sqdtr74hyu0");
         assertThat(geo.hash("Palermo", "Catania")).isEqualTo(expected);
@@ -102,7 +103,7 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
         
-        Map<String, GeoPosition> expected = new LinkedHashMap<String, GeoPosition>();
+        Map<String, GeoPosition> expected = new LinkedHashMap<>();
         expected.put("Palermo", new GeoPosition(13.361389338970184, 38.115556395496299));
         expected.put("Catania", new GeoPosition(15.087267458438873, 37.50266842333162));
         assertThat(geo.pos("Palermo", "Catania")).isEqualTo(expected);
@@ -131,7 +132,7 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"));
         
-        Map<String, GeoPosition> expected = new LinkedHashMap<String, GeoPosition>();
+        Map<String, GeoPosition> expected = new LinkedHashMap<>();
         expected.put("Palermo", new GeoPosition(13.361389338970184, 38.115556395496299));
         assertThat(geo.pos("test2", "Palermo", "test3", "Catania", "test1")).isEqualTo(expected);
     }
@@ -141,7 +142,7 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
         
-        Map<String, GeoPosition> expected = new LinkedHashMap<String, GeoPosition>();
+        Map<String, GeoPosition> expected = new LinkedHashMap<>();
         expected.put("Palermo", new GeoPosition(13.361389338970184, 38.115556395496299));
         expected.put("Catania", new GeoPosition(15.087267458438873, 37.50266842333162));
         assertThat(geo.pos("test2", "Palermo", "test3", "Catania", "test1")).isEqualTo(expected);
@@ -159,7 +160,7 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        assertThat(geo.radius(15, 37, 200, GeoUnit.KILOMETERS)).containsExactly("Palermo", "Catania");
+        assertThat(geo.search(GeoSearchArgs.from(15, 37).radius(200, GeoUnit.KILOMETERS))).containsExactly("Palermo", "Catania");
     }
     
     @Test
@@ -167,7 +168,10 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        assertThat(geo.radius(15, 37, 200, GeoUnit.KILOMETERS, 1)).containsExactly("Catania");
+        assertThat(geo.search(GeoSearchArgs
+                                .from(15, 37)
+                                .radius(200, GeoUnit.KILOMETERS)
+                                .count(1))).containsExactly("Catania");
     }
 
     @Test
@@ -175,8 +179,14 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        assertThat(geo.radius(15, 37, 200, GeoUnit.KILOMETERS, GeoOrder.DESC)).containsExactly("Palermo", "Catania");
-        assertThat(geo.radius(15, 37, 200, GeoUnit.KILOMETERS, GeoOrder.ASC)).containsExactly("Catania", "Palermo");
+        assertThat(geo.search(GeoSearchArgs
+                                .from(15, 37)
+                                .radius(200, GeoUnit.KILOMETERS)
+                                .order(GeoOrder.DESC))).containsExactly("Palermo", "Catania");
+        assertThat(geo.search(GeoSearchArgs
+                                .from(15, 37)
+                                .radius(200, GeoUnit.KILOMETERS)
+                                .order(GeoOrder.ASC))).containsExactly("Catania", "Palermo");
     }
     
     @Test
@@ -184,15 +194,23 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        assertThat(geo.radius(15, 37, 200, GeoUnit.KILOMETERS, GeoOrder.DESC, 1)).containsExactly("Palermo");
-        assertThat(geo.radius(15, 37, 200, GeoUnit.KILOMETERS, GeoOrder.ASC, 1)).containsExactly("Catania");
+        assertThat(geo.search(GeoSearchArgs
+                                .from(15, 37)
+                                .radius(200, GeoUnit.KILOMETERS)
+                                .order(GeoOrder.DESC).count(1))).containsExactly("Palermo");
+        assertThat(geo.search(GeoSearchArgs
+                                .from(15, 37)
+                                .radius(200, GeoUnit.KILOMETERS)
+                                .order(GeoOrder.ASC).count(1))).containsExactly("Catania");
     }
     
     @Test
     public void testRadiusEmpty() {
         RGeo<String> geo = redisson.getGeo("test");
 
-        assertThat(geo.radius(15, 37, 200, GeoUnit.KILOMETERS)).isEmpty();
+        assertThat(geo.search(GeoSearchArgs
+                                .from(15, 37)
+                                .radius(200, GeoUnit.KILOMETERS))).isEmpty();
     }
 
     @Test
@@ -200,10 +218,12 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        Map<String, Double> expected = new HashMap<String, Double>();
+        Map<String, Double> expected = new HashMap<>();
         expected.put("Palermo", 190.4424);
         expected.put("Catania", 56.4413);
-        assertThat(geo.radiusWithDistance(15, 37, 200, GeoUnit.KILOMETERS)).isEqualTo(expected);
+        assertThat(geo.searchWithDistance(GeoSearchArgs
+                                .from(15, 37)
+                                .radius(200, GeoUnit.KILOMETERS))).isEqualTo(expected);
     }
     
     @Test
@@ -211,9 +231,12 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        Map<String, Double> expected = new HashMap<String, Double>();
+        Map<String, Double> expected = new HashMap<>();
         expected.put("Catania", 56.4413);
-        assertThat(geo.radiusWithDistance(15, 37, 200, GeoUnit.KILOMETERS, 1)).isEqualTo(expected);
+        assertThat(geo.searchWithDistance(GeoSearchArgs
+                                .from(15, 37)
+                                .radius(200, GeoUnit.KILOMETERS)
+                                .count(1))).isEqualTo(expected);
     }
 
     @Test
@@ -221,16 +244,22 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        Map<String, Double> descExpected = new LinkedHashMap<String, Double>();
+        Map<String, Double> descExpected = new LinkedHashMap<>();
         descExpected.put("Palermo", 190.4424);
         descExpected.put("Catania", 56.4413);
-        assertThat(geo.radiusWithDistance(15, 37, 200, GeoUnit.KILOMETERS, GeoOrder.DESC).entrySet())
+        assertThat(geo.searchWithDistance(GeoSearchArgs
+                                .from(15, 37)
+                                .radius(200, GeoUnit.KILOMETERS)
+                                .order(GeoOrder.DESC)).entrySet())
             .containsExactlyElementsOf(descExpected.entrySet());
         
-        Map<String, Double> ascExpected = new LinkedHashMap<String, Double>();
+        Map<String, Double> ascExpected = new LinkedHashMap<>();
         ascExpected.put("Catania", 56.4413);
         ascExpected.put("Palermo", 190.4424);
-        assertThat(geo.radiusWithDistance(15, 37, 200, GeoUnit.KILOMETERS, GeoOrder.ASC).entrySet())
+        assertThat(geo.searchWithDistance(GeoSearchArgs
+                                .from(15, 37)
+                                .radius(200, GeoUnit.KILOMETERS)
+                                .order(GeoOrder.ASC)).entrySet())
             .containsExactlyElementsOf(ascExpected.entrySet());
     }
     
@@ -239,14 +268,22 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        Map<String, Double> descExpected = new LinkedHashMap<String, Double>();
+        Map<String, Double> descExpected = new LinkedHashMap<>();
         descExpected.put("Palermo", 190.4424);
-        assertThat(geo.radiusWithDistance(15, 37, 200, GeoUnit.KILOMETERS, GeoOrder.DESC, 1).entrySet())
+        assertThat(geo.searchWithDistance(GeoSearchArgs
+                                .from(15, 37)
+                                .radius(200, GeoUnit.KILOMETERS)
+                                .order(GeoOrder.DESC)
+                                .count(1)).entrySet())
             .containsExactlyElementsOf(descExpected.entrySet());
         
-        Map<String, Double> ascExpected = new LinkedHashMap<String, Double>();
+        Map<String, Double> ascExpected = new LinkedHashMap<>();
         ascExpected.put("Catania", 56.4413);
-        assertThat(geo.radiusWithDistance(15, 37, 200, GeoUnit.KILOMETERS, GeoOrder.ASC, 1).entrySet())
+        assertThat(geo.searchWithDistance(GeoSearchArgs
+                                .from(15, 37)
+                                .radius(200, GeoUnit.KILOMETERS)
+                                .order(GeoOrder.ASC)
+                                .count(1)).entrySet())
             .containsExactlyElementsOf(ascExpected.entrySet());
     }
 
@@ -259,8 +296,9 @@ public class RedissonGeoTest extends BaseTest {
             geo.add(10 + 0.000001*i, 11 + 0.000001*i, "" + i);
         }
         
-        Map<String, Double> res = geo.radiusWithDistance(10, 11, 200, GeoUnit.KILOMETERS);
-        assertThat(res).hasSize(10000);
+        assertThat(geo.searchWithDistance(GeoSearchArgs
+                                .from(10, 11)
+                                .radius(200, GeoUnit.KILOMETERS))).hasSize(10000);
     }
     
     @Test
@@ -271,8 +309,9 @@ public class RedissonGeoTest extends BaseTest {
             geo.add(10 + 0.000001*i, 11 + 0.000001*i, "" + i);
         }
         
-        Map<String, GeoPosition> res = geo.radiusWithPosition(10, 11, 200, GeoUnit.KILOMETERS);
-        assertThat(res).hasSize(10000);
+        assertThat(geo.searchWithPosition(GeoSearchArgs
+                                .from(10, 11)
+                                .radius(200, GeoUnit.KILOMETERS))).hasSize(10000);
     }
 
     
@@ -280,29 +319,30 @@ public class RedissonGeoTest extends BaseTest {
     public void testRadiusWithDistanceBigObject() {
         RGeo<Map<String, String>> geo = redisson.getGeo("test");
 
-        Map<String, String> map = new HashMap<String, String>();
+        Map<String, String> map = new HashMap<>();
         for (int i = 0; i < 150; i++) {
             map.put("" + i, "" + i);
         }
         
         geo.add(new GeoEntry(13.361389, 38.115556, map));
         
-        Map<String, String> map1 = new HashMap<String, String>(map);
+        Map<String, String> map1 = new HashMap<>(map);
         map1.remove("100");
         geo.add(new GeoEntry(15.087269, 37.502669, map1));
         
-        Map<String, String> map2 = new HashMap<String, String>(map);
+        Map<String, String> map2 = new HashMap<>(map);
         map2.remove("0");
         geo.add(new GeoEntry(15.081269, 37.502169, map2));
 
-        Map<Map<String, String>, Double> expected = new HashMap<Map<String, String>, Double>();
+        Map<Map<String, String>, Double> expected = new HashMap<>();
         expected.put(map, 190.4424);
         expected.put(map1, 56.4413);
         expected.put(map2, 56.3159);
         
-        Map<Map<String, String>, Double> res = geo.radiusWithDistance(15, 37, 200, GeoUnit.KILOMETERS);
-        assertThat(res.keySet()).containsOnlyElementsOf(expected.keySet());
-        assertThat(res.values()).containsOnlyElementsOf(expected.values());
+        Map<Map<String, String>, Double> res = geo.searchWithDistance(GeoSearchArgs
+                                                                        .from(15, 37)
+                                                                        .radius(200, GeoUnit.KILOMETERS));
+        assertThat(res).isEqualTo(expected);
     }
 
     
@@ -310,7 +350,9 @@ public class RedissonGeoTest extends BaseTest {
     public void testRadiusWithDistanceEmpty() {
         RGeo<String> geo = redisson.getGeo("test");
 
-        assertThat(geo.radiusWithDistance(15, 37, 200, GeoUnit.KILOMETERS)).isEmpty();
+        assertThat(geo.searchWithDistance(GeoSearchArgs
+                                                .from(15, 37)
+                                                .radius(200, GeoUnit.KILOMETERS))).isEmpty();
     }
 
     @Test
@@ -318,10 +360,12 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        Map<String, GeoPosition> expected = new HashMap<String, GeoPosition>();
+        Map<String, GeoPosition> expected = new HashMap<>();
         expected.put("Palermo", new GeoPosition(13.361389338970184, 38.115556395496299));
         expected.put("Catania", new GeoPosition(15.087267458438873, 37.50266842333162));
-        assertThat(geo.radiusWithPosition(15, 37, 200, GeoUnit.KILOMETERS)).isEqualTo(expected);
+        assertThat(geo.searchWithPosition(GeoSearchArgs
+                                            .from(15, 37)
+                                            .radius(200, GeoUnit.KILOMETERS))).isEqualTo(expected);
     }
     
     @Test
@@ -329,10 +373,13 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        Map<String, GeoPosition> expected = new HashMap<String, GeoPosition>();
+        Map<String, GeoPosition> expected = new HashMap<>();
         expected.put("Palermo", new GeoPosition(13.361389338970184, 38.115556395496299));
         expected.put("Catania", new GeoPosition(15.087267458438873, 37.50266842333162));
-        assertThat(expected.entrySet().removeAll(geo.radiusWithPosition(15, 37, 200, GeoUnit.KILOMETERS, 1).entrySet())).isTrue();
+        assertThat(expected.entrySet().removeAll(geo.searchWithPosition(GeoSearchArgs
+                                            .from(15, 37)
+                                            .radius(200, GeoUnit.KILOMETERS)
+                                            .count(1)).entrySet())).isTrue();
         assertThat(expected).hasSize(1);
     }
     
@@ -341,15 +388,21 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        Map<String, GeoPosition> descExpected = new LinkedHashMap<String, GeoPosition>();
+        Map<String, GeoPosition> descExpected = new LinkedHashMap<>();
         descExpected.put("Palermo", new GeoPosition(13.361389338970184, 38.115556395496299));
         descExpected.put("Catania", new GeoPosition(15.087267458438873, 37.50266842333162));
-        assertThat(geo.radiusWithPosition(15, 37, 200, GeoUnit.KILOMETERS, GeoOrder.DESC).entrySet()).containsExactlyElementsOf(descExpected.entrySet());
+        assertThat(geo.searchWithPosition(GeoSearchArgs
+                                            .from(15, 37)
+                                            .radius(200, GeoUnit.KILOMETERS)
+                                            .order(GeoOrder.DESC)).entrySet()).containsExactlyElementsOf(descExpected.entrySet());
         
-        Map<String, GeoPosition> ascExpected = new LinkedHashMap<String, GeoPosition>();
+        Map<String, GeoPosition> ascExpected = new LinkedHashMap<>();
         ascExpected.put("Catania", new GeoPosition(15.087267458438873, 37.50266842333162));
         ascExpected.put("Palermo", new GeoPosition(13.361389338970184, 38.115556395496299));
-        assertThat(geo.radiusWithPosition(15, 37, 200, GeoUnit.KILOMETERS, GeoOrder.ASC).entrySet()).containsExactlyElementsOf(ascExpected.entrySet());
+        assertThat(geo.searchWithPosition(GeoSearchArgs
+                                            .from(15, 37)
+                                            .radius(200, GeoUnit.KILOMETERS)
+                                            .order(GeoOrder.ASC)).entrySet()).containsExactlyElementsOf(ascExpected.entrySet());
     }
     
     @Test
@@ -357,13 +410,21 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        Map<String, GeoPosition> descExpected = new LinkedHashMap<String, GeoPosition>();
+        Map<String, GeoPosition> descExpected = new LinkedHashMap<>();
         descExpected.put("Palermo", new GeoPosition(13.361389338970184, 38.115556395496299));
-        assertThat(geo.radiusWithPosition(15, 37, 200, GeoUnit.KILOMETERS, GeoOrder.DESC, 1).entrySet()).containsExactlyElementsOf(descExpected.entrySet());
+        assertThat(geo.searchWithPosition(GeoSearchArgs
+                                            .from(15, 37)
+                                            .radius(200, GeoUnit.KILOMETERS)
+                                            .order(GeoOrder.DESC)
+                                            .count(1)).entrySet()).containsExactlyElementsOf(descExpected.entrySet());
         
-        Map<String, GeoPosition> ascExpected = new LinkedHashMap<String, GeoPosition>();
+        Map<String, GeoPosition> ascExpected = new LinkedHashMap<>();
         ascExpected.put("Catania", new GeoPosition(15.087267458438873, 37.50266842333162));
-        assertThat(geo.radiusWithPosition(15, 37, 200, GeoUnit.KILOMETERS, GeoOrder.ASC, 1).entrySet()).containsExactlyElementsOf(ascExpected.entrySet());
+        assertThat(geo.searchWithPosition(GeoSearchArgs
+                                            .from(15, 37)
+                                            .radius(200, GeoUnit.KILOMETERS)
+                                            .order(GeoOrder.ASC)
+                                            .count(1)).entrySet()).containsExactlyElementsOf(ascExpected.entrySet());
     }
 
 
@@ -371,7 +432,9 @@ public class RedissonGeoTest extends BaseTest {
     public void testRadiusWithPositionEmpty() {
         RGeo<String> geo = redisson.getGeo("test");
 
-        assertThat(geo.radiusWithPosition(15, 37, 200, GeoUnit.KILOMETERS)).isEmpty();
+        assertThat(geo.searchWithPosition(GeoSearchArgs
+                                            .from(15, 37)
+                                            .radius(200, GeoUnit.KILOMETERS))).isEmpty();
     }
     
     @Test
@@ -379,7 +442,9 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        assertThat(geo.radius("Palermo", 200, GeoUnit.KILOMETERS)).containsExactly("Palermo", "Catania");
+        assertThat(geo.search(GeoSearchArgs
+                                .from("Palermo")
+                                .radius(200, GeoUnit.KILOMETERS))).containsExactly("Palermo", "Catania");
     }
     
     @Test
@@ -387,7 +452,10 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        assertThat(geo.radius("Palermo", 200, GeoUnit.KILOMETERS, 1)).containsExactly("Palermo");
+        assertThat(geo.search(GeoSearchArgs
+                                .from("Palermo")
+                                .radius(200, GeoUnit.KILOMETERS)
+                                .count(1))).containsExactly("Palermo");
     }
 
     @Test
@@ -395,8 +463,15 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        assertThat(geo.radius("Palermo", 200, GeoUnit.KILOMETERS, GeoOrder.DESC)).containsExactly("Catania", "Palermo");
-        assertThat(geo.radius("Palermo", 200, GeoUnit.KILOMETERS, GeoOrder.ASC)).containsExactly("Palermo", "Catania");
+        assertThat(geo.search(GeoSearchArgs
+                                .from("Palermo")
+                                .radius(200, GeoUnit.KILOMETERS)
+                                .order(GeoOrder.DESC))).containsExactly("Catania", "Palermo");
+
+        assertThat(geo.search(GeoSearchArgs
+                                .from("Palermo")
+                                .radius(200, GeoUnit.KILOMETERS)
+                                .order(GeoOrder.ASC))).containsExactly("Palermo", "Catania");
     }
     
     @Test
@@ -404,8 +479,17 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        assertThat(geo.radius("Palermo", 200, GeoUnit.KILOMETERS, GeoOrder.DESC, 1)).containsExactly("Catania");
-        assertThat(geo.radius("Palermo", 200, GeoUnit.KILOMETERS, GeoOrder.ASC, 1)).containsExactly("Palermo");
+        assertThat(geo.search(GeoSearchArgs
+                                .from("Palermo")
+                                .radius(200, GeoUnit.KILOMETERS)
+                                .order(GeoOrder.DESC)
+                                .count(1))).containsExactly("Catania");
+
+        assertThat(geo.search(GeoSearchArgs
+                                .from("Palermo")
+                                .radius(200, GeoUnit.KILOMETERS)
+                                .order(GeoOrder.ASC)
+                                .count(1))).containsExactly("Palermo");
     }
 
     
@@ -413,7 +497,9 @@ public class RedissonGeoTest extends BaseTest {
     public void testRadiusMemberEmpty() {
         RGeo<String> geo = redisson.getGeo("test");
 
-        assertThat(geo.radius("Palermo", 200, GeoUnit.KILOMETERS)).isEmpty();
+        assertThat(geo.search(GeoSearchArgs
+                                .from("Palermo")
+                                .radius(200, GeoUnit.KILOMETERS))).isEmpty();
     }
 
     @Test
@@ -421,10 +507,12 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        Map<String, Double> expected = new HashMap<String, Double>();
+        Map<String, Double> expected = new HashMap<>();
         expected.put("Palermo", 0.0);
         expected.put("Catania", 166.2742);
-        assertThat(geo.radiusWithDistance("Palermo", 200, GeoUnit.KILOMETERS)).isEqualTo(expected);
+        assertThat(geo.searchWithDistance(GeoSearchArgs
+                                            .from("Palermo")
+                                            .radius(200, GeoUnit.KILOMETERS))).isEqualTo(expected);
     }
     
     @Test
@@ -432,10 +520,13 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        Map<String, Double> expected = new HashMap<String, Double>();
+        Map<String, Double> expected = new HashMap<>();
         expected.put("Palermo", 0.0);
         expected.put("Catania", 166.2742);
-        assertThat(expected.entrySet().removeAll(geo.radiusWithDistance("Palermo", 200, GeoUnit.KILOMETERS, 1).entrySet())).isTrue();
+        assertThat(expected.entrySet().removeAll(geo.searchWithDistance(GeoSearchArgs
+                                            .from("Palermo")
+                                            .radius(200, GeoUnit.KILOMETERS)
+                                            .count(1)).entrySet())).isTrue();
         assertThat(expected).hasSize(1);
     }
 
@@ -444,15 +535,21 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        Map<String, Double> ascExpected = new LinkedHashMap<String, Double>();
+        Map<String, Double> ascExpected = new LinkedHashMap<>();
         ascExpected.put("Palermo", 0.0);
         ascExpected.put("Catania", 166.2742);
-        assertThat(geo.radiusWithDistance("Palermo", 200, GeoUnit.KILOMETERS, GeoOrder.ASC).entrySet()).containsExactlyElementsOf(ascExpected.entrySet());
+        assertThat(geo.searchWithDistance(GeoSearchArgs
+                                                .from("Palermo")
+                                                .radius(200, GeoUnit.KILOMETERS)
+                                                .order(GeoOrder.ASC)).entrySet()).containsExactlyElementsOf(ascExpected.entrySet());
 
-        Map<String, Double> descExpected = new LinkedHashMap<String, Double>();
+        Map<String, Double> descExpected = new LinkedHashMap<>();
         descExpected.put("Catania", 166.2742);
         descExpected.put("Palermo", 0.0);
-        assertThat(geo.radiusWithDistance("Palermo", 200, GeoUnit.KILOMETERS, GeoOrder.DESC).entrySet()).containsExactlyElementsOf(descExpected.entrySet());
+        assertThat(geo.searchWithDistance(GeoSearchArgs
+                                                .from("Palermo")
+                                                .radius(200, GeoUnit.KILOMETERS)
+                                                .order(GeoOrder.DESC)).entrySet()).containsExactlyElementsOf(descExpected.entrySet());
     }
     
     @Test
@@ -460,20 +557,30 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        Map<String, Double> ascExpected = new LinkedHashMap<String, Double>();
+        Map<String, Double> ascExpected = new LinkedHashMap<>();
         ascExpected.put("Palermo", 0.0);
-        assertThat(geo.radiusWithDistance("Palermo", 200, GeoUnit.KILOMETERS, GeoOrder.ASC, 1).entrySet()).containsExactlyElementsOf(ascExpected.entrySet());
+        assertThat(geo.searchWithDistance(GeoSearchArgs
+                                                .from("Palermo")
+                                                .radius(200, GeoUnit.KILOMETERS)
+                                                .order(GeoOrder.ASC)
+                                                .count(1)).entrySet()).containsExactlyElementsOf(ascExpected.entrySet());
 
-        Map<String, Double> descExpected = new LinkedHashMap<String, Double>();
+        Map<String, Double> descExpected = new LinkedHashMap<>();
         descExpected.put("Catania", 166.2742);
-        assertThat(geo.radiusWithDistance("Palermo", 200, GeoUnit.KILOMETERS, GeoOrder.DESC, 1).entrySet()).containsExactlyElementsOf(descExpected.entrySet());
+        assertThat(geo.searchWithDistance(GeoSearchArgs
+                                                .from("Palermo")
+                                                .radius(200, GeoUnit.KILOMETERS)
+                                                .order(GeoOrder.DESC)
+                                                .count(1)).entrySet()).containsExactlyElementsOf(descExpected.entrySet());
     }
     
     @Test
     public void testRadiusMemberWithDistanceEmpty() {
         RGeo<String> geo = redisson.getGeo("test");
 
-        assertThat(geo.radiusWithDistance("Palermo", 200, GeoUnit.KILOMETERS)).isEmpty();
+        assertThat(geo.searchWithDistance(GeoSearchArgs
+                                                .from("Palermo")
+                                                .radius(200, GeoUnit.KILOMETERS))).isEmpty();
     }
 
     @Test
@@ -481,10 +588,12 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        Map<String, GeoPosition> expected = new HashMap<String, GeoPosition>();
+        Map<String, GeoPosition> expected = new HashMap<>();
         expected.put("Palermo", new GeoPosition(13.361389338970184, 38.115556395496299));
         expected.put("Catania", new GeoPosition(15.087267458438873, 37.50266842333162));
-        assertThat(geo.radiusWithPosition("Palermo", 200, GeoUnit.KILOMETERS)).isEqualTo(expected);
+        assertThat(geo.searchWithPosition(GeoSearchArgs
+                                                .from("Palermo")
+                                                .radius(200, GeoUnit.KILOMETERS))).isEqualTo(expected);
     }
     
     @Test
@@ -492,10 +601,13 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        Map<String, GeoPosition> expected = new HashMap<String, GeoPosition>();
+        Map<String, GeoPosition> expected = new HashMap<>();
         expected.put("Palermo", new GeoPosition(13.361389338970184, 38.115556395496299));
         expected.put("Catania", new GeoPosition(15.087267458438873, 37.50266842333162));
-        assertThat(expected.entrySet().removeAll(geo.radiusWithPosition("Palermo", 200, GeoUnit.KILOMETERS, 1).entrySet())).isTrue();
+        assertThat(expected.entrySet().removeAll(geo.searchWithPosition(GeoSearchArgs
+                                                        .from("Palermo")
+                                                        .radius(200, GeoUnit.KILOMETERS)
+                                                        .count(1)).entrySet())).isTrue();
         assertThat(expected).hasSize(1);
     }
 
@@ -504,15 +616,21 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        Map<String, GeoPosition> ascExpected = new LinkedHashMap<String, GeoPosition>();
+        Map<String, GeoPosition> ascExpected = new LinkedHashMap<>();
         ascExpected.put("Palermo", new GeoPosition(13.361389338970184, 38.115556395496299));
         ascExpected.put("Catania", new GeoPosition(15.087267458438873, 37.50266842333162));
-        assertThat(geo.radiusWithPosition("Palermo", 200, GeoUnit.KILOMETERS, GeoOrder.ASC).entrySet()).containsExactlyElementsOf(ascExpected.entrySet());
+        assertThat(geo.searchWithPosition(GeoSearchArgs
+                                            .from("Palermo")
+                                            .radius(200, GeoUnit.KILOMETERS)
+                                            .order(GeoOrder.ASC)).entrySet()).containsExactlyElementsOf(ascExpected.entrySet());
         
-        Map<String, GeoPosition> descExpected = new LinkedHashMap<String, GeoPosition>();
+        Map<String, GeoPosition> descExpected = new LinkedHashMap<>();
         descExpected.put("Catania", new GeoPosition(15.087267458438873, 37.50266842333162));
         descExpected.put("Palermo", new GeoPosition(13.361389338970184, 38.115556395496299));
-        assertThat(geo.radiusWithPosition("Palermo", 200, GeoUnit.KILOMETERS, GeoOrder.DESC).entrySet()).containsExactlyElementsOf(descExpected.entrySet());
+        assertThat(geo.searchWithPosition(GeoSearchArgs
+                                            .from("Palermo")
+                                            .radius(200, GeoUnit.KILOMETERS)
+                                            .order(GeoOrder.DESC)).entrySet()).containsExactlyElementsOf(descExpected.entrySet());
     }
 
     @Test
@@ -520,27 +638,41 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        Map<String, GeoPosition> ascExpected = new LinkedHashMap<String, GeoPosition>();
+        Map<String, GeoPosition> ascExpected = new LinkedHashMap<>();
         ascExpected.put("Palermo", new GeoPosition(13.361389338970184, 38.115556395496299));
-        assertThat(geo.radiusWithPosition("Palermo", 200, GeoUnit.KILOMETERS, GeoOrder.ASC, 1).entrySet()).containsExactlyElementsOf(ascExpected.entrySet());
+        assertThat(geo.searchWithPosition(GeoSearchArgs
+                                            .from("Palermo")
+                                            .radius(200, GeoUnit.KILOMETERS)
+                                            .order(GeoOrder.ASC)
+                                            .count(1)).entrySet()).containsExactlyElementsOf(ascExpected.entrySet());
         
-        Map<String, GeoPosition> descExpected = new LinkedHashMap<String, GeoPosition>();
+        Map<String, GeoPosition> descExpected = new LinkedHashMap<>();
         descExpected.put("Catania", new GeoPosition(15.087267458438873, 37.50266842333162));
-        assertThat(geo.radiusWithPosition("Palermo", 200, GeoUnit.KILOMETERS, GeoOrder.DESC, 1).entrySet()).containsExactlyElementsOf(descExpected.entrySet());
+        assertThat(geo.searchWithPosition(GeoSearchArgs
+                                            .from("Palermo")
+                                            .radius(200, GeoUnit.KILOMETERS)
+                                            .order(GeoOrder.DESC)
+                                            .count(1)).entrySet()).containsExactlyElementsOf(descExpected.entrySet());
         
         RGeo<String> geo2 = redisson.getGeo("test2");
         geo2.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(13.361390, 38.115557, "Catania"));
-        Map<String, GeoPosition> ascExpected2 = new LinkedHashMap<String, GeoPosition>();
+        Map<String, GeoPosition> ascExpected2 = new LinkedHashMap<>();
         ascExpected2.put("Palermo", new GeoPosition(13.361389338970184, 38.115556395496299));
         ascExpected2.put("Catania", new GeoPosition(13.361389338970184, 38.115556395496299));
-        assertThat(geo2.radiusWithPosition("Palermo", 200, GeoUnit.KILOMETERS, GeoOrder.DESC, 2).entrySet()).containsExactlyElementsOf(ascExpected2.entrySet());
+        assertThat(geo2.searchWithPosition(GeoSearchArgs
+                                            .from("Palermo")
+                                            .radius(200, GeoUnit.KILOMETERS)
+                                            .order(GeoOrder.DESC)
+                                            .count(2)).entrySet()).containsExactlyElementsOf(ascExpected2.entrySet());
     }
 
     @Test
     public void testRadiusMemberWithPositionEmpty() {
         RGeo<String> geo = redisson.getGeo("test");
 
-        assertThat(geo.radiusWithPosition("Palermo", 200, GeoUnit.KILOMETERS)).isEmpty();
+        assertThat(geo.searchWithPosition(GeoSearchArgs
+                                            .from("Palermo")
+                                            .radius(200, GeoUnit.KILOMETERS))).isEmpty();
     }
 
     @Test
@@ -549,7 +681,9 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geoDest = redisson.getGeo("test-store");
         geoSource.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        assertThat(geoSource.radiusStoreTo(geoDest.getName(), 15, 37, 200, GeoUnit.KILOMETERS)).isEqualTo(2);
+        assertThat(geoSource.storeSearchTo(geoDest.getName(), GeoSearchArgs
+                                                                .from(15, 37)
+                                                                .radius(200, GeoUnit.KILOMETERS))).isEqualTo(2);
         assertThat(geoDest.readAll()).containsExactlyInAnyOrder("Palermo", "Catania");
     }
 
@@ -569,7 +703,10 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geoDest = redisson.getGeo("test-store");
         geoSource.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        assertThat(geoSource.radiusStoreTo(geoDest.getName(), 15, 37, 200, GeoUnit.KILOMETERS, 1)).isEqualTo(1);
+        assertThat(geoSource.storeSearchTo(geoDest.getName(), GeoSearchArgs
+                                                                .from(15, 37)
+                                                                .radius(200, GeoUnit.KILOMETERS)
+                                                                .count(1))).isEqualTo(1);
         assertThat(geoDest.readAll()).containsExactly("Catania");
     }
 
@@ -579,7 +716,10 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geoDest = redisson.getGeo("test-store");
         geoSource.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        assertThat(geoSource.radiusStoreSortedTo(geoDest.getName(), 15, 37, 200, GeoUnit.KILOMETERS, 1)).isEqualTo(1);
+        assertThat(geoSource.storeSearchTo(geoDest.getName(), GeoSearchArgs
+                                                                .from(15, 37)
+                                                                .radius(200, GeoUnit.KILOMETERS)
+                                                                .count(1))).isEqualTo(1);
         assertThat(geoDest.readAll()).containsExactly("Catania");
     }
     
@@ -589,10 +729,18 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geoDest = redisson.getGeo("test-store");
         geoSource.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        assertThat(geoSource.radiusStoreTo(geoDest.getName(), 15, 37, 200, GeoUnit.KILOMETERS, GeoOrder.DESC, 1)).isEqualTo(1);
+        assertThat(geoSource.storeSearchTo(geoDest.getName(), GeoSearchArgs
+                                                                .from(15, 37)
+                                                                .radius(200, GeoUnit.KILOMETERS)
+                                                                .order(GeoOrder.DESC)
+                                                                .count(1))).isEqualTo(1);
         assertThat(geoDest.readAll()).containsExactly("Palermo");
 
-        assertThat(geoSource.radiusStoreTo(geoDest.getName(), 15, 37, 200, GeoUnit.KILOMETERS, GeoOrder.ASC, 1)).isEqualTo(1);
+        assertThat(geoSource.storeSearchTo(geoDest.getName(), GeoSearchArgs
+                                                                .from(15, 37)
+                                                                .radius(200, GeoUnit.KILOMETERS)
+                                                                .order(GeoOrder.ASC)
+                                                                .count(1))).isEqualTo(1);
         assertThat(geoDest.readAll()).containsExactly("Catania");
     }
 
@@ -602,10 +750,18 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geoDest = redisson.getGeo("test-store");
         geoSource.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        assertThat(geoSource.radiusStoreSortedTo(geoDest.getName(), 15, 37, 200, GeoUnit.KILOMETERS, GeoOrder.DESC, 1)).isEqualTo(1);
+        assertThat(geoSource.storeSortedSearchTo(geoDest.getName(), GeoSearchArgs
+                                                                .from(15, 37)
+                                                                .radius(200, GeoUnit.KILOMETERS)
+                                                                .order(GeoOrder.DESC)
+                                                                .count(1))).isEqualTo(1);
         assertThat(geoDest.readAll()).containsExactly("Palermo");
 
-        assertThat(geoSource.radiusStoreSortedTo(geoDest.getName(), 15, 37, 200, GeoUnit.KILOMETERS, GeoOrder.ASC, 1)).isEqualTo(1);
+        assertThat(geoSource.storeSortedSearchTo(geoDest.getName(), GeoSearchArgs
+                                                                .from(15, 37)
+                                                                .radius(200, GeoUnit.KILOMETERS)
+                                                                .order(GeoOrder.ASC)
+                                                                .count(1))).isEqualTo(1);
         assertThat(geoDest.readAll()).containsExactly("Catania");
     }
     
@@ -614,7 +770,9 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geoSource = redisson.getGeo("test");
         RGeo<String> geoDest = redisson.getGeo("test-store");
 
-        assertThat(geoSource.radiusStoreTo(geoDest.getName(), 15, 37, 200, GeoUnit.KILOMETERS)).isEqualTo(0);
+        assertThat(geoSource.storeSearchTo(geoDest.getName(), GeoSearchArgs
+                                                                .from(15, 37)
+                                                                .radius(200, GeoUnit.KILOMETERS))).isEqualTo(0);
         assertThat(geoDest.readAll()).isEmpty();
     }
 
@@ -624,7 +782,9 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geoDest = redisson.getGeo("test-store");
         geoSource.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        assertThat(geoSource.radiusStoreTo(geoDest.getName(), "Palermo", 200, GeoUnit.KILOMETERS)).isEqualTo(2);
+        assertThat(geoSource.storeSearchTo(geoDest.getName(), GeoSearchArgs
+                                                                .from("Palermo")
+                                                                .radius(200, GeoUnit.KILOMETERS))).isEqualTo(2);
         assertThat(geoDest.readAll()).containsExactlyInAnyOrder("Palermo", "Catania");
     }
 
@@ -634,7 +794,10 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geoDest = redisson.getGeo("test-store");
         geoSource.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        assertThat(geoSource.radiusStoreTo(geoDest.getName(), "Palermo", 200, GeoUnit.KILOMETERS, 1)).isEqualTo(1);
+        assertThat(geoSource.storeSearchTo(geoDest.getName(), GeoSearchArgs
+                                                                .from("Palermo")
+                                                                .radius(200, GeoUnit.KILOMETERS)
+                                                                .count(1))).isEqualTo(1);
         assertThat(geoDest.readAll()).containsExactly("Palermo");
     }
 
@@ -644,10 +807,18 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geoDest = redisson.getGeo("test-store");
         geoSource.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        assertThat(geoSource.radiusStoreTo(geoDest.getName(), "Palermo", 200, GeoUnit.KILOMETERS, GeoOrder.DESC, 1)).isEqualTo(1);
+        assertThat(geoSource.storeSearchTo(geoDest.getName(), GeoSearchArgs
+                                                                .from("Palermo")
+                                                                .radius(200, GeoUnit.KILOMETERS)
+                                                                .order(GeoOrder.DESC)
+                                                                .count(1))).isEqualTo(1);
         assertThat(geoDest.readAll()).containsExactly("Catania");
 
-        assertThat(geoSource.radiusStoreTo(geoDest.getName(), "Palermo", 200, GeoUnit.KILOMETERS, GeoOrder.ASC, 1)).isEqualTo(1);
+        assertThat(geoSource.storeSearchTo(geoDest.getName(), GeoSearchArgs
+                                                                .from("Palermo")
+                                                                .radius(200, GeoUnit.KILOMETERS)
+                                                                .order(GeoOrder.ASC)
+                                                                .count(1))).isEqualTo(1);
         assertThat(geoDest.readAll()).containsExactly("Palermo");
     }
 
@@ -656,7 +827,9 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geoSource = redisson.getGeo("test");
         RGeo<String> geoDest = redisson.getGeo("test-store");
 
-        assertThat(geoSource.radiusStoreTo(geoDest.getName(), "Palermo", 200, GeoUnit.KILOMETERS)).isEqualTo(0);
+        assertThat(geoSource.storeSearchTo(geoDest.getName(), GeoSearchArgs
+                                                                .from("Palermo")
+                                                                .radius(200, GeoUnit.KILOMETERS))).isZero();
         assertThat(geoDest.readAll()).isEmpty();
     }
 

@@ -25,6 +25,8 @@ import org.redisson.api.GeoUnit;
 import org.redisson.api.RFuture;
 import org.redisson.api.RGeo;
 import org.redisson.api.RedissonClient;
+import org.redisson.api.geo.GeoSearchArgs;
+import org.redisson.api.geo.GeoSearchNode;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
@@ -209,6 +211,125 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
                 new GeoPositionDecoder());
         RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("GEOPOS", decoder);
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, command, params.toArray());
+    }
+
+    @Override
+    public List<V> search(GeoSearchArgs args) {
+        return get(searchAsync(args));
+    }
+
+    @Override
+    public RFuture<List<V>> searchAsync(GeoSearchArgs args) {
+        GeoSearchNode node = (GeoSearchNode) args;
+        Map<GeoSearchNode.Params, Object> params = node.getParams();
+
+        List<Object> commandParams = new ArrayList<>();
+        commandParams.add(getName());
+        RedisCommand command = null;
+        if (params.get(GeoSearchNode.Params.LATITUDE) != null
+                && params.get(GeoSearchNode.Params.LONGITUDE) != null) {
+            commandParams.add(convert((double) params.get(GeoSearchNode.Params.LONGITUDE)));
+            commandParams.add(convert((double) params.get(GeoSearchNode.Params.LATITUDE)));
+            command = RedisCommands.GEORADIUS_RO;
+        }
+        if (params.get(GeoSearchNode.Params.MEMBER) != null) {
+            commandParams.add(encode(params.get(GeoSearchNode.Params.MEMBER)));
+            command = RedisCommands.GEORADIUSBYMEMBER_RO;
+        }
+        if (params.get(GeoSearchNode.Params.RADIUS) != null
+            && params.get(GeoSearchNode.Params.UNIT) != null) {
+            commandParams.add(params.get(GeoSearchNode.Params.RADIUS));
+            commandParams.add(params.get(GeoSearchNode.Params.UNIT));
+        }
+        if (params.get(GeoSearchNode.Params.COUNT) != null) {
+            commandParams.add("COUNT");
+            commandParams.add(params.get(GeoSearchNode.Params.COUNT));
+        }
+        if (params.get(GeoSearchNode.Params.ORDER) != null) {
+            commandParams.add(params.get(GeoSearchNode.Params.ORDER));
+        }
+
+        return commandExecutor.readAsync(getName(), codec, command, commandParams.toArray());
+    }
+
+    @Override
+    public Map<V, Double> searchWithDistance(GeoSearchArgs args) {
+        return get(searchWithDistanceAsync(args));
+    }
+
+    @Override
+    public RFuture<Map<V, Double>> searchWithDistanceAsync(GeoSearchArgs args) {
+        GeoSearchNode node = (GeoSearchNode) args;
+        Map<GeoSearchNode.Params, Object> params = node.getParams();
+
+        List<Object> commandParams = new ArrayList<>();
+        commandParams.add(getName());
+        RedisCommand command = null;
+        if (params.get(GeoSearchNode.Params.LATITUDE) != null
+                && params.get(GeoSearchNode.Params.LONGITUDE) != null) {
+            commandParams.add(convert((double) params.get(GeoSearchNode.Params.LONGITUDE)));
+            commandParams.add(convert((double) params.get(GeoSearchNode.Params.LATITUDE)));
+            command = GEORADIUS_RO_DISTANCE;
+        }
+        if (params.get(GeoSearchNode.Params.MEMBER) != null) {
+            commandParams.add(encode(params.get(GeoSearchNode.Params.MEMBER)));
+            command = GEORADIUSBYMEMBER_RO_DISTANCE;
+        }
+        if (params.get(GeoSearchNode.Params.RADIUS) != null
+            && params.get(GeoSearchNode.Params.UNIT) != null) {
+            commandParams.add(params.get(GeoSearchNode.Params.RADIUS));
+            commandParams.add(params.get(GeoSearchNode.Params.UNIT));
+        }
+        commandParams.add("WITHDIST");
+        if (params.get(GeoSearchNode.Params.COUNT) != null) {
+            commandParams.add("COUNT");
+            commandParams.add(params.get(GeoSearchNode.Params.COUNT));
+        }
+        if (params.get(GeoSearchNode.Params.ORDER) != null) {
+            commandParams.add(params.get(GeoSearchNode.Params.ORDER));
+        }
+
+        return commandExecutor.readAsync(getName(), codec, command, commandParams.toArray());
+    }
+
+    @Override
+    public Map<V, GeoPosition> searchWithPosition(GeoSearchArgs args) {
+        return get(searchWithPositionAsync(args));
+    }
+
+    @Override
+    public RFuture<Map<V, GeoPosition>> searchWithPositionAsync(GeoSearchArgs args) {
+        GeoSearchNode node = (GeoSearchNode) args;
+        Map<GeoSearchNode.Params, Object> params = node.getParams();
+
+        List<Object> commandParams = new ArrayList<>();
+        commandParams.add(getName());
+        RedisCommand command = null;
+        if (params.get(GeoSearchNode.Params.LATITUDE) != null
+                && params.get(GeoSearchNode.Params.LONGITUDE) != null) {
+            commandParams.add(convert((double) params.get(GeoSearchNode.Params.LONGITUDE)));
+            commandParams.add(convert((double) params.get(GeoSearchNode.Params.LATITUDE)));
+            command = GEORADIUS_RO_POS;
+        }
+        if (params.get(GeoSearchNode.Params.MEMBER) != null) {
+            commandParams.add(encode(params.get(GeoSearchNode.Params.MEMBER)));
+            command = GEORADIUSBYMEMBER_RO_POS;
+        }
+        if (params.get(GeoSearchNode.Params.RADIUS) != null
+            && params.get(GeoSearchNode.Params.UNIT) != null) {
+            commandParams.add(params.get(GeoSearchNode.Params.RADIUS));
+            commandParams.add(params.get(GeoSearchNode.Params.UNIT));
+        }
+        commandParams.add("WITHCOORD");
+        if (params.get(GeoSearchNode.Params.COUNT) != null) {
+            commandParams.add("COUNT");
+            commandParams.add(params.get(GeoSearchNode.Params.COUNT));
+        }
+        if (params.get(GeoSearchNode.Params.ORDER) != null) {
+            commandParams.add(params.get(GeoSearchNode.Params.ORDER));
+        }
+
+        return commandExecutor.readAsync(getName(), codec, command, commandParams.toArray());
     }
 
     @Override
@@ -510,6 +631,47 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
     }
 
     @Override
+    public long storeSearchTo(String destName, GeoSearchArgs args) {
+        return get(storeSearchToAsync(destName, args));
+    }
+
+    @Override
+    public RFuture<Long> storeSearchToAsync(String destName, GeoSearchArgs args) {
+        GeoSearchNode node = (GeoSearchNode) args;
+        Map<GeoSearchNode.Params, Object> params = node.getParams();
+
+        List<Object> commandParams = new ArrayList<>();
+        commandParams.add(getName());
+        RedisCommand command = null;
+        if (params.get(GeoSearchNode.Params.LATITUDE) != null
+                && params.get(GeoSearchNode.Params.LONGITUDE) != null) {
+            commandParams.add(convert((double) params.get(GeoSearchNode.Params.LONGITUDE)));
+            commandParams.add(convert((double) params.get(GeoSearchNode.Params.LATITUDE)));
+            command = RedisCommands.GEORADIUS_STORE;
+        }
+        if (params.get(GeoSearchNode.Params.MEMBER) != null) {
+            commandParams.add(encode(params.get(GeoSearchNode.Params.MEMBER)));
+            command = RedisCommands.GEORADIUSBYMEMBER_STORE;
+        }
+        if (params.get(GeoSearchNode.Params.RADIUS) != null
+            && params.get(GeoSearchNode.Params.UNIT) != null) {
+            commandParams.add(params.get(GeoSearchNode.Params.RADIUS));
+            commandParams.add(params.get(GeoSearchNode.Params.UNIT));
+        }
+        if (params.get(GeoSearchNode.Params.ORDER) != null) {
+            commandParams.add(params.get(GeoSearchNode.Params.ORDER));
+        }
+        if (params.get(GeoSearchNode.Params.COUNT) != null) {
+            commandParams.add("COUNT");
+            commandParams.add(params.get(GeoSearchNode.Params.COUNT));
+        }
+        commandParams.add("STORE");
+        commandParams.add(destName);
+
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, command, commandParams.toArray());
+    }
+
+    @Override
     public long radiusStoreTo(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit,
             int count) {
         return get(radiusStoreToAsync(destName, longitude, latitude, radius, geoUnit, count));
@@ -567,6 +729,47 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
             GeoOrder geoOrder, int count) {
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.GEORADIUSBYMEMBER_STORE, getName(),
                 encode(member), radius, geoUnit, geoOrder, "COUNT", count, "STORE", destName);
+    }
+
+    @Override
+    public long storeSortedSearchTo(String destName, GeoSearchArgs args) {
+        return get(storeSortedSearchToAsync(destName, args));
+    }
+
+    @Override
+    public RFuture<Long> storeSortedSearchToAsync(String destName, GeoSearchArgs args) {
+        GeoSearchNode node = (GeoSearchNode) args;
+        Map<GeoSearchNode.Params, Object> params = node.getParams();
+
+        List<Object> commandParams = new ArrayList<>();
+        commandParams.add(getName());
+        RedisCommand command = null;
+        if (params.get(GeoSearchNode.Params.LATITUDE) != null
+                && params.get(GeoSearchNode.Params.LONGITUDE) != null) {
+            commandParams.add(convert((double) params.get(GeoSearchNode.Params.LONGITUDE)));
+            commandParams.add(convert((double) params.get(GeoSearchNode.Params.LATITUDE)));
+            command = RedisCommands.GEORADIUS_STORE;
+        }
+        if (params.get(GeoSearchNode.Params.MEMBER) != null) {
+            commandParams.add(encode(params.get(GeoSearchNode.Params.MEMBER)));
+            command = RedisCommands.GEORADIUSBYMEMBER_STORE;
+        }
+        if (params.get(GeoSearchNode.Params.RADIUS) != null
+            && params.get(GeoSearchNode.Params.UNIT) != null) {
+            commandParams.add(params.get(GeoSearchNode.Params.RADIUS));
+            commandParams.add(params.get(GeoSearchNode.Params.UNIT));
+        }
+        if (params.get(GeoSearchNode.Params.ORDER) != null) {
+            commandParams.add(params.get(GeoSearchNode.Params.ORDER));
+        }
+        if (params.get(GeoSearchNode.Params.COUNT) != null) {
+            commandParams.add("COUNT");
+            commandParams.add(params.get(GeoSearchNode.Params.COUNT));
+        }
+        commandParams.add("STOREDIST");
+        commandParams.add(destName);
+
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, command, commandParams.toArray());
     }
 
     @Override
