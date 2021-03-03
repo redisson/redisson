@@ -62,6 +62,10 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
     
     private static final RedisCommand<Map<Object, Object>> GEORADIUS_RO_DISTANCE = new RedisCommand<Map<Object, Object>>(
             "GEORADIUS_RO", DISTANCE_DECODER);
+    private static final RedisCommand<Map<Object, Object>> GEOSEARCH_DISTANCE = new RedisCommand<Map<Object, Object>>(
+            "GEOSEARCH", DISTANCE_DECODER);
+    private static final RedisCommand<Map<Object, Object>> GEOSEARCH_POS = new RedisCommand<Map<Object, Object>>(
+            "GEOSEARCH", POSTITION_DECODER);
     private static final RedisCommand<Map<Object, Object>> GEORADIUS_RO_POS = new RedisCommand<Map<Object, Object>>(
             "GEORADIUS_RO", POSTITION_DECODER);
     private static final RedisCommand<Map<Object, Object>> GEORADIUSBYMEMBER_RO_DISTANCE = new RedisCommand<Map<Object, Object>>(
@@ -228,18 +232,37 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
         RedisCommand command = null;
         if (params.get(GeoSearchNode.Params.LATITUDE) != null
                 && params.get(GeoSearchNode.Params.LONGITUDE) != null) {
+            command = RedisCommands.GEORADIUS_RO;
+            if (params.get(GeoSearchNode.Params.HEIGHT) != null) {
+                command = RedisCommands.GEOSEARCH;
+                commandParams.add("FROMLONLAT");
+            }
             commandParams.add(convert((double) params.get(GeoSearchNode.Params.LONGITUDE)));
             commandParams.add(convert((double) params.get(GeoSearchNode.Params.LATITUDE)));
-            command = RedisCommands.GEORADIUS_RO;
         }
         if (params.get(GeoSearchNode.Params.MEMBER) != null) {
-            commandParams.add(encode(params.get(GeoSearchNode.Params.MEMBER)));
             command = RedisCommands.GEORADIUSBYMEMBER_RO;
+            if (params.get(GeoSearchNode.Params.HEIGHT) != null) {
+                command = RedisCommands.GEOSEARCH;
+                commandParams.add("FROMMEMBER");
+            }
+            commandParams.add(encode(params.get(GeoSearchNode.Params.MEMBER)));
         }
         if (params.get(GeoSearchNode.Params.RADIUS) != null
             && params.get(GeoSearchNode.Params.UNIT) != null) {
             commandParams.add(params.get(GeoSearchNode.Params.RADIUS));
             commandParams.add(params.get(GeoSearchNode.Params.UNIT));
+        }
+        if (params.get(GeoSearchNode.Params.HEIGHT) != null
+            && params.get(GeoSearchNode.Params.UNIT) != null) {
+            commandParams.add("BYBOX");
+            commandParams.add(params.get(GeoSearchNode.Params.WIDTH));
+            commandParams.add(params.get(GeoSearchNode.Params.HEIGHT));
+            commandParams.add(params.get(GeoSearchNode.Params.UNIT));
+
+            if (params.get(GeoSearchNode.Params.ORDER) != null) {
+                commandParams.add(params.get(GeoSearchNode.Params.ORDER));
+            }
         }
         if (params.get(GeoSearchNode.Params.COUNT) != null) {
             commandParams.add("COUNT");
@@ -248,7 +271,8 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
                 commandParams.add("ANY");
             }
         }
-        if (params.get(GeoSearchNode.Params.ORDER) != null) {
+        if (params.get(GeoSearchNode.Params.HEIGHT) == null
+                && params.get(GeoSearchNode.Params.ORDER) != null) {
             commandParams.add(params.get(GeoSearchNode.Params.ORDER));
         }
 
@@ -270,20 +294,41 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
         RedisCommand command = null;
         if (params.get(GeoSearchNode.Params.LATITUDE) != null
                 && params.get(GeoSearchNode.Params.LONGITUDE) != null) {
+            command = GEORADIUS_RO_DISTANCE;
+            if (params.get(GeoSearchNode.Params.HEIGHT) != null) {
+                command = GEOSEARCH_DISTANCE;
+                commandParams.add("FROMLONLAT");
+            }
             commandParams.add(convert((double) params.get(GeoSearchNode.Params.LONGITUDE)));
             commandParams.add(convert((double) params.get(GeoSearchNode.Params.LATITUDE)));
-            command = GEORADIUS_RO_DISTANCE;
         }
         if (params.get(GeoSearchNode.Params.MEMBER) != null) {
-            commandParams.add(encode(params.get(GeoSearchNode.Params.MEMBER)));
             command = GEORADIUSBYMEMBER_RO_DISTANCE;
+            if (params.get(GeoSearchNode.Params.HEIGHT) != null) {
+                command = GEOSEARCH_DISTANCE;
+                commandParams.add("FROMMEMBER");
+            }
+            commandParams.add(encode(params.get(GeoSearchNode.Params.MEMBER)));
         }
         if (params.get(GeoSearchNode.Params.RADIUS) != null
             && params.get(GeoSearchNode.Params.UNIT) != null) {
             commandParams.add(params.get(GeoSearchNode.Params.RADIUS));
             commandParams.add(params.get(GeoSearchNode.Params.UNIT));
         }
-        commandParams.add("WITHDIST");
+        if (params.get(GeoSearchNode.Params.HEIGHT) != null
+            && params.get(GeoSearchNode.Params.UNIT) != null) {
+            commandParams.add("BYBOX");
+            commandParams.add(params.get(GeoSearchNode.Params.WIDTH));
+            commandParams.add(params.get(GeoSearchNode.Params.HEIGHT));
+            commandParams.add(params.get(GeoSearchNode.Params.UNIT));
+
+            if (params.get(GeoSearchNode.Params.ORDER) != null) {
+                commandParams.add(params.get(GeoSearchNode.Params.ORDER));
+            }
+        }
+        if (params.get(GeoSearchNode.Params.HEIGHT) == null) {
+            commandParams.add("WITHDIST");
+        }
         if (params.get(GeoSearchNode.Params.COUNT) != null) {
             commandParams.add("COUNT");
             commandParams.add(params.get(GeoSearchNode.Params.COUNT));
@@ -291,8 +336,12 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
                 commandParams.add("ANY");
             }
         }
-        if (params.get(GeoSearchNode.Params.ORDER) != null) {
+        if (params.get(GeoSearchNode.Params.HEIGHT) == null
+                && params.get(GeoSearchNode.Params.ORDER) != null) {
             commandParams.add(params.get(GeoSearchNode.Params.ORDER));
+        }
+        if (params.get(GeoSearchNode.Params.HEIGHT) != null) {
+            commandParams.add("WITHDIST");
         }
 
         return commandExecutor.readAsync(getName(), codec, command, commandParams.toArray());
@@ -313,20 +362,41 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
         RedisCommand command = null;
         if (params.get(GeoSearchNode.Params.LATITUDE) != null
                 && params.get(GeoSearchNode.Params.LONGITUDE) != null) {
+            command = GEORADIUS_RO_POS;
+            if (params.get(GeoSearchNode.Params.HEIGHT) != null) {
+                command = GEOSEARCH_POS;
+                commandParams.add("FROMLONLAT");
+            }
             commandParams.add(convert((double) params.get(GeoSearchNode.Params.LONGITUDE)));
             commandParams.add(convert((double) params.get(GeoSearchNode.Params.LATITUDE)));
-            command = GEORADIUS_RO_POS;
         }
         if (params.get(GeoSearchNode.Params.MEMBER) != null) {
-            commandParams.add(encode(params.get(GeoSearchNode.Params.MEMBER)));
             command = GEORADIUSBYMEMBER_RO_POS;
+            if (params.get(GeoSearchNode.Params.HEIGHT) != null) {
+                command = GEOSEARCH_POS;
+                commandParams.add("FROMMEMBER");
+            }
+            commandParams.add(encode(params.get(GeoSearchNode.Params.MEMBER)));
         }
         if (params.get(GeoSearchNode.Params.RADIUS) != null
             && params.get(GeoSearchNode.Params.UNIT) != null) {
             commandParams.add(params.get(GeoSearchNode.Params.RADIUS));
             commandParams.add(params.get(GeoSearchNode.Params.UNIT));
         }
-        commandParams.add("WITHCOORD");
+        if (params.get(GeoSearchNode.Params.HEIGHT) != null
+            && params.get(GeoSearchNode.Params.UNIT) != null) {
+            commandParams.add("BYBOX");
+            commandParams.add(params.get(GeoSearchNode.Params.WIDTH));
+            commandParams.add(params.get(GeoSearchNode.Params.HEIGHT));
+            commandParams.add(params.get(GeoSearchNode.Params.UNIT));
+
+            if (params.get(GeoSearchNode.Params.ORDER) != null) {
+                commandParams.add(params.get(GeoSearchNode.Params.ORDER));
+            }
+        }
+        if (params.get(GeoSearchNode.Params.HEIGHT) == null) {
+            commandParams.add("WITHCOORD");
+        }
         if (params.get(GeoSearchNode.Params.COUNT) != null) {
             commandParams.add("COUNT");
             commandParams.add(params.get(GeoSearchNode.Params.COUNT));
@@ -334,8 +404,12 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
                 commandParams.add("ANY");
             }
         }
-        if (params.get(GeoSearchNode.Params.ORDER) != null) {
+        if (params.get(GeoSearchNode.Params.HEIGHT) == null
+                && params.get(GeoSearchNode.Params.ORDER) != null) {
             commandParams.add(params.get(GeoSearchNode.Params.ORDER));
+        }
+        if (params.get(GeoSearchNode.Params.HEIGHT) != null) {
+            commandParams.add("WITHCOORD");
         }
 
         return commandExecutor.readAsync(getName(), codec, command, commandParams.toArray());
@@ -650,25 +724,44 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
         Map<GeoSearchNode.Params, Object> params = node.getParams();
 
         List<Object> commandParams = new ArrayList<>();
+        if (params.get(GeoSearchNode.Params.HEIGHT) != null) {
+            commandParams.add(destName);
+        }
         commandParams.add(getName());
         RedisCommand command = null;
         if (params.get(GeoSearchNode.Params.LATITUDE) != null
                 && params.get(GeoSearchNode.Params.LONGITUDE) != null) {
+            command = RedisCommands.GEORADIUS_STORE;
+            if (params.get(GeoSearchNode.Params.HEIGHT) != null) {
+                command = RedisCommands.GEOSEARCHSTORE_STORE;
+                commandParams.add("FROMLONLAT");
+            }
             commandParams.add(convert((double) params.get(GeoSearchNode.Params.LONGITUDE)));
             commandParams.add(convert((double) params.get(GeoSearchNode.Params.LATITUDE)));
-            command = RedisCommands.GEORADIUS_STORE;
         }
         if (params.get(GeoSearchNode.Params.MEMBER) != null) {
-            commandParams.add(encode(params.get(GeoSearchNode.Params.MEMBER)));
             command = RedisCommands.GEORADIUSBYMEMBER_STORE;
+            if (params.get(GeoSearchNode.Params.HEIGHT) != null) {
+                command = RedisCommands.GEOSEARCHSTORE_STORE;
+                commandParams.add("FROMMEMBER");
+            }
+            commandParams.add(encode(params.get(GeoSearchNode.Params.MEMBER)));
         }
         if (params.get(GeoSearchNode.Params.RADIUS) != null
             && params.get(GeoSearchNode.Params.UNIT) != null) {
             commandParams.add(params.get(GeoSearchNode.Params.RADIUS));
             commandParams.add(params.get(GeoSearchNode.Params.UNIT));
         }
-        if (params.get(GeoSearchNode.Params.ORDER) != null) {
-            commandParams.add(params.get(GeoSearchNode.Params.ORDER));
+        if (params.get(GeoSearchNode.Params.HEIGHT) != null
+            && params.get(GeoSearchNode.Params.UNIT) != null) {
+            commandParams.add("BYBOX");
+            commandParams.add(params.get(GeoSearchNode.Params.WIDTH));
+            commandParams.add(params.get(GeoSearchNode.Params.HEIGHT));
+            commandParams.add(params.get(GeoSearchNode.Params.UNIT));
+
+            if (params.get(GeoSearchNode.Params.ORDER) != null) {
+                commandParams.add(params.get(GeoSearchNode.Params.ORDER));
+            }
         }
         if (params.get(GeoSearchNode.Params.COUNT) != null) {
             commandParams.add("COUNT");
@@ -677,8 +770,14 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
                 commandParams.add("ANY");
             }
         }
-        commandParams.add("STORE");
-        commandParams.add(destName);
+        if (params.get(GeoSearchNode.Params.HEIGHT) == null
+                && params.get(GeoSearchNode.Params.ORDER) != null) {
+            commandParams.add(params.get(GeoSearchNode.Params.ORDER));
+        }
+        if (params.get(GeoSearchNode.Params.HEIGHT) == null) {
+            commandParams.add("STORE");
+            commandParams.add(destName);
+        }
 
         return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, command, commandParams.toArray());
     }
@@ -754,25 +853,44 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
         Map<GeoSearchNode.Params, Object> params = node.getParams();
 
         List<Object> commandParams = new ArrayList<>();
+        if (params.get(GeoSearchNode.Params.HEIGHT) != null) {
+            commandParams.add(destName);
+        }
         commandParams.add(getName());
         RedisCommand command = null;
         if (params.get(GeoSearchNode.Params.LATITUDE) != null
                 && params.get(GeoSearchNode.Params.LONGITUDE) != null) {
+            command = RedisCommands.GEORADIUS_STORE;
+            if (params.get(GeoSearchNode.Params.HEIGHT) != null) {
+                command = RedisCommands.GEOSEARCHSTORE_STORE;
+                commandParams.add("FROMLONLAT");
+            }
             commandParams.add(convert((double) params.get(GeoSearchNode.Params.LONGITUDE)));
             commandParams.add(convert((double) params.get(GeoSearchNode.Params.LATITUDE)));
-            command = RedisCommands.GEORADIUS_STORE;
         }
         if (params.get(GeoSearchNode.Params.MEMBER) != null) {
-            commandParams.add(encode(params.get(GeoSearchNode.Params.MEMBER)));
             command = RedisCommands.GEORADIUSBYMEMBER_STORE;
+            if (params.get(GeoSearchNode.Params.HEIGHT) != null) {
+                command = RedisCommands.GEOSEARCHSTORE_STORE;
+                commandParams.add("FROMMEMBER");
+            }
+            commandParams.add(encode(params.get(GeoSearchNode.Params.MEMBER)));
         }
         if (params.get(GeoSearchNode.Params.RADIUS) != null
             && params.get(GeoSearchNode.Params.UNIT) != null) {
             commandParams.add(params.get(GeoSearchNode.Params.RADIUS));
             commandParams.add(params.get(GeoSearchNode.Params.UNIT));
         }
-        if (params.get(GeoSearchNode.Params.ORDER) != null) {
-            commandParams.add(params.get(GeoSearchNode.Params.ORDER));
+        if (params.get(GeoSearchNode.Params.HEIGHT) != null
+            && params.get(GeoSearchNode.Params.UNIT) != null) {
+            commandParams.add("BYBOX");
+            commandParams.add(params.get(GeoSearchNode.Params.WIDTH));
+            commandParams.add(params.get(GeoSearchNode.Params.HEIGHT));
+            commandParams.add(params.get(GeoSearchNode.Params.UNIT));
+
+            if (params.get(GeoSearchNode.Params.ORDER) != null) {
+                commandParams.add(params.get(GeoSearchNode.Params.ORDER));
+            }
         }
         if (params.get(GeoSearchNode.Params.COUNT) != null) {
             commandParams.add("COUNT");
@@ -781,8 +899,14 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
                 commandParams.add("ANY");
             }
         }
+        if (params.get(GeoSearchNode.Params.HEIGHT) == null
+                && params.get(GeoSearchNode.Params.ORDER) != null) {
+            commandParams.add(params.get(GeoSearchNode.Params.ORDER));
+        }
         commandParams.add("STOREDIST");
-        commandParams.add(destName);
+        if (params.get(GeoSearchNode.Params.HEIGHT) == null) {
+            commandParams.add(destName);
+        }
 
         return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, command, commandParams.toArray());
     }

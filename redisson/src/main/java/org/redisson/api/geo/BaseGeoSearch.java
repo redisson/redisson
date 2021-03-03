@@ -36,13 +36,13 @@ class BaseGeoSearch implements ShapeGeoSearch {
         params.put(GeoSearchNode.Params.LATITUDE, latitude);
     }
 
-//    @Override
-//    public OptionalGeoSearch box(double width, double height, GeoUnit geoUnit) {
-//        params.put(GeoSearchNode.Params.WIDTH, width);
-//        params.put(GeoSearchNode.Params.HEIGHT, height);
-//        params.put(GeoSearchNode.Params.UNIT, geoUnit);
-//        return new BaseOptionalGeoSearch(params);
-//    }
+    @Override
+    public OptionalGeoSearch box(double width, double height, GeoUnit geoUnit) {
+        params.put(GeoSearchNode.Params.WIDTH, width);
+        params.put(GeoSearchNode.Params.HEIGHT, height);
+        params.put(GeoSearchNode.Params.UNIT, geoUnit);
+        return new BaseOptionalGeoSearch(params);
+    }
 
     @Override
     public OptionalGeoSearch radius(double radius, GeoUnit geoUnit) {

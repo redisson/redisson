@@ -24,15 +24,17 @@ import org.redisson.api.GeoUnit;
  */
 public interface ShapeGeoSearch {
 
-//    /**
-//     * Defines search within box
-//     *
-//     * @param width - box width
-//     * @param height - box height
-//     * @param geoUnit - geo unit
-//     * @return search conditions object
-//     */
-//    OptionalGeoSearch box(double width, double height, GeoUnit geoUnit);
+    /**
+     * Defines search within box
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param width - box width
+     * @param height - box height
+     * @param geoUnit - geo unit
+     * @return search conditions object
+     */
+    OptionalGeoSearch box(double width, double height, GeoUnit geoUnit);
 
     /**
      * Defines search within radius
