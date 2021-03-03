@@ -30,11 +30,21 @@ class BaseOptionalGeoSearch implements OptionalGeoSearch, GeoSearchNode {
         this.params = params;
     }
 
+    @Override
     public OptionalGeoSearch count(int value) {
         params.put(Params.COUNT, value);
+        params.remove(Params.COUNT_ANY);
         return this;
     }
 
+    @Override
+    public OptionalGeoSearch countAny(int value) {
+        params.put(Params.COUNT, value);
+        params.put(Params.COUNT_ANY, true);
+        return this;
+    }
+
+    @Override
     public OptionalGeoSearch order(GeoOrder geoOrder) {
         params.put(Params.ORDER, geoOrder);
         return this;

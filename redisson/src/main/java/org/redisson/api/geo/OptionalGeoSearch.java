@@ -33,6 +33,17 @@ public interface OptionalGeoSearch extends GeoSearchArgs {
     OptionalGeoSearch count(int value);
 
     /**
+     * Defines limit of search result.
+     * Returns as soon as enough matches are found.
+     * Result size might be not closest to defined limit,
+     * but works faster.
+     *
+     * @param value - result limit
+     * @return search conditions object
+     */
+    OptionalGeoSearch countAny(int value);
+
+    /**
      * Defines order of search result
      *
      * @param geoOrder - result order

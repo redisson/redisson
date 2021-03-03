@@ -244,6 +244,9 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
         if (params.get(GeoSearchNode.Params.COUNT) != null) {
             commandParams.add("COUNT");
             commandParams.add(params.get(GeoSearchNode.Params.COUNT));
+            if (params.get(GeoSearchNode.Params.COUNT_ANY) != null) {
+                commandParams.add("ANY");
+            }
         }
         if (params.get(GeoSearchNode.Params.ORDER) != null) {
             commandParams.add(params.get(GeoSearchNode.Params.ORDER));
@@ -284,6 +287,9 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
         if (params.get(GeoSearchNode.Params.COUNT) != null) {
             commandParams.add("COUNT");
             commandParams.add(params.get(GeoSearchNode.Params.COUNT));
+            if (params.get(GeoSearchNode.Params.COUNT_ANY) != null) {
+                commandParams.add("ANY");
+            }
         }
         if (params.get(GeoSearchNode.Params.ORDER) != null) {
             commandParams.add(params.get(GeoSearchNode.Params.ORDER));
@@ -324,6 +330,9 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
         if (params.get(GeoSearchNode.Params.COUNT) != null) {
             commandParams.add("COUNT");
             commandParams.add(params.get(GeoSearchNode.Params.COUNT));
+            if (params.get(GeoSearchNode.Params.COUNT_ANY) != null) {
+                commandParams.add("ANY");
+            }
         }
         if (params.get(GeoSearchNode.Params.ORDER) != null) {
             commandParams.add(params.get(GeoSearchNode.Params.ORDER));
@@ -664,6 +673,9 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
         if (params.get(GeoSearchNode.Params.COUNT) != null) {
             commandParams.add("COUNT");
             commandParams.add(params.get(GeoSearchNode.Params.COUNT));
+            if (params.get(GeoSearchNode.Params.COUNT_ANY) != null) {
+                commandParams.add("ANY");
+            }
         }
         commandParams.add("STORE");
         commandParams.add(destName);
@@ -765,6 +777,9 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
         if (params.get(GeoSearchNode.Params.COUNT) != null) {
             commandParams.add("COUNT");
             commandParams.add(params.get(GeoSearchNode.Params.COUNT));
+            if (params.get(GeoSearchNode.Params.COUNT_ANY) != null) {
+                commandParams.add("ANY");
+            }
         }
         commandParams.add("STOREDIST");
         commandParams.add(destName);

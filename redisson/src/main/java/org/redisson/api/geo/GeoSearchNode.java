@@ -23,7 +23,7 @@ import java.util.Map;
 public interface GeoSearchNode {
 
     enum Params {
-        MEMBER, LONGITUDE, LATITUDE, WIDTH, HEIGHT, RADIUS, UNIT, COUNT, ORDER
+        MEMBER, LONGITUDE, LATITUDE, WIDTH, HEIGHT, RADIUS, UNIT, COUNT, COUNT_ANY, ORDER
     }
 
     Map<Params, Object>  getParams();
