@@ -131,21 +131,9 @@ abstract class ConnectionPool<T extends RedisConnection> {
                             if (initPromise.isDone()) {
                                 return;
                             }
-                            
-                            for (RedisConnection connection : entry.getAllConnections()) {
-                                if (!connection.isClosed()) {
-                                    connection.closeAsync();
-                                }
-                            }
-                            entry.getAllConnections().clear();
-                            
-                            for (RedisConnection connection : entry.getAllSubscribeConnections()) {
-                                if (!connection.isClosed()) {
-                                    connection.closeAsync();
-                                }
-                            }
-                            entry.getAllSubscribeConnections().clear();
-                            
+
+                            entry.closeAllConnections();
+
                             int totalInitializedConnections = minimumIdleSize - initializedConnections.get();
                             String errorMsg;
                             if (totalInitializedConnections == 0) {
