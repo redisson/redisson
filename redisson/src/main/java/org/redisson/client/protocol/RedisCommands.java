@@ -240,7 +240,7 @@ public interface RedisCommands {
     RedisCommand<Set<Entry<Object, Object>>> EVAL_MAP_ENTRY = new RedisCommand<Set<Entry<Object, Object>>>("EVAL",
             new MapEntriesDecoder(new ObjectMapEntryReplayDecoder()));
     RedisCommand<Map<Object, Object>> EVAL_MAP = new RedisCommand<Map<Object, Object>>("EVAL",
-            new MapEntriesDecoder(new ObjectMapReplayDecoder()));
+            new ObjectMapReplayDecoder());
     RedisCommand<List<Object>> EVAL_MAP_VALUE_LIST = new RedisCommand<List<Object>>("EVAL",
             new MapValueDecoder(new ObjectListReplayDecoder<>()));
     RedisCommand<Set<Object>> EVAL_MAP_VALUE_SET = new RedisCommand<Set<Object>>("EVAL",
@@ -280,13 +280,13 @@ public interface RedisCommands {
     RedisCommand<MapScanResult<Object, Object>> HSCAN =
             new RedisCommand<MapScanResult<Object, Object>>("HSCAN",
                         new ListMultiDecoder2(new MapScanResultReplayDecoder(),
-                                new MapEntriesDecoder(new ObjectMapReplayDecoder())));
+                                new ObjectMapReplayDecoder()));
     RedisCommand<Map<Object, Object>> HRANDFIELD = new RedisCommand<>("HRANDFIELD",
-                        new MapEntriesDecoder(new ObjectMapReplayDecoder()), new EmptyMapConvertor());
+                        new ObjectMapReplayDecoder(), new EmptyMapConvertor());
     RedisCommand<Set<Object>> HRANDFIELD_KEYS = new RedisCommand<>("HRANDFIELD",
                         new MapKeyDecoder(new ObjectSetReplayDecoder<>()), new EmptySetConvertor());
     RedisCommand<Map<Object, Object>> HGETALL = new RedisCommand<Map<Object, Object>>("HGETALL",
-                        new MapEntriesDecoder(new ObjectMapReplayDecoder()));
+                        new ObjectMapReplayDecoder());
     RedisCommand<Set<Entry<Object, Object>>> HGETALL_ENTRY = new RedisCommand<Set<Entry<Object, Object>>>("HGETALL",
                         new MapEntriesDecoder(new ObjectMapEntryReplayDecoder()));
     RedisCommand<List<Object>> HVALS = new RedisCommand<List<Object>>("HVALS",

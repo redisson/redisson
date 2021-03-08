@@ -26,10 +26,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.decoder.CodecDecoder;
-import org.redisson.client.protocol.decoder.ListMultiDecoder2;
-import org.redisson.client.protocol.decoder.ObjectMapDecoder;
-import org.redisson.client.protocol.decoder.StreamInfoDecoder;
+import org.redisson.client.protocol.decoder.*;
 import org.redisson.command.CommandAsyncExecutor;
 
 /**
@@ -1083,7 +1080,12 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
 
     @Override
     public RFuture<StreamInfo<K, V>> getInfoAsync() {
-        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, XINFO_STREAM, getName());
+        RedisCommand<StreamInfo<Object, Object>> xinfoStream = new RedisCommand<>("XINFO", "STREAM",
+                                                                        new ListMultiDecoder2(
+                                                                                new StreamInfoDecoder(),
+                                                                                new CodecDecoder(),
+                                                                                new ObjectMapReplayDecoder(codec)));
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, xinfoStream, getName());
     }
 
     @Override

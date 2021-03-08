@@ -15,11 +15,14 @@
  */
 package org.redisson.client.protocol.decoder;
 
+import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
+import org.redisson.client.protocol.Decoder;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * 
@@ -27,6 +30,25 @@ import java.util.Map;
  *
  */
 public class ObjectMapReplayDecoder<K, V> implements MultiDecoder<Map<K, V>> {
+
+    private final Codec codec;
+
+    public ObjectMapReplayDecoder(Codec codec) {
+        this.codec = codec;
+    }
+
+    public ObjectMapReplayDecoder() {
+        this(null);
+    }
+
+    @Override
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+        if (paramNum % 2 != 0) {
+            return Optional.ofNullable(this.codec).orElse(codec).getMapValueDecoder();
+        } else {
+            return Optional.ofNullable(this.codec).orElse(codec).getMapKeyDecoder();
+        }
+    }
 
     @Override
     public Map<K, V> decode(List<Object> parts, State state) {
