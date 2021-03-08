@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.stream.StreamAddArgs;
+import org.redisson.api.stream.TrimStrategy;
 import reactor.core.publisher.Mono;
 
 /**
@@ -486,91 +488,75 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
     Mono<Long> size();
 
     /**
-     * Appends a new entry and returns generated Stream ID
-     * 
-     * @param key - key of entry
-     * @param value - value of entry
-     * @return Stream ID
+     * Appends a new entry/entries and returns generated Stream Message ID
+     *
+     * @param args - method arguments object
+     * @return Stream Message ID
      */
+    Mono<StreamMessageId> add(StreamAddArgs<K, V> args);
+
+    /**
+     * Appends a new entry/entries by specified Stream Message ID
+     *
+     * @param id - Stream Message ID
+     * @param args - method arguments object
+     */
+    Mono<Void> add(StreamMessageId id, StreamAddArgs<K, V> args);
+
+    /*
+     * Use add(StreamAddArgs) method instead
+     *
+     */
+    @Deprecated
     Mono<StreamMessageId> add(K key, V value);
     
-    /**
-     * Appends a new entry by specified Stream ID
-     * 
-     * @param id - Stream ID
-     * @param key - key of entry
-     * @param value - value of entry
-     * @return void
+    /*
+     * Use add(StreamMessageId, StreamAddArgs) method instead
+     *
      */
+    @Deprecated
     Mono<Void> add(StreamMessageId id, K key, V value);
     
-    /**
-     * Appends a new entry and returns generated Stream ID.
-     * Trims stream to a specified <code>trimLen</code> size.
-     * If <code>trimStrict</code> is <code>false</code> then trims to few tens of entries more than specified length to trim.
-     * 
-     * @param key - key of entry
-     * @param value - value of entry
-     * @param trimLen - length to trim
-     * @param trimStrict - if <code>false</code> then trims to few tens of entries more than specified length to trim
-     * @return Stream ID
+    /*
+     * Use add(StreamAddArgs) method instead
+     *
      */
+    @Deprecated
     Mono<StreamMessageId> add(K key, V value, int trimLen, boolean trimStrict);
 
-    /**
-     * Appends a new entry by specified Stream ID.
-     * Trims stream to a specified <code>trimLen</code> size.
-     * If <code>trimStrict</code> is <code>false</code> then trims to few tens of entries more than specified length to trim.
-     * 
-     * @param id - Stream ID
-     * @param key - key of entry
-     * @param value - value of entry
-     * @param trimLen - length to trim
-     * @param trimStrict - if <code>false</code> then trims to few tens of entries more than specified length to trim
-     * @return void
+    /*
+     * Use add(StreamMessageId, StreamAddArgs) method instead
+     *
      */
+    @Deprecated
     Mono<Void> add(StreamMessageId id, K key, V value, int trimLen, boolean trimStrict);
     
-    /**
-     * Appends new entries and returns generated Stream ID
-     * 
-     * @param entries - entries to add
-     * @return Stream ID
+    /*
+     * Use add(StreamAddArgs) method instead
+     *
      */
+    @Deprecated
     Mono<StreamMessageId> addAll(Map<K, V> entries);
     
-    /**
-     * Appends new entries by specified Stream ID
-     * 
-     * @param id - Stream ID
-     * @param entries - entries to add
-     * @return void
+    /*
+     * Use add(StreamMessageId, StreamAddArgs) method instead
+     *
      */
+    @Deprecated
     Mono<Void> addAll(StreamMessageId id, Map<K, V> entries);
     
-    /**
-     * Appends new entries and returns generated Stream ID.
-     * Trims stream to a specified <code>trimLen</code> size.
-     * If <code>trimStrict</code> is <code>false</code> then trims to few tens of entries more than specified length to trim.
-     * 
-     * @param entries - entries to add
-     * @param trimLen - length to trim
-     * @param trimStrict - if <code>false</code> then trims to few tens of entries more than specified length to trim
-     * @return Stream ID
+    /*
+     * Use add(StreamAddArgs) method instead
+     *
      */
+    @Deprecated
     Mono<StreamMessageId> addAll(Map<K, V> entries, int trimLen, boolean trimStrict);
 
-    /**
-     * Appends new entries by specified Stream ID.
-     * Trims stream to a specified <code>trimLen</code> size.
-     * If <code>trimStrict</code> is <code>false</code> then trims to few tens of entries more than specified length to trim.
-     * 
-     * @param id - Stream ID
-     * @param entries - entries to add
-     * @param trimLen - length to trim
-     * @param trimStrict - if <code>false</code> then trims to few tens of entries more than specified length to trim
-     * @return void
+    /*
+     * Use add(StreamMessageId, StreamAddArgs) method instead
+     *
      */
+    @Deprecated
     Mono<Void> addAll(StreamMessageId id, Map<K, V> entries, int trimLen, boolean trimStrict);
     
     /**
@@ -822,6 +808,34 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @return number of deleted messages
      */
     Mono<Long> trimNonStrict(int size);
+
+    /**
+     * Trims stream to specified size
+     *
+     * @param strategy - trim strategy
+     * @param threshold - new size of stream
+     * @return number of deleted messages
+     */
+    Mono<Long> trim(TrimStrategy strategy, int threshold);
+
+    /**
+     * Trims stream using almost exact trimming threshold.
+     *
+     * @param strategy - trim strategy
+     * @param threshold - trim threshold
+     * @return number of deleted messages
+     */
+    Mono<Long> trimNonStrict(TrimStrategy strategy, int threshold);
+
+    /**
+     * Trims stream using almost exact trimming threshold up to limit.
+     *
+     * @param strategy - trim strategy
+     * @param threshold - trim threshold
+     * @param limit - trim limit
+     * @return number of deleted messages
+     */
+    Mono<Long> trimNonStrict(TrimStrategy strategy, int threshold, int limit);
 
     /**
      * Returns information about this stream.
