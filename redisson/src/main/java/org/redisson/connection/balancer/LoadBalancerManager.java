@@ -159,7 +159,6 @@ public class LoadBalancerManager {
                                 if (!initConnError.compareAndSet(false, true)) {
                                     return;
                                 }
-                                entry.closeAllConnections();
                                 entry.setInitialized(false);
                             }
                         }
