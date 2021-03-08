@@ -1105,13 +1105,6 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         return get(getInfoAsync());
     }
 
-    private static final RedisCommand<StreamInfo<Object, Object>> XINFO_STREAM = new RedisCommand<>("XINFO", "STREAM",
-                                                                        new ListMultiDecoder2(
-                                                                                new StreamInfoDecoder(),
-                                                                                new CodecDecoder(),
-                                                                                new ObjectMapDecoder(false)));
-
-
     @Override
     public RFuture<StreamInfo<K, V>> getInfoAsync() {
         RedisCommand<StreamInfo<Object, Object>> xinfoStream = new RedisCommand<>("XINFO", "STREAM",

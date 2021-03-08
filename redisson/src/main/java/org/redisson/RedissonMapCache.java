@@ -1395,7 +1395,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     private static final RedisCommand<MapCacheScanResult<Object, Object>> SCAN = new RedisCommand<MapCacheScanResult<Object, Object>>("EVAL",
                 new ListMultiDecoder2(
                         new MapCacheScanResultReplayDecoder(),
-                        new MapEntriesDecoder(new ObjectMapDecoder(true))));
+                        new ObjectMapDecoder(true)));
 
     @Override
     public RFuture<MapScanResult<Object, Object>> scanIteratorAsync(String name, RedisClient client, long startPos, String pattern, int count) {

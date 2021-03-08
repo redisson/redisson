@@ -238,7 +238,7 @@ public interface RedisCommands {
     RedisCommand<Object> EVAL_OBJECT = new RedisCommand<Object>("EVAL");
     RedisCommand<Object> EVAL_MAP_VALUE = new RedisCommand<Object>("EVAL", new MapValueDecoder());
     RedisCommand<Set<Entry<Object, Object>>> EVAL_MAP_ENTRY = new RedisCommand<Set<Entry<Object, Object>>>("EVAL",
-            new MapEntriesDecoder(new ObjectMapEntryReplayDecoder()));
+            new ObjectMapEntryReplayDecoder());
     RedisCommand<Map<Object, Object>> EVAL_MAP = new RedisCommand<Map<Object, Object>>("EVAL",
             new ObjectMapReplayDecoder());
     RedisCommand<List<Object>> EVAL_MAP_VALUE_LIST = new RedisCommand<List<Object>>("EVAL",
@@ -288,7 +288,7 @@ public interface RedisCommands {
     RedisCommand<Map<Object, Object>> HGETALL = new RedisCommand<Map<Object, Object>>("HGETALL",
                         new ObjectMapReplayDecoder());
     RedisCommand<Set<Entry<Object, Object>>> HGETALL_ENTRY = new RedisCommand<Set<Entry<Object, Object>>>("HGETALL",
-                        new MapEntriesDecoder(new ObjectMapEntryReplayDecoder()));
+                        new ObjectMapEntryReplayDecoder());
     RedisCommand<List<Object>> HVALS = new RedisCommand<List<Object>>("HVALS",
                         new MapValueDecoder(new ObjectListReplayDecoder<>()));
     RedisCommand<Boolean> HEXISTS = new RedisCommand<Boolean>("HEXISTS", new BooleanReplayConvertor());

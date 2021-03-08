@@ -49,7 +49,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     public static final String DISABLED_ACK_SUFFIX = ":topic";
 
     private static final RedisCommand<Set<Object>> ALL_KEYS = new RedisCommand<Set<Object>>("EVAL", new MapKeyDecoder(new ObjectSetReplayDecoder<Object>()));
-    private static final RedisCommand<Set<Entry<Object, Object>>> ALL_ENTRIES = new RedisCommand<Set<Entry<Object, Object>>>("EVAL", new MapEntriesDecoder(new ObjectMapEntryReplayDecoder()));
+    private static final RedisCommand<Set<Entry<Object, Object>>> ALL_ENTRIES = new RedisCommand<>("EVAL", new ObjectMapEntryReplayDecoder());
     private static final RedisCommand<Map<Object, Object>> ALL_MAP = new RedisCommand<Map<Object, Object>>("EVAL", new ObjectMapReplayDecoder());
     
     private long cacheUpdateLogTime = TimeUnit.MINUTES.toMillis(10);
