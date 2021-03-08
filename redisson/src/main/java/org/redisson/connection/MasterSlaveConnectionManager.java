@@ -235,6 +235,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     protected final RFuture<RedisConnection> connectToNode(BaseConfig<?> cfg, RedisURI addr, String sslHostname) {
+        return connectToNode(NodeType.MASTER, cfg, addr, sslHostname);
+    }
+
+    protected final RFuture<RedisConnection> connectToNode(NodeType type, BaseConfig<?> cfg, RedisURI addr, String sslHostname) {
         RedisConnection conn = nodeConnections.get(addr);
         if (conn != null) {
             if (!conn.isActive()) {
@@ -245,7 +249,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
         }
 
-        RedisClient client = createClient(NodeType.MASTER, addr, cfg.getConnectTimeout(), cfg.getTimeout(), sslHostname);
+        RedisClient client = createClient(type, addr, cfg.getConnectTimeout(), cfg.getTimeout(), sslHostname);
         RPromise<RedisConnection> result = new RedissonPromise<>();
         RFuture<RedisConnection> future = client.connectAsync();
         future.onComplete((connection, e) -> {
