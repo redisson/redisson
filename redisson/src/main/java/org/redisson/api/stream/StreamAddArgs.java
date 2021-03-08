@@ -27,14 +27,6 @@ import java.util.Map;
  */
 public interface StreamAddArgs<K, V> {
 
-    enum TrimStrategy {
-
-        MAXLEN,
-
-        MINID
-
-    }
-
     /**
      * Define to not create stream automatically if it doesn't exist
      *

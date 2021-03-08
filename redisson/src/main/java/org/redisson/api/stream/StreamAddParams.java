@@ -27,7 +27,7 @@ public class StreamAddParams<K, V> {
     private Map<K, V> entries;
     private boolean noMakeStream;
     private boolean trimStrict;
-    private StreamAddArgs.TrimStrategy trimStrategy;
+    private TrimStrategy trimStrategy;
     private int trimThreshold;
     private int limit;
 
@@ -55,11 +55,11 @@ public class StreamAddParams<K, V> {
         this.trimStrict = trimStrict;
     }
 
-    public StreamAddArgs.TrimStrategy getTrimStrategy() {
+    public TrimStrategy getTrimStrategy() {
         return trimStrategy;
     }
 
-    public void setTrimStrategy(StreamAddArgs.TrimStrategy trimStrategy) {
+    public void setTrimStrategy(TrimStrategy trimStrategy) {
         this.trimStrategy = trimStrategy;
     }
 

@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import org.redisson.api.stream.StreamAddArgs;
+import org.redisson.api.stream.TrimStrategy;
 
 import java.util.List;
 import java.util.Map;
@@ -858,7 +859,7 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
     long remove(StreamMessageId... ids);
     
     /**
-     * Trims stream to specified size
+     * Trims stream using MAXLEN strategy to specified size
      * 
      * @param size - new size of stream
      * @return number of deleted messages
@@ -866,12 +867,40 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
     long trim(int size);
 
     /**
-     * Trims stream to few tens of entries more than specified length to trim.
+     * Trims stream to specified size
+     *
+     * @param strategy - trim strategy
+     * @param threshold - new size of stream
+     * @return number of deleted messages
+     */
+    long trim(TrimStrategy strategy, int threshold);
+
+    /**
+     * Trims stream using MAXLEN strategy to almost exact trimming threshold..
      * 
      * @param size - new size of stream
      * @return number of deleted messages
      */
     long trimNonStrict(int size);
+
+    /**
+     * Trims stream using almost exact trimming threshold.
+     *
+     * @param strategy - trim strategy
+     * @param threshold - trim threshold
+     * @return number of deleted messages
+     */
+    long trimNonStrict(TrimStrategy strategy, int threshold);
+
+    /**
+     * Trims stream using almost exact trimming threshold up to limit.
+     *
+     * @param strategy - trim strategy
+     * @param threshold - trim threshold
+     * @param limit - trim limit
+     * @return number of deleted messages
+     */
+    long trimNonStrict(TrimStrategy strategy, int threshold, int limit);
 
     /**
      * Returns information about this stream.

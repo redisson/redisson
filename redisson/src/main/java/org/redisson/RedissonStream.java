@@ -22,6 +22,7 @@ import org.redisson.api.*;
 import org.redisson.api.stream.StreamAddArgs;
 import org.redisson.api.stream.StreamAddArgsSource;
 import org.redisson.api.stream.StreamAddParams;
+import org.redisson.api.stream.TrimStrategy;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
@@ -1004,6 +1005,39 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     @Override
     public long remove(StreamMessageId... ids) {
         return get(removeAsync(ids));
+    }
+
+    @Override
+    public long trim(TrimStrategy strategy, int threshold) {
+        return get(trimAsync(strategy, threshold));
+    }
+
+    @Override
+    public long trimNonStrict(TrimStrategy strategy, int threshold, int limit) {
+        return get(trimNonStrictAsync(strategy, threshold, limit));
+    }
+
+    @Override
+    public RFuture<Long> trimAsync(TrimStrategy strategy, int threshold) {
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XTRIM,
+                                            getName(), strategy.toString(), threshold);
+    }
+
+    @Override
+    public RFuture<Long> trimNonStrictAsync(TrimStrategy strategy, int threshold, int limit) {
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XTRIM,
+                                    getName(), strategy.toString(), "~", threshold, "LIMIT", limit);
+    }
+
+    @Override
+    public long trimNonStrict(TrimStrategy strategy, int threshold) {
+        return get(trimNonStrictAsync(strategy, threshold));
+    }
+
+    @Override
+    public RFuture<Long> trimNonStrictAsync(TrimStrategy strategy, int threshold) {
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XTRIM,
+                                    getName(), strategy.toString(), "~", threshold);
     }
 
     @Override
