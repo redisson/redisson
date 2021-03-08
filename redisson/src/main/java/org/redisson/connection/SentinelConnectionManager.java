@@ -331,7 +331,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
         RedisClient client = iterator.next();
         RedisURI addr = getIpAddr(client.getAddr());
-        RFuture<RedisConnection> connectionFuture = connectToNode(cfg, addr, null);
+        RFuture<RedisConnection> connectionFuture = connectToNode(NodeType.SENTINEL, cfg, addr, null);
         connectionFuture.onComplete((connection, e) -> {
             if (e != null) {
                 lastException.set(e);
