@@ -19,6 +19,9 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.*;
+import org.redisson.api.stream.StreamAddArgs;
+import org.redisson.api.stream.StreamAddArgsSource;
+import org.redisson.api.stream.StreamAddParams;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
@@ -734,6 +737,70 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
             return commandExecutor.readAsync(getName(), codec, RedisCommands.XREAD_BLOCKING, params.toArray());
         }
         return commandExecutor.readAsync(getName(), codec, RedisCommands.XREAD, params.toArray());
+    }
+
+    @Override
+    public StreamMessageId add(StreamAddArgs<K, V> args) {
+        return get(addAsync(args));
+    }
+
+    @Override
+    public void add(StreamMessageId id, StreamAddArgs<K, V> args) {
+        get(addAsync(id, args));
+    }
+
+    @Override
+    public RFuture<StreamMessageId> addAsync(StreamAddArgs<K, V> args) {
+        return addCustomAsync(null, args);
+    }
+
+    @Override
+    public RFuture<Void> addAsync(StreamMessageId id, StreamAddArgs<K, V> args) {
+        return addCustomAsync(id, args);
+    }
+
+    public <R> RFuture<R> addCustomAsync(StreamMessageId id, StreamAddArgs<K, V> args) {
+        StreamAddArgsSource<K, V> source = (StreamAddArgsSource<K, V>) args;
+        StreamAddParams<K, V> pps = source.getParams();
+
+        List<Object> params = new LinkedList<Object>();
+        params.add(getName());
+
+        if (pps.isNoMakeStream()) {
+            params.add("NOMKSTREAM");
+        }
+
+        if (pps.getTrimThreshold() > 0) {
+            params.add(pps.getTrimStrategy().toString());
+            if (!pps.isTrimStrict()) {
+                params.add("~");
+            }
+            params.add(pps.getTrimThreshold());
+        }
+
+        if (pps.getLimit() > 0) {
+            params.add("LIMIT");
+            params.add(pps.getLimit());
+        }
+
+        if (id == null) {
+            params.add("*");
+        } else {
+            params.add(id.toString());
+        }
+
+        for (java.util.Map.Entry<? extends K, ? extends V> t : pps.getEntries().entrySet()) {
+            checkKey(t.getKey());
+            checkValue(t.getValue());
+
+            params.add(encodeMapKey(t.getKey()));
+            params.add(encodeMapValue(t.getValue()));
+        }
+
+        if (id == null) {
+            return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XADD, params.toArray());
+        }
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XADD_VOID, params.toArray());
     }
 
     @Override

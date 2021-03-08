@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.stream.StreamAddArgs;
+
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -536,91 +538,75 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
     RFuture<Long> sizeAsync();
 
     /**
-     * Appends a new entry and returns generated Stream ID
-     * 
-     * @param key - key of entry
-     * @param value - value of entry
-     * @return Stream ID
+     * Appends a new entry/entries and returns generated Stream Message ID
+     *
+     * @param args - method arguments object
+     * @return Stream Message ID
      */
+    RFuture<StreamMessageId> addAsync(StreamAddArgs<K, V> args);
+
+    /**
+     * Appends a new entry/entries by specified Stream Message ID
+     *
+     * @param id - Stream Message ID
+     * @param args - method arguments object
+     */
+    RFuture<Void> addAsync(StreamMessageId id, StreamAddArgs<K, V> args);
+
+    /*
+     * Use addAsync(StreamAddArgs) method instead
+     *
+     */
+    @Deprecated
     RFuture<StreamMessageId> addAsync(K key, V value);
     
-    /**
-     * Appends a new entry by specified Stream ID
-     * 
-     * @param id - Stream ID
-     * @param key - key of entry
-     * @param value - value of entry
-     * @return void
+    /*
+     * Use addAsync(StreamMessageId, StreamAddArgs) method instead
+     *
      */
+    @Deprecated
     RFuture<Void> addAsync(StreamMessageId id, K key, V value);
     
-    /**
-     * Appends a new entry and returns generated Stream ID.
-     * Trims stream to a specified <code>trimLen</code> size.
-     * If <code>trimStrict</code> is <code>false</code> then trims to few tens of entries more than specified length to trim.
-     * 
-     * @param key - key of entry
-     * @param value - value of entry
-     * @param trimLen - length to trim
-     * @param trimStrict - if <code>false</code> then trims to few tens of entries more than specified length to trim
-     * @return Stream ID
+    /*
+     * Use addAsync(StreamAddArgs) method instead
+     *
      */
+    @Deprecated
     RFuture<StreamMessageId> addAsync(K key, V value, int trimLen, boolean trimStrict);
 
-    /**
-     * Appends a new entry by specified Stream ID.
-     * Trims stream to a specified <code>trimLen</code> size.
-     * If <code>trimStrict</code> is <code>false</code> then trims to few tens of entries more than specified length to trim.
-     * 
-     * @param id - Stream ID
-     * @param key - key of entry
-     * @param value - value of entry
-     * @param trimLen - length to trim
-     * @param trimStrict - if <code>false</code> then trims to few tens of entries more than specified length to trim
-     * @return void
+    /*
+     * Use addAsync(StreamMessageId, StreamAddArgs) method instead
+     *
      */
+    @Deprecated
     RFuture<Void> addAsync(StreamMessageId id, K key, V value, int trimLen, boolean trimStrict);
     
-    /**
-     * Appends new entries and returns generated Stream ID
-     * 
-     * @param entries - entries to add
-     * @return Stream ID
+    /*
+     * Use addAsync(StreamAddArgs) method instead
+     *
      */
+    @Deprecated
     RFuture<StreamMessageId> addAllAsync(Map<K, V> entries);
     
-    /**
-     * Appends new entries by specified Stream ID
-     * 
-     * @param id - Stream ID
-     * @param entries - entries to add
-     * @return void
+    /*
+     * Use addAsync(StreamMessageId, StreamAddArgs) method instead
+     *
      */
+    @Deprecated
     RFuture<Void> addAllAsync(StreamMessageId id, Map<K, V> entries);
     
-    /**
-     * Appends new entries and returns generated Stream ID.
-     * Trims stream to a specified <code>trimLen</code> size.
-     * If <code>trimStrict</code> is <code>false</code> then trims to few tens of entries more than specified length to trim.
-     * 
-     * @param entries - entries to add
-     * @param trimLen - length to trim
-     * @param trimStrict - if <code>false</code> then trims to few tens of entries more than specified length to trim
-     * @return Stream ID
+    /*
+     * Use addAsync(StreamAddArgs) method instead
+     *
      */
+    @Deprecated
     RFuture<StreamMessageId> addAllAsync(Map<K, V> entries, int trimLen, boolean trimStrict);
 
-    /**
-     * Appends new entries by specified Stream ID.
-     * Trims stream to a specified <code>trimLen</code> size.
-     * If <code>trimStrict</code> is <code>false</code> then trims to few tens of entries more than specified length to trim.
-     * 
-     * @param id - Stream ID
-     * @param entries - entries to add
-     * @param trimLen - length to trim
-     * @param trimStrict - if <code>false</code> then trims to few tens of entries more than specified length to trim
-     * @return void
+    /*
+     * Use addAsync(StreamMessageId, StreamAddArgs) method instead
+     *
      */
+    @Deprecated
     RFuture<Void> addAllAsync(StreamMessageId id, Map<K, V> entries, int trimLen, boolean trimStrict);
     
     /**

@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.stream.StreamAddArgs;
+
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -550,87 +552,75 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
     long size();
 
     /**
-     * Appends a new entry and returns generated Stream Message ID
-     * 
-     * @param key - key of entry
-     * @param value - value of entry
+     * Appends a new entry/entries and returns generated Stream Message ID
+     *
+     * @param args - method arguments object
      * @return Stream Message ID
      */
-    StreamMessageId add(K key, V value);
-    
-    /**
-     * Appends a new entry by specified Stream Message ID
-     * 
-     * @param id - Stream Message ID
-     * @param key - key of entry
-     * @param value - value of entry
-     */
-    void add(StreamMessageId id, K key, V value);
-    
-    /**
-     * Appends a new entry and returns generated Stream Message ID.
-     * Trims stream to a specified <code>trimLen</code> size.
-     * If <code>trimStrict</code> is <code>false</code> then trims to few tens of entries more than specified length to trim.
-     * 
-     * @param key - key of entry
-     * @param value - value of entry
-     * @param trimLen - length to trim
-     * @param trimStrict - if <code>false</code> then trims to few tens of entries more than specified length to trim
-     * @return Stream Message ID
-     */
-    StreamMessageId add(K key, V value, int trimLen, boolean trimStrict);
+    StreamMessageId add(StreamAddArgs<K, V> args);
 
     /**
-     * Appends a new entry by specified Stream Message ID.
-     * Trims stream to a specified <code>trimLen</code> size.
-     * If <code>trimStrict</code> is <code>false</code> then trims to few tens of entries more than specified length to trim.
-     * 
+     * Appends a new entry/entries by specified Stream Message ID
+     *
      * @param id - Stream Message ID
-     * @param key - key of entry
-     * @param value - value of entry
-     * @param trimLen - length to trim
-     * @param trimStrict - if <code>false</code> then trims to few tens of entries more than specified length to trim
+     * @param args - method arguments object
      */
+    void add(StreamMessageId id, StreamAddArgs<K, V> args);
+
+    /*
+     * Use add(StreamAddArgs) method instead
+     *
+     */
+    @Deprecated
+    StreamMessageId add(K key, V value);
+    
+    /*
+     * Use add(StreamMessageId, StreamAddArgs) method instead
+     *
+     */
+    @Deprecated
+    void add(StreamMessageId id, K key, V value);
+    
+    /*
+     * Use add(StreamAddArgs) method instead
+     *
+     */
+    @Deprecated
+    StreamMessageId add(K key, V value, int trimLen, boolean trimStrict);
+
+    /*
+     * Use add(StreamMessageId, StreamAddArgs) method instead
+     *
+     */
+    @Deprecated
     void add(StreamMessageId id, K key, V value, int trimLen, boolean trimStrict);
     
-    /**
-     * Appends new entries and returns generated Stream Message ID
-     * 
-     * @param entries - entries to add
-     * @return Stream Message ID
+    /*
+     * Use add(StreamAddArgs) method instead
+     *
      */
+    @Deprecated
     StreamMessageId addAll(Map<K, V> entries);
     
-    /**
-     * Appends new entries by specified Stream Message ID
-     * 
-     * @param id - Stream Message ID
-     * @param entries - entries to add
+    /*
+     * Use add(StreamMessageId, StreamAddArgs) method instead
+     *
      */
+    @Deprecated
     void addAll(StreamMessageId id, Map<K, V> entries);
     
-    /**
-     * Appends new entries and returns generated Stream Message ID.
-     * Trims stream to a specified <code>trimLen</code> size.
-     * If <code>trimStrict</code> is <code>false</code> then trims to few tens of entries more than specified length to trim.
-     * 
-     * @param entries - entries to add
-     * @param trimLen - length to trim
-     * @param trimStrict - if <code>false</code> then trims to few tens of entries more than specified length to trim
-     * @return Stream Message ID
+    /*
+     * Use add(StreamAddArgs) method instead
+     *
      */
+    @Deprecated
     StreamMessageId addAll(Map<K, V> entries, int trimLen, boolean trimStrict);
     
-    /**
-     * Appends new entries by specified Stream Message ID.
-     * Trims stream to a specified <code>trimLen</code> size.
-     * If <code>trimStrict</code> is <code>false</code> then trims to few tens of entries more than specified length to trim.
-     * 
-     * @param id - Stream Message ID
-     * @param entries - entries to add
-     * @param trimLen - length to trim
-     * @param trimStrict - if <code>false</code> then trims to few tens of entries more than specified length to trim
+    /*
+     * Use add(StreamMessageId, StreamAddArgs) method instead
+     *
      */
+    @Deprecated
     void addAll(StreamMessageId id, Map<K, V> entries, int trimLen, boolean trimStrict);
     
     /**
