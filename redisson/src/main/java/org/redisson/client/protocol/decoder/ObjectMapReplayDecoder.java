@@ -43,11 +43,11 @@ public class ObjectMapReplayDecoder<K, V> implements MultiDecoder<Map<K, V>> {
 
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+        Codec c = Optional.ofNullable(this.codec).orElse(codec);
         if (paramNum % 2 != 0) {
-            return Optional.ofNullable(this.codec).orElse(codec).getMapValueDecoder();
-        } else {
-            return Optional.ofNullable(this.codec).orElse(codec).getMapKeyDecoder();
+            return c.getMapValueDecoder();
         }
+        return c.getMapKeyDecoder();
     }
 
     @Override
