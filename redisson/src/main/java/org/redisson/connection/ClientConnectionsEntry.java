@@ -259,6 +259,24 @@ public class ClientConnectionsEntry {
         freeSubscribeConnectionsCounter.release();
     }
 
+    public void closeAllConnections() {
+        synchronized (this) {
+            for (RedisConnection connection : this.getAllConnections()) {
+                if (!connection.isClosed()) {
+                    connection.closeAsync();
+                }
+            }
+            this.getAllConnections().clear();
+
+            for (RedisConnection connection : this.getAllSubscribeConnections()) {
+                if (!connection.isClosed()) {
+                    connection.closeAsync();
+                }
+            }
+            this.getAllSubscribeConnections().clear();
+        }
+    }
+
     @Override
     public String toString() {
         return "[freeSubscribeConnectionsAmount=" + freeSubscribeConnections.size()

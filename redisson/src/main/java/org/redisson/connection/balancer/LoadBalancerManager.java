@@ -153,28 +153,14 @@ public class LoadBalancerManager {
                         private AtomicBoolean initConnError = new AtomicBoolean(false);
                         @Override
                         public void accept(Void r, Throwable ex) {
-                            synchronized (this) {
-                                if (ex == null) {
-                                    listener.decCounter();
-                                } else {
-                                    if (!initConnError.compareAndSet(false, true)) {
-                                        return;
-                                    }
-                                    for (RedisConnection connection : entry.getAllConnections()) {
-                                        if (!connection.isClosed()) {
-                                            connection.closeAsync();
-                                        }
-                                    }
-                                    entry.getAllConnections().clear();
-
-                                    for (RedisConnection connection : entry.getAllSubscribeConnections()) {
-                                        if (!connection.isClosed()) {
-                                            connection.closeAsync();
-                                        }
-                                    }
-                                    entry.getAllSubscribeConnections().clear();
-                                    entry.setInitialized(false);
+                            if (ex == null) {
+                                listener.decCounter();
+                            } else {
+                                if (!initConnError.compareAndSet(false, true)) {
+                                    return;
                                 }
+                                entry.closeAllConnections();
+                                entry.setInitialized(false);
                             }
                         }
                     };
@@ -187,7 +173,7 @@ public class LoadBalancerManager {
         }
         return false;
     }
-    
+
     public ClientConnectionsEntry freeze(RedisURI address, FreezeReason freezeReason) {
         ClientConnectionsEntry connectionEntry = getEntry(address);
         return freeze(connectionEntry, freezeReason);
