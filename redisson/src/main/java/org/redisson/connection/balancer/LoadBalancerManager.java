@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 
 import org.redisson.api.NodeType;
@@ -148,9 +149,33 @@ public class LoadBalancerManager {
                         }
                     };
                     listener.setCounter(2);
-                    BiConsumer<Void, Throwable> initCallBack = (r, ex) -> {
-                        if (ex == null) {
-                            listener.decCounter();
+                    BiConsumer<Void, Throwable> initCallBack = new BiConsumer<Void, Throwable>() {
+                        private AtomicBoolean initConnError = new AtomicBoolean(false);
+                        @Override
+                        public void accept(Void r, Throwable ex) {
+                            synchronized (this) {
+                                if (ex == null) {
+                                    listener.decCounter();
+                                } else {
+                                    if (!initConnError.compareAndSet(false, true)) {
+                                        return;
+                                    }
+                                    for (RedisConnection connection : entry.getAllConnections()) {
+                                        if (!connection.isClosed()) {
+                                            connection.closeAsync();
+                                        }
+                                    }
+                                    entry.getAllConnections().clear();
+
+                                    for (RedisConnection connection : entry.getAllSubscribeConnections()) {
+                                        if (!connection.isClosed()) {
+                                            connection.closeAsync();
+                                        }
+                                    }
+                                    entry.getAllSubscribeConnections().clear();
+                                    entry.setInitialized(false);
+                                }
+                            }
                         }
                     };
                     entry.resetFirstFail();
