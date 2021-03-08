@@ -16,7 +16,6 @@
 package org.redisson.config;
 
 import io.netty.channel.EventLoopGroup;
-import org.redisson.client.DefaultNettyHook;
 import org.redisson.client.NettyHook;
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.MarshallingCodec;
@@ -85,7 +84,7 @@ public class Config {
 
     private int cleanUpKeysAmount = 100;
 
-    private NettyHook nettyHook = new DefaultNettyHook();
+    private NettyHook nettyHook = new NettyHook() {};
 
     private boolean useThreadClassLoader = true;
 
