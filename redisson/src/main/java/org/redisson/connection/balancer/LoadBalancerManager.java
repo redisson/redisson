@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 
 import org.redisson.api.NodeType;
@@ -148,9 +149,18 @@ public class LoadBalancerManager {
                         }
                     };
                     listener.setCounter(2);
-                    BiConsumer<Void, Throwable> initCallBack = (r, ex) -> {
-                        if (ex == null) {
-                            listener.decCounter();
+                    BiConsumer<Void, Throwable> initCallBack = new BiConsumer<Void, Throwable>() {
+                        private AtomicBoolean initConnError = new AtomicBoolean(false);
+                        @Override
+                        public void accept(Void r, Throwable ex) {
+                            if (ex == null) {
+                                listener.decCounter();
+                            } else {
+                                if (!initConnError.compareAndSet(false, true)) {
+                                    return;
+                                }
+                                entry.setInitialized(false);
+                            }
                         }
                     };
                     entry.resetFirstFail();
@@ -162,7 +172,7 @@ public class LoadBalancerManager {
         }
         return false;
     }
-    
+
     public ClientConnectionsEntry freeze(RedisURI address, FreezeReason freezeReason) {
         ClientConnectionsEntry connectionEntry = getEntry(address);
         return freeze(connectionEntry, freezeReason);
