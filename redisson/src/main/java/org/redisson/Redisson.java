@@ -27,6 +27,7 @@ import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
+import org.redisson.executor.FairLockCache;
 import org.redisson.redisnode.RedissonClusterNodes;
 import org.redisson.redisnode.RedissonMasterSlaveNodes;
 import org.redisson.redisnode.RedissonSentinelMasterSlaveNodes;
@@ -51,6 +52,7 @@ public class Redisson implements RedissonClient {
     protected final EvictionScheduler evictionScheduler;
     protected final WriteBehindService writeBehindService;
     protected final ConnectionManager connectionManager;
+    protected final FairLockCache fairLockCache;
 
     protected final ConcurrentMap<Class<?>, Class<?>> liveObjectClassCache = new ConcurrentHashMap<>();
     protected final Config config;
@@ -64,6 +66,10 @@ public class Redisson implements RedissonClient {
         connectionManager = ConfigSupport.createConnectionManager(configCopy);
         evictionScheduler = new EvictionScheduler(connectionManager.getCommandExecutor());
         writeBehindService = new WriteBehindService(connectionManager.getCommandExecutor());
+
+        // Create renew thread for all fairLocks
+        fairLockCache = new FairLockCache();
+        fairLockCache.startRefresh(connectionManager.getCommandExecutor());
     }
 
     public EvictionScheduler getEvictionScheduler() {
@@ -368,7 +374,7 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RLock getFairLock(String name) {
-        return new RedissonFairLock(connectionManager.getCommandExecutor(), name);
+        return new RedissonFairLock(connectionManager.getCommandExecutor(), name, fairLockCache);
     }
 
     @Override
@@ -663,12 +669,14 @@ public class Redisson implements RedissonClient {
 
     @Override
     public void shutdown() {
+        fairLockCache.endRefresh(connectionManager.getCommandExecutor());
         connectionManager.shutdown();
     }
 
 
     @Override
     public void shutdown(long quietPeriod, long timeout, TimeUnit unit) {
+        fairLockCache.endRefresh(connectionManager.getCommandExecutor());
         connectionManager.shutdown(quietPeriod, timeout, unit);
     }
 
