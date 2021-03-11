@@ -51,10 +51,10 @@ public class MapOptions<K, V> {
     private int writeBehindBatchSize = 50;
     private int writeBehindDelay = 1000;
     
-    protected MapOptions() {
+    public MapOptions() {
     }
     
-    protected MapOptions(MapOptions<K, V> copy) {
+    public MapOptions(MapOptions<K, V> copy) {
     }
     
     /**
