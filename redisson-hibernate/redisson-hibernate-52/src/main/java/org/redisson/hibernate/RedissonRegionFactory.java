@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Hibernate Cache region factory based on Redisson. 
@@ -76,7 +77,14 @@ public class RedissonRegionFactory implements RegionFactory {
     protected RedissonClient redisson;
     private Settings settings;
     private CacheKeysFactory cacheKeysFactory;
-    
+
+    // support for fallbackNextTimestamp -
+    // taken from hibernate 5.2 hibernate-jcache/src/main/java/org/hibernate/cache/jcache/time/Timestamper.java
+    private static final int BIN_DIGITS = 12;
+    private static final short ONE_MS = 1 << BIN_DIGITS;
+    private static final AtomicLong VALUE = new AtomicLong();
+    boolean fallback;
+
     @Override
     public void start(SessionFactoryOptions settings, Properties properties) throws CacheException {
         this.redisson = createRedissonClient(properties);
@@ -85,6 +93,9 @@ public class RedissonRegionFactory implements RegionFactory {
         StrategySelector selector = settings.getServiceRegistry().getService(StrategySelector.class);
         cacheKeysFactory = selector.resolveDefaultableStrategy(CacheKeysFactory.class, 
                                 properties.get(Environment.CACHE_KEYS_FACTORY), new RedissonCacheKeysFactory(redisson.getConfig().getCodec()));
+
+        String fallbackValue = (String) properties.getOrDefault(RedissonRegionFactory.FALLBACK, "false");
+        fallback = Boolean.valueOf(fallbackValue);
     }
 
     protected RedissonClient createRedissonClient(Properties properties) {
@@ -156,6 +167,7 @@ public class RedissonRegionFactory implements RegionFactory {
 
     @Override
     public long nextTimestamp() {
+       try {
         long time = System.currentTimeMillis() << 12;
         return redisson.getScript(LongCodec.INSTANCE).eval(RScript.Mode.READ_WRITE,
                   "local currentTime = redis.call('get', KEYS[1]);"
@@ -167,6 +179,28 @@ public class RedissonRegionFactory implements RegionFactory {
                 + "redis.call('set', KEYS[1], nextValue); "
                 + "return nextValue;",
                 RScript.ReturnType.INTEGER, Arrays.<Object>asList("redisson-hibernate-timestamp"), time);
+        } catch(Exception e) {
+            if(fallback) {
+                return fallbackNextTimestamp();
+            }
+            throw e;
+        }
+    }
+
+
+    private long fallbackNextTimestamp() {
+        // taken from hibernate 5.2 hibernate-jcache/src/main/java/org/hibernate/cache/jcache/time/Timestamper.java
+        while ( true ) {
+            long base = System.currentTimeMillis() << BIN_DIGITS;
+            long maxValue = base + ONE_MS - 1;
+
+            for ( long current = VALUE.get(), update = Math.max( base, current + 1 ); update < maxValue;
+                  current = VALUE.get(), update = Math.max( base, current + 1 ) ) {
+                if ( VALUE.compareAndSet( current, update ) ) {
+                    return update;
+                }
+            }
+        }
     }
 
     @Override
