@@ -21,8 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
-import org.redisson.api.stream.StreamAddArgs;
-import org.redisson.api.stream.TrimStrategy;
+import org.redisson.api.stream.*;
 
 /**
  * Reactive interface for Redis Stream object.
@@ -272,212 +271,128 @@ public interface RStreamRx<K, V> extends RExpirableRx {
     Single<FastAutoClaimResult> fastAutoClaim(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId startId, int count);
 
     /**
-     * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs.
-     * 
-     * @param groupName - name of group
-     * @param consumerName - name of consumer
-     * @param ids - collection of Stream IDs
-     * @return stream data mapped by Stream ID
+     * Read stream data from consumer group and multiple streams including current.
+     *
+     * @param args - method arguments object
+     * @return stream data mapped by stream name and Stream Message ID
      */
+    Single<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, StreamMultiReadGroupArgs args);
+
+    /**
+     * Read stream data from consumer group and current stream only.
+     *
+     * @param args - method arguments object
+     * @return stream data mapped by Stream Message ID
+     */
+    Single<Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, StreamReadGroupArgs args);
+
+    /*
+     * Use readGroup(String, String, StreamReadGroupArgs) method instead
+     *
+     */
+    @Deprecated
     Single<Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, StreamMessageId... ids);
     
-    /**
-     * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs.
-     * 
-     * @param groupName - name of group
-     * @param consumerName - name of consumer
-     * @param count - stream data size limit
-     * @param ids - collection of Stream IDs
-     * @return stream data mapped by Stream ID
+    /*
+     * Use readGroup(String, String, StreamReadGroupArgs) method instead
+     *
      */
+    @Deprecated
     Single<Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, int count, StreamMessageId... ids);
 
-    /**
-     * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs. 
-     * Wait for stream data availability for specified <code>timeout</code> interval.
-     * 
-     * @param groupName - name of group
-     * @param consumerName - name of consumer
-     * @param timeout - time interval to wait for stream data availability
-     * @param unit - time interval unit
-     * @param ids - collection of Stream IDs
-     * @return stream data mapped by Stream ID
+    /*
+     * Use readGroup(String, String, StreamReadGroupArgs) method instead
+     *
      */
+    @Deprecated
     Single<Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, long timeout, TimeUnit unit, StreamMessageId... ids);
     
-    /**
-     * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs. 
-     * Wait for stream data availability for specified <code>timeout</code> interval.
-     * 
-     * @param groupName - name of group
-     * @param consumerName - name of consumer
-     * @param count - stream data size limit
-     * @param timeout - time interval to wait for stream data availability
-     * @param unit - time interval unit
-     * @param ids - collection of Stream IDs
-     * @return stream data mapped by Stream ID
+    /*
+     * Use readGroup(String, String, StreamReadGroupArgs) method instead
+     *
      */
+    @Deprecated
     Single<Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamMessageId... ids);
 
-    /**
-     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
-     * 
-     * @param groupName - name of group
-     * @param consumerName - name of consumer
-     * @param id - starting message id for this stream
-     * @param nameToId - Stream Message ID mapped by stream name
-     * @return stream data mapped by key and Stream Message ID
+    /*
+     * Use readGroup(String, String, StreamMultiReadGroupArgs) method instead
+     *
      */
+    @Deprecated
     Single<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, StreamMessageId id, Map<String, StreamMessageId> nameToId);
     
-    /**
-     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
-     * 
-     * @param groupName - name of group
-     * @param consumerName - name of consumer
-     * @param count - stream data size limit
-     * @param id - starting message id for this stream
-     * @param nameToId - Stream Message ID mapped by stream name
-     * @return stream data mapped by key and Stream Message ID
+    /*
+     * Use readGroup(String, String, StreamMultiReadGroupArgs) method instead
+     *
      */
+    @Deprecated
     Single<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, int count, StreamMessageId id, Map<String, StreamMessageId> nameToId);
 
-    /**
-     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
-     * Waits for the first stream data availability for specified <code>timeout</code> interval.
-     * 
-     * @param groupName - name of group
-     * @param consumerName - name of consumer
-     * @param count - stream data size limit
-     * @param timeout - time interval to wait for stream data availability
-     * @param unit - time interval unit
-     * @param id - starting message id for this stream
-     * @param key2 - name of second stream
-     * @param id2 - starting message id for second stream
-     * @return stream data mapped by key and Stream Message ID
+    /*
+     * Use readGroup(String, String, StreamMultiReadGroupArgs) method instead
+     *
      */
+    @Deprecated
     Single<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamMessageId id, String key2, StreamMessageId id2);
 
-    /**
-     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
-     * Waits for the first stream data availability for specified <code>timeout</code> interval.
-     * 
-     * @param groupName - name of group
-     * @param consumerName - name of consumer
-     * @param count - stream data size limit
-     * @param timeout - time interval to wait for stream data availability
-     * @param unit - time interval unit
-     * @param id - starting message id for this stream
-     * @param key2 - name of second stream
-     * @param id2 - starting message id for second stream
-     * @param key3 - name of third stream
-     * @param id3 - starting message id for third stream
-     * @return stream data mapped by key and Stream Message ID
+    /*
+     * Use readGroup(String, String, StreamMultiReadGroupArgs) method instead
+     *
      */
+    @Deprecated
     Single<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamMessageId id,
             String key2, StreamMessageId id2, String key3, StreamMessageId id3);
     
-    /**
-     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
-     * Waits for the first stream data availability for specified <code>timeout</code> interval.
-     * 
-     * @param groupName - name of group
-     * @param consumerName - name of consumer
-     * @param timeout - time interval to wait for stream data availability
-     * @param unit - time interval unit
-     * @param id - starting message id for this stream
-     * @param nameToId - Stream Message ID mapped by stream name
-     * @return stream data mapped by key and Stream Message ID
+    /*
+     * Use readGroup(String, String, StreamMultiReadGroupArgs) method instead
+     *
      */
+    @Deprecated
     Single<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, long timeout, TimeUnit unit, StreamMessageId id, Map<String, StreamMessageId> nameToId);
     
-    /**
-     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
-     * 
-     * @param groupName - name of group
-     * @param consumerName - name of consumer
-     * @param id - starting message id for this stream
-     * @param key2 - name of second stream
-     * @param id2 - starting message id for second stream
-     * @return stream data mapped by key and Stream Message ID
+    /*
+     * Use readGroup(String, String, StreamMultiReadGroupArgs) method instead
+     *
      */
+    @Deprecated
     Single<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, StreamMessageId id, String key2, StreamMessageId id2);
 
-    /**
-     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
-     * 
-     * @param groupName - name of group
-     * @param consumerName - name of consumer
-     * @param id - starting message id for this stream
-     * @param key2 - name of second stream
-     * @param id2  - starting message id for second stream
-     * @param key3 - name of third stream
-     * @param id3  - starting message id for third stream
-     * @return stream data mapped by key and Stream Message ID
+    /*
+     * Use readGroup(String, String, StreamMultiReadGroupArgs) method instead
+     *
      */
+    @Deprecated
     Single<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, StreamMessageId id, String key2, StreamMessageId id2, String key3,
             StreamMessageId id3);
 
-    /**
-     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
-     * 
-     * @param groupName - name of group
-     * @param consumerName - name of consumer
-     * @param count - stream data size limit
-     * @param id - starting message id for this stream
-     * @param key2 - name of second stream
-     * @param id2  - starting message id for second stream
-     * @return stream data mapped by key and Stream Message ID
+    /*
+     * Use readGroup(String, String, StreamMultiReadGroupArgs) method instead
+     *
      */
+    @Deprecated
     Single<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, int count, StreamMessageId id, String key2, StreamMessageId id2);
 
-    /**
-     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
-     * 
-     * @param groupName - name of group
-     * @param consumerName - name of consumer
-     * @param count - stream data size limit
-     * @param id - starting message id for this stream
-     * @param key2 - name of second stream
-     * @param id2 - starting message id for second stream
-     * @param key3 - name of third stream
-     * @param id3 - starting message id for third stream
-     * @return stream data mapped by key and Stream Message ID
+    /*
+     * Use readGroup(String, String, StreamMultiReadGroupArgs) method instead
+     *
      */
+    @Deprecated
     Single<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, int count, StreamMessageId id, String key2, StreamMessageId id2,
             String key3, StreamMessageId id3);
 
-    /**
-     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
-     * Waits for the first stream data availability for specified <code>timeout</code> interval.
-     * 
-     * @param groupName - name of group
-     * @param consumerName - name of consumer
-     * @param timeout - time interval to wait for stream data availability
-     * @param unit - time interval unit
-     * @param id - starting message id for this stream
-     * @param key2 - name of second stream
-     * @param id2 - starting message id for second stream
-     * @return stream data mapped by key and Stream Message ID
+    /*
+     * Use readGroup(String, String, StreamMultiReadGroupArgs) method instead
+     *
      */
+    @Deprecated
     Single<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, long timeout, TimeUnit unit, StreamMessageId id,
             String key2, StreamMessageId id2);
 
-    /**
-     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
-     * Waits for the first stream data availability for specified <code>timeout</code> interval.
-     * 
-     * @param groupName - name of group
-     * @param consumerName - name of consumer
-     * @param timeout - time interval to wait for stream data availability
-     * @param unit - time interval unit
-     * @param id - starting message id for this stream
-     * @param key2 - name of second stream
-     * @param id2 - starting message id for second stream
-     * @param key3 - name of third stream
-     * @param id3 - starting message id for third stream
-     * @return stream data mapped by key and Stream Message ID
+    /*
+     * Use readGroup(String, String, StreamMultiReadGroupArgs) method instead
+     *
      */
+    @Deprecated
     Single<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, long timeout, TimeUnit unit, StreamMessageId id,
             String key2, StreamMessageId id2, String key3, StreamMessageId id3);
     
@@ -559,193 +474,133 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      */
     @Deprecated
     Completable addAll(StreamMessageId id, Map<K, V> entries, int trimLen, boolean trimStrict);
-    
+
     /**
-     * Read stream data by specified collection of Stream IDs.
-     * 
-     * @param ids - collection of Stream IDs
-     * @return stream data mapped by Stream ID
+     * Read stream data from multiple streams including current.
+     *
+     * @param args - method arguments object
+     * @return stream data mapped by stream name and Stream Message ID
      */
+    Single<Map<String, Map<StreamMessageId, Map<K, V>>>> read(StreamMultiReadArgs args);
+
+    /**
+     * Read stream data from current stream only.
+     *
+     * @param args - method arguments object
+     * @return stream data mapped by Stream Message ID
+     */
+    Single<Map<StreamMessageId, Map<K, V>>> read(StreamReadArgs args);
+
+    /*
+     * Use read(StreamReadArgs) method instead
+     *
+     */
+    @Deprecated
     Single<Map<StreamMessageId, Map<K, V>>> read(StreamMessageId... ids);
     
-    /**
-     * Read stream data by specified collection of Stream IDs.
-     * 
-     * @param count - stream data size limit
-     * @param ids - collection of Stream IDs
-     * @return stream data mapped by Stream ID
+    /*
+     * Use read(StreamReadArgs) method instead
+     *
      */
+    @Deprecated
     Single<Map<StreamMessageId, Map<K, V>>> read(int count, StreamMessageId... ids);
 
-    /**
-     * Read stream data by specified collection of Stream IDs. 
-     * Wait for stream data availability for specified <code>timeout</code> interval.
-     * 
-     * @param timeout - time interval to wait for stream data availability
-     * @param unit - time interval unit
-     * @param ids - collection of Stream IDs
-     * @return stream data mapped by Stream ID
+    /*
+     * Use read(StreamReadArgs) method instead
+     *
      */
+    @Deprecated
     Single<Map<StreamMessageId, Map<K, V>>> read(long timeout, TimeUnit unit, StreamMessageId... ids);
     
-    /**
-     * Read stream data by specified collection of Stream IDs. 
-     * Wait for stream data availability for specified <code>timeout</code> interval.
-     * 
-     * @param count - stream data size limit
-     * @param timeout - time interval to wait for stream data availability
-     * @param unit - time interval unit
-     * @param ids - collection of Stream IDs
-     * @return stream data mapped by Stream ID
+    /*
+     * Use read(StreamReadArgs) method instead
+     *
      */
+    @Deprecated
     Single<Map<StreamMessageId, Map<K, V>>> read(int count, long timeout, TimeUnit unit, StreamMessageId... ids);
 
-    /**
-     * Read stream data by specified stream name including this stream.
-     * 
-     * @param id - id of this stream
-     * @param name2 - name of second stream
-     * @param id2 - id of second stream
-     * @return stream data mapped by key and Stream ID
+    /*
+     * Use read(StreamMultiReadArgs) method instead
+     *
      */
+    @Deprecated
     Single<Map<String, Map<StreamMessageId, Map<K, V>>>> read(StreamMessageId id, String name2, StreamMessageId id2);
 
-    /**
-     * Read stream data by specified stream names including this stream.
-     * 
-     * @param id - id of this stream
-     * @param name2 - name of second stream
-     * @param id2 - id of second stream
-     * @param name3 - name of third stream
-     * @param id3 - id of third stream
-     * @return stream data mapped by key and Stream ID
+    /*
+     * Use read(StreamMultiReadArgs) method instead
+     *
      */
+    @Deprecated
     Single<Map<String, Map<StreamMessageId, Map<K, V>>>> read(StreamMessageId id, String name2, StreamMessageId id2, String name3, StreamMessageId id3);
     
-    /**
-     * Read stream data by specified stream id mapped by name including this stream.
-     * 
-     * @param id - id of this stream
-     * @param nameToId - stream id mapped by name
-     * @return stream data mapped by key and Stream ID
+    /*
+     * Use read(StreamMultiReadArgs) method instead
+     *
      */
+    @Deprecated
     Single<Map<String, Map<StreamMessageId, Map<K, V>>>> read(StreamMessageId id, Map<String, StreamMessageId> nameToId);
 
-    /**
-     * Read stream data by specified stream name including this stream.
-     * 
-     * @param count - stream data size limit
-     * @param id - id of this stream
-     * @param name2 - name of second stream
-     * @param id2 - id of second stream
-     * @return stream data mapped by key and Stream ID
+    /*
+     * Use read(StreamMultiReadArgs) method instead
+     *
      */
+    @Deprecated
     Single<Map<String, Map<StreamMessageId, Map<K, V>>>> read(int count, StreamMessageId id, String name2, StreamMessageId id2);
 
-    /**
-     * Read stream data by specified stream names including this stream.
-     * 
-     * @param count - stream data size limit
-     * @param id - id of this stream
-     * @param name2 - name of second stream
-     * @param id2 - id of second stream
-     * @param name3 - name of third stream
-     * @param id3 - id of third stream
-     * @return stream data mapped by key and Stream ID
+    /*
+     * Use read(StreamMultiReadArgs) method instead
+     *
      */
+    @Deprecated
     Single<Map<String, Map<StreamMessageId, Map<K, V>>>> read(int count, StreamMessageId id, String name2, StreamMessageId id2, String name3, StreamMessageId id3);
     
-    /**
-     * Read stream data by specified stream id mapped by name including this stream.
-     * 
-     * @param count - stream data size limit
-     * @param id - id of this stream
-     * @param nameToId - stream id mapped by name
-     * @return stream data mapped by key and Stream ID
+    /*
+     * Use read(StreamMultiReadArgs) method instead
+     *
      */
+    @Deprecated
     Single<Map<String, Map<StreamMessageId, Map<K, V>>>> read(int count, StreamMessageId id, Map<String, StreamMessageId> nameToId);
 
-    /**
-     * Read stream data by specified stream name including this stream.
-     * Wait for the first stream data availability for specified <code>timeout</code> interval.
-     * 
-     * @param timeout - time interval to wait for stream data availability
-     * @param unit - time interval unit
-     * @param id - id of this stream
-     * @param name2 - name of second stream
-     * @param id2 - id of second stream
-     * @return stream data mapped by key and Stream ID
+    /*
+     * Use read(StreamMultiReadArgs) method instead
+     *
      */
+    @Deprecated
     Single<Map<String, Map<StreamMessageId, Map<K, V>>>> read(long timeout, TimeUnit unit, StreamMessageId id, String name2, StreamMessageId id2);
 
-    /**
-     * Read stream data by specified stream names including this stream.
-     * Wait for the first stream data availability for specified <code>timeout</code> interval.
-     * 
-     * @param timeout - time interval to wait for stream data availability
-     * @param unit - time interval unit
-     * @param id - id of this stream
-     * @param name2 - name of second stream
-     * @param id2 - id of second stream
-     * @param name3 - name of third stream
-     * @param id3 - id of third stream
-     * @return stream data mapped by key and Stream ID
+    /*
+     * Use read(StreamMultiReadArgs) method instead
+     *
      */
+    @Deprecated
     Single<Map<String, Map<StreamMessageId, Map<K, V>>>> read(long timeout, TimeUnit unit, StreamMessageId id, String name2, StreamMessageId id2, String name3, StreamMessageId id3);
     
-    /**
-     * Read stream data by specified stream id mapped by name including this stream.
-     * Wait for the first stream data availability for specified <code>timeout</code> interval.
-     * 
-     * @param timeout - time interval to wait for stream data availability
-     * @param unit - time interval unit
-     * @param id - id of this stream
-     * @param nameToId - stream id mapped by name
-     * @return stream data mapped by key and Stream ID
+    /*
+     * Use read(StreamMultiReadArgs) method instead
+     *
      */
+    @Deprecated
     Single<Map<String, Map<StreamMessageId, Map<K, V>>>> read(long timeout, TimeUnit unit, StreamMessageId id, Map<String, StreamMessageId> nameToId);
 
-    /**
-     * Read stream data by specified stream name including this stream.
-     * Wait for the first stream data availability for specified <code>timeout</code> interval.
-     * 
-     * @param count - stream data size limit
-     * @param timeout - time interval to wait for stream data availability
-     * @param unit - time interval unit
-     * @param id - id of this stream
-     * @param name2 - name of second stream
-     * @param id2 - id of second stream
-     * @return stream data mapped by key and Stream ID
+    /*
+     * Use read(StreamMultiReadArgs) method instead
+     *
      */
+    @Deprecated
     Single<Map<String, Map<StreamMessageId, Map<K, V>>>> read(int count, long timeout, TimeUnit unit, StreamMessageId id, String name2, StreamMessageId id2);
 
-    /**
-     * Read stream data by specified stream names including this stream.
-     * Wait for the first stream data availability for specified <code>timeout</code> interval.
-     * 
-     * @param count - stream data size limit
-     * @param timeout - time interval to wait for stream data availability
-     * @param unit - time interval unit
-     * @param id - id of this stream
-     * @param name2 - name of second stream
-     * @param id2 - id of second stream
-     * @param name3 - name of third stream
-     * @param id3 - id of third stream
-     * @return stream data mapped by key and Stream ID
+    /*
+     * Use read(StreamMultiReadArgs) method instead
+     *
      */
+    @Deprecated
     Single<Map<String, Map<StreamMessageId, Map<K, V>>>> read(int count, long timeout, TimeUnit unit, StreamMessageId id, String name2, StreamMessageId id2, String name3, StreamMessageId id3);
     
-    /**
-     * Read stream data by specified stream id mapped by name including this stream.
-     * Wait for the first stream data availability for specified <code>timeout</code> interval.
-     * 
-     * @param count - stream data size limit
-     * @param timeout - time interval to wait for stream data availability
-     * @param unit - time interval unit
-     * @param id - id of this stream
-     * @param nameToId - stream id mapped by name
-     * @return stream data mapped by key and Stream ID
+    /*
+     * Use read(StreamMultiReadArgs) method instead
+     *
      */
+    @Deprecated
     Single<Map<String, Map<StreamMessageId, Map<K, V>>>> read(int count, long timeout, TimeUnit unit, StreamMessageId id, Map<String, StreamMessageId> nameToId);
     
     /**
