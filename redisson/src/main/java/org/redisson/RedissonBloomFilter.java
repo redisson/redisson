@@ -29,9 +29,7 @@
 package org.redisson;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RBitSetAsync;
@@ -119,6 +117,56 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
             RBitSetAsync bs = createBitSet(executorService);
             for (int i = 0; i < indexes.length; i++) {
                 bs.setAsync(indexes[i]);
+            }
+            try {
+                List<Boolean> result = (List<Boolean>) executorService.execute().getResponses();
+
+                for (Boolean val : result.subList(1, result.size()-1)) {
+                    if (!val) {
+                        return true;
+                    }
+                }
+                return false;
+            } catch (RedisException e) {
+                if (e.getMessage() == null || !e.getMessage().contains("Bloom filter config has been changed")) {
+                    throw e;
+                }
+            }
+        }
+    }
+
+    @Override
+    public boolean addAll(Collection<T> objects) {
+        if (objects == null) {
+            throw new NullPointerException();
+        }
+
+        List<long[]> hashesList = new ArrayList<>(objects.size());
+        for (T t : objects) {
+            long[] hashes = hash(t);
+            hashesList.add(hashes);
+        }
+
+        while (true) {
+            if (size == 0) {
+                readConfig();
+            }
+
+            int hashIterations = this.hashIterations;
+            long size = this.size;
+
+            CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
+            addConfigCheck(hashIterations, size, executorService);
+            RBitSetAsync bs = createBitSet(executorService);
+            Set<Long> indexSet = new HashSet<>();
+            for (long[] hashes: hashesList) {
+                long[] indexes = hash(hashes[0], hashes[1], hashIterations, size);
+                for (int i = 0; i < indexes.length; i++) {
+                    indexSet.add(indexes[i]);
+                }
+            }
+            for (Long index : indexSet) {
+                bs.setAsync(index);
             }
             try {
                 List<Boolean> result = (List<Boolean>) executorService.execute().getResponses();
