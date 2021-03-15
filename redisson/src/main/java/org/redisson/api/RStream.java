@@ -104,12 +104,6 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
      */
     PendingResult getPendingInfo(String groupName);
     
-    /*
-     * Use #getPendingInfo method
-     */
-    @Deprecated
-    PendingResult listPending(String groupName);
-    
     /**
      * Returns list of common info about pending messages by group name.
      * Limited by start Stream Message ID and end Stream Message ID and count.
