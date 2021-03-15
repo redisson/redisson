@@ -34,8 +34,7 @@ import io.reactivex.rxjava3.processors.ReplayProcessor;
 public class CommandRxService extends CommandAsyncService implements CommandRxExecutor {
 
     public CommandRxService(ConnectionManager connectionManager) {
-        super(connectionManager);
-        objectBuilder = connectionManager.getCommandExecutor().getObjectBuilder();
+        super(connectionManager, connectionManager.getCommandExecutor().getObjectBuilder());
     }
 
     @Override

@@ -21,6 +21,7 @@ import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,8 +34,8 @@ public class CommandSyncService extends CommandAsyncService implements CommandEx
 
     final Logger log = LoggerFactory.getLogger(getClass());
 
-    public CommandSyncService(ConnectionManager connectionManager) {
-        super(connectionManager);
+    public CommandSyncService(ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder) {
+        super(connectionManager, objectBuilder);
     }
 
     @Override
