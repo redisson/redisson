@@ -97,7 +97,7 @@ public class RedissonStreamTest extends BaseTest {
     public void testPendingEmpty() {
         RStream<Object, Object> stream = redisson.getStream("test");
         stream.createGroup("testGroup");
-        PendingResult result = stream.listPending("testGroup");
+        PendingResult result = stream.getPendingInfo("testGroup");
         assertThat(result.getTotal()).isZero();
         assertThat(result.getHighestId()).isNull();
         assertThat(result.getLowestId()).isNull();
@@ -298,7 +298,7 @@ public class RedissonStreamTest extends BaseTest {
         Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup", "consumer2", StreamReadGroupArgs.neverDelivered());
         assertThat(s2.size()).isEqualTo(2);
         
-        PendingResult pi = stream.listPending("testGroup");
+        PendingResult pi = stream.getPendingInfo("testGroup");
         assertThat(pi.getLowestId()).isEqualTo(id1);
         assertThat(pi.getHighestId()).isEqualTo(id4);
         assertThat(pi.getTotal()).isEqualTo(4);

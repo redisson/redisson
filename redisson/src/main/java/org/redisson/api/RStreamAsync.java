@@ -106,12 +106,6 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      */
     RFuture<PendingResult> getPendingInfoAsync(String groupName);
 
-    /*
-     * Use #getPendingInfoAsync method
-     */
-    @Deprecated
-    RFuture<PendingResult> listPendingAsync(String groupName);
-
     /**
      * Returns list of common info about pending messages by group name.
      * Limited by minimum idle time, messages count, start and end Stream Message IDs.
