@@ -31,10 +31,18 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
-      with:
+#      with:
         # We must fetch at least the immediate parents so that if this is
         # a pull request then we can checkout the head.
-        fetch-depth: 2
+#        fetch-depth: 2
+
+    - name: Cache local Maven repository
+      uses: actions/cache@v2
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
 
     # If this run was triggered by a pull request event, then checkout
     # the head of the pull request instead of the merge commit.
