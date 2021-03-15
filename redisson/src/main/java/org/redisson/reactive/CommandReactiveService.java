@@ -33,6 +33,7 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
 
     public CommandReactiveService(ConnectionManager connectionManager) {
         super(connectionManager);
+        objectBuilder = connectionManager.getCommandExecutor().getObjectBuilder();
     }
 
     @Override

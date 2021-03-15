@@ -103,30 +103,35 @@ public class CommandBatchService extends CommandAsyncService {
     }
 
     private final AsyncCountDownLatch latch = new AsyncCountDownLatch();
-    private AtomicInteger index = new AtomicInteger();
+    private final AtomicInteger index = new AtomicInteger();
 
-    private ConcurrentMap<MasterSlaveEntry, Entry> commands = new ConcurrentHashMap<>();
-    private ConcurrentMap<MasterSlaveEntry, ConnectionEntry> connections = new ConcurrentHashMap<>();
+    private final ConcurrentMap<MasterSlaveEntry, Entry> commands = new ConcurrentHashMap<>();
+    private final ConcurrentMap<MasterSlaveEntry, ConnectionEntry> connections = new ConcurrentHashMap<>();
     
-    private BatchOptions options = BatchOptions.defaults();
+    private final BatchOptions options;
     
-    private Map<RFuture<?>, List<CommandBatchService>> nestedServices = new ConcurrentHashMap<>();
+    private final Map<RFuture<?>, List<CommandBatchService>> nestedServices = new ConcurrentHashMap<>();
 
-    private AtomicBoolean executed = new AtomicBoolean();
+    private final AtomicBoolean executed = new AtomicBoolean();
 
-    public CommandBatchService(ConnectionManager connectionManager) {
-        super(connectionManager);
+    public CommandBatchService(CommandAsyncExecutor executor) {
+        this(executor.getConnectionManager(), BatchOptions.defaults(), executor.getObjectBuilder());
     }
-    
+
+    public CommandBatchService(CommandAsyncExecutor executor, BatchOptions options) {
+        this(executor.getConnectionManager(), options, executor.getObjectBuilder());
+    }
+
     public CommandBatchService(ConnectionManager connectionManager, BatchOptions options) {
+        this(connectionManager.getCommandExecutor(), options);
+    }
+
+    public CommandBatchService(ConnectionManager connectionManager, BatchOptions options, RedissonObjectBuilder objectBuilder) {
         super(connectionManager);
         this.options = options;
-    }
-
-    public void setObjectBuilder(RedissonObjectBuilder objectBuilder) {
         this.objectBuilder = objectBuilder;
     }
-    
+
     public BatchOptions getOptions() {
         return options;
     }

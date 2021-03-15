@@ -114,7 +114,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
 
             long[] indexes = hash(hashes[0], hashes[1], hashIterations, size);
 
-            CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
+            CommandBatchService executorService = new CommandBatchService(commandExecutor);
             addConfigCheck(hashIterations, size, executorService);
             RBitSetAsync bs = createBitSet(executorService);
             for (int i = 0; i < indexes.length; i++) {
@@ -165,7 +165,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
 
             long[] indexes = hash(hashes[0], hashes[1], hashIterations, size);
 
-            CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
+            CommandBatchService executorService = new CommandBatchService(commandExecutor);
             addConfigCheck(hashIterations, size, executorService);
             RBitSetAsync bs = createBitSet(executorService);
             for (int i = 0; i < indexes.length; i++) {
@@ -203,7 +203,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
 
     @Override
     public long count() {
-        CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
+        CommandBatchService executorService = new CommandBatchService(commandExecutor);
         RFuture<Map<String, String>> configFuture = executorService.readAsync(configName, StringCodec.INSTANCE,
                 new RedisCommand<Map<Object, Object>>("HGETALL", new ObjectMapReplayDecoder()), configName);
         RBitSetAsync bs = createBitSet(executorService);
@@ -265,7 +265,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
         }
         hashIterations = optimalNumOfHashFunctions(expectedInsertions, size);
 
-        CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
+        CommandBatchService executorService = new CommandBatchService(commandExecutor);
         executorService.evalReadAsync(configName, codec, RedisCommands.EVAL_VOID,
                 "local size = redis.call('hget', KEYS[1], 'size');" +
                         "local hashIterations = redis.call('hget', KEYS[1], 'hashIterations');" +

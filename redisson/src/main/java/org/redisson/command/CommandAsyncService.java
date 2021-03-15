@@ -77,21 +77,18 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
-    public CommandAsyncExecutor enableRedissonReferenceSupport(RedissonClient redisson) {
+    public void enableRedissonReferenceSupport(RedissonClient redisson) {
         enableRedissonReferenceSupport(redisson.getConfig(), redisson, null, null);
-        return this;
     }
 
     @Override
-    public CommandAsyncExecutor enableRedissonReferenceSupport(RedissonReactiveClient redissonReactive) {
+    public void enableRedissonReferenceSupport(RedissonReactiveClient redissonReactive) {
         enableRedissonReferenceSupport(redissonReactive.getConfig(), null, redissonReactive, null);
-        return this;
     }
     
     @Override
-    public CommandAsyncExecutor enableRedissonReferenceSupport(RedissonRxClient redissonRx) {
+    public void enableRedissonReferenceSupport(RedissonRxClient redissonRx) {
         enableRedissonReferenceSupport(redissonRx.getConfig(), null, null, redissonRx);
-        return this;
     }
 
     private void enableRedissonReferenceSupport(Config config, RedissonClient redisson, RedissonReactiveClient redissonReactive, RedissonRxClient redissonRx) {
@@ -664,7 +661,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             if (this instanceof CommandBatchService) {
                 executorService = (CommandBatchService) this;
             } else {
-                executorService = new CommandBatchService(connectionManager);
+                executorService = new CommandBatchService(this);
             }
 
             for (String key : entry.getValue()) {

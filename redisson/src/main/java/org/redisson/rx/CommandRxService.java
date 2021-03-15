@@ -35,6 +35,7 @@ public class CommandRxService extends CommandAsyncService implements CommandRxEx
 
     public CommandRxService(ConnectionManager connectionManager) {
         super(connectionManager);
+        objectBuilder = connectionManager.getCommandExecutor().getObjectBuilder();
     }
 
     @Override

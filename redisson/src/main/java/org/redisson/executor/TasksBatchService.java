@@ -36,7 +36,7 @@ public class TasksBatchService extends TasksService {
     
     public TasksBatchService(Codec codec, String name, CommandExecutor commandExecutor, String executorId, ConcurrentMap<String, ResponseEntry> responses) {
         super(codec, name, commandExecutor, executorId, responses);
-        batchCommandService = new CommandBatchService(commandExecutor.getConnectionManager());
+        batchCommandService = new CommandBatchService(commandExecutor);
     }
     
     @Override

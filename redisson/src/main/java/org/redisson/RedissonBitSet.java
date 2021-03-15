@@ -341,7 +341,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
     @Override
     public RFuture<Void> setAsync(long fromIndex, long toIndex, boolean value) {
         int val = toInt(value);
-        CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
+        CommandBatchService executorService = new CommandBatchService(commandExecutor);
         for (long i = fromIndex; i < toIndex; i++) {
             executorService.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.SETBIT_VOID, getName(), i, val);
         }

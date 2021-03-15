@@ -233,10 +233,6 @@ public class RedissonBatchReactive implements RBatchReactive {
         return commandExecutor.reactive(() -> executorService.executeAsync());
     }
 
-    public void enableRedissonReferenceSupport(RedissonReactiveClient redissonReactive) {
-        this.executorService.enableRedissonReferenceSupport(redissonReactive);
-    }
-
     @Override
     public <V> RGeoReactive<V> getGeo(String name) {
         return ReactiveProxyBuilder.create(executorService, new RedissonGeo<V>(executorService, name, null), 
