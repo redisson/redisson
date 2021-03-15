@@ -42,7 +42,7 @@ public class CommandRxBatchService extends CommandRxService {
 
     public CommandRxBatchService(ConnectionManager connectionManager, BatchOptions options) {
         super(connectionManager);
-        batchService = new CommandBatchService(connectionManager, options);
+        batchService = new CommandBatchService(connectionManager.getCommandExecutor(), options);
     }
     
     @Override
@@ -80,10 +80,4 @@ public class CommandRxBatchService extends CommandRxService {
         return batchService.executeAsync();
     }
 
-    @Override
-    public CommandAsyncExecutor enableRedissonReferenceSupport(RedissonRxClient redissonReactive) {
-        batchService.enableRedissonReferenceSupport(redissonReactive);
-        return super.enableRedissonReferenceSupport(redissonReactive);
-    }
-    
 }

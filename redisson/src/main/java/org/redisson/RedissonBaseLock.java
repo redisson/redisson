@@ -273,7 +273,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
         BatchOptions options = BatchOptions.defaults()
                 .syncSlaves(entry.getAvailableSlaves(), 1, TimeUnit.SECONDS);
 
-        return new CommandBatchService(commandExecutor.getConnectionManager(), options);
+        return new CommandBatchService(commandExecutor, options);
     }
 
     protected void acquireFailed(long waitTime, TimeUnit unit, long threadId) {

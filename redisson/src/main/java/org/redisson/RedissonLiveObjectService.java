@@ -175,8 +175,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
     @Override
     public <T> List<T> persist(T... detachedObjects) {
-        CommandBatchService commandExecutor = new CommandBatchService(connectionManager);
-        commandExecutor.setObjectBuilder(connectionManager.getCommandExecutor().getObjectBuilder());
+        CommandBatchService commandExecutor = new CommandBatchService(connectionManager.getCommandExecutor());
 
         Map<Class<?>, Class<?>> classCache = new HashMap<>();
         Map<T, Object> detached2Attached = new LinkedHashMap<>();
@@ -192,7 +191,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
             name2id.put(liveMap.getName(), id);
         }
 
-        CommandBatchService checkExecutor = new CommandBatchService(connectionManager);
+        CommandBatchService checkExecutor = new CommandBatchService(connectionManager.getCommandExecutor());
         for (Entry<String, Object> entry : name2id.entrySet()) {
             RMap<String, Object> map = new RedissonMap<>(checkExecutor, entry.getKey(), null, null, null);
             map.containsKeyAsync("redisson_live_object");
@@ -562,7 +561,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
     @Override
     public <T> long delete(Class<T> entityClass, Object... ids) {
-        CommandBatchService ce = new CommandBatchService(connectionManager);
+        CommandBatchService ce = new CommandBatchService(connectionManager.getCommandExecutor());
         FieldList<InDefinedShape> fields = Introspectior.getFieldsWithAnnotation(entityClass.getSuperclass(), RIndex.class);
         Set<String> fieldNames = fields.stream().map(f -> f.getName()).collect(Collectors.toSet());
 
