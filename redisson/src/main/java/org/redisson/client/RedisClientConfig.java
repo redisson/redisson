@@ -63,7 +63,7 @@ public class RedisClientConfig {
     private String sslTruststorePassword;
     private URL sslKeystore;
     private String sslKeystorePassword;
-    private NettyHook nettyHook = new NettyHook() {};
+    private NettyHook nettyHook = new DefaultNettyHook();
     
     public RedisClientConfig() {
     }
