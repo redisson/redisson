@@ -34,6 +34,7 @@ import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.ReadMode;
 import org.redisson.config.ReplicatedServersConfig;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
+import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.misc.RedisURI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,8 +64,8 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
         slave
     }
 
-    public ReplicatedConnectionManager(ReplicatedServersConfig cfg, Config config, UUID id) {
-        super(config, id);
+    public ReplicatedConnectionManager(ReplicatedServersConfig cfg, Config config, UUID id, RedissonObjectBuilder objectBuilder) {
+        super(config, id, objectBuilder);
 
         this.config = create(cfg);
         initTimer(this.config);

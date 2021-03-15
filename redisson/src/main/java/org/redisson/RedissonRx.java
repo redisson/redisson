@@ -48,10 +48,7 @@ public class RedissonRx implements RedissonRxClient {
         this.config = config;
         Config configCopy = new Config(config);
 
-        connectionManager = ConfigSupport.createConnectionManager(configCopy);
-        if (config.isReferenceEnabled()) {
-            connectionManager.getCommandExecutor().enableRedissonReferenceSupport(this);
-        }
+        connectionManager = ConfigSupport.createConnectionManager(configCopy, this);
         commandExecutor = new CommandRxService(connectionManager);
         evictionScheduler = new EvictionScheduler(commandExecutor);
         writeBehindService = new WriteBehindService(commandExecutor);

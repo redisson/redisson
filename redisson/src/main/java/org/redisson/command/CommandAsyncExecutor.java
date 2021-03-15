@@ -18,9 +18,6 @@ package org.redisson.command;
 import io.netty.buffer.ByteBuf;
 import org.redisson.SlotCallback;
 import org.redisson.api.RFuture;
-import org.redisson.api.RedissonClient;
-import org.redisson.api.RedissonReactiveClient;
-import org.redisson.api.RedissonRxClient;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
@@ -43,12 +40,6 @@ public interface CommandAsyncExecutor {
     
     ConnectionManager getConnectionManager();
 
-    void enableRedissonReferenceSupport(RedissonClient redisson);
-    
-    void enableRedissonReferenceSupport(RedissonReactiveClient redissonReactive);
-    
-    void enableRedissonReferenceSupport(RedissonRxClient redissonReactive);
-    
     <V> RedisException convertException(RFuture<V> future);
 
     void syncSubscription(RFuture<?> future);

@@ -22,9 +22,6 @@ import io.netty.util.ReferenceCountUtil;
 import org.redisson.RedissonReference;
 import org.redisson.SlotCallback;
 import org.redisson.api.RFuture;
-import org.redisson.api.RedissonClient;
-import org.redisson.api.RedissonReactiveClient;
-import org.redisson.api.RedissonRxClient;
 import org.redisson.cache.LRUCacheMap;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisException;
@@ -34,8 +31,6 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.codec.ReferenceCodecProvider;
-import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
@@ -65,37 +60,16 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     static final Logger log = LoggerFactory.getLogger(CommandAsyncService.class);
 
     final ConnectionManager connectionManager;
-    protected RedissonObjectBuilder objectBuilder;
+    final RedissonObjectBuilder objectBuilder;
 
-    public CommandAsyncService(ConnectionManager connectionManager) {
+    public CommandAsyncService(ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder) {
         this.connectionManager = connectionManager;
+        this.objectBuilder = objectBuilder;
     }
 
     @Override
     public ConnectionManager getConnectionManager() {
         return connectionManager;
-    }
-
-    @Override
-    public void enableRedissonReferenceSupport(RedissonClient redisson) {
-        enableRedissonReferenceSupport(redisson.getConfig(), redisson, null, null);
-    }
-
-    @Override
-    public void enableRedissonReferenceSupport(RedissonReactiveClient redissonReactive) {
-        enableRedissonReferenceSupport(redissonReactive.getConfig(), null, redissonReactive, null);
-    }
-    
-    @Override
-    public void enableRedissonReferenceSupport(RedissonRxClient redissonRx) {
-        enableRedissonReferenceSupport(redissonRx.getConfig(), null, null, redissonRx);
-    }
-
-    private void enableRedissonReferenceSupport(Config config, RedissonClient redisson, RedissonReactiveClient redissonReactive, RedissonRxClient redissonRx) {
-        Codec codec = config.getCodec();
-        objectBuilder = new RedissonObjectBuilder(config, redisson, redissonReactive, redissonRx);
-        ReferenceCodecProvider codecProvider = objectBuilder.getReferenceCodecProvider();
-        codecProvider.registerCodec((Class<Codec>) codec.getClass(), codec);
     }
 
     private boolean isRedissonReferenceSupportEnabled() {

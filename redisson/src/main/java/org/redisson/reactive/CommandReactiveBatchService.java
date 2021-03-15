@@ -15,21 +15,18 @@
  */
 package org.redisson.reactive;
 
-import java.util.concurrent.Callable;
-
 import org.redisson.api.BatchOptions;
 import org.redisson.api.BatchResult;
 import org.redisson.api.RFuture;
-import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
-import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.NodeSource;
 import org.redisson.misc.RPromise;
-
 import reactor.core.publisher.Mono;
+
+import java.util.concurrent.Callable;
 
 /**
  * 
