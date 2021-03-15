@@ -42,7 +42,7 @@ public class CommandReactiveBatchService extends CommandReactiveService {
 
     public CommandReactiveBatchService(ConnectionManager connectionManager, BatchOptions options) {
         super(connectionManager);
-        batchService = new CommandBatchService(connectionManager, options);
+        batchService = new CommandBatchService(connectionManager.getCommandExecutor(), options);
     }
 
     @Override
@@ -80,10 +80,4 @@ public class CommandReactiveBatchService extends CommandReactiveService {
         return batchService.executeAsync();
     }
 
-    @Override
-    public CommandAsyncExecutor enableRedissonReferenceSupport(RedissonReactiveClient redissonReactive) {
-        batchService.enableRedissonReferenceSupport(redissonReactive);
-        return super.enableRedissonReferenceSupport(redissonReactive);
-    }
-    
 }

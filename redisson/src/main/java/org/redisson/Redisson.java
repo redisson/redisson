@@ -62,6 +62,9 @@ public class Redisson implements RedissonClient {
         Config configCopy = new Config(config);
 
         connectionManager = ConfigSupport.createConnectionManager(configCopy);
+        if (config.isReferenceEnabled()) {
+            connectionManager.getCommandExecutor().enableRedissonReferenceSupport(this);
+        }
         evictionScheduler = new EvictionScheduler(connectionManager.getCommandExecutor());
         writeBehindService = new WriteBehindService(connectionManager.getCommandExecutor());
     }
@@ -101,11 +104,7 @@ public class Redisson implements RedissonClient {
      * @return Redisson instance
      */
     public static RedissonClient create(Config config) {
-        Redisson redisson = new Redisson(config);
-        if (config.isReferenceEnabled()) {
-            redisson.enableRedissonReferenceSupport();
-        }
-        return redisson;
+        return new Redisson(config);
     }
 
     /**
@@ -126,11 +125,7 @@ public class Redisson implements RedissonClient {
      * @return Redisson instance
      */
     public static RedissonRxClient createRx(Config config) {
-        RedissonRx react = new RedissonRx(config);
-        if (config.isReferenceEnabled()) {
-            react.enableRedissonReferenceSupport();
-        }
-        return react;
+        return new RedissonRx(config);
     }
 
     
@@ -152,11 +147,7 @@ public class Redisson implements RedissonClient {
      * @return Redisson instance
      */
     public static RedissonReactiveClient createReactive(Config config) {
-        RedissonReactive react = new RedissonReactive(config);
-        if (config.isReferenceEnabled()) {
-            react.enableRedissonReferenceSupport();
-        }
-        return react;
+        return new RedissonReactive(config);
     }
 
     @Override
@@ -644,11 +635,7 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RBatch createBatch(BatchOptions options) {
-        RedissonBatch batch = new RedissonBatch(evictionScheduler, connectionManager, options);
-        if (config.isReferenceEnabled()) {
-            batch.enableRedissonReferenceSupport(this);
-        }
-        return batch;
+        return new RedissonBatch(evictionScheduler, connectionManager, options);
     }
 
     @Override
@@ -727,10 +714,6 @@ public class Redisson implements RedissonClient {
     @Override
     public boolean isShuttingDown() {
         return connectionManager.isShuttingDown();
-    }
-
-    protected void enableRedissonReferenceSupport() {
-        this.connectionManager.getCommandExecutor().enableRedissonReferenceSupport(this);
     }
 
     @Override

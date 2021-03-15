@@ -49,6 +49,9 @@ public class RedissonRx implements RedissonRxClient {
         Config configCopy = new Config(config);
 
         connectionManager = ConfigSupport.createConnectionManager(configCopy);
+        if (config.isReferenceEnabled()) {
+            connectionManager.getCommandExecutor().enableRedissonReferenceSupport(this);
+        }
         commandExecutor = new CommandRxService(connectionManager);
         evictionScheduler = new EvictionScheduler(commandExecutor);
         writeBehindService = new WriteBehindService(commandExecutor);
@@ -475,11 +478,7 @@ public class RedissonRx implements RedissonRxClient {
     
     @Override
     public RBatchRx createBatch(BatchOptions options) {
-        RedissonBatchRx batch = new RedissonBatchRx(evictionScheduler, connectionManager, commandExecutor, options);
-        if (config.isReferenceEnabled()) {
-            batch.enableRedissonReferenceSupport(this);
-        }
-        return batch;
+        return new RedissonBatchRx(evictionScheduler, connectionManager, commandExecutor, options);
     }
 
     @Override
@@ -518,10 +517,6 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public boolean isShuttingDown() {
         return connectionManager.isShuttingDown();
-    }
-
-    protected void enableRedissonReferenceSupport() {
-        this.commandExecutor.enableRedissonReferenceSupport(this);
     }
 
     @Override

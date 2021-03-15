@@ -123,7 +123,7 @@ public class LiveObjectInterceptor {
             if (commandExecutor instanceof CommandBatchService) {
                 ce = (CommandBatchService) commandExecutor;
             } else {
-                ce = new CommandBatchService(connectionManager);
+                ce = new CommandBatchService(commandExecutor);
             }
 
             Object idd = ((RLiveObject) me).getLiveObjectId();

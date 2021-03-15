@@ -188,7 +188,7 @@ public class AccessorInterceptor {
         if (commandExecutor instanceof CommandBatchService) {
             ce = (CommandBatchService) commandExecutor;
         } else {
-            ce = new CommandBatchService(connectionManager);
+            ce = new CommandBatchService(commandExecutor);
         }
 
         if (Number.class.isAssignableFrom(field.getType()) || PRIMITIVE_CLASSES.contains(field.getType())) {
@@ -246,7 +246,7 @@ public class AccessorInterceptor {
             ce = (CommandBatchService) commandExecutor;
             skipExecution = true;
         } else {
-            ce = new CommandBatchService(connectionManager);
+            ce = new CommandBatchService(commandExecutor);
         }
 
         if (arg instanceof Number) {

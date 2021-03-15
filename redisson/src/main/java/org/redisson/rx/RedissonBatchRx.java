@@ -243,10 +243,6 @@ public class RedissonBatchRx implements RBatchRx {
         return commandExecutor.flowable(() -> executorService.executeAsync()).singleElement();
     }
     
-    public void enableRedissonReferenceSupport(RedissonRxClient redissonRx) {
-        this.executorService.enableRedissonReferenceSupport(redissonRx);
-    }
-
     @Override
     public <V> RGeoRx<V> getGeo(String name) {
         RedissonGeo<V> geo = new RedissonGeo<V>(executorService, name, null);

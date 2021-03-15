@@ -43,11 +43,11 @@ public interface CommandAsyncExecutor {
     
     ConnectionManager getConnectionManager();
 
-    CommandAsyncExecutor enableRedissonReferenceSupport(RedissonClient redisson);
+    void enableRedissonReferenceSupport(RedissonClient redisson);
     
-    CommandAsyncExecutor enableRedissonReferenceSupport(RedissonReactiveClient redissonReactive);
+    void enableRedissonReferenceSupport(RedissonReactiveClient redissonReactive);
     
-    CommandAsyncExecutor enableRedissonReferenceSupport(RedissonRxClient redissonReactive);
+    void enableRedissonReferenceSupport(RedissonRxClient redissonReactive);
     
     <V> RedisException convertException(RFuture<V> future);
 

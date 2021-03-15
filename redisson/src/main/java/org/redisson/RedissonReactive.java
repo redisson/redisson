@@ -51,6 +51,10 @@ public class RedissonReactive implements RedissonReactiveClient {
         Config configCopy = new Config(config);
 
         connectionManager = ConfigSupport.createConnectionManager(configCopy);
+        if (config.isReferenceEnabled()) {
+            this.connectionManager.getCommandExecutor().enableRedissonReferenceSupport(this);
+        }
+
         commandExecutor = new CommandReactiveService(connectionManager);
         evictionScheduler = new EvictionScheduler(commandExecutor);
         writeBehindService = new WriteBehindService(commandExecutor);
@@ -465,11 +469,7 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public RBatchReactive createBatch(BatchOptions options) {
-        RedissonBatchReactive batch = new RedissonBatchReactive(evictionScheduler, connectionManager, commandExecutor, options);
-        if (config.isReferenceEnabled()) {
-            batch.enableRedissonReferenceSupport(this);
-        }
-        return batch;
+        return new RedissonBatchReactive(evictionScheduler, connectionManager, commandExecutor, options);
     }
 
     @Override
@@ -513,10 +513,6 @@ public class RedissonReactive implements RedissonReactiveClient {
     @Override
     public boolean isShuttingDown() {
         return connectionManager.isShuttingDown();
-    }
-
-    protected void enableRedissonReferenceSupport() {
-        this.commandExecutor.enableRedissonReferenceSupport(this);
     }
 
     @Override
