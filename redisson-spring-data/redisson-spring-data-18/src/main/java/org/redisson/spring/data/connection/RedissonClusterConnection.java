@@ -493,7 +493,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         };
 
         for (Entry<MasterSlaveEntry, List<byte[]>> entry : range2key.entrySet()) {
-            CommandBatchService es = new CommandBatchService(executorService.getConnectionManager());
+            CommandBatchService es = new CommandBatchService(executorService);
             for (byte[] key : entry.getValue()) {
                 es.writeAsync(entry.getKey(), null, command, key);
             }
