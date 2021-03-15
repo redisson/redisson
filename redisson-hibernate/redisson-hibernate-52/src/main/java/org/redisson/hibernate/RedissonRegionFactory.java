@@ -18,6 +18,7 @@ package org.redisson.hibernate;
 import org.hibernate.boot.registry.selector.spi.StrategySelector;
 import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.cache.CacheException;
+import org.hibernate.cache.jcache.time.Timestamper;
 import org.hibernate.cache.spi.*;
 import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cfg.Environment;
@@ -77,12 +78,6 @@ public class RedissonRegionFactory implements RegionFactory {
     protected RedissonClient redisson;
     private Settings settings;
     private CacheKeysFactory cacheKeysFactory;
-
-    // support for fallbackNextTimestamp -
-    // taken from hibernate 5.2 hibernate-jcache/src/main/java/org/hibernate/cache/jcache/time/Timestamper.java
-    private static final int BIN_DIGITS = 12;
-    private static final short ONE_MS = 1 << BIN_DIGITS;
-    private static final AtomicLong VALUE = new AtomicLong();
     boolean fallback;
 
     @Override
@@ -181,25 +176,9 @@ public class RedissonRegionFactory implements RegionFactory {
                 RScript.ReturnType.INTEGER, Arrays.<Object>asList("redisson-hibernate-timestamp"), time);
         } catch(Exception e) {
             if(fallback) {
-                return fallbackNextTimestamp();
+                return(Timestamper.next());
             }
             throw e;
-        }
-    }
-
-
-    private long fallbackNextTimestamp() {
-        // taken from hibernate 5.2 hibernate-jcache/src/main/java/org/hibernate/cache/jcache/time/Timestamper.java
-        while ( true ) {
-            long base = System.currentTimeMillis() << BIN_DIGITS;
-            long maxValue = base + ONE_MS - 1;
-
-            for ( long current = VALUE.get(), update = Math.max( base, current + 1 ); update < maxValue;
-                  current = VALUE.get(), update = Math.max( base, current + 1 ) ) {
-                if ( VALUE.compareAndSet( current, update ) ) {
-                    return update;
-                }
-            }
         }
     }
 
