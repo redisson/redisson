@@ -38,7 +38,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Properties;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Hibernate Cache region factory based on Redisson. 
