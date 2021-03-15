@@ -19,26 +19,18 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 
 /**
- * This interface allows to create hooks applied
- * after Netty Bootstrap and Channel object initialization.
  *
  * @author Nikita Koksharov
  *
  */
-public interface NettyHook {
+public class DefaultNettyHook implements NettyHook {
 
-    /**
-     * Invoked when Redis client created and initialized Netty Bootstrap object.
-     *
-     * @param bootstrap - Netty Bootstrap object
-     */
-    void afterBoostrapInitialization(Bootstrap bootstrap);
+    @Override
+    public void afterBoostrapInitialization(Bootstrap bootstrap) {
+    }
 
-    /**
-     * Invoked when Netty Channel object was created and initialized.
-     *
-     * @param channel - Netty Channel object
-     */
-    void afterChannelInitialization(Channel channel);
+    @Override
+    public void afterChannelInitialization(Channel channel) {
+    }
 
 }
