@@ -197,6 +197,10 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
                 params.add(command.getReadOptions().getBlock());
             }
 
+            if (command.getConsumer() != null && command.getReadOptions().isNoack()) {
+                params.add("NOACK");
+            }
+
             params.add("STREAMS");
             for (StreamOffset<ByteBuffer> streamOffset : command.getStreamOffsets()) {
                 params.add(toByteArray(streamOffset.getKey()));

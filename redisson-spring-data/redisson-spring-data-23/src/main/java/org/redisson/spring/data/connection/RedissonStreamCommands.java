@@ -583,6 +583,10 @@ public class RedissonStreamCommands implements RedisStreamCommands {
             params.add(readOptions.getBlock());
         }
 
+        if (readOptions.isNoack()) {
+            params.add("NOACK");
+        }
+
         params.add("STREAMS");
         for (StreamOffset<byte[]> streamOffset : streams) {
             params.add(streamOffset.getKey());
