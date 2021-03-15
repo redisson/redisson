@@ -40,6 +40,7 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.command.CommandSyncService;
 import org.redisson.config.*;
+import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.misc.CountableListener;
 import org.redisson.misc.InfinitySemaphoreLatch;
 import org.redisson.misc.RPromise;
@@ -147,15 +148,15 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     
     private final Map<RedisURI, RedisConnection> nodeConnections = new ConcurrentHashMap<>();
     
-    public MasterSlaveConnectionManager(MasterSlaveServersConfig cfg, Config config, UUID id) {
-        this(config, id);
+    public MasterSlaveConnectionManager(MasterSlaveServersConfig cfg, Config config, UUID id, RedissonObjectBuilder objectBuilder) {
+        this(config, id, objectBuilder);
         this.config = cfg;
         
         initTimer(cfg);
         initSingleEntry();
     }
 
-    protected MasterSlaveConnectionManager(Config cfg, UUID id) {
+    protected MasterSlaveConnectionManager(Config cfg, UUID id, RedissonObjectBuilder objectBuilder) {
         this.id = id.toString();
         Version.logVersion();
 
@@ -212,7 +213,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
         this.cfg = cfg;
         this.codec = cfg.getCodec();
-        this.commandExecutor = new CommandSyncService(this);
+        this.commandExecutor = new CommandSyncService(this, objectBuilder);
     }
     
     protected void closeNodeConnections() {

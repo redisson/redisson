@@ -61,10 +61,7 @@ public class Redisson implements RedissonClient {
         this.config = config;
         Config configCopy = new Config(config);
 
-        connectionManager = ConfigSupport.createConnectionManager(configCopy);
-        if (config.isReferenceEnabled()) {
-            connectionManager.getCommandExecutor().enableRedissonReferenceSupport(this);
-        }
+        connectionManager = ConfigSupport.createConnectionManager(configCopy, this);
         evictionScheduler = new EvictionScheduler(connectionManager.getCommandExecutor());
         writeBehindService = new WriteBehindService(connectionManager.getCommandExecutor());
     }

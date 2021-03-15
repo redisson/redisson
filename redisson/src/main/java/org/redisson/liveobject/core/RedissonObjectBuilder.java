@@ -62,9 +62,9 @@ public class RedissonObjectBuilder {
     }
 
     private final Config config;
-    private final RedissonClient redisson;
-    private final RedissonReactiveClient redissonReactive;
-    private final RedissonRxClient redissonRx;
+    private RedissonClient redisson;
+    private RedissonReactiveClient redissonReactive;
+    private RedissonRxClient redissonRx;
     
     public static class CodecMethodRef {
 
@@ -81,14 +81,45 @@ public class RedissonObjectBuilder {
     
     private final ReferenceCodecProvider codecProvider = new DefaultReferenceCodecProvider();
     
-    public RedissonObjectBuilder(Config config, 
+    public RedissonObjectBuilder(RedissonClient redisson) {
+        super();
+        this.config = redisson.getConfig();
+        this.redisson = redisson;
+
+        Codec codec = config.getCodec();
+        codecProvider.registerCodec((Class<Codec>) codec.getClass(), codec);
+    }
+
+    public RedissonObjectBuilder(RedissonReactiveClient redissonReactive) {
+        super();
+        this.config = redissonReactive.getConfig();
+        this.redissonReactive = redissonReactive;
+
+        Codec codec = config.getCodec();
+        codecProvider.registerCodec((Class<Codec>) codec.getClass(), codec);
+    }
+
+    public RedissonObjectBuilder(RedissonRxClient redissonRx) {
+        super();
+        this.config = redissonRx.getConfig();
+        this.redissonRx = redissonRx;
+
+        Codec codec = config.getCodec();
+        codecProvider.registerCodec((Class<Codec>) codec.getClass(), codec);
+    }
+
+    public RedissonObjectBuilder(Config config,
             RedissonClient redisson, RedissonReactiveClient redissonReactive, RedissonRxClient redissonRx) {
         super();
         this.config = config;
         this.redisson = redisson;
         this.redissonReactive = redissonReactive;
         this.redissonRx = redissonRx;
+
+        Codec codec = config.getCodec();
+        codecProvider.registerCodec((Class<Codec>) codec.getClass(), codec);
     }
+
 
     public ReferenceCodecProvider getReferenceCodecProvider() {
         return codecProvider;

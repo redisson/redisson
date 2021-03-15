@@ -37,6 +37,7 @@ import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.SingleEntry;
+import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedisURI;
 import org.redisson.misc.RedissonPromise;
@@ -76,8 +77,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     private final Map<RedisClient, MasterSlaveEntry> client2entry = new ConcurrentHashMap<>();
 
-    public ClusterConnectionManager(ClusterServersConfig cfg, Config config, UUID id) {
-        super(config, id);
+    public ClusterConnectionManager(ClusterServersConfig cfg, Config config, UUID id, RedissonObjectBuilder objectBuilder) {
+        super(config, id, objectBuilder);
 
         if (cfg.getNodeAddresses().isEmpty()) {
             throw new IllegalArgumentException("At least one cluster node should be defined!");

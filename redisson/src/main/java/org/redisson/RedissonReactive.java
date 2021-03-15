@@ -50,11 +50,7 @@ public class RedissonReactive implements RedissonReactiveClient {
         this.config = config;
         Config configCopy = new Config(config);
 
-        connectionManager = ConfigSupport.createConnectionManager(configCopy);
-        if (config.isReferenceEnabled()) {
-            this.connectionManager.getCommandExecutor().enableRedissonReferenceSupport(this);
-        }
-
+        connectionManager = ConfigSupport.createConnectionManager(configCopy, this);
         commandExecutor = new CommandReactiveService(connectionManager);
         evictionScheduler = new EvictionScheduler(commandExecutor);
         writeBehindService = new WriteBehindService(commandExecutor);

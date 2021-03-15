@@ -127,9 +127,8 @@ public class CommandBatchService extends CommandAsyncService {
     }
 
     public CommandBatchService(ConnectionManager connectionManager, BatchOptions options, RedissonObjectBuilder objectBuilder) {
-        super(connectionManager);
+        super(connectionManager, objectBuilder);
         this.options = options;
-        this.objectBuilder = objectBuilder;
     }
 
     public BatchOptions getOptions() {
