@@ -15,8 +15,15 @@
 
     <dependencies>
        <dependency>
+          <groupId>org.hibernate</groupId>
+          <artifactId>hibernate-core</artifactId>
+          <version>5.2.18.Final</version>
+          <optional>true</optional>
+       </dependency>
+
+       <dependency>
          <groupId>org.hibernate</groupId>
-         <artifactId>hibernate-core</artifactId>
+         <artifactId>hibernate-jcache</artifactId>
          <version>5.2.18.Final</version>
          <optional>true</optional>
        </dependency>
