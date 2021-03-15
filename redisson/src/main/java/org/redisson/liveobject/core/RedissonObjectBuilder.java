@@ -108,23 +108,6 @@ public class RedissonObjectBuilder {
         codecProvider.registerCodec((Class<Codec>) codec.getClass(), codec);
     }
 
-    public RedissonObjectBuilder(Config config,
-            RedissonClient redisson, RedissonReactiveClient redissonReactive, RedissonRxClient redissonRx) {
-        super();
-        this.config = config;
-        this.redisson = redisson;
-        this.redissonReactive = redissonReactive;
-        this.redissonRx = redissonRx;
-
-        Codec codec = config.getCodec();
-        codecProvider.registerCodec((Class<Codec>) codec.getClass(), codec);
-    }
-
-
-    public ReferenceCodecProvider getReferenceCodecProvider() {
-        return codecProvider;
-    }
-
     public void storeAsync(RObject ar, String fieldName, RMap<String, Object> liveMap) {
         Codec codec = ar.getCodec();
         if (codec != null) {
@@ -218,14 +201,12 @@ public class RedissonObjectBuilder {
     }
 
     public Object fromReference(RedissonReference rr) throws ReflectiveOperationException {
-        if (redisson != null) {
-            return fromReference(redisson, rr);
-        } else if (redissonReactive != null) {
+        if (rr.getReferenceType() == RedissonReference.ReferenceType.REACTIVE) {
             return fromReference(redissonReactive, rr);
-        } else if (redissonRx != null) {
+        } else if (rr.getReferenceType() == RedissonReference.ReferenceType.RXJAVA) {
             return fromReference(redissonRx, rr);
         }
-        throw new IllegalStateException();
+        return fromReference(redisson, rr);
     }
     
     private Object fromReference(RedissonClient redisson, RedissonReference rr) throws ReflectiveOperationException {
@@ -267,9 +248,9 @@ public class RedissonObjectBuilder {
     }
 
     private Object fromReference(RedissonRxClient redisson, RedissonReference rr) throws ReflectiveOperationException {
-        Class<? extends Object> type = rr.getReactiveType();
+        Class<? extends Object> type = rr.getRxJavaType();
         /**
-         * Live Object from reference in reactive client is not supported yet.
+         * Live Object from reference in rxjava client is not supported yet.
          */
         return getObject(redisson, rr, type, codecProvider);
     }
@@ -305,7 +286,16 @@ public class RedissonObjectBuilder {
             }
             return new RedissonReference(clazz, rObject.getName(), rObject.getCodec());
         }
-        
+        if (object instanceof RObjectRx && !(object instanceof RLiveObject)) {
+            Class<?> clazz = object.getClass().getInterfaces()[0];
+
+            RObjectRx rObject = (RObjectRx) object;
+            if (rObject.getCodec() != null) {
+                codecProvider.registerCodec((Class) rObject.getCodec().getClass(), rObject.getCodec());
+            }
+            return new RedissonReference(clazz, rObject.getName(), rObject.getCodec());
+        }
+
         try {
             if (object instanceof RLiveObject) {
                 Class<? extends Object> rEntity = object.getClass().getSuperclass();

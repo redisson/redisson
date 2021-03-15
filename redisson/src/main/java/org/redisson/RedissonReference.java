@@ -16,37 +16,9 @@
 package org.redisson;
 
 import java.io.Serializable;
+import java.util.Optional;
 
-import org.redisson.api.RAtomicLong;
-import org.redisson.api.RAtomicLongReactive;
-import org.redisson.api.RBitSet;
-import org.redisson.api.RBitSetReactive;
-import org.redisson.api.RBlockingQueue;
-import org.redisson.api.RBlockingQueueReactive;
-import org.redisson.api.RBucket;
-import org.redisson.api.RBucketReactive;
-import org.redisson.api.RDeque;
-import org.redisson.api.RDequeReactive;
-import org.redisson.api.RHyperLogLog;
-import org.redisson.api.RHyperLogLogReactive;
-import org.redisson.api.RLexSortedSet;
-import org.redisson.api.RLexSortedSetReactive;
-import org.redisson.api.RList;
-import org.redisson.api.RListReactive;
-import org.redisson.api.RMap;
-import org.redisson.api.RMapCache;
-import org.redisson.api.RMapCacheReactive;
-import org.redisson.api.RMapReactive;
-import org.redisson.api.RObject;
-import org.redisson.api.RObjectReactive;
-import org.redisson.api.RQueue;
-import org.redisson.api.RQueueReactive;
-import org.redisson.api.RScoredSortedSet;
-import org.redisson.api.RScoredSortedSetReactive;
-import org.redisson.api.RSet;
-import org.redisson.api.RSetCache;
-import org.redisson.api.RSetCacheReactive;
-import org.redisson.api.RSetReactive;
+import org.redisson.api.*;
 import org.redisson.api.annotation.REntity;
 import org.redisson.client.codec.Codec;
 import org.redisson.liveobject.misc.ClassUtils;
@@ -60,7 +32,8 @@ public class RedissonReference implements Serializable {
 
     private static final long serialVersionUID = -2378564460151709127L;
     
-    private static final BiHashMap<String, String> REACTIVE_MAP = new BiHashMap<String, String>();
+    private static final BiHashMap<String, String> REACTIVE_MAP = new BiHashMap<>();
+    private static final BiHashMap<String, String> RXJAVA_MAP = new BiHashMap<>();
 
     static {
         REACTIVE_MAP.put(RAtomicLongReactive.class.getName(),         RAtomicLong.class.getName());
@@ -79,13 +52,33 @@ public class RedissonReference implements Serializable {
         REACTIVE_MAP.put(RSetReactive.class.getName(),                RSet.class.getName());
 
         REACTIVE_MAP.makeImmutable();
+
+        RXJAVA_MAP.put(RAtomicLongRx.class.getName(),         RAtomicLong.class.getName());
+        RXJAVA_MAP.put(RBitSetRx.class.getName(),             RBitSet.class.getName());
+        RXJAVA_MAP.put(RBlockingQueueRx.class.getName(),      RBlockingQueue.class.getName());
+        RXJAVA_MAP.put(RBucketRx.class.getName(),             RBucket.class.getName());
+        RXJAVA_MAP.put(RDequeRx.class.getName(),              RDeque.class.getName());
+        RXJAVA_MAP.put(RHyperLogLogRx.class.getName(),        RHyperLogLog.class.getName());
+        RXJAVA_MAP.put(RLexSortedSetRx.class.getName(),       RLexSortedSet.class.getName());
+        RXJAVA_MAP.put(RListRx.class.getName(),               RList.class.getName());
+        RXJAVA_MAP.put(RMapCacheRx.class.getName(),           RMapCache.class.getName());
+        RXJAVA_MAP.put(RMapRx.class.getName(),                RMap.class.getName());
+        RXJAVA_MAP.put(RQueueRx.class.getName(),              RQueue.class.getName());
+        RXJAVA_MAP.put(RScoredSortedSetRx.class.getName(),    RScoredSortedSet.class.getName());
+        RXJAVA_MAP.put(RSetCacheRx.class.getName(),           RSetCache.class.getName());
+        RXJAVA_MAP.put(RSetRx.class.getName(),                RSet.class.getName());
+
+        RXJAVA_MAP.makeImmutable();
     }
 
     public static void warmUp() {}
 
+    public enum ReferenceType {RXJAVA, REACTIVE, DEFAULT}
+
     private String type;
     private String keyName;
     private String codec;
+    private ReferenceType referenceType;
 
     public RedissonReference() {
     }
@@ -95,12 +88,26 @@ public class RedissonReference implements Serializable {
     }
 
     public RedissonReference(Class<?> type, String keyName, Codec codec) {
-        if (!ClassUtils.isAnnotationPresent(type, REntity.class) && !RObject.class.isAssignableFrom(type) && !RObjectReactive.class.isAssignableFrom(type)) {
-            throw new IllegalArgumentException("Class reference has to be a type of either RObject or RLiveObject or RObjectReactive");
+        if (!ClassUtils.isAnnotationPresent(type, REntity.class)
+                && !RObject.class.isAssignableFrom(type)
+                    && !RObjectReactive.class.isAssignableFrom(type)
+                        && !RObjectRx.class.isAssignableFrom(type)) {
+            throw new IllegalArgumentException("Class reference has to be a type of either RObject/RLiveObject/RObjectReactive/RObjectRx");
         }
         if (RObjectReactive.class.isAssignableFrom(type)) {
+            this.referenceType = ReferenceType.REACTIVE;
             this.type = REACTIVE_MAP.get(type.getName());
+            if (this.type == null) {
+                throw new IllegalArgumentException("There is no Reactive compatible type for " + type);
+            }
+        } else if (RObjectRx.class.isAssignableFrom(type)) {
+            this.referenceType = ReferenceType.RXJAVA;
+            this.type = RXJAVA_MAP.get(type.getName());
+            if (this.type == null) {
+                throw new IllegalArgumentException("There is no RxJava compatible type for " + type);
+            }
         } else {
+            this.referenceType = ReferenceType.DEFAULT;
             this.type = type.getName();
         }
         this.keyName = keyName;
@@ -115,6 +122,17 @@ public class RedissonReference implements Serializable {
      */
     public Class<?> getType() throws ClassNotFoundException {
         return Class.forName(type);
+    }
+
+    public ReferenceType getReferenceType() {
+        return Optional.ofNullable(referenceType).orElse(ReferenceType.DEFAULT);
+    }
+
+    public Class<?> getRxJavaType() throws ClassNotFoundException {
+        if (RXJAVA_MAP.containsValue(type)) {
+            return Class.forName(RXJAVA_MAP.reverseGet(type)); //live object is not supported in reactive client
+        }
+        throw new ClassNotFoundException("There is no RxJava compatible type for " + type);
     }
 
     /**
@@ -133,13 +151,6 @@ public class RedissonReference implements Serializable {
      */
     public String getTypeName() {
         return type;
-    }
-
-    /**
-     * @return type name in string
-     */
-    public String getReactiveTypeName() {
-        return type + "Reactive";
     }
 
     /**
