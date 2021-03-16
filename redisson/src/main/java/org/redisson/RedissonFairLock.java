@@ -101,8 +101,6 @@ public class RedissonFairLock extends RedissonLock implements RLock {
 
     @Override
     <T> RFuture<T> tryLockInnerAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
-        internalLockLeaseTime = unit.toMillis(leaseTime);
-
         long wait = threadWaitTime;
         if (waitTime != -1) {
             wait = unit.toMillis(waitTime);
@@ -151,7 +149,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                     "end;" +
                     "return 1;",
                     Arrays.asList(getName(), threadsQueueName, timeoutSetName),
-                    internalLockLeaseTime, getLockName(threadId), currentTime, wait);
+                    unit.toMillis(leaseTime), getLockName(threadId), currentTime, wait);
         }
 
         if (command == RedisCommands.EVAL_LONG) {
@@ -228,7 +226,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                     "end;" +
                     "return ttl;",
                     Arrays.asList(getName(), threadsQueueName, timeoutSetName),
-                    internalLockLeaseTime, getLockName(threadId), wait, currentTime);
+                    unit.toMillis(leaseTime), getLockName(threadId), wait, currentTime);
         }
 
         throw new IllegalArgumentException();
