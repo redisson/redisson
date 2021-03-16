@@ -97,7 +97,7 @@ public class AccessorInterceptor {
                 return result;
             }
             if (result instanceof RedissonReference) {
-                return commandExecutor.getObjectBuilder().fromReference((RedissonReference) result);
+                return commandExecutor.getObjectBuilder().fromReference((RedissonReference) result, RedissonObjectBuilder.ReferenceType.DEFAULT);
             }
             return result;
         }

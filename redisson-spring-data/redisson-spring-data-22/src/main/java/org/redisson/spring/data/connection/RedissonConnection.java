@@ -153,7 +153,7 @@ public class RedissonConnection extends AbstractRedisConnection {
     public void openPipeline() {
         BatchOptions options = BatchOptions.defaults()
                 .executionMode(ExecutionMode.IN_MEMORY);
-        this.executorService = new CommandBatchService(redisson.getConnectionManager(), options);
+        this.executorService = new CommandBatchService(executorService, options);
     }
 
     @Override
@@ -1507,13 +1507,13 @@ public class RedissonConnection extends AbstractRedisConnection {
         if (isPipelined()) {
             BatchOptions options = BatchOptions.defaults()
                     .executionMode(ExecutionMode.IN_MEMORY_ATOMIC);
-            this.executorService = new CommandBatchService(redisson.getConnectionManager(), options);
+            this.executorService = new CommandBatchService(executorService, options);
             return;
         }
         
         BatchOptions options = BatchOptions.defaults()
             .executionMode(ExecutionMode.REDIS_WRITE_ATOMIC);
-        this.executorService = new CommandBatchService(redisson.getConnectionManager(), options);
+        this.executorService = new CommandBatchService(executorService, options);
     }
 
     @Override

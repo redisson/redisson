@@ -15,18 +15,18 @@
  */
 package org.redisson;
 
-import java.io.Serializable;
-import java.util.Optional;
-
 import org.redisson.api.*;
 import org.redisson.api.annotation.REntity;
 import org.redisson.client.codec.Codec;
 import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.misc.BiHashMap;
 
+import java.io.Serializable;
+
 /**
  *
  * @author Rui Gu (https://github.com/jackygurui)
+ * @author Nikita Koksharov
  */
 public class RedissonReference implements Serializable {
 
@@ -78,7 +78,6 @@ public class RedissonReference implements Serializable {
     private String type;
     private String keyName;
     private String codec;
-    private ReferenceType referenceType;
 
     public RedissonReference() {
     }
@@ -95,19 +94,16 @@ public class RedissonReference implements Serializable {
             throw new IllegalArgumentException("Class reference has to be a type of either RObject/RLiveObject/RObjectReactive/RObjectRx");
         }
         if (RObjectReactive.class.isAssignableFrom(type)) {
-            this.referenceType = ReferenceType.REACTIVE;
             this.type = REACTIVE_MAP.get(type.getName());
             if (this.type == null) {
                 throw new IllegalArgumentException("There is no Reactive compatible type for " + type);
             }
         } else if (RObjectRx.class.isAssignableFrom(type)) {
-            this.referenceType = ReferenceType.RXJAVA;
             this.type = RXJAVA_MAP.get(type.getName());
             if (this.type == null) {
                 throw new IllegalArgumentException("There is no RxJava compatible type for " + type);
             }
         } else {
-            this.referenceType = ReferenceType.DEFAULT;
             this.type = type.getName();
         }
         this.keyName = keyName;
@@ -122,10 +118,6 @@ public class RedissonReference implements Serializable {
      */
     public Class<?> getType() throws ClassNotFoundException {
         return Class.forName(type);
-    }
-
-    public ReferenceType getReferenceType() {
-        return Optional.ofNullable(referenceType).orElse(ReferenceType.DEFAULT);
     }
 
     public Class<?> getRxJavaType() throws ClassNotFoundException {
@@ -151,17 +143,6 @@ public class RedissonReference implements Serializable {
      */
     public String getTypeName() {
         return type;
-    }
-
-    /**
-     * @param type the type to set
-     */
-    public void setType(Class<?> type) {
-        if (!ClassUtils.isAnnotationPresent(type, REntity.class) 
-                && (!RObject.class.isAssignableFrom(type) || !RObjectReactive.class.isAssignableFrom(type))) {
-            throw new IllegalArgumentException("Class reference has to be a type of either RObject or RLiveObject or RObjectReactive");
-        }
-        this.type = type.getName();
     }
 
     /**
@@ -192,19 +173,4 @@ public class RedissonReference implements Serializable {
         }
         return null;
     }
-
-    /**
-     * @return Codec name in string
-     */
-    public String getCodecName() {
-        return codec;
-    }
-
-    /**
-     * @param codec the codec to set
-     */
-    public void setCodecType(Class<? extends Codec> codec) {
-        this.codec = codec.getName();
-    }
-    
 }
