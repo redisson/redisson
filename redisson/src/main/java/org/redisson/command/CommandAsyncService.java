@@ -61,10 +61,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     final ConnectionManager connectionManager;
     final RedissonObjectBuilder objectBuilder;
+    final RedissonObjectBuilder.ReferenceType referenceType;
 
-    public CommandAsyncService(ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder) {
+    public CommandAsyncService(ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder, RedissonObjectBuilder.ReferenceType referenceType) {
         this.connectionManager = connectionManager;
         this.objectBuilder = objectBuilder;
+        this.referenceType = referenceType;
     }
 
     @Override
@@ -499,7 +501,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             args.addAll(Arrays.asList(params));
 
             RedisExecutor<T, R> executor = new RedisExecutor<>(readOnlyMode, nodeSource, codec, cmd,
-                                                        args.toArray(), promise, false, connectionManager, objectBuilder);
+                                                        args.toArray(), promise, false, connectionManager, objectBuilder, referenceType);
             executor.execute();
 
             promise.onComplete((res, e) -> {
@@ -572,7 +574,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     public <V, R> void async(boolean readOnlyMode, NodeSource source, Codec codec,
             RedisCommand<V> command, Object[] params, RPromise<R> mainPromise, 
             boolean ignoreRedirect) {
-        RedisExecutor<V, R> executor = new RedisExecutor<>(readOnlyMode, source, codec, command, params, mainPromise, ignoreRedirect, connectionManager, objectBuilder);
+        RedisExecutor<V, R> executor = new RedisExecutor<>(readOnlyMode, source, codec, command, params, mainPromise,
+                                                    ignoreRedirect, connectionManager, objectBuilder, referenceType);
         executor.execute();
     }
 

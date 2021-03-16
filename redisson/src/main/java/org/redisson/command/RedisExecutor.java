@@ -22,7 +22,6 @@ import io.netty.util.ReferenceCountUtil;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.FutureListener;
-import org.redisson.RedissonReference;
 import org.redisson.RedissonShutdownException;
 import org.redisson.ScanResult;
 import org.redisson.api.RFuture;
@@ -30,9 +29,10 @@ import org.redisson.cache.LRUCacheMap;
 import org.redisson.client.*;
 import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.*;
-import org.redisson.client.protocol.decoder.ListScanResult;
-import org.redisson.client.protocol.decoder.MapScanResult;
+import org.redisson.client.protocol.CommandData;
+import org.redisson.client.protocol.CommandsData;
+import org.redisson.client.protocol.RedisCommand;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.NodeSource;
 import org.redisson.connection.NodeSource.Redirect;
@@ -43,7 +43,9 @@ import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 
@@ -66,6 +68,7 @@ public class RedisExecutor<V, R> {
     final boolean ignoreRedirect;
     final RedissonObjectBuilder objectBuilder;
     final ConnectionManager connectionManager;
+    final RedissonObjectBuilder.ReferenceType referenceType;
 
     RFuture<RedisConnection> connectionFuture;
     NodeSource source;
@@ -81,8 +84,9 @@ public class RedisExecutor<V, R> {
     long responseTimeout;
     
     public RedisExecutor(boolean readOnlyMode, NodeSource source, Codec codec, RedisCommand<V> command,
-            Object[] params, RPromise<R> mainPromise, boolean ignoreRedirect, 
-            ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder) {
+                         Object[] params, RPromise<R> mainPromise, boolean ignoreRedirect,
+                         ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder,
+                         RedissonObjectBuilder.ReferenceType referenceType) {
         super();
         this.readOnlyMode = readOnlyMode;
         this.source = source;
@@ -97,6 +101,7 @@ public class RedisExecutor<V, R> {
         this.attempts = connectionManager.getConfig().getRetryAttempts();
         this.retryInterval = connectionManager.getConfig().getRetryInterval();
         this.responseTimeout = connectionManager.getConfig().getTimeout();
+        this.referenceType = referenceType;
     }
 
     public void execute() {
@@ -485,127 +490,9 @@ public class RedisExecutor<V, R> {
     }
 
     private void handleReference(RPromise<R> promise, R res) throws ReflectiveOperationException {
-        promise.trySuccess((R) tryHandleReference(objectBuilder, res));
-    }
-    
-    public static Object tryHandleReference(RedissonObjectBuilder objectBuilder, Object o) throws ReflectiveOperationException {
-        boolean hasConversion = false;
-        if (o instanceof List) {
-            List<Object> r = (List<Object>) o;
-            for (int i = 0; i < r.size(); i++) {
-                Object ref = tryHandleReference0(objectBuilder, r.get(i));
-                if (ref != r.get(i)) {
-                    r.set(i, ref);
-                }
-            }
-            return o;
-        } else if (o instanceof Set) {
-            Set<Object> set = (Set<Object>) o;
-            Set<Object> r = (Set<Object>) o;
-            boolean useNewSet = o instanceof LinkedHashSet;
-            try {
-                set = (Set<Object>) o.getClass().getConstructor().newInstance();
-            } catch (Exception exception) {
-                set = new LinkedHashSet<Object>();
-            }
-            for (Object i : r) {
-                Object ref = tryHandleReference0(objectBuilder, i);
-                //Not testing for ref changes because r.add(ref) below needs to
-                //fail on the first iteration to be able to perform fall back 
-                //if failure happens.
-                //
-                //Assuming the failure reason is systematic such as put method
-                //is not supported or implemented, and not an occasional issue 
-                //like only one element fails.
-                if (useNewSet) {
-                    set.add(ref);
-                } else {
-                    try {
-                        r.add(ref);
-                        set.add(i);
-                    } catch (Exception e) {
-                        //r is not supporting add operation, like 
-                        //LinkedHashMap$LinkedEntrySet and others.
-                        //fall back to use a new set.
-                        useNewSet = true;
-                        set.add(ref);
-                    }
-                }
-                hasConversion |= ref != i;
-            }
-
-            if (!hasConversion) {
-                return o;
-            } else if (useNewSet) {
-                return set;
-            } else if (!set.isEmpty()) {
-                r.removeAll(set);
-            }
-            return o;
-        } else if (o instanceof Map) {
-            Map<Object, Object> r = (Map<Object, Object>) o;
-            for (Map.Entry<Object, Object> e : r.entrySet()) {
-                if (e.getKey() instanceof RedissonReference
-                        || e.getValue() instanceof RedissonReference) {
-                    Object key = e.getKey();
-                    Object value = e.getValue();
-                    if (e.getKey() instanceof RedissonReference) {
-                        key = fromReference(objectBuilder, e.getKey());
-                        r.remove(e.getKey());
-                    }
-                    if (e.getValue() instanceof RedissonReference) {
-                        value = fromReference(objectBuilder, e.getValue());
-                    }
-                    r.put(key, value);
-                }
-            }
-
-            return o;
-        } else if (o instanceof ListScanResult) {
-            tryHandleReference(objectBuilder, ((ListScanResult) o).getValues());
-            return o;
-        } else if (o instanceof MapScanResult) {
-            MapScanResult scanResult = (MapScanResult) o;
-            Map oldMap = ((MapScanResult) o).getMap();
-            Map map = (Map) tryHandleReference(objectBuilder, oldMap);
-            if (map != oldMap) {
-                MapScanResult<Object, Object> newScanResult
-                        = new MapScanResult<Object, Object>(scanResult.getPos(), map);
-                newScanResult.setRedisClient(scanResult.getRedisClient());
-                return newScanResult;
-            } else {
-                return o;
-            }
-        } else {
-            return tryHandleReference0(objectBuilder, o);
-        }
+        promise.trySuccess((R) objectBuilder.tryHandleReference(res, referenceType));
     }
 
-    private static Object tryHandleReference0(RedissonObjectBuilder objectBuilder, Object o) throws ReflectiveOperationException {
-        if (o instanceof RedissonReference) {
-            return fromReference(objectBuilder, o);
-        } else if (o instanceof ScoredEntry && ((ScoredEntry) o).getValue() instanceof RedissonReference) {
-            ScoredEntry<?> se = (ScoredEntry<?>) o;
-            return new ScoredEntry(se.getScore(), fromReference(objectBuilder, se.getValue()));
-        } else if (o instanceof Map.Entry) {
-            Map.Entry old = (Map.Entry) o;
-            Object key = tryHandleReference0(objectBuilder, old.getKey());
-            Object value = tryHandleReference0(objectBuilder, old.getValue());
-            if (value != old.getValue() || key != old.getKey()) {
-                return new AbstractMap.SimpleEntry(key, value);
-            }
-        }
-        return o;
-    }
-
-    private static Object fromReference(RedissonObjectBuilder objectBuilder, Object res) throws ReflectiveOperationException {
-        if (objectBuilder == null) {
-            return res;
-        }
-        
-        return objectBuilder.fromReference((RedissonReference) res);
-    }
-    
     protected void sendCommand(RPromise<R> attemptPromise, RedisConnection connection) {
         if (source.getRedirect() == Redirect.ASK) {
             List<CommandData<?, ?>> list = new ArrayList<CommandData<?, ?>>(2);
