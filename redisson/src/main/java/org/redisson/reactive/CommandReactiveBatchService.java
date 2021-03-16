@@ -23,6 +23,7 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.NodeSource;
+import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.misc.RPromise;
 import reactor.core.publisher.Mono;
 
@@ -39,7 +40,7 @@ public class CommandReactiveBatchService extends CommandReactiveService {
 
     public CommandReactiveBatchService(ConnectionManager connectionManager, BatchOptions options) {
         super(connectionManager);
-        batchService = new CommandBatchService(connectionManager.getCommandExecutor(), options);
+        batchService = new CommandBatchService(connectionManager.getCommandExecutor(), options, RedissonObjectBuilder.ReferenceType.REACTIVE);
     }
 
     @Override

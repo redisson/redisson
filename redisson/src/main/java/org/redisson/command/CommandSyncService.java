@@ -35,7 +35,7 @@ public class CommandSyncService extends CommandAsyncService implements CommandEx
     final Logger log = LoggerFactory.getLogger(getClass());
 
     public CommandSyncService(ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder) {
-        super(connectionManager, objectBuilder);
+        super(connectionManager, objectBuilder, RedissonObjectBuilder.ReferenceType.DEFAULT);
     }
 
     @Override
