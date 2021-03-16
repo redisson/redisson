@@ -287,10 +287,12 @@ public class CommandBatchService extends CommandAsyncService {
                         if (commandEntry.getPromise().isCancelled()) {
                             continue;
                         }
-                        
+
                         Object entryResult = commandEntry.getPromise().getNow();
                         try {
-                            entryResult = objectBuilder.tryHandleReference(entryResult, referenceType);
+                            if (objectBuilder != null) {
+                                entryResult = objectBuilder.tryHandleReference(entryResult, referenceType);
+                            }
                         } catch (ReflectiveOperationException exc) {
                             log.error("Unable to handle reference from " + entryResult, exc);
                         }
@@ -441,7 +443,9 @@ public class CommandBatchService extends CommandAsyncService {
                             } else if (!commandEntry.getCommand().getName().equals(RedisCommands.MULTI.getName())
                                     && !commandEntry.getCommand().getName().equals(RedisCommands.EXEC.getName())) {
                                 Object entryResult = commandEntry.getPromise().getNow();
-                                entryResult = objectBuilder.tryHandleReference(entryResult, referenceType);
+                                if (objectBuilder != null) {
+                                    entryResult = objectBuilder.tryHandleReference(entryResult, referenceType);
+                                }
                                 responses.add(entryResult);
                             }
                         }
