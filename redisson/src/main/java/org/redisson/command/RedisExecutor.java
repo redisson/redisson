@@ -490,7 +490,11 @@ public class RedisExecutor<V, R> {
     }
 
     private void handleReference(RPromise<R> promise, R res) throws ReflectiveOperationException {
-        promise.trySuccess((R) objectBuilder.tryHandleReference(res, referenceType));
+        if (objectBuilder != null) {
+            promise.trySuccess((R) objectBuilder.tryHandleReference(res, referenceType));
+        } else {
+            promise.trySuccess(res);
+        }
     }
 
     protected void sendCommand(RPromise<R> attemptPromise, RedisConnection connection) {
