@@ -108,47 +108,50 @@ public class Redisson implements RedissonClient {
         return new Redisson(config);
     }
 
-    /**
-     * Create Reactive Redisson instance with default config
-     *
-     * @return Redisson instance
+    /*
+     * Use Redisson.create().rxJava() method instead
      */
+    @Deprecated
     public static RedissonRxClient createRx() {
         Config config = new Config();
         config.useSingleServer().setAddress("redis://127.0.0.1:6379");
         return createRx(config);
     }
 
-    /**
-     * Create Reactive Redisson instance with provided config
-     *
-     * @param config for Redisson
-     * @return Redisson instance
+    /*
+     * Use Redisson.create(config).rxJava() method instead
      */
+    @Deprecated
     public static RedissonRxClient createRx(Config config) {
         return new RedissonRx(config);
     }
 
+    @Override
+    public RedissonRxClient rxJava() {
+        return new RedissonRx(connectionManager, evictionScheduler, writeBehindService, responses);
+    }
 
-    /**
-     * Create Reactive Redisson instance with default config
-     *
-     * @return Redisson instance
+    /*
+     * Use Redisson.create().reactive() method instead
      */
+    @Deprecated
     public static RedissonReactiveClient createReactive() {
         Config config = new Config();
         config.useSingleServer().setAddress("redis://127.0.0.1:6379");
         return createReactive(config);
     }
 
-    /**
-     * Create Reactive Redisson instance with provided config
-     *
-     * @param config for Redisson
-     * @return Redisson instance
+    /*
+     * Use Redisson.create(config).reactive() method instead
      */
+    @Deprecated
     public static RedissonReactiveClient createReactive(Config config) {
         return new RedissonReactive(config);
+    }
+
+    @Override
+    public RedissonReactiveClient reactive() {
+        return new RedissonReactive(connectionManager, evictionScheduler, writeBehindService, responses);
     }
 
     @Override

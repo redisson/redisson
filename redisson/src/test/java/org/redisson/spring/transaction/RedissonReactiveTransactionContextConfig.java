@@ -35,7 +35,7 @@ public class RedissonReactiveTransactionContextConfig {
 
     @Bean
     public RedissonReactiveClient redisson() {
-        return Redisson.createReactive(BaseTest.createConfig());
+        return Redisson.create(BaseTest.createConfig()).reactive();
     }
     
     @PreDestroy

@@ -136,7 +136,7 @@ public class RedissonBatchRxTest extends BaseRxTest {
                 .setTimeout(200)
                 .setConnectionMinimumIdleSize(1).setConnectionPoolSize(1);
 
-        RedissonRxClient redisson = Redisson.createRx(config);
+        RedissonRxClient redisson = Redisson.create(config).rxJava();
         
         BatchOptions batchOptions = BatchOptions.defaults().executionMode(ExecutionMode.REDIS_WRITE_ATOMIC);
         RBatchRx batch = redisson.createBatch(batchOptions);
@@ -204,7 +204,7 @@ public class RedissonBatchRxTest extends BaseRxTest {
         .setTimeout(1000000)
         .setRetryInterval(1000000)
         .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
-        RedissonRxClient redisson = Redisson.createRx(config);
+        RedissonRxClient redisson = Redisson.create(config).rxJava();
         
         batchOptions
                 .syncSlaves(1, 1, TimeUnit.SECONDS);
@@ -227,7 +227,7 @@ public class RedissonBatchRxTest extends BaseRxTest {
     public void testWriteTimeout() throws InterruptedException {
         Config config = BaseTest.createConfig();
         config.useSingleServer().setRetryInterval(700).setTimeout(1500);
-        RedissonRxClient redisson = Redisson.createRx(config);
+        RedissonRxClient redisson = Redisson.create(config).rxJava();
 
         RBatchRx batch = redisson.createBatch(batchOptions);
         RMapCacheRx<String, String> map = batch.getMapCache("test");
@@ -322,7 +322,7 @@ public class RedissonBatchRxTest extends BaseRxTest {
         config.useClusterServers()
         .setTimeout(123000)
         .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
-        RedissonRxClient redisson = Redisson.createRx(config);
+        RedissonRxClient redisson = Redisson.create(config).rxJava();
         
         batchOptions
                                             .executionMode(ExecutionMode.IN_MEMORY_ATOMIC)
@@ -386,7 +386,7 @@ public class RedissonBatchRxTest extends BaseRxTest {
     public void testBatchBigRequest() {
         Config config = BaseTest.createConfig();
         config.useSingleServer().setTimeout(15000);
-        RedissonRxClient redisson = Redisson.createRx(config);
+        RedissonRxClient redisson = Redisson.create(config).rxJava();
 
         RBatchRx batch = redisson.createBatch(batchOptions);
         for (int i = 0; i < 210; i++) {
