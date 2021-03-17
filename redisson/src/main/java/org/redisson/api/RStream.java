@@ -314,6 +314,16 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
 
     /**
      * Read stream data from consumer group and multiple streams including current.
+     * <p>
+     * Usage examples:
+     * <pre>
+     * Map result = stream.read("group1", "consumer1",  StreamMultiReadGroupArgs.greaterThan(id, "stream2", id2));
+     * </pre>
+     * <pre>
+     * Map result = stream.read("group1", "consumer1", StreamMultiReadGroupArgs.greaterThan(id, "stream2", id2)
+     *                                                                          .count(100)
+     *                                                                          .timeout(Duration.ofSeconds(5))));
+     * </pre>
      *
      * @param args - method arguments object
      * @return stream data mapped by stream name and Stream Message ID
@@ -322,6 +332,16 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
 
     /**
      * Read stream data from consumer group and current stream only.
+     * <p>
+     * Usage examples:
+     * <pre>
+     * Map result = stream.read("group1", "consumer1",  StreamReadGroupArgs.greaterThan(id));
+     * </pre>
+     * <pre>
+     * Map result = stream.read("group1", "consumer1", StreamReadGroupArgs.greaterThan(id)
+     *                                                                          .count(100)
+     *                                                                          .timeout(Duration.ofSeconds(5))));
+     * </pre>
      *
      * @param args - method arguments object
      * @return stream data mapped by Stream Message ID
@@ -455,6 +475,15 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
 
     /**
      * Appends a new entry/entries and returns generated Stream Message ID
+     * <p>
+     * Usage examples:
+     * <pre>
+     * StreamMessageId id = stream.add(StreamAddArgs.entry(15, 37));
+     * </pre>
+     * <pre>
+     * StreamMessageId id = stream.add(StreamAddArgs.entries(15, 37, 23, 43)
+     *                                 .trim(TrimStrategy.MAXLEN, 100)));
+     * </pre>
      *
      * @param args - method arguments object
      * @return Stream Message ID
@@ -463,6 +492,15 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
 
     /**
      * Appends a new entry/entries by specified Stream Message ID
+     * <p>
+     * Usage examples:
+     * <pre>
+     * stream.add(id, StreamAddArgs.entry(15, 37));
+     * </pre>
+     * <pre>
+     * stream.add(id, StreamAddArgs.entries(15, 37, 23, 43)
+     *                                 .trim(TrimStrategy.MAXLEN, 100)));
+     * </pre>
      *
      * @param id - Stream Message ID
      * @param args - method arguments object
@@ -527,6 +565,16 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
 
     /**
      * Read stream data from multiple streams including current.
+     * <p>
+     * Usage examples:
+     * <pre>
+     * Map result = stream.read(StreamMultiReadArgs.greaterThan(id, "stream2", id2));
+     * </pre>
+     * <pre>
+     * Map result = stream.read(StreamMultiReadArgs.greaterThan(id, "stream2", id2)
+     *                                 .count(100)
+     *                                 .timeout(Duration.ofSeconds(5))));
+     * </pre>
      *
      * @param args - method arguments object
      * @return stream data mapped by stream name and Stream Message ID
@@ -535,6 +583,16 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
 
     /**
      * Read stream data from current stream only.
+     * <p>
+     * Usage examples:
+     * <pre>
+     * Map result = stream.read(StreamReadArgs.greaterThan(id));
+     * </pre>
+     * <pre>
+     * Map result = stream.read(StreamReadArgs.greaterThan(id)
+     *                                 .count(100)
+     *                                 .timeout(Duration.ofSeconds(5))));
+     * </pre>
      *
      * @param args - method arguments object
      * @return stream data mapped by Stream Message ID
