@@ -161,8 +161,9 @@ public class RedissonLock extends RedissonBaseLock {
             if (ttlRemaining) {
                 if (-1 != leaseTime) {
                     internalLockLeaseTime = unit.toMillis(leaseTime);
+                } else {
+                    scheduleExpirationRenewal(threadId);
                 }
-                scheduleExpirationRenewal(threadId);
             }
         });
         return ttlRemainingFuture;
@@ -185,8 +186,9 @@ public class RedissonLock extends RedissonBaseLock {
             if (ttlRemaining == null) {
                 if (-1 != leaseTime) {
                     internalLockLeaseTime = unit.toMillis(leaseTime);
+                } else {
+                    scheduleExpirationRenewal(threadId);
                 }
-                scheduleExpirationRenewal(threadId);
             }
         });
         return ttlRemainingFuture;
