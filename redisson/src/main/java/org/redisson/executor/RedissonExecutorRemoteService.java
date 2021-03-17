@@ -23,7 +23,7 @@ import org.redisson.api.RMap;
 import org.redisson.api.executor.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.command.CommandAsyncService;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
 import org.redisson.remote.*;
 import org.slf4j.Logger;
@@ -58,7 +58,7 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
     private List<TaskSuccessListener> successListeners;
 
     public RedissonExecutorRemoteService(Codec codec, String name,
-            CommandAsyncService commandExecutor, String executorId, ConcurrentMap<String, ResponseEntry> responses) {
+                                         CommandAsyncExecutor commandExecutor, String executorId, ConcurrentMap<String, ResponseEntry> responses) {
         super(codec, name, commandExecutor, executorId, responses);
     }
 

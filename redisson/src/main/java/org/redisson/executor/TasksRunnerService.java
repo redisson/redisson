@@ -32,7 +32,7 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.codec.CustomObjectInputStream;
-import org.redisson.command.CommandExecutor;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.executor.params.*;
 import org.redisson.misc.Hash;
 import org.redisson.misc.HashValue;
@@ -64,7 +64,7 @@ public class TasksRunnerService implements RemoteExecutorService {
     
     private final Codec codec;
     private final String name;
-    private final CommandExecutor commandExecutor;
+    private final CommandAsyncExecutor commandExecutor;
 
     private final RedissonClient redisson;
     
@@ -80,7 +80,7 @@ public class TasksRunnerService implements RemoteExecutorService {
     private BeanFactory beanFactory;
     private ConcurrentMap<String, ResponseEntry> responses;
     
-    public TasksRunnerService(CommandExecutor commandExecutor, RedissonClient redisson, Codec codec, String name, ConcurrentMap<String, ResponseEntry> responses) {
+    public TasksRunnerService(CommandAsyncExecutor commandExecutor, RedissonClient redisson, Codec codec, String name, ConcurrentMap<String, ResponseEntry> responses) {
         this.commandExecutor = commandExecutor;
         this.name = name;
         this.redisson = redisson;
@@ -385,10 +385,10 @@ public class TasksRunnerService implements RemoteExecutorService {
                     + "end;"
                 + "end;";  
 
-        commandExecutor.evalWrite(name, StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
+        commandExecutor.get(commandExecutor.evalWriteAsync(name, StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 script,
                 Arrays.<Object>asList(tasksCounterName, statusName, terminationTopicName, tasksName, schedulerQueueName, tasksRetryIntervalName),
-                RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE, requestId);
+                RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE, requestId));
     }
 
 }

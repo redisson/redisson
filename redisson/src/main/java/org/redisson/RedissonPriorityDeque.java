@@ -22,7 +22,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.ListFirstObjectDecoder;
-import org.redisson.command.CommandExecutor;
+import org.redisson.command.CommandAsyncExecutor;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -42,11 +42,11 @@ public class RedissonPriorityDeque<V> extends RedissonPriorityQueue<V> implement
     private static final RedisCommand<Object> LRANGE_SINGLE = new RedisCommand<Object>("LRANGE", new ListFirstObjectDecoder());
 
 
-    protected RedissonPriorityDeque(CommandExecutor commandExecutor, String name, RedissonClient redisson) {
+    protected RedissonPriorityDeque(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name, redisson);
     }
 
-    public RedissonPriorityDeque(Codec codec, CommandExecutor commandExecutor, String name, RedissonClient redisson) {
+    public RedissonPriorityDeque(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(codec, commandExecutor, name, redisson);
     }
 

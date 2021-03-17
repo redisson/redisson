@@ -17,8 +17,8 @@ package org.redisson;
 
 import org.redisson.api.*;
 import org.redisson.client.codec.Codec;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
-import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
 
 /**
@@ -32,8 +32,8 @@ public class RedissonBatch implements RBatch {
     private final EvictionScheduler evictionScheduler;
     private final CommandBatchService executorService;
 
-    public RedissonBatch(EvictionScheduler evictionScheduler, ConnectionManager connectionManager, BatchOptions options) {
-        this.executorService = new CommandBatchService(connectionManager.getCommandExecutor(), options);
+    public RedissonBatch(EvictionScheduler evictionScheduler, CommandAsyncExecutor executor, BatchOptions options) {
+        this.executorService = new CommandBatchService(executor, options);
         this.evictionScheduler = evictionScheduler;
     }
 

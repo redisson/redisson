@@ -89,7 +89,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     
     @Override
     public <KOut, VOut> RCollectionMapReduce<V, KOut, VOut> mapReduce() {
-        return new RedissonCollectionMapReduce<V, KOut, VOut>(this, redisson, commandExecutor.getConnectionManager());
+        return new RedissonCollectionMapReduce<>(this, redisson, commandExecutor);
     }
 
     @Override

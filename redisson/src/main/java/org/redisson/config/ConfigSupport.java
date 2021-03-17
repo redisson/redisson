@@ -28,14 +28,14 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import org.redisson.api.*;
+import org.redisson.api.NatMapper;
+import org.redisson.api.RedissonNodeInitializer;
 import org.redisson.client.NettyHook;
 import org.redisson.client.codec.Codec;
 import org.redisson.cluster.ClusterConnectionManager;
 import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.connection.*;
 import org.redisson.connection.balancer.LoadBalancer;
-import org.redisson.liveobject.core.RedissonObjectBuilder;
 
 import java.io.*;
 import java.net.URL;
@@ -178,51 +178,24 @@ public class ConfigSupport {
         return yamlMapper.writeValueAsString(config);
     }
 
-    public static ConnectionManager createConnectionManager(Config config, RedissonRxClient redisson) {
-        RedissonObjectBuilder objectBuilder = null;
-        if (config.isReferenceEnabled()) {
-            objectBuilder = new RedissonObjectBuilder(redisson);
-        }
-
-        return createConnectionManager(config, objectBuilder);
-    }
-
-    public static ConnectionManager createConnectionManager(Config config, RedissonReactiveClient redisson) {
-        RedissonObjectBuilder objectBuilder = null;
-        if (config.isReferenceEnabled()) {
-            objectBuilder = new RedissonObjectBuilder(redisson);
-        }
-
-        return createConnectionManager(config, objectBuilder);
-    }
-
-    public static ConnectionManager createConnectionManager(Config config, RedissonClient redisson) {
-        RedissonObjectBuilder objectBuilder = null;
-        if (config.isReferenceEnabled()) {
-            objectBuilder = new RedissonObjectBuilder(redisson);
-        }
-
-        return createConnectionManager(config, objectBuilder);
-    }
-
-    public static ConnectionManager createConnectionManager(Config configCopy, RedissonObjectBuilder objectBuilder) {
+    public static ConnectionManager createConnectionManager(Config configCopy) {
         UUID id = UUID.randomUUID();
 
         if (configCopy.getMasterSlaveServersConfig() != null) {
             validate(configCopy.getMasterSlaveServersConfig());
-            return new MasterSlaveConnectionManager(configCopy.getMasterSlaveServersConfig(), configCopy, id, objectBuilder);
+            return new MasterSlaveConnectionManager(configCopy.getMasterSlaveServersConfig(), configCopy, id);
         } else if (configCopy.getSingleServerConfig() != null) {
             validate(configCopy.getSingleServerConfig());
-            return new SingleConnectionManager(configCopy.getSingleServerConfig(), configCopy, id, objectBuilder);
+            return new SingleConnectionManager(configCopy.getSingleServerConfig(), configCopy, id);
         } else if (configCopy.getSentinelServersConfig() != null) {
             validate(configCopy.getSentinelServersConfig());
-            return new SentinelConnectionManager(configCopy.getSentinelServersConfig(), configCopy, id, objectBuilder);
+            return new SentinelConnectionManager(configCopy.getSentinelServersConfig(), configCopy, id);
         } else if (configCopy.getClusterServersConfig() != null) {
             validate(configCopy.getClusterServersConfig());
-            return new ClusterConnectionManager(configCopy.getClusterServersConfig(), configCopy, id, objectBuilder);
+            return new ClusterConnectionManager(configCopy.getClusterServersConfig(), configCopy, id);
         } else if (configCopy.getReplicatedServersConfig() != null) {
             validate(configCopy.getReplicatedServersConfig());
-            return new ReplicatedConnectionManager(configCopy.getReplicatedServersConfig(), configCopy, id, objectBuilder);
+            return new ReplicatedConnectionManager(configCopy.getReplicatedServersConfig(), configCopy, id);
         } else if (configCopy.getConnectionManager() != null) {
             return configCopy.getConnectionManager();
         }else {

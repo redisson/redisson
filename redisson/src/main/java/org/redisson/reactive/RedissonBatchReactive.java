@@ -35,7 +35,7 @@ public class RedissonBatchReactive implements RBatchReactive {
 
     public RedissonBatchReactive(EvictionScheduler evictionScheduler, ConnectionManager connectionManager, CommandReactiveService commandExecutor, BatchOptions options) {
         this.evictionScheduler = evictionScheduler;
-        this.executorService = new CommandReactiveBatchService(connectionManager, options);
+        this.executorService = new CommandReactiveBatchService(connectionManager, commandExecutor, options);
         this.commandExecutor = commandExecutor;
     }
 

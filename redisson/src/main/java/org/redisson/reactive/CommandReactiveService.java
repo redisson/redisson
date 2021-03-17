@@ -32,8 +32,8 @@ import reactor.core.publisher.Mono;
  */
 public class CommandReactiveService extends CommandAsyncService implements CommandReactiveExecutor {
 
-    public CommandReactiveService(ConnectionManager connectionManager) {
-        super(connectionManager, connectionManager.getCommandExecutor().getObjectBuilder(), RedissonObjectBuilder.ReferenceType.REACTIVE);
+    public CommandReactiveService(ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder) {
+        super(connectionManager, objectBuilder, RedissonObjectBuilder.ReferenceType.REACTIVE);
     }
 
     @Override

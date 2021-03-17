@@ -28,7 +28,6 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.*;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
-import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.misc.CountableListener;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedisURI;
@@ -70,8 +69,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     private boolean usePassword = false;
     private String scheme;
 
-    public SentinelConnectionManager(SentinelServersConfig cfg, Config config, UUID id, RedissonObjectBuilder objectBuilder) {
-        super(config, id, objectBuilder);
+    public SentinelConnectionManager(SentinelServersConfig cfg, Config config, UUID id) {
+        super(config, id);
         
         if (cfg.getMasterName() == null) {
             throw new IllegalArgumentException("masterName parameter is not defined!");
