@@ -20,6 +20,7 @@ import io.netty.util.NetUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
+import io.netty.util.internal.StringUtil;
 import org.redisson.api.NatMapper;
 import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
@@ -34,7 +35,6 @@ import org.redisson.misc.RedisURI;
 import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.StringUtils;
 
 import java.net.InetSocketAddress;
 import java.util.*;
@@ -599,7 +599,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
     private boolean isSlaveDown(String flags, String masterLinkStatus) {
         boolean baseStatus = flags.contains("s_down") || flags.contains("disconnected");
-        if (this.checkSlaveStatusWithSyncing && StringUtils.hasText(masterLinkStatus)) {
+        if (this.checkSlaveStatusWithSyncing && !StringUtil.isNullOrEmpty(masterLinkStatus)) {
             return baseStatus || masterLinkStatus.contains("err");
         }
         return baseStatus;
