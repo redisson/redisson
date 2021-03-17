@@ -391,13 +391,13 @@ public class RedissonRemoteServiceTest extends BaseTest {
 
     @Test
     public void testCancelReactive() throws InterruptedException {
-        RedissonReactiveClient r1 = Redisson.createReactive(createConfig());
+        RedissonReactiveClient r1 = Redisson.create(createConfig()).reactive();
         AtomicInteger iterations = new AtomicInteger();
         ExecutorService executor = Executors.newSingleThreadExecutor();
         r1.getKeys().flushall();
         r1.getRemoteService().register(RemoteInterface.class, new RemoteImpl(iterations), 1, executor);
         
-        RedissonReactiveClient r2 = Redisson.createReactive(createConfig());
+        RedissonReactiveClient r2 = Redisson.create(createConfig()).reactive();
         RemoteInterfaceReactive ri = r2.getRemoteService().get(RemoteInterfaceReactive.class);
         
         Mono<Void> f = ri.cancelMethod();
@@ -444,10 +444,10 @@ public class RedissonRemoteServiceTest extends BaseTest {
 
     @Test
     public void testReactive() throws InterruptedException {
-        RedissonReactiveClient r1 = Redisson.createReactive(createConfig());
+        RedissonReactiveClient r1 = Redisson.create(createConfig()).reactive();
         r1.getRemoteService().register(RemoteInterface.class, new RemoteImpl());
         
-        RedissonReactiveClient r2 = Redisson.createReactive(createConfig());
+        RedissonReactiveClient r2 = Redisson.create(createConfig()).reactive();
         RemoteInterfaceReactive ri = r2.getRemoteService().get(RemoteInterfaceReactive.class);
         
         Mono<Void> f = ri.voidMethod("someName", 100L);
@@ -460,11 +460,11 @@ public class RedissonRemoteServiceTest extends BaseTest {
     }
 
     @Test
-    public void testRx() throws InterruptedException {
-        RedissonRxClient r1 = Redisson.createRx(createConfig());
+    public void testRx() {
+        RedissonRxClient r1 = Redisson.create(createConfig()).rxJava();
         r1.getRemoteService().register(RemoteInterface.class, new RemoteImpl());
         
-        RedissonRxClient r2 = Redisson.createRx(createConfig());
+        RedissonRxClient r2 = Redisson.create(createConfig()).rxJava();
         RemoteInterfaceRx ri = r2.getRemoteService().get(RemoteInterfaceRx.class);
         
         Completable f = ri.voidMethod("someName", 100L);

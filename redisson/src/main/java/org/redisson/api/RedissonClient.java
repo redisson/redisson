@@ -1136,7 +1136,21 @@ public interface RedissonClient {
      * @return LiveObjectService object
      */
     RLiveObjectService getLiveObjectService();
-    
+
+    /**
+     * Returns RxJava Redisson instance
+     *
+     * @return redisson instance
+     */
+    RedissonRxClient rxJava();
+
+    /**
+     * Returns Reactive Redisson instance
+     *
+     * @return redisson instance
+     */
+    RedissonReactiveClient reactive();
+
     /**
      * Shutdown Redisson instance but <b>NOT</b> Redis server
      * 

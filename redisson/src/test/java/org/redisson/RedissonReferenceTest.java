@@ -96,7 +96,7 @@ public class RedissonReferenceTest extends BaseTest {
         b3.setAsync(b1);
         batch.execute();
 
-        RBatchReactive b = Redisson.createReactive(redisson.getConfig()).createBatch();
+        RBatchReactive b = redisson.reactive().createBatch();
         b.getBucket("b1").get();
         b.getBucket("b2").get();
         b.getBucket("b3").get();
