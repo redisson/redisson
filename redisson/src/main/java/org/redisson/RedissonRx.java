@@ -41,8 +41,7 @@ public class RedissonRx implements RedissonRxClient {
     protected final EvictionScheduler evictionScheduler;
     protected final CommandRxExecutor commandExecutor;
     protected final ConnectionManager connectionManager;
-
-    protected final ConcurrentMap<String, ResponseEntry> responses = new ConcurrentHashMap<>();
+    protected final ConcurrentMap<String, ResponseEntry> responses;
     
     protected RedissonRx(Config config) {
         Config configCopy = new Config(config);
@@ -55,8 +54,22 @@ public class RedissonRx implements RedissonRxClient {
         commandExecutor = new CommandRxService(connectionManager, objectBuilder);
         evictionScheduler = new EvictionScheduler(commandExecutor);
         writeBehindService = new WriteBehindService(commandExecutor);
+        responses = new ConcurrentHashMap<>();
     }
-    
+
+    protected RedissonRx(ConnectionManager connectionManager, EvictionScheduler evictionScheduler,
+                         WriteBehindService writeBehindService, ConcurrentMap<String, ResponseEntry> responses) {
+        this.connectionManager = connectionManager;
+        RedissonObjectBuilder objectBuilder = null;
+        if (connectionManager.getCfg().isReferenceEnabled()) {
+            objectBuilder = new RedissonObjectBuilder(this);
+        }
+        commandExecutor = new CommandRxService(connectionManager, objectBuilder);
+        this.evictionScheduler = evictionScheduler;
+        this.writeBehindService = writeBehindService;
+        this.responses = responses;
+    }
+
     @Override
     public <K, V> RStreamRx<K, V> getStream(String name) {
         return RxProxyBuilder.create(commandExecutor, new RedissonStream<K, V>(commandExecutor, name), RStreamRx.class);

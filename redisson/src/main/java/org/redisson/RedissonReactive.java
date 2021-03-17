@@ -15,11 +15,6 @@
  */
 package org.redisson;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-
 import org.redisson.api.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.config.Config;
@@ -29,6 +24,11 @@ import org.redisson.eviction.EvictionScheduler;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.reactive.*;
 import org.redisson.remote.ResponseEntry;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Main infrastructure class allows to get access
@@ -43,8 +43,7 @@ public class RedissonReactive implements RedissonReactiveClient {
     protected final EvictionScheduler evictionScheduler;
     protected final CommandReactiveService commandExecutor;
     protected final ConnectionManager connectionManager;
-
-    protected final ConcurrentMap<String, ResponseEntry> responses = new ConcurrentHashMap<>();
+    protected final ConcurrentMap<String, ResponseEntry> responses;
 
     protected RedissonReactive(Config config) {
         Config configCopy = new Config(config);
@@ -57,8 +56,22 @@ public class RedissonReactive implements RedissonReactiveClient {
         commandExecutor = new CommandReactiveService(connectionManager, objectBuilder);
         evictionScheduler = new EvictionScheduler(commandExecutor);
         writeBehindService = new WriteBehindService(commandExecutor);
+        responses = new ConcurrentHashMap<>();
     }
-    
+
+    protected RedissonReactive(ConnectionManager connectionManager, EvictionScheduler evictionScheduler,
+                               WriteBehindService writeBehindService, ConcurrentMap<String, ResponseEntry> responses) {
+        this.connectionManager = connectionManager;
+        RedissonObjectBuilder objectBuilder = null;
+        if (connectionManager.getCfg().isReferenceEnabled()) {
+            objectBuilder = new RedissonObjectBuilder(this);
+        }
+        commandExecutor = new CommandReactiveService(connectionManager, objectBuilder);
+        this.evictionScheduler = evictionScheduler;
+        this.writeBehindService = writeBehindService;
+        this.responses = responses;
+    }
+
     public EvictionScheduler getEvictionScheduler() {
         return evictionScheduler;
     }
