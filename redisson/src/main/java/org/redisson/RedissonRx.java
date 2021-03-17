@@ -70,6 +70,10 @@ public class RedissonRx implements RedissonRxClient {
         this.responses = responses;
     }
 
+    public CommandRxExecutor getCommandExecutor() {
+        return commandExecutor;
+    }
+
     @Override
     public <K, V> RStreamRx<K, V> getStream(String name) {
         return RxProxyBuilder.create(commandExecutor, new RedissonStream<K, V>(commandExecutor, name), RStreamRx.class);

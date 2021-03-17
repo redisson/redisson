@@ -41,7 +41,7 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     protected final WriteBehindService writeBehindService;
     protected final EvictionScheduler evictionScheduler;
-    protected final CommandReactiveService commandExecutor;
+    protected final CommandReactiveExecutor commandExecutor;
     protected final ConnectionManager connectionManager;
     protected final ConcurrentMap<String, ResponseEntry> responses;
 
@@ -80,7 +80,7 @@ public class RedissonReactive implements RedissonReactiveClient {
         return connectionManager;
     }
     
-    public CommandReactiveService getCommandExecutor() {
+    public CommandReactiveExecutor getCommandExecutor() {
         return commandExecutor;
     }
     
