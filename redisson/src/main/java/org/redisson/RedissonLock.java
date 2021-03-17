@@ -145,7 +145,7 @@ public class RedissonLock extends RedissonBaseLock {
     
     private RFuture<Boolean> tryAcquireOnceAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId) {
         RFuture<Boolean> ttlRemainingFuture;
-        if (-1 != leaseTime) {
+        if (leaseTime != -1) {
             ttlRemainingFuture = tryLockInnerAsync(waitTime, leaseTime, unit, threadId, RedisCommands.EVAL_NULL_BOOLEAN);
         } else {
             ttlRemainingFuture = tryLockInnerAsync(waitTime, internalLockLeaseTime,
@@ -159,7 +159,7 @@ public class RedissonLock extends RedissonBaseLock {
 
             // lock acquired
             if (ttlRemaining) {
-                if (-1 != leaseTime) {
+                if (leaseTime != -1) {
                     internalLockLeaseTime = unit.toMillis(leaseTime);
                 } else {
                     scheduleExpirationRenewal(threadId);
@@ -184,7 +184,7 @@ public class RedissonLock extends RedissonBaseLock {
 
             // lock acquired
             if (ttlRemaining == null) {
-                if (-1 != leaseTime) {
+                if (leaseTime != -1) {
                     internalLockLeaseTime = unit.toMillis(leaseTime);
                 } else {
                     scheduleExpirationRenewal(threadId);
