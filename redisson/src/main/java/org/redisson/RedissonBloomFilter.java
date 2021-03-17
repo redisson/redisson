@@ -28,30 +28,25 @@
  */
 package org.redisson;
 
+import io.netty.buffer.ByteBuf;
+import org.redisson.api.RBitSetAsync;
+import org.redisson.api.RBloomFilter;
+import org.redisson.api.RFuture;
+import org.redisson.client.RedisException;
+import org.redisson.client.codec.*;
+import org.redisson.client.protocol.RedisCommand;
+import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.convertor.VoidReplayConvertor;
+import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder;
+import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.command.CommandBatchService;
+import org.redisson.misc.Hash;
+
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
-import org.redisson.api.RBitSetAsync;
-import org.redisson.api.RBloomFilter;
-import org.redisson.api.RFuture;
-import org.redisson.client.RedisException;
-import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.DoubleCodec;
-import org.redisson.client.codec.IntegerCodec;
-import org.redisson.client.codec.LongCodec;
-import org.redisson.client.codec.StringCodec;
-import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.convertor.VoidReplayConvertor;
-import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder;
-import org.redisson.command.CommandBatchService;
-import org.redisson.command.CommandExecutor;
-import org.redisson.misc.Hash;
-
-import io.netty.buffer.ByteBuf;
 
 /**
  * Bloom filter based on Highway 128-bit hash.
@@ -65,16 +60,16 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
     private volatile long size;
     private volatile int hashIterations;
 
-    private final CommandExecutor commandExecutor;
+    private final CommandAsyncExecutor commandExecutor;
     private String configName;
 
-    protected RedissonBloomFilter(CommandExecutor commandExecutor, String name) {
+    protected RedissonBloomFilter(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
         this.commandExecutor = commandExecutor;
         this.configName = suffixName(getName(), "config");
     }
 
-    protected RedissonBloomFilter(Codec codec, CommandExecutor commandExecutor, String name) {
+    protected RedissonBloomFilter(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
         this.commandExecutor = commandExecutor;
         this.configName = suffixName(getName(), "config");
@@ -305,25 +300,25 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
     
     @Override
     public long getExpectedInsertions() {
-        Long result = commandExecutor.read(configName, LongCodec.INSTANCE, RedisCommands.HGET, configName, "expectedInsertions");
+        Long result = get(commandExecutor.readAsync(configName, LongCodec.INSTANCE, RedisCommands.HGET, configName, "expectedInsertions"));
         return check(result);
     }
 
     @Override
     public double getFalseProbability() {
-        Double result = commandExecutor.read(configName, DoubleCodec.INSTANCE, RedisCommands.HGET, configName, "falseProbability");
+        Double result = get(commandExecutor.readAsync(configName, DoubleCodec.INSTANCE, RedisCommands.HGET, configName, "falseProbability"));
         return check(result);
     }
 
     @Override
     public long getSize() {
-        Long result = commandExecutor.read(configName, LongCodec.INSTANCE, RedisCommands.HGET, configName, "size");
+        Long result = get(commandExecutor.readAsync(configName, LongCodec.INSTANCE, RedisCommands.HGET, configName, "size"));
         return check(result);
     }
 
     @Override
     public int getHashIterations() {
-        Integer result = commandExecutor.read(configName, IntegerCodec.INSTANCE, RedisCommands.HGET, configName, "hashIterations");
+        Integer result = get(commandExecutor.readAsync(configName, IntegerCodec.INSTANCE, RedisCommands.HGET, configName, "hashIterations"));
         return check(result);
     }
 

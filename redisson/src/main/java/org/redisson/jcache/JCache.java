@@ -2939,10 +2939,10 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
             return (T) this;
         }
         if (clazz == CacheReactive.class) {
-            return (T) ReactiveProxyBuilder.create(new CommandReactiveService(commandExecutor.getConnectionManager()), this, CacheReactive.class);
+            return (T) ReactiveProxyBuilder.create(new CommandReactiveService(commandExecutor.getConnectionManager(), commandExecutor.getObjectBuilder()), this, CacheReactive.class);
         }
         if (clazz == CacheRx.class) {
-            return (T) RxProxyBuilder.create(new CommandRxService(commandExecutor.getConnectionManager()), this, CacheRx.class);
+            return (T) RxProxyBuilder.create(new CommandRxService(commandExecutor.getConnectionManager(), commandExecutor.getObjectBuilder()), this, CacheRx.class);
         }
         return null;
     }

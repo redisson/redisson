@@ -19,6 +19,7 @@ import org.redisson.api.NodeType;
 import org.redisson.api.redisnode.RedisCluster;
 import org.redisson.api.redisnode.RedisClusterMaster;
 import org.redisson.api.redisnode.RedisClusterSlave;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.ConnectionManager;
 
 import java.util.Collection;
@@ -30,8 +31,8 @@ import java.util.Collection;
  */
 public class RedissonClusterNodes extends RedissonBaseNodes implements RedisCluster {
 
-    public RedissonClusterNodes(ConnectionManager connectionManager) {
-        super(connectionManager);
+    public RedissonClusterNodes(ConnectionManager connectionManager, CommandAsyncExecutor commandExecutor) {
+        super(connectionManager, commandExecutor);
     }
 
     @Override

@@ -38,9 +38,9 @@ public class CommandReactiveBatchService extends CommandReactiveService {
 
     private final CommandBatchService batchService;
 
-    public CommandReactiveBatchService(ConnectionManager connectionManager, BatchOptions options) {
-        super(connectionManager);
-        batchService = new CommandBatchService(connectionManager.getCommandExecutor(), options, RedissonObjectBuilder.ReferenceType.REACTIVE);
+    public CommandReactiveBatchService(ConnectionManager connectionManager, CommandReactiveExecutor commandExecutor, BatchOptions options) {
+        super(connectionManager, commandExecutor.getObjectBuilder());
+        batchService = new CommandBatchService(commandExecutor, options, RedissonObjectBuilder.ReferenceType.REACTIVE);
     }
 
     @Override

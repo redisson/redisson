@@ -23,7 +23,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.command.CommandExecutor;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.executor.*;
 import org.redisson.executor.params.*;
@@ -60,7 +60,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     public static final int SHUTDOWN_STATE = 1;
     public static final int TERMINATED_STATE = 2;
     
-    private final CommandExecutor commandExecutor;
+    private final CommandAsyncExecutor commandExecutor;
     private final ConnectionManager connectionManager;
     private final Codec codec;
     private final Redisson redisson;
@@ -102,8 +102,8 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     private final ReferenceQueue<RExecutorFuture<?>> referenceDueue = new ReferenceQueue<>();
     private final Collection<RedissonExecutorFutureReference> references = Collections.newSetFromMap(new ConcurrentHashMap<>());
     
-    public RedissonExecutorService(Codec codec, CommandExecutor commandExecutor, Redisson redisson, 
-            String name, QueueTransferService queueTransferService, ConcurrentMap<String, ResponseEntry> responses, ExecutorOptions options) {
+    public RedissonExecutorService(Codec codec, CommandAsyncExecutor commandExecutor, Redisson redisson,
+                                   String name, QueueTransferService queueTransferService, ConcurrentMap<String, ResponseEntry> responses, ExecutorOptions options) {
         super();
         this.codec = codec;
         this.commandExecutor = commandExecutor;
@@ -119,7 +119,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             this.executorId = connectionManager.getId() + ":" + RemoteExecutorServiceAsync.class.getName() + ":" + name;
         }
         
-        remoteService = new RedissonExecutorRemoteService(codec, name, connectionManager.getCommandExecutor(), executorId, responses);
+        remoteService = new RedissonExecutorRemoteService(codec, name, commandExecutor, executorId, responses);
         requestQueueName = remoteService.getRequestQueueName(RemoteExecutorService.class);
         responseQueueName = remoteService.getResponseQueueName(executorId);
         String objectName = requestQueueName;
@@ -474,7 +474,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         remoteService.deregister(RemoteExecutorService.class);
         workersTopic.removeListener(workersGroupListenerId);
         
-        commandExecutor.evalWrite(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
+        commandExecutor.get(commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 "if redis.call('exists', KEYS[2]) == 0 then "
                      + "if redis.call('get', KEYS[1]) == '0' or redis.call('exists', KEYS[1]) == 0 then "
                         + "redis.call('set', KEYS[2], ARGV[2]);"
@@ -484,7 +484,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
                      + "end;"
                 + "end;", 
                 Arrays.<Object>asList(tasksCounterName, statusName, terminationTopic.getChannelNames().get(0), tasksRetryIntervalName),
-                SHUTDOWN_STATE, TERMINATED_STATE);
+                SHUTDOWN_STATE, TERMINATED_STATE));
     }
 
     @Override
@@ -524,13 +524,13 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     }
 
     private boolean checkState(int state) {
-        return commandExecutor.evalWrite(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.get(commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('exists', KEYS[1]) == 1 and tonumber(redis.call('get', KEYS[1])) >= tonumber(ARGV[1]) then "
                 + "return 1;"
             + "end;"
             + "return 0;", 
                 Arrays.<Object>asList(statusName),
-                state);
+                state));
     }
 
     @Override

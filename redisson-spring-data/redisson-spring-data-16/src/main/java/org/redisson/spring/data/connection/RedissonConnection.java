@@ -1523,7 +1523,7 @@ public class RedissonConnection extends AbstractRedisConnection {
     public void subscribe(MessageListener listener, byte[]... channels) {
         checkSubscription();
         
-        subscription = new RedissonSubscription(redisson.getConnectionManager(), redisson.getConnectionManager().getSubscribeService(), listener);
+        subscription = new RedissonSubscription(executorService, redisson.getConnectionManager().getSubscribeService(), listener);
         subscription.subscribe(channels);
     }
 
@@ -1544,7 +1544,7 @@ public class RedissonConnection extends AbstractRedisConnection {
     public void pSubscribe(MessageListener listener, byte[]... patterns) {
         checkSubscription();
         
-        subscription = new RedissonSubscription(redisson.getConnectionManager(), redisson.getConnectionManager().getSubscribeService(), listener);
+        subscription = new RedissonSubscription(executorService, redisson.getConnectionManager().getSubscribeService(), listener);
         subscription.pSubscribe(patterns);
     }
 

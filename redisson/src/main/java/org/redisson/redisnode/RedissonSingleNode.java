@@ -18,6 +18,7 @@ package org.redisson.redisnode;
 import org.redisson.api.NodeType;
 import org.redisson.api.redisnode.RedisMaster;
 import org.redisson.api.redisnode.RedisSingle;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.ConnectionManager;
 
 import java.util.Collection;
@@ -29,8 +30,8 @@ import java.util.Collection;
  */
 public class RedissonSingleNode extends RedissonBaseNodes implements RedisSingle {
 
-    public RedissonSingleNode(ConnectionManager connectionManager) {
-        super(connectionManager);
+    public RedissonSingleNode(ConnectionManager connectionManager, CommandAsyncExecutor commandExecutor) {
+        super(connectionManager, commandExecutor);
     }
 
     @Override

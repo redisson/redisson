@@ -26,7 +26,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.Time;
-import org.redisson.command.CommandAsyncService;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
@@ -43,9 +43,9 @@ import java.util.concurrent.TimeUnit;
 public class SentinelRedisNode implements RedisSentinel, RedisSentinelAsync {
 
     private final RedisClient client;
-    private final CommandAsyncService commandAsyncService;
+    private final CommandAsyncExecutor commandAsyncService;
 
-    public SentinelRedisNode(RedisClient client, CommandAsyncService commandAsyncService) {
+    public SentinelRedisNode(RedisClient client, CommandAsyncExecutor commandAsyncService) {
         super();
         this.client = client;
         this.commandAsyncService = commandAsyncService;

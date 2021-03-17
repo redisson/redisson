@@ -28,7 +28,6 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
-import org.redisson.connection.ConnectionManager;
 import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.liveobject.misc.Introspectior;
 import org.redisson.liveobject.resolver.NamingScheme;
@@ -54,11 +53,9 @@ public class AccessorInterceptor {
     private static final Pattern FIELD_PATTERN = Pattern.compile("^(get|set|is)");
 
     private final CommandAsyncExecutor commandExecutor;
-    private final ConnectionManager connectionManager;
 
-    public AccessorInterceptor(CommandAsyncExecutor commandExecutor, ConnectionManager connectionManager) {
+    public AccessorInterceptor(CommandAsyncExecutor commandExecutor) {
         this.commandExecutor = commandExecutor;
-        this.connectionManager = connectionManager;
     }
 
     @RuntimeType
@@ -196,7 +193,7 @@ public class AccessorInterceptor {
             set.removeAsync(((RLiveObject) me).getLiveObjectId());
         } else {
             if (ClassUtils.isAnnotationPresent(field.getType(), REntity.class)
-                    || connectionManager.isClusterMode()) {
+                    || commandExecutor.getConnectionManager().isClusterMode()) {
                 Object value = liveMap.remove(field.getName());
                 if (value != null) {
                     RMultimapAsync<Object, Object> map = new RedissonSetMultimap<>(namingScheme.getCodec(), ce, indexName);

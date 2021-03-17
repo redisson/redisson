@@ -15,16 +15,16 @@
  */
 package org.redisson.mapreduce;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
-
 import org.redisson.api.RObject;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.mapreduce.RCollator;
 import org.redisson.api.mapreduce.RMapReduce;
 import org.redisson.api.mapreduce.RMapper;
 import org.redisson.api.mapreduce.RReducer;
-import org.redisson.connection.ConnectionManager;
+import org.redisson.command.CommandAsyncExecutor;
+
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 
@@ -38,8 +38,8 @@ import org.redisson.connection.ConnectionManager;
 public class RedissonMapReduce<KIn, VIn, KOut, VOut> extends MapReduceExecutor<RMapper<KIn, VIn, KOut, VOut>, VIn, KOut, VOut> 
                                                         implements RMapReduce<KIn, VIn, KOut, VOut> {
 
-    public RedissonMapReduce(RObject object, RedissonClient redisson, ConnectionManager connectionManager) {
-        super(object, redisson, connectionManager);
+    public RedissonMapReduce(RObject object, RedissonClient redisson, CommandAsyncExecutor commandExecutor) {
+        super(object, redisson, commandExecutor);
     }
 
     @Override

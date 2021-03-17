@@ -34,8 +34,8 @@ import org.redisson.liveobject.core.RedissonObjectBuilder;
  */
 public class CommandRxService extends CommandAsyncService implements CommandRxExecutor {
 
-    public CommandRxService(ConnectionManager connectionManager) {
-        super(connectionManager, connectionManager.getCommandExecutor().getObjectBuilder(), RedissonObjectBuilder.ReferenceType.RXJAVA);
+    public CommandRxService(ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder) {
+        super(connectionManager, objectBuilder, RedissonObjectBuilder.ReferenceType.RXJAVA);
     }
 
     @Override
