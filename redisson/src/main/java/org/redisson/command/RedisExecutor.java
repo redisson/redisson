@@ -181,9 +181,8 @@ public class RedisExecutor<V, R> {
 
                 if (connectionFuture.cancel(false)) {
                     if (exception == null) {
-                        exception = new RedisTimeoutException("Unable to acquire connection! " +
-                                    "Avoid to use blocking commands in Async/JavaRx/Reactive handlers. " +
-                                    "Try to increase connection pool size. "
+                        exception = new RedisTimeoutException("Unable to acquire connection! " + connectionFuture +
+                                    "Increase connection pool size. "
                                     + "Node source: " + source
                                     + ", command: " + LogHelper.toString(command, params)
                                     + " after " + attempt + " retry attempts");
@@ -204,7 +203,6 @@ public class RedisExecutor<V, R> {
                                         }
 
                                         exception = new RedisTimeoutException("Command still hasn't been written into connection! " +
-                                                "Avoid to use blocking commands in Async/JavaRx/Reactive handlers. " +
                                                 "Try to increase nettyThreads setting. Payload size in bytes: " + totalSize
                                                 + ". Node source: " + source + ", connection: " + connectionFuture.getNow()
                                                 + ", command: " + LogHelper.toString(command, params)

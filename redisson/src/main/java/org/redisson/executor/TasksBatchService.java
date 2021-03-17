@@ -15,15 +15,14 @@
  */
 package org.redisson.executor;
 
-import java.util.List;
-import java.util.concurrent.ConcurrentMap;
-
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
-import org.redisson.command.CommandExecutor;
 import org.redisson.remote.ResponseEntry;
+
+import java.util.List;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * 
@@ -32,9 +31,9 @@ import org.redisson.remote.ResponseEntry;
  */
 public class TasksBatchService extends TasksService {
 
-    private CommandBatchService batchCommandService;
+    private final CommandBatchService batchCommandService;
     
-    public TasksBatchService(Codec codec, String name, CommandExecutor commandExecutor, String executorId, ConcurrentMap<String, ResponseEntry> responses) {
+    public TasksBatchService(Codec codec, String name, CommandAsyncExecutor commandExecutor, String executorId, ConcurrentMap<String, ResponseEntry> responses) {
         super(codec, name, commandExecutor, executorId, responses);
         batchCommandService = new CommandBatchService(commandExecutor);
     }

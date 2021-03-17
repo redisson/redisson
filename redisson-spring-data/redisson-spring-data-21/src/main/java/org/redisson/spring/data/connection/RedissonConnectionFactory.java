@@ -144,12 +144,12 @@ public class RedissonConnectionFactory implements RedisConnectionFactory,
 
     @Override
     public ReactiveRedisConnection getReactiveConnection() {
-        return new RedissonReactiveRedisConnection(new CommandReactiveService(((RedissonKeys)redisson.getKeys()).getConnectionManager()));
+        return new RedissonReactiveRedisConnection(new CommandReactiveService(((Redisson)redisson).getConnectionManager(), ((Redisson)redisson).getCommandExecutor().getObjectBuilder()));
     }
 
     @Override
     public ReactiveRedisClusterConnection getReactiveClusterConnection() {
-        return new RedissonReactiveRedisClusterConnection(new CommandReactiveService(((RedissonKeys)redisson.getKeys()).getConnectionManager()));
+        return new RedissonReactiveRedisClusterConnection(new CommandReactiveService(((Redisson)redisson).getConnectionManager(), ((Redisson)redisson).getCommandExecutor().getObjectBuilder()));
     }
 
 }

@@ -540,7 +540,7 @@ public class RedissonTransaction implements RTransaction {
     }
 
     private RedissonBatch createBatch() {
-        return new RedissonBatch(null, commandExecutor.getConnectionManager(),
+        return new RedissonBatch(null, commandExecutor,
                                     BatchOptions.defaults().executionMode(BatchOptions.ExecutionMode.IN_MEMORY_ATOMIC));
     }
 

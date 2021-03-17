@@ -98,7 +98,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     
     @Override
     public <KOut, VOut> RMapReduce<K, V, KOut, VOut> mapReduce() {
-        return new RedissonMapReduce<>(this, redisson, commandExecutor.getConnectionManager());
+        return new RedissonMapReduce<>(this, redisson, commandExecutor);
     }
     
     @Override

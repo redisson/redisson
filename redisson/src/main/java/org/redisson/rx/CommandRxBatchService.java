@@ -21,6 +21,7 @@ import org.redisson.api.BatchResult;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.NodeSource;
@@ -38,9 +39,9 @@ public class CommandRxBatchService extends CommandRxService {
 
     private final CommandBatchService batchService;
 
-    public CommandRxBatchService(ConnectionManager connectionManager, BatchOptions options) {
-        super(connectionManager);
-        batchService = new CommandBatchService(connectionManager.getCommandExecutor(), options, RedissonObjectBuilder.ReferenceType.RXJAVA);
+    public CommandRxBatchService(ConnectionManager connectionManager, CommandAsyncExecutor executor, BatchOptions options) {
+        super(connectionManager, executor.getObjectBuilder());
+        batchService = new CommandBatchService(executor, options, RedissonObjectBuilder.ReferenceType.RXJAVA);
     }
     
     @Override

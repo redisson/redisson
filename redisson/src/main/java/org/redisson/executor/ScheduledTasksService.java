@@ -15,21 +15,21 @@
  */
 package org.redisson.executor;
 
-import java.util.Arrays;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ThreadLocalRandom;
-
 import org.redisson.RedissonExecutorService;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.command.CommandExecutor;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.executor.params.ScheduledParameters;
 import org.redisson.remote.RemoteServiceRequest;
 import org.redisson.remote.RequestId;
 import org.redisson.remote.ResponseEntry;
+
+import java.util.Arrays;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * 
@@ -40,7 +40,7 @@ public class ScheduledTasksService extends TasksService {
 
     private RequestId requestId;
     
-    public ScheduledTasksService(Codec codec, String name, CommandExecutor commandExecutor, String redissonId, ConcurrentMap<String, ResponseEntry> responses) {
+    public ScheduledTasksService(Codec codec, String name, CommandAsyncExecutor commandExecutor, String redissonId, ConcurrentMap<String, ResponseEntry> responses) {
         super(codec, name, commandExecutor, redissonId, responses);
     }
     

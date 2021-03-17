@@ -81,7 +81,9 @@ public class RedissonReactiveClusterKeyCommandsTest {
                 .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
 
         redisson = Redisson.create(config);
-        connection = new RedissonReactiveRedisClusterConnection(new CommandReactiveService(((RedissonKeys) redisson.getKeys()).getConnectionManager()));
+        connection = new RedissonReactiveRedisClusterConnection(
+                        new CommandReactiveService(((RedissonKeys) redisson.getKeys()).getCommandExecutor().getConnectionManager(),
+                                        ((RedissonKeys) redisson.getKeys()).getCommandExecutor().getObjectBuilder()));
     }
 
     @AfterClass

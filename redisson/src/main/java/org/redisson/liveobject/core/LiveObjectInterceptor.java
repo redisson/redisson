@@ -24,7 +24,6 @@ import org.redisson.api.RMap;
 import org.redisson.client.RedisException;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
-import org.redisson.connection.ConnectionManager;
 import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.liveobject.resolver.NamingScheme;
 
@@ -48,22 +47,19 @@ public class LiveObjectInterceptor {
     }
 
     private final CommandAsyncExecutor commandExecutor;
-    private final ConnectionManager connectionManager;
     private final Class<?> originalClass;
     private final String idFieldName;
     private final Class<?> idFieldType;
     private final NamingScheme namingScheme;
     private final RedissonLiveObjectService service;
 
-    public LiveObjectInterceptor(CommandAsyncExecutor commandExecutor, ConnectionManager connectionManager,
-                                 RedissonLiveObjectService service, Class<?> entityClass, String idFieldName) {
+    public LiveObjectInterceptor(CommandAsyncExecutor commandExecutor, RedissonLiveObjectService service, Class<?> entityClass, String idFieldName) {
         this.service = service;
         this.commandExecutor = commandExecutor;
-        this.connectionManager = connectionManager;
         this.originalClass = entityClass;
         this.idFieldName = idFieldName;
 
-        namingScheme = connectionManager.getCommandExecutor().getObjectBuilder().getNamingScheme(entityClass);
+        namingScheme = commandExecutor.getObjectBuilder().getNamingScheme(entityClass);
 
         try {
             this.idFieldType = ClassUtils.getDeclaredField(originalClass, idFieldName).getType();

@@ -20,7 +20,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.command.CommandExecutor;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
@@ -69,12 +69,12 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
 
     private Comparator comparator = Comparator.naturalOrder();
 
-    CommandExecutor commandExecutor;
+    CommandAsyncExecutor commandExecutor;
     
     RLock lock;
     private RBucket<String> comparatorHolder;
 
-    public RedissonPriorityQueue(CommandExecutor commandExecutor, String name, RedissonClient redisson) {
+    public RedissonPriorityQueue(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name, redisson);
         this.commandExecutor = commandExecutor;
 
@@ -82,7 +82,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
         lock = redisson.getLock("redisson_sortedset_lock:{" + getName() + "}");
     }
 
-    public RedissonPriorityQueue(Codec codec, CommandExecutor commandExecutor, String name, RedissonClient redisson) {
+    public RedissonPriorityQueue(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(codec, commandExecutor, name, redisson);
         this.commandExecutor = commandExecutor;
 
@@ -143,7 +143,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
     @Override
     public boolean contains(Object o) {
         checkComparator();
-        return binarySearch((V) o, codec).getIndex() >= 0;
+        return binarySearch((V) o).getIndex() >= 0;
     }
 
     @Override
@@ -153,7 +153,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
         try {
             checkComparator();
     
-            BinarySearchResult<V> res = binarySearch(value, codec);
+            BinarySearchResult<V> res = binarySearch(value);
             int index = 0;
             if (res.getIndex() < 0) {
                 index = -(res.getIndex() + 1);
@@ -161,7 +161,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
                 index = res.getIndex() + 1;
             }
                 
-            commandExecutor.evalWrite(getName(), RedisCommands.EVAL_VOID, 
+            commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_VOID,
                "local len = redis.call('llen', KEYS[1]);"
                 + "if tonumber(ARGV[1]) < len then "
                     + "local pivot = redis.call('lindex', KEYS[1], ARGV[1]);"
@@ -195,7 +195,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
         try {
             checkComparator();
             
-            BinarySearchResult<V> res = binarySearch((V) value, codec);
+            BinarySearchResult<V> res = binarySearch((V) value);
             if (res.getIndex() < 0) {
                 return false;
             }
@@ -211,7 +211,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
     public boolean containsAll(Collection<?> c) {
         checkComparator();
         for (Object object : c) {
-            if (binarySearch((V) object, codec).getIndex() < 0) {
+            if (binarySearch((V) object).getIndex() < 0) {
                 return false;
             }
         }
@@ -361,7 +361,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
     }
     
     // TODO optimize: get three values each time instead of single
-    public BinarySearchResult<V> binarySearch(V value, Codec codec) {
+    public BinarySearchResult<V> binarySearch(V value) {
         int size = size();
         int upperIndex = size - 1;
         int lowerIndex = 0;

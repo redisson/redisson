@@ -19,6 +19,7 @@ import org.redisson.api.NodeType;
 import org.redisson.api.redisnode.RedisMaster;
 import org.redisson.api.redisnode.RedisMasterSlave;
 import org.redisson.api.redisnode.RedisSlave;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.ConnectionManager;
 
 import java.util.Collection;
@@ -30,8 +31,8 @@ import java.util.Collection;
  */
 public class RedissonMasterSlaveNodes extends RedissonBaseNodes implements RedisMasterSlave {
 
-    public RedissonMasterSlaveNodes(ConnectionManager connectionManager) {
-        super(connectionManager);
+    public RedissonMasterSlaveNodes(ConnectionManager connectionManager, CommandAsyncExecutor commandExecutor) {
+        super(connectionManager, commandExecutor);
     }
 
     @Override

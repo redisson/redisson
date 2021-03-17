@@ -21,6 +21,7 @@ import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
+import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.remote.ResponseEntry;
 import org.redisson.rx.*;
 
@@ -40,16 +41,18 @@ public class RedissonRx implements RedissonRxClient {
     protected final EvictionScheduler evictionScheduler;
     protected final CommandRxExecutor commandExecutor;
     protected final ConnectionManager connectionManager;
-    protected final Config config;
 
     protected final ConcurrentMap<String, ResponseEntry> responses = new ConcurrentHashMap<>();
     
     protected RedissonRx(Config config) {
-        this.config = config;
         Config configCopy = new Config(config);
 
-        connectionManager = ConfigSupport.createConnectionManager(configCopy, this);
-        commandExecutor = new CommandRxService(connectionManager);
+        connectionManager = ConfigSupport.createConnectionManager(configCopy);
+        RedissonObjectBuilder objectBuilder = null;
+        if (connectionManager.getCfg().isReferenceEnabled()) {
+            objectBuilder = new RedissonObjectBuilder(this);
+        }
+        commandExecutor = new CommandRxService(connectionManager, objectBuilder);
         evictionScheduler = new EvictionScheduler(commandExecutor);
         writeBehindService = new WriteBehindService(commandExecutor);
     }
@@ -485,12 +488,12 @@ public class RedissonRx implements RedissonRxClient {
 
     @Override
     public Config getConfig() {
-        return config;
+        return connectionManager.getCfg();
     }
 
     @Override
     public NodesGroup<Node> getNodesGroup() {
-        return new RedisNodes<Node>(connectionManager);
+        return new RedisNodes<Node>(connectionManager, commandExecutor);
     }
 
     @Override
@@ -498,7 +501,7 @@ public class RedissonRx implements RedissonRxClient {
         if (!connectionManager.isClusterMode()) {
             throw new IllegalStateException("Redisson not in cluster mode!");
         }
-        return new RedisNodes<ClusterNode>(connectionManager);
+        return new RedisNodes<ClusterNode>(connectionManager, commandExecutor);
     }
 
     @Override
@@ -569,7 +572,7 @@ public class RedissonRx implements RedissonRxClient {
     public <V> RTransferQueueRx<V> getTransferQueue(String name) {
         String remoteName = RedissonObject.suffixName(name, "remoteService");
         RRemoteService service = getRemoteService(remoteName);
-        RedissonTransferQueue<V> queue = new RedissonTransferQueue<V>(connectionManager.getCommandExecutor(), name, service);
+        RedissonTransferQueue<V> queue = new RedissonTransferQueue<V>(commandExecutor, name, service);
         return RxProxyBuilder.create(commandExecutor, queue,
                 new RedissonTransferQueueRx<V>(queue), RTransferQueueRx.class);
     }
@@ -578,7 +581,7 @@ public class RedissonRx implements RedissonRxClient {
     public <V> RTransferQueueRx<V> getTransferQueue(String name, Codec codec) {
         String remoteName = RedissonObject.suffixName(name, "remoteService");
         RRemoteService service = getRemoteService(remoteName);
-        RedissonTransferQueue<V> queue = new RedissonTransferQueue<V>(codec, connectionManager.getCommandExecutor(), name, service);
+        RedissonTransferQueue<V> queue = new RedissonTransferQueue<V>(codec, commandExecutor, name, service);
         return RxProxyBuilder.create(commandExecutor, queue,
                 new RedissonTransferQueueRx<V>(queue), RTransferQueueRx.class);
     }

@@ -25,7 +25,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.Time;
 import org.redisson.cluster.ClusterSlotRange;
-import org.redisson.command.CommandSyncService;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedisURI;
 import org.redisson.misc.RedissonPromise;
@@ -47,10 +47,10 @@ public class RedisNode implements RedisClusterMaster, RedisClusterSlave, RedisMa
                                         RedisMasterAsync, RedisSlaveAsync {
 
     final RedisClient client;
-    final CommandSyncService commandExecutor;
+    final CommandAsyncExecutor commandExecutor;
     private final NodeType type;
 
-    public RedisNode(RedisClient client, CommandSyncService commandExecutor, NodeType type) {
+    public RedisNode(RedisClient client, CommandAsyncExecutor commandExecutor, NodeType type) {
         super();
         this.client = client;
         this.commandExecutor = commandExecutor;
