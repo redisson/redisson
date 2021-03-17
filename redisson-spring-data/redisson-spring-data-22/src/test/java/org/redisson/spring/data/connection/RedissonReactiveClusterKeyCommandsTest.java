@@ -6,12 +6,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.redisson.ClusterRunner;
+import org.redisson.*;
 import org.redisson.ClusterRunner.ClusterProcesses;
-import org.redisson.RedisRunner;
 import org.redisson.RedisRunner.FailedToStartRedisException;
-import org.redisson.Redisson;
-import org.redisson.RedissonKeys;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
@@ -80,7 +77,7 @@ public class RedissonReactiveClusterKeyCommandsTest {
                 .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
 
         redisson = Redisson.create(config);
-        connection = new RedissonReactiveRedisClusterConnection(new CommandReactiveService(((Redisson)redisson).getConnectionManager(), ((Redisson)redisson).getCommandExecutor().getObjectBuilder()));
+        connection = new RedissonReactiveRedisClusterConnection(((RedissonReactive)redisson.reactive()).getCommandExecutor());
     }
 
     @AfterClass

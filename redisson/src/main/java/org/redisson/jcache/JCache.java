@@ -16,9 +16,7 @@
 package org.redisson.jcache;
 
 import io.netty.buffer.ByteBuf;
-import org.redisson.Redisson;
-import org.redisson.RedissonObject;
-import org.redisson.ScanResult;
+import org.redisson.*;
 import org.redisson.api.*;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.client.RedisClient;
@@ -36,9 +34,7 @@ import org.redisson.jcache.configuration.JCacheConfiguration;
 import org.redisson.misc.Hash;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
-import org.redisson.reactive.CommandReactiveService;
 import org.redisson.reactive.ReactiveProxyBuilder;
-import org.redisson.rx.CommandRxService;
 import org.redisson.rx.RxProxyBuilder;
 
 import javax.cache.Cache;
@@ -2939,10 +2935,10 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
             return (T) this;
         }
         if (clazz == CacheReactive.class) {
-            return (T) ReactiveProxyBuilder.create(new CommandReactiveService(commandExecutor.getConnectionManager(), commandExecutor.getObjectBuilder()), this, CacheReactive.class);
+            return (T) ReactiveProxyBuilder.create(((RedissonReactive) redisson.reactive()).getCommandExecutor(), this, CacheReactive.class);
         }
         if (clazz == CacheRx.class) {
-            return (T) RxProxyBuilder.create(new CommandRxService(commandExecutor.getConnectionManager(), commandExecutor.getObjectBuilder()), this, CacheRx.class);
+            return (T) RxProxyBuilder.create(((RedissonRx) redisson.rxJava()).getCommandExecutor(), this, CacheRx.class);
         }
         return null;
     }

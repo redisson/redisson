@@ -19,6 +19,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.redisson.Redisson;
 import org.redisson.RedissonKeys;
+import org.redisson.RedissonReactive;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.RedisCommands;
@@ -150,12 +151,12 @@ public class RedissonConnectionFactory implements RedisConnectionFactory,
 
     @Override
     public ReactiveRedisConnection getReactiveConnection() {
-        return new RedissonReactiveRedisConnection(new CommandReactiveService(((Redisson)redisson).getConnectionManager(), ((Redisson)redisson).getCommandExecutor().getObjectBuilder()));
+        return new RedissonReactiveRedisConnection(((RedissonReactive)redisson.reactive()).getCommandExecutor());
     }
 
     @Override
     public ReactiveRedisClusterConnection getReactiveClusterConnection() {
-        return new RedissonReactiveRedisClusterConnection(new CommandReactiveService(((Redisson)redisson).getConnectionManager(), ((Redisson)redisson).getCommandExecutor().getObjectBuilder()));
+        return new RedissonReactiveRedisClusterConnection(((RedissonReactive)redisson.reactive()).getCommandExecutor());
     }
 
 }
