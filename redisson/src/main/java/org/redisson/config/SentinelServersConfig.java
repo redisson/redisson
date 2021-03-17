@@ -197,6 +197,14 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
         return checkSlaveStatusWithSyncing;
     }
 
+    /**
+     * check node status from sentinel with 'master-link-status' flag
+     * <p>
+     * Default is <code>true</code>
+     *
+     * @param checkSlaveStatusWithSyncing - boolean value
+     * @return config
+     */
     public SentinelServersConfig setCheckSlaveStatusWithSyncing(boolean checkSlaveStatusWithSyncing) {
         this.checkSlaveStatusWithSyncing = checkSlaveStatusWithSyncing;
         return this;
