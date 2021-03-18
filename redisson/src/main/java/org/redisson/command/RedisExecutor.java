@@ -120,7 +120,7 @@ public class RedisExecutor<V, R> {
         
         RFuture<RedisConnection> connectionFuture = getConnection();
 
-        RPromise<R> attemptPromise = new RedissonPromise<R>();
+        RPromise<R> attemptPromise = new RedissonPromise<>();
         mainPromiseListener = (r, e) -> {
             if (mainPromise.isCancelled() && connectionFuture.cancel(false)) {
                 log.debug("Connection obtaining canceled for {}", command);
@@ -314,34 +314,32 @@ public class RedisExecutor<V, R> {
         }
 
         long timeoutAmount = timeoutTime;
-        TimerTask timeoutTask = new TimerTask() {
-            @Override
-            public void run(Timeout timeout) throws Exception {
-                if (isResendAllowed(attempt, attempts)) {
-                    if (!attemptPromise.cancel(false)) {
-                        return;
-                    }
+        TimerTask timeoutResponseTask = timeout -> {
+            if (isResendAllowed(attempt, attempts)) {
+                if (!attemptPromise.cancel(false)) {
+                    return;
+                }
 
+                connectionManager.newTimeout(t -> {
                     attempt++;
                     if (log.isDebugEnabled()) {
                         log.debug("attempt {} for command {} and params {}",
                                 attempt, command, LogHelper.toString(params));
                     }
-                    
+
                     mainPromiseListener = null;
-
                     execute();
-                    return;
-                }
-
-                attemptPromise.tryFailure(
-                        new RedisResponseTimeoutException("Redis server response timeout (" + timeoutAmount + " ms) occured"
-                                + " after " + attempt + " retry attempts. Increase nettyThreads and/or timeout settings. Try to define pingConnectionInterval setting. Command: "
-                                + LogHelper.toString(command, params) + ", channel: " + connection.getChannel()));
+                }, retryInterval, TimeUnit.MILLISECONDS);
+                return;
             }
+
+            attemptPromise.tryFailure(
+                    new RedisResponseTimeoutException("Redis server response timeout (" + timeoutAmount + " ms) occured"
+                            + " after " + attempt + " retry attempts. Increase nettyThreads and/or timeout settings. Try to define pingConnectionInterval setting. Command: "
+                            + LogHelper.toString(command, params) + ", channel: " + connection.getChannel()));
         };
 
-        timeout = connectionManager.newTimeout(timeoutTask, timeoutTime, TimeUnit.MILLISECONDS);
+        timeout = connectionManager.newTimeout(timeoutResponseTask, timeoutTime, TimeUnit.MILLISECONDS);
     }
 
     protected boolean isResendAllowed(int attempt, int attempts) {
@@ -356,12 +354,9 @@ public class RedisExecutor<V, R> {
         Timeout scheduledFuture;
         if (popTimeout != 0) {
             // handling cases when connection has been lost
-            scheduledFuture = connectionManager.newTimeout(new TimerTask() {
-                @Override
-                public void run(Timeout timeout) throws Exception {
-                    if (attemptPromise.trySuccess(null)) {
-                        connection.forceFastReconnectAsync();
-                    }
+            scheduledFuture = connectionManager.newTimeout(timeout -> {
+                if (attemptPromise.trySuccess(null)) {
+                    connection.forceFastReconnectAsync();
                 }
             }, popTimeout + 1, TimeUnit.SECONDS);
         } else {
@@ -439,13 +434,10 @@ public class RedisExecutor<V, R> {
                             || attemptFuture.cause() instanceof RedisBusyException) {
                 if (attempt < attempts) {
                     onException();
-                    connectionManager.newTimeout(new TimerTask() {
-                        @Override
-                        public void run(Timeout timeout) throws Exception {
-                            attempt++;
-                            execute();
-                        }
-                    }, Math.min(responseTimeout, 1000), TimeUnit.MILLISECONDS);
+                    connectionManager.newTimeout(timeout -> {
+                        attempt++;
+                        execute();
+                    }, retryInterval, TimeUnit.MILLISECONDS);
                     return;
                 }
             }
@@ -497,18 +489,18 @@ public class RedisExecutor<V, R> {
 
     protected void sendCommand(RPromise<R> attemptPromise, RedisConnection connection) {
         if (source.getRedirect() == Redirect.ASK) {
-            List<CommandData<?, ?>> list = new ArrayList<CommandData<?, ?>>(2);
-            RPromise<Void> promise = new RedissonPromise<Void>();
-            list.add(new CommandData<Void, Void>(promise, codec, RedisCommands.ASKING, new Object[]{}));
-            list.add(new CommandData<V, R>(attemptPromise, codec, command, params));
-            RPromise<Void> main = new RedissonPromise<Void>();
+            List<CommandData<?, ?>> list = new ArrayList<>(2);
+            RPromise<Void> promise = new RedissonPromise<>();
+            list.add(new CommandData<>(promise, codec, RedisCommands.ASKING, new Object[]{}));
+            list.add(new CommandData<>(attemptPromise, codec, command, params));
+            RPromise<Void> main = new RedissonPromise<>();
             writeFuture = connection.send(new CommandsData(main, list, false, false));
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("acquired connection for command {} and params {} from slot {} using node {}... {}",
                         command, LogHelper.toString(params), source, connection.getRedisClient().getAddr(), connection);
             }
-            writeFuture = connection.send(new CommandData<V, R>(attemptPromise, codec, command, params));
+            writeFuture = connection.send(new CommandData<>(attemptPromise, codec, command, params));
         }
     }
     
