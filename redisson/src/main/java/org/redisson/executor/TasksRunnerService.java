@@ -231,7 +231,7 @@ public class TasksRunnerService implements RemoteExecutorService {
             return;
         }
 
-        ((Redisson) redisson).getConnectionManager().newTimeout(new TimerTask() {
+        commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
                 renewRetryTime(requestId);
