@@ -141,39 +141,37 @@ public class MarshallingCodec extends BaseCodec {
         
     }
     
-    private final Decoder<Object> decoder = new Decoder<Object>() {
-        
-        @Override
-        public Object decode(ByteBuf buf, State state) throws IOException {
-            Unmarshaller unmarshaller = decoderThreadLocal.get();
-            try {
-                unmarshaller.start(new ByteInputWrapper(buf));
-                return unmarshaller.readObject();
-            } catch (ClassNotFoundException e) {
-                throw new IOException(e);
-            } finally {
-                unmarshaller.finish();
-                unmarshaller.close();
-            }
+    private final Decoder<Object> decoder = (buf, state) -> {
+        Unmarshaller unmarshaller = decoderThreadLocal.get();
+        try {
+            unmarshaller.start(new ByteInputWrapper(buf));
+            return unmarshaller.readObject();
+        } catch (ClassNotFoundException e) {
+            throw new IOException(e);
+        } finally {
+            unmarshaller.finish();
+            unmarshaller.close();
         }
     };
     
-    private final Encoder encoder = new Encoder() {
-        
-        @Override
-        public ByteBuf encode(Object in) throws IOException {
-            ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
+    private final Encoder encoder = in -> {
+        ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
 
-            Marshaller marshaller = encoderThreadLocal.get();
-            try {
-                marshaller.start(new ByteOutputWrapper(out));
-                marshaller.writeObject(in);
-            } finally {
-                marshaller.finish();
-                marshaller.close();
-            }
-            return out;
+        Marshaller marshaller = encoderThreadLocal.get();
+        try {
+            marshaller.start(new ByteOutputWrapper(out));
+            marshaller.writeObject(in);
+        } catch (IOException e) {
+            out.release();
+            throw e;
+        } catch (Exception e) {
+            out.release();
+            throw new IOException(e);
+        } finally {
+            marshaller.finish();
+            marshaller.close();
         }
+        return out;
     };
     
     private final MarshallerFactory factory;
