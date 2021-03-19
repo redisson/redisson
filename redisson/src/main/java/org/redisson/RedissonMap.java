@@ -1421,7 +1421,12 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                 writeBehindTask.addTask(task);
             } else {
                 commandExecutor.getConnectionManager().getExecutor().execute(() -> {
-                    options.getWriter().delete(deletedKeys);
+                    try {
+                        options.getWriter().delete(deletedKeys);
+                    } catch (Exception ex) {
+                        result.tryFailure(ex);
+                        return;
+                    }
                     result.trySuccess((long) deletedKeys.size());
                 });
             }

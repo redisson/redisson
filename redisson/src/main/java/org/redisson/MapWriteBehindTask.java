@@ -73,32 +73,49 @@ public class MapWriteBehindTask {
             commandExecutor.getConnectionManager().getExecutor().execute(() -> {
                 if (task != null) {
                     if (task instanceof MapWriterTask.Remove) {
-                        for (Object key : task.getKeys()) {
-                            deletedKeys.add(key);
-                            if (deletedKeys.size() == options.getWriteBehindBatchSize()) {
-                                options.getWriter().delete(deletedKeys);
-                                deletedKeys.clear();
+                            for (Object key : task.getKeys()) {
+                                try {
+                                    deletedKeys.add(key);
+                                    if (deletedKeys.size() == options.getWriteBehindBatchSize()) {
+                                        options.getWriter().delete(deletedKeys);
+                                        deletedKeys.clear();
+
+                                    }
+                                } catch (Exception exception) {
+                                    log.error("Unable to delete keys: " + deletedKeys, exception);
+                                }
                             }
-                        }
                     } else {
                         for (Entry<Object, Object> entry : task.getMap().entrySet()) {
-                            addedMap.put(entry.getKey(), entry.getValue());
-                            if (addedMap.size() == options.getWriteBehindBatchSize()) {
-                                options.getWriter().write(addedMap);
-                                addedMap.clear();
+                            try {
+                                addedMap.put(entry.getKey(), entry.getValue());
+                                if (addedMap.size() == options.getWriteBehindBatchSize()) {
+                                    options.getWriter().write(addedMap);
+                                    addedMap.clear();
+                                }
+                            } catch (Exception exception) {
+                                log.error("Unable to add keys: " + addedMap, exception);
                             }
                         }
                     }
 
                     pollTask(addedMap, deletedKeys);
                 } else {
-                    if (!deletedKeys.isEmpty()) {
-                        options.getWriter().delete(deletedKeys);
-                        deletedKeys.clear();
+                    try {
+                        if (!deletedKeys.isEmpty()) {
+                            options.getWriter().delete(deletedKeys);
+                            deletedKeys.clear();
+                        }
+                    } catch (Exception exception) {
+                        log.error("Unable to delete keys: " + deletedKeys, exception);
                     }
-                    if (!addedMap.isEmpty()) {
-                        options.getWriter().write(addedMap);
-                        addedMap.clear();
+                    try {
+                        if (!addedMap.isEmpty()) {
+                            options.getWriter().write(addedMap);
+                            addedMap.clear();
+                        }
+                    } catch (Exception exception) {
+                        log.error("Unable to add keys: " + addedMap, exception);
                     }
 
                     enqueueTask();
