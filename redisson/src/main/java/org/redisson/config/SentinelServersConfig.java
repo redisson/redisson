@@ -51,6 +51,8 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
 
     private boolean checkSentinelsList = true;
 
+    private boolean checkSlaveStatusWithSyncing = true;
+
     public SentinelServersConfig() {
     }
 
@@ -63,6 +65,7 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
         setNatMapper(config.getNatMapper());
         setCheckSentinelsList(config.isCheckSentinelsList());
         setSentinelPassword(config.getSentinelPassword());
+        setCheckSlaveStatusWithSyncing(config.isCheckSlaveStatusWithSyncing());
     }
 
     /**
@@ -187,6 +190,23 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
      */
     public SentinelServersConfig setCheckSentinelsList(boolean checkSentinelsList) {
         this.checkSentinelsList = checkSentinelsList;
+        return this;
+    }
+
+    public boolean isCheckSlaveStatusWithSyncing() {
+        return checkSlaveStatusWithSyncing;
+    }
+
+    /**
+     * check node status from sentinel with 'master-link-status' flag
+     * <p>
+     * Default is <code>true</code>
+     *
+     * @param checkSlaveStatusWithSyncing - boolean value
+     * @return config
+     */
+    public SentinelServersConfig setCheckSlaveStatusWithSyncing(boolean checkSlaveStatusWithSyncing) {
+        this.checkSlaveStatusWithSyncing = checkSlaveStatusWithSyncing;
         return this;
     }
 }
