@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.queue.DequeMoveArgs;
+
 import java.util.Deque;
 import java.util.List;
 
@@ -58,5 +60,26 @@ public interface RDeque<V> extends Deque<V>, RQueue<V>, RDequeAsync<V> {
      * @return list of head elements
      */
     List<V> pollFirst(int limit);
+
+    /**
+     * Move element from this deque to the given destination deque.
+     * Returns moved element.
+     * <p>
+     * Usage examples:
+     * <pre>
+     * V element = deque.move(DequeMoveArgs.pollLast()
+     *                                 .addFirstTo("deque2"));
+     * </pre>
+     * <pre>
+     * V elements = deque.move(DequeMoveArgs.pollFirst()
+     *                                 .addLastTo("deque2"));
+     * </pre>
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param args - arguments object
+     * @return moved element
+     */
+    V move(DequeMoveArgs args);
 
 }

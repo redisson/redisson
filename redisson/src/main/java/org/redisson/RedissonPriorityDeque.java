@@ -18,6 +18,7 @@ package org.redisson;
 import org.redisson.api.RFuture;
 import org.redisson.api.RPriorityDeque;
 import org.redisson.api.RedissonClient;
+import org.redisson.api.queue.DequeMoveArgs;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
@@ -296,5 +297,15 @@ public class RedissonPriorityDeque<V> extends RedissonPriorityQueue<V> implement
                             "return result;",
                     Collections.singletonList(getName()), limit);
         });
+    }
+
+    @Override
+    public V move(DequeMoveArgs args) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public RFuture<V> moveAsync(DequeMoveArgs args) {
+        throw new UnsupportedOperationException();
     }
 }
