@@ -23,6 +23,9 @@ import java.util.NoSuchElementException;
 import org.redisson.api.RDeque;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
+import org.redisson.api.queue.DequeMoveArgs;
+import org.redisson.api.queue.DequeMoveParams;
+import org.redisson.api.queue.DequeMoveSource;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
@@ -89,6 +92,18 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.RPUSH_VOID, getName(), encode(e));
     }
 
+    @Override
+    public V move(DequeMoveArgs args) {
+        return get(moveAsync(args));
+    }
+
+    @Override
+    public RFuture<V> moveAsync(DequeMoveArgs args) {
+        DequeMoveSource source = (DequeMoveSource) args;
+        DequeMoveParams pp = source.getParams();
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LMOVE, getName(),
+                                                pp.getDestName(), pp.getSourceDirection(), pp.getDestDirection());
+    }
 
     @Override
     public Iterator<V> descendingIterator() {

@@ -1,16 +1,43 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.Assert;
+import org.junit.Test;
+import org.redisson.api.RDeque;
+import org.redisson.api.queue.DequeMoveArgs;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
 
-import org.junit.Assert;
-import org.junit.Test;
-import org.redisson.api.RDeque;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonDequeTest extends BaseTest {
+
+    @Test
+    public void testMove() {
+        RDeque<Integer> deque1 = redisson.getDeque("deque1");
+        RDeque<Integer> deque2 = redisson.getDeque("deque2");
+
+        deque1.add(1);
+        deque1.add(2);
+        deque1.add(3);
+
+        deque2.add(4);
+        deque2.add(5);
+        deque2.add(6);
+
+        Integer r1 = deque1.move(DequeMoveArgs.pollFirst().addLastTo(deque2.getName()));
+        assertThat(r1).isEqualTo(1);
+
+        assertThat(deque1).containsExactly(2, 3);
+        assertThat(deque2).containsExactly(4, 5, 6, 1);
+
+        Integer r2 = deque2.move(DequeMoveArgs.pollLast().addFirstTo(deque1.getName()));
+        assertThat(r2).isEqualTo(1);
+
+        assertThat(deque1).containsExactly(1, 2, 3);
+        assertThat(deque2).containsExactly(4, 5, 6);
+    }
 
     @Test
     public void testRemoveLastOccurrence() {

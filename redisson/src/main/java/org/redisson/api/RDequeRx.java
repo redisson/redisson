@@ -19,6 +19,7 @@ import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
+import org.redisson.api.queue.DequeMoveArgs;
 
 /**
  * RxJava2 interface for Deque object
@@ -182,5 +183,26 @@ public interface RDequeRx<V> extends RQueueRx<V> {
      * @return <code>true</code> if element was added to this deque otherwise <code>false</code>
      */
     Single<Boolean> offerFirst(V e);
+
+    /**
+     * Move element from this deque to the given destination deque.
+     * Returns moved element.
+     * <p>
+     * Usage examples:
+     * <pre>
+     * V element = deque.move(DequeMoveArgs.pollLast()
+     *                                 .addFirstTo("deque2"));
+     * </pre>
+     * <pre>
+     * V elements = deque.move(DequeMoveArgs.pollFirst()
+     *                                 .addLastTo("deque2"));
+     * </pre>
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param args - arguments object
+     * @return moved element
+     */
+    Maybe<V> move(DequeMoveArgs args);
 
 }

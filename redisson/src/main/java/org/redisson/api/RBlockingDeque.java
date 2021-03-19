@@ -15,6 +15,9 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.queue.DequeMoveArgs;
+
+import java.time.Duration;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -58,6 +61,8 @@ public interface RBlockingDeque<V> extends BlockingDeque<V>, RBlockingQueue<V>, 
      * @throws InterruptedException if interrupted while waiting
      */
     V pollLastFromAny(long timeout, TimeUnit unit, String... queueNames) throws InterruptedException;
+
+    V move(Duration timeout, DequeMoveArgs args);
 
     /**
      * Subscribes on first elements appeared in this queue.

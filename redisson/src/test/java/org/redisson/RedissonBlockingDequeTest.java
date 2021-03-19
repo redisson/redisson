@@ -1,15 +1,67 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
+import org.awaitility.Awaitility;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RBlockingDeque;
+import org.redisson.api.queue.DequeMoveArgs;
+
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonBlockingDequeTest extends BaseTest {
+
+    @Test
+    public void testMove() {
+        RBlockingDeque<Integer> deque1 = redisson.getBlockingDeque("deque1");
+        RBlockingDeque<Integer> deque2 = redisson.getBlockingDeque("deque2");
+
+        deque2.add(4);
+        deque2.add(5);
+        deque2.add(6);
+
+        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+            deque1.add(1);
+            deque1.add(2);
+            deque1.add(3);
+        }, 3, TimeUnit.SECONDS);
+
+        Awaitility.await().atLeast(Duration.ofSeconds(1)).untilAsserted(() -> {
+            Integer r = deque1.move(Duration.ofSeconds(1), DequeMoveArgs.pollFirst().addLastTo(deque2.getName()));
+            assertThat(r).isNull();
+        });
+
+        Awaitility.await().between(Duration.ofMillis(1700), Duration.ofSeconds(2)).untilAsserted(() -> {
+            Integer r = deque1.move(Duration.ofSeconds(2), DequeMoveArgs.pollFirst().addLastTo(deque2.getName()));
+            assertThat(r).isEqualTo(1);
+        });
+
+        assertThat(deque1).containsExactly(2, 3);
+        assertThat(deque2).containsExactly(4, 5, 6, 1);
+
+        deque2.clear();
+
+        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+            deque2.addAll(Arrays.asList(4, 5, 6, 1));
+        }, 3, TimeUnit.SECONDS);
+
+        Awaitility.await().atLeast(Duration.ofSeconds(1)).untilAsserted(() -> {
+            Integer r = deque2.move(Duration.ofSeconds(1), DequeMoveArgs.pollFirst().addLastTo(deque1.getName()));
+            assertThat(r).isNull();
+        });
+
+        Awaitility.await().between(Duration.ofMillis(1700), Duration.ofSeconds(2)).untilAsserted(() -> {
+            Integer r = deque2.move(Duration.ofSeconds(2), DequeMoveArgs.pollLast().addFirstTo(deque1.getName()));
+            assertThat(r).isEqualTo(1);
+        });
+
+        assertThat(deque1).containsExactly(1, 2, 3);
+        assertThat(deque2).containsExactly(4, 5, 6);
+    }
 
     @Test
     public void testPollLastAndOfferFirstTo() throws InterruptedException {
