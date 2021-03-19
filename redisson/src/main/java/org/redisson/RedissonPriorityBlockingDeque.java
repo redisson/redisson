@@ -18,12 +18,14 @@ package org.redisson;
 import org.redisson.api.RFuture;
 import org.redisson.api.RPriorityBlockingDeque;
 import org.redisson.api.RedissonClient;
+import org.redisson.api.queue.DequeMoveArgs;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -286,6 +288,16 @@ public class RedissonPriorityBlockingDeque<V> extends RedissonPriorityDeque<V> i
 
     @Override
     public RFuture<List<V>> pollLastAsync(int limit) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public V move(Duration timeout, DequeMoveArgs args) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public RFuture<V> moveAsync(Duration timeout, DequeMoveArgs args) {
         throw new UnsupportedOperationException();
     }
 }
