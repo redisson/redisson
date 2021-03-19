@@ -15,18 +15,16 @@
  */
 package org.redisson.codec;
 
-import java.io.IOException;
-import java.util.Locale;
-
-import org.jboss.marshalling.*;
-import org.redisson.client.codec.BaseCodec;
-import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Decoder;
-import org.redisson.client.protocol.Encoder;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.util.concurrent.FastThreadLocal;
+import org.jboss.marshalling.*;
+import org.redisson.client.codec.BaseCodec;
+import org.redisson.client.protocol.Decoder;
+import org.redisson.client.protocol.Encoder;
+
+import java.io.IOException;
+import java.util.Locale;
 
 /**
  * JBoss Marshalling codec.
