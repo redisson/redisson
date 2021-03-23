@@ -130,7 +130,7 @@ public class TasksRunnerService implements RemoteExecutorService {
         params.setStartTime(newStartTime);
         RFuture<Void> future = asyncScheduledServiceAtFixed(params.getExecutorId(), params.getRequestId()).scheduleAtFixedRate(params);
         try {
-            executeRunnable(params);
+            executeRunnable(params, false);
         } catch (Exception e) {
             // cancel task if it throws an exception
             future.cancel(true);
