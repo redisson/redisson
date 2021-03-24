@@ -24,7 +24,15 @@ public class ScheduledAtFixedRateParameters extends ScheduledParameters {
 
     private long period;
     private String executorId;
-    
+    private long spentTime;
+
+    public long getSpentTime() {
+        return spentTime;
+    }
+    public void setSpentTime(long spentTime) {
+        this.spentTime = spentTime;
+    }
+
     public long getPeriod() {
         return period;
     }

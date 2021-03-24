@@ -126,16 +126,16 @@ public class TasksRunnerService implements RemoteExecutorService {
 
     @Override
     public void scheduleAtFixedRate(ScheduledAtFixedRateParameters params) {
-        long newStartTime = System.currentTimeMillis() + params.getPeriod();
+        long start = System.nanoTime();
+        executeRunnable(params, false);
+        long spent = params.getSpentTime()
+                                + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+
+        long newStartTime = System.currentTimeMillis() + Math.max(params.getPeriod() - spent, 0);
         params.setStartTime(newStartTime);
-        RFuture<Void> future = asyncScheduledServiceAtFixed(params.getExecutorId(), params.getRequestId()).scheduleAtFixedRate(params);
-        try {
-            executeRunnable(params, false);
-        } catch (Exception e) {
-            // cancel task if it throws an exception
-            future.cancel(true);
-            throw e;
-        }
+        spent = Math.max(spent - params.getPeriod(), 0);
+        params.setSpentTime(spent);
+        asyncScheduledServiceAtFixed(params.getExecutorId(), params.getRequestId()).scheduleAtFixedRate(params);
     }
     
     @Override
