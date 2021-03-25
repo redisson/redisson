@@ -15,10 +15,7 @@
  */
 package org.redisson;
 
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 import org.redisson.api.RDeque;
 import org.redisson.api.RFuture;
@@ -64,12 +61,18 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public RFuture<Integer> addFirstIfExistsAsync(V... elements) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LPUSHX, getName(), encode(elements));
+        List<Object> args = new ArrayList<>(elements.length + 1);
+        args.add(getName());
+        encode(args, Arrays.asList(elements));
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LPUSHX, args.toArray());
     }
 
     @Override
     public RFuture<Integer> addLastIfExistsAsync(V... elements) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.RPUSHX, getName(), encode(elements));
+        List<Object> args = new ArrayList<>(elements.length + 1);
+        args.add(getName());
+        encode(args, Arrays.asList(elements));
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.RPUSHX, args.toArray());
     }
 
     @Override
