@@ -38,7 +38,7 @@ public class MasterConnectionPool extends ConnectionPool<RedisConnection> {
 
     @Override
     public RFuture<RedisConnection> get(RedisCommand<?> command) {
-        return acquireConnection(command, entries.get(0));
+        return acquireConnection(command, entries.peek());
     }
     
     public void remove(ClientConnectionsEntry entry) {
