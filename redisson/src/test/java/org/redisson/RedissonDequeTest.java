@@ -14,6 +14,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class RedissonDequeTest extends BaseTest {
 
     @Test
+    public void testAddIfExists() {
+        RDeque<Integer> deque1 = redisson.getDeque("deque1");
+        deque1.add(1);
+        deque1.add(2);
+        deque1.add(3);
+
+        deque1.addFirstIfExists(4, 5);
+
+        assertThat(deque1).containsExactly(5, 4, 1, 2, 3);
+    }
+
+    @Test
     public void testMove() {
         RDeque<Integer> deque1 = redisson.getDeque("deque1");
         RDeque<Integer> deque2 = redisson.getDeque("deque2");
