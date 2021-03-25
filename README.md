@@ -131,10 +131,10 @@ config = Config.fromYAML(new File("config-file.yaml"));
 RedissonClient redisson = Redisson.create(config);
 
 // Reactive API
-RedissonReactiveClient redissonReactive = Redisson.createReactive(config);
+RedissonReactiveClient redissonReactive = redisson.reactive();
 
-// RxJava2 API
-RedissonRxClient redissonRx = Redisson.createRx(config);
+// RxJava3 API
+RedissonRxClient redissonRx = redisson.rxJava();
 ```
 
 ```java
