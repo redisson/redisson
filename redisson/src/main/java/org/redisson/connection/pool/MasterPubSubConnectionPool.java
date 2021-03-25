@@ -38,7 +38,7 @@ public class MasterPubSubConnectionPool extends PubSubConnectionPool {
 
     @Override
     public RFuture<RedisPubSubConnection> get(RedisCommand<?> command) {
-        return acquireConnection(command, entries.get(0));
+        return acquireConnection(command, entries.peek());
     }
 
     public void remove(ClientConnectionsEntry entry) {
