@@ -18,6 +18,7 @@ package org.redisson.connection;
 import java.net.InetSocketAddress;
 
 /**
+ * Redis connection listener
  *
  * @author Nikita Koksharov
  *
