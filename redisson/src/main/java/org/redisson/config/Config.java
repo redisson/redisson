@@ -20,10 +20,7 @@ import org.redisson.client.DefaultNettyHook;
 import org.redisson.client.NettyHook;
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.MarshallingCodec;
-import org.redisson.connection.AddressResolverGroupFactory;
-import org.redisson.connection.ConnectionManager;
-import org.redisson.connection.DnsAddressResolverGroupFactory;
-import org.redisson.connection.ReplicatedConnectionManager;
+import org.redisson.connection.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,6 +84,8 @@ public class Config {
 
     private NettyHook nettyHook = new DefaultNettyHook();
 
+    private ConnectionListener connectionListener;
+
     private boolean useThreadClassLoader = true;
 
     private AddressResolverGroupFactory addressResolverGroupFactory = new DnsAddressResolverGroupFactory();
@@ -103,6 +102,7 @@ public class Config {
             oldConf.setCodec(new MarshallingCodec());
         }
 
+        setConnectionListener(oldConf.getConnectionListener());
         setUseThreadClassLoader(oldConf.isUseThreadClassLoader());
         setMinCleanUpDelay(oldConf.getMinCleanUpDelay());
         setMaxCleanUpDelay(oldConf.getMaxCleanUpDelay());
@@ -796,6 +796,22 @@ public class Config {
      */
     public Config setReliableTopicWatchdogTimeout(long timeout) {
         this.reliableTopicWatchdogTimeout = timeout;
+        return this;
+    }
+
+    public ConnectionListener getConnectionListener() {
+        return connectionListener;
+    }
+
+    /**
+     * Sets connection listener which is triggered
+     * when Redisson connected/disconnected to Redis server
+     *
+     * @param connectionListener - connection listener
+     * @return config
+     */
+    public Config setConnectionListener(ConnectionListener connectionListener) {
+        this.connectionListener = connectionListener;
         return this;
     }
 }
