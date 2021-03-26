@@ -231,10 +231,7 @@ public class RedissonTest extends BaseTest {
 
         Config config = new Config();
         config.useSingleServer().setAddress(p.getRedisServerAddressAndPort());
-
-        RedissonClient r = Redisson.create(config);
-
-        int id = r.getNodesGroup().addConnectionListener(new ConnectionListener() {
+        config.setConnectionListener(new ConnectionListener() {
 
             @Override
             public void onDisconnect(InetSocketAddress addr) {
@@ -249,11 +246,11 @@ public class RedissonTest extends BaseTest {
             }
         });
 
-        assertThat(id).isNotZero();
-        
+        RedissonClient r = Redisson.create(config);
+
         r.getBucket("1").get();
         Assert.assertEquals(0, p.stop());
-        
+
         await().atMost(2, TimeUnit.SECONDS).until(() -> disconnectCounter.get() == 1);
         
         try {
@@ -261,7 +258,7 @@ public class RedissonTest extends BaseTest {
         } catch (Exception e) {
         }
         
-        assertThat(connectCounter.get()).isEqualTo(0);
+        assertThat(connectCounter.get()).isEqualTo(1);
         assertThat(disconnectCounter.get()).isEqualTo(1);
 
         RedisProcess pp = new RedisRunner()
@@ -272,7 +269,7 @@ public class RedissonTest extends BaseTest {
 
         r.getBucket("1").get();
 
-        assertThat(connectCounter.get()).isEqualTo(1);
+        assertThat(connectCounter.get()).isEqualTo(2);
         assertThat(disconnectCounter.get()).isEqualTo(1);
 
         r.shutdown();
@@ -387,7 +384,7 @@ public class RedissonTest extends BaseTest {
         
         System.out.println("errors " + errors + " success " + success + " readonly " + readonlyErrors);
         
-        assertThat(errors).isLessThan(600);
+        assertThat(errors).isLessThan(800);
         assertThat(readonlyErrors).isZero();
         
         redisson.shutdown();

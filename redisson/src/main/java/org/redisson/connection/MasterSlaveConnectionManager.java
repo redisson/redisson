@@ -200,6 +200,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
         this.cfg = cfg;
         this.codec = cfg.getCodec();
+
+        if (cfg.getConnectionListener() != null) {
+            connectionEventsHub.addListener(cfg.getConnectionListener());
+        }
     }
     
     protected void closeNodeConnections() {
