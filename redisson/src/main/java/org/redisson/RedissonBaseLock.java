@@ -17,12 +17,10 @@ package org.redisson;
 
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
-import org.redisson.api.BatchOptions;
-import org.redisson.api.BatchResult;
-import org.redisson.api.RFuture;
-import org.redisson.api.RLock;
+import org.redisson.api.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
@@ -35,13 +33,8 @@ import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.locks.Condition;
 
 /**
@@ -176,6 +169,36 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
         }
     }
 
+
+//    public RFuture<Object> getKey(){
+//        return evalReadAsync(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_FIRST_LIST,
+//                "if(redis.call('exists', KEYS[1]) == 1) then " +
+//                        "return redis.call('hkeys', KEYS[1]);" +
+//                        "end;" +
+//                        "return 'tet';",
+//                Collections.singletonList(getName())
+//        );
+//    }
+
+
+    public RFuture<LockInfo> getLockInfoAsync(){
+        return evalReadAsync(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_LOCK_INFO,
+                "if(redis.call('exists', KEYS[1]) == 1) then " +
+                        "local ownerInfo = redis.call('hkeys', KEYS[1])[1];" +
+                        "local ttl = redis.call('pttl', KEYS[1]);" +
+                        "return {ownerInfo, ttl};" +
+                        "end;" +
+                        "return nil;",
+                Collections.singletonList(getName())
+        );
+    }
+
+    @Override
+    public LockInfo getLockInfo(){
+        return get(getLockInfoAsync());
+    }
+
+
     protected RFuture<Boolean> renewExpirationAsync(long threadId) {
         return evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) then " +
@@ -186,6 +209,10 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
                 Collections.singletonList(getName()),
                 internalLockLeaseTime, getLockName(threadId));
     }
+
+//    public RFuture<Long> getLockThreadId(){
+//        return evalReadAsync(getName(), LongCodec.INSTANCE)
+//    }
 
     protected void cancelExpirationRenewal(Long threadId) {
         ExpirationEntry task = EXPIRATION_RENEWAL_MAP.get(getEntryName());
@@ -206,13 +233,32 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
         }
     }
 
+    protected <T> RFuture<T> evalReadAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params){
+        CommandBatchService executorService = createCommandBatchService();
+        RFuture<T> result = executorService.evalReadAsync(key, codec, evalCommandType, script, keys, params);
+        if (commandExecutor instanceof CommandBatchService) {
+            return result;
+        }
+
+        RPromise<T> r = new RedissonPromise<>();
+        RFuture<BatchResult<?>> future = executorService.executeAsync();
+        future.onComplete((res, ex) -> {
+            if (ex != null) {
+                r.tryFailure(ex);
+                return;
+            }
+
+            r.trySuccess(result.getNow());
+        });
+        return r;
+    }
+
     protected <T> RFuture<T> evalWriteAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
         CommandBatchService executorService = createCommandBatchService();
         RFuture<T> result = executorService.evalWriteAsync(key, codec, evalCommandType, script, keys, params);
         if (commandExecutor instanceof CommandBatchService) {
             return result;
         }
-
         RPromise<T> r = new RedissonPromise<>();
         RFuture<BatchResult<?>> future = executorService.executeAsync();
         future.onComplete((res, ex) -> {
