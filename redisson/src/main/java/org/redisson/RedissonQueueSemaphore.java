@@ -15,14 +15,14 @@
  */
 package org.redisson;
 
+import org.redisson.api.RFuture;
+import org.redisson.client.protocol.RedisCommands;
+import org.redisson.command.CommandAsyncExecutor;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-
-import org.redisson.api.RFuture;
-import org.redisson.client.protocol.RedisCommands;
-import org.redisson.command.CommandExecutor;
 
 /**
  * 
@@ -35,7 +35,7 @@ public class RedissonQueueSemaphore extends RedissonSemaphore {
     private Object value;
     private Collection<?> values;
     
-    public RedissonQueueSemaphore(CommandExecutor commandExecutor, String name) {
+    public RedissonQueueSemaphore(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
     }
     

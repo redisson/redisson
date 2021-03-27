@@ -15,25 +15,20 @@
  */
 package org.redisson.mapreduce;
 
-import java.lang.reflect.Modifier;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.Callable;
-
-import org.redisson.api.RBatch;
-import org.redisson.api.RExecutorService;
-import org.redisson.api.RFuture;
-import org.redisson.api.RMapAsync;
-import org.redisson.api.RObject;
-import org.redisson.api.RedissonClient;
+import org.redisson.api.*;
 import org.redisson.api.mapreduce.RCollator;
 import org.redisson.api.mapreduce.RMapReduceExecutor;
 import org.redisson.api.mapreduce.RReducer;
 import org.redisson.client.codec.Codec;
-import org.redisson.connection.ConnectionManager;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 import org.redisson.misc.TransferListener;
+
+import java.lang.reflect.Modifier;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.Callable;
 
 /**
  * 
@@ -53,14 +48,14 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
     final Codec objectCodec;
     final String objectName;
     final Class<?> objectClass;
-    
+    final CommandAsyncExecutor commandExecutor;
 
-    private ConnectionManager connectionManager;
+
     RReducer<KOut, VOut> reducer;
     M mapper;
     long timeout;
     
-    MapReduceExecutor(RObject object, RedissonClient redisson, ConnectionManager connectionManager) {
+    MapReduceExecutor(RObject object, RedissonClient redisson, CommandAsyncExecutor commandExecutor) {
         this.objectName = object.getName();
         this.objectCodec = object.getCodec();
         this.objectClass = object.getClass();
@@ -69,7 +64,7 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
         UUID id = UUID.randomUUID();
         this.resultMapName = object.getName() + ":result:" + id;
         this.executorService = redisson.getExecutorService(RExecutorService.MAPREDUCE_NAME);
-        this.connectionManager = connectionManager;
+        this.commandExecutor = commandExecutor;
     }
 
     protected void check(Object task) {
@@ -87,7 +82,7 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
     
     @Override
     public Map<KOut, VOut> execute() {
-        return connectionManager.getCommandExecutor().get(executeAsync());
+        return commandExecutor.get(executeAsync());
     }
     
     @Override
@@ -120,7 +115,7 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
     
     @Override
     public void execute(String resultMapName) {
-        connectionManager.getCommandExecutor().get(executeAsync(resultMapName));
+        commandExecutor.get(executeAsync(resultMapName));
     }
     
     @Override
@@ -145,7 +140,7 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
     
     @Override
     public <R> R execute(RCollator<KOut, VOut, R> collator) {
-        return connectionManager.getCommandExecutor().get(executeAsync(collator));
+        return commandExecutor.get(executeAsync(collator));
     }
     
     @Override

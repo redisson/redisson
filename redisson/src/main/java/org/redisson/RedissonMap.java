@@ -98,7 +98,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     
     @Override
     public <KOut, VOut> RMapReduce<K, V, KOut, VOut> mapReduce() {
-        return new RedissonMapReduce<>(this, redisson, commandExecutor.getConnectionManager());
+        return new RedissonMapReduce<>(this, redisson, commandExecutor);
     }
     
     @Override
@@ -1421,7 +1421,12 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                 writeBehindTask.addTask(task);
             } else {
                 commandExecutor.getConnectionManager().getExecutor().execute(() -> {
-                    options.getWriter().delete(deletedKeys);
+                    try {
+                        options.getWriter().delete(deletedKeys);
+                    } catch (Exception ex) {
+                        result.tryFailure(ex);
+                        return;
+                    }
                     result.trySuccess((long) deletedKeys.size());
                 });
             }

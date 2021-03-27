@@ -35,7 +35,7 @@ public class RedissonBatchRx implements RBatchRx {
 
     public RedissonBatchRx(EvictionScheduler evictionScheduler, ConnectionManager connectionManager, CommandRxExecutor commandExecutor, BatchOptions options) {
         this.evictionScheduler = evictionScheduler;
-        this.executorService = new CommandRxBatchService(connectionManager, options);
+        this.executorService = new CommandRxBatchService(connectionManager, commandExecutor, options);
         this.commandExecutor = commandExecutor;
     }
 
@@ -243,10 +243,6 @@ public class RedissonBatchRx implements RBatchRx {
         return commandExecutor.flowable(() -> executorService.executeAsync()).singleElement();
     }
     
-    public void enableRedissonReferenceSupport(RedissonRxClient redissonRx) {
-        this.executorService.enableRedissonReferenceSupport(redissonRx);
-    }
-
     @Override
     public <V> RGeoRx<V> getGeo(String name) {
         RedissonGeo<V> geo = new RedissonGeo<V>(executorService, name, null);

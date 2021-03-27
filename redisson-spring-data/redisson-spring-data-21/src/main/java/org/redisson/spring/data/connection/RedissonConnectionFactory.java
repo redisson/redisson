@@ -19,6 +19,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.redisson.Redisson;
 import org.redisson.RedissonKeys;
+import org.redisson.RedissonReactive;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.RedisCommands;
@@ -125,7 +126,7 @@ public class RedissonConnectionFactory implements RedisConnectionFactory,
             throw new InvalidDataAccessResourceUsageException("Redisson is not in Sentinel mode");
         }
         
-        SentinelConnectionManager manager = ((SentinelConnectionManager)((RedissonKeys)redisson.getKeys()).getConnectionManager());
+        SentinelConnectionManager manager = (SentinelConnectionManager)(((Redisson)redisson).getConnectionManager());
         for (RedisClient client : manager.getSentinels()) {
             org.redisson.client.RedisConnection connection = client.connect();
             try {
@@ -144,12 +145,12 @@ public class RedissonConnectionFactory implements RedisConnectionFactory,
 
     @Override
     public ReactiveRedisConnection getReactiveConnection() {
-        return new RedissonReactiveRedisConnection(new CommandReactiveService(((RedissonKeys)redisson.getKeys()).getConnectionManager()));
+        return new RedissonReactiveRedisConnection(((RedissonReactive)redisson.reactive()).getCommandExecutor());
     }
 
     @Override
     public ReactiveRedisClusterConnection getReactiveClusterConnection() {
-        return new RedissonReactiveRedisClusterConnection(new CommandReactiveService(((RedissonKeys)redisson.getKeys()).getConnectionManager()));
+        return new RedissonReactiveRedisClusterConnection(((RedissonReactive)redisson.reactive()).getCommandExecutor());
     }
 
 }

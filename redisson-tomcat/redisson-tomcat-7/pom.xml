@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-tomcat</artifactId>
-        <version>3.15.2-SNAPSHOT</version>
+        <version>3.15.3-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
@@ -17,7 +17,7 @@
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-core</artifactId>
-            <version>7.0.104</version>
+            <version>7.0.107</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

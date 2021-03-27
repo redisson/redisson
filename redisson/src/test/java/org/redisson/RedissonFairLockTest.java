@@ -149,8 +149,8 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         for (Long timeout : queue) {
             long epiry = ((timeout - new Date().getTime()) / 1000);
             log.info("Item " + (i++) + " expires in " + epiry + " seconds");
-            //the Redisson library uses this 5000ms delay in the code
-            if (epiry > leaseTimeSeconds + 5) {
+            //the Redisson library uses this 60000*5ms delay in the code
+            if (epiry > leaseTimeSeconds + 60*5) {
                 Assert.fail("It would take more than " + leaseTimeSeconds + "s to get the lock!");
             }
         }
@@ -255,9 +255,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         // we're testing interaction of various internal methods, so create a Redisson instance for protected access
         Redisson redisson = new Redisson(createConfig());
 
-        RedissonFairLock lock = new RedissonFairLock(
-                redisson.connectionManager.getCommandExecutor(),
-                "testAcquireFailedTimeoutDrift_Descrete");
+        RedissonFairLock lock = (RedissonFairLock) redisson.getFairLock("testAcquireFailedTimeoutDrift_Descrete");
 
         // clear out any prior state
         lock.delete();
@@ -337,7 +335,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         Redisson redisson = new Redisson(createConfig());
 
         RedissonFairLock lock = new RedissonFairLock(
-            redisson.connectionManager.getCommandExecutor(),
+            redisson.getCommandExecutor(),
             "testLockAcquiredTimeoutDrift_Descrete",
             100);
 
@@ -395,7 +393,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         Redisson redisson = new Redisson(createConfig());
 
         RedissonFairLock lock = new RedissonFairLock(
-                redisson.connectionManager.getCommandExecutor(),
+                redisson.getCommandExecutor(),
                 "testLockAcquiredTimeoutDrift_Descrete");
 
         // clear out any prior state
@@ -451,7 +449,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         Redisson redisson = new Redisson(createConfig());
 
         RedissonFairLock lock = new RedissonFairLock(
-                redisson.connectionManager.getCommandExecutor(),
+                redisson.getCommandExecutor(),
                 "testAbandonedTimeoutDrift_Descrete",
                 threadWaitTime);
 
@@ -574,8 +572,8 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
             long timeout = queue.get(i);
             long epiry = ((timeout - new Date().getTime()) / 1000);
             log.info("Item " + i + " expires in " + epiry + " seconds");
-            // the Redisson library uses this 5000ms delay in the code
-            Assert.assertFalse("It would take more than " + (leaseTimeSeconds + 5 * (i + 1)) + "s to get the lock!", epiry > leaseTimeSeconds + 5 * (i + 1));
+            // the Redisson library uses this 60000*5ms delay in the code
+            Assert.assertFalse("It would take more than " + (leaseTimeSeconds + 60*5 * (i + 1)) + "s to get the lock!", epiry > leaseTimeSeconds + 60*5 * (i + 1));
         }
     }
 

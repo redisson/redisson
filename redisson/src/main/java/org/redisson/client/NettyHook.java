@@ -32,15 +32,13 @@ public interface NettyHook {
      *
      * @param bootstrap - Netty Bootstrap object
      */
-    default void afterBoostrapInitialization(Bootstrap bootstrap) {
-    }
+    void afterBoostrapInitialization(Bootstrap bootstrap);
 
     /**
      * Invoked when Netty Channel object was created and initialized.
      *
      * @param channel - Netty Channel object
      */
-    default void afterChannelInitialization(Channel channel) {
-    }
+    void afterChannelInitialization(Channel channel);
 
 }

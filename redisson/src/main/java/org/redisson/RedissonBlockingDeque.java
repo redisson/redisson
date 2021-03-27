@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -22,6 +23,9 @@ import java.util.function.Consumer;
 import org.redisson.api.RBlockingDeque;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
+import org.redisson.api.queue.DequeMoveArgs;
+import org.redisson.api.queue.DequeMoveParams;
+import org.redisson.api.queue.DequeMoveSource;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
@@ -268,6 +272,19 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
     @Override
     public V pollLast(long timeout, TimeUnit unit) throws InterruptedException {
         return commandExecutor.getInterrupted(pollLastAsync(timeout, unit));
-   }
+    }
 
+    @Override
+    public V move(Duration timeout, DequeMoveArgs args) {
+        return get(moveAsync(timeout, args));
+    }
+
+    @Override
+    public RFuture<V> moveAsync(Duration timeout, DequeMoveArgs args) {
+        DequeMoveSource source = (DequeMoveSource) args;
+        DequeMoveParams pp = source.getParams();
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.BLMOVE, getName(),
+                                                pp.getDestName(), pp.getSourceDirection(), pp.getDestDirection(),
+                                                toSeconds(timeout.getSeconds(), TimeUnit.SECONDS));
+    }
 }

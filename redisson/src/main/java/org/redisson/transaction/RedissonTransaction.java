@@ -201,7 +201,7 @@ public class RedissonTransaction implements RTransaction {
         
         BatchOptions batchOptions = createOptions();
         
-        CommandBatchService transactionExecutor = new CommandBatchService(commandExecutor.getConnectionManager(), batchOptions);
+        CommandBatchService transactionExecutor = new CommandBatchService(commandExecutor, batchOptions);
         for (TransactionalOperation transactionalOperation : operations) {
             transactionalOperation.commit(transactionExecutor);
         }
@@ -265,7 +265,7 @@ public class RedissonTransaction implements RTransaction {
         
         BatchOptions batchOptions = createOptions();
         
-        CommandBatchService transactionExecutor = new CommandBatchService(commandExecutor.getConnectionManager(), batchOptions);
+        CommandBatchService transactionExecutor = new CommandBatchService(commandExecutor, batchOptions);
         for (TransactionalOperation transactionalOperation : operations) {
             transactionalOperation.commit(transactionExecutor);
         }
@@ -540,7 +540,7 @@ public class RedissonTransaction implements RTransaction {
     }
 
     private RedissonBatch createBatch() {
-        return new RedissonBatch(null, commandExecutor.getConnectionManager(),
+        return new RedissonBatch(null, commandExecutor,
                                     BatchOptions.defaults().executionMode(BatchOptions.ExecutionMode.IN_MEMORY_ATOMIC));
     }
 
@@ -558,7 +558,7 @@ public class RedissonTransaction implements RTransaction {
     public void rollback(List<TransactionalOperation> operations) {
         checkState();
 
-        CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
+        CommandBatchService executorService = new CommandBatchService(commandExecutor);
         for (TransactionalOperation transactionalOperation : operations) {
             transactionalOperation.rollback(executorService);
         }
@@ -577,7 +577,7 @@ public class RedissonTransaction implements RTransaction {
     public RFuture<Void> rollbackAsync() {
         checkState();
 
-        CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
+        CommandBatchService executorService = new CommandBatchService(commandExecutor);
         for (TransactionalOperation transactionalOperation : operations) {
             transactionalOperation.rollback(executorService);
         }

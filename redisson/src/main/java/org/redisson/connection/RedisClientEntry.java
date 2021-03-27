@@ -15,10 +15,6 @@
  */
 package org.redisson.connection;
 
-import java.net.InetSocketAddress;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
 import org.redisson.api.ClusterNode;
 import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
@@ -28,9 +24,13 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.Time;
-import org.redisson.command.CommandSyncService;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
+
+import java.net.InetSocketAddress;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 
@@ -40,10 +40,10 @@ import org.redisson.misc.RedissonPromise;
 public class RedisClientEntry implements ClusterNode {
 
     private final RedisClient client;
-    private final CommandSyncService commandExecutor;
+    private final CommandAsyncExecutor commandExecutor;
     private final NodeType type;
 
-    public RedisClientEntry(RedisClient client, CommandSyncService commandExecutor, NodeType type) {
+    public RedisClientEntry(RedisClient client, CommandAsyncExecutor commandExecutor, NodeType type) {
         super();
         this.client = client;
         this.commandExecutor = commandExecutor;

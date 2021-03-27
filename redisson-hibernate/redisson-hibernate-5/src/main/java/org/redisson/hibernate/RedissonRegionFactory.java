@@ -35,8 +35,9 @@ import org.redisson.hibernate.region.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Hibernate Cache region factory based on Redisson. 
@@ -72,10 +73,13 @@ import java.util.Properties;
 
     public static final String FALLBACK = CONFIG_PREFIX + "fallback";
 
+    private static AtomicLong currentTime = new AtomicLong();
+
     protected RedissonClient redisson;
     private Settings settings;
     private CacheKeysFactory cacheKeysFactory;
-    
+    private boolean fallback;
+
     @Override
     public void start(SessionFactoryOptions settings, Properties properties) throws CacheException {
         this.redisson = createRedissonClient(properties);
@@ -85,6 +89,8 @@ import java.util.Properties;
         cacheKeysFactory = selector.resolveDefaultableStrategy(CacheKeysFactory.class,
                                 properties.get(Environment.CACHE_KEYS_FACTORY), new RedissonCacheKeysFactory(redisson.getConfig().getCodec()));
 
+        String fallbackValue = (String) properties.getOrDefault(FALLBACK, "false");
+        fallback = Boolean.valueOf(fallbackValue);
     }
     
     protected RedissonClient createRedissonClient(Properties properties) {
@@ -157,16 +163,35 @@ import java.util.Properties;
     @Override
     public long nextTimestamp() {
         long time = System.currentTimeMillis() << 12;
-        return redisson.getScript(LongCodec.INSTANCE).eval(RScript.Mode.READ_WRITE,
-                  "local currentTime = redis.call('get', KEYS[1]);"
-                + "if currentTime == false then "
-                    + "redis.call('set', KEYS[1], ARGV[1]); "
-                    + "return ARGV[1]; "
-                + "end;"
-                + "local nextValue = math.max(tonumber(ARGV[1]), tonumber(currentTime) + 1); "
-                + "redis.call('set', KEYS[1], nextValue); "
-                + "return nextValue;",
-                RScript.ReturnType.INTEGER, Arrays.<Object>asList("redisson-hibernate-timestamp"), time);
+        try {
+            return redisson.getScript(LongCodec.INSTANCE).eval(RScript.Mode.READ_WRITE,
+                      "local currentTime = redis.call('get', KEYS[1]);"
+                            + "if currentTime == false then "
+                                + "redis.call('set', KEYS[1], ARGV[1]); "
+                                + "return ARGV[1]; "
+                            + "end;"
+                            + "local nextValue = math.max(tonumber(ARGV[1]), tonumber(currentTime) + 1); "
+                            + "redis.call('set', KEYS[1], nextValue); "
+                            + "return nextValue;",
+                            RScript.ReturnType.INTEGER, Collections.singletonList("redisson-hibernate-timestamp"), time);
+        } catch (Exception e) {
+            if (fallback) {
+                while (true) {
+                    if (currentTime.get() == 0) {
+                        if (currentTime.compareAndSet(0, time)) {
+                            return time;
+                        }
+                    } else {
+                        long currValue = currentTime.get();
+                        long nextTime = Math.max(time, currValue + 1);
+                        if (currentTime.compareAndSet(currValue, nextTime)) {
+                            return nextTime;
+                        }
+                    }
+                }
+            }
+            throw e;
+        }
     }
 
     @Override

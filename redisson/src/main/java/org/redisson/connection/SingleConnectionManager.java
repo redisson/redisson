@@ -15,13 +15,9 @@
  */
 package org.redisson.connection;
 
-import java.util.UUID;
+import org.redisson.config.*;
 
-import org.redisson.config.Config;
-import org.redisson.config.MasterSlaveServersConfig;
-import org.redisson.config.ReadMode;
-import org.redisson.config.SingleServerConfig;
-import org.redisson.config.SubscriptionMode;
+import java.util.UUID;
 
 /**
  * 

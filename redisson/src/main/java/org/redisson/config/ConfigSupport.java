@@ -15,33 +15,6 @@
  */
 package org.redisson.config;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.net.URL;
-import java.util.Scanner;
-import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import com.fasterxml.jackson.databind.SerializationFeature;
-import org.redisson.api.NatMapper;
-import org.redisson.api.RedissonNodeInitializer;
-import org.redisson.client.NettyHook;
-import org.redisson.client.codec.Codec;
-import org.redisson.cluster.ClusterConnectionManager;
-import org.redisson.codec.ReferenceCodecProvider;
-import org.redisson.connection.AddressResolverGroupFactory;
-import org.redisson.connection.ConnectionManager;
-import org.redisson.connection.MasterSlaveConnectionManager;
-import org.redisson.connection.ReplicatedConnectionManager;
-import org.redisson.connection.SentinelConnectionManager;
-import org.redisson.connection.SingleConnectionManager;
-import org.redisson.connection.balancer.LoadBalancer;
-
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -49,11 +22,27 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.redisson.api.NatMapper;
+import org.redisson.api.RedissonNodeInitializer;
+import org.redisson.client.NettyHook;
+import org.redisson.client.codec.Codec;
+import org.redisson.cluster.ClusterConnectionManager;
+import org.redisson.codec.ReferenceCodecProvider;
+import org.redisson.connection.*;
+import org.redisson.connection.balancer.LoadBalancer;
+
+import java.io.*;
+import java.net.URL;
+import java.util.Scanner;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * 
@@ -188,10 +177,10 @@ public class ConfigSupport {
     public String toYAML(Config config) throws IOException {
         return yamlMapper.writeValueAsString(config);
     }
-    
+
     public static ConnectionManager createConnectionManager(Config configCopy) {
         UUID id = UUID.randomUUID();
-        
+
         if (configCopy.getMasterSlaveServersConfig() != null) {
             validate(configCopy.getMasterSlaveServersConfig());
             return new MasterSlaveConnectionManager(configCopy.getMasterSlaveServersConfig(), configCopy, id);

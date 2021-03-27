@@ -21,6 +21,7 @@ import org.redisson.api.RFuture;
 import org.redisson.command.CommandAsyncService;
 import org.redisson.connection.ConnectionManager;
 
+import org.redisson.liveobject.core.RedissonObjectBuilder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -31,8 +32,8 @@ import reactor.core.publisher.Mono;
  */
 public class CommandReactiveService extends CommandAsyncService implements CommandReactiveExecutor {
 
-    public CommandReactiveService(ConnectionManager connectionManager) {
-        super(connectionManager);
+    public CommandReactiveService(ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder) {
+        super(connectionManager, objectBuilder, RedissonObjectBuilder.ReferenceType.REACTIVE);
     }
 
     @Override

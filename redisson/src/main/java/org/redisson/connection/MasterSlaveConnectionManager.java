@@ -15,40 +15,6 @@
  */
 package org.redisson.connection;
 
-import java.net.InetSocketAddress;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import io.netty.util.*;
-import io.netty.util.Timer;
-import io.netty.util.TimerTask;
-import org.redisson.ElementsSubscribeService;
-import org.redisson.Version;
-import org.redisson.api.NodeType;
-import org.redisson.api.RFuture;
-import org.redisson.client.RedisClient;
-import org.redisson.client.RedisClientConfig;
-import org.redisson.client.RedisConnection;
-import org.redisson.client.RedisException;
-import org.redisson.client.RedisNodeNotFoundException;
-import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.RedisCommand;
-import org.redisson.cluster.ClusterSlotRange;
-import org.redisson.command.CommandSyncService;
-import org.redisson.config.*;
-import org.redisson.misc.CountableListener;
-import org.redisson.misc.InfinitySemaphoreLatch;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedisURI;
-import org.redisson.misc.RedissonPromise;
-import org.redisson.pubsub.PublishSubscribeService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.EpollDatagramChannel;
 import io.netty.channel.epoll.EpollEventLoopGroup;
@@ -63,11 +29,35 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.resolver.AddressResolverGroup;
 import io.netty.resolver.DefaultAddressResolverGroup;
 import io.netty.resolver.dns.DnsServerAddressStreamProviders;
+import io.netty.util.Timer;
+import io.netty.util.TimerTask;
+import io.netty.util.*;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.PlatformDependent;
+import org.redisson.ElementsSubscribeService;
+import org.redisson.Version;
+import org.redisson.api.NodeType;
+import org.redisson.api.RFuture;
+import org.redisson.client.*;
+import org.redisson.client.codec.Codec;
+import org.redisson.client.protocol.RedisCommand;
+import org.redisson.cluster.ClusterSlotRange;
+import org.redisson.config.*;
+import org.redisson.misc.*;
+import org.redisson.pubsub.PublishSubscribeService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.InetSocketAddress;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -135,8 +125,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     
     private final ExecutorService executor; 
     
-    private final CommandSyncService commandExecutor;
-
     private final Config cfg;
 
     protected final AddressResolverGroup<InetSocketAddress> resolverGroup;
@@ -212,7 +200,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
         this.cfg = cfg;
         this.codec = cfg.getCodec();
-        this.commandExecutor = new CommandSyncService(this);
+
+        if (cfg.getConnectionListener() != null) {
+            connectionEventsHub.addListener(cfg.getConnectionListener());
+        }
     }
     
     protected void closeNodeConnections() {
@@ -287,11 +278,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return false;
     }
     
-    @Override
-    public CommandSyncService getCommandExecutor() {
-        return commandExecutor;
-    }
-
     @Override
     public IdleConnectionWatcher getConnectionWatcher() {
         return connectionWatcher;
