@@ -181,6 +181,11 @@ public interface RLockReactive {
      */
     Mono<Long> remainTimeToLive();
 
+    /**
+     * Current lock information
+     *
+     * @return information about current lock (owner, ttl)
+     */
     Mono<LockInfo> getLockInfo();
     
 }

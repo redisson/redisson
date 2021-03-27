@@ -52,22 +52,13 @@ public class RedissonLockTest extends BaseConcurrentTest {
     }
 
     @Test
-    public void createInfinityLock() throws InterruptedException, IOException {
-        RedisRunner.RedisProcess master = new RedisRunner()
-                .port(6377)
-                .nosave()
-                .randomDir()
-                .run();
-
-        Config config = new Config();
-        config.useSingleServer().setAddress("redis://127.0.0.1:6377");
-        RedissonClient redisson = Redisson.create(config);
-
+    public void testLockInfo() throws InterruptedException {
         Runnable runnable = () -> {
-            RLock lock = redisson.getLock("lock");
+            RLock lock = redisson.getLock("lock-info-test");
             lock.lock();
             Long threadId = Thread.currentThread().getId();
             LockInfo lockInfo = lock.getLockInfo();
+            Assert.assertTrue(lockInfo.isLocked());
             Assert.assertEquals(threadId, lockInfo.getThreadOwnerId());
             Assert.assertTrue(lock.isHeldByThread(threadId));
         };
@@ -75,6 +66,14 @@ public class RedissonLockTest extends BaseConcurrentTest {
         worker.start();
         worker.join();
     }
+
+    @Test
+    public void testLockInfoNonPresent() {
+        RLock lock = redisson.getLock("free-lock");
+        LockInfo lockInfo = lock.getLockInfo();
+        Assert.assertFalse(lockInfo.isLocked());
+    }
+
 
     @Test(expected = WriteRedisConnectionException.class)
     public void testRedisFailed() throws IOException, InterruptedException {

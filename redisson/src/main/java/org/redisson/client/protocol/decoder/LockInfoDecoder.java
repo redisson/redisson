@@ -9,16 +9,34 @@ import java.util.List;
 /**
  * @author Sergey Kurenchuk
  */
-public class LockInfoDecoder implements MultiDecoder<LockInfo>{
+public class LockInfoDecoder implements MultiDecoder<LockInfo> {
+
+    private static class FreeLockInfo extends LockInfo {
+
+        public FreeLockInfo() {
+            super(null, null, null);
+        }
+
+        @Override
+        public boolean isLocked() {
+            return false;
+        }
+    }
 
     @Override
     public LockInfo decode(List<Object> parts, State state) {
-        assert parts.size() == 2;
+        if (parts.size() != 2) {
+            return new FreeLockInfo();
+        }
         String lockOwnerInfo = parts.get(0).toString();
         String expiredInMillis = parts.get(1).toString();
-        assert !StringUtils.isBlank(lockOwnerInfo);
+        if (StringUtils.isBlank(lockOwnerInfo)) {
+            return new FreeLockInfo();
+        }
         String[] split = lockOwnerInfo.split(":");
-        assert split.length == 2;
+        if (split.length != 2) {
+            return new FreeLockInfo();
+        }
         String connectionId = split[0];
         Long threadOwnerId = Long.valueOf(split[1]);
         Long expired = Long.valueOf(expiredInMillis);

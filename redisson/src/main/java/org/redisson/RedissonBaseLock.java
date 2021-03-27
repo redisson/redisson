@@ -1,12 +1,12 @@
 /**
  * Copyright (c) 2013-2020 Nikita Koksharov
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -63,15 +63,18 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
             }
             threadIds.put(threadId, counter);
         }
+
         public synchronized boolean hasNoThreads() {
             return threadIds.isEmpty();
         }
+
         public synchronized Long getFirstThreadId() {
             if (threadIds.isEmpty()) {
                 return null;
             }
             return threadIds.keySet().iterator().next();
         }
+
         public synchronized void removeThreadId(long threadId) {
             Integer counter = threadIds.get(threadId);
             if (counter == null) {
@@ -89,6 +92,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
         public void setTimeout(Timeout timeout) {
             this.timeout = timeout;
         }
+
         public Timeout getTimeout() {
             return timeout;
         }
@@ -126,7 +130,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
         if (ee == null) {
             return;
         }
-        
+
         Timeout task = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
@@ -138,7 +142,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
                 if (threadId == null) {
                     return;
                 }
-                
+
                 RFuture<Boolean> future = renewExpirationAsync(threadId);
                 future.onComplete((res, e) -> {
                     if (e != null) {
@@ -146,7 +150,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
                         EXPIRATION_RENEWAL_MAP.remove(getEntryName());
                         return;
                     }
-                    
+
                     if (res) {
                         // reschedule itself
                         renewExpiration();
@@ -154,10 +158,10 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
                 });
             }
         }, internalLockLeaseTime / 3, TimeUnit.MILLISECONDS);
-        
+
         ee.setTimeout(task);
     }
-    
+
     protected void scheduleExpirationRenewal(long threadId) {
         ExpirationEntry entry = new ExpirationEntry();
         ExpirationEntry oldEntry = EXPIRATION_RENEWAL_MAP.putIfAbsent(getEntryName(), entry);
@@ -169,32 +173,20 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
         }
     }
 
-
-//    public RFuture<Object> getKey(){
-//        return evalReadAsync(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_FIRST_LIST,
-//                "if(redis.call('exists', KEYS[1]) == 1) then " +
-//                        "return redis.call('hkeys', KEYS[1]);" +
-//                        "end;" +
-//                        "return 'tet';",
-//                Collections.singletonList(getName())
-//        );
-//    }
-
-
-    public RFuture<LockInfo> getLockInfoAsync(){
+    public RFuture<LockInfo> getLockInfoAsync() {
         return evalReadAsync(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_LOCK_INFO,
                 "if(redis.call('exists', KEYS[1]) == 1) then " +
                         "local ownerInfo = redis.call('hkeys', KEYS[1])[1];" +
                         "local ttl = redis.call('pttl', KEYS[1]);" +
                         "return {ownerInfo, ttl};" +
                         "end;" +
-                        "return nil;",
+                        "return {};",
                 Collections.singletonList(getName())
         );
     }
 
     @Override
-    public LockInfo getLockInfo(){
+    public LockInfo getLockInfo() {
         return get(getLockInfoAsync());
     }
 
@@ -219,7 +211,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
         if (task == null) {
             return;
         }
-        
+
         if (threadId != null) {
             task.removeThreadId(threadId);
         }
@@ -233,7 +225,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
         }
     }
 
-    protected <T> RFuture<T> evalReadAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params){
+    protected <T> RFuture<T> evalReadAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
         CommandBatchService executorService = createCommandBatchService();
         RFuture<T> result = executorService.evalReadAsync(key, codec, evalCommandType, script, keys, params);
         if (commandExecutor instanceof CommandBatchService) {
@@ -279,7 +271,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
 
         MasterSlaveEntry entry = commandExecutor.getConnectionManager().getEntry(getName());
         BatchOptions options = BatchOptions.defaults()
-                                .syncSlaves(entry.getAvailableSlaves(), 1, TimeUnit.SECONDS);
+                .syncSlaves(entry.getAvailableSlaves(), 1, TimeUnit.SECONDS);
 
         return new CommandBatchService(commandExecutor.getConnectionManager(), options);
     }
@@ -287,7 +279,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
     protected void acquireFailed(long waitTime, TimeUnit unit, long threadId) {
         get(acquireFailedAsync(waitTime, unit, threadId));
     }
-    
+
     protected RFuture<Void> acquireFailedAsync(long waitTime, TimeUnit unit, long threadId) {
         return RedissonPromise.newSucceededFuture(null);
     }
@@ -302,7 +294,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
     public boolean isLocked() {
         return isExists();
     }
-    
+
     @Override
     public RFuture<Boolean> isLockedAsync() {
         return isExistsAsync();
@@ -320,11 +312,11 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
     }
 
     private static final RedisCommand<Integer> HGET = new RedisCommand<Integer>("HGET", new MapValueDecoder(), new IntegerReplayConvertor(0));
-    
+
     public RFuture<Integer> getHoldCountAsync() {
         return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, HGET, getName(), getLockName(Thread.currentThread().getId()));
     }
-    
+
     @Override
     public int getHoldCount() {
         return get(getHoldCountAsync());
