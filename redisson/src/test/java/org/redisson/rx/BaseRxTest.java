@@ -70,7 +70,7 @@ public abstract class BaseRxTest {
 
     public static RedissonRxClient createInstance() {
         Config config = BaseTest.createConfig();
-        return Redisson.createRx(config);
+        return Redisson.create(config).rxJava();
     }
 
 }

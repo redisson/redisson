@@ -120,7 +120,7 @@ public class RedissonConnectionFactory implements RedisConnectionFactory, Initia
             throw new InvalidDataAccessResourceUsageException("Redisson is not in Sentinel mode");
         }
         
-        SentinelConnectionManager manager = ((SentinelConnectionManager)((RedissonKeys)redisson.getKeys()).getConnectionManager());
+        SentinelConnectionManager manager = (SentinelConnectionManager)(((Redisson)redisson).getConnectionManager());
         for (RedisClient client : manager.getSentinels()) {
             org.redisson.client.RedisConnection connection = client.connect();
             try {

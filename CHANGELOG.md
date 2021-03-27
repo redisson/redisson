@@ -3,6 +3,28 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 22-Mar-2021 - 3.15.2 released
+
+Feature - `move()` method added to `RDeque` and `RBlockingDeque` objects  
+Feature - `MINID` trimming strategy and `LIMIT` argument added to `RStream.add()` method  
+Feature - new config `checkSlaveStatusWithSyncing` setting added  
+Feature - enable tcpNoDelay setting by default (thanks to @mikawudi)  
+Feature - `RedissonClient.reactive()` and `RedissonClient.rxJava()` methods added  
+Feature - Spring Boot auto configuration should create `Reactive` and `RxJava` instances  
+
+Improvement - simplified API of `RStream.read()` and `RStream.readGroup()`  
+
+Fixed - Hibernate modules prior 5.3 version don't support fallback for `nextTimestamp()` method  
+Fixed - `MarshallingCodec` doesn't release allocated ByteBuf object if exception thrown during encoding  
+Fixed - `retryInterval` isn't used for next attempt if Redis client didn't send response  
+Fixed - lease timeout updated in non-safe way in `org.redisson.RedissonLock#tryLockInnerAsync` method (thanks to @coding-tortoise)  
+Fixed - references in RxJava objects aren't supported  
+Fixed - Spring Data Redis module doesn't support `StreamReadOptions.isNoack()` option in `RedisStreamCommands.xReadGroup()` method. 
+Fixed - trying to authentificate sentinel server without password  
+Fixed - `RStream.getInfo()` method doesn't decode entries  
+Fixed - Redisson doesn't reconnect slave if it was excluded before due to errors in failedSlaveCheckInterval time range. (thanks to @mikawudi)  
+
+
 ### 03-Mar-2021 - 3.15.1 released
 
 Feature - `expireAt(Instant)` method added to `RExpirable` object  

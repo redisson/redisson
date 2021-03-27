@@ -64,6 +64,10 @@ public class RedissonKeys implements RKeys {
         this.commandExecutor = commandExecutor;
     }
 
+    public CommandAsyncExecutor getCommandExecutor() {
+        return commandExecutor;
+    }
+
     public ConnectionManager getConnectionManager() {
         return commandExecutor.getConnectionManager();
     }

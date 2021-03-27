@@ -15,6 +15,9 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.queue.DequeMoveArgs;
+
+import java.time.Duration;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.TimeUnit;
 
@@ -109,4 +112,7 @@ public interface RBlockingDequeAsync<V> extends RDequeAsync<V>, RBlockingQueueAs
      * @return the head element of this queue
      */
     RFuture<V> takeFirstAsync();
+
+    RFuture<V> moveAsync(Duration timeout, DequeMoveArgs args);
+
 }

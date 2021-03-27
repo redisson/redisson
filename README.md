@@ -6,7 +6,7 @@
 [Quick start](https://github.com/redisson/redisson#quick-start) | [Documentation](https://github.com/redisson/redisson/wiki/Table-of-Content) | [Javadocs](https://www.javadoc.io/doc/org.redisson/redisson/latest/index.html) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [FAQs](https://github.com/redisson/redisson/wiki/16.-FAQ) | [Report an issue](https://github.com/redisson/redisson/issues/new)
 
 Based on high-performance async and lock-free Java Redis client and [Netty](http://netty.io) framework.  
-JDK compatibility:  1.8 - 15, Android  
+JDK compatibility:  1.8 - 16, Android  
 
 ## Features
 
@@ -102,14 +102,14 @@ Used by
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>3.15.1</version>
+       <version>3.15.2</version>
     </dependency>  
 
 #### Gradle
-    compile 'org.redisson:redisson:3.15.1'  
+    compile 'org.redisson:redisson:3.15.2'  
 
 #### SBT
-    libraryDependencies += "org.redisson" % "redisson" % "3.15.1"
+    libraryDependencies += "org.redisson" % "redisson" % "3.15.2"
 
 #### Java
 
@@ -131,10 +131,10 @@ config = Config.fromYAML(new File("config-file.yaml"));
 RedissonClient redisson = Redisson.create(config);
 
 // Reactive API
-RedissonReactiveClient redissonReactive = Redisson.createReactive(config);
+RedissonReactiveClient redissonReactive = redisson.reactive();
 
-// RxJava2 API
-RedissonRxClient redissonRx = Redisson.createRx(config);
+// RxJava3 API
+RedissonRxClient redissonRx = redisson.rxJava();
 ```
 
 ```java
@@ -167,8 +167,8 @@ Consider __[Redisson PRO](https://redisson.pro)__ version for advanced features 
 
 ## Downloads
    
-[Redisson 3.15.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.15.1&e=jar),
-[Redisson node 3.15.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.15.1&e=jar)  
+[Redisson 3.15.2](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.15.2&e=jar),
+[Redisson node 3.15.2](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.15.2&e=jar)  
 
 ## FAQs
 

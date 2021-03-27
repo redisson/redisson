@@ -61,7 +61,7 @@ public abstract class BaseReactiveTest {
 
     public static RedissonReactiveClient createInstance() {
         Config config = BaseTest.createConfig();
-        return Redisson.createReactive(config);
+        return Redisson.create(config).reactive();
     }
 
 }

@@ -15,19 +15,20 @@
  */
 package org.redisson;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-
 import org.redisson.api.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
+import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.reactive.*;
 import org.redisson.remote.ResponseEntry;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Main infrastructure class allows to get access
@@ -40,22 +41,37 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     protected final WriteBehindService writeBehindService;
     protected final EvictionScheduler evictionScheduler;
-    protected final CommandReactiveService commandExecutor;
+    protected final CommandReactiveExecutor commandExecutor;
     protected final ConnectionManager connectionManager;
-    protected final Config config;
-    
-    protected final ConcurrentMap<String, ResponseEntry> responses = new ConcurrentHashMap<>();
+    protected final ConcurrentMap<String, ResponseEntry> responses;
 
     protected RedissonReactive(Config config) {
-        this.config = config;
         Config configCopy = new Config(config);
 
         connectionManager = ConfigSupport.createConnectionManager(configCopy);
-        commandExecutor = new CommandReactiveService(connectionManager);
+        RedissonObjectBuilder objectBuilder = null;
+        if (config.isReferenceEnabled()) {
+            objectBuilder = new RedissonObjectBuilder(this);
+        }
+        commandExecutor = new CommandReactiveService(connectionManager, objectBuilder);
         evictionScheduler = new EvictionScheduler(commandExecutor);
         writeBehindService = new WriteBehindService(commandExecutor);
+        responses = new ConcurrentHashMap<>();
     }
-    
+
+    protected RedissonReactive(ConnectionManager connectionManager, EvictionScheduler evictionScheduler,
+                               WriteBehindService writeBehindService, ConcurrentMap<String, ResponseEntry> responses) {
+        this.connectionManager = connectionManager;
+        RedissonObjectBuilder objectBuilder = null;
+        if (connectionManager.getCfg().isReferenceEnabled()) {
+            objectBuilder = new RedissonObjectBuilder(this);
+        }
+        commandExecutor = new CommandReactiveService(connectionManager, objectBuilder);
+        this.evictionScheduler = evictionScheduler;
+        this.writeBehindService = writeBehindService;
+        this.responses = responses;
+    }
+
     public EvictionScheduler getEvictionScheduler() {
         return evictionScheduler;
     }
@@ -64,7 +80,7 @@ public class RedissonReactive implements RedissonReactiveClient {
         return connectionManager;
     }
     
-    public CommandReactiveService getCommandExecutor() {
+    public CommandReactiveExecutor getCommandExecutor() {
         return commandExecutor;
     }
     
@@ -465,11 +481,7 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public RBatchReactive createBatch(BatchOptions options) {
-        RedissonBatchReactive batch = new RedissonBatchReactive(evictionScheduler, connectionManager, commandExecutor, options);
-        if (config.isReferenceEnabled()) {
-            batch.enableRedissonReferenceSupport(this);
-        }
-        return batch;
+        return new RedissonBatchReactive(evictionScheduler, connectionManager, commandExecutor, options);
     }
 
     @Override
@@ -484,12 +496,12 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public Config getConfig() {
-        return config;
+        return connectionManager.getCfg();
     }
 
     @Override
     public NodesGroup<Node> getNodesGroup() {
-        return new RedisNodes<Node>(connectionManager);
+        return new RedisNodes<Node>(connectionManager, commandExecutor);
     }
 
     @Override
@@ -497,7 +509,7 @@ public class RedissonReactive implements RedissonReactiveClient {
         if (!connectionManager.isClusterMode()) {
             throw new IllegalStateException("Redisson not in cluster mode!");
         }
-        return new RedisNodes<ClusterNode>(connectionManager);
+        return new RedisNodes<ClusterNode>(connectionManager, commandExecutor);
     }
 
     @Override
@@ -513,10 +525,6 @@ public class RedissonReactive implements RedissonReactiveClient {
     @Override
     public boolean isShuttingDown() {
         return connectionManager.isShuttingDown();
-    }
-
-    protected void enableRedissonReferenceSupport() {
-        this.commandExecutor.enableRedissonReferenceSupport(this);
     }
 
     @Override
@@ -571,7 +579,7 @@ public class RedissonReactive implements RedissonReactiveClient {
     public <V> RTransferQueueReactive<V> getTransferQueue(String name) {
         String remoteName = RedissonObject.suffixName(name, "remoteService");
         RRemoteService service = getRemoteService(remoteName);
-        RedissonTransferQueue<V> queue = new RedissonTransferQueue<V>(connectionManager.getCommandExecutor(), name, service);
+        RedissonTransferQueue<V> queue = new RedissonTransferQueue<V>(commandExecutor, name, service);
         return ReactiveProxyBuilder.create(commandExecutor, queue,
                 new RedissonTransferQueueReactive<V>(queue), RTransferQueueReactive.class);
     }
@@ -580,7 +588,7 @@ public class RedissonReactive implements RedissonReactiveClient {
     public <V> RTransferQueueReactive<V> getTransferQueue(String name, Codec codec) {
         String remoteName = RedissonObject.suffixName(name, "remoteService");
         RRemoteService service = getRemoteService(remoteName);
-        RedissonTransferQueue<V> queue = new RedissonTransferQueue<V>(codec, connectionManager.getCommandExecutor(), name, service);
+        RedissonTransferQueue<V> queue = new RedissonTransferQueue<V>(codec, commandExecutor, name, service);
         return ReactiveProxyBuilder.create(commandExecutor, queue,
                 new RedissonTransferQueueReactive<V>(queue), RTransferQueueReactive.class);
     }

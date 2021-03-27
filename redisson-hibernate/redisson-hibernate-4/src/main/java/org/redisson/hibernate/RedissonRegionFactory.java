@@ -15,20 +15,8 @@
  */
 package org.redisson.hibernate;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Arrays;
-import java.util.Properties;
-
 import org.hibernate.cache.CacheException;
-import org.hibernate.cache.spi.CacheDataDescription;
-import org.hibernate.cache.spi.CollectionRegion;
-import org.hibernate.cache.spi.EntityRegion;
-import org.hibernate.cache.spi.NaturalIdRegion;
-import org.hibernate.cache.spi.QueryResultsRegion;
-import org.hibernate.cache.spi.RegionFactory;
-import org.hibernate.cache.spi.TimestampsRegion;
+import org.hibernate.cache.spi.*;
 import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cfg.Settings;
 import org.hibernate.internal.util.config.ConfigurationHelper;
@@ -39,11 +27,14 @@ import org.redisson.api.RScript;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.config.Config;
-import org.redisson.hibernate.region.RedissonCollectionRegion;
-import org.redisson.hibernate.region.RedissonEntityRegion;
-import org.redisson.hibernate.region.RedissonNaturalIdRegion;
-import org.redisson.hibernate.region.RedissonQueryRegion;
-import org.redisson.hibernate.region.RedissonTimestampsRegion;
+import org.redisson.hibernate.region.*;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Collections;
+import java.util.Properties;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Hibernate Cache region factory based on Redisson. 
@@ -80,13 +71,19 @@ public class RedissonRegionFactory implements RegionFactory {
 
     public static final String FALLBACK = CONFIG_PREFIX + "fallback";
 
+    private static AtomicLong currentTime = new AtomicLong();
+
     protected RedissonClient redisson;
     private Settings settings;
-    
+    private boolean fallback;
+
     @Override
     public void start(Settings settings, Properties properties) throws CacheException {
         this.redisson = createRedissonClient(properties);
         this.settings = settings;
+
+        String fallbackValue = (String) properties.getOrDefault(FALLBACK, "false");
+        fallback = Boolean.valueOf(fallbackValue);
     }
 
     protected RedissonClient createRedissonClient(Properties properties) {
@@ -159,16 +156,35 @@ public class RedissonRegionFactory implements RegionFactory {
     @Override
     public long nextTimestamp() {
         long time = System.currentTimeMillis() << 12;
-        return redisson.getScript(LongCodec.INSTANCE).eval(RScript.Mode.READ_WRITE,
-                  "local currentTime = redis.call('get', KEYS[1]);"
-                + "if currentTime == false then "
-                    + "redis.call('set', KEYS[1], ARGV[1]); "
-                    + "return ARGV[1]; "
-                + "end;"
-                + "local nextValue = math.max(tonumber(ARGV[1]), tonumber(currentTime) + 1); "
-                + "redis.call('set', KEYS[1], nextValue); "
-                + "return nextValue;",
-                RScript.ReturnType.INTEGER, Arrays.<Object>asList("redisson-hibernate-timestamp"), time);
+        try {
+            return redisson.getScript(LongCodec.INSTANCE).eval(RScript.Mode.READ_WRITE,
+                      "local currentTime = redis.call('get', KEYS[1]);"
+                            + "if currentTime == false then "
+                                + "redis.call('set', KEYS[1], ARGV[1]); "
+                                + "return ARGV[1]; "
+                            + "end;"
+                            + "local nextValue = math.max(tonumber(ARGV[1]), tonumber(currentTime) + 1); "
+                            + "redis.call('set', KEYS[1], nextValue); "
+                            + "return nextValue;",
+                            RScript.ReturnType.INTEGER, Collections.singletonList("redisson-hibernate-timestamp"), time);
+        } catch (Exception e) {
+            if (fallback) {
+                while (true) {
+                    if (currentTime.get() == 0) {
+                        if (currentTime.compareAndSet(0, time)) {
+                            return time;
+                        }
+                    } else {
+                        long currValue = currentTime.get();
+                        long nextTime = Math.max(time, currValue + 1);
+                        if (currentTime.compareAndSet(currValue, nextTime)) {
+                            return nextTime;
+                        }
+                    }
+                }
+            }
+            throw e;
+        }
     }
 
     @Override

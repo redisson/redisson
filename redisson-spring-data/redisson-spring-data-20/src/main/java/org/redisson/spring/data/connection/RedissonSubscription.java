@@ -20,6 +20,7 @@ import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.ChannelName;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.protocol.pubsub.PubSubType;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.pubsub.PubSubConnectionEntry;
 import org.redisson.pubsub.PublishSubscribeService;
@@ -39,12 +40,12 @@ import java.util.List;
  */
 public class RedissonSubscription extends AbstractSubscription {
 
-    private final ConnectionManager connectionManager;
+    private final CommandAsyncExecutor commandExecutor;
     private final PublishSubscribeService subscribeService;
     
-    public RedissonSubscription(ConnectionManager connectionManager, PublishSubscribeService subscribeService, MessageListener listener) {
+    public RedissonSubscription(CommandAsyncExecutor commandExecutor, PublishSubscribeService subscribeService, MessageListener listener) {
         super(listener, null, null);
-        this.connectionManager = connectionManager;
+        this.commandExecutor = commandExecutor;
         this.subscribeService = subscribeService;
     }
 
@@ -67,7 +68,7 @@ public class RedissonSubscription extends AbstractSubscription {
             list.add(f);
         }
         for (RFuture<?> future : list) {
-            connectionManager.getCommandExecutor().syncSubscription(future);
+            commandExecutor.syncSubscription(future);
         }
     }
 
@@ -97,7 +98,7 @@ public class RedissonSubscription extends AbstractSubscription {
             list.add(f);
         }
         for (RFuture<?> future : list) {
-            connectionManager.getCommandExecutor().syncSubscription(future);
+            commandExecutor.syncSubscription(future);
         }
     }
 

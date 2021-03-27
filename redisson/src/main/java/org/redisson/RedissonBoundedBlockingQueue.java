@@ -15,13 +15,6 @@
  */
 package org.redisson;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
-
 import org.redisson.api.RBoundedBlockingQueue;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
@@ -29,10 +22,17 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.command.CommandExecutor;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.ListDrainToDecoder;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /**
  * <p>Distributed and concurrent implementation of bounded {@link java.util.concurrent.BlockingQueue}.
@@ -41,14 +41,14 @@ import org.redisson.misc.RedissonPromise;
  */
 public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements RBoundedBlockingQueue<V> {
 
-    private final CommandExecutor commandExecutor;
+    private final CommandAsyncExecutor commandExecutor;
     
-    protected RedissonBoundedBlockingQueue(CommandExecutor commandExecutor, String name, RedissonClient redisson) {
+    protected RedissonBoundedBlockingQueue(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name, redisson);
         this.commandExecutor = commandExecutor;
     }
 
-    protected RedissonBoundedBlockingQueue(Codec codec, CommandExecutor commandExecutor, String name, RedissonClient redisson) {
+    protected RedissonBoundedBlockingQueue(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(codec, commandExecutor, name, redisson);
         this.commandExecutor = commandExecutor;
     }
@@ -340,14 +340,14 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
     @Override
     public void clear() {
         String channelName = RedissonSemaphore.getChannelName(getSemaphoreName());
-        commandExecutor.evalWrite(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+        get(commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
               "local len = redis.call('llen', KEYS[1]); " +
               "if len > 0 then "
               + "redis.call('del', KEYS[1]); "
               + "local value = redis.call('incrby', KEYS[2], len); " +
                 "redis.call('publish', KEYS[3], value); "
             + "end; ", 
-              Arrays.<Object>asList(getName(), getSemaphoreName(), channelName));
+              Arrays.<Object>asList(getName(), getSemaphoreName(), channelName)));
 
     }
     

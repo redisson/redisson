@@ -22,9 +22,6 @@ import io.netty.util.ReferenceCountUtil;
 import org.redisson.RedissonReference;
 import org.redisson.SlotCallback;
 import org.redisson.api.RFuture;
-import org.redisson.api.RedissonClient;
-import org.redisson.api.RedissonReactiveClient;
-import org.redisson.api.RedissonRxClient;
 import org.redisson.cache.LRUCacheMap;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisException;
@@ -34,8 +31,6 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.codec.ReferenceCodecProvider;
-import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
@@ -65,40 +60,18 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     static final Logger log = LoggerFactory.getLogger(CommandAsyncService.class);
 
     final ConnectionManager connectionManager;
-    protected RedissonObjectBuilder objectBuilder;
+    final RedissonObjectBuilder objectBuilder;
+    final RedissonObjectBuilder.ReferenceType referenceType;
 
-    public CommandAsyncService(ConnectionManager connectionManager) {
+    public CommandAsyncService(ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder, RedissonObjectBuilder.ReferenceType referenceType) {
         this.connectionManager = connectionManager;
+        this.objectBuilder = objectBuilder;
+        this.referenceType = referenceType;
     }
 
     @Override
     public ConnectionManager getConnectionManager() {
         return connectionManager;
-    }
-
-    @Override
-    public CommandAsyncExecutor enableRedissonReferenceSupport(RedissonClient redisson) {
-        enableRedissonReferenceSupport(redisson.getConfig(), redisson, null, null);
-        return this;
-    }
-
-    @Override
-    public CommandAsyncExecutor enableRedissonReferenceSupport(RedissonReactiveClient redissonReactive) {
-        enableRedissonReferenceSupport(redissonReactive.getConfig(), null, redissonReactive, null);
-        return this;
-    }
-    
-    @Override
-    public CommandAsyncExecutor enableRedissonReferenceSupport(RedissonRxClient redissonRx) {
-        enableRedissonReferenceSupport(redissonRx.getConfig(), null, null, redissonRx);
-        return this;
-    }
-
-    private void enableRedissonReferenceSupport(Config config, RedissonClient redisson, RedissonReactiveClient redissonReactive, RedissonRxClient redissonRx) {
-        Codec codec = config.getCodec();
-        objectBuilder = new RedissonObjectBuilder(config, redisson, redissonReactive, redissonRx);
-        ReferenceCodecProvider codecProvider = objectBuilder.getReferenceCodecProvider();
-        codecProvider.registerCodec((Class<Codec>) codec.getClass(), codec);
     }
 
     private boolean isRedissonReferenceSupportEnabled() {
@@ -528,7 +501,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             args.addAll(Arrays.asList(params));
 
             RedisExecutor<T, R> executor = new RedisExecutor<>(readOnlyMode, nodeSource, codec, cmd,
-                                                        args.toArray(), promise, false, connectionManager, objectBuilder);
+                                                        args.toArray(), promise, false, connectionManager, objectBuilder, referenceType);
             executor.execute();
 
             promise.onComplete((res, e) -> {
@@ -601,7 +574,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     public <V, R> void async(boolean readOnlyMode, NodeSource source, Codec codec,
             RedisCommand<V> command, Object[] params, RPromise<R> mainPromise, 
             boolean ignoreRedirect) {
-        RedisExecutor<V, R> executor = new RedisExecutor<>(readOnlyMode, source, codec, command, params, mainPromise, ignoreRedirect, connectionManager, objectBuilder);
+        RedisExecutor<V, R> executor = new RedisExecutor<>(readOnlyMode, source, codec, command, params, mainPromise,
+                                                    ignoreRedirect, connectionManager, objectBuilder, referenceType);
         executor.execute();
     }
 
@@ -664,7 +638,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             if (this instanceof CommandBatchService) {
                 executorService = (CommandBatchService) this;
             } else {
-                executorService = new CommandBatchService(connectionManager);
+                executorService = new CommandBatchService(this);
             }
 
             for (String key : entry.getValue()) {

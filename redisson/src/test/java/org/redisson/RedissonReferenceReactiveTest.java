@@ -100,18 +100,14 @@ public class RedissonReferenceReactiveTest extends BaseReactiveTest {
         config.useSingleServer()
                 .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
 
-        RedissonReactiveClient reactive = Redisson.createReactive(config);
+        RedissonReactiveClient reactive = Redisson.create(config).reactive();
         RBucketReactive<Object> b1 = reactive.getBucket("b1");
         sync(b1.set(new MyObject()));
         RSetReactive<Object> s1 = reactive.getSet("s1");
         assertTrue(sync(s1.add(b1)));
         assertTrue(codec == b1.getCodec());
 
-        Config config1 = new Config();
-        config1.setCodec(codec);
-        config1.useSingleServer()
-                .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
-        RedissonReactiveClient reactive1 = Redisson.createReactive(config1);
+        RedissonReactiveClient reactive1 = Redisson.create(config).reactive();
 
         RSetReactive<RBucketReactive> s2 = reactive1.getSet("s1");
         RBucketReactive<MyObject> b2 = sync(s2.iterator(1));

@@ -20,6 +20,7 @@ import io.netty.util.NetUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
+import io.netty.util.internal.StringUtil;
 import org.redisson.api.NatMapper;
 import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
@@ -68,6 +69,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     private final String sentinelPassword;
     private boolean usePassword = false;
     private String scheme;
+    private boolean checkSlaveStatusWithSyncing;
 
     public SentinelConnectionManager(SentinelServersConfig cfg, Config config, UUID id) {
         super(config, id);
@@ -81,6 +83,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
         this.config = create(cfg);
         this.sentinelPassword = cfg.getSentinelPassword();
+        this.checkSlaveStatusWithSyncing = cfg.isCheckSlaveStatusWithSyncing();
         initTimer(this.config);
 
         this.natMapper = cfg.getNatMapper();
@@ -134,6 +137,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     String ip = map.get("ip");
                     String port = map.get("port");
                     String flags = map.getOrDefault("flags", "");
+                    String masterLinkStatus = map.getOrDefault("master-link-status", "");
 
                     RedisURI host = toURI(ip, port);
 
@@ -141,7 +145,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     log.debug("slave {} state: {}", host, map);
                     log.info("slave: {} added", host);
 
-                    if (flags.contains("s_down") || flags.contains("disconnected")) {
+                    if (isSlaveDown(flags, masterLinkStatus)) {
                         disconnectedSlaves.add(host);
                         log.warn("slave: {} is down", host);
                     }
@@ -406,11 +410,12 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     String ip = map.get("ip");
                     String port = map.get("port");
                     String flags = map.getOrDefault("flags", "");
+                    String masterLinkStatus = map.getOrDefault("master-link-status", "");
                     String masterHost = map.get("master-host");
                     String masterPort = map.get("master-port");
 
                     RedisURI slaveAddr = toURI(ip, port);
-                    if (flags.contains("s_down") || flags.contains("disconnected")) {
+                    if (isSlaveDown(flags, masterLinkStatus)) {
                         slaveDown(slaveAddr);
                         continue;
                     }
@@ -451,7 +456,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             
             Set<RedisURI> newUris = list.stream().filter(m -> {
                 String flags = m.getOrDefault("flags", "");
-                if (!m.isEmpty() && !flags.contains("disconnected") && !flags.contains("s_down")) {
+                String masterLinkStatus = m.getOrDefault("master-link-status", "");
+                if (!m.isEmpty() && !isSlaveDown(flags, masterLinkStatus)) {
                     return true;
                 }
                 return false;
@@ -589,6 +595,14 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 log.warn("slave: {} is down", uri);
             }
         }
+    }
+
+    private boolean isSlaveDown(String flags, String masterLinkStatus) {
+        boolean baseStatus = flags.contains("s_down") || flags.contains("disconnected");
+        if (this.checkSlaveStatusWithSyncing && !StringUtil.isNullOrEmpty(masterLinkStatus)) {
+            return baseStatus || masterLinkStatus.contains("err");
+        }
+        return baseStatus;
     }
 
     private boolean isUseSameMaster(RedisURI slaveAddr, String slaveMasterHost, String slaveMasterPort) {

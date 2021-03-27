@@ -19,10 +19,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.*;
-import org.redisson.api.stream.StreamAddArgs;
-import org.redisson.api.stream.StreamAddArgsSource;
-import org.redisson.api.stream.StreamAddParams;
-import org.redisson.api.stream.TrimStrategy;
+import org.redisson.api.stream.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
@@ -95,23 +92,13 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
 
     @Override
-    public RFuture<PendingResult> listPendingAsync(String groupName) {
-        return getPendingInfoAsync(groupName);
-    }
-
-    @Override
-    public PendingResult listPending(String groupName) {
-        return getPendingInfo(groupName);
-    }
-
-    @Override
     public RFuture<PendingResult> getPendingInfoAsync(String groupName) {
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.XPENDING, getName(), groupName);
     }
 
     @Override
     public PendingResult getPendingInfo(String groupName) {
-        return get(listPendingAsync(groupName));
+        return get(getPendingInfoAsync(groupName));
     }
     
     @Override
@@ -200,6 +187,97 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     @Override
     public FastAutoClaimResult fastAutoClaim(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId startId, int count) {
         return get(fastAutoClaimAsync(groupName, consumerName, idleTime, idleTimeUnit, startId, count));
+    }
+
+    @Override
+    public Map<String, Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, StreamMultiReadGroupArgs args) {
+        return get(readGroupAsync(groupName, consumerName, args));
+    }
+
+    @Override
+    public Map<StreamMessageId, Map<K, V>> readGroup(String groupName, String consumerName, StreamReadGroupArgs args) {
+        return get(readGroupAsync(groupName, consumerName, args));
+    }
+
+    @Override
+    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName, StreamMultiReadGroupArgs args) {
+        StreamReadGroupParams rp = ((StreamReadGroupSource) args).getParams();
+
+        List<Object> params = new ArrayList<>();
+        params.add("GROUP");
+        params.add(groupName);
+        params.add(consumerName);
+
+        if (rp.getCount() > 0) {
+            params.add("COUNT");
+            params.add(rp.getCount());
+        }
+
+        if (rp.getTimeout() != null) {
+            params.add("BLOCK");
+            params.add(toSeconds(rp.getTimeout().getSeconds(), TimeUnit.SECONDS)*1000);
+        }
+
+        if (rp.isNoAck()) {
+            params.add("NOACK");
+        }
+
+        params.add("STREAMS");
+        params.add(getName());
+        params.addAll(rp.getOffsets().keySet());
+
+        if (rp.getId1() == null) {
+            params.add(">");
+        } else {
+            params.add(rp.getId1().toString());
+        }
+
+        for (StreamMessageId nextId : rp.getOffsets().values()) {
+            params.add(nextId.toString());
+        }
+
+        if (rp.getTimeout() != null) {
+            return commandExecutor.writeAsync(getName(), codec, RedisCommands.XREADGROUP_BLOCKING, params.toArray());
+        }
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.XREADGROUP, params.toArray());
+    }
+
+    @Override
+    public RFuture<Map<StreamMessageId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, StreamReadGroupArgs args) {
+        StreamReadGroupParams rp = ((StreamReadGroupSource) args).getParams();
+
+        List<Object> params = new ArrayList<>();
+        params.add("GROUP");
+        params.add(groupName);
+        params.add(consumerName);
+
+        if (rp.getCount() > 0) {
+            params.add("COUNT");
+            params.add(rp.getCount());
+        }
+
+        if (rp.getTimeout() != null) {
+            params.add("BLOCK");
+            params.add(toSeconds(rp.getTimeout().getSeconds(), TimeUnit.SECONDS)*1000);
+        }
+
+        if (rp.isNoAck()) {
+            params.add("NOACK");
+        }
+
+        params.add("STREAMS");
+        params.add(getName());
+
+        if (rp.getId1() == null) {
+            params.add(">");
+        } else {
+            params.add(rp.getId1().toString());
+        }
+
+        if (rp.getTimeout() != null) {
+            return commandExecutor.writeAsync(getName(), codec, RedisCommands.XREADGROUP_BLOCKING_SINGLE, params.toArray());
+        }
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.XREADGROUP_SINGLE, params.toArray());
     }
 
     @Override
@@ -569,7 +647,72 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     public RFuture<Long> sizeAsync() {
         return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XLEN, getName());
     }
-    
+
+    @Override
+    public Map<String, Map<StreamMessageId, Map<K, V>>> read(StreamMultiReadArgs args) {
+        return get(readAsync(args));
+    }
+
+    @Override
+    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(StreamMultiReadArgs args) {
+        StreamReadParams rp = ((StreamReadSource) args).getParams();
+
+        List<Object> params = new ArrayList<>();
+        if (rp.getCount() > 0) {
+            params.add("COUNT");
+            params.add(rp.getCount());
+        }
+
+        if (rp.getTimeout() != null) {
+            params.add("BLOCK");
+            params.add(toSeconds(rp.getTimeout().getSeconds(), TimeUnit.SECONDS)*1000);
+        }
+
+        params.add("STREAMS");
+        params.add(getName());
+        params.addAll(rp.getOffsets().keySet());
+
+        params.add(rp.getId1());
+        for (StreamMessageId nextId : rp.getOffsets().values()) {
+            params.add(nextId.toString());
+        }
+
+        if (rp.getTimeout() != null) {
+            return commandExecutor.readAsync(getName(), codec, RedisCommands.XREAD_BLOCKING, params.toArray());
+        }
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.XREAD, params.toArray());
+    }
+
+    @Override
+    public Map<StreamMessageId, Map<K, V>> read(StreamReadArgs args) {
+        return get(readAsync(args));
+    }
+
+    @Override
+    public RFuture<Map<StreamMessageId, Map<K, V>>> readAsync(StreamReadArgs args) {
+        StreamReadParams rp = ((StreamReadSource) args).getParams();
+
+        List<Object> params = new ArrayList<Object>();
+        if (rp.getCount() > 0) {
+            params.add("COUNT");
+            params.add(rp.getCount());
+        }
+
+        if (rp.getTimeout() != null) {
+            params.add("BLOCK");
+            params.add(toSeconds(rp.getTimeout().getSeconds(), TimeUnit.SECONDS)*1000);
+        }
+
+        params.add("STREAMS");
+        params.add(getName());
+        params.add(rp.getId1());
+
+        if (rp.getTimeout() != null) {
+            return commandExecutor.readAsync(getName(), codec, RedisCommands.XREAD_BLOCKING_SINGLE, params.toArray());
+        }
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.XREAD_SINGLE, params.toArray());
+    }
+
     @Override
     public Map<String, Map<StreamMessageId, Map<K, V>>> read(StreamMessageId id, Map<String, StreamMessageId> keyToId) {
         return read(0, id, keyToId);
