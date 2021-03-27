@@ -180,5 +180,7 @@ public interface RLockReactive {
      *          -1 if the lock exists but has no associated expire.
      */
     Mono<Long> remainTimeToLive();
+
+    Mono<LockInfo> getLockInfo();
     
 }

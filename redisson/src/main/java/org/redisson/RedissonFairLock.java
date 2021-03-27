@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
+import org.redisson.api.LockInfo;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.client.codec.LongCodec;
@@ -338,5 +339,4 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                 Arrays.<Object>asList(getName(), threadsQueueName, timeoutSetName, getChannelName()), 
                 LockPubSub.UNLOCK_MESSAGE, System.currentTimeMillis());
     }
-
 }
