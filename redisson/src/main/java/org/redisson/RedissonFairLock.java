@@ -15,12 +15,6 @@
  */
 package org.redisson;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-
-import org.redisson.api.LockInfo;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.client.codec.LongCodec;
@@ -28,6 +22,11 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.pubsub.LockPubSub;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
 
 /**
  * Distributed implementation of {@link java.util.concurrent.locks.Lock}

@@ -371,7 +371,7 @@ public class RedissonMultiLock implements RLock {
 
         int failedLocksLimit = failedLocksLimit();
         List<RLock> acquiredLocks = new ArrayList<>(locks.size());
-        for (ListIterator<RLock> iterator = locks.listIterator(); iterator.hasNext(); ) {
+        for (ListIterator<RLock> iterator = locks.listIterator(); iterator.hasNext();) {
             RLock lock = iterator.next();
             boolean lockAcquired;
             try {

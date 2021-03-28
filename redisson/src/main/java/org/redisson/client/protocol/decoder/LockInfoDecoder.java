@@ -13,7 +13,7 @@ public class LockInfoDecoder implements MultiDecoder<LockInfo> {
 
     private static class FreeLockInfo extends LockInfo {
 
-        public FreeLockInfo() {
+        FreeLockInfo() {
             super(null, null, null);
         }
 
