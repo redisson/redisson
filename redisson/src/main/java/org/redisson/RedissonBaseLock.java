@@ -202,10 +202,6 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
                 internalLockLeaseTime, getLockName(threadId));
     }
 
-//    public RFuture<Long> getLockThreadId(){
-//        return evalReadAsync(getName(), LongCodec.INSTANCE)
-//    }
-
     protected void cancelExpirationRenewal(Long threadId) {
         ExpirationEntry task = EXPIRATION_RENEWAL_MAP.get(getEntryName());
         if (task == null) {
