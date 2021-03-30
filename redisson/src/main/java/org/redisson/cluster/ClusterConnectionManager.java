@@ -746,16 +746,18 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
     
     private Collection<ClusterPartition> parsePartitions(List<ClusterNodeInfo> nodes) {
-        Map<String, ClusterPartition> partitions = new HashMap<String, ClusterPartition>();
+        Map<String, ClusterPartition> partitions = new HashMap<>();
         for (ClusterNodeInfo clusterNodeInfo : nodes) {
             if (clusterNodeInfo.containsFlag(Flag.NOADDR) || clusterNodeInfo.containsFlag(Flag.HANDSHAKE)) {
                 // skip it
                 continue;
             }
 
-            String masterId = clusterNodeInfo.getNodeId();
+            String masterId;
             if (clusterNodeInfo.containsFlag(Flag.SLAVE)) {
                 masterId = clusterNodeInfo.getSlaveOf();
+            } else {
+                masterId = clusterNodeInfo.getNodeId();
             }
 
             if (masterId == null) {
@@ -765,8 +767,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
             RedisURI address = applyNatMap(clusterNodeInfo.getAddress());
             if (clusterNodeInfo.containsFlag(Flag.SLAVE)) {
-                ClusterPartition masterPartition = getPartition(partitions, masterId);
-                ClusterPartition slavePartition = getPartition(partitions, clusterNodeInfo.getNodeId());
+                ClusterPartition masterPartition = partitions.computeIfAbsent(masterId, k -> new ClusterPartition(masterId));
+                ClusterPartition slavePartition = partitions.computeIfAbsent(clusterNodeInfo.getNodeId(),
+                                                                                k -> new ClusterPartition(clusterNodeInfo.getNodeId()));
                 slavePartition.setType(Type.SLAVE);
                 slavePartition.setParent(masterPartition);
                 
@@ -775,7 +778,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     masterPartition.addFailedSlaveAddress(address);
                 }
             } else if (clusterNodeInfo.containsFlag(Flag.MASTER)) {
-                ClusterPartition masterPartition = getPartition(partitions, masterId);
+                ClusterPartition masterPartition = partitions.computeIfAbsent(masterId, k -> new ClusterPartition(masterId));
                 masterPartition.addSlotRanges(clusterNodeInfo.getSlotRanges());
                 masterPartition.setMasterAddress(address);
                 masterPartition.setType(Type.MASTER);
@@ -809,15 +812,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             }
             iter.remove();
         }
-    }
-
-    private ClusterPartition getPartition(Map<String, ClusterPartition> partitions, String id) {
-        ClusterPartition partition = partitions.get(id);
-        if (partition == null) {
-            partition = new ClusterPartition(id);
-            partitions.put(id, partition);
-        }
-        return partition;
     }
 
     @Override
