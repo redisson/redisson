@@ -2,16 +2,17 @@ package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.awaitility.Awaitility;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.redisson.api.RBlockingDequeReactive;
-import org.redisson.api.RBlockingDequeRx;
 
 public class RedissonBlockingDequeReactiveTest extends BaseReactiveTest {
 
@@ -50,10 +51,10 @@ public class RedissonBlockingDequeReactiveTest extends BaseReactiveTest {
     @Test
     public void testPollLastAndOfferFirstTo() throws InterruptedException {
         RBlockingDequeReactive<String> blockingDeque = redisson.getBlockingDeque("blocking_deque");
-        long start = System.currentTimeMillis();
-        String redisTask = sync(blockingDeque.pollLastAndOfferFirstTo("deque", 1, TimeUnit.SECONDS));
-        assertThat(System.currentTimeMillis() - start).isBetween(950L, 1150L);
-        assertThat(redisTask).isNull();
+        Awaitility.await().between(Duration.ofMillis(950), Duration.ofMillis(1150)).untilAsserted(() -> {
+            String redisTask = sync(blockingDeque.pollLastAndOfferFirstTo("deque", 1, TimeUnit.SECONDS));
+            assertThat(redisTask).isNull();
+        });
     }
     
     @Test(timeout = 3000)
@@ -77,11 +78,10 @@ public class RedissonBlockingDequeReactiveTest extends BaseReactiveTest {
             }
         }, 3, TimeUnit.SECONDS);
 
-        long s = System.currentTimeMillis();
-        int l = sync(queue1.pollLastFromAny(4, TimeUnit.SECONDS, "deque:pollany1", "deque:pollany2"));
-
-        assertThat(l).isEqualTo(2);
-        assertThat(System.currentTimeMillis() - s).isGreaterThan(2000);
+        Awaitility.await().atLeast(Duration.ofSeconds(2)).untilAsserted(() -> {
+            int l = sync(queue1.pollLastFromAny(4, TimeUnit.SECONDS, "deque:pollany1", "deque:pollany2"));
+            assertThat(l).isEqualTo(2);
+        });
     }
 
     @Test
@@ -150,9 +150,10 @@ public class RedissonBlockingDequeReactiveTest extends BaseReactiveTest {
             sync(deque1.putLast(4));
         }, 10, TimeUnit.SECONDS);
 
-        long s = System.currentTimeMillis();
-        assertThat(sync(deque.takeFirst())).isEqualTo(1);
-        assertThat(System.currentTimeMillis() - s).isGreaterThan(9000);
+        Awaitility.await().between(Duration.ofSeconds(9), Duration.ofSeconds(11)).untilAsserted(() -> {
+            assertThat(sync(deque.takeFirst())).isEqualTo(1);
+        });
+
         Thread.sleep(50);
         assertThat(sync(deque.takeFirst())).isEqualTo(2);
         assertThat(sync(deque.takeFirst())).isEqualTo(3);
@@ -170,9 +171,10 @@ public class RedissonBlockingDequeReactiveTest extends BaseReactiveTest {
             sync(deque1.putLast(4));
         }, 10, TimeUnit.SECONDS);
 
-        long s = System.currentTimeMillis();
-        assertThat(sync(deque.takeLast())).isEqualTo(1);
-        assertThat(System.currentTimeMillis() - s).isGreaterThan(9000);
+        Awaitility.await().between(Duration.ofSeconds(9), Duration.ofSeconds(11)).untilAsserted(() -> {
+            assertThat(sync(deque.takeLast())).isEqualTo(1);
+        });
+
         Thread.sleep(50);
         assertThat(sync(deque.takeLast())).isEqualTo(4);
         assertThat(sync(deque.takeLast())).isEqualTo(3);
@@ -190,9 +192,9 @@ public class RedissonBlockingDequeReactiveTest extends BaseReactiveTest {
         assertThat(sync(queue1.pollFirst(2, TimeUnit.SECONDS))).isEqualTo(2);
         assertThat(sync(queue1.pollFirst(2, TimeUnit.SECONDS))).isEqualTo(3);
 
-        long s = System.currentTimeMillis();
-        assertThat(sync(queue1.pollFirst(5, TimeUnit.SECONDS))).isNull();
-        assertThat(System.currentTimeMillis() - s).isGreaterThan(5000);
+        Awaitility.await().between(Duration.ofSeconds(5), Duration.ofSeconds(7)).untilAsserted(() -> {
+            assertThat(sync(queue1.pollFirst(5, TimeUnit.SECONDS))).isNull();
+        });
     }
 
     @Test
@@ -206,9 +208,9 @@ public class RedissonBlockingDequeReactiveTest extends BaseReactiveTest {
         assertThat(sync(queue1.pollLast(2, TimeUnit.SECONDS))).isEqualTo(2);
         assertThat(sync(queue1.pollLast(2, TimeUnit.SECONDS))).isEqualTo(1);
 
-        long s = System.currentTimeMillis();
-        assertThat(sync(queue1.pollLast(5, TimeUnit.SECONDS))).isNull();
-        assertThat(System.currentTimeMillis() - s).isGreaterThan(5000);
+        Awaitility.await().between(Duration.ofSeconds(5), Duration.ofSeconds(7)).untilAsserted(() -> {
+            assertThat(sync(queue1.pollLast(5, TimeUnit.SECONDS))).isNull();
+        });
     }
 
 }
