@@ -205,7 +205,7 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
                      + "end; "
 
                      + "if released > 0 then "
-                          + "redis.call('zrem', permitsName, unpack(expiredValues)); "
+                          + "redis.call('zremrangebyscore', permitsName, 0, tonumber(ARGV[2]) - interval); "
                           + "currentValue = tonumber(currentValue) + released; "
                           + "redis.call('set', valueName, currentValue);"
                      + "end;"
@@ -320,7 +320,7 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
                      + "end; "
 
                      + "if released > 0 then "
-                          + "redis.call('zrem', permitsName, unpack(expiredValues)); "
+                          + "redis.call('zremrangebyscore', permitsName, 0, tonumber(ARGV[1]) - interval); "
                           + "currentValue = tonumber(currentValue) + released; "
                           + "redis.call('set', valueName, currentValue);"
                      + "end;"
