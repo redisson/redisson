@@ -213,7 +213,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
     
     protected void closeNodeConnection(RedisConnection conn) {
-        if (nodeConnections.values().remove(conn)) {
+        if (nodeConnections.values().removeAll(Arrays.asList(conn))) {
             conn.closeAsync();
         }
     }
@@ -221,6 +221,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected final void disconnectNode(RedisURI addr) {
         RedisConnection conn = nodeConnections.remove(addr);
         if (conn != null) {
+            nodeConnections.values().removeAll(Arrays.asList(conn));
             conn.closeAsync();
         }
     }
@@ -233,8 +234,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         RedisConnection conn = nodeConnections.get(addr);
         if (conn != null) {
             if (!conn.isActive()) {
-                nodeConnections.remove(addr);
-                conn.closeAsync();
+                closeNodeConnection(conn);
             } else {
                 return RedissonPromise.newSucceededFuture(conn);
             }
@@ -251,13 +251,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
             if (connection.isActive()) {
                 boolean isHostname = NetUtil.createByteArrayFromIpAddressString(addr.getHost()) == null;
-                RedisURI address = addr;
                 if (isHostname) {
-                    address = new RedisURI(addr.getScheme()
+                    RedisURI address = new RedisURI(addr.getScheme()
                                  + "://" + connection.getRedisClient().getAddr().getAddress().getHostAddress()
                                  + ":" + connection.getRedisClient().getAddr().getPort());
+                    nodeConnections.put(address, connection);
                 }
-                nodeConnections.put(address, connection);
+                nodeConnections.put(addr, connection);
                 result.trySuccess(connection);
             } else {
                 connection.closeAsync();
