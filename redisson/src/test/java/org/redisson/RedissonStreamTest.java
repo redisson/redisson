@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.awaitility.Awaitility;
 import org.junit.Test;
 import org.redisson.api.*;
 import org.redisson.api.stream.*;
@@ -533,14 +534,14 @@ public class RedissonStreamTest extends BaseTest {
             }
         };
         t.start();
-        
-        long start = System.currentTimeMillis();
-        Map<String, Map<StreamMessageId, Map<String, String>>> s = stream.read(StreamMultiReadArgs.greaterThan(new StreamMessageId(0), "test1", StreamMessageId.NEWEST)
-                                                                            .timeout(Duration.ofSeconds(5))
-                                                                            .count(2));
-        assertThat(System.currentTimeMillis() - start).isBetween(1900L, 2200L);
-        assertThat(s).hasSize(1);
-        assertThat(s.get("test").get(new StreamMessageId(1))).isEqualTo(entries1);
+
+        Awaitility.await().between(Duration.ofMillis(1900), Duration.ofMillis(2200)).untilAsserted(() -> {
+            Map<String, Map<StreamMessageId, Map<String, String>>> s = stream.read(StreamMultiReadArgs.greaterThan(new StreamMessageId(0), "test1", StreamMessageId.NEWEST)
+                    .timeout(Duration.ofSeconds(5))
+                    .count(2));
+            assertThat(s).hasSize(1);
+            assertThat(s.get("test").get(new StreamMessageId(1))).isEqualTo(entries1);
+        });
     }
     
     @Test
@@ -564,13 +565,13 @@ public class RedissonStreamTest extends BaseTest {
             }
         };
         t.start();
-        
-        long start = System.currentTimeMillis();
-        Map<StreamMessageId, Map<String, String>> s = stream.read(StreamReadArgs.greaterThan(new StreamMessageId(0)).count(2).timeout(Duration.ofSeconds(4)));
-        assertThat(System.currentTimeMillis() - start).isBetween(1900L, 2200L);
-        assertThat(s).hasSize(1);
-        assertThat(s.get(new StreamMessageId(1))).isEqualTo(entries1);
-        
+
+        Awaitility.await().between(Duration.ofMillis(1900), Duration.ofMillis(2200)).untilAsserted(() -> {
+            Map<StreamMessageId, Map<String, String>> s = stream.read(StreamReadArgs.greaterThan(new StreamMessageId(0)).count(2).timeout(Duration.ofSeconds(4)));
+            assertThat(s).hasSize(1);
+            assertThat(s.get(new StreamMessageId(1))).isEqualTo(entries1);
+        });
+
         StreamMessageId id0 = stream.add(StreamAddArgs.entry("11", "11"));
         stream.add(StreamAddArgs.entry("22", "22"));
 

@@ -2,9 +2,11 @@ package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.awaitility.Awaitility;
 import org.junit.Test;
 import org.redisson.api.RSemaphore;
 
@@ -158,9 +160,10 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
         t.start();
         t.join(1);
 
-        long startTime = System.currentTimeMillis();
-        assertThat(s.tryAcquire(4, 2, TimeUnit.SECONDS)).isTrue();
-        assertThat(System.currentTimeMillis() - startTime).isBetween(900L, 1020L);
+        Awaitility.await().between(Duration.ofMillis(900), Duration.ofMillis(1020)).untilAsserted(() -> {
+            assertThat(s.tryAcquire(4, 2, TimeUnit.SECONDS)).isTrue();
+        });
+
         assertThat(s.availablePermits()).isEqualTo(0);
     }
 

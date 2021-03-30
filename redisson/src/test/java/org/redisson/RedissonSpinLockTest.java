@@ -1,5 +1,6 @@
 package org.redisson;
 
+import org.awaitility.Awaitility;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RFuture;
@@ -10,6 +11,7 @@ import org.redisson.config.Config;
 import org.redisson.connection.balancer.RandomLoadBalancer;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -81,9 +83,9 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
 
         RLock lock = redisson.getSpinLock("lock");
 
-        long startTime = System.currentTimeMillis();
-        lock.tryLock(3, TimeUnit.SECONDS);
-        assertThat(System.currentTimeMillis() - startTime).isBetween(3000L, 3200L);
+        Awaitility.await().between(Duration.ofMillis(3000), Duration.ofMillis(3200)).untilAsserted(() -> {
+            lock.tryLock(3, TimeUnit.SECONDS);
+        });
     }
 
     @Test
