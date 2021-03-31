@@ -3,6 +3,19 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 30-Mar-2021 - 3.15.3 released
+
+Feature - [connectionListener](https://github.com/redisson/redisson/wiki/2.-Configuration#connectionlistener) setting added  
+
+Fixed - `tryAcquire()` and `availablePermits()` method of `RRateLimiter` object throw too many results to unpack error  
+Fixed - `RRateLimiter` object throws LUA-script error  
+Fixed - connection leak in Topology Manager for Replicated Redis config  
+Fixed - `ConnectionListener.onConnect()` method isn't triggered during Redisson start  
+Fixed - `addLastIfExists()` and `addLastIfExists()` methods of `RDeque` object don't work  
+Fixed - `ArrayIndexOutOfBoundsException` is thrown if Redis master change was unsuccessful  
+Fixed - `RScheduledExecutorService.scheduleAtFixedRate()` starts multiple instances of the same task if multiple workers defined  
+Fixed - tasks scheduled via `RScheduledExecutorService.scheduleAtFixedRate()` method aren't executed after some time  
+
 ### 22-Mar-2021 - 3.15.2 released
 
 Feature - `move()` method added to `RDeque` and `RBlockingDeque` objects  
