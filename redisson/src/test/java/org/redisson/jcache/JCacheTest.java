@@ -26,6 +26,8 @@ import javax.cache.configuration.MutableConfiguration;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryExpiredListener;
 import javax.cache.event.CacheEntryListenerException;
+import javax.cache.event.CacheEntryRemovedListener;
+import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 
@@ -397,6 +399,80 @@ public class JCacheTest extends BaseTest {
         cache.close();
         runner.stop();
     }
+
+    @Test
+    public void testUpdate() throws IOException, InterruptedException, URISyntaxException {
+        RedisProcess runner = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(6311)
+                .run();
+
+        MutableConfiguration<String, String> config = new MutableConfiguration<>();
+        config.setStoreByValue(true);
+
+        URI configUri = getClass().getResource("redisson-jcache.json").toURI();
+        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager(configUri, null)
+                .createCache("test", config);
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        String key = "123";
+
+        UpdatedListener clientListener = new UpdatedListener(latch, key, "80", "90");
+        MutableCacheEntryListenerConfiguration<String, String> listenerConfiguration =
+                new MutableCacheEntryListenerConfiguration<>(FactoryBuilder.factoryOf(clientListener), null, true, true);
+        cache.registerCacheEntryListener(listenerConfiguration);
+
+        cache.put(key, "80");
+        Assert.assertNotNull(cache.get(key));
+
+        cache.put(key, "90");
+
+        latch.await();
+
+        //Assert.assertNotNull(cache.get(key));
+
+        cache.close();
+        runner.stop();
+    }
+
+    @Test
+    public void testRemoveListener() throws IOException, InterruptedException, URISyntaxException {
+                RedisProcess runner = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(6311)
+                .run();
+
+        MutableConfiguration<String, String> config = new MutableConfiguration<>();
+        config.setStoreByValue(true);
+
+        URI configUri = getClass().getResource("redisson-jcache.json").toURI();
+        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager(configUri, null)
+                .createCache("test", config);
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        String key = "123";
+
+        RemovedListener clientListener = new RemovedListener(latch, key, "80");
+        MutableCacheEntryListenerConfiguration<String, String> listenerConfiguration =
+                new MutableCacheEntryListenerConfiguration<>(FactoryBuilder.factoryOf(clientListener), null, true, true);
+        cache.registerCacheEntryListener(listenerConfiguration);
+
+        cache.put(key, "80");
+        Assert.assertNotNull(cache.get(key));
+
+        cache.remove(key);
+
+        latch.await();
+
+        Assert.assertNull(cache.get(key));
+
+        cache.close();
+        runner.stop();
+    }
     
     public static class ExpiredListener implements CacheEntryExpiredListener<String, String>, Serializable {
 
@@ -420,10 +496,63 @@ public class JCacheTest extends BaseTest {
             
             assertThat(entry.getKey()).isEqualTo(key);
             assertThat(entry.getValue()).isEqualTo(value);
+            assertThat(entry.getOldValue()).isEqualTo(value);
+
             latch.countDown();
         }
 
         
     }
     
+    public static class UpdatedListener implements CacheEntryUpdatedListener<String, String>, Serializable {
+        private Object key;
+        private Object oldValue;
+        private Object value;
+        private CountDownLatch latch;
+
+        public UpdatedListener(CountDownLatch latch, Object key, Object oldValue, Object value) {
+            super();
+            this.latch = latch;
+            this.key = key;
+            this.oldValue = oldValue;
+            this.value = value;
+        }
+
+        @Override
+        public void onUpdated(Iterable<CacheEntryEvent<? extends String, ? extends String>> events)
+                throws CacheEntryListenerException {
+            CacheEntryEvent<? extends String, ? extends String> entry = events.iterator().next();
+
+            assertThat(entry.getKey()).isEqualTo(key);
+            assertThat(entry.getOldValue()).isEqualTo(oldValue);
+            assertThat(entry.getValue()).isEqualTo(value);
+
+            latch.countDown();
+        }
+    }
+
+    public static class RemovedListener implements CacheEntryRemovedListener<String, String>, Serializable {
+        private Object key;
+        private Object value;
+        private CountDownLatch latch;
+
+        public RemovedListener(CountDownLatch latch, Object key, Object value) {
+            super();
+            this.latch = latch;
+            this.key = key;
+            this.value = value;
+        }
+
+        @Override
+        public void onRemoved(Iterable<CacheEntryEvent<? extends String, ? extends String>> events)
+                throws CacheEntryListenerException {
+            CacheEntryEvent<? extends String, ? extends String> entry = events.iterator().next();
+
+            assertThat(entry.getKey()).isEqualTo(key);
+            assertThat(entry.getValue()).isEqualTo(value);
+            assertThat(entry.getOldValue()).isEqualTo(value);
+
+            latch.countDown();
+        }
+    }
 }
