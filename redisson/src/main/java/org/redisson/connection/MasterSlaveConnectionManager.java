@@ -371,6 +371,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         c.setSslTruststorePassword(cfg.getSslTruststorePassword());
         c.setSslKeystore(cfg.getSslKeystore());
         c.setSslKeystorePassword(cfg.getSslKeystorePassword());
+        c.setSslProtocols(cfg.getSslProtocols());
         
         c.setRetryInterval(cfg.getRetryInterval());
         c.setRetryAttempts(cfg.getRetryAttempts());
@@ -441,6 +442,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
               .setSslTruststorePassword(config.getSslTruststorePassword())
               .setSslKeystore(config.getSslKeystore())
               .setSslKeystorePassword(config.getSslKeystorePassword())
+              .setSslProtocols(config.getSslProtocols())
               .setClientName(config.getClientName())
               .setKeepPubSubOrder(cfg.isKeepPubSubOrder())
               .setPingConnectionInterval(config.getPingConnectionInterval())

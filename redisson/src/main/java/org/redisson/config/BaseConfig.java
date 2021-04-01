@@ -86,6 +86,8 @@ public class BaseConfig<T extends BaseConfig<T>> {
     
     private String sslKeystorePassword;
 
+    private String[] sslProtocols;
+
     private int pingConnectionInterval = 30000;
 
     private boolean keepAlive;
@@ -112,6 +114,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
         setSslTruststorePassword(config.getSslTruststorePassword());
         setSslKeystore(config.getSslKeystore());
         setSslKeystorePassword(config.getSslKeystorePassword());
+        setSslProtocols(config.getSslProtocols());
         setPingConnectionInterval(config.getPingConnectionInterval());
         setKeepAlive(config.isKeepAlive());
         setTcpNoDelay(config.isTcpNoDelay());
@@ -377,6 +380,24 @@ public class BaseConfig<T extends BaseConfig<T>> {
      */
     public T setSslKeystorePassword(String sslKeystorePassword) {
         this.sslKeystorePassword = sslKeystorePassword;
+        return (T) this;
+    }
+
+    public String[] getSslProtocols() {
+        return sslProtocols;
+    }
+
+    /**
+     * Defines SSL protocols.
+     * Example values: TLSv1.3, TLSv1.2, TLSv1.1, TLSv1
+     * <p>
+     * Default is <code>null</code>
+     *
+     * @param sslProtocols - protocols
+     * @return config
+     */
+    public T setSslProtocols(String[] sslProtocols) {
+        this.sslProtocols = sslProtocols;
         return (T) this;
     }
 
