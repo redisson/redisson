@@ -117,6 +117,7 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
         }
         
         SslContextBuilder sslContextBuilder = SslContextBuilder.forClient().sslProvider(provided);
+        sslContextBuilder.protocols(config.getSslProtocols());
         if (config.getSslTruststore() != null) {
             KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
             

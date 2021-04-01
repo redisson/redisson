@@ -40,6 +40,7 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
         newconfig.setSslTruststorePassword(cfg.getSslTruststorePassword());
         newconfig.setSslKeystore(cfg.getSslKeystore());
         newconfig.setSslKeystorePassword(cfg.getSslKeystorePassword());
+        newconfig.setSslProtocols(cfg.getSslProtocols());
         
         newconfig.setRetryAttempts(cfg.getRetryAttempts());
         newconfig.setRetryInterval(cfg.getRetryInterval());
