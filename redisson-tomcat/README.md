@@ -4,8 +4,6 @@ Stores session of [Apache Tomcat](http://tomcat.apache.org) in Redis and allows 
 
 Supports Apache Tomcat 7.x, 8.x, 9.x, 10.x
 
-Consider __[Redisson PRO](https://redisson.pro)__ version for <b>Ultra-fast Tomcat Manager</b> and support by SLA.
-
 ## Usage
 
 ### 1. Add session manager
