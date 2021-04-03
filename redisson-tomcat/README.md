@@ -11,7 +11,7 @@ Supports Apache Tomcat 7.x, 8.x, 9.x, 10.x
 |Class name | Ultra-fast read/write |
 | ------------- | :----------:|
 |RedissonRegionFactory<br/><sub><i>open-source version</i></sub> | ❌ |
-|RedissonRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | ✔️ |
+|RedissonRegionFactory<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ✔️ |
 
 
 Add `RedissonSessionManager` in global context - `tomcat/conf/context.xml` or per application context - `tomcat/conf/server.xml`
