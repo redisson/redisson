@@ -10,7 +10,7 @@ Supports Apache Tomcat 7.x, 8.x, 9.x, 10.x
 
 |Class name | Ultra-fast read/write |
 | ------------- | :----------:|
-|RedissonRegionFactory<br/>&nbsp; | ❌ |
+|RedissonRegionFactory<br/><sub><i>open-source version</i></sub> | ❌ |
 |RedissonRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | ✔️ |
 
 
