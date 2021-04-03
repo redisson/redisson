@@ -10,6 +10,12 @@ Consider __[Redisson PRO](https://redisson.pro)__ version for <b>Ultra-fast Tomc
 
 ### 1. Add session manager
 
+|Class name | Ultra-fast read/write |
+| ------------- | :----------:|
+|RedissonRegionFactory<br/>&nbsp; | ❌ |
+|RedissonRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | ✔️ |
+
+
 Add `RedissonSessionManager` in global context - `tomcat/conf/context.xml` or per application context - `tomcat/conf/server.xml`
 
    ```xml
