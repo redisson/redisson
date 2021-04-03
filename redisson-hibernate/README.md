@@ -16,7 +16,7 @@ Below is the list of all available factories with local cache and/or data partit
 |Class name | Local cache | Data partitioning | Ultra-fast read/write |
 | ------------- | ------------- | ------------| ------------|
 |RedissonRegionFactory<br/><sub><i>open-source version</i></sub> | :heavy_multiplication_x: | :heavy_multiplication_x: | :heavy_multiplication_x: |
-|RedissonRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | :heavy_multiplication_x: | :heavy_multiplication_x: | :heavy_check_mark: |
+|RedissonRegionFactory<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | :heavy_multiplication_x: | :heavy_multiplication_x: | :heavy_check_mark: |
 |RedissonLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub>  | :heavy_check_mark: | :heavy_multiplication_x: | :heavy_check_mark: |
 |RedissonClusteredRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | :heavy_multiplication_x: | :heavy_check_mark: | :heavy_check_mark: |
 |RedissonClusteredLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
