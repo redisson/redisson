@@ -12,12 +12,13 @@ Redisson provides various MyBatis Cache implementations including those with fea
 
 Below is the list of all available implementations with local cache and/or data partitioning support:
 
-|Class name | Local cache | Data partitioning |
-| ------------- | ------------- | ------------|
-|RedissonCache<br/>&nbsp; | :heavy_multiplication_x: | :heavy_multiplication_x: |
-|RedissonLocalCachedCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub>  | :heavy_check_mark: | :heavy_multiplication_x: |
-|RedissonClusteredCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | :heavy_multiplication_x: | :heavy_check_mark: |
-|RedissonClusteredLocalCachedCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | :heavy_check_mark: | :heavy_check_mark: |
+|Class name | Local cache | Data partitioning | Ultra-fast read/write |
+| ------------- | ------------- | ------------| ------------|
+|RedissonCache<br/>&nbsp; | :heavy_multiplication_x: | :heavy_multiplication_x: | :heavy_multiplication_x: |
+|RedissonCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | :heavy_multiplication_x: | :heavy_multiplication_x: | :heavy_check_mark: |
+|RedissonLocalCachedCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub>  | :heavy_check_mark: | :heavy_multiplication_x: | :heavy_check_mark: |
+|RedissonClusteredCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | :heavy_multiplication_x: | :heavy_check_mark: | :heavy_check_mark: |
+|RedissonClusteredLocalCachedCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 
 ## MyBatis Cache Usage
 
