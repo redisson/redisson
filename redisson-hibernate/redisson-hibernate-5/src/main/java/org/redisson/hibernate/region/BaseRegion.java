@@ -59,15 +59,15 @@ public class BaseRegion implements TransactionalDataRegion, GeneralDataRegion {
         this.metadata = metadata;
         this.connectionManager = connectionManager;
         
-        String maxEntries = getProperty(properties, mapCache.getName2(), defaultKey, RedissonRegionFactory.MAX_ENTRIES_SUFFIX);
+        String maxEntries = getProperty(properties, mapCache.getName(), defaultKey, RedissonRegionFactory.MAX_ENTRIES_SUFFIX);
         if (maxEntries != null) {
             mapCache.setMaxSize(Integer.valueOf(maxEntries));
         }
-        String timeToLive = getProperty(properties, mapCache.getName2(), defaultKey, RedissonRegionFactory.TTL_SUFFIX);
+        String timeToLive = getProperty(properties, mapCache.getName(), defaultKey, RedissonRegionFactory.TTL_SUFFIX);
         if (timeToLive != null) {
             ttl = Integer.valueOf(timeToLive);
         }
-        String maxIdleTime = getProperty(properties, mapCache.getName2(), defaultKey, RedissonRegionFactory.MAX_IDLE_SUFFIX);
+        String maxIdleTime = getProperty(properties, mapCache.getName(), defaultKey, RedissonRegionFactory.MAX_IDLE_SUFFIX);
         if (maxIdleTime != null) {
             maxIdle = Integer.valueOf(maxIdleTime);
         }
@@ -115,7 +115,7 @@ public class BaseRegion implements TransactionalDataRegion, GeneralDataRegion {
 
     @Override
     public String getName() {
-        return mapCache.getName2();
+        return mapCache.getName();
     }
 
     @Override
