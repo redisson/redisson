@@ -127,7 +127,7 @@ public class MapReactiveIterator<K, V, M> implements Consumer<FluxSink<M>> {
     }
 
     public RFuture<MapScanResult<Object, Object>> scanIterator(RedisClient client, long nextIterPos) {
-        return map.scanIteratorAsync(map.getName(), client, nextIterPos, pattern, count);
+        return map.scanIteratorAsync(map.getRawName(), client, nextIterPos, pattern, count);
     }
 
 }

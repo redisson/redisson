@@ -68,7 +68,7 @@ public class RedissonMapRxIterator<K, V, M> {
             };
             
             protected void nextValues() {
-                map.scanIteratorAsync(map.getName(), client, nextIterPos, pattern, count).onComplete((res, e) -> {
+                map.scanIteratorAsync(map.getRawName(), client, nextIterPos, pattern, count).onComplete((res, e) -> {
                     if (e != null) {
                         p.onError(e);
                         return;

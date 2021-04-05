@@ -181,7 +181,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
             return false;
         }
 
-        RMap<String, RemoteServiceRequest> tasks = getMap(requestQueue.getName() + ":tasks");
+        RMap<String, RemoteServiceRequest> tasks = getMap(((RedissonObject) requestQueue).getRawName() + ":tasks");
         RFuture<RemoteServiceRequest> taskFuture = getTask(requestId, tasks);
         commandExecutor.getInterrupted(taskFuture);
 
@@ -224,7 +224,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                 return;
             }
 
-            RMap<String, RemoteServiceRequest> tasks = getMap(requestQueue.getName() + ":tasks");
+            RMap<String, RemoteServiceRequest> tasks = getMap(((RedissonObject) requestQueue).getRawName() + ":tasks");
             RFuture<RemoteServiceRequest> taskFuture = getTask(requestId, tasks);
             taskFuture.onComplete((request, exc) -> {
                 if (exc != null) {
@@ -292,7 +292,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                     subscribe(remoteInterface, requestQueue, executor, bean);
                 }
 
-                RMap<String, RemoteServiceRequest> tasks = getMap(requestQueue.getName() + ":tasks");
+                RMap<String, RemoteServiceRequest> tasks = getMap(((RedissonObject) requestQueue).getRawName() + ":tasks");
                 RFuture<RemoteServiceRequest> taskFuture = getTask(requestId, tasks);
                 taskFuture.onComplete((request, exc) -> {
                     if (exc != null) {

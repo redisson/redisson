@@ -205,7 +205,7 @@ public class RedissonPriorityBlockingDeque<V> extends RedissonPriorityDeque<V> i
     @Override
     public RFuture<V> takeLastAsync() {
         RPromise<V> result = new RedissonPromise<V>();
-        blockingQueue.takeAsync(result, 0, 0, RedisCommands.RPOP, getName());
+        blockingQueue.takeAsync(result, 0, 0, RedisCommands.RPOP, getRawName());
         return result;
     }
 
@@ -257,7 +257,7 @@ public class RedissonPriorityBlockingDeque<V> extends RedissonPriorityDeque<V> i
     @Override
     public RFuture<V> pollLastAsync(long timeout, TimeUnit unit) {
         RPromise<V> result = new RedissonPromise<V>();
-        blockingQueue.takeAsync(result, 0, unit.toMicros(timeout), RedisCommands.RPOP, getName());
+        blockingQueue.takeAsync(result, 0, unit.toMicros(timeout), RedisCommands.RPOP, getRawName());
         return result;
     }
 

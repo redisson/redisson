@@ -62,6 +62,8 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
         newconfig.setReadMode(ReadMode.MASTER);
         newconfig.setSubscriptionMode(SubscriptionMode.MASTER);
         newconfig.setKeepAlive(cfg.isKeepAlive());
+        newconfig.setTcpNoDelay(cfg.isTcpNoDelay());
+        newconfig.setNameMapper(cfg.getNameMapper());
         
         return newconfig;
     }

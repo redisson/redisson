@@ -43,7 +43,7 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
     }
 
     String getPermitsName() {
-        return suffixName(getName(), "permits");
+        return suffixName(getRawName(), "permits");
     }
 
     String getClientPermitsName() {
@@ -51,7 +51,7 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
     }
 
     String getValueName() {
-        return suffixName(getName(), "value");
+        return suffixName(getRawName(), "value");
     }
     
     String getClientValueName() {
@@ -180,7 +180,7 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
     }
     
     private <T> RFuture<T> tryAcquireAsync(RedisCommand<T> command, Long value) {
-        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, command,
+        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, command,
                 "local rate = redis.call('hget', KEYS[1], 'rate');"
               + "local interval = redis.call('hget', KEYS[1], 'interval');"
               + "local type = redis.call('hget', KEYS[1], 'type');"
@@ -225,7 +225,7 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
                      + "redis.call('decrby', valueName, ARGV[1]); "
                      + "return nil; "
               + "end;",
-                Arrays.asList(getName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName()),
+                Arrays.asList(getRawName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName()),
                 value, System.currentTimeMillis(), ThreadLocalRandom.current().nextLong());
     }
 
@@ -236,11 +236,11 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
 
     @Override
     public RFuture<Boolean> trySetRateAsync(RateType type, long rate, long rateInterval, RateIntervalUnit unit) {
-        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "redis.call('hsetnx', KEYS[1], 'rate', ARGV[1]);"
               + "redis.call('hsetnx', KEYS[1], 'interval', ARGV[2]);"
               + "return redis.call('hsetnx', KEYS[1], 'type', ARGV[3]);",
-                Collections.singletonList(getName()), rate, unit.toMillis(rateInterval), type.ordinal());
+                Collections.singletonList(getRawName()), rate, unit.toMillis(rateInterval), type.ordinal());
     }
 
     @Override
@@ -250,12 +250,12 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
 
     @Override
     public RFuture<Void> setRateAsync(RateType type, long rate, long rateInterval, RateIntervalUnit unit) {
-         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "redis.call('hset', KEYS[1], 'rate', ARGV[1]);"
                         + "redis.call('hset', KEYS[1], 'interval', ARGV[2]);"
                         + "redis.call('hset', KEYS[1], 'type', ARGV[3]);"
                         + "redis.call('del', KEYS[2], KEYS[3]);",
-                Arrays.asList(getName(), getValueName(), getPermitsName()), rate, unit.toMillis(rateInterval), type.ordinal());
+                Arrays.asList(getRawName(), getValueName(), getPermitsName()), rate, unit.toMillis(rateInterval), type.ordinal());
     }
     
     private static final RedisCommand HGETALL = new RedisCommand("HGETALL", new MapEntriesDecoder(new MultiDecoder<RateLimiterConfig>() {
@@ -284,7 +284,7 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
     
     @Override
     public RFuture<RateLimiterConfig> getConfigAsync() {
-        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, HGETALL, getName());
+        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, HGETALL, getRawName());
     }
 
     @Override
@@ -294,7 +294,7 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
 
     @Override
     public RFuture<Long> availablePermitsAsync() {
-        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
+        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
                 "local rate = redis.call('hget', KEYS[1], 'rate');"
               + "local interval = redis.call('hget', KEYS[1], 'interval');"
               + "local type = redis.call('hget', KEYS[1], 'type');"
@@ -327,28 +327,28 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
 
                      + "return currentValue; "
               + "end;",
-                Arrays.asList(getName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName()),
+                Arrays.asList(getRawName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName()),
                 System.currentTimeMillis());
     }
 
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
-        return expireAsync(timeToLive, timeUnit, getName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName());
+        return expireAsync(timeToLive, timeUnit, getRawName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName());
     }
 
     @Override
     public RFuture<Boolean> expireAtAsync(long timestamp) {
-        return expireAtAsync(timestamp, getName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName());
+        return expireAtAsync(timestamp, getRawName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName());
     }
 
     @Override
     public RFuture<Boolean> clearExpireAsync() {
-        return clearExpireAsync(getName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName());
+        return clearExpireAsync(getRawName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName());
     }
 
     @Override
     public RFuture<Boolean> deleteAsync() {
-        return deleteAsync(getName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName());
+        return deleteAsync(getRawName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName());
     }
 
 }

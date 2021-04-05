@@ -17,6 +17,7 @@ package org.redisson.liveobject.core;
 
 import io.netty.buffer.ByteBuf;
 import net.bytebuddy.implementation.bind.annotation.*;
+import org.redisson.RedissonObject;
 import org.redisson.RedissonReference;
 import org.redisson.RedissonScoredSortedSet;
 import org.redisson.RedissonSetMultimap;
@@ -204,7 +205,8 @@ public class AccessorInterceptor {
                     map.removeAsync(k, ((RLiveObject) me).getLiveObjectId());
                 }
             } else {
-                removeAsync(ce, indexName, liveMap.getName(), namingScheme.getCodec(), ((RLiveObject) me).getLiveObjectId(), field.getName());
+                removeAsync(ce, indexName, ((RedissonObject) liveMap).getRawName(),
+                        namingScheme.getCodec(), ((RLiveObject) me).getLiveObjectId(), field.getName());
             }
         }
 

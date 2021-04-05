@@ -66,13 +66,13 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
     protected RedissonBloomFilter(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
         this.commandExecutor = commandExecutor;
-        this.configName = suffixName(getName(), "config");
+        this.configName = suffixName(getRawName(), "config");
     }
 
     protected RedissonBloomFilter(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
         this.commandExecutor = commandExecutor;
-        this.configName = suffixName(getName(), "config");
+        this.configName = suffixName(getRawName(), "config");
     }
 
     private int optimalNumOfHashFunctions(long n, long m) {
@@ -185,7 +185,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
     }
 
     protected RBitSetAsync createBitSet(CommandBatchService executorService) {
-        return new RedissonBitSet(executorService, getName());
+        return new RedissonBitSet(executorService, getRawName());
     }
 
     private void addConfigCheck(int hashIterations, long size, CommandBatchService executorService) {
@@ -212,12 +212,12 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
 
     @Override
     public RFuture<Boolean> deleteAsync() {
-        return deleteAsync(getName(), configName);
+        return deleteAsync(getRawName(), configName);
     }
 
     @Override
     public RFuture<Long> sizeInMemoryAsync() {
-        List<Object> keys = Arrays.<Object>asList(getName(), configName);
+        List<Object> keys = Arrays.<Object>asList(getRawName(), configName);
         return super.sizeInMemoryAsync(keys);
     }
     
@@ -285,17 +285,17 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
 
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
-        return expireAsync(timeToLive, timeUnit, getName(), configName);
+        return expireAsync(timeToLive, timeUnit, getRawName(), configName);
     }
 
     @Override
     public RFuture<Boolean> expireAtAsync(long timestamp) {
-        return expireAtAsync(timestamp, getName(), configName);
+        return expireAtAsync(timestamp, getRawName(), configName);
     }
 
     @Override
     public RFuture<Boolean> clearExpireAsync() {
-        return clearExpireAsync(getName(), configName);
+        return clearExpireAsync(getRawName(), configName);
     }
     
     @Override
@@ -324,18 +324,18 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
 
     @Override
     public RFuture<Boolean> isExistsAsync() {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.EXISTS, getName(), configName);
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.EXISTS, getRawName(), configName);
     }
 
     @Override
     public RFuture<Void> renameAsync(String newName) {
         String newConfigName = suffixName(newName, "config");
-        RFuture<Void> f = commandExecutor.evalWriteAsync(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
+        RFuture<Void> f = commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
                      "if redis.call('exists', KEYS[1]) == 1 then " +
                               "redis.call('rename', KEYS[1], ARGV[1]); " +
                           "end; " +
                           "return redis.call('rename', KEYS[2], ARGV[2]); ",
-                Arrays.<Object>asList(getName(), configName), newName, newConfigName);
+                Arrays.<Object>asList(getRawName(), configName), newName, newConfigName);
         f.onComplete((value, e) -> {
             if (e == null) {
                 setName(newName);
@@ -348,14 +348,14 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
     @Override
     public RFuture<Boolean> renamenxAsync(String newName) {
         String newConfigName = suffixName(newName, "config");
-        RFuture<Boolean> f = commandExecutor.evalWriteAsync(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        RFuture<Boolean> f = commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local r = redis.call('renamenx', KEYS[1], ARGV[1]); "
                         + "if r == 0 then "
                         + "  return 0; "
                         + "else  "
                         + "  return redis.call('renamenx', KEYS[2], ARGV[2]); "
                         + "end; ",
-                Arrays.<Object>asList(getName(), configName), newName, newConfigName);
+                Arrays.<Object>asList(getRawName(), configName), newName, newConfigName);
         f.onComplete((value, e) -> {
             if (e == null && value) {
                 setName(newName);

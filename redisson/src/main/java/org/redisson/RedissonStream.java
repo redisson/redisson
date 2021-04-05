@@ -73,17 +73,17 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     
     @Override
     public RFuture<Void> createGroupAsync(String groupName, StreamMessageId id) {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XGROUP, "CREATE", getName(), groupName, id, "MKSTREAM");
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XGROUP, "CREATE", getRawName(), groupName, id, "MKSTREAM");
     }
     
     @Override
     public RFuture<Long> ackAsync(String groupName, StreamMessageId... ids) {
         List<Object> params = new ArrayList<Object>();
-        params.add(getName());
+        params.add(getRawName());
         params.add(groupName);
         params.addAll(Arrays.asList(ids));
         
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XACK, params.toArray());
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XACK, params.toArray());
     }
 
     @Override
@@ -93,7 +93,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
 
     @Override
     public RFuture<PendingResult> getPendingInfoAsync(String groupName) {
-        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.XPENDING, getName(), groupName);
+        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XPENDING, getRawName(), groupName);
     }
 
     @Override
@@ -103,22 +103,22 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     
     @Override
     public RFuture<List<PendingEntry>> listPendingAsync(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, int count) {
-        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.XPENDING_ENTRIES, getName(), groupName, startId, endId, count, consumerName);
+        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XPENDING_ENTRIES, getRawName(), groupName, startId, endId, count, consumerName);
     }
 
     @Override
     public RFuture<List<PendingEntry>> listPendingAsync(String groupName, StreamMessageId startId, StreamMessageId endId, int count) {
-        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.XPENDING_ENTRIES, getName(), groupName, startId, endId, count);
+        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XPENDING_ENTRIES, getRawName(), groupName, startId, endId, count);
     }
 
     @Override
     public RFuture<List<PendingEntry>> listPendingAsync(String groupName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count) {
-        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.XPENDING_ENTRIES, getName(), groupName, "IDLE", idleTimeUnit.toMillis(idleTime), startId, endId, count);
+        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XPENDING_ENTRIES, getRawName(), groupName, "IDLE", idleTimeUnit.toMillis(idleTime), startId, endId, count);
     }
 
     @Override
     public RFuture<List<PendingEntry>> listPendingAsync(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count) {
-        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.XPENDING_ENTRIES, getName(), groupName, "IDLE", idleTimeUnit.toMillis(idleTime), startId, endId, count, consumerName);
+        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XPENDING_ENTRIES, getRawName(), groupName, "IDLE", idleTimeUnit.toMillis(idleTime), startId, endId, count, consumerName);
     }
 
     @Override
@@ -151,7 +151,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     public RFuture<List<StreamMessageId>> fastClaimAsync(String groupName, String consumerName, long idleTime,
             TimeUnit idleTimeUnit, StreamMessageId... ids) {
         List<Object> params = new ArrayList<Object>();
-        params.add(getName());
+        params.add(getRawName());
         params.add(groupName);
         params.add(consumerName);
         params.add(idleTimeUnit.toMillis(idleTime));
@@ -162,7 +162,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         
         params.add("JUSTID");
         
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XCLAIM_IDS, params.toArray());
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XCLAIM_IDS, params.toArray());
     }
 
     @Override
@@ -173,7 +173,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     @Override
     public RFuture<AutoClaimResult<K, V>> autoClaimAsync(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId startId, int count) {
         List<Object> params = new ArrayList<>();
-        params.add(getName());
+        params.add(getRawName());
         params.add(groupName);
         params.add(consumerName);
         params.add(idleTimeUnit.toMillis(idleTime));
@@ -181,7 +181,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         params.add("COUNT");
         params.add(count);
 
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.XAUTOCLAIM, params.toArray());
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.XAUTOCLAIM, params.toArray());
     }
 
     @Override
@@ -223,7 +223,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         }
 
         params.add("STREAMS");
-        params.add(getName());
+        params.add(getRawName());
         params.addAll(rp.getOffsets().keySet());
 
         if (rp.getId1() == null) {
@@ -237,9 +237,9 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         }
 
         if (rp.getTimeout() != null) {
-            return commandExecutor.writeAsync(getName(), codec, RedisCommands.XREADGROUP_BLOCKING, params.toArray());
+            return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.XREADGROUP_BLOCKING, params.toArray());
         }
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.XREADGROUP, params.toArray());
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.XREADGROUP, params.toArray());
     }
 
     @Override
@@ -266,7 +266,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         }
 
         params.add("STREAMS");
-        params.add(getName());
+        params.add(getRawName());
 
         if (rp.getId1() == null) {
             params.add(">");
@@ -275,15 +275,15 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         }
 
         if (rp.getTimeout() != null) {
-            return commandExecutor.writeAsync(getName(), codec, RedisCommands.XREADGROUP_BLOCKING_SINGLE, params.toArray());
+            return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.XREADGROUP_BLOCKING_SINGLE, params.toArray());
         }
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.XREADGROUP_SINGLE, params.toArray());
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.XREADGROUP_SINGLE, params.toArray());
     }
 
     @Override
     public RFuture<FastAutoClaimResult> fastAutoClaimAsync(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId startId, int count) {
         List<Object> params = new ArrayList<>();
-        params.add(getName());
+        params.add(getRawName());
         params.add(groupName);
         params.add(consumerName);
         params.add(idleTimeUnit.toMillis(idleTime));
@@ -292,14 +292,14 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         params.add(count);
         params.add("JUSTID");
 
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.XAUTOCLAIM_IDS, params.toArray());
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.XAUTOCLAIM_IDS, params.toArray());
     }
 
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> claimAsync(String groupName, String consumerName, long idleTime,
             TimeUnit idleTimeUnit, StreamMessageId... ids) {
         List<Object> params = new ArrayList<Object>();
-        params.add(getName());
+        params.add(getRawName());
         params.add(groupName);
         params.add(consumerName);
         params.add(idleTimeUnit.toMillis(idleTime));
@@ -308,7 +308,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
             params.add(id.toString());
         }
         
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.XCLAIM, params.toArray());
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.XCLAIM, params.toArray());
     }
 
     @Override
@@ -352,7 +352,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         }
         
         params.add("STREAMS");
-        params.add(getName());
+        params.add(getRawName());
 
         if (ids.length == 0) {
             params.add(">");
@@ -363,9 +363,9 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         }
 
         if (timeout > 0) {
-            return commandExecutor.writeAsync(getName(), codec, RedisCommands.XREADGROUP_BLOCKING_SINGLE, params.toArray());
+            return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.XREADGROUP_BLOCKING_SINGLE, params.toArray());
         }
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.XREADGROUP_SINGLE, params.toArray());
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.XREADGROUP_SINGLE, params.toArray());
     }
     
     @Override
@@ -525,7 +525,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         }
         
         params.add("STREAMS");
-        params.add(getName());
+        params.add(getRawName());
         params.addAll(keyToId.keySet());
 
         if (id == null) {
@@ -539,9 +539,9 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         }
 
         if (timeout > 0) {
-            return commandExecutor.writeAsync(getName(), codec, RedisCommands.XREADGROUP_BLOCKING, params.toArray());
+            return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.XREADGROUP_BLOCKING, params.toArray());
         }
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.XREADGROUP, params.toArray());
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.XREADGROUP, params.toArray());
     }
 
 
@@ -603,7 +603,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
 
     private <R> RFuture<R> addAllCustomAsync(StreamMessageId id, Map<K, V> entries, int trimLen, boolean trimStrict) {
         List<Object> params = new ArrayList<Object>(entries.size()*2 + 1);
-        params.add(getName());
+        params.add(getRawName());
         
         if (trimLen > 0) {
             params.add("MAXLEN");
@@ -628,9 +628,9 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         }
 
         if (id == null) {
-            return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XADD, params.toArray());
+            return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XADD, params.toArray());
         }
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XADD_VOID, params.toArray());
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XADD_VOID, params.toArray());
     }
     
     @Override
@@ -645,7 +645,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     
     @Override
     public RFuture<Long> sizeAsync() {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XLEN, getName());
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XLEN, getRawName());
     }
 
     @Override
@@ -669,7 +669,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         }
 
         params.add("STREAMS");
-        params.add(getName());
+        params.add(getRawName());
         params.addAll(rp.getOffsets().keySet());
 
         params.add(rp.getId1());
@@ -678,9 +678,9 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         }
 
         if (rp.getTimeout() != null) {
-            return commandExecutor.readAsync(getName(), codec, RedisCommands.XREAD_BLOCKING, params.toArray());
+            return commandExecutor.readAsync(getRawName(), codec, RedisCommands.XREAD_BLOCKING, params.toArray());
         }
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.XREAD, params.toArray());
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.XREAD, params.toArray());
     }
 
     @Override
@@ -704,13 +704,13 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         }
 
         params.add("STREAMS");
-        params.add(getName());
+        params.add(getRawName());
         params.add(rp.getId1());
 
         if (rp.getTimeout() != null) {
-            return commandExecutor.readAsync(getName(), codec, RedisCommands.XREAD_BLOCKING_SINGLE, params.toArray());
+            return commandExecutor.readAsync(getRawName(), codec, RedisCommands.XREAD_BLOCKING_SINGLE, params.toArray());
         }
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.XREAD_SINGLE, params.toArray());
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.XREAD_SINGLE, params.toArray());
     }
 
     @Override
@@ -866,7 +866,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         }
         
         params.add("STREAMS");
-        params.add(getName());
+        params.add(getRawName());
         params.addAll(keyToId.keySet());
         
         params.add(id);
@@ -875,9 +875,9 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         }
 
         if (timeout > 0) {
-            return commandExecutor.readAsync(getName(), codec, RedisCommands.XREAD_BLOCKING, params.toArray());
+            return commandExecutor.readAsync(getRawName(), codec, RedisCommands.XREAD_BLOCKING, params.toArray());
         }
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.XREAD, params.toArray());
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.XREAD, params.toArray());
     }
 
     @Override
@@ -905,7 +905,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         StreamAddParams<K, V> pps = source.getParams();
 
         List<Object> params = new LinkedList<Object>();
-        params.add(getName());
+        params.add(getRawName());
 
         if (pps.isNoMakeStream()) {
             params.add("NOMKSTREAM");
@@ -939,9 +939,9 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         }
 
         if (id == null) {
-            return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XADD, params.toArray());
+            return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XADD, params.toArray());
         }
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XADD_VOID, params.toArray());
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XADD_VOID, params.toArray());
     }
 
     @Override
@@ -961,7 +961,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
 
     private <R> RFuture<R> addCustomAsync(StreamMessageId id, K key, V value, int trimLen, boolean trimStrict) {
         List<Object> params = new LinkedList<Object>();
-        params.add(getName());
+        params.add(getRawName());
         
         if (trimLen > 0) {
             params.add("MAXLEN");
@@ -984,9 +984,9 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         params.add(encodeMapValue(value));
 
         if (id == null) {
-            return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XADD, params.toArray());
+            return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XADD, params.toArray());
         }
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XADD_VOID, params.toArray());
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XADD_VOID, params.toArray());
     }
     
     @Override
@@ -1044,22 +1044,22 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         }
         
         params.add("STREAMS");
-        params.add(getName());
+        params.add(getRawName());
 
         for (StreamMessageId id : ids) {
             params.add(id.toString());
         }
 
         if (timeout > 0) {
-            return commandExecutor.readAsync(getName(), codec, RedisCommands.XREAD_BLOCKING_SINGLE, params.toArray());
+            return commandExecutor.readAsync(getRawName(), codec, RedisCommands.XREAD_BLOCKING_SINGLE, params.toArray());
         }
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.XREAD_SINGLE, params.toArray());
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.XREAD_SINGLE, params.toArray());
     }
 
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> rangeAsync(int count, StreamMessageId startId, StreamMessageId endId) {
         List<Object> params = new LinkedList<Object>();
-        params.add(getName());
+        params.add(getRawName());
         params.add(startId);
         params.add(endId);
         
@@ -1068,7 +1068,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
             params.add(count);
         }
         
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.XRANGE, params.toArray());
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.XRANGE, params.toArray());
     }
 
     @Override
@@ -1079,7 +1079,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> rangeReversedAsync(int count, StreamMessageId startId, StreamMessageId endId) {
         List<Object> params = new LinkedList<Object>();
-        params.add(getName());
+        params.add(getRawName());
         params.add(startId);
         params.add(endId);
         
@@ -1088,7 +1088,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
             params.add(count);
         }
         
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.XREVRANGE, params.toArray());
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.XREVRANGE, params.toArray());
     }
 
     @Override
@@ -1139,10 +1139,10 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     @Override
     public RFuture<Long> removeAsync(StreamMessageId... ids) {
         List<Object> params = new ArrayList<Object>();
-        params.add(getName());
+        params.add(getRawName());
         params.addAll(Arrays.asList(ids));
 
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XDEL, params.toArray());
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XDEL, params.toArray());
     }
 
     @Override
@@ -1162,14 +1162,14 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
 
     @Override
     public RFuture<Long> trimAsync(TrimStrategy strategy, int threshold) {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XTRIM,
-                                            getName(), strategy.toString(), threshold);
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XTRIM,
+                                            getRawName(), strategy.toString(), threshold);
     }
 
     @Override
     public RFuture<Long> trimNonStrictAsync(TrimStrategy strategy, int threshold, int limit) {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XTRIM,
-                                    getName(), strategy.toString(), "~", threshold, "LIMIT", limit);
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XTRIM,
+                                    getRawName(), strategy.toString(), "~", threshold, "LIMIT", limit);
     }
 
     @Override
@@ -1179,18 +1179,18 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
 
     @Override
     public RFuture<Long> trimNonStrictAsync(TrimStrategy strategy, int threshold) {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XTRIM,
-                                    getName(), strategy.toString(), "~", threshold);
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XTRIM,
+                                    getRawName(), strategy.toString(), "~", threshold);
     }
 
     @Override
     public RFuture<Long> trimAsync(int count) {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XTRIM, getName(), "MAXLEN", count);
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XTRIM, getRawName(), "MAXLEN", count);
     }
 
     @Override
     public RFuture<Long> trimNonStrictAsync(int count) {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XTRIM, getName(), "MAXLEN", "~", count);
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XTRIM, getRawName(), "MAXLEN", "~", count);
     }
 
     @Override
@@ -1205,7 +1205,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
 
     @Override
     public RFuture<Void> removeGroupAsync(String groupName) {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XGROUP, "DESTROY", getName(), groupName);
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XGROUP, "DESTROY", getRawName(), groupName);
     }
 
     @Override
@@ -1220,12 +1220,12 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
 
     @Override
     public RFuture<Void> createConsumerAsync(String groupName, String consumerName) {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XGROUP, "CREATECONSUMER", getName(), groupName, consumerName);
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XGROUP, "CREATECONSUMER", getRawName(), groupName, consumerName);
     }
 
     @Override
     public RFuture<Long> removeConsumerAsync(String groupName, String consumerName) {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XGROUP_LONG, "DELCONSUMER", getName(), groupName, consumerName);
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XGROUP_LONG, "DELCONSUMER", getRawName(), groupName, consumerName);
     }
 
     @Override
@@ -1235,7 +1235,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
 
     @Override
     public RFuture<Void> updateGroupMessageIdAsync(String groupName, StreamMessageId id) {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XGROUP, "SETID", getName(), groupName, id);
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XGROUP, "SETID", getRawName(), groupName, id);
     }
 
     @Override
@@ -1255,7 +1255,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
                                                                                 new StreamInfoDecoder(),
                                                                                 new CodecDecoder(),
                                                                                 new ObjectMapReplayDecoder(codec)));
-        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, xinfoStream, getName());
+        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, xinfoStream, getRawName());
     }
 
     @Override
@@ -1265,7 +1265,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
 
     @Override
     public RFuture<List<StreamGroup>> listGroupsAsync() {
-        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.XINFO_GROUPS, getName());
+        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XINFO_GROUPS, getRawName());
     }
 
     @Override
@@ -1275,7 +1275,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
 
     @Override
     public RFuture<List<StreamConsumer>> listConsumersAsync(String groupName) {
-        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.XINFO_CONSUMERS, getName(), groupName);
+        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XINFO_CONSUMERS, getRawName(), groupName);
     }
 
     private static final RedisCommand<Map<StreamMessageId, Map<Object, Object>>> EVAL_XRANGE = new RedisCommand("EVAL", RedisCommands.XRANGE.getReplayMultiDecoder());
@@ -1283,7 +1283,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> pendingRangeAsync(String groupName, StreamMessageId startId,
             StreamMessageId endId, int count) {
-        return commandExecutor.evalReadAsync(getName(), codec, EVAL_XRANGE,
+        return commandExecutor.evalReadAsync(getRawName(), codec, EVAL_XRANGE,
                 "local pendingData = redis.call('xpending', KEYS[1], ARGV[1], ARGV[2], ARGV[3], ARGV[4]);" +
                 "local result = {}; " +
                 "for i = 1, #pendingData, 1 do " +
@@ -1291,14 +1291,14 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
                     "table.insert(result, value[1]);" + 
                 "end; " +
                 "return result;",
-                Collections.<Object>singletonList(getName()), 
+                Collections.<Object>singletonList(getRawName()),
                 groupName, startId, endId, count);
     }
 
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> pendingRangeAsync(String groupName, String consumerName,
             StreamMessageId startId, StreamMessageId endId, int count) {
-        return commandExecutor.evalReadAsync(getName(), codec, EVAL_XRANGE,
+        return commandExecutor.evalReadAsync(getRawName(), codec, EVAL_XRANGE,
                 "local pendingData = redis.call('xpending', KEYS[1], ARGV[1], ARGV[2], ARGV[3], ARGV[4], ARGV[5]);" +
                 "local result = {}; " +
                 "for i = 1, #pendingData, 1 do " +
@@ -1306,14 +1306,14 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
                     "table.insert(result, value[1]);" + 
                 "end; " +
                 "return result;",
-                Collections.singletonList(getName()),
+                Collections.singletonList(getRawName()),
                 groupName, startId, endId, count, consumerName);
     }
 
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> pendingRangeAsync(String groupName, StreamMessageId startId,
             StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count) {
-        return commandExecutor.evalReadAsync(getName(), codec, EVAL_XRANGE,
+        return commandExecutor.evalReadAsync(getRawName(), codec, EVAL_XRANGE,
                 "local pendingData = redis.call('xpending', KEYS[1], ARGV[1], 'IDLE', ARGV[2], ARGV[3], ARGV[4], ARGV[5]);" +
                 "local result = {}; " +
                 "for i = 1, #pendingData, 1 do " +
@@ -1321,14 +1321,14 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
                     "table.insert(result, value[1]);" +
                 "end; " +
                 "return result;",
-                Collections.singletonList(getName()),
+                Collections.singletonList(getRawName()),
                 groupName, idleTimeUnit.toMillis(idleTime), startId, endId, count);
     }
 
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> pendingRangeAsync(String groupName, String consumerName,
             StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count) {
-        return commandExecutor.evalReadAsync(getName(), codec, EVAL_XRANGE,
+        return commandExecutor.evalReadAsync(getRawName(), codec, EVAL_XRANGE,
                 "local pendingData = redis.call('xpending', KEYS[1], ARGV[1], 'IDLE', ARGV[2], ARGV[3], ARGV[4], ARGV[5], ARGV[6]);" +
                 "local result = {}; " +
                 "for i = 1, #pendingData, 1 do " +
@@ -1336,7 +1336,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
                     "table.insert(result, value[1]);" +
                 "end; " +
                 "return result;",
-                Collections.singletonList(getName()),
+                Collections.singletonList(getRawName()),
                 groupName, idleTimeUnit.toMillis(idleTime), startId, endId, count, consumerName);
     }
 

@@ -2,29 +2,29 @@ package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.awaitility.Awaitility;
 import org.awaitility.Durations;
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.api.LocalCachedMapOptions;
+import org.redisson.api.*;
 import org.redisson.api.LocalCachedMapOptions.EvictionPolicy;
 import org.redisson.api.LocalCachedMapOptions.ReconnectionStrategy;
 import org.redisson.api.LocalCachedMapOptions.SyncStrategy;
 import org.redisson.api.MapOptions.WriteMode;
-import org.redisson.api.RLocalCachedMap;
-import org.redisson.api.RMap;
+import org.redisson.client.RedisClient;
+import org.redisson.client.RedisClientConfig;
+import org.redisson.client.RedisConnection;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.codec.IntegerCodec;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.codec.CompositeCodec;
+import org.redisson.config.Config;
 
 public class RedissonLocalCachedMapTest extends BaseMapTest {
 
@@ -246,7 +246,71 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
             }
         }.execute();
     }
-    
+
+    @Test
+    public void testNameMapper() throws InterruptedException {
+        Config config = new Config();
+        config.useSingleServer()
+                .setNameMapper(new NameMapper() {
+                    @Override
+                    public String map(String name) {
+                        return name + ":suffix:";
+                    }
+
+                    @Override
+                    public String unmap(String name) {
+                        return name.replace(":suffix:", "");
+                    }
+                })
+              .setConnectionMinimumIdleSize(3)
+              .setConnectionPoolSize(3)
+              .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+
+        RedissonClient redisson = Redisson.create(config);
+
+        LocalCachedMapOptions<String, Integer> options = LocalCachedMapOptions.<String, Integer>defaults()
+                .evictionPolicy(EvictionPolicy.LFU)
+                .cacheSize(5);
+
+        RLocalCachedMap<String, Integer> map1 = redisson.getLocalCachedMap("test", options);
+        Map<String, Integer> cache1 = map1.getCachedMap();
+
+        RLocalCachedMap<String, Integer> map2 = redisson.getLocalCachedMap("test", options);
+        Map<String, Integer> cache2 = map2.getCachedMap();
+
+        assertThat(map1.getName()).isEqualTo("test");
+        assertThat(map2.getName()).isEqualTo("test");
+
+        map1.put("1", 1);
+        map1.put("2", 2);
+
+        assertThat(map2.get("1")).isEqualTo(1);
+        assertThat(map2.get("2")).isEqualTo(2);
+
+        assertThat(cache1.size()).isEqualTo(2);
+        assertThat(cache2.size()).isEqualTo(2);
+
+        map1.put("1", 3);
+        map2.put("2", 4);
+        Thread.sleep(50);
+
+        assertThat(redisson.getKeys().getKeys()).containsOnly("test:suffix:");
+
+        RedisClientConfig destinationCfg = new RedisClientConfig();
+        destinationCfg.setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+        RedisClient client = RedisClient.create(destinationCfg);
+        RedisConnection destinationConnection = client.connect();
+
+        List<String> channels = destinationConnection.sync(RedisCommands.PUBSUB_CHANNELS);
+        assertThat(channels).contains("{test:suffix:}:topic");
+        client.shutdown();
+
+        assertThat(cache1.size()).isEqualTo(1);
+        assertThat(cache2.size()).isEqualTo(1);
+
+        redisson.shutdown();
+    }
+
     @Test
     public void testNoInvalidationOnUpdate() throws InterruptedException {
         LocalCachedMapOptions<String, Integer> options = LocalCachedMapOptions.<String, Integer>defaults()
@@ -664,13 +728,15 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
 
     
     @Test
-    public void testRemoveValue() {
+    public void testRemoveValue() throws InterruptedException {
         RLocalCachedMap<SimpleKey, SimpleValue> map = redisson.getLocalCachedMap("simple12", LocalCachedMapOptions.defaults());
         Map<SimpleKey, SimpleValue> cache = map.getCachedMap();
         map.put(new SimpleKey("1"), new SimpleValue("2"));
 
         boolean res = map.remove(new SimpleKey("1"), new SimpleValue("2"));
         Assert.assertTrue(res);
+
+        Thread.sleep(50);
 
         SimpleValue val1 = map.get(new SimpleKey("1"));
         Assert.assertNull(val1);

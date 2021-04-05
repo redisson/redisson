@@ -149,7 +149,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
                 RFuture<Boolean> future = renewExpirationAsync(threadId);
                 future.onComplete((res, e) -> {
                     if (e != null) {
-                        log.error("Can't update lock " + getName() + " expiration", e);
+                        log.error("Can't update lock " + getRawName() + " expiration", e);
                         EXPIRATION_RENEWAL_MAP.remove(getEntryName());
                         return;
                     }
@@ -177,13 +177,13 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
     }
 
     protected RFuture<Boolean> renewExpirationAsync(long threadId) {
-        return evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) then " +
                         "redis.call('pexpire', KEYS[1], ARGV[1]); " +
                         "return 1; " +
                         "end; " +
                         "return 0;",
-                Collections.singletonList(getName()),
+                Collections.singletonList(getRawName()),
                 internalLockLeaseTime, getLockName(threadId));
     }
 
@@ -231,7 +231,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
             return (CommandBatchService) commandExecutor;
         }
 
-        MasterSlaveEntry entry = commandExecutor.getConnectionManager().getEntry(getName());
+        MasterSlaveEntry entry = commandExecutor.getConnectionManager().getEntry(getRawName());
         BatchOptions options = BatchOptions.defaults()
                                 .syncSlaves(entry.getAvailableSlaves(), 1, TimeUnit.SECONDS);
 
@@ -269,14 +269,14 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
 
     @Override
     public boolean isHeldByThread(long threadId) {
-        RFuture<Boolean> future = commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.HEXISTS, getName(), getLockName(threadId));
+        RFuture<Boolean> future = commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.HEXISTS, getRawName(), getLockName(threadId));
         return get(future);
     }
 
     private static final RedisCommand<Integer> HGET = new RedisCommand<Integer>("HGET", new MapValueDecoder(), new IntegerReplayConvertor(0));
     
     public RFuture<Integer> getHoldCountAsync() {
-        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, HGET, getName(), getLockName(Thread.currentThread().getId()));
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, HGET, getRawName(), getLockName(Thread.currentThread().getId()));
     }
     
     @Override

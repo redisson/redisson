@@ -46,7 +46,7 @@ public class RedissonMapIterator<M> extends RedissonBaseMapIterator<M> {
 
     @Override
     protected ScanResult<Entry<Object, Object>> iterator(RedisClient client, long nextIterPos) {
-        return map.scanIterator(map.getName(), client, nextIterPos, pattern, count);
+        return map.scanIterator(map.getRawName(), client, nextIterPos, pattern, count);
     }
 
     @Override

@@ -42,12 +42,12 @@ public class RedissonReadWriteLock extends RedissonExpirable implements RReadWri
 
     @Override
     public RLock readLock() {
-        return new RedissonReadLock(commandExecutor, getName());
+        return new RedissonReadLock(commandExecutor, getRawName());
     }
 
     @Override
     public RLock writeLock() {
-        return new RedissonWriteLock(commandExecutor, getName());
+        return new RedissonWriteLock(commandExecutor, getRawName());
     }
 
 }

@@ -206,7 +206,7 @@ public class JCacheManager implements CacheManager {
     }
     
     public void closeCache(JCache<?, ?> cache) {
-        caches.remove(cache.getName());
+        caches.remove(cache.getRawName());
         unregisterStatisticsBean(cache);
         unregisterManagementBean(cache);
     }
@@ -286,7 +286,7 @@ public class JCacheManager implements CacheManager {
     private String getName(String name, JCache<?, ?> cache) {
         return "javax.cache:type=Cache" + name + ",CacheManager="
                 + cache.getCacheManager().getURI().toString().replaceAll(",|:|=|\n", ".") 
-                + ",Cache=" + cache.getName().replaceAll(",|:|=|\n", ".");
+                + ",Cache=" + cache.getRawName().replaceAll(",|:|=|\n", ".");
     }
     
     @Override

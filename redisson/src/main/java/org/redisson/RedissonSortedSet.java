@@ -82,8 +82,8 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         this.redisson = redisson;
 
         comparatorHolder = redisson.getBucket(getComparatorKeyName(), StringCodec.INSTANCE);
-        lock = redisson.getLock("redisson_sortedset_lock:{" + getName() + "}");
-        list = (RedissonList<V>) redisson.<V>getList(getName());
+        lock = redisson.getLock("redisson_sortedset_lock:{" + getRawName() + "}");
+        list = (RedissonList<V>) redisson.<V>getList(getRawName());
     }
 
     public RedissonSortedSet(Codec codec, CommandAsyncExecutor commandExecutor, String name, Redisson redisson) {
@@ -91,8 +91,8 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         this.commandExecutor = commandExecutor;
 
         comparatorHolder = redisson.getBucket(getComparatorKeyName(), StringCodec.INSTANCE);
-        lock = redisson.getLock("redisson_sortedset_lock:{" + getName() + "}");
-        list = (RedissonList<V>) redisson.<V>getList(getName(), codec);
+        lock = redisson.getLock("redisson_sortedset_lock:{" + getRawName() + "}");
+        list = (RedissonList<V>) redisson.<V>getList(getRawName(), codec);
     }
     
     @Override
@@ -150,7 +150,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public RFuture<Collection<V>> readAllAsync() {
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.LRANGE_SET, getName(), 0, -1);
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.LRANGE_SET, getRawName(), 0, -1);
     }
     
     @Override
@@ -196,14 +196,14 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
                 
                 ByteBuf encodedValue = encode(value);
                 
-                commandExecutor.get(commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_VOID,
+                commandExecutor.get(commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
                    "local len = redis.call('llen', KEYS[1]);"
                     + "if tonumber(ARGV[1]) < len then "
                         + "local pivot = redis.call('lindex', KEYS[1], ARGV[1]);"
                         + "redis.call('linsert', KEYS[1], 'before', pivot, ARGV[2]);"
                         + "return;"
                     + "end;"
-                    + "redis.call('rpush', KEYS[1], ARGV[2]);", Arrays.<Object>asList(getName()), index, encodedValue));
+                    + "redis.call('rpush', KEYS[1], ARGV[2]);", Arrays.<Object>asList(getRawName()), index, encodedValue));
                 return true;
             } else {
                 return false;
@@ -366,7 +366,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     }
 
     private String getComparatorKeyName() {
-        return "redisson_sortedset_comparator:{" + getName() + "}";
+        return "redisson_sortedset_comparator:{" + getRawName() + "}";
     }
 
     @Override
@@ -374,14 +374,14 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         String className = comparator.getClass().getName();
         final String comparatorSign = className + ":" + calcClassSign(className);
 
-        Boolean res = commandExecutor.get(commandExecutor.evalWriteAsync(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        Boolean res = commandExecutor.get(commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('llen', KEYS[1]) == 0 then "
                 + "redis.call('set', KEYS[2], ARGV[1]); "
                 + "return 1; "
                 + "else "
                 + "return 0; "
                 + "end",
-                Arrays.<Object>asList(getName(), getComparatorKeyName()), comparatorSign));
+                Arrays.<Object>asList(getRawName(), getComparatorKeyName()), comparatorSign));
         if (res) {
             this.comparator = comparator;
         }

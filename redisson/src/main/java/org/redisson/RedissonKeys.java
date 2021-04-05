@@ -311,7 +311,7 @@ public class RedissonKeys implements RKeys {
     public RFuture<Long> deleteAsync(RObject... objects) {
         List<String> keys = new ArrayList<String>();
         for (RObject obj : objects) {
-            keys.add(obj.getName());
+            keys.add(((RedissonObject) obj).getRawName());
         }
 
         return deleteAsync(keys.toArray(new String[keys.size()]));
