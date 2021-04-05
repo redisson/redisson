@@ -396,6 +396,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         c.setSubscriptionMode(cfg.getSubscriptionMode());
         c.setDnsMonitoringInterval(cfg.getDnsMonitoringInterval());
         c.setKeepAlive(cfg.isKeepAlive());
+        c.setTcpNoDelay(cfg.isTcpNoDelay());
+        c.setNameMapper(cfg.getNameMapper());
 
         return c;
     }

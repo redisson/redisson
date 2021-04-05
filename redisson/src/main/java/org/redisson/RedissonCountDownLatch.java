@@ -284,19 +284,19 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
     @Override
     public RFuture<Void> countDownAsync() {
-        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                         "local v = redis.call('decr', KEYS[1]);" +
                         "if v <= 0 then redis.call('del', KEYS[1]) end;" +
                         "if v == 0 then redis.call('publish', KEYS[2], ARGV[1]) end;",
-                    Arrays.<Object>asList(getName(), getChannelName()), CountDownLatchPubSub.ZERO_COUNT_MESSAGE);
+                    Arrays.<Object>asList(getRawName(), getChannelName()), CountDownLatchPubSub.ZERO_COUNT_MESSAGE);
     }
 
     private String getEntryName() {
-        return id + getName();
+        return id + getRawName();
     }
 
     private String getChannelName() {
-        return "redisson_countdownlatch__channel__{" + getName() + "}";
+        return "redisson_countdownlatch__channel__{" + getRawName() + "}";
     }
 
     @Override
@@ -306,7 +306,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
     @Override
     public RFuture<Long> getCountAsync() {
-        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.GET_LONG, getName());
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.GET_LONG, getRawName());
     }
 
     @Override
@@ -316,7 +316,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
     @Override
     public RFuture<Boolean> trySetCountAsync(long count) {
-        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('exists', KEYS[1]) == 0 then "
                     + "redis.call('set', KEYS[1], ARGV[2]); "
                     + "redis.call('publish', KEYS[2], ARGV[1]); "
@@ -324,19 +324,19 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
                 + "else "
                     + "return 0 "
                 + "end",
-                Arrays.<Object>asList(getName(), getChannelName()), CountDownLatchPubSub.NEW_COUNT_MESSAGE, count);
+                Arrays.<Object>asList(getRawName(), getChannelName()), CountDownLatchPubSub.NEW_COUNT_MESSAGE, count);
     }
 
     @Override
     public RFuture<Boolean> deleteAsync() {
-        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('del', KEYS[1]) == 1 then "
                     + "redis.call('publish', KEYS[2], ARGV[1]); "
                     + "return 1 "
                 + "else "
                     + "return 0 "
                 + "end",
-                Arrays.<Object>asList(getName(), getChannelName()), CountDownLatchPubSub.NEW_COUNT_MESSAGE);
+                Arrays.<Object>asList(getRawName(), getChannelName()), CountDownLatchPubSub.NEW_COUNT_MESSAGE);
     }
 
 }

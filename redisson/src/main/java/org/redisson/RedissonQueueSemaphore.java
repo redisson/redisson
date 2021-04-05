@@ -64,7 +64,7 @@ public class RedissonQueueSemaphore extends RedissonSemaphore {
             params.add(1);
             params.add(encode(value));
         }
-        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "local value = redis.call('get', KEYS[1]); " +
                     "assert(value ~= false, 'Capacity of queue ' .. KEYS[1] .. ' has not been set'); " +
                     "if (tonumber(value) >= tonumber(ARGV[1])) then " +
@@ -73,7 +73,7 @@ public class RedissonQueueSemaphore extends RedissonSemaphore {
                         "return 1; " +
                     "end; " +
                     "return 0;",
-                    Arrays.<Object>asList(getName(), queueName), params.toArray());
+                    Arrays.<Object>asList(getRawName(), queueName), params.toArray());
     }
 
     

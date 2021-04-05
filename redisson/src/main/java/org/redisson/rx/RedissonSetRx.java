@@ -62,7 +62,7 @@ public class RedissonSetRx<V> {
         return new SetRxIterator<V>() {
             @Override
             protected RFuture<ListScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
-                return ((ScanIterator) instance).scanIteratorAsync(instance.getName(), client, nextIterPos, pattern, count);
+                return ((ScanIterator) instance).scanIteratorAsync(((RedissonObject) instance).getRawName(), client, nextIterPos, pattern, count);
             }
         }.create();
     }

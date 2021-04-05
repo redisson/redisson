@@ -60,7 +60,7 @@ public class RedissonLock extends RedissonBaseLock {
     }
 
     String getChannelName() {
-        return prefixName("redisson_lock__channel", getName());
+        return prefixName("redisson_lock__channel", getRawName());
     }
 
     @Override
@@ -200,7 +200,7 @@ public class RedissonLock extends RedissonBaseLock {
     }
 
     <T> RFuture<T> tryLockInnerAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
-        return evalWriteAsync(getName(), LongCodec.INSTANCE, command,
+        return evalWriteAsync(getRawName(), LongCodec.INSTANCE, command,
                 "if (redis.call('exists', KEYS[1]) == 0) then " +
                         "redis.call('hincrby', KEYS[1], ARGV[2], 1); " +
                         "redis.call('pexpire', KEYS[1], ARGV[1]); " +
@@ -212,7 +212,7 @@ public class RedissonLock extends RedissonBaseLock {
                         "return nil; " +
                         "end; " +
                         "return redis.call('pttl', KEYS[1]);",
-                Collections.singletonList(getName()), unit.toMillis(leaseTime), getLockName(threadId));
+                Collections.singletonList(getRawName()), unit.toMillis(leaseTime), getLockName(threadId));
     }
 
     @Override
@@ -331,18 +331,18 @@ public class RedissonLock extends RedissonBaseLock {
     @Override
     public RFuture<Boolean> forceUnlockAsync() {
         cancelExpirationRenewal(null);
-        return evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if (redis.call('del', KEYS[1]) == 1) then "
                         + "redis.call('publish', KEYS[2], ARGV[1]); "
                         + "return 1 "
                         + "else "
                         + "return 0 "
                         + "end",
-                Arrays.asList(getName(), getChannelName()), LockPubSub.UNLOCK_MESSAGE);
+                Arrays.asList(getRawName(), getChannelName()), LockPubSub.UNLOCK_MESSAGE);
     }
 
     protected RFuture<Boolean> unlockInnerAsync(long threadId) {
-        return evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if (redis.call('hexists', KEYS[1], ARGV[3]) == 0) then " +
                         "return nil;" +
                         "end; " +
@@ -356,7 +356,7 @@ public class RedissonLock extends RedissonBaseLock {
                         "return 1; " +
                         "end; " +
                         "return nil;",
-                Arrays.asList(getName(), getChannelName()), LockPubSub.UNLOCK_MESSAGE, internalLockLeaseTime, getLockName(threadId));
+                Arrays.asList(getRawName(), getChannelName()), LockPubSub.UNLOCK_MESSAGE, internalLockLeaseTime, getLockName(threadId));
     }
 
     @Override

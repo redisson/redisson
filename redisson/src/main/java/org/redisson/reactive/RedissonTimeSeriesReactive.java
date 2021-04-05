@@ -16,6 +16,7 @@
 package org.redisson.reactive;
 
 import org.reactivestreams.Publisher;
+import org.redisson.RedissonObject;
 import org.redisson.RedissonTimeSeries;
 import org.redisson.api.RFuture;
 import org.redisson.api.RTimeSeries;
@@ -44,7 +45,7 @@ public class RedissonTimeSeriesReactive<V> {
         return Flux.create(new SetReactiveIterator<V>() {
             @Override
             protected RFuture<ListScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
-                return ((RedissonTimeSeries) instance).scanIteratorAsync(instance.getName(), client, nextIterPos, 10);
+                return ((RedissonTimeSeries) instance).scanIteratorAsync(((RedissonObject) instance).getRawName(), client, nextIterPos, 10);
             }
         });
     }

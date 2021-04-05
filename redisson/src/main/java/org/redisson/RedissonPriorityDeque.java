@@ -129,7 +129,7 @@ public class RedissonPriorityDeque<V> extends RedissonPriorityQueue<V> implement
 
     @Override
     public RFuture<V> getLastAsync() {
-        return commandExecutor.readAsync(getName(), codec, LRANGE_SINGLE, getName(), -1, -1);
+        return commandExecutor.readAsync(getRawName(), codec, LRANGE_SINGLE, getRawName(), -1, -1);
     }
 
     @Override
@@ -188,7 +188,7 @@ public class RedissonPriorityDeque<V> extends RedissonPriorityQueue<V> implement
     }
 
     public RFuture<V> pollLastAsync() {
-        return wrapLockedAsync(RedisCommands.RPOP, getName());
+        return wrapLockedAsync(RedisCommands.RPOP, getRawName());
     }
 
     @Override
@@ -284,7 +284,7 @@ public class RedissonPriorityDeque<V> extends RedissonPriorityQueue<V> implement
     @Override
     public RFuture<List<V>> pollLastAsync(int limit) {
         return wrapLockedAsync(() -> {
-            return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_LIST,
+            return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_LIST,
                       "local result = {};"
                           + "for i = 1, ARGV[1], 1 do " +
                                 "local value = redis.call('rpop', KEYS[1]);" +
@@ -295,7 +295,7 @@ public class RedissonPriorityDeque<V> extends RedissonPriorityQueue<V> implement
                                 "end;" +
                             "end; " +
                             "return result;",
-                    Collections.singletonList(getName()), limit);
+                    Collections.singletonList(getRawName()), limit);
         });
     }
 

@@ -15,6 +15,7 @@
  */
 package org.redisson.liveobject;
 
+import org.redisson.RedissonObject;
 import org.redisson.RedissonScoredSortedSet;
 import org.redisson.RedissonSet;
 import org.redisson.RedissonSetMultimap;
@@ -65,7 +66,7 @@ public class LiveObjectSearch {
                 } else {
                     RSetMultimap<Object, Object> map = new RedissonSetMultimap<>(namingScheme.getCodec(), commandExecutor, indexName);
                     RSet<Object> values = map.get(eqc.getValue());
-                    eqNames.add(values.getName());
+                    eqNames.add(((RedissonObject) values).getRawName());
                 }
             }
             if (cond instanceof LTCondition) {
@@ -203,7 +204,7 @@ public class LiveObjectSearch {
                 } else {
                     RSetMultimap<Object, Object> map = new RedissonSetMultimap<>(namingScheme.getCodec(), commandExecutor, indexName);
                     RSet<Object> values = map.get(eqc.getValue());
-                    eqNames.add(values.getName());
+                    eqNames.add(((RedissonObject) values).getRawName());
                 }
             }
             if (cond instanceof GTCondition) {

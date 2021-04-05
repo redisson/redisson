@@ -15,10 +15,11 @@
  */
 package org.redisson.config;
 
-import java.net.URL;
-
+import org.redisson.api.NameMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.net.URL;
 
 /**
  * 
@@ -94,6 +95,8 @@ public class BaseConfig<T extends BaseConfig<T>> {
     
     private boolean tcpNoDelay = true;
 
+    private NameMapper nameMapper = NameMapper.direct();
+
     
     BaseConfig() {
     }
@@ -118,6 +121,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
         setPingConnectionInterval(config.getPingConnectionInterval());
         setKeepAlive(config.isKeepAlive());
         setTcpNoDelay(config.isTcpNoDelay());
+        setNameMapper(config.getNameMapper());
     }
 
     /**
@@ -453,6 +457,20 @@ public class BaseConfig<T extends BaseConfig<T>> {
         return (T) this;
     }
 
-    
-    
+
+    public NameMapper getNameMapper() {
+        return nameMapper;
+    }
+
+    /**
+     * Defines Name mapper which maps Redisson object name.
+     * Applied to all Redisson objects.
+     *
+     * @param nameMapper - name mapper object
+     * @return config
+     */
+    public T setNameMapper(NameMapper nameMapper) {
+        this.nameMapper = nameMapper;
+        return (T) this;
+    }
 }

@@ -533,7 +533,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 deleteCollection(deleted, (Iterable<?>) obj.getValue());
                 ((RObject) obj.getValue()).delete();
             } else if (isLiveObject(obj.getValue())) {
-                if (deleted.add(getMap(obj.getValue()).getName())) {
+                if (deleted.add(((RedissonObject) getMap(obj.getValue())).getRawName())) {
                     delete(obj.getValue(), deleted);
                 }
             } else if (obj.getValue() instanceof RMap) {
@@ -552,7 +552,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     private void deleteCollection(Set<String> deleted, Iterable<?> objs) {
         for (Object object : objs) {
             if (isLiveObject(object)) {
-                if (deleted.add(getMap(object).getName())) {
+                if (deleted.add(((RedissonObject) getMap(object)).getRawName())) {
                     delete(object, deleted);
                 }
             }

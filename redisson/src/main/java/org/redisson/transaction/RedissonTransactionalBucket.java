@@ -141,7 +141,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
             @Override
             public void run() {
                 if (state != null) {
-                    operations.add(new TouchOperation(getName(), getLockName()));
+                    operations.add(new TouchOperation(getRawName(), getLockName()));
                     result.trySuccess(state != NULL);
                     return;
                 }
@@ -152,7 +152,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
                         return;
                     }
                     
-                    operations.add(new TouchOperation(getName(), getLockName()));
+                    operations.add(new TouchOperation(getRawName(), getLockName()));
                     result.trySuccess(res);
                 });
             }
@@ -168,7 +168,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
             @Override
             public void run() {
                 if (state != null) {
-                    operations.add(new UnlinkOperation(getName(), getLockName()));
+                    operations.add(new UnlinkOperation(getRawName(), getLockName()));
                     if (state == NULL) {
                         result.trySuccess(false);
                     } else {
@@ -184,7 +184,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
                         return;
                     }
                     
-                    operations.add(new UnlinkOperation(getName(), getLockName()));
+                    operations.add(new UnlinkOperation(getRawName(), getLockName()));
                     state = NULL;
                     result.trySuccess(res);
                 });
@@ -202,7 +202,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
             @Override
             public void run() {
                 if (state != null) {
-                    operations.add(new DeleteOperation(getName(), getLockName(), transactionId, threadId));
+                    operations.add(new DeleteOperation(getRawName(), getLockName(), transactionId, threadId));
                     if (state == NULL) {
                         result.trySuccess(false);
                     } else {
@@ -218,7 +218,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
                         return;
                     }
                     
-                    operations.add(new DeleteOperation(getName(), getLockName(), transactionId, threadId));
+                    operations.add(new DeleteOperation(getRawName(), getLockName(), transactionId, threadId));
                     state = NULL;
                     result.trySuccess(res);
                 });
@@ -250,7 +250,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
             @Override
             public void run() {
                 if (state != null) {
-                    operations.add(new BucketCompareAndSetOperation<V>(getName(), getLockName(), getCodec(), expect, update, transactionId));
+                    operations.add(new BucketCompareAndSetOperation<V>(getRawName(), getLockName(), getCodec(), expect, update, transactionId));
                     if ((state == NULL && expect == null)
                             || isEquals(state, expect)) {
                         if (update == null) {
@@ -271,7 +271,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
                         return;
                     }
                     
-                    operations.add(new BucketCompareAndSetOperation<V>(getName(), getLockName(), getCodec(), expect, update, transactionId));
+                    operations.add(new BucketCompareAndSetOperation<V>(getRawName(), getLockName(), getCodec(), expect, update, transactionId));
                     if ((res == null && expect == null) 
                             || isEquals(res, expect)) {
                         if (update == null) {
@@ -291,12 +291,12 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
     
     @Override
     public RFuture<V> getAndSetAsync(V value, long timeToLive, TimeUnit timeUnit) {
-        return getAndSet(value, new BucketGetAndSetOperation<V>(getName(), getLockName(), getCodec(), value, timeToLive, timeUnit, transactionId));
+        return getAndSet(value, new BucketGetAndSetOperation<V>(getRawName(), getLockName(), getCodec(), value, timeToLive, timeUnit, transactionId));
     }
     
     @Override
     public RFuture<V> getAndSetAsync(V value) {
-        return getAndSet(value, new BucketGetAndSetOperation<V>(getName(), getLockName(), getCodec(), value, transactionId));
+        return getAndSet(value, new BucketGetAndSetOperation<V>(getRawName(), getLockName(), getCodec(), value, transactionId));
     }
     
     @SuppressWarnings("unchecked")
@@ -357,7 +357,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
                     } else {
                         prevValue = state;
                     }
-                    operations.add(new BucketGetAndDeleteOperation<V>(getName(), getLockName(), getCodec(), transactionId));
+                    operations.add(new BucketGetAndDeleteOperation<V>(getRawName(), getLockName(), getCodec(), transactionId));
                     state = NULL;
                     result.trySuccess((V) prevValue);
                     return;
@@ -370,7 +370,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
                     }
                     
                     state = NULL;
-                    operations.add(new BucketGetAndDeleteOperation<V>(getName(), getLockName(), getCodec(), transactionId));
+                    operations.add(new BucketGetAndDeleteOperation<V>(getRawName(), getLockName(), getCodec(), transactionId));
                     result.trySuccess(res);
                 });
             }
@@ -380,7 +380,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
     
     @Override
     public RFuture<Void> setAsync(V newValue) {
-        return setAsync(newValue, new BucketSetOperation<V>(getName(), getLockName(), getCodec(), newValue, transactionId));
+        return setAsync(newValue, new BucketSetOperation<V>(getRawName(), getLockName(), getCodec(), newValue, transactionId));
     }
 
     private RFuture<Void> setAsync(V newValue, TransactionalOperation operation) {
@@ -403,17 +403,17 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
     
     @Override
     public RFuture<Void> setAsync(V value, long timeToLive, TimeUnit timeUnit) {
-        return setAsync(value, new BucketSetOperation<V>(getName(), getLockName(), getCodec(), value, timeToLive, timeUnit, transactionId));
+        return setAsync(value, new BucketSetOperation<V>(getRawName(), getLockName(), getCodec(), value, timeToLive, timeUnit, transactionId));
     }
     
     @Override
     public RFuture<Boolean> trySetAsync(V newValue) {
-        return trySet(newValue, new BucketTrySetOperation<V>(getName(), getLockName(), getCodec(), newValue, transactionId));
+        return trySet(newValue, new BucketTrySetOperation<V>(getRawName(), getLockName(), getCodec(), newValue, transactionId));
     }
     
     @Override
     public RFuture<Boolean> trySetAsync(V value, long timeToLive, TimeUnit timeUnit) {
-        return trySet(value, new BucketTrySetOperation<V>(getName(), getLockName(), getCodec(), value, timeToLive, timeUnit, transactionId));
+        return trySet(value, new BucketTrySetOperation<V>(getRawName(), getLockName(), getCodec(), value, timeToLive, timeUnit, transactionId));
     }
 
     private RFuture<Boolean> trySet(V newValue, TransactionalOperation operation) {
@@ -489,7 +489,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
     }
 
     private String getLockName() {
-        return getName() + ":transaction_lock";
+        return getRawName() + ":transaction_lock";
     }
 
     protected void checkState() {

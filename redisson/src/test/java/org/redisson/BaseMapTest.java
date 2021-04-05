@@ -686,7 +686,7 @@ public abstract class BaseMapTest extends BaseTest {
     }
     
     @Test
-    public void testRemoveValue() {
+    public void testRemoveValue() throws InterruptedException {
         RMap<SimpleKey, SimpleValue> map = getMap("simple");
         map.put(new SimpleKey("1"), new SimpleValue("2"));
 

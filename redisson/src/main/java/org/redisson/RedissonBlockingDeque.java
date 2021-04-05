@@ -216,7 +216,7 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
 
     @Override
     public RFuture<V> takeLastAsync() {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.BRPOP_VALUE, getName(), 0);
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.BRPOP_VALUE, getRawName(), 0);
     }
 
     @Override
@@ -256,7 +256,7 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
 
     @Override
     public RFuture<V> pollLastFromAnyAsync(long timeout, TimeUnit unit, String... queueNames) {
-        return commandExecutor.pollFromAnyAsync(getName(), codec, RedisCommands.BRPOP_VALUE, toSeconds(timeout, unit), queueNames);
+        return commandExecutor.pollFromAnyAsync(getRawName(), codec, RedisCommands.BRPOP_VALUE, toSeconds(timeout, unit), queueNames);
     }
 
     @Override
@@ -266,7 +266,7 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
 
     @Override
     public RFuture<V> pollLastAsync(long timeout, TimeUnit unit) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.BRPOP_VALUE, getName(), toSeconds(timeout, unit));
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.BRPOP_VALUE, getRawName(), toSeconds(timeout, unit));
     }
 
     @Override
@@ -283,7 +283,7 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
     public RFuture<V> moveAsync(Duration timeout, DequeMoveArgs args) {
         DequeMoveSource source = (DequeMoveSource) args;
         DequeMoveParams pp = source.getParams();
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.BLMOVE, getName(),
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.BLMOVE, getRawName(),
                                                 pp.getDestName(), pp.getSourceDirection(), pp.getDestDirection(),
                                                 toSeconds(timeout.getSeconds(), TimeUnit.SECONDS));
     }

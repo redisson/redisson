@@ -18,6 +18,7 @@ package org.redisson.liveobject.core;
 import net.bytebuddy.implementation.bind.annotation.*;
 import org.redisson.RedissonLiveObjectService;
 import org.redisson.RedissonMap;
+import org.redisson.RedissonObject;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLiveObject;
 import org.redisson.api.RMap;
@@ -87,7 +88,7 @@ public class LiveObjectInterceptor {
             //TODO: distributed locking maybe required.
             String idKey = getMapKey(args[0]);
             if (map != null) {
-                if (map.getName().equals(idKey)) {
+                if (((RedissonObject) map).getRawName().equals(idKey)) {
                     return null;
                 }
                 try {
@@ -111,7 +112,7 @@ public class LiveObjectInterceptor {
             if (map == null) {
                 return null;
             }
-            return namingScheme.resolveId(map.getName());
+            return namingScheme.resolveId(((RedissonObject) map).getRawName());
         }
 
         if ("delete".equals(method.getName())) {

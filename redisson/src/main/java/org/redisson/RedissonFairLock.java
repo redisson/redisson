@@ -76,7 +76,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
             wait = unit.toMillis(waitTime);
         }
 
-        return evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
+        return evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 // get the existing timeout for the thread to remove
                 "local queue = redis.call('lrange', KEYS[1], 0, -1);" +
                 // find the location in the queue where the thread is
@@ -107,7 +107,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
 
         long currentTime = System.currentTimeMillis();
         if (command == RedisCommands.EVAL_NULL_BOOLEAN) {
-            return evalWriteAsync(getName(), LongCodec.INSTANCE, command,
+            return evalWriteAsync(getRawName(), LongCodec.INSTANCE, command,
                     // remove stale threads
                     "while true do " +
                         "local firstThreadId2 = redis.call('lindex', KEYS[2], 0);" +
@@ -147,12 +147,12 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                         "return nil;" +
                     "end;" +
                     "return 1;",
-                    Arrays.asList(getName(), threadsQueueName, timeoutSetName),
+                    Arrays.asList(getRawName(), threadsQueueName, timeoutSetName),
                     unit.toMillis(leaseTime), getLockName(threadId), currentTime, wait);
         }
 
         if (command == RedisCommands.EVAL_LONG) {
-            return evalWriteAsync(getName(), LongCodec.INSTANCE, command,
+            return evalWriteAsync(getRawName(), LongCodec.INSTANCE, command,
                     // remove stale threads
                     "while true do " +
                         "local firstThreadId2 = redis.call('lindex', KEYS[2], 0);" +
@@ -224,7 +224,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                         "redis.call('rpush', KEYS[2], ARGV[2]);" +
                     "end;" +
                     "return ttl;",
-                    Arrays.asList(getName(), threadsQueueName, timeoutSetName),
+                    Arrays.asList(getRawName(), threadsQueueName, timeoutSetName),
                     unit.toMillis(leaseTime), getLockName(threadId), wait, currentTime);
         }
 
@@ -233,7 +233,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
 
     @Override
     protected RFuture<Boolean> unlockInnerAsync(long threadId) {
-        return evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 // remove stale threads
                 "while true do "
                 + "local firstThreadId2 = redis.call('lindex', KEYS[2], 0);"
@@ -271,7 +271,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                     "redis.call('publish', KEYS[4] .. ':' .. nextThreadId, ARGV[1]); " +
                 "end; " +
                 "return 1; ",
-                Arrays.asList(getName(), threadsQueueName, timeoutSetName, getChannelName()),
+                Arrays.asList(getRawName(), threadsQueueName, timeoutSetName, getChannelName()),
                 LockPubSub.UNLOCK_MESSAGE, internalLockLeaseTime, getLockName(threadId), System.currentTimeMillis());
     }
 
@@ -282,35 +282,35 @@ public class RedissonFairLock extends RedissonLock implements RLock {
 
     @Override
     public RFuture<Boolean> deleteAsync() {
-        return deleteAsync(getName(), threadsQueueName, timeoutSetName);
+        return deleteAsync(getRawName(), threadsQueueName, timeoutSetName);
     }
 
     @Override
     public RFuture<Long> sizeInMemoryAsync() {
-        List<Object> keys = Arrays.asList(getName(), threadsQueueName, timeoutSetName);
+        List<Object> keys = Arrays.asList(getRawName(), threadsQueueName, timeoutSetName);
         return super.sizeInMemoryAsync(keys);
     }
 
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
-        return expireAsync(timeToLive, timeUnit, getName(), threadsQueueName, timeoutSetName);
+        return expireAsync(timeToLive, timeUnit, getRawName(), threadsQueueName, timeoutSetName);
     }
 
     @Override
     public RFuture<Boolean> expireAtAsync(long timestamp) {
-        return expireAtAsync(timestamp, getName(), threadsQueueName, timeoutSetName);
+        return expireAtAsync(timestamp, getRawName(), threadsQueueName, timeoutSetName);
     }
 
     @Override
     public RFuture<Boolean> clearExpireAsync() {
-        return clearExpireAsync(getName(), threadsQueueName, timeoutSetName);
+        return clearExpireAsync(getRawName(), threadsQueueName, timeoutSetName);
     }
 
     
     @Override
     public RFuture<Boolean> forceUnlockAsync() {
         cancelExpirationRenewal(null);
-        return evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 // remove stale threads
                 "while true do "
                 + "local firstThreadId2 = redis.call('lindex', KEYS[2], 0);"
@@ -335,7 +335,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                     "return 1; " + 
                 "end; " + 
                 "return 0;",
-                Arrays.<Object>asList(getName(), threadsQueueName, timeoutSetName, getChannelName()), 
+                Arrays.<Object>asList(getRawName(), threadsQueueName, timeoutSetName, getChannelName()),
                 LockPubSub.UNLOCK_MESSAGE, System.currentTimeMillis());
     }
 

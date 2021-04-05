@@ -65,7 +65,7 @@ public class RedissonPriorityBlockingQueue<V> extends RedissonPriorityQueue<V> i
     @Override
     public RFuture<V> takeAsync() {
         RPromise<V> result = new RedissonPromise<V>();
-        takeAsync(result, 0, 0, RedisCommands.LPOP, getName());
+        takeAsync(result, 0, 0, RedisCommands.LPOP, getRawName());
         return result;
     }
 
@@ -114,7 +114,7 @@ public class RedissonPriorityBlockingQueue<V> extends RedissonPriorityQueue<V> i
 
     public RFuture<V> pollAsync(long timeout, TimeUnit unit) {
         RPromise<V> result = new RedissonPromise<V>();
-        takeAsync(result, 0, unit.toMicros(timeout), RedisCommands.LPOP, getName());
+        takeAsync(result, 0, unit.toMicros(timeout), RedisCommands.LPOP, getRawName());
         return result;
     }
 
@@ -131,7 +131,7 @@ public class RedissonPriorityBlockingQueue<V> extends RedissonPriorityQueue<V> i
     @Override
     public RFuture<V> pollLastAndOfferFirstToAsync(String queueName, long timeout, TimeUnit unit) {
         RPromise<V> result = new RedissonPromise<V>();
-        takeAsync(result, 0, unit.toMicros(timeout), RedisCommands.RPOPLPUSH, getName(), queueName);
+        takeAsync(result, 0, unit.toMicros(timeout), RedisCommands.RPOPLPUSH, getRawName(), queueName);
         return result;
     }
 
@@ -180,10 +180,10 @@ public class RedissonPriorityBlockingQueue<V> extends RedissonPriorityQueue<V> i
             throw new NullPointerException();
         }
 
-        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Object>("EVAL", new ListDrainToDecoder(c)),
+        return commandExecutor.evalWriteAsync(getRawName(), codec, new RedisCommand<Object>("EVAL", new ListDrainToDecoder(c)),
               "local vals = redis.call('lrange', KEYS[1], 0, -1); " +
               "redis.call('ltrim', KEYS[1], -1, 0); " +
-              "return vals", Collections.<Object>singletonList(getName()));
+              "return vals", Collections.<Object>singletonList(getRawName()));
     }
 
     @Override
@@ -205,12 +205,12 @@ public class RedissonPriorityBlockingQueue<V> extends RedissonPriorityQueue<V> i
         if (c == null) {
             throw new NullPointerException();
         }
-        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Object>("EVAL", new ListDrainToDecoder(c)),
+        return commandExecutor.evalWriteAsync(getRawName(), codec, new RedisCommand<Object>("EVAL", new ListDrainToDecoder(c)),
                 "local elemNum = math.min(ARGV[1], redis.call('llen', KEYS[1])) - 1;" +
                         "local vals = redis.call('lrange', KEYS[1], 0, elemNum); " +
                         "redis.call('ltrim', KEYS[1], elemNum + 1, -1); " +
                         "return vals",
-                Collections.<Object>singletonList(getName()), maxElements);
+                Collections.<Object>singletonList(getRawName()), maxElements);
     }
 
     @Override
@@ -221,7 +221,7 @@ public class RedissonPriorityBlockingQueue<V> extends RedissonPriorityQueue<V> i
     @Override
     public RFuture<List<V>> pollAsync(int limit) {
         return wrapLockedAsync(() -> {
-            return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_LIST,
+            return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_LIST,
                        "local result = {};"
                      + "for i = 1, ARGV[1], 1 do " +
                            "local value = redis.call('lpop', KEYS[1]);" +
@@ -232,7 +232,7 @@ public class RedissonPriorityBlockingQueue<V> extends RedissonPriorityQueue<V> i
                            "end;" +
                        "end; " +
                        "return result;",
-                    Collections.singletonList(getName()), limit);
+                    Collections.singletonList(getRawName()), limit);
         });
     }
 

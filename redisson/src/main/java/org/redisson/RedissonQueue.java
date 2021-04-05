@@ -76,7 +76,7 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
 
     @Override
     public RFuture<V> pollAsync() {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LPOP, getName());
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.LPOP, getRawName());
     }
 
     @Override
@@ -86,7 +86,7 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
 
     @Override
     public RFuture<List<V>> pollAsync(int limit) {
-        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_LIST,
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_LIST,
                    "local result = {};"
                  + "for i = 1, ARGV[1], 1 do " +
                        "local value = redis.call('lpop', KEYS[1]);" +
@@ -97,7 +97,7 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
                        "end;" +
                    "end; " +
                    "return result;",
-                Collections.singletonList(getName()), limit);
+                Collections.singletonList(getRawName()), limit);
     }
 
     @Override
@@ -127,7 +127,7 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
 
     @Override
     public RFuture<V> pollLastAndOfferFirstToAsync(String queueName) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.RPOPLPUSH, getName(), queueName);
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.RPOPLPUSH, getRawName(), queueName);
     }
 
 }
