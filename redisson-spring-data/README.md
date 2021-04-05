@@ -4,8 +4,6 @@ Integrates Redisson with Spring Data Redis library. Implements Spring Data's `Re
 
 Supports Spring Data Redis 1.6.x - 2.4.x
 
-<sub>Consider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.</sub>
-
 ## Usage
 
 ### 1. Add `redisson-spring-data` dependency into your project:
@@ -57,6 +55,11 @@ Gradle
 ```
 
 ### 2. Register `RedissonConnectionFactory` in Spring context
+
+|Class name | Ultra-fast read/write |
+| ------------- | :----------:|
+|RedissonConnectionFactory<br/><sub><i>open-source version</i></sub> | ❌ |
+|RedissonConnectionFactory<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ✔️ |
 
 ```java
  @Configuration
