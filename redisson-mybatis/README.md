@@ -16,9 +16,9 @@ Below is the list of all available implementations with local cache and/or data 
 | ------------- | :-----------: | :----------:| :----------:|
 |RedissonCache<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
 |RedissonCache<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
-|RedissonLocalCachedCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub>  | ✔️ | ❌ | ✔️ |
-|RedissonClusteredCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | ❌ | ✔️ | ✔️ |
-|RedissonClusteredLocalCachedCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | ✔️ | ✔️ | ✔️ |
+|RedissonLocalCachedCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ❌ | ✔️ |
+|RedissonClusteredCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
+|RedissonClusteredLocalCachedCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
 
 ## MyBatis Cache Usage
 
@@ -30,14 +30,14 @@ Maven
      <dependency>
          <groupId>org.redisson</groupId>
          <artifactId>redisson-mybatis</artifactId>
-         <version>3.15.2</version>
+         <version>3.15.3</version>
      </dependency>
 ```
 
 Gradle
 
 ```groovy
-     compile 'org.redisson:redisson-mybatis:3.15.2'
+     compile 'org.redisson:redisson-mybatis:3.15.3'
 ```
 
 ### 2. Specify MyBatis cache settings
