@@ -39,21 +39,21 @@ Gradle
 
 ```groovy
      // for Spring Data Redis v.1.6.x
-     compile 'org.redisson:redisson-spring-data-16:3.15.2'
+     compile 'org.redisson:redisson-spring-data-16:3.15.3'
      // for Spring Data Redis v.1.7.x
-     compile 'org.redisson:redisson-spring-data-17:3.15.2'
+     compile 'org.redisson:redisson-spring-data-17:3.15.3'
      // for Spring Data Redis v.1.8.x
-     compile 'org.redisson:redisson-spring-data-18:3.15.2'
+     compile 'org.redisson:redisson-spring-data-18:3.15.3'
      // for Spring Data Redis v.2.0.x
-     compile 'org.redisson:redisson-spring-data-20:3.15.2'
+     compile 'org.redisson:redisson-spring-data-20:3.15.3'
      // for Spring Data Redis v.2.1.x
-     compile 'org.redisson:redisson-spring-data-21:3.15.2'
+     compile 'org.redisson:redisson-spring-data-21:3.15.3'
      // for Spring Data Redis v.2.2.x
-     compile 'org.redisson:redisson-spring-data-22:3.15.2'
+     compile 'org.redisson:redisson-spring-data-22:3.15.3'
      // for Spring Data Redis v.2.3.x
-     compile 'org.redisson:redisson-spring-data-23:3.15.2'
+     compile 'org.redisson:redisson-spring-data-23:3.15.3'
      // for Spring Data Redis v.2.4.x
-     compile 'org.redisson:redisson-spring-data-24:3.15.2'
+     compile 'org.redisson:redisson-spring-data-24:3.15.3'
 ```
 
 ### 2. Register `RedissonConnectionFactory` in Spring context
