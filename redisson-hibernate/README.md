@@ -9,7 +9,7 @@ Redisson provides various Hibernate Cache factories including those with feature
 
 **local cache** - so called `near cache`, which is useful for use cases when Hibernate Cache used mostly for read operations and/or network roundtrips are undesirable. It caches Map entries on Redisson side and executes read operations up to **5x faster** in comparison with common implementation. Local cache instances with the same name connected to the same pub/sub channel. This channel is used for exchanging of update/invalidate events between instances.  
 
-**data partitioning** - scales available memory, read/write operations and entry eviction process for individual Hibernate Cache instance in Redis cluster.
+**data partitioning** - data partitioning in cluster mode. Scales available memory, read/write operations and entry eviction process for individual Hibernate Cache instance in Redis cluster.
 
 Below is the list of all available factories with local cache and/or data partitioning support:
 
