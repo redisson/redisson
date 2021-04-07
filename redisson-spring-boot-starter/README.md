@@ -6,14 +6,6 @@ Supports Spring Boot 1.3.x - 2.4.x
 
 ## Usage
 
-|Class name | Ultra-fast read/write |
-| ------------- | :----------:|
-|RedisTemplate<br/><sub><i>open-source version</i></sub> | ❌ |
-|ReactiveRedisTemplate<br/><sub><i>open-source version</i></sub> | ❌ |
-|RedisTemplate<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ✔️ |
-|ReactiveRedisTemplate<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ✔️ |
-
-
 ### 1. Add `redisson-spring-boot-starter` dependency into your project:
 
 Maven
@@ -108,5 +100,21 @@ spring:
 
 ```
 
-### 3. Use Redisson through spring bean with `RedissonClient` interface or `RedisTemplate`/`ReactiveRedisTemplate` objects
+### 3. Avaialble Spring Beans:
+
+|Class name | Ultra-fast read/write |
+| ------------- | :----------:|
+|RedissonClient<br/><sub><i>open-source version</i></sub> | ❌ |
+|RedissonRxClient<br/><sub><i>open-source version</i></sub> | ❌ |
+|RedissonReactiveClient<br/><sub><i>open-source version</i></sub> | ❌ |
+|RedisTemplate<br/><sub><i>open-source version</i></sub> | ❌ |
+|ReactiveRedisTemplate<br/><sub><i>open-source version</i></sub> | ❌ |
+|RedissonClient<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ✔️ |
+|RedissonRxClient<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ✔️ |
+|RedissonReactiveClient<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ✔️ |
+|RedisTemplate<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ✔️ |
+|ReactiveRedisTemplate<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ✔️ |
+
+
+Redisson through spring bean with `RedissonClient` interface or `RedisTemplate`/`ReactiveRedisTemplate` objects
 
