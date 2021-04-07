@@ -373,7 +373,7 @@ public class RedissonTransaction implements RTransaction {
         CountDownLatch latch = new CountDownLatch(hashes.size());
         List<RTopic> topics = new ArrayList<>();
         for (Entry<HashKey, HashValue> entry : hashes.entrySet()) {
-            RTopic topic = new RedissonTopic(LocalCachedMessageCodec.INSTANCE, 
+            RTopic topic = RedissonTopic.createRaw(LocalCachedMessageCodec.INSTANCE,
                     commandExecutor, RedissonObject.suffixName(entry.getKey().getName(), requestId + RedissonLocalCachedMap.DISABLED_ACK_SUFFIX));
             topics.add(topic);
             topic.addListener(Object.class, new MessageListener<Object>() {
@@ -473,8 +473,8 @@ public class RedissonTransaction implements RTransaction {
                 List<RTopic> topics = new ArrayList<>();
                 for (Entry<HashKey, HashValue> entry : hashes.entrySet()) {
                     String disabledAckName = RedissonObject.suffixName(entry.getKey().getName(), requestId + RedissonLocalCachedMap.DISABLED_ACK_SUFFIX);
-                    RTopic topic = new RedissonTopic(LocalCachedMessageCodec.INSTANCE, 
-                            commandExecutor, disabledAckName);
+                    RTopic topic = RedissonTopic.createRaw(LocalCachedMessageCodec.INSTANCE,
+                                                                commandExecutor, disabledAckName);
                     topics.add(topic);
                     RFuture<Integer> topicFuture = topic.addListenerAsync(Object.class, new MessageListener<Object>() {
                         @Override

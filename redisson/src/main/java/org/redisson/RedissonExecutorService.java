@@ -243,7 +243,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         QueueTransferTask task = new QueueTransferTask(connectionManager) {
             @Override
             protected RTopic getTopic() {
-                return new RedissonTopic(LongCodec.INSTANCE, commandExecutor, schedulerChannelName);
+                return RedissonTopic.createRaw(LongCodec.INSTANCE, commandExecutor, schedulerChannelName);
             }
 
             @Override
