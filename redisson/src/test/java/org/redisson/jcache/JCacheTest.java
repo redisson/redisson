@@ -415,7 +415,7 @@ public class JCacheTest extends BaseTest {
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager(configUri, null)
                 .createCache("test", config);
 
-        CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(2);
 
         String key = "123";
 
@@ -424,6 +424,11 @@ public class JCacheTest extends BaseTest {
                 new MutableCacheEntryListenerConfiguration<>(FactoryBuilder.factoryOf(clientListener), null, true, true);
         cache.registerCacheEntryListener(listenerConfiguration);
 
+        UpdatedListener secondClientListener = new UpdatedListener(latch, key, null, "90");
+        MutableCacheEntryListenerConfiguration<String, String> secondListenerConfiguration =
+                new MutableCacheEntryListenerConfiguration<>(FactoryBuilder.factoryOf(secondClientListener), null, false, true);
+        cache.registerCacheEntryListener(secondListenerConfiguration);
+
         cache.put(key, "80");
         Assert.assertNotNull(cache.get(key));
 
@@ -431,7 +436,7 @@ public class JCacheTest extends BaseTest {
 
         latch.await();
 
-        //Assert.assertNotNull(cache.get(key));
+        Assert.assertNotNull(cache.get(key));
 
         cache.close();
         runner.stop();
