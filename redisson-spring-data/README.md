@@ -4,8 +4,6 @@ Integrates Redisson with Spring Data Redis library. Implements Spring Data's `Re
 
 Supports Spring Data Redis 1.6.x - 2.4.x
 
-<sub>Consider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.</sub>
-
 ## Usage
 
 ### 1. Add `redisson-spring-data` dependency into your project:
@@ -39,24 +37,29 @@ Gradle
 
 ```groovy
      // for Spring Data Redis v.1.6.x
-     compile 'org.redisson:redisson-spring-data-16:3.15.2'
+     compile 'org.redisson:redisson-spring-data-16:3.15.3'
      // for Spring Data Redis v.1.7.x
-     compile 'org.redisson:redisson-spring-data-17:3.15.2'
+     compile 'org.redisson:redisson-spring-data-17:3.15.3'
      // for Spring Data Redis v.1.8.x
-     compile 'org.redisson:redisson-spring-data-18:3.15.2'
+     compile 'org.redisson:redisson-spring-data-18:3.15.3'
      // for Spring Data Redis v.2.0.x
-     compile 'org.redisson:redisson-spring-data-20:3.15.2'
+     compile 'org.redisson:redisson-spring-data-20:3.15.3'
      // for Spring Data Redis v.2.1.x
-     compile 'org.redisson:redisson-spring-data-21:3.15.2'
+     compile 'org.redisson:redisson-spring-data-21:3.15.3'
      // for Spring Data Redis v.2.2.x
-     compile 'org.redisson:redisson-spring-data-22:3.15.2'
+     compile 'org.redisson:redisson-spring-data-22:3.15.3'
      // for Spring Data Redis v.2.3.x
-     compile 'org.redisson:redisson-spring-data-23:3.15.2'
+     compile 'org.redisson:redisson-spring-data-23:3.15.3'
      // for Spring Data Redis v.2.4.x
-     compile 'org.redisson:redisson-spring-data-24:3.15.2'
+     compile 'org.redisson:redisson-spring-data-24:3.15.3'
 ```
 
 ### 2. Register `RedissonConnectionFactory` in Spring context
+
+|Class name | Ultra-fast read/write |
+| ------------- | :----------:|
+|RedissonConnectionFactory<br/><sub><i>open-source version</i></sub> | ❌ |
+|RedissonConnectionFactory<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ✔️ |
 
 ```java
  @Configuration
