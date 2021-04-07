@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import org.redisson.api.NameMapper;
 import org.redisson.api.RFuture;
 import org.redisson.api.RTopic;
 import org.redisson.api.listener.MessageListener;
@@ -56,9 +57,21 @@ public class RedissonTopic implements RTopic {
         this(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name);
     }
 
+    public static RedissonTopic createRaw(CommandAsyncExecutor commandExecutor, String name) {
+        return new RedissonTopic(commandExecutor.getConnectionManager().getCodec(), commandExecutor, NameMapper.direct(), name);
+    }
+
+    public static RedissonTopic createRaw(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
+        return new RedissonTopic(codec, commandExecutor, NameMapper.direct(), name);
+    }
+
     public RedissonTopic(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
+        this(codec, commandExecutor, commandExecutor.getConnectionManager().getConfig().getNameMapper(), name);
+    }
+
+    public RedissonTopic(Codec codec, CommandAsyncExecutor commandExecutor, NameMapper nameMapper, String name) {
         this.commandExecutor = commandExecutor;
-        this.name = name;
+        this.name = nameMapper.map(name);
         this.channelName = new ChannelName(name);
         this.codec = codec;
         this.subscribeService = commandExecutor.getConnectionManager().getSubscribeService();
