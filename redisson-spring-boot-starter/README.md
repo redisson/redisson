@@ -114,7 +114,3 @@ spring:
 |RedissonReactiveClient<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ✔️ |
 |RedisTemplate<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ✔️ |
 |ReactiveRedisTemplate<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ✔️ |
-
-
-Redisson through spring bean with `RedissonClient` interface or `RedisTemplate`/`ReactiveRedisTemplate` objects
-
