@@ -402,21 +402,35 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                       + "elseif ARGV[2] ~= '-1' then "
                           + "redis.call('hset', KEYS[1], ARGV[4], ARGV[5]); "
                           + "redis.call('zadd', KEYS[2], ARGV[2], ARGV[4]); "
-                          + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value)); "
+                          + "local oldValueRequired = tonumber(redis.call('get', KEYS[9])); "
+                          + "local msg, syncMsg; "
+                          + "if oldValueRequired == nil or oldValueRequired < 1 then "
+                              + "msg = struct.pack('Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5]); "
+                              + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], ARGV[6]); "
+                          + "else "
+                              + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value)); "
+                              + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value), ARGV[6]); "
+                          + "end; "
                           + "redis.call('publish', KEYS[5], msg); "
-                          + "local syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value), ARGV[6]); "
                           + "local syncs = redis.call('publish', KEYS[8], syncMsg); "
                           + "return {1, syncs};"
                       + "else "
                           + "redis.call('hset', KEYS[1], ARGV[4], ARGV[5]); "
-                          + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value)); "
+                          + "local oldValueRequired = tonumber(redis.call('get', KEYS[9])); "
+                          + "local msg, syncMsg; "
+                          + "if oldValueRequired == nil or oldValueRequired < 1 then "
+                              + "msg = struct.pack('Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5]); "
+                              + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], ARGV[6]); "
+                          + "else "
+                              + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value)); "
+                              + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value), ARGV[6]); "
+                          + "end; "
                           + "redis.call('publish', KEYS[5], msg); "
-                          + "local syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value), ARGV[6]); "
                           + "local syncs = redis.call('publish', KEYS[8], syncMsg); "
                           + "return {1, syncs};"
                       + "end; ",
                  Arrays.<Object>asList(getRawName(), getTimeoutSetName(), getCreatedChannelName(), getRemovedChannelName(), getUpdatedChannelName(),
-                         getCreatedSyncChannelName(), getRemovedSyncChannelName(), getUpdatedSyncChannelName()), 
+                         getCreatedSyncChannelName(), getRemovedSyncChannelName(), getUpdatedSyncChannelName(), getOldValueListenerCounter()),
                  0, updateTimeout, System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value), syncId);
             
             res.add(syncId);
@@ -495,16 +509,30 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 + "elseif ARGV[2] ~= '-1' then "
                     + "redis.call('hset', KEYS[1], ARGV[i], ARGV[i+1]); "
                     + "redis.call('zadd', KEYS[2], ARGV[2], ARGV[i]); "
-                    + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1], string.len(tostring(value)), tostring(value)); "
+                    + "local oldValueRequired = tonumber(redis.call('get', KEYS[9])); "
+                    + "local msg, syncMsg; "
+                    + "if oldValueRequired == nil or oldValueRequired < 1 then "
+                        + "msg = struct.pack('Lc0Lc0', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1]); "
+                        + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1], ARGV[4]); "
+                    + "else "
+                        + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1], string.len(tostring(value)), tostring(value)); "
+                        + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1], string.len(tostring(value)), tostring(value), ARGV[4]); "
+                    + "end; "
                     + "redis.call('publish', KEYS[5], msg); "
-                    + "local syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1], string.len(tostring(value)), tostring(value), ARGV[4]); "
                     + "syncs = syncs + redis.call('publish', KEYS[8], syncMsg); "
                     + "added = added + 1;"
                 + "else "
                     + "redis.call('hset', KEYS[1], ARGV[i], ARGV[i+1]); "
-                    + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1], string.len(tostring(value)), tostring(value)); "
+                    + "local oldValueRequired = tonumber(redis.call('get', KEYS[9])); "
+                    + "local msg, syncMsg; "
+                    + "if oldValueRequired == nil or oldValueRequired < 1 then "
+                        + "msg = struct.pack('Lc0Lc0', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1]); "
+                        + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1], ARGV[4]); "
+                    + "else "
+                        + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1], string.len(tostring(value)), tostring(value)); "
+                        + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1], string.len(tostring(value)), tostring(value), ARGV[4]); "
+                    + "end; "
                     + "redis.call('publish', KEYS[5], msg); "
-                    + "local syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1], string.len(tostring(value)), tostring(value), ARGV[4]); "
                     + "syncs = syncs + redis.call('publish', KEYS[8], syncMsg); "
                     + "added = added + 1;"
                 + "end; "
@@ -530,7 +558,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
           + "end; "
           + "return {added, syncs};",
              Arrays.<Object>asList(getRawName(), getTimeoutSetName(), getCreatedChannelName(), getRemovedChannelName(), getUpdatedChannelName(),
-                     getCreatedSyncChannelName(), getRemovedSyncChannelName(), getUpdatedSyncChannelName()), 
+                     getCreatedSyncChannelName(), getRemovedSyncChannelName(), getUpdatedSyncChannelName(), getOldValueListenerCounter()),
                      params.toArray());
         
         RPromise<Long> result = new RedissonPromise<>();
@@ -612,11 +640,11 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                       + "local oldValueRequired = tonumber(redis.call('get', KEYS[9])); "
                       + "local msg, syncMsg; "
                       + "if oldValueRequired == nil or oldValueRequired < 1 then "
-                        + "msg = struct.pack('Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5]); "
-                        + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], ARGV[6]); "
+                          + "msg = struct.pack('Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5]); "
+                          + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], ARGV[6]); "
                       + "else "
-                        + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value)); "
-                        + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value), ARGV[6]); "
+                          + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value)); "
+                          + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value), ARGV[6]); "
                       + "end; "
                       + "redis.call('publish', KEYS[5], msg); "
                       + "local syncs = redis.call('publish', KEYS[8], syncMsg); "
@@ -625,12 +653,12 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                       + "redis.call('hset', KEYS[1], ARGV[4], ARGV[5]); "
                       + "local oldValueRequired = tonumber(redis.call('get', KEYS[9])); "
                       + "local msg, syncMsg; "
-                        + "if oldValueRequired == nil or oldValueRequired < 1 then "
-                        + "msg = struct.pack('Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5]); "
-                        + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], ARGV[6]); "
+                      + "if oldValueRequired == nil or oldValueRequired < 1 then "
+                          + "msg = struct.pack('Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5]); "
+                          + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], ARGV[6]); "
                       + "else "
-                        + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value)); "
-                        + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value), ARGV[6]); "
+                          + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value)); "
+                          + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value), ARGV[6]); "
                       + "end; "
                       + "redis.call('publish', KEYS[5], msg); "
                       + "local syncs = redis.call('publish', KEYS[8], syncMsg); "
@@ -1245,21 +1273,35 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                       + "elseif ARGV[2] ~= '-1' then " 
                           + "redis.call('hset', KEYS[1], ARGV[4], ARGV[5]); "
                           + "redis.call('zadd', KEYS[2], ARGV[2], ARGV[4]); "
-                          + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value)); "
+                          + "local oldValueRequired = tonumber(redis.call('get', KEYS[9])); "
+                          + "local msg, syncMsg; "
+                          + "if oldValueRequired == nil or oldValueRequired < 1 then "
+                              + "msg = struct.pack('Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5]); "
+                              + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], ARGV[6]); "
+                          + "else "
+                              + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value)); "
+                              + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value), ARGV[6]); "
+                          + "end; "
                           + "redis.call('publish', KEYS[5], msg); "
-                          + "local syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value), ARGV[6]); "
                           + "local syncs = redis.call('publish', KEYS[8], syncMsg); "
                           + "return {1, value, syncs};"
                       + "else " 
                           + "redis.call('hset', KEYS[1], ARGV[4], ARGV[5]); "
-                          + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value)); "
+                          + "local oldValueRequired = tonumber(redis.call('get', KEYS[9])); "
+                          + "local msg, syncMsg; "
+                          + "if oldValueRequired == nil or oldValueRequired < 1 then "
+                              + "msg = struct.pack('Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5]); "
+                              + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], ARGV[6]); "
+                          + "else "
+                              + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value)); "
+                              + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value), ARGV[6]); "
+                          + "end; "
                           + "redis.call('publish', KEYS[5], msg); "
-                          + "local syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value), ARGV[6]); "
                           + "local syncs = redis.call('publish', KEYS[8], syncMsg); "
                           + "return {1, value, syncs};"
                       + "end; ",
                  Arrays.<Object>asList(getRawName(), getTimeoutSetName(), getRemovedChannelName(), getCreatedChannelName(), getUpdatedChannelName(),
-                         getRemovedSyncChannelName(), getCreatedSyncChannelName(), getUpdatedSyncChannelName()), 
+                         getRemovedSyncChannelName(), getCreatedSyncChannelName(), getUpdatedSyncChannelName(), getOldValueListenerCounter()),
                  0, updateTimeout, System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value), syncId);
             
             result.add(syncId);
@@ -1315,19 +1357,33 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                       + "local syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value), ARGV[6]); "
                       + "local syncs = redis.call('publish', KEYS[6], syncMsg); "
                       + "return {0, value, syncs};"
-                  + "elseif ARGV[2] ~= '-1' then " 
+                  + "elseif ARGV[2] ~= '-1' then "
                       + "redis.call('hset', KEYS[1], ARGV[4], ARGV[5]); "
                       + "redis.call('zadd', KEYS[2], ARGV[2], ARGV[4]); "
-                      + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value)); "
+                      + "local oldValueRequired = tonumber(redis.call('get', KEYS[9])); "
+                      + "local msg, syncMsg; "
+                      + "if oldValueRequired == nil or oldValueRequired < 1 then "
+                          + "msg = struct.pack('Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5]); "
+                          + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], ARGV[6]); "
+                      + "else "
+                          + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value)); "
+                          + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value), ARGV[6]); "
+                      + "end; "
                       + "redis.call('publish', KEYS[5], msg); "
-                      + "local syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value), ARGV[6]); "
                       + "local syncs = redis.call('publish', KEYS[8], syncMsg); "
                       + "return {1, value, syncs};"
-                  + "else " 
+                  + "else "
                       + "redis.call('hset', KEYS[1], ARGV[4], ARGV[5]); "
-                      + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value)); "
+                      + "local oldValueRequired = tonumber(redis.call('get', KEYS[9])); "
+                      + "local msg, syncMsg; "
+                      + "if oldValueRequired == nil or oldValueRequired < 1 then "
+                          + "msg = struct.pack('Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5]); "
+                          + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], ARGV[6]); "
+                      + "else "
+                          + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value)); "
+                          + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value), ARGV[6]); "
+                      + "end; "
                       + "redis.call('publish', KEYS[5], msg); "
-                      + "local syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value), ARGV[6]); "
                       + "local syncs = redis.call('publish', KEYS[8], syncMsg); "
                       + "return {1, value, syncs};"
                   + "end; "
@@ -1352,7 +1408,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                   + "end; "
               + "end; ",
              Arrays.<Object>asList(getRawName(), getTimeoutSetName(), getRemovedChannelName(), getCreatedChannelName(), getUpdatedChannelName(),
-                     getRemovedSyncChannelName(), getCreatedSyncChannelName(), getUpdatedSyncChannelName()), 
+                     getRemovedSyncChannelName(), getCreatedSyncChannelName(), getUpdatedSyncChannelName(), getOldValueListenerCounter()),
              creationTimeout, updateTimeout, System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value), syncId);
         
         future.onComplete((r, e) -> {
@@ -2235,9 +2291,16 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                        + "elseif ARGV[2] ~= '-1' then " 
                            + "redis.call('hset', KEYS[1], ARGV[4], ARGV[6]); "
                            + "redis.call('zadd', KEYS[2], ARGV[2], ARGV[4]); "
-                           + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[6]), ARGV[6], string.len(tostring(value)), tostring(value)); "
+                           + "local oldValueRequired = tonumber(redis.call('get', KEYS[7])); "
+                           + "local msg, syncMsg; "
+                           + "if oldValueRequired == nil or oldValueRequired < 1 then "
+                               + "msg = struct.pack('Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[6]), ARGV[6]); "
+                               + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[6]), ARGV[6], ARGV[7]); "
+                           + "else "
+                               + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[6]), ARGV[6], string.len(tostring(value)), tostring(value)); "
+                               + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[6]), ARGV[6], string.len(tostring(value)), tostring(value), ARGV[7]); "
+                           + "end; "
                            + "redis.call('publish', KEYS[4], msg); "
-                           + "local syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[6]), ARGV[6], string.len(tostring(value)), tostring(value), ARGV[7]); "
                            + "return redis.call('publish', KEYS[6], syncMsg); "
                        + "else " 
                            + "redis.call('hset', KEYS[1], ARGV[4], ARGV[6]); "
@@ -2247,7 +2310,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                            + "return redis.call('publish', KEYS[6], syncMsg); "
                        + "end; ",
                        Arrays.<Object>asList(getRawName(), getTimeoutSetName(), getRemovedChannelName(), getUpdatedChannelName(),
-                               getRemovedSyncChannelName(), getUpdatedSyncChannelName()), 
+                               getRemovedSyncChannelName(), getUpdatedSyncChannelName(), getOldValueListenerCounter()),
                        0, updateTimeout, System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(oldValue), encodeMapValue(newValue), syncId);
            
            List<Object> result = Arrays.<Object>asList(syncs, syncId);
@@ -2312,11 +2375,23 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                   + "elseif ARGV[2] ~= '-1' then " 
                       + "redis.call('hset', KEYS[1], ARGV[4], ARGV[6]); "
                       + "redis.call('zadd', KEYS[2], ARGV[2], ARGV[4]); "
-                      + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[6]), ARGV[6], string.len(tostring(value)), tostring(value)); "
+                      + "local oldValueRequired = tonumber(redis.call('get', KEYS[5])); "
+                      + "local msg; "
+                      + "if oldValueRequired == nil or oldValueRequired < 1 then "
+                          + "msg = struct.pack('Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[6]), ARGV[6]); "
+                      + "else "
+                          + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[6]), ARGV[6], string.len(tostring(value)), tostring(value)); "
+                      + "end; "
                       + "redis.call('publish', KEYS[4], msg); "
                   + "else " 
                       + "redis.call('hset', KEYS[1], ARGV[4], ARGV[6]); "
-                      + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[6]), ARGV[6], string.len(tostring(value)), tostring(value)); "
+                      + "local oldValueRequired = tonumber(redis.call('get', KEYS[5])); "
+                      + "local msg; "
+                      + "if oldValueRequired == nil or oldValueRequired < 1 then "
+                          + "msg = struct.pack('Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[6]), ARGV[6]); "
+                      + "else "
+                          + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[6]), ARGV[6], string.len(tostring(value)), tostring(value)); "
+                      + "end; "
                       + "redis.call('publish', KEYS[4], msg); "
                   + "end; "
                   + "return 1;"
@@ -2332,7 +2407,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                   + "return 0;"
               + "end; "
               + "return -1; ",
-             Arrays.<Object>asList(getRawName(), getTimeoutSetName(), getRemovedChannelName(), getUpdatedChannelName()),
+             Arrays.<Object>asList(getRawName(), getTimeoutSetName(), getRemovedChannelName(), getUpdatedChannelName(), getOldValueListenerCounter()),
              accessTimeout, updateTimeout, System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(oldValue), encodeMapValue(newValue));
         
     }
@@ -2431,19 +2506,33 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
               + "elseif ARGV[1] ~= '-1' then "
                   + "redis.call('hset', KEYS[1], ARGV[3], ARGV[4]); "
                   + "redis.call('zadd', KEYS[2], ARGV[1], ARGV[3]); "
-                  + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value)); "
+                  + "local oldValueRequired = tonumber(redis.call('get', KEYS[7])); "
+                  + "local msg, syncMsg; "
+                  + "if oldValueRequired == nil or oldValueRequired < 1 then "
+                      + "msg = struct.pack('Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4]); "
+                      + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], ARGV[5]); "
+                  + "else "
+                      + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value)); "
+                      + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value), ARGV[5]); "
+                  + "end; "
                   + "redis.call('publish', KEYS[4], msg); "
-                  + "local syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value), ARGV[5]); "
                   + "return redis.call('publish', KEYS[6], syncMsg); "
               + "else " 
                   + "redis.call('hset', KEYS[1], ARGV[3], ARGV[4]); "
-                  + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value)); "
+                  + "local oldValueRequired = tonumber(redis.call('get', KEYS[7])); "
+                  + "local msg, syncMsg; "
+                  + "if oldValueRequired == nil or oldValueRequired < 1 then "
+                      + "msg = struct.pack('Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4]); "
+                      + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], ARGV[5]); "
+                  + "else "
+                      + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value)); "
+                      + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value), ARGV[5]); "
+                  + "end; "
                   + "redis.call('publish', KEYS[4], msg); "
-                  + "local syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value), ARGV[5]); "
                   + "return redis.call('publish', KEYS[6], syncMsg); "
               + "end; ",
              Arrays.<Object>asList(getRawName(), getTimeoutSetName(), getRemovedChannelName(), getUpdatedChannelName(),
-                     getRemovedSyncChannelName(), getUpdatedSyncChannelName()), 
+                     getRemovedSyncChannelName(), getUpdatedSyncChannelName(), getOldValueListenerCounter()),
              updateTimeout, System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value), syncId);
         
         List<Object> result = Arrays.<Object>asList(syncs, syncId);
@@ -2478,15 +2567,27 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
               + "elseif ARGV[1] ~= '-1' then "
                   + "redis.call('hset', KEYS[1], ARGV[3], ARGV[4]); "
                   + "redis.call('zadd', KEYS[2], ARGV[1], ARGV[3]); "
-                  + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value)); "
+                  + "local oldValueRequired = tonumber(redis.call('get', KEYS[5])); "
+                  + "local msg; "
+                  + "if oldValueRequired == nil or oldValueRequired < 1 then "
+                      + "msg = struct.pack('Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4]); "
+                  + "else "
+                      + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value)); "
+                  + "end; "
                   + "redis.call('publish', KEYS[4], msg); "
               + "else " 
                   + "redis.call('hset', KEYS[1], ARGV[3], ARGV[4]); "
-                  + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value)); "
+                  + "local oldValueRequired = tonumber(redis.call('get', KEYS[5])); "
+                  + "local msg; "
+                  + "if oldValueRequired == nil or oldValueRequired < 1 then "
+                      + "msg = struct.pack('Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4]); "
+                  + "else "
+                      + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value)); "
+                  + "end; "
                   + "redis.call('publish', KEYS[4], msg); "
               + "end; "
               + "return 1;",
-             Arrays.<Object>asList(getRawName(), getTimeoutSetName(), getRemovedChannelName(), getUpdatedChannelName()),
+             Arrays.<Object>asList(getRawName(), getTimeoutSetName(), getRemovedChannelName(), getUpdatedChannelName(), getOldValueListenerCounter()),
              updateTimeout, System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value));
         
     }
@@ -2513,17 +2614,29 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
               + "elseif ARGV[1] ~= '-1' then " 
                   + "redis.call('hset', KEYS[1], ARGV[3], ARGV[4]); "
                   + "redis.call('zadd', KEYS[2], ARGV[1], ARGV[3]); "
-                  + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value)); "
+                  + "local oldValueRequired = tonumber(redis.call('get', KEYS[5])); "
+                  + "local msg; "
+                  + "if oldValueRequired == nil or oldValueRequired < 1 then "
+                      + "msg = struct.pack('Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4]); "
+                  + "else "
+                      + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value)); "
+                  + "end; "
                   + "redis.call('publish', KEYS[4], msg); "
               + "else " 
                   + "redis.call('hset', KEYS[1], ARGV[3], ARGV[4]); "
-                  + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value)); "
+                  + "local oldValueRequired = tonumber(redis.call('get', KEYS[5])); "
+                  + "local msg; "
+                  + "if oldValueRequired == nil or oldValueRequired < 1 then "
+                      + "msg = struct.pack('Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4]); "
+                  + "else "
+                      + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value)); "
+                  + "end; "
                   + "redis.call('publish', KEYS[4], msg); "
               + "end; "
               + "return value;",
-             Arrays.<Object>asList(getRawName(), getTimeoutSetName(), getRemovedChannelName(), getUpdatedChannelName()),
+             Arrays.<Object>asList(getRawName(), getTimeoutSetName(), getRemovedChannelName(), getUpdatedChannelName(), getOldValueListenerCounter()),
              updateTimeout, System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value));
-        
+
     }
     
     private V getAndReplaceValueLocked(K key, V value) {
@@ -2556,19 +2669,33 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
               + "elseif ARGV[1] ~= '-1' then " 
                   + "redis.call('hset', KEYS[1], ARGV[3], ARGV[4]); "
                   + "redis.call('zadd', KEYS[2], ARGV[1], ARGV[3]); "
-                  + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value)); "
+                  + "local oldValueRequired = tonumber(redis.call('get', KEYS[7])); "
+                  + "local msg, syncMsg; "
+                  + "if oldValueRequired == nil or oldValueRequired < 1 then "
+                      + "msg = struct.pack('Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4]); "
+                      + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], ARGV[5]); "
+                  + "else "
+                      + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value)); "
+                      + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value), ARGV[5]); "
+                  + "end; "
                   + "redis.call('publish', KEYS[4], msg); "
-                  + "local syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value), ARGV[5]); "
                   + "return redis.call('publish', KEYS[6], syncMsg); "
               + "else " 
                   + "redis.call('hset', KEYS[1], ARGV[3], ARGV[4]); "
-                  + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value)); "
+                  + "local oldValueRequired = tonumber(redis.call('get', KEYS[7])); "
+                  + "local msg, syncMsg; "
+                  + "if oldValueRequired == nil or oldValueRequired < 1 then "
+                      + "msg = struct.pack('Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4]); "
+                      + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], ARGV[5]); "
+                  + "else "
+                      + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value)); "
+                      + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value), ARGV[5]); "
+                  + "end; "
                   + "redis.call('publish', KEYS[4], msg); "
-                  + "local syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value), ARGV[5]); "
                   + "return redis.call('publish', KEYS[6], syncMsg); "
               + "end; ",
              Arrays.<Object>asList(getRawName(), getTimeoutSetName(), getRemovedChannelName(), getUpdatedChannelName(),
-                     getRemovedSyncChannelName(), getUpdatedSyncChannelName()), 
+                     getRemovedSyncChannelName(), getUpdatedSyncChannelName(), getOldValueListenerCounter()),
              updateTimeout, System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value), syncId);
             
             List<Object> result = Arrays.<Object>asList(syncs, syncId);
