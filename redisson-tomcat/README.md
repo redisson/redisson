@@ -8,12 +8,6 @@ Supports Apache Tomcat 7.x, 8.x, 9.x, 10.x
 
 ### 1. Add session manager
 
-|Class name | Ultra-fast read/write |
-| ------------- | :----------:|
-|RedissonRegionFactory<br/><sub><i>open-source version</i></sub> | ❌ |
-|RedissonRegionFactory<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ✔️ |
-
-
 Add `RedissonSessionManager` in global context - `tomcat/conf/context.xml` or per application context - `tomcat/conf/server.xml`
 
    ```xml
@@ -78,3 +72,5 @@ Tomcat 8.x - [redisson-tomcat-8-3.15.3.jar](https://repository.sonatype.org/serv
 Tomcat 9.x - [redisson-tomcat-9-3.15.3.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-9&v=3.15.3&e=jar)  
 
 Tomcat 10.x - [redisson-tomcat-10-3.15.3.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-10&v=3.15.3&e=jar)  
+
+Consider __[Redisson PRO](https://redisson.pro)__ version for **ultra-fast performance** and **support by SLA**.
