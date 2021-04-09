@@ -17,9 +17,9 @@ Below is the list of all available factories with local cache and/or data partit
 | ------------- | :-----------: | :----------:| :----------:|
 |RedissonRegionFactory<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
 |RedissonRegionFactory<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
-|RedissonLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub>  | ✔️ | ❌ | ✔️ |
-|RedissonClusteredRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | ❌ | ✔️ | ✔️ |
-|RedissonClusteredLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | ✔️ | ✔️ | ✔️ |
+|RedissonLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ❌ | ✔️ |
+|RedissonClusteredRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
+|RedissonClusteredLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
 
 ## Hibernate Cache Usage
 
