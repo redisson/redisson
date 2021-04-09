@@ -157,7 +157,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return "jcache_removed_channel:{" + getRawName() + "}";
     }
 
-    String getOldValueListenerCounter() { return "jcache_old_value_listener_counter:{" + getName() + "}"; }
+    String getOldValueListenerCounter() { return "jcache_old_value_listeners:{" + getName() + "}"; }
 
     long currentNanoTime() {
         if (config.isStatisticsEnabled()) {
