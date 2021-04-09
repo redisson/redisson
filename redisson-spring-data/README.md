@@ -29,7 +29,7 @@ Maven
          <artifactId>redisson-spring-data-23</artifactId>
          <!-- for Spring Data Redis v.2.4.x -->
          <artifactId>redisson-spring-data-24</artifactId>
-         <version>3.15.2</version>
+         <version>3.15.3</version>
      </dependency>
 ```
 
@@ -73,4 +73,4 @@ Gradle
 
  }
 ```
-Consider __[Redisson PRO](https://redisson.pro)__ version for **ultra-fast performance** and **support by SLA**.</sub>
+Consider __[Redisson PRO](https://redisson.pro)__ version for **ultra-fast performance** and **support by SLA**.
