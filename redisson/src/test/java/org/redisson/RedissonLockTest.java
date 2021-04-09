@@ -2,6 +2,7 @@ package org.redisson;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.api.LockInfo;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.WriteRedisConnectionException;
@@ -50,6 +51,30 @@ public class RedissonLockTest extends BaseConcurrentTest {
         }
     }
 
+    @Test
+    public void testLockInfo() throws InterruptedException {
+        Runnable runnable = () -> {
+            RLock lock = redisson.getLock("lock-info-test");
+            lock.lock();
+            Long threadId = Thread.currentThread().getId();
+            LockInfo lockInfo = lock.getLockInfo();
+            Assert.assertTrue(lockInfo.isLocked());
+            Assert.assertEquals(threadId, lockInfo.getThreadOwnerId());
+            Assert.assertTrue(lock.isHeldByThread(threadId));
+        };
+        Thread worker = new Thread(runnable);
+        worker.start();
+        worker.join();
+    }
+
+    @Test
+    public void testLockInfoNonPresent() {
+        RLock lock = redisson.getLock("free-lock");
+        LockInfo lockInfo = lock.getLockInfo();
+        Assert.assertFalse(lockInfo.isLocked());
+    }
+
+
     @Test(expected = WriteRedisConnectionException.class)
     public void testRedisFailed() throws IOException, InterruptedException {
         RedisRunner.RedisProcess master = new RedisRunner()
@@ -77,12 +102,12 @@ public class RedissonLockTest extends BaseConcurrentTest {
         });
 
         RLock lock = redisson.getLock("lock");
-        
+
         long startTime = System.currentTimeMillis();
         lock.tryLock(3, TimeUnit.SECONDS);
         assertThat(System.currentTimeMillis() - startTime).isBetween(2990L, 3100L);
     }
-    
+
     @Test
     public void testLockUninterruptibly() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(2);
@@ -97,7 +122,7 @@ public class RedissonLockTest extends BaseConcurrentTest {
         boolean res = latch.await(2, TimeUnit.SECONDS);
         assertThat(res).isFalse();
     }
-    
+
     @Test
     public void testForceUnlock() {
         RLock lock = redisson.getLock("lock");
@@ -122,7 +147,9 @@ public class RedissonLockTest extends BaseConcurrentTest {
                 long spendTime = System.currentTimeMillis() - startTime;
                 Assert.assertTrue(spendTime < 2020);
                 lock1.unlock();
-            };
+            }
+
+            ;
         };
 
         t.start();
@@ -152,8 +179,8 @@ public class RedissonLockTest extends BaseConcurrentTest {
 
         Config config = new Config();
         config.useClusterServers()
-        .setLoadBalancer(new RandomLoadBalancer())
-        .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
+                .setLoadBalancer(new RandomLoadBalancer())
+                .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
         RedissonClient redisson = Redisson.create(config);
 
         RLock lock = redisson.getLock("myLock");
@@ -170,9 +197,9 @@ public class RedissonLockTest extends BaseConcurrentTest {
     @Test
     public void testAutoExpire() throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
-        
+
         RedissonClient r = createInstance();
-        
+
         Thread t = new Thread() {
             @Override
             public void run() {
@@ -187,14 +214,14 @@ public class RedissonLockTest extends BaseConcurrentTest {
                 }
             }
         };
-        
+
         t.start();
 
         Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
         RLock lock = redisson.getLock("lock");
         t.join();
         r.shutdown();
-        
+
         await().atMost(redisson.getConfig().getLockWatchdogTimeout(), TimeUnit.MILLISECONDS).until(() -> !lock.isLocked());
     }
 
@@ -225,7 +252,9 @@ public class RedissonLockTest extends BaseConcurrentTest {
             public void run() {
                 RLock lock = redisson.getLock("lock");
                 Assert.assertFalse(lock.isHeldByCurrentThread());
-            };
+            }
+
+            ;
         };
 
         t.start();
@@ -236,7 +265,9 @@ public class RedissonLockTest extends BaseConcurrentTest {
             public void run() {
                 RLock lock = redisson.getLock("lock");
                 Assert.assertFalse(lock.isHeldByCurrentThread());
-            };
+            }
+
+            ;
         };
 
         t2.start();
@@ -262,7 +293,9 @@ public class RedissonLockTest extends BaseConcurrentTest {
             public void run() {
                 RLock lock = redisson.getLock("lock");
                 Assert.assertTrue(lock.isLocked());
-            };
+            }
+
+            ;
         };
 
         t.start();
@@ -273,7 +306,9 @@ public class RedissonLockTest extends BaseConcurrentTest {
             public void run() {
                 RLock lock = redisson.getLock("lock");
                 Assert.assertFalse(lock.isLocked());
-            };
+            }
+
+            ;
         };
 
         t2.start();
@@ -306,7 +341,9 @@ public class RedissonLockTest extends BaseConcurrentTest {
                 }
 
                 lock.unlock();
-            };
+            }
+
+            ;
         };
 
         t.start();

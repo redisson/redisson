@@ -33,7 +33,7 @@ public interface RLock extends Lock, RLockAsync {
      * @return name - name of object
      */
     String getName();
-    
+
     /**
      * Acquires the lock with defined <code>leaseTime</code>.
      * Waits if necessary until lock became available.
@@ -124,5 +124,12 @@ public interface RLock extends Lock, RLockAsync {
      *          -1 if the lock exists but has no associated expire.
      */
     long remainTimeToLive();
-    
+
+    /**
+     * Current lock information
+     *
+     * @return information about current lock (owner, ttl)
+     */
+    LockInfo getLockInfo();
+
 }
