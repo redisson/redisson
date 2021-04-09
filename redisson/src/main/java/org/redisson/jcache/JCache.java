@@ -2704,15 +2704,21 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return oldValue;
     }
 
-    private int incrementOldValueListenerCounter(String counterName) {
-        return evalWrite(getName(), codec, RedisCommands.EVAL_INTEGER,
+    private void incrementOldValueListenerCounter(String counterName) {
+        evalWrite(getName(), codec, RedisCommands.EVAL_INTEGER,
                 "return redis.call('incr', KEYS[1]);",
                 Arrays.<Object>asList(counterName));
     }
 
-    private int decrementOldValueListenerCounter(String counterName) {
-        return evalWrite(getName(), codec, RedisCommands.EVAL_INTEGER,
+    private void decrementOldValueListenerCounter(String counterName) {
+        evalWrite(getName(), codec, RedisCommands.EVAL_INTEGER,
                 "return redis.call('decr', KEYS[1]);",
+                Arrays.<Object>asList(counterName));
+    }
+
+    private Integer getOldValueListenerCount(String counterName) {
+        return evalWrite(getName(), codec, RedisCommands.EVAL_INTEGER,
+                "return tonumber(redis.call('get', KEYS[1]));",
                 Arrays.<Object>asList(counterName));
     }
 
@@ -3191,7 +3197,9 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 incrementOldValueListenerCounter(getOldValueListenerCounter());
             }
 
-            RTopic topic = redisson.getTopic(channelName, new JCacheEventCodec(codec, osType, sync, cacheEntryListenerConfiguration.isOldValueRequired()));
+            Integer oldValueListenerCount = getOldValueListenerCount(getOldValueListenerCounter());
+            boolean expectOldValue = oldValueListenerCount != null && oldValueListenerCount > 0;
+            RTopic topic = redisson.getTopic(channelName, new JCacheEventCodec(codec, osType, sync, expectOldValue));
             int listenerId = topic.addListener(List.class, new MessageListener<List<Object>>() {
                 @Override
                 public void onMessage(CharSequence channel, List<Object> msg) {
