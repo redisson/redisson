@@ -69,7 +69,7 @@ public abstract class BaseRemoteService {
 
     public BaseRemoteService(Codec codec, String name, CommandAsyncExecutor commandExecutor, String executorId, ConcurrentMap<String, ResponseEntry> responses) {
         this.codec = codec;
-        this.name = name;
+        this.name = commandExecutor.getConnectionManager().getConfig().getNameMapper().map(name);
         this.commandExecutor = commandExecutor;
         this.executorId = executorId;
         this.responses = responses;

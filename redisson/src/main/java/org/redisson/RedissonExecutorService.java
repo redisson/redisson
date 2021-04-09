@@ -108,7 +108,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         this.codec = codec;
         this.commandExecutor = commandExecutor;
         this.connectionManager = commandExecutor.getConnectionManager();
-        this.name = name;
+        this.name = commandExecutor.getConnectionManager().getConfig().getNameMapper().map(name);
         this.redisson = redisson;
         this.queueTransferService = queueTransferService;
         this.responses = responses;
@@ -357,7 +357,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     }
 
     private TasksBatchService createBatchService() {
-        TasksBatchService executorRemoteService = new TasksBatchService(codec, name, commandExecutor, executorId, responses);
+        TasksBatchService executorRemoteService = new TasksBatchService(codec, getName(), commandExecutor, executorId, responses);
         executorRemoteService.setTasksExpirationTimeName(tasksExpirationTimeName);
         executorRemoteService.setTerminationTopicName(terminationTopic.getChannelNames().get(0));
         executorRemoteService.setTasksCounterName(tasksCounterName);
@@ -489,7 +489,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
 
     @Override
     public String getName() {
-        return name;
+        return commandExecutor.getConnectionManager().getConfig().getNameMapper().unmap(name);
     }
     
     @Override
