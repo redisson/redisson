@@ -56,11 +56,6 @@ Gradle
 
 ### 2. Register `RedissonConnectionFactory` in Spring context
 
-|Class name | Ultra-fast read/write |
-| ------------- | :----------:|
-|RedissonConnectionFactory<br/><sub><i>open-source version</i></sub> | ❌ |
-|RedissonConnectionFactory<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ✔️ |
-
 ```java
  @Configuration
  public class RedissonSpringDataConfig {
@@ -78,3 +73,4 @@ Gradle
 
  }
 ```
+Consider __[Redisson PRO](https://redisson.pro)__ version for **ultra-fast performance** and **support by SLA**.</sub>
