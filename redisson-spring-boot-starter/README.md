@@ -108,4 +108,4 @@ spring:
 - `RedisTemplate`  
 - `ReactiveRedisTemplate`  
 
-Consider __[Redisson PRO](https://redisson.pro)__ version for **ultra-fast performance** and **support by SLA**.</sub>
+Consider __[Redisson PRO](https://redisson.pro)__ version for **ultra-fast performance** and **support by SLA**.
