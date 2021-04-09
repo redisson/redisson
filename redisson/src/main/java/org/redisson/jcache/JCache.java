@@ -157,7 +157,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return "jcache_removed_channel:{" + getRawName() + "}";
     }
 
-    String getUpdatedChannelOldValueRequiredCounter() { return "jcache_updated_old_value_required_counter:{" + getName() + "}"; }
+    String getOldValueListenerCounter() { return "jcache_old_value_listener_counter:{" + getName() + "}"; }
 
     long currentNanoTime() {
         if (config.isStatisticsEnabled()) {
@@ -657,7 +657,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                   + "end; "
               + "end; ",
              Arrays.<Object>asList(getRawName(), getTimeoutSetName(), getCreatedChannelName(), getRemovedChannelName(), getUpdatedChannelName(),
-                     getCreatedSyncChannelName(), getRemovedSyncChannelName(), getUpdatedSyncChannelName(), getUpdatedChannelOldValueRequiredCounter()),
+                     getCreatedSyncChannelName(), getRemovedSyncChannelName(), getUpdatedSyncChannelName(), getOldValueListenerCounter()),
              creationTimeout, updateTimeout, System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value), syncId);
         
         RPromise<Boolean> result = waitSync(syncId, res);
@@ -2577,13 +2577,13 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return oldValue;
     }
 
-    private int incrementOldValueRequiredCounter(String counterName) {
+    private int incrementOldValueListenerCounter(String counterName) {
         return evalWrite(getName(), codec, RedisCommands.EVAL_INTEGER,
                 "return redis.call('incr', KEYS[1]);",
                 Arrays.<Object>asList(counterName));
     }
 
-    private int decrementOldValueRequiredCounter(String counterName) {
+    private int decrementOldValueListenerCounter(String counterName) {
         return evalWrite(getName(), codec, RedisCommands.EVAL_INTEGER,
                 "return redis.call('decr', KEYS[1]);",
                 Arrays.<Object>asList(counterName));
@@ -3061,7 +3061,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
             }
 
             if (cacheEntryListenerConfiguration.isOldValueRequired()) {
-                incrementOldValueRequiredCounter(getUpdatedChannelOldValueRequiredCounter());
+                incrementOldValueListenerCounter(getOldValueListenerCounter());
             }
 
             RTopic topic = redisson.getTopic(channelName, new JCacheEventCodec(codec, osType, sync, cacheEntryListenerConfiguration.isOldValueRequired()));
@@ -3134,7 +3134,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
             final CacheEntryListener<? super K, ? super V> listener = cacheEntryListenerConfiguration.getCacheEntryListenerFactory().create();
 
             if (CacheEntryUpdatedListener.class.isAssignableFrom(listener.getClass())) {
-                decrementOldValueRequiredCounter(getUpdatedChannelOldValueRequiredCounter());
+                decrementOldValueListenerCounter(getOldValueListenerCounter());
             }
         }
 
