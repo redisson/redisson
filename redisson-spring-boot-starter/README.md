@@ -102,10 +102,10 @@ spring:
 
 ### 3. Avaialble Spring Beans:
 
-`RedissonClient`  
-`RedissonRxClient`  
-`RedissonReactiveClient`  
-`RedisTemplate`  
-`ReactiveRedisTemplate`  
+- `RedissonClient`  
+- `RedissonRxClient`  
+- `RedissonReactiveClient`  
+- `RedisTemplate`  
+- `ReactiveRedisTemplate`  
 
 Consider __[Redisson PRO](https://redisson.pro)__ version for *ultra-fast performance* and support by SLA.</sub>
