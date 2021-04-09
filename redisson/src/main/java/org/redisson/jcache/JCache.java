@@ -157,7 +157,9 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return "jcache_removed_channel:{" + getRawName() + "}";
     }
 
-    String getOldValueListenerCounter() { return "jcache_old_value_listeners:{" + getName() + "}"; }
+    String getOldValueListenerCounter() {
+        return "jcache_old_value_listeners:{" + getRawName() + "}";
+    }
 
     long currentNanoTime() {
         if (config.isStatisticsEnabled()) {
@@ -2705,19 +2707,19 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
     }
 
     private void incrementOldValueListenerCounter(String counterName) {
-        evalWrite(getName(), codec, RedisCommands.EVAL_INTEGER,
+        evalWrite(getRawName(), codec, RedisCommands.EVAL_INTEGER,
                 "return redis.call('incr', KEYS[1]);",
                 Arrays.<Object>asList(counterName));
     }
 
     private void decrementOldValueListenerCounter(String counterName) {
-        evalWrite(getName(), codec, RedisCommands.EVAL_INTEGER,
+        evalWrite(getRawName(), codec, RedisCommands.EVAL_INTEGER,
                 "return redis.call('decr', KEYS[1]);",
                 Arrays.<Object>asList(counterName));
     }
 
     private Integer getOldValueListenerCount(String counterName) {
-        return evalWrite(getName(), codec, RedisCommands.EVAL_INTEGER,
+        return evalWrite(getRawName(), codec, RedisCommands.EVAL_INTEGER,
                 "return tonumber(redis.call('get', KEYS[1]));",
                 Arrays.<Object>asList(counterName));
     }
