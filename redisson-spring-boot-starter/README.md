@@ -102,15 +102,10 @@ spring:
 
 ### 3. Avaialble Spring Beans:
 
-|Class name | Ultra-fast read/write |
-| ------------- | :----------:|
-|RedissonClient<br/><sub><i>open-source version</i></sub> | ❌ |
-|RedissonRxClient<br/><sub><i>open-source version</i></sub> | ❌ |
-|RedissonReactiveClient<br/><sub><i>open-source version</i></sub> | ❌ |
-|RedisTemplate<br/><sub><i>open-source version</i></sub> | ❌ |
-|ReactiveRedisTemplate<br/><sub><i>open-source version</i></sub> | ❌ |
-|RedissonClient<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ✔️ |
-|RedissonRxClient<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ✔️ |
-|RedissonReactiveClient<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ✔️ |
-|RedisTemplate<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ✔️ |
-|ReactiveRedisTemplate<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ✔️ |
+- `RedissonClient`  
+- `RedissonRxClient`  
+- `RedissonReactiveClient`  
+- `RedisTemplate`  
+- `ReactiveRedisTemplate`  
+
+Consider __[Redisson PRO](https://redisson.pro)__ version for **ultra-fast performance** and **support by SLA**.

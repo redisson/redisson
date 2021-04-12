@@ -29,7 +29,7 @@ Maven
          <artifactId>redisson-spring-data-23</artifactId>
          <!-- for Spring Data Redis v.2.4.x -->
          <artifactId>redisson-spring-data-24</artifactId>
-         <version>3.15.2</version>
+         <version>3.15.3</version>
      </dependency>
 ```
 
@@ -56,11 +56,6 @@ Gradle
 
 ### 2. Register `RedissonConnectionFactory` in Spring context
 
-|Class name | Ultra-fast read/write |
-| ------------- | :----------:|
-|RedissonConnectionFactory<br/><sub><i>open-source version</i></sub> | ❌ |
-|RedissonConnectionFactory<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ✔️ |
-
 ```java
  @Configuration
  public class RedissonSpringDataConfig {
@@ -78,3 +73,4 @@ Gradle
 
  }
 ```
+Consider __[Redisson PRO](https://redisson.pro)__ version for **ultra-fast performance** and **support by SLA**.
