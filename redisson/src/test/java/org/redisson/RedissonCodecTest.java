@@ -1,17 +1,12 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.junit.Assert;
-import org.junit.Test;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.dataformat.avro.AvroMapper;
+import com.fasterxml.jackson.dataformat.avro.AvroSchema;
+import io.netty.buffer.ByteBuf;
+import net.bytebuddy.utility.RandomString;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.redisson.api.RBucket;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
@@ -19,12 +14,10 @@ import org.redisson.client.codec.Codec;
 import org.redisson.codec.*;
 import org.redisson.config.Config;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.dataformat.avro.AvroMapper;
-import com.fasterxml.jackson.dataformat.avro.AvroSchema;
+import java.io.IOException;
+import java.util.*;
 
-import io.netty.buffer.ByteBuf;
-import net.bytebuddy.utility.RandomString;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonCodecTest extends BaseTest {
     private Codec smileCodec = new SmileJacksonCodec();
@@ -196,7 +189,7 @@ public class RedissonCodecTest extends BaseTest {
 
         map.fastPut(1, a);
         Map<String, Object> resa = map.get(1);
-        Assert.assertEquals(a, resa);
+        Assertions.assertEquals(a, resa);
 
         Set<TestObject> set = redisson.getSet("set");
 
@@ -206,9 +199,9 @@ public class RedissonCodecTest extends BaseTest {
         set.add(new TestObject("3", "4"));
         set.add(new TestObject("5", "6"));
 
-        Assert.assertTrue(set.contains(new TestObject("2", "3")));
-        Assert.assertTrue(set.contains(new TestObject("1", "2")));
-        Assert.assertFalse(set.contains(new TestObject("1", "9")));
+        Assertions.assertTrue(set.contains(new TestObject("2", "3")));
+        Assertions.assertTrue(set.contains(new TestObject("1", "2")));
+        Assertions.assertFalse(set.contains(new TestObject("1", "9")));
         
         redisson.shutdown();
     }

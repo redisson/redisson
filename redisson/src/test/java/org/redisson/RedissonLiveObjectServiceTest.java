@@ -1,35 +1,23 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
-
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 import org.redisson.api.*;
-import org.redisson.api.annotation.RCascade;
-import org.redisson.api.annotation.REntity;
-import org.redisson.api.annotation.RFieldAccessor;
-import org.redisson.api.annotation.RId;
-import org.redisson.api.annotation.RIndex;
+import org.redisson.api.annotation.*;
 import org.redisson.api.condition.Conditions;
 import org.redisson.config.Config;
-import org.redisson.connection.balancer.RandomLoadBalancer;
 import org.redisson.liveobject.resolver.DefaultNamingScheme;
 import org.redisson.liveobject.resolver.LongGenerator;
 import org.redisson.liveobject.resolver.UUIDGenerator;
+
+import java.io.IOException;
+import java.io.Serializable;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.*;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  *
@@ -1923,12 +1911,14 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         assertThat(se.getItem("2")).isEqualTo(2);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testObjectShouldNotBeAttached() {
-        Customer customer = new Customer("12");
-        customer = redisson.getLiveObjectService().persist(customer);
-        Order order = new Order();
-        customer.getOrders().add(order);
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            Customer customer = new Customer("12");
+            customer = redisson.getLiveObjectService().persist(customer);
+            Order order = new Order();
+            customer.getOrders().add(order);
+        });
     }
     
     @Test
@@ -2249,22 +2239,24 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         }
     }
 
-    @Test(timeout = 40*1000)
+    @Test
     public void testBatchedPersist() {
-        RLiveObjectService s = redisson.getLiveObjectService();
+        Assertions.assertTimeout(Duration.ofSeconds(40), () -> {
+            RLiveObjectService s = redisson.getLiveObjectService();
 
-        List<TestREntity> objects = new ArrayList<>();
-        int objectsAmount = 1000000;
-        for (int i = 0; i < objectsAmount; i++) {
-            TestREntity e = new TestREntity();
-            e.setName("" + i);
-            e.setValue("value" + i);
-            objects.add(e);
-        }
-        List<Object> attachedObjects = s.persist(objects.toArray());
-        assertThat(attachedObjects).hasSize(objectsAmount);
+            List<TestREntity> objects = new ArrayList<>();
+            int objectsAmount = 1000000;
+            for (int i = 0; i < objectsAmount; i++) {
+                TestREntity e = new TestREntity();
+                e.setName("" + i);
+                e.setValue("value" + i);
+                objects.add(e);
+            }
+            List<Object> attachedObjects = s.persist(objects.toArray());
+            assertThat(attachedObjects).hasSize(objectsAmount);
 
-        assertThat(redisson.getKeys().count()).isEqualTo(objectsAmount);
+            assertThat(redisson.getKeys().count()).isEqualTo(objectsAmount);
+        });
     }
 
     @Test

@@ -1,18 +1,17 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.redisson.api.RListReactive;
+import org.redisson.client.RedisException;
+import reactor.core.publisher.BaseSubscriber;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 
-import org.junit.Assert;
-import org.junit.Test;
-import org.redisson.api.RListReactive;
-import org.redisson.client.RedisException;
-
-import reactor.core.publisher.BaseSubscriber;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonListReactiveTest extends BaseReactiveTest {
 
@@ -23,7 +22,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         sync(list.add("b"));
         sync(list.add("c"));
 
-        Assert.assertEquals(126145, list.hashCode());
+        Assertions.assertEquals(126145, list.hashCode());
     }
 
     @Test
@@ -45,8 +44,8 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         sync(list.add(5));
 
         RListReactive<Integer> list2 = redisson.getList("list2");
-        Assert.assertEquals(true, sync(list2.addAll(list.iterator())));
-        Assert.assertEquals(5, sync(list2.size()).intValue());
+        Assertions.assertEquals(true, sync(list2.addAll(list.iterator())));
+        Assertions.assertEquals(5, sync(list2.size()).intValue());
     }
 
     @Test
@@ -65,14 +64,14 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
                     @Override
                     public void hookOnError(Throwable error) {
-                        Assert.fail(error.getMessage());
+                        Assertions.fail(error.getMessage());
                     }
                 });
             }
 
             @Override
             public void hookOnError(Throwable error) {
-                Assert.fail(error.getMessage());
+                Assertions.fail(error.getMessage());
             }
         });
 
@@ -96,14 +95,14 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
                     @Override
                     public void hookOnError(Throwable error) {
-                        Assert.fail(error.getMessage());
+                        Assertions.fail(error.getMessage());
                     }
                 });
             }
 
             @Override
             public void hookOnError(Throwable error) {
-                Assert.fail(error.getMessage());
+                Assertions.fail(error.getMessage());
             }
         });
 
@@ -137,17 +136,17 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
         Iterator<Integer> iterator = toIterator(list.iterator());
 
-        Assert.assertTrue(1 == iterator.next());
-        Assert.assertTrue(2 == iterator.next());
-        Assert.assertTrue(3 == iterator.next());
-        Assert.assertTrue(4 == iterator.next());
-        Assert.assertTrue(5 == iterator.next());
-        Assert.assertTrue(0 == iterator.next());
-        Assert.assertTrue(7 == iterator.next());
-        Assert.assertTrue(8 == iterator.next());
-        Assert.assertTrue(0 == iterator.next());
-        Assert.assertTrue(10 == iterator.next());
-        Assert.assertFalse(iterator.hasNext());
+        Assertions.assertTrue(1 == iterator.next());
+        Assertions.assertTrue(2 == iterator.next());
+        Assertions.assertTrue(3 == iterator.next());
+        Assertions.assertTrue(4 == iterator.next());
+        Assertions.assertTrue(5 == iterator.next());
+        Assertions.assertTrue(0 == iterator.next());
+        Assertions.assertTrue(7 == iterator.next());
+        Assertions.assertTrue(8 == iterator.next());
+        Assertions.assertTrue(0 == iterator.next());
+        Assertions.assertTrue(10 == iterator.next());
+        Assertions.assertFalse(iterator.hasNext());
     }
 
     @Test
@@ -166,17 +165,17 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
         Iterator<Integer> iterator = toIterator(list.descendingIterator());
 
-        Assert.assertTrue(10 == iterator.next());
-        Assert.assertTrue(0 == iterator.next());
-        Assert.assertTrue(8 == iterator.next());
-        Assert.assertTrue(7 == iterator.next());
-        Assert.assertTrue(0 == iterator.next());
-        Assert.assertTrue(5 == iterator.next());
-        Assert.assertTrue(4 == iterator.next());
-        Assert.assertTrue(3 == iterator.next());
-        Assert.assertTrue(2 == iterator.next());
-        Assert.assertTrue(1 == iterator.next());
-        Assert.assertFalse(iterator.hasNext());
+        Assertions.assertTrue(10 == iterator.next());
+        Assertions.assertTrue(0 == iterator.next());
+        Assertions.assertTrue(8 == iterator.next());
+        Assertions.assertTrue(7 == iterator.next());
+        Assertions.assertTrue(0 == iterator.next());
+        Assertions.assertTrue(5 == iterator.next());
+        Assertions.assertTrue(4 == iterator.next());
+        Assertions.assertTrue(3 == iterator.next());
+        Assertions.assertTrue(2 == iterator.next());
+        Assertions.assertTrue(1 == iterator.next());
+        Assertions.assertFalse(iterator.hasNext());
     }
 
     @Test
@@ -188,7 +187,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         sync(list.add(4));
         sync(list.add(5));
 
-        Assert.assertEquals(-1, sync(list.lastIndexOf(10)).intValue());
+        Assertions.assertEquals(-1, sync(list.lastIndexOf(10)).intValue());
     }
 
     @Test
@@ -206,7 +205,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         sync(list.add(10));
 
         long index = sync(list.lastIndexOf(3));
-        Assert.assertEquals(2, index);
+        Assertions.assertEquals(2, index);
     }
 
     @Test
@@ -224,7 +223,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         sync(list.add(10));
 
         long index = sync(list.lastIndexOf(3));
-        Assert.assertEquals(5, index);
+        Assertions.assertEquals(5, index);
     }
 
     @Test
@@ -242,7 +241,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         sync(list.add(10));
 
         int index = sync(list.lastIndexOf(3));
-        Assert.assertEquals(8, index);
+        Assertions.assertEquals(8, index);
     }
 
     @Test
@@ -252,10 +251,10 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
             sync(list.add(i));
         }
 
-        Assert.assertTrue(55 == sync(list.indexOf(56)));
-        Assert.assertTrue(99 == sync(list.indexOf(100)));
-        Assert.assertTrue(-1 == sync(list.indexOf(200)));
-        Assert.assertTrue(-1 == sync(list.indexOf(0)));
+        Assertions.assertTrue(55 == sync(list.indexOf(56)));
+        Assertions.assertTrue(99 == sync(list.indexOf(100)));
+        Assertions.assertTrue(-1 == sync(list.indexOf(200)));
+        Assertions.assertTrue(-1 == sync(list.indexOf(0)));
     }
 
     @Test
@@ -268,7 +267,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         sync(list.add(5));
 
         Integer val = sync(list.remove(0));
-        Assert.assertTrue(1 == val);
+        Assertions.assertTrue(1 == val);
 
         assertThat(sync(list)).containsExactly(2, 3, 4, 5);
     }
@@ -287,16 +286,17 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         assertThat(sync(list)).containsExactly(1, 2, 3, 4, 6);
     }
 
-    @Test(expected = IndexOutOfBoundsException.class)
-    public void testSetFail() throws InterruptedException {
-        RListReactive<Integer> list = redisson.getList("list");
-        sync(list.add(1));
-        sync(list.add(2));
-        sync(list.add(3));
-        sync(list.add(4));
-        sync(list.add(5));
-
-        sync(list.set(5, 6));
+    @Test
+    public void testSetFail() {
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> {
+            RListReactive<Integer> list = redisson.getList("list");
+            sync(list.add(1));
+            sync(list.add(2));
+            sync(list.add(3));
+            sync(list.add(4));
+            sync(list.add(5));
+            sync(list.set(5, 6));
+        });
     }
 
     @Test
@@ -308,8 +308,8 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         sync(list.add(4));
         sync(list.add(5));
 
-        Assert.assertFalse(sync(list.removeAll(Collections.emptyList())));
-        Assert.assertFalse(Arrays.asList(1).removeAll(Collections.emptyList()));
+        Assertions.assertFalse(sync(list.removeAll(Collections.emptyList())));
+        Assertions.assertFalse(Arrays.asList(1).removeAll(Collections.emptyList()));
     }
 
     @Test
@@ -321,18 +321,18 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         sync(list.add(4));
         sync(list.add(5));
 
-        Assert.assertFalse(sync(list.removeAll(Collections.emptyList())));
-        Assert.assertTrue(sync(list.removeAll(Arrays.asList(3, 2, 10, 6))));
+        Assertions.assertFalse(sync(list.removeAll(Collections.emptyList())));
+        Assertions.assertTrue(sync(list.removeAll(Arrays.asList(3, 2, 10, 6))));
 
         assertThat(sync(list)).containsExactly(1, 4, 5);
 
-        Assert.assertTrue(sync(list.removeAll(Arrays.asList(4))));
+        Assertions.assertTrue(sync(list.removeAll(Arrays.asList(4))));
 
         assertThat(sync(list)).containsExactly(1, 5);
 
-        Assert.assertTrue(sync(list.removeAll(Arrays.asList(1, 5, 1, 5))));
+        Assertions.assertTrue(sync(list.removeAll(Arrays.asList(1, 5, 1, 5))));
 
-        Assert.assertEquals(0, sync(list.size()).longValue());
+        Assertions.assertEquals(0, sync(list.size()).longValue());
     }
 
     @Test
@@ -344,10 +344,10 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         sync(list.add(4));
         sync(list.add(5));
 
-        Assert.assertTrue(sync(list.retainAll(Arrays.asList(3, 2, 10, 6))));
+        Assertions.assertTrue(sync(list.retainAll(Arrays.asList(3, 2, 10, 6))));
 
         assertThat(sync(list)).containsExactly(2, 3);
-        Assert.assertEquals(2, sync(list.size()).longValue());
+        Assertions.assertEquals(2, sync(list.size()).longValue());
     }
 
     @Test
@@ -357,7 +357,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         sync(list.add(2));
 
         sync(list.fastSet(0, 3));
-        Assert.assertEquals(3, (int)sync(list.get(0)));
+        Assertions.assertEquals(3, (int)sync(list.get(0)));
     }
 
     @Test
@@ -369,8 +369,8 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         sync(list.add(4));
         sync(list.add(5));
 
-        Assert.assertTrue(sync(list.retainAll(Collections.<Integer>emptyList())));
-        Assert.assertEquals(0, sync(list.size()).intValue());
+        Assertions.assertTrue(sync(list.retainAll(Collections.<Integer>emptyList())));
+        Assertions.assertEquals(0, sync(list.size()).intValue());
     }
 
     @Test
@@ -379,14 +379,16 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         sync(list.add(1));
         sync(list.add(2));
 
-        Assert.assertFalse(sync(list.retainAll(Arrays.asList(1, 2)))); // nothing changed
+        Assertions.assertFalse(sync(list.retainAll(Arrays.asList(1, 2)))); // nothing changed
         assertThat(sync(list)).containsExactly(1, 2);
     }
 
-    @Test(expected = RedisException.class)
+    @Test
     public void testAddAllIndexError() {
-        RListReactive<Integer> list = redisson.getList("list");
-        sync(list.addAll(2, Arrays.asList(7, 8, 9)));
+        Assertions.assertThrows(RedisException.class, () -> {
+            RListReactive<Integer> list = redisson.getList("list");
+            sync(list.addAll(2, Arrays.asList(7, 8, 9)));
+        });
     }
 
     @Test
@@ -398,7 +400,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         sync(list.add(4));
         sync(list.add(5));
 
-        Assert.assertEquals(true, sync(list.addAll(2, Arrays.asList(7, 8, 9))));
+        Assertions.assertEquals(true, sync(list.addAll(2, Arrays.asList(7, 8, 9))));
 
         assertThat(sync(list)).containsExactly(1, 2, 7, 8, 9, 3, 4, 5);
 
@@ -410,7 +412,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
         assertThat(sync(list)).containsExactly(1, 2, 7, 8, 9, 3, 4, 9, 1, 9, 5, 0, 5);
 
-        Assert.assertEquals(true, sync(list.addAll(0, Arrays.asList(6, 7))));
+        Assertions.assertEquals(true, sync(list.addAll(0, Arrays.asList(6, 7))));
 
         assertThat(sync(list)).containsExactly(6,7,1, 2, 7, 8, 9, 3, 4, 9, 1, 9, 5, 0, 5);
     }
@@ -424,9 +426,9 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         sync(list.add(4));
         sync(list.add(5));
 
-        Assert.assertEquals(true, sync(list.addAll(Arrays.asList(7, 8, 9))));
+        Assertions.assertEquals(true, sync(list.addAll(Arrays.asList(7, 8, 9))));
 
-        Assert.assertEquals(true, sync(list.addAll(Arrays.asList(9, 1, 9))));
+        Assertions.assertEquals(true, sync(list.addAll(Arrays.asList(9, 1, 9))));
 
         assertThat(sync(list)).containsExactly(1, 2, 3, 4, 5, 7, 8, 9, 9, 1, 9);
     }
@@ -434,8 +436,8 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
     @Test
     public void testAddAllEmpty() {
         RListReactive<Integer> list = redisson.getList("list");
-        Assert.assertEquals(false, sync(list.addAll(Collections.<Integer>emptyList())));
-        Assert.assertEquals(0, sync(list.size()).intValue());
+        Assertions.assertEquals(false, sync(list.addAll(Collections.<Integer>emptyList())));
+        Assertions.assertEquals(0, sync(list.size()).intValue());
     }
 
     @Test
@@ -445,9 +447,9 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
             sync(list.add(i));
         }
 
-        Assert.assertTrue(sync(list.containsAll(Arrays.asList(30, 11))));
-        Assert.assertFalse(sync(list.containsAll(Arrays.asList(30, 711, 11))));
-        Assert.assertTrue(sync(list.containsAll(Arrays.asList(30))));
+        Assertions.assertTrue(sync(list.containsAll(Arrays.asList(30, 11))));
+        Assertions.assertFalse(sync(list.containsAll(Arrays.asList(30, 711, 11))));
+        Assertions.assertTrue(sync(list.containsAll(Arrays.asList(30))));
     }
 
     @Test
@@ -457,8 +459,8 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
             sync(list.add(i));
         }
 
-        Assert.assertTrue(sync(list.containsAll(Collections.emptyList())));
-        Assert.assertTrue(Arrays.asList(1).containsAll(Collections.emptyList()));
+        Assertions.assertTrue(sync(list.containsAll(Collections.emptyList())));
+        Assertions.assertTrue(Arrays.asList(1).containsAll(Collections.emptyList()));
     }
 
     @Test
@@ -480,11 +482,11 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         for (Iterator<String> iterator = toIterator(list.iterator()); iterator.hasNext();) {
             String value = iterator.next();
             String val = sync(list.get(iteration));
-            Assert.assertEquals(val, value);
+            Assertions.assertEquals(val, value);
             iteration++;
         }
 
-        Assert.assertEquals(sync(list.size()).intValue(), iteration);
+        Assertions.assertEquals(sync(list.size()).intValue(), iteration);
     }
 
 
@@ -497,9 +499,9 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         sync(list.add("5"));
         sync(list.add("3"));
 
-        Assert.assertTrue(sync(list.contains("3")));
-        Assert.assertFalse(sync(list.contains("31")));
-        Assert.assertTrue(sync(list.contains("1")));
+        Assertions.assertTrue(sync(list.contains("3")));
+        Assertions.assertFalse(sync(list.contains("31")));
+        Assertions.assertTrue(sync(list.contains("1")));
     }
 
 //    @Test(expected = RedisException.class)
@@ -519,10 +521,10 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         sync(list.add("3"));
 
         String val1 = sync(list.get(0));
-        Assert.assertEquals("1", val1);
+        Assertions.assertEquals("1", val1);
 
         String val2 = sync(list.get(3));
-        Assert.assertEquals("5", val2);
+        Assertions.assertEquals("5", val2);
     }
 
     @Test
@@ -535,7 +537,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         sync(list.add(new TestObject("3", "4")));
         sync(list.add(new TestObject("5", "6")));
 
-        Assert.assertEquals(5, sync(list.size()).intValue());
+        Assertions.assertEquals(5, sync(list.size()).intValue());
     }
 
     @Test

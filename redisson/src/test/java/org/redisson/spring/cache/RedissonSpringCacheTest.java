@@ -6,16 +6,14 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.redisson.BaseTest;
 import org.redisson.RedisRunner;
 import org.redisson.RedisRunner.FailedToStartRedisException;
@@ -30,8 +28,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Service;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-@RunWith(Parameterized.class)
+@SpringJUnitConfig
 public class RedissonSpringCacheTest {
 
     public static class SampleObject implements Serializable {
@@ -125,38 +124,26 @@ public class RedissonSpringCacheTest {
 
     private static Map<Class<?>, AnnotationConfigApplicationContext> contexts;
 
-    @Parameterized.Parameters(name = "{index} - {0}")
-    public static Iterable<Class<?>[]> data() throws IOException, InterruptedException {
-        return Arrays.asList(new Class<?>[][]{
-            {Application.class},
-            {JsonConfigApplication.class}
-        });
+    public static List<Class<?>> data() {
+        return Arrays.asList(Application.class, JsonConfigApplication.class);
     }
 
-    @Parameterized.Parameter(0)
-    public Class<?> contextClass;
-    public AnnotationConfigApplicationContext context;
-    
-    @Before
-    public void dbefore() {
-        context = contexts.get(contextClass);
-    }
-    
-    @BeforeClass
+    @BeforeAll
     public static void before() throws FailedToStartRedisException, IOException, InterruptedException {
         RedisRunner.startDefaultRedisServerInstance();
-        contexts = StreamSupport.stream(RedissonSpringCacheTest.data().spliterator(), false)
-                          .collect(Collectors.toMap(e -> e[0], e -> new AnnotationConfigApplicationContext(e[0])));
+        contexts = data().stream().collect(Collectors.toMap(e -> e, e -> new AnnotationConfigApplicationContext(e)));
     }
 
-    @AfterClass
-    public static void after() throws InterruptedException, IOException {
+    @AfterAll
+    public static void after() throws InterruptedException {
         contexts.values().forEach(e -> e.close());
         RedisRunner.shutDownDefaultRedisServerInstance();
     }
 
-    @Test
-    public void testNull() {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testNull(Class<?> contextClass) {
+        AnnotationConfigApplicationContext context = contexts.get(contextClass);
         SampleBean bean = context.getBean(SampleBean.class);
         bean.store("object1", null);
         assertThat(bean.readNull("object1")).isNull();
@@ -164,8 +151,10 @@ public class RedissonSpringCacheTest {
         assertThat(bean.readNull("object1")).isNull();
     }
 
-    @Test
-    public void testRemove() {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testRemove(Class<?> contextClass) {
+        AnnotationConfigApplicationContext context = contexts.get(contextClass);
         SampleBean bean = context.getBean(SampleBean.class);
         bean.store("object1", new SampleObject("name1", "value1"));
         assertThat(bean.read("object1")).isNotNull();
@@ -173,8 +162,10 @@ public class RedissonSpringCacheTest {
         assertThat(bean.readNull("object1")).isNull();
     }
 
-    @Test
-    public void testPutGet() {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testPutGet(Class<?> contextClass) {
+        AnnotationConfigApplicationContext context = contexts.get(contextClass);
         SampleBean bean = context.getBean(SampleBean.class);
         bean.store("object1", new SampleObject("name1", "value1"));
         SampleObject s = bean.read("object1");
@@ -182,10 +173,14 @@ public class RedissonSpringCacheTest {
         assertThat(s.getValue()).isEqualTo("value1");
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void testGet() {
-        SampleBean bean = context.getBean(SampleBean.class);
-        bean.read("object2");
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testGet(Class<?> contextClass) {
+        Assertions.assertThrows(IllegalStateException.class, () -> {
+            AnnotationConfigApplicationContext context = contexts.get(contextClass);
+            SampleBean bean = context.getBean(SampleBean.class);
+            bean.read("object2");
+        });
     }
 
 }

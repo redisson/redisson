@@ -1,11 +1,9 @@
 package org.redisson;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.redisson.api.RBinaryStreamReactive;
 
 import java.nio.ByteBuffer;
-import java.nio.channels.AsynchronousByteChannel;
-import java.util.concurrent.ExecutionException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -14,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class RedissonBinaryStreamReactiveTest extends BaseReactiveTest {
 
-        @Test
+    @Test
     public void testAsyncReadWrite() {
         RBinaryStreamReactive stream = redisson.getBinaryStream("test");
 

@@ -7,10 +7,10 @@ import org.apache.http.client.fluent.Executor;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.cookie.Cookie;
 import org.apache.http.impl.client.BasicCookieStore;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.redisson.RedisRunner;
 import org.redisson.RedisRunner.KEYSPACE_EVENTS_OPTIONS;
 import org.redisson.RedissonRuntimeEnvironment;
@@ -21,14 +21,12 @@ public class RedissonSessionManagerTest {
 
     private static RedisRunner.RedisProcess defaultRedisInstance;
     
-    @AfterClass
+    @AfterAll
     public static void afterClass() throws IOException, InterruptedException {
-        if (!RedissonRuntimeEnvironment.isTravis) {
-            defaultRedisInstance.stop();
-        }
+        defaultRedisInstance.stop();
     }
     
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() throws IOException, InterruptedException {
         if (!RedissonRuntimeEnvironment.isTravis) {
             defaultRedisInstance = new RedisRunner()
@@ -141,15 +139,15 @@ public class RedissonSessionManagerTest {
 
         Thread.sleep(50);
 
-        Assert.assertEquals(1, listener.getSessionCreatedEvents());
-        Assert.assertEquals(0, listener.getSessionExpiredEvents());
+        Assertions.assertEquals(1, listener.getSessionCreatedEvents());
+        Assertions.assertEquals(0, listener.getSessionExpiredEvents());
 
         Executor.closeIdleConnections();
 
         Thread.sleep(6000);
         
-        Assert.assertEquals(1, listener.getSessionCreatedEvents());
-        Assert.assertEquals(1, listener.getSessionExpiredEvents());
+        Assertions.assertEquals(1, listener.getSessionCreatedEvents());
+        Assertions.assertEquals(1, listener.getSessionExpiredEvents());
         
         executor = Executor.newInstance();
         cookieStore = new BasicCookieStore();
@@ -159,17 +157,17 @@ public class RedissonSessionManagerTest {
 
         Thread.sleep(50);
 
-        Assert.assertEquals(2, listener.getSessionCreatedEvents());
+        Assertions.assertEquals(2, listener.getSessionCreatedEvents());
 
         write(executor, "test", "1234");
         Thread.sleep(3000);
         read(executor, "test", "1234");
         Thread.sleep(3000);
-        Assert.assertEquals(1, listener.getSessionExpiredEvents());
+        Assertions.assertEquals(1, listener.getSessionExpiredEvents());
         Thread.sleep(1000);
-        Assert.assertEquals(1, listener.getSessionExpiredEvents());
+        Assertions.assertEquals(1, listener.getSessionExpiredEvents());
         Thread.sleep(3000);
-        Assert.assertEquals(2, listener.getSessionExpiredEvents());
+        Assertions.assertEquals(2, listener.getSessionExpiredEvents());
         
         Executor.closeIdleConnections();
         server.stop();
@@ -192,13 +190,13 @@ public class RedissonSessionManagerTest {
         
         Thread.sleep(50);
         
-        Assert.assertEquals(1, listener.getSessionCreatedEvents());
-        Assert.assertEquals(0, listener.getSessionDeletedEvents());
+        Assertions.assertEquals(1, listener.getSessionCreatedEvents());
+        Assertions.assertEquals(0, listener.getSessionDeletedEvents());
         
         invalidate(executor);
         
-        Assert.assertEquals(1, listener.getSessionCreatedEvents());
-        Assert.assertEquals(1, listener.getSessionDeletedEvents());
+        Assertions.assertEquals(1, listener.getSessionCreatedEvents());
+        Assertions.assertEquals(1, listener.getSessionDeletedEvents());
 
         Executor.closeIdleConnections();
         
@@ -215,31 +213,31 @@ public class RedissonSessionManagerTest {
     private void write(Executor executor, String key, String value) throws IOException, ClientProtocolException {
         String url = "http://localhost:8080/myapp/write?key=" + key + "&value=" + value;
         String response = executor.execute(Request.Get(url)).returnContent().asString();
-        Assert.assertEquals("OK", response);
+        Assertions.assertEquals("OK", response);
     }
     
     private void read(Executor executor, String key, String value) throws IOException, ClientProtocolException {
         String url = "http://localhost:8080/myapp/read?key=" + key;
         String response = executor.execute(Request.Get(url)).returnContent().asString();
-        Assert.assertEquals(value, response);
+        Assertions.assertEquals(value, response);
     }
 
     private void remove(Executor executor, String key, String value) throws IOException, ClientProtocolException {
         String url = "http://localhost:8080/myapp/remove?key=" + key;
         String response = executor.execute(Request.Get(url)).returnContent().asString();
-        Assert.assertEquals(value, response);
+        Assertions.assertEquals(value, response);
     }
     
     private void invalidate(Executor executor) throws IOException, ClientProtocolException {
         String url = "http://localhost:8080/myapp/invalidate";
         String response = executor.execute(Request.Get(url)).returnContent().asString();
-        Assert.assertEquals("OK", response);
+        Assertions.assertEquals("OK", response);
     }
 
     private void recreate(Executor executor, String key, String value) throws IOException, ClientProtocolException {
         String url = "http://localhost:8080/myapp/recreate?key=" + key + "&value=" + value;
         String response = executor.execute(Request.Get(url)).returnContent().asString();
-        Assert.assertEquals("OK", response);
+        Assertions.assertEquals("OK", response);
     }
     
 }

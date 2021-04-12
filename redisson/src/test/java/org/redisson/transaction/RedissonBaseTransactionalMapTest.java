@@ -1,6 +1,11 @@
 package org.redisson.transaction;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.redisson.BaseTest;
+import org.redisson.api.RMap;
+import org.redisson.api.RTransaction;
+import org.redisson.api.TransactionOptions;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -10,12 +15,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Assert;
-import org.junit.Test;
-import org.redisson.BaseTest;
-import org.redisson.api.RMap;
-import org.redisson.api.RTransaction;
-import org.redisson.api.TransactionOptions;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public abstract class RedissonBaseTransactionalMapTest extends BaseTest {
 
@@ -23,28 +23,30 @@ public abstract class RedissonBaseTransactionalMapTest extends BaseTest {
     
     protected abstract RMap<String, String> getTransactionalMap(RTransaction transaction);
     
-    @Test(expected = TransactionTimeoutException.class)
+    @Test
     public void testParallel(){
-        RMap<Integer, String> m = redisson.getMap("test");
-        m.put(1, "test");
-        
-        RTransaction transaction1 = redisson.createTransaction(TransactionOptions.defaults().timeout(10, TimeUnit.SECONDS));
-        RMap<Integer, String> map1 = transaction1.getMap("put_test");
-        map1.remove(1);
+        Assertions.assertThrows(TransactionTimeoutException.class, () -> {
+            RMap<Integer, String> m = redisson.getMap("test");
+            m.put(1, "test");
 
-        RTransaction transaction2 = redisson.createTransaction(TransactionOptions.defaults());
-        RMap<Integer, String> map2 = transaction2.getMap("put_test");
-        map2.put(1,"aryan");
-        
-        try {
-            transaction2.commit();
-            Assert.fail();
-        } catch (TransactionTimeoutException e) {
-            // skip
-        }
-        
-        transaction1.commit();
-        assertThat(m.size()).isZero();
+            RTransaction transaction1 = redisson.createTransaction(TransactionOptions.defaults().timeout(10, TimeUnit.SECONDS));
+            RMap<Integer, String> map1 = transaction1.getMap("put_test");
+            map1.remove(1);
+
+            RTransaction transaction2 = redisson.createTransaction(TransactionOptions.defaults());
+            RMap<Integer, String> map2 = transaction2.getMap("put_test");
+            map2.put(1,"aryan");
+
+            try {
+                transaction2.commit();
+                Assertions.fail();
+            } catch (TransactionTimeoutException e) {
+                // skip
+            }
+
+            transaction1.commit();
+            assertThat(m.size()).isZero();
+        });
     }
     
     @Test

@@ -1,8 +1,8 @@
 package org.redisson;
 
 import org.awaitility.Awaitility;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.redisson.api.RBlockingDeque;
 import org.redisson.api.queue.DequeMoveArgs;
 
@@ -72,28 +72,27 @@ public class RedissonBlockingDequeTest extends BaseTest {
         assertThat(redisTask).isNull();
     }
     
-    @Test(timeout = 3000)
-    public void testShortPoll() throws InterruptedException {
-        RBlockingDeque<Integer> queue = redisson.getBlockingDeque("queue:pollany");
-        queue.pollLastAsync(500, TimeUnit.MILLISECONDS);
-        queue.pollFirstAsync(10, TimeUnit.MICROSECONDS);
+    @Test
+    public void testShortPoll() {
+        Assertions.assertTimeout(Duration.ofSeconds(3), () -> {
+            RBlockingDeque<Integer> queue = redisson.getBlockingDeque("queue:pollany");
+            queue.pollLastAsync(500, TimeUnit.MILLISECONDS);
+            queue.pollFirstAsync(10, TimeUnit.MICROSECONDS);
+        });
     }
     
     @Test
     public void testPollLastFromAny() throws InterruptedException {
         final RBlockingDeque<Integer> queue1 = redisson.getBlockingDeque("deque:pollany");
-        Executors.newSingleThreadScheduledExecutor().schedule(new Runnable() {
-            @Override
-            public void run() {
-                RBlockingDeque<Integer> queue2 = redisson.getBlockingDeque("deque:pollany1");
-                RBlockingDeque<Integer> queue3 = redisson.getBlockingDeque("deque:pollany2");
-                try {
-                    queue3.put(2);
-                    queue1.put(1);
-                    queue2.put(3);
-                } catch (InterruptedException e) {
-                    Assert.fail();
-                }
+        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+            RBlockingDeque<Integer> queue2 = redisson.getBlockingDeque("deque:pollany1");
+            RBlockingDeque<Integer> queue3 = redisson.getBlockingDeque("deque:pollany2");
+            try {
+                queue3.put(2);
+                queue1.put(1);
+                queue2.put(3);
+            } catch (InterruptedException e) {
+                Assertions.fail();
             }
         }, 3, TimeUnit.SECONDS);
 
@@ -116,7 +115,7 @@ public class RedissonBlockingDequeTest extends BaseTest {
     }
 
     @Test
-    public void testOfferFirstLast() throws InterruptedException {
+    public void testOfferFirstLast() {
         RBlockingDeque<Integer> deque = redisson.getBlockingDeque("deque");
         deque.offerFirst(1);
         deque.offerFirst(2);

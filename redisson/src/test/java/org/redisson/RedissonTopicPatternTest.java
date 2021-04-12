@@ -19,8 +19,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.awaitility.Awaitility;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.RPatternTopic;
 import org.redisson.api.RTopic;
@@ -213,8 +213,8 @@ public class RedissonTopicPatternTest extends BaseTest {
         
         Thread.sleep(500);
         
-        Assert.assertEquals(1, i.get());
-        Assert.assertEquals(1, str.get());
+        Assertions.assertEquals(1, i.get());
+        Assertions.assertEquals(1, str.get());
     }
 
     @Test
@@ -223,19 +223,19 @@ public class RedissonTopicPatternTest extends BaseTest {
 
         RPatternTopic topic1 = redisson.getPatternTopic("topic1.*");
         int listenerId = topic1.addListener(Message.class, (pattern, channel, msg) -> {
-            Assert.fail();
+            Assertions.fail();
         });
         topic1.addListener(Message.class, (pattern, channel, msg) -> {
-            Assert.assertTrue(pattern.equals("topic1.*"));
-            Assert.assertTrue(channel.equals("topic1.t3"));
-            Assert.assertEquals(new Message("123"), msg);
+            Assertions.assertTrue(pattern.equals("topic1.*"));
+            Assertions.assertTrue(channel.equals("topic1.t3"));
+            Assertions.assertEquals(new Message("123"), msg);
             messageRecieved.countDown();
         });
         topic1.removeListener(listenerId);
 
         redisson.getTopic("topic1.t3").publish(new Message("123"));
 
-        Assert.assertTrue(messageRecieved.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(messageRecieved.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -245,7 +245,7 @@ public class RedissonTopicPatternTest extends BaseTest {
         RedissonClient redisson1 = BaseTest.createInstance();
         RPatternTopic topic1 = redisson1.getPatternTopic("topic.*");
         int listenerId = topic1.addListener(Message.class, (pattern, channel, msg) -> {
-            Assert.fail();
+            Assertions.fail();
         });
 
         Thread.sleep(1000);
@@ -255,16 +255,16 @@ public class RedissonTopicPatternTest extends BaseTest {
         RedissonClient redisson2 = BaseTest.createInstance();
         RPatternTopic topic2 = redisson2.getPatternTopic("topic.*");
         topic2.addListener(Message.class, (pattern, channel, msg) -> {
-            Assert.assertTrue(pattern.equals("topic.*"));
-            Assert.assertTrue(channel.equals("topic.t1"));
-            Assert.assertEquals(new Message("123"), msg);
+            Assertions.assertTrue(pattern.equals("topic.*"));
+            Assertions.assertTrue(channel.equals("topic.t1"));
+            Assertions.assertEquals(new Message("123"), msg);
             messageRecieved.countDown();
         });
 
         RTopic topic3 = redisson2.getTopic("topic.t1");
         topic3.publish(new Message("123"));
 
-        Assert.assertTrue(messageRecieved.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(messageRecieved.await(5, TimeUnit.SECONDS));
 
         redisson1.shutdown();
         redisson2.shutdown();
@@ -280,19 +280,19 @@ public class RedissonTopicPatternTest extends BaseTest {
         topic1.addListener(new BasePatternStatusListener() {
             @Override
             public void onPSubscribe(String pattern) {
-                Assert.assertEquals("topic.*", pattern);
+                Assertions.assertEquals("topic.*", pattern);
                 statusRecieved.countDown();
             }
         });
         topic1.addListener(Message.class, (pattern, channel, msg) -> {
-            Assert.assertEquals(new Message("123"), msg);
+            Assertions.assertEquals(new Message("123"), msg);
             messageRecieved.countDown();
         });
 
         RedissonClient redisson2 = BaseTest.createInstance();
         RTopic topic2 = redisson2.getTopic("topic.t1");
         topic2.addListener(Message.class, (channel, msg) -> {
-            Assert.assertEquals(new Message("123"), msg);
+            Assertions.assertEquals(new Message("123"), msg);
             messageRecieved.countDown();
         });
         topic2.publish(new Message("123"));
@@ -307,7 +307,7 @@ public class RedissonTopicPatternTest extends BaseTest {
         topict2.publish(new Message("123"));
 
         statusRecieved.await();
-        Assert.assertTrue(messageRecieved.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(messageRecieved.await(5, TimeUnit.SECONDS));
 
         redisson1.shutdown();
         redisson2.shutdown();
@@ -321,12 +321,12 @@ public class RedissonTopicPatternTest extends BaseTest {
         topic1.addListener(new BasePatternStatusListener() {
             @Override
             public void onPUnsubscribe(String pattern) {
-                Assert.assertEquals("topic.*", pattern);
+                Assertions.assertEquals("topic.*", pattern);
                 l.countDown();
             }
         });
         int id = topic1.addListener(Message.class, (pattern, channel, msg) -> {
-            Assert.fail();
+            Assertions.fail();
         });
 
         RedissonClient redisson2 = BaseTest.createInstance();
@@ -371,7 +371,7 @@ public class RedissonTopicPatternTest extends BaseTest {
             futures.add(s);
         }
         executor.shutdown();
-        Assert.assertTrue(executor.awaitTermination(threads * loops * 1000, TimeUnit.SECONDS));
+        Assertions.assertTrue(executor.awaitTermination(threads * loops * 1000, TimeUnit.SECONDS));
 
         for (Future<?> future : futures) {
             future.get();

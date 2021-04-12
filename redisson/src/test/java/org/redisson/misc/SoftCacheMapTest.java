@@ -1,6 +1,6 @@
 package org.redisson.misc;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.redisson.cache.Cache;
 import org.redisson.cache.ReferenceCacheMap;
 

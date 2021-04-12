@@ -2,6 +2,7 @@ package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Duration;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
@@ -11,8 +12,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.assertj.core.api.Assertions;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.redisson.api.RRateLimiter;
 import org.redisson.api.RateIntervalUnit;
 import org.redisson.api.RateType;
@@ -86,7 +87,8 @@ public class RedissonRateLimiterTest extends BaseTest {
         RRateLimiter limiter = redisson.getRateLimiter("myLimiter");
         limiter.trySetRate(RateType.PER_CLIENT, 1, 1, RateIntervalUnit.SECONDS);
         
-        Assertions.assertThatThrownBy(() -> limiter.tryAcquire(20)).hasMessageContaining("Requested permits amount could not exceed defined rate");
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> limiter.tryAcquire(20))
+                    .hasMessageContaining("Requested permits amount could not exceed defined rate");
         assertThat(limiter.tryAcquire()).isTrue();
     }
 
@@ -128,14 +130,16 @@ public class RedissonRateLimiterTest extends BaseTest {
     }
     
     
-    @Test(timeout = 1500)
+    @Test
     public void testTryAcquire() {
-        RRateLimiter rr = redisson.getRateLimiter("acquire");
-        assertThat(rr.trySetRate(RateType.OVERALL, 1, 5, RateIntervalUnit.SECONDS)).isTrue();
+        Assertions.assertTimeout(Duration.ofMillis(1500), () -> {
+            RRateLimiter rr = redisson.getRateLimiter("acquire");
+            assertThat(rr.trySetRate(RateType.OVERALL, 1, 5, RateIntervalUnit.SECONDS)).isTrue();
 
-        assertThat(rr.tryAcquire(1, 1, TimeUnit.SECONDS)).isTrue();
-        assertThat(rr.tryAcquire(1, 1, TimeUnit.SECONDS)).isFalse();
-        assertThat(rr.tryAcquire()).isFalse();
+            assertThat(rr.tryAcquire(1, 1, TimeUnit.SECONDS)).isTrue();
+            assertThat(rr.tryAcquire(1, 1, TimeUnit.SECONDS)).isFalse();
+            assertThat(rr.tryAcquire()).isFalse();
+        });
     }
     
     @Test

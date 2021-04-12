@@ -1,7 +1,7 @@
 package org.redisson;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.redisson.api.MapOptions;
 import org.redisson.api.MapOptions.WriteMode;
 import org.redisson.api.RMap;

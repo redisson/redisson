@@ -1,16 +1,16 @@
 package org.redisson.transaction;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.LinkedHashMap;
-import java.util.Map;
-
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.redisson.BaseTest;
 import org.redisson.api.RBucket;
 import org.redisson.api.RBuckets;
 import org.redisson.api.RTransaction;
 import org.redisson.api.TransactionOptions;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonTransactionalBucketsTest extends BaseTest {
 

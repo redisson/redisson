@@ -1,14 +1,11 @@
 package org.redisson.spring.transaction;
 
-import org.junit.Assert;
 import org.redisson.api.RMapReactive;
 import org.redisson.api.RTransactionReactive;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.NoTransactionException;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class ReactiveTransactionalBean {
 

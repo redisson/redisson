@@ -1,23 +1,20 @@
 package org.redisson.rx;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Single;
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import org.redisson.api.RTopicRx;
+import org.redisson.api.listener.MessageListener;
 
 import java.io.Serializable;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import org.awaitility.Awaitility;
-import org.junit.Assert;
-import org.junit.Test;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import org.redisson.api.RTopicRx;
-import org.redisson.api.listener.MessageListener;
-
-import io.reactivex.rxjava3.core.Flowable;
-import io.reactivex.rxjava3.core.Single;
 
 public class RedissonTopicRxTest extends BaseRxTest {
 
@@ -61,7 +58,7 @@ public class RedissonTopicRxTest extends BaseRxTest {
         MessageListener listener = new MessageListener() {
             @Override
             public void onMessage(CharSequence channel, Object msg) {
-                Assert.fail();
+                Assertions.fail();
             }
         };
         
@@ -79,7 +76,7 @@ public class RedissonTopicRxTest extends BaseRxTest {
         MessageListener listener = new MessageListener() {
             @Override
             public void onMessage(CharSequence channel, Object msg) {
-                Assert.fail();
+                Assertions.fail();
             }
         };
         

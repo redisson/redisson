@@ -1,6 +1,6 @@
 package org.redisson;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.redisson.api.RAtomicDouble;
 
 import java.math.BigDecimal;

@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.redisson.api.RSortedSet;
 import org.redisson.api.RedissonClient;
 
@@ -35,7 +35,7 @@ public class ConcurrentRedissonSortedSetTest extends BaseConcurrentTest {
             RSortedSet<Integer> set = rc.getSortedSet(name);
             int c = counter.incrementAndGet();
             Integer element = elements.get(c);
-            Assert.assertTrue(set.add(element));
+            Assertions.assertTrue(set.add(element));
         });
 
         Collections.sort(elements);
@@ -63,11 +63,11 @@ public class ConcurrentRedissonSortedSetTest extends BaseConcurrentTest {
         testSingleInstanceConcurrency(length, rc -> {
             RSortedSet<Integer> set = rc.getSortedSet(name);
             int c = counter.incrementAndGet();
-            Assert.assertTrue(set.add(c));
+            Assertions.assertTrue(set.add(c));
             set.remove(rnd.nextInt(length));
         });
 
-        Assert.assertEquals(counter.get(), length*2);
+        Assertions.assertEquals(counter.get(), length*2);
         
         Integer prevVal = null;
         for (Integer val : map) {
@@ -76,7 +76,7 @@ public class ConcurrentRedissonSortedSetTest extends BaseConcurrentTest {
                 continue;
             }
             if (val < prevVal) {
-                Assert.fail();
+                Assertions.fail();
             }
         }
         

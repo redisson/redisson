@@ -1,6 +1,11 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import org.redisson.api.RBlockingDequeReactive;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -8,11 +13,7 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import org.awaitility.Awaitility;
-import org.junit.Test;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import org.redisson.api.RBlockingDequeReactive;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonBlockingDequeReactiveTest extends BaseReactiveTest {
 
@@ -49,7 +50,7 @@ public class RedissonBlockingDequeReactiveTest extends BaseReactiveTest {
     }
     
     @Test
-    public void testPollLastAndOfferFirstTo() throws InterruptedException {
+    public void testPollLastAndOfferFirstTo() {
         RBlockingDequeReactive<String> blockingDeque = redisson.getBlockingDeque("blocking_deque");
         Awaitility.await().between(Duration.ofMillis(950), Duration.ofMillis(1150)).untilAsserted(() -> {
             String redisTask = sync(blockingDeque.pollLastAndOfferFirstTo("deque", 1, TimeUnit.SECONDS));
@@ -57,25 +58,24 @@ public class RedissonBlockingDequeReactiveTest extends BaseReactiveTest {
         });
     }
     
-    @Test(timeout = 3000)
-    public void testShortPoll() throws InterruptedException {
-        RBlockingDequeReactive<Integer> queue = redisson.getBlockingDeque("queue:pollany");
-        sync(queue.pollLast(500, TimeUnit.MILLISECONDS));
-        sync(queue.pollFirst(10, TimeUnit.MICROSECONDS));
+    @Test
+    public void testShortPoll() {
+        Assertions.assertTimeout(Duration.ofSeconds(3), () -> {
+            RBlockingDequeReactive<Integer> queue = redisson.getBlockingDeque("queue:pollany");
+            sync(queue.pollLast(500, TimeUnit.MILLISECONDS));
+            sync(queue.pollFirst(10, TimeUnit.MICROSECONDS));
+        });
     }
     
     @Test
-    public void testPollLastFromAny() throws InterruptedException {
+    public void testPollLastFromAny() {
         final RBlockingDequeReactive<Integer> queue1 = redisson.getBlockingDeque("deque:pollany");
-        Executors.newSingleThreadScheduledExecutor().schedule(new Runnable() {
-            @Override
-            public void run() {
-                RBlockingDequeReactive<Integer> queue2 = redisson.getBlockingDeque("deque:pollany1");
-                RBlockingDequeReactive<Integer> queue3 = redisson.getBlockingDeque("deque:pollany2");
-                sync(queue3.put(2));
-                sync(queue1.put(1));
-                sync(queue2.put(3));
-            }
+        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+            RBlockingDequeReactive<Integer> queue2 = redisson.getBlockingDeque("deque:pollany1");
+            RBlockingDequeReactive<Integer> queue3 = redisson.getBlockingDeque("deque:pollany2");
+            sync(queue3.put(2));
+            sync(queue1.put(1));
+            sync(queue2.put(3));
         }, 3, TimeUnit.SECONDS);
 
         Awaitility.await().atLeast(Duration.ofSeconds(2)).untilAsserted(() -> {
@@ -85,7 +85,7 @@ public class RedissonBlockingDequeReactiveTest extends BaseReactiveTest {
     }
 
     @Test
-    public void testFirstLast() throws InterruptedException {
+    public void testFirstLast() {
         RBlockingDequeReactive<Integer> deque = redisson.getBlockingDeque("deque");
         sync(deque.putFirst(1));
         sync(deque.putFirst(2));
@@ -96,7 +96,7 @@ public class RedissonBlockingDequeReactiveTest extends BaseReactiveTest {
     }
 
     @Test
-    public void testOfferFirstLast() throws InterruptedException {
+    public void testOfferFirstLast() {
         RBlockingDequeReactive<Integer> deque = redisson.getBlockingDeque("deque");
         sync(deque.offerFirst(1));
         sync(deque.offerFirst(2));
@@ -107,7 +107,7 @@ public class RedissonBlockingDequeReactiveTest extends BaseReactiveTest {
     }
 
     @Test
-    public void testTakeFirst() throws InterruptedException {
+    public void testTakeFirst() {
         RBlockingDequeReactive<Integer> deque = redisson.getBlockingDeque("queue:take");
 
         sync(deque.offerFirst(1));
@@ -123,7 +123,7 @@ public class RedissonBlockingDequeReactiveTest extends BaseReactiveTest {
     }
 
     @Test
-    public void testTakeLast() throws InterruptedException {
+    public void testTakeLast() {
         RBlockingDequeReactive<Integer> deque = redisson.getBlockingDeque("queue:take");
 
         sync(deque.offerFirst(1));
@@ -182,7 +182,7 @@ public class RedissonBlockingDequeReactiveTest extends BaseReactiveTest {
     }
 
     @Test
-    public void testPollFirst() throws InterruptedException {
+    public void testPollFirst() {
         RBlockingDequeReactive<Integer> queue1 = redisson.getBlockingDeque("queue1");
         sync(queue1.put(1));
         sync(queue1.put(2));
@@ -198,7 +198,7 @@ public class RedissonBlockingDequeReactiveTest extends BaseReactiveTest {
     }
 
     @Test
-    public void testPollLast() throws InterruptedException {
+    public void testPollLast() {
         RBlockingDequeReactive<Integer> queue1 = redisson.getBlockingDeque("queue1");
         sync(queue1.putLast(1));
         sync(queue1.putLast(2));

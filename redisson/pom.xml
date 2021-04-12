@@ -74,12 +74,12 @@
         <dependency>
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-core</artifactId>
-            <version>3.4.2</version>
+            <version>3.4.4</version>
         </dependency>
         <dependency>
             <groupId>io.reactivex.rxjava3</groupId>
             <artifactId>rxjava</artifactId>
-            <version>3.0.10</version>
+            <version>3.0.12</version>
         </dependency>
 
         <dependency>
@@ -97,7 +97,7 @@
         <dependency>
            <groupId>org.jmockit</groupId>
            <artifactId>jmockit</artifactId>
-           <version>1.46</version>
+           <version>1.49</version>
            <scope>test</scope>
         </dependency>
         <dependency>
@@ -107,9 +107,15 @@
            <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.13.1</version>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>5.7.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <version>5.7.1</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -455,7 +461,7 @@
                         <forkCount>4</forkCount>
                         <reuseForks>true</reuseForks>
                         <argLine>
-                           -javaagent:"${settings.localRepository}"/org/jmockit/jmockit/1.46/jmockit-1.46.jar
+                           -javaagent:"${settings.localRepository}"/org/jmockit/jmockit/1.49/jmockit-1.49.jar
                         </argLine>
                     </configuration>
             </plugin>

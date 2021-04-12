@@ -6,10 +6,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLexSortedSet;
 import org.redisson.api.RScript;
@@ -20,7 +19,7 @@ import org.redisson.client.codec.StringCodec;
 public class RedissonScriptTest extends BaseTest {
 
     @Test
-    public void testMulti() throws InterruptedException, ExecutionException {
+    public void testMulti() {
         RLexSortedSet idx2 = redisson.getLexSortedSet("ABCD17436");
         
         Long l = new Long("1506524856000");
@@ -69,39 +68,39 @@ public class RedissonScriptTest extends BaseTest {
         script.eval(RScript.Mode.READ_WRITE, "redis.call('set', KEYS[1], ARGV[1])", RScript.ReturnType.VALUE, Arrays.asList("foo"), value);
 
         String val = script.eval(RScript.Mode.READ_WRITE, "return redis.call('get', KEYS[1])", RScript.ReturnType.VALUE, Arrays.asList("foo"));
-        Assert.assertEquals(value, val);
+        Assertions.assertEquals(value, val);
     }
 
     @Test
     public void testScriptExists() {
         RScript s = redisson.getScript();
         String r = s.scriptLoad("return redis.call('get', 'foo')");
-        Assert.assertEquals("282297a0228f48cd3fc6a55de6316f31422f5d17", r);
+        Assertions.assertEquals("282297a0228f48cd3fc6a55de6316f31422f5d17", r);
 
         List<Boolean> r1 = s.scriptExists(r);
-        Assert.assertEquals(1, r1.size());
-        Assert.assertTrue(r1.get(0));
+        Assertions.assertEquals(1, r1.size());
+        Assertions.assertTrue(r1.get(0));
 
         s.scriptFlush();
 
         List<Boolean> r2 = s.scriptExists(r);
-        Assert.assertEquals(1, r2.size());
-        Assert.assertFalse(r2.get(0));
+        Assertions.assertEquals(1, r2.size());
+        Assertions.assertFalse(r2.get(0));
     }
 
     @Test
     public void testScriptFlush() {
         redisson.getBucket("foo").set("bar");
         String r = redisson.getScript().scriptLoad("return redis.call('get', 'foo')");
-        Assert.assertEquals("282297a0228f48cd3fc6a55de6316f31422f5d17", r);
+        Assertions.assertEquals("282297a0228f48cd3fc6a55de6316f31422f5d17", r);
         String r1 = redisson.getScript().evalSha(Mode.READ_ONLY, "282297a0228f48cd3fc6a55de6316f31422f5d17", RScript.ReturnType.VALUE, Collections.emptyList());
-        Assert.assertEquals("bar", r1);
+        Assertions.assertEquals("bar", r1);
         redisson.getScript().scriptFlush();
 
         try {
             redisson.getScript().evalSha(Mode.READ_ONLY, "282297a0228f48cd3fc6a55de6316f31422f5d17", RScript.ReturnType.VALUE, Collections.emptyList());
         } catch (Exception e) {
-            Assert.assertEquals(RedisException.class, e.getClass());
+            Assertions.assertEquals(RedisException.class, e.getClass());
         }
     }
 
@@ -109,42 +108,42 @@ public class RedissonScriptTest extends BaseTest {
     public void testScriptLoad() {
         redisson.getBucket("foo").set("bar");
         String r = redisson.getScript().scriptLoad("return redis.call('get', 'foo')");
-        Assert.assertEquals("282297a0228f48cd3fc6a55de6316f31422f5d17", r);
+        Assertions.assertEquals("282297a0228f48cd3fc6a55de6316f31422f5d17", r);
         String r1 = redisson.getScript().evalSha(Mode.READ_ONLY, "282297a0228f48cd3fc6a55de6316f31422f5d17", RScript.ReturnType.VALUE, Collections.emptyList());
-        Assert.assertEquals("bar", r1);
+        Assertions.assertEquals("bar", r1);
     }
 
     @Test
     public void testScriptLoadAsync() {
         redisson.getBucket("foo").set("bar");
         RFuture<String> r = redisson.getScript().scriptLoadAsync("return redis.call('get', 'foo')");
-        Assert.assertEquals("282297a0228f48cd3fc6a55de6316f31422f5d17", r.awaitUninterruptibly().getNow());
+        Assertions.assertEquals("282297a0228f48cd3fc6a55de6316f31422f5d17", r.awaitUninterruptibly().getNow());
         String r1 = redisson.getScript().evalSha(Mode.READ_ONLY, "282297a0228f48cd3fc6a55de6316f31422f5d17", RScript.ReturnType.VALUE, Collections.emptyList());
-        Assert.assertEquals("bar", r1);
+        Assertions.assertEquals("bar", r1);
     }
 
     @Test
     public void testEvalSha() {
         RScript s = redisson.getScript();
         String res = s.scriptLoad("return redis.call('get', 'foo')");
-        Assert.assertEquals("282297a0228f48cd3fc6a55de6316f31422f5d17", res);
+        Assertions.assertEquals("282297a0228f48cd3fc6a55de6316f31422f5d17", res);
 
         redisson.getBucket("foo").set("bar");
         String r1 = s.evalSha(Mode.READ_ONLY, "282297a0228f48cd3fc6a55de6316f31422f5d17", RScript.ReturnType.VALUE, Collections.emptyList());
-        Assert.assertEquals("bar", r1);
+        Assertions.assertEquals("bar", r1);
     }
 
     @Test
     public void testEvalshaAsync() {
         RScript s = redisson.getScript();
         String res = s.scriptLoad("return redis.call('get', 'foo')");
-        Assert.assertEquals("282297a0228f48cd3fc6a55de6316f31422f5d17", res);
+        Assertions.assertEquals("282297a0228f48cd3fc6a55de6316f31422f5d17", res);
 
         redisson.getBucket("foo").set("bar");
         String r = redisson.getScript().eval(Mode.READ_ONLY, "return redis.call('get', 'foo')", RScript.ReturnType.VALUE);
-        Assert.assertEquals("bar", r);
+        Assertions.assertEquals("bar", r);
         RFuture<Object> r1 = redisson.getScript().evalShaAsync(Mode.READ_ONLY, "282297a0228f48cd3fc6a55de6316f31422f5d17", RScript.ReturnType.VALUE, Collections.emptyList());
-        Assert.assertEquals("bar", r1.awaitUninterruptibly().getNow());
+        Assertions.assertEquals("bar", r1.awaitUninterruptibly().getNow());
     }
 
 

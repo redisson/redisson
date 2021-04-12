@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.redisson.BaseReactiveTest;
 import org.redisson.api.RBucketReactive;
 import org.redisson.api.RTransactionReactive;
@@ -26,7 +26,7 @@ public class RedissonTransactionalBucketReactiveTest extends BaseReactiveTest {
         
         try {
             sync(transaction.commit());
-            Assert.fail();
+            Assertions.fail();
         } catch (TransactionException e) {
             // skip
         }

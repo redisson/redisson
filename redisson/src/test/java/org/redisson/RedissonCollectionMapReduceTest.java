@@ -1,30 +1,19 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.redisson.api.*;
+import org.redisson.api.annotation.RInject;
+import org.redisson.api.mapreduce.*;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.redisson.api.RExecutorService;
-import org.redisson.api.RList;
-import org.redisson.api.RMap;
-import org.redisson.api.RQueue;
-import org.redisson.api.RedissonClient;
-import org.redisson.api.WorkerOptions;
-import org.redisson.api.annotation.RInject;
-import org.redisson.api.mapreduce.RCollator;
-import org.redisson.api.mapreduce.RCollectionMapReduce;
-import org.redisson.api.mapreduce.RCollectionMapper;
-import org.redisson.api.mapreduce.RCollector;
-import org.redisson.api.mapreduce.RReducer;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@RunWith(Parameterized.class)
 public class RedissonCollectionMapReduceTest extends BaseTest {
     
     public static class WordMapper implements RCollectionMapper<String, String, Integer> {
@@ -66,25 +55,21 @@ public class RedissonCollectionMapReduceTest extends BaseTest {
         
     }
     
-    @Parameterized.Parameters(name = "{index} - {0}")
     public static Iterable<Object[]> mapClasses() {
         return Arrays.asList(new Object[][]{
             {RList.class}, {RQueue.class}
         });
     }
 
-    @Parameterized.Parameter(0)
-    public Class<?> mapClass;
-
-    
-    @Before
+    @BeforeEach
     public void beforeTest() {
         redisson.getExecutorService(RExecutorService.MAPREDUCE_NAME).registerWorkers(WorkerOptions.defaults().workers(3));
     }
     
-    @Test
-    public void test() {
-        RList<String> list = getCollection();
+    @ParameterizedTest
+    @MethodSource("mapClasses")
+    public void test(Class<?> mapClass) {
+        RList<String> list = getCollection(mapClass);
         
         list.add("Alice was beginning to get very tired"); 
         list.add("of sitting by her sister on the bank and");
@@ -202,9 +187,10 @@ public class RedissonCollectionMapReduceTest extends BaseTest {
         
     }
 
-    @Test
-    public void testInjector() {
-        RList<String> list = getCollection();
+    @ParameterizedTest
+    @MethodSource("mapClasses")
+    public void testInjector(Class<?> mapClass) {
+        RList<String> list = getCollection(mapClass);
 
         list.add("Alice was beginning to get very tired"); 
         
@@ -217,7 +203,7 @@ public class RedissonCollectionMapReduceTest extends BaseTest {
         assertThat(redisson.getAtomicLong("test").get()).isEqualTo(16 + 1);
     }
 
-    private RList<String> getCollection() {
+    private RList<String> getCollection(Class<?> mapClass) {
         RList<String> list = null;
         if (RList.class.isAssignableFrom(mapClass)) {
             list = redisson.getList("list");

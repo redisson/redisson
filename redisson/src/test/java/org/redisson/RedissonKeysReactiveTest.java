@@ -1,15 +1,15 @@
 package org.redisson;
 
-import java.util.Iterator;
-
-import static org.assertj.core.api.Assertions.*;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.redisson.api.RBucketReactive;
 import org.redisson.api.RKeysReactive;
-import org.redisson.api.RKeysRx;
 import org.redisson.api.RMapReactive;
 import reactor.core.publisher.Flux;
+
+import java.util.Iterator;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonKeysReactiveTest extends BaseReactiveTest {
 
@@ -49,9 +49,9 @@ public class RedissonKeysReactiveTest extends BaseReactiveTest {
 
         assertThat(sync(redisson.getKeys().randomKey())).isIn("test1", "test2");
         sync(redisson.getKeys().delete("test1"));
-        Assert.assertEquals("test2", sync(redisson.getKeys().randomKey()));
+        Assertions.assertEquals("test2", sync(redisson.getKeys().randomKey()));
         sync(redisson.getKeys().flushdb());
-        Assert.assertNull(sync(redisson.getKeys().randomKey()));
+        Assertions.assertNull(sync(redisson.getKeys().randomKey()));
     }
 
     @Test
@@ -61,7 +61,7 @@ public class RedissonKeysReactiveTest extends BaseReactiveTest {
         RMapReactive<String, String> map = redisson.getMap("test2");
         sync(map.fastPut("1", "2"));
 
-        Assert.assertEquals(2, sync(redisson.getKeys().deleteByPattern("test?")).intValue());
+        Assertions.assertEquals(2, sync(redisson.getKeys().deleteByPattern("test?")).intValue());
     }
 
     @Test
@@ -71,8 +71,8 @@ public class RedissonKeysReactiveTest extends BaseReactiveTest {
         RMapReactive<String, String> map = redisson.getMap("map2");
         sync(map.fastPut("1", "2"));
 
-        Assert.assertEquals(2, sync(redisson.getKeys().delete("test", "map2")).intValue());
-        Assert.assertEquals(0, sync(redisson.getKeys().delete("test", "map2")).intValue());
+        Assertions.assertEquals(2, sync(redisson.getKeys().delete("test", "map2")).intValue());
+        Assertions.assertEquals(0, sync(redisson.getKeys().delete("test", "map2")).intValue());
     }
 
 }

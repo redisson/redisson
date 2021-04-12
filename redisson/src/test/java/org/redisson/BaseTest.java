@@ -2,10 +2,9 @@ package org.redisson;
 
 import java.io.IOException;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 
@@ -13,19 +12,19 @@ public abstract class BaseTest {
     
     protected static RedissonClient redisson;
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() throws IOException, InterruptedException {
         RedisRunner.startDefaultRedisServerInstance();
         redisson = createInstance();
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterClass() throws InterruptedException {
         redisson.shutdown();
         RedisRunner.shutDownDefaultRedisServerInstance();
     }
 
-    @Before
+    @BeforeEach
     public void before() throws IOException, InterruptedException {
         if (flushBetweenTests()) {
             redisson.getKeys().flushall();

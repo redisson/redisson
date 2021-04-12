@@ -8,8 +8,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.redisson.ClusterRunner.ClusterProcesses;
 import org.redisson.RedisRunner.FailedToStartRedisException;
 import org.redisson.api.RBucket;
@@ -71,7 +70,7 @@ public class RedissonBucketsTest extends BaseTest {
         expected.put("test1", "someValue1");
         expected.put("test3", "someValue3");
 
-        Assert.assertEquals(expected, result);
+        assertThat(expected).isEqualTo(result);
     }
 
     @Test
@@ -85,8 +84,8 @@ public class RedissonBucketsTest extends BaseTest {
 
         buckets.set(items);
         items = buckets.get("buckets:A", "buckets:B", "buckets:C");
-        Assert.assertEquals(3, items.size());
-        Assert.assertEquals("XYZ", items.get("buckets:A"));
+        assertThat(3).isEqualTo(items.size());
+        assertThat(items.get("buckets:A")).isEqualTo("XYZ");
     }
 
     @Test

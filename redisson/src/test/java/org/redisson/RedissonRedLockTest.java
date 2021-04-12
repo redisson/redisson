@@ -7,11 +7,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Assert;
-import org.junit.Test;
-
 import io.netty.channel.nio.NioEventLoopGroup;
 
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -162,7 +161,7 @@ public class RedissonRedLockTest {
         t.join(1000);
 
         RedissonMultiLock lock = new RedissonRedLock(lock1, lock2, lock3);
-        Assert.assertFalse(lock.tryLock());
+        Assertions.assertFalse(lock.tryLock());
         
         client1.shutdown();
         client2.shutdown();

@@ -5,8 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.Collections;
 import java.util.List;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.redisson.api.RScript;
 import org.redisson.api.RScriptRx;
 import org.redisson.client.RedisException;
@@ -25,32 +25,32 @@ public class RedissonScriptRxTest extends BaseRxTest {
     public void testScriptExists() {
         RScriptRx s = redisson.getScript();
         String r = sync(s.scriptLoad("return redis.call('get', 'foo')"));
-        Assert.assertEquals("282297a0228f48cd3fc6a55de6316f31422f5d17", r);
+        Assertions.assertEquals("282297a0228f48cd3fc6a55de6316f31422f5d17", r);
 
         List<Boolean> r1 = sync(s.scriptExists(r));
-        Assert.assertEquals(1, r1.size());
-        Assert.assertTrue(r1.get(0));
+        Assertions.assertEquals(1, r1.size());
+        Assertions.assertTrue(r1.get(0));
 
         sync(s.scriptFlush());
 
         List<Boolean> r2 = sync(s.scriptExists(r));
-        Assert.assertEquals(1, r2.size());
-        Assert.assertFalse(r2.get(0));
+        Assertions.assertEquals(1, r2.size());
+        Assertions.assertFalse(r2.get(0));
     }
 
     @Test
     public void testScriptFlush() {
         sync(redisson.getBucket("foo").set("bar"));
         String r = sync(redisson.getScript().scriptLoad("return redis.call('get', 'foo')"));
-        Assert.assertEquals("282297a0228f48cd3fc6a55de6316f31422f5d17", r);
+        Assertions.assertEquals("282297a0228f48cd3fc6a55de6316f31422f5d17", r);
         String r1 = sync(redisson.getScript().<String>evalSha(RScript.Mode.READ_ONLY, "282297a0228f48cd3fc6a55de6316f31422f5d17", RScript.ReturnType.VALUE, Collections.emptyList()));
-        Assert.assertEquals("bar", r1);
+        Assertions.assertEquals("bar", r1);
         sync(redisson.getScript().scriptFlush());
 
         try {
             sync(redisson.getScript().evalSha(RScript.Mode.READ_ONLY, "282297a0228f48cd3fc6a55de6316f31422f5d17", RScript.ReturnType.VALUE, Collections.emptyList()));
         } catch (Exception e) {
-            Assert.assertEquals(RedisException.class, e.getClass());
+            Assertions.assertEquals(RedisException.class, e.getClass());
         }
     }
 
@@ -58,20 +58,20 @@ public class RedissonScriptRxTest extends BaseRxTest {
     public void testScriptLoad() {
         sync(redisson.getBucket("foo").set("bar"));
         String r = sync(redisson.getScript().scriptLoad("return redis.call('get', 'foo')"));
-        Assert.assertEquals("282297a0228f48cd3fc6a55de6316f31422f5d17", r);
+        Assertions.assertEquals("282297a0228f48cd3fc6a55de6316f31422f5d17", r);
         String r1 = sync(redisson.getScript().<String>evalSha(RScript.Mode.READ_ONLY, "282297a0228f48cd3fc6a55de6316f31422f5d17", RScript.ReturnType.VALUE, Collections.emptyList()));
-        Assert.assertEquals("bar", r1);
+        Assertions.assertEquals("bar", r1);
     }
 
     @Test
     public void testEvalSha() {
         RScriptRx s = redisson.getScript();
         String res = sync(s.scriptLoad("return redis.call('get', 'foo')"));
-        Assert.assertEquals("282297a0228f48cd3fc6a55de6316f31422f5d17", res);
+        Assertions.assertEquals("282297a0228f48cd3fc6a55de6316f31422f5d17", res);
 
         sync(redisson.getBucket("foo").set("bar"));
         String r1 = sync(s.<String>evalSha(RScript.Mode.READ_ONLY, "282297a0228f48cd3fc6a55de6316f31422f5d17", RScript.ReturnType.VALUE, Collections.emptyList()));
-        Assert.assertEquals("bar", r1);
+        Assertions.assertEquals("bar", r1);
     }
 
 
