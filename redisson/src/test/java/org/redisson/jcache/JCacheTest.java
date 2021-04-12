@@ -415,7 +415,7 @@ public class JCacheTest extends BaseTest {
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager(configUri, null)
                 .createCache("test", config);
 
-        CountDownLatch latch = new CountDownLatch(2);
+        CountDownLatch latch = new CountDownLatch(1);
 
         String key = "123";
 
@@ -423,6 +423,82 @@ public class JCacheTest extends BaseTest {
         MutableCacheEntryListenerConfiguration<String, String> listenerConfiguration =
                 new MutableCacheEntryListenerConfiguration<>(FactoryBuilder.factoryOf(clientListener), null, true, true);
         cache.registerCacheEntryListener(listenerConfiguration);
+
+        cache.put(key, "80");
+        Assert.assertNotNull(cache.get(key));
+
+        cache.put(key, "90");
+
+        latch.await();
+
+        Assert.assertNotNull(cache.get(key));
+
+        cache.close();
+        runner.stop();
+    }
+
+    @Test
+    public void testUpdateAsync() throws IOException, InterruptedException, URISyntaxException {
+        RedisProcess runner = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(6311)
+                .run();
+
+        MutableConfiguration<String, String> config = new MutableConfiguration<>();
+        config.setStoreByValue(true);
+
+        URI configUri = getClass().getResource("redisson-jcache.json").toURI();
+        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager(configUri, null)
+                .createCache("test", config);
+
+        CountDownLatch latch = new CountDownLatch(2);
+
+        String key = "123";
+
+        UpdatedListener clientListener = new UpdatedListener(latch, key, "80", "90");
+        MutableCacheEntryListenerConfiguration<String, String> listenerConfiguration =
+                new MutableCacheEntryListenerConfiguration<>(FactoryBuilder.factoryOf(clientListener), null, true, false);
+        cache.registerCacheEntryListener(listenerConfiguration);
+
+        UpdatedListener secondClientListener = new UpdatedListener(latch, key, "80", "90");
+        MutableCacheEntryListenerConfiguration<String, String> secondListenerConfiguration =
+                new MutableCacheEntryListenerConfiguration<>(FactoryBuilder.factoryOf(secondClientListener), null, false, false);
+        cache.registerCacheEntryListener(secondListenerConfiguration);
+
+
+
+        cache.put(key, "80");
+        Assert.assertNotNull(cache.get(key));
+
+        cache.put(key, "90");
+
+        latch.await();
+
+        Assert.assertNotNull(cache.get(key));
+
+        cache.close();
+        runner.stop();
+    }
+
+    @Test
+    public void testUpdateWithoutOldValue() throws IOException, InterruptedException, URISyntaxException {
+        RedisProcess runner = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(6311)
+                .run();
+
+        MutableConfiguration<String, String> config = new MutableConfiguration<>();
+        config.setStoreByValue(true);
+
+        URI configUri = getClass().getResource("redisson-jcache.json").toURI();
+        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager(configUri, null)
+                .createCache("test", config);
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        String key = "123";
 
         UpdatedListener secondClientListener = new UpdatedListener(latch, key, null, "90");
         MutableCacheEntryListenerConfiguration<String, String> secondListenerConfiguration =

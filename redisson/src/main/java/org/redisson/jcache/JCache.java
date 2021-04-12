@@ -407,8 +407,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                           + "local oldValueRequired = tonumber(redis.call('get', KEYS[9])); "
                           + "local msg, syncMsg; "
                           + "if oldValueRequired == nil or oldValueRequired < 1 then "
-                              + "msg = struct.pack('Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5]); "
-                              + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], ARGV[6]); "
+                              + "msg = struct.pack('Lc0Lc0h', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], -1); "
+                              + "syncMsg = struct.pack('Lc0Lc0hd', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], -1, ARGV[6]); "
                           + "else "
                               + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value)); "
                               + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value), ARGV[6]); "
@@ -421,8 +421,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                           + "local oldValueRequired = tonumber(redis.call('get', KEYS[9])); "
                           + "local msg, syncMsg; "
                           + "if oldValueRequired == nil or oldValueRequired < 1 then "
-                              + "msg = struct.pack('Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5]); "
-                              + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], ARGV[6]); "
+                              + "msg = struct.pack('Lc0Lc0h', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], -1); "
+                              + "syncMsg = struct.pack('Lc0Lc0hd', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], -1, ARGV[6]); "
                           + "else "
                               + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value)); "
                               + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value), ARGV[6]); "
@@ -514,8 +514,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                     + "local oldValueRequired = tonumber(redis.call('get', KEYS[9])); "
                     + "local msg, syncMsg; "
                     + "if oldValueRequired == nil or oldValueRequired < 1 then "
-                        + "msg = struct.pack('Lc0Lc0', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1]); "
-                        + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1], ARGV[4]); "
+                        + "msg = struct.pack('Lc0Lc0h', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1], -1); "
+                        + "syncMsg = struct.pack('Lc0Lc0hd', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1], -1, ARGV[4]); "
                     + "else "
                         + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1], string.len(tostring(value)), tostring(value)); "
                         + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1], string.len(tostring(value)), tostring(value), ARGV[4]); "
@@ -528,8 +528,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                     + "local oldValueRequired = tonumber(redis.call('get', KEYS[9])); "
                     + "local msg, syncMsg; "
                     + "if oldValueRequired == nil or oldValueRequired < 1 then "
-                        + "msg = struct.pack('Lc0Lc0', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1]); "
-                        + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1], ARGV[4]); "
+                        + "msg = struct.pack('Lc0Lc0h', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1], -1); "
+                        + "syncMsg = struct.pack('Lc0Lc0hd', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1], -1, ARGV[4]); "
                     + "else "
                         + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1], string.len(tostring(value)), tostring(value)); "
                         + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1], string.len(tostring(value)), tostring(value), ARGV[4]); "
@@ -642,8 +642,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                       + "local oldValueRequired = tonumber(redis.call('get', KEYS[9])); "
                       + "local msg, syncMsg; "
                       + "if oldValueRequired == nil or oldValueRequired < 1 then "
-                          + "msg = struct.pack('Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5]); "
-                          + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], ARGV[6]); "
+                          + "msg = struct.pack('Lc0Lc0h', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], -1); "
+                          + "syncMsg = struct.pack('Lc0Lc0hd', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], -1, ARGV[6]); "
                       + "else "
                           + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value)); "
                           + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value), ARGV[6]); "
@@ -656,8 +656,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                       + "local oldValueRequired = tonumber(redis.call('get', KEYS[9])); "
                       + "local msg, syncMsg; "
                       + "if oldValueRequired == nil or oldValueRequired < 1 then "
-                          + "msg = struct.pack('Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5]); "
-                          + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], ARGV[6]); "
+                          + "msg = struct.pack('Lc0Lc0h', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], -1); "
+                          + "syncMsg = struct.pack('Lc0Lc0hd', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], -1, ARGV[6]); "
                       + "else "
                           + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value)); "
                           + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value), ARGV[6]); "
@@ -1278,8 +1278,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                           + "local oldValueRequired = tonumber(redis.call('get', KEYS[9])); "
                           + "local msg, syncMsg; "
                           + "if oldValueRequired == nil or oldValueRequired < 1 then "
-                              + "msg = struct.pack('Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5]); "
-                              + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], ARGV[6]); "
+                              + "msg = struct.pack('Lc0Lc0h', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], -1); "
+                              + "syncMsg = struct.pack('Lc0Lc0hd', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], -1, ARGV[6]); "
                           + "else "
                               + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value)); "
                               + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value), ARGV[6]); "
@@ -1292,8 +1292,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                           + "local oldValueRequired = tonumber(redis.call('get', KEYS[9])); "
                           + "local msg, syncMsg; "
                           + "if oldValueRequired == nil or oldValueRequired < 1 then "
-                              + "msg = struct.pack('Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5]); "
-                              + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], ARGV[6]); "
+                              + "msg = struct.pack('Lc0Lc0h', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], -1); "
+                              + "syncMsg = struct.pack('Lc0Lc0hd', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], -1, ARGV[6]); "
                           + "else "
                               + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value)); "
                               + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value), ARGV[6]); "
@@ -1365,8 +1365,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                       + "local oldValueRequired = tonumber(redis.call('get', KEYS[9])); "
                       + "local msg, syncMsg; "
                       + "if oldValueRequired == nil or oldValueRequired < 1 then "
-                          + "msg = struct.pack('Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5]); "
-                          + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], ARGV[6]); "
+                          + "msg = struct.pack('Lc0Lc0h', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], -1); "
+                          + "syncMsg = struct.pack('Lc0Lc0hd', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], -1, ARGV[6]); "
                       + "else "
                           + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value)); "
                           + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value), ARGV[6]); "
@@ -1379,8 +1379,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                       + "local oldValueRequired = tonumber(redis.call('get', KEYS[9])); "
                       + "local msg, syncMsg; "
                       + "if oldValueRequired == nil or oldValueRequired < 1 then "
-                          + "msg = struct.pack('Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5]); "
-                          + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], ARGV[6]); "
+                          + "msg = struct.pack('Lc0Lc0h', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], -1); "
+                          + "syncMsg = struct.pack('Lc0Lc0hd', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], -1, ARGV[6]); "
                       + "else "
                           + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value)); "
                           + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[5]), ARGV[5], string.len(tostring(value)), tostring(value), ARGV[6]); "
@@ -2296,8 +2296,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                            + "local oldValueRequired = tonumber(redis.call('get', KEYS[7])); "
                            + "local msg, syncMsg; "
                            + "if oldValueRequired == nil or oldValueRequired < 1 then "
-                               + "msg = struct.pack('Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[6]), ARGV[6]); "
-                               + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[6]), ARGV[6], ARGV[7]); "
+                               + "msg = struct.pack('Lc0Lc0h', string.len(ARGV[4]), ARGV[4], string.len(ARGV[6]), ARGV[6], -1); "
+                               + "syncMsg = struct.pack('Lc0Lc0hd', string.len(ARGV[4]), ARGV[4], string.len(ARGV[6]), ARGV[6], -1, ARGV[7]); "
                            + "else "
                                + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[6]), ARGV[6], string.len(tostring(value)), tostring(value)); "
                                + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[6]), ARGV[6], string.len(tostring(value)), tostring(value), ARGV[7]); "
@@ -2380,7 +2380,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                       + "local oldValueRequired = tonumber(redis.call('get', KEYS[5])); "
                       + "local msg; "
                       + "if oldValueRequired == nil or oldValueRequired < 1 then "
-                          + "msg = struct.pack('Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[6]), ARGV[6]); "
+                          + "msg = struct.pack('Lc0Lc0h', string.len(ARGV[4]), ARGV[4], string.len(ARGV[6]), ARGV[6], -1); "
                       + "else "
                           + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[6]), ARGV[6], string.len(tostring(value)), tostring(value)); "
                       + "end; "
@@ -2390,7 +2390,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                       + "local oldValueRequired = tonumber(redis.call('get', KEYS[5])); "
                       + "local msg; "
                       + "if oldValueRequired == nil or oldValueRequired < 1 then "
-                          + "msg = struct.pack('Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[6]), ARGV[6]); "
+                          + "msg = struct.pack('Lc0Lc0h', string.len(ARGV[4]), ARGV[4], string.len(ARGV[6]), ARGV[6], -1); "
                       + "else "
                           + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[6]), ARGV[6], string.len(tostring(value)), tostring(value)); "
                       + "end; "
@@ -2511,8 +2511,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                   + "local oldValueRequired = tonumber(redis.call('get', KEYS[7])); "
                   + "local msg, syncMsg; "
                   + "if oldValueRequired == nil or oldValueRequired < 1 then "
-                      + "msg = struct.pack('Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4]); "
-                      + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], ARGV[5]); "
+                      + "msg = struct.pack('Lc0Lc0h', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], -1); "
+                      + "syncMsg = struct.pack('Lc0Lc0hd', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], -1, ARGV[5]); "
                   + "else "
                       + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value)); "
                       + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value), ARGV[5]); "
@@ -2524,8 +2524,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                   + "local oldValueRequired = tonumber(redis.call('get', KEYS[7])); "
                   + "local msg, syncMsg; "
                   + "if oldValueRequired == nil or oldValueRequired < 1 then "
-                      + "msg = struct.pack('Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4]); "
-                      + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], ARGV[5]); "
+                      + "msg = struct.pack('Lc0Lc0h', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], -1); "
+                      + "syncMsg = struct.pack('Lc0Lc0hd', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], -1, ARGV[5]); "
                   + "else "
                       + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value)); "
                       + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value), ARGV[5]); "
@@ -2572,7 +2572,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                   + "local oldValueRequired = tonumber(redis.call('get', KEYS[5])); "
                   + "local msg; "
                   + "if oldValueRequired == nil or oldValueRequired < 1 then "
-                      + "msg = struct.pack('Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4]); "
+                      + "msg = struct.pack('Lc0Lc0h', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], -1); "
                   + "else "
                       + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value)); "
                   + "end; "
@@ -2582,7 +2582,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                   + "local oldValueRequired = tonumber(redis.call('get', KEYS[5])); "
                   + "local msg; "
                   + "if oldValueRequired == nil or oldValueRequired < 1 then "
-                      + "msg = struct.pack('Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4]); "
+                      + "msg = struct.pack('Lc0Lc0h', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], -1); "
                   + "else "
                       + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value)); "
                   + "end; "
@@ -2619,7 +2619,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                   + "local oldValueRequired = tonumber(redis.call('get', KEYS[5])); "
                   + "local msg; "
                   + "if oldValueRequired == nil or oldValueRequired < 1 then "
-                      + "msg = struct.pack('Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4]); "
+                      + "msg = struct.pack('Lc0Lc0h', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], -1); "
                   + "else "
                       + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value)); "
                   + "end; "
@@ -2629,7 +2629,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                   + "local oldValueRequired = tonumber(redis.call('get', KEYS[5])); "
                   + "local msg; "
                   + "if oldValueRequired == nil or oldValueRequired < 1 then "
-                      + "msg = struct.pack('Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4]); "
+                      + "msg = struct.pack('Lc0Lc0h', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], -1); "
                   + "else "
                       + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value)); "
                   + "end; "
@@ -2674,8 +2674,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                   + "local oldValueRequired = tonumber(redis.call('get', KEYS[7])); "
                   + "local msg, syncMsg; "
                   + "if oldValueRequired == nil or oldValueRequired < 1 then "
-                      + "msg = struct.pack('Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4]); "
-                      + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], ARGV[5]); "
+                      + "msg = struct.pack('Lc0Lc0h', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], -1); "
+                      + "syncMsg = struct.pack('Lc0Lc0hd', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], -1, ARGV[5]); "
                   + "else "
                       + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value)); "
                       + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value), ARGV[5]); "
@@ -2687,8 +2687,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                   + "local oldValueRequired = tonumber(redis.call('get', KEYS[7])); "
                   + "local msg, syncMsg; "
                   + "if oldValueRequired == nil or oldValueRequired < 1 then "
-                      + "msg = struct.pack('Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4]); "
-                      + "syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], ARGV[5]); "
+                      + "msg = struct.pack('Lc0Lc0h', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], -1); "
+                      + "syncMsg = struct.pack('Lc0Lc0hd', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], -1, ARGV[5]); "
                   + "else "
                       + "msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value)); "
                       + "syncMsg = struct.pack('Lc0Lc0Lc0d', string.len(ARGV[3]), ARGV[3], string.len(ARGV[4]), ARGV[4], string.len(tostring(value)), tostring(value), ARGV[5]); "
@@ -3160,7 +3160,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                             ((CacheEntryRemovedListener<K, V>) listener).onRemoved(events);
                         }
                     } finally {
-                        sendSync(sync, msg.get(2));
+                        sendSync(sync, msg);
                     }
                 }
             });
@@ -3183,7 +3183,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                             ((CacheEntryCreatedListener<K, V>) listener).onCreated(events);
                         }
                     } finally {
-                        sendSync(sync, msg.get(2));
+                        sendSync(sync, msg);
                     }
                 }
             });
@@ -3199,19 +3199,11 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 incrementOldValueListenerCounter(getOldValueListenerCounter());
             }
 
-            Integer oldValueListenerCount = getOldValueListenerCount(getOldValueListenerCounter());
-            boolean expectOldValue = oldValueListenerCount != null && oldValueListenerCount > 0;
-            RTopic topic = redisson.getTopic(channelName, new JCacheEventCodec(codec, osType, sync, expectOldValue));
+            RTopic topic = redisson.getTopic(channelName, new JCacheEventCodec(codec, osType, sync, true));
             int listenerId = topic.addListener(List.class, new MessageListener<List<Object>>() {
                 @Override
                 public void onMessage(CharSequence channel, List<Object> msg) {
-                    JCacheEntryEvent<K, V> event;
-
-                    if (cacheEntryListenerConfiguration.isOldValueRequired()) {
-                        event = new JCacheEntryEvent<K, V>(JCache.this, EventType.UPDATED, msg.get(0), msg.get(1), msg.get(2));
-                    } else {
-                        event = new JCacheEntryEvent<K, V>(JCache.this, EventType.UPDATED, msg.get(0), msg.get(1));
-                    }
+                    JCacheEntryEvent<K, V> event = new JCacheEntryEvent<K, V>(JCache.this, EventType.UPDATED, msg.get(0), msg.get(1), msg.get(2));
 
                     try {
                         if (filter == null || filter.evaluate(event)) {
@@ -3219,11 +3211,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                             ((CacheEntryUpdatedListener<K, V>) listener).onUpdated(events);
                         }
                     } finally {
-                        if (cacheEntryListenerConfiguration.isOldValueRequired()) {
-                            sendSync(sync, msg.get(3));
-                        } else {
-                            sendSync(sync, msg.get(2));
-                        }
+                        sendSync(sync, msg);
                     }
                 }
             });
@@ -3251,8 +3239,9 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
     }
 
-    private void sendSync(boolean sync, Object syncId) {
+    private void sendSync(boolean sync, List<Object> msg) {
         if (sync) {
+            Object syncId = msg.get(msg.size() - 1);
             RSemaphore semaphore = redisson.getSemaphore(getSyncName(syncId));
             semaphore.release();
         }
