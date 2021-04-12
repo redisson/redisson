@@ -1,11 +1,10 @@
 package org.redisson;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.redisson.api.RBlockingQueueReactive;
-import org.redisson.api.RTransferQueue;
 import org.redisson.api.RTransferQueueReactive;
 
 import java.util.ArrayList;
@@ -18,8 +17,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.shouldHaveThrown;
-import static org.junit.Assert.assertTrue;
 
 public class RedissonTransferQueueReactiveTest extends BaseReactiveTest {
 
@@ -66,26 +63,26 @@ public class RedissonTransferQueueReactiveTest extends BaseReactiveTest {
         long s = System.currentTimeMillis();
         int l = sync(queue1.take());
 
-        Assert.assertEquals(3, l);
-        Assert.assertTrue(System.currentTimeMillis() - s > 9000);
+        Assertions.assertEquals(3, l);
+        Assertions.assertTrue(System.currentTimeMillis() - s > 9000);
     }
 
     @Test
     public void testPoll() throws InterruptedException {
         RBlockingQueueReactive<Integer> queue1 = redisson.getTransferQueue("queue1");
         sync(queue1.put(1));
-        Assert.assertEquals((Integer)1, sync(queue1.poll(2, TimeUnit.SECONDS)));
+        Assertions.assertEquals((Integer)1, sync(queue1.poll(2, TimeUnit.SECONDS)));
 
         long s = System.currentTimeMillis();
-        Assert.assertNull(sync(queue1.poll(5, TimeUnit.SECONDS)));
-        Assert.assertTrue(System.currentTimeMillis() - s > 5000);
+        Assertions.assertNull(sync(queue1.poll(5, TimeUnit.SECONDS)));
+        Assertions.assertTrue(System.currentTimeMillis() - s > 5000);
     }
     @Test
     public void testAwait() throws InterruptedException {
         RBlockingQueueReactive<Integer> queue1 = redisson.getTransferQueue("queue1");
         sync(queue1.put(1));
 
-        Assert.assertEquals((Integer)1, sync(queue1.poll(10, TimeUnit.SECONDS)));
+        Assertions.assertEquals((Integer)1, sync(queue1.poll(10, TimeUnit.SECONDS)));
     }
 
     @Test
@@ -94,16 +91,16 @@ public class RedissonTransferQueueReactiveTest extends BaseReactiveTest {
         for (int i = 0 ; i < 100; i++) {
             sync(queue.offer(i));
         }
-        Assert.assertEquals(100, sync(queue.size()).intValue());
+        Assertions.assertEquals(100, sync(queue.size()).intValue());
         Set<Integer> batch = new HashSet<Integer>();
         int count = sync(queue.drainTo(batch, 10));
-        Assert.assertEquals(10, count);
-        Assert.assertEquals(10, batch.size());
-        Assert.assertEquals(90, sync(queue.size()).intValue());
+        Assertions.assertEquals(10, count);
+        Assertions.assertEquals(10, batch.size());
+        Assertions.assertEquals(90, sync(queue.size()).intValue());
         sync(queue.drainTo(batch, 10));
         sync(queue.drainTo(batch, 20));
         sync(queue.drainTo(batch, 60));
-        Assert.assertEquals(0, sync(queue.size()).intValue());
+        Assertions.assertEquals(0, sync(queue.size()).intValue());
     }
 
     @Test
@@ -128,7 +125,7 @@ public class RedissonTransferQueueReactiveTest extends BaseReactiveTest {
         int count = 0;
         while (count < total) {
             int item = sync(queue.take());
-            assertTrue(item > 0 && item <= total);
+            Assertions.assertTrue(item > 0 && item <= total);
             count++;
         }
 
@@ -145,7 +142,7 @@ public class RedissonTransferQueueReactiveTest extends BaseReactiveTest {
         ArrayList<Object> dst = new ArrayList<Object>();
         sync(queue1.drainTo(dst));
         assertThat(dst).containsExactly(1, 2L, "e");
-        Assert.assertEquals(0, sync(queue1.size()).intValue());
+        Assertions.assertEquals(0, sync(queue1.size()).intValue());
     }
 
     @Test
@@ -158,7 +155,7 @@ public class RedissonTransferQueueReactiveTest extends BaseReactiveTest {
         ArrayList<Object> dst = new ArrayList<Object>();
         sync(queue1.drainTo(dst, 2));
         assertThat(dst).containsExactly(1, 2L);
-        Assert.assertEquals(1, sync(queue1.size()).intValue());
+        Assertions.assertEquals(1, sync(queue1.size()).intValue());
 
         dst.clear();
         sync(queue1.drainTo(dst, 2));

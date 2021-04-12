@@ -1,12 +1,12 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
+import org.redisson.api.RMultimapCache;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Test;
-import org.redisson.api.RMultimapCache;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public abstract class RedissonBaseMultimapCacheTest extends BaseTest {
 

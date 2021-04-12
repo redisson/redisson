@@ -1,26 +1,7 @@
 package org.redisson;
 
-import static org.awaitility.Awaitility.await;
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.NoSuchElementException;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.RBoundedBlockingQueue;
 import org.redisson.api.RFuture;
@@ -28,7 +9,14 @@ import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisException;
 import org.redisson.config.Config;
 
-import io.netty.util.concurrent.Future;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 public class RedissonBoundedBlockingQueueTest extends BaseTest {
 
@@ -81,10 +69,10 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         queue.add(4);
         queue.add(5);
 
-        Assert.assertTrue(queue.addAll(Arrays.asList(7, 8, 9)));
+        Assertions.assertTrue(queue.addAll(Arrays.asList(7, 8, 9)));
         assertThat(queue.remainingCapacity()).isEqualTo(3);
 
-        Assert.assertTrue(queue.addAll(Arrays.asList(9, 1, 9)));
+        Assertions.assertTrue(queue.addAll(Arrays.asList(9, 1, 9)));
         assertThat(queue.remainingCapacity()).isEqualTo(0);
 
         assertThat(queue).containsExactly(1, 2, 3, 4, 5, 7, 8, 9, 9, 1, 9);
@@ -101,20 +89,20 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         queue.add(4);
         queue.add(5);
 
-        Assert.assertFalse(queue.removeAll(Collections.emptyList()));
+        Assertions.assertFalse(queue.removeAll(Collections.emptyList()));
         assertThat(queue.remainingCapacity()).isEqualTo(0);
         
-        Assert.assertTrue(queue.removeAll(Arrays.asList(3, 2, 10, 6)));
+        Assertions.assertTrue(queue.removeAll(Arrays.asList(3, 2, 10, 6)));
         assertThat(queue.remainingCapacity()).isEqualTo(2);
         assertThat(queue).containsExactly(1, 4, 5);
 
-        Assert.assertTrue(queue.removeAll(Arrays.asList(4)));
+        Assertions.assertTrue(queue.removeAll(Arrays.asList(4)));
         assertThat(queue.remainingCapacity()).isEqualTo(3);
         assertThat(queue).containsExactly(1, 5);
 
-        Assert.assertTrue(queue.removeAll(Arrays.asList(1, 5, 1, 5)));
+        Assertions.assertTrue(queue.removeAll(Arrays.asList(1, 5, 1, 5)));
         assertThat(queue.remainingCapacity()).isEqualTo(5);
-        Assert.assertTrue(queue.isEmpty());
+        Assertions.assertTrue(queue.isEmpty());
     }
 
     @Test
@@ -217,11 +205,12 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         }
     }
 
-    
-    @Test(expected = RedisException.class)
+    @Test
     public void testInitCapacityError() {
-        RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("bounded-queue:testInitCapacityError");
-        queue1.add(1);
+        Assertions.assertThrows(RedisException.class, () -> {
+            RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("bounded-queue:testInitCapacityError");
+            queue1.add(1);
+        });
     }
     
     @Test
@@ -239,7 +228,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         assertThat(queue1.trySetCapacity(5)).isTrue();
         RFuture<Integer> f = queue1.pollAsync(5, TimeUnit.SECONDS);
         
-        Assert.assertFalse(f.await(1, TimeUnit.SECONDS));
+        Assertions.assertFalse(f.await(1, TimeUnit.SECONDS));
         runner.stop();
 
         long start = System.currentTimeMillis();
@@ -441,15 +430,15 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
                 queue1.put(1);
                 queue2.put(3);
             } catch (Exception e) {
-                Assert.fail();
+                Assertions.fail();
             }
         }, 3, TimeUnit.SECONDS);
 
         long s = System.currentTimeMillis();
         int l = queue1.pollFromAny(40, TimeUnit.SECONDS, "queue:pollany1", "queue:pollany2");
 
-        Assert.assertEquals(2, l);
-        Assert.assertTrue(System.currentTimeMillis() - s > 2000);
+        Assertions.assertEquals(2, l);
+        Assertions.assertTrue(System.currentTimeMillis() - s > 2000);
         
         executor.shutdown();
         assertThat(executor.awaitTermination(1, TimeUnit.MINUTES)).isTrue();
@@ -473,8 +462,8 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         long s = System.currentTimeMillis();
         int l = queue1.take();
 
-        Assert.assertEquals(3, l);
-        Assert.assertTrue(System.currentTimeMillis() - s > 9000);
+        Assertions.assertEquals(3, l);
+        Assertions.assertTrue(System.currentTimeMillis() - s > 9000);
     }
 
     @Test
@@ -482,11 +471,11 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("queue1");
         assertThat(queue1.trySetCapacity(10)).isTrue();
         queue1.put(1);
-        Assert.assertEquals((Integer)1, queue1.poll(2, TimeUnit.SECONDS));
+        Assertions.assertEquals((Integer)1, queue1.poll(2, TimeUnit.SECONDS));
 
         long s = System.currentTimeMillis();
-        Assert.assertNull(queue1.poll(5, TimeUnit.SECONDS));
-        Assert.assertTrue(System.currentTimeMillis() - s > 5000);
+        Assertions.assertNull(queue1.poll(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(System.currentTimeMillis() - s > 5000);
     }
     @Test
     public void testAwait() throws InterruptedException {
@@ -494,7 +483,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         assertThat(queue1.trySetCapacity(10)).isTrue();
         queue1.put(1);
 
-        Assert.assertEquals((Integer)1, queue1.poll(10, TimeUnit.SECONDS));
+        Assertions.assertEquals((Integer)1, queue1.poll(10, TimeUnit.SECONDS));
     }
 
     @Test
@@ -568,9 +557,9 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         assertThat(queue.offer(4)).isTrue();
 
         assertThat(queue).containsExactly(1, 2, 3, 4);
-        Assert.assertEquals((Integer) 1, queue.poll());
+        Assertions.assertEquals((Integer) 1, queue.poll());
         assertThat(queue).containsExactly(2, 3, 4);
-        Assert.assertEquals((Integer) 2, queue.element());
+        Assertions.assertEquals((Integer) 2, queue.element());
     }
 
     @Test
@@ -589,14 +578,16 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         assertThat(queue.remove()).isEqualTo(3);
         assertThat(queue.remove()).isEqualTo(4);
 
-        Assert.assertTrue(queue.isEmpty());
+        Assertions.assertTrue(queue.isEmpty());
     }
 
-    @Test(expected = NoSuchElementException.class)
+    @Test
     public void testRemoveEmpty() {
-        RBoundedBlockingQueue<Integer> queue = redisson.getBoundedBlockingQueue("blocking:queue");
-        queue.trySetCapacity(10);
-        queue.remove();
+        Assertions.assertThrows(NoSuchElementException.class, () -> {
+            RBoundedBlockingQueue<Integer> queue = redisson.getBoundedBlockingQueue("blocking:queue");
+            queue.trySetCapacity(10);
+            queue.remove();
+        });
     }
 
     @Test
@@ -606,21 +597,21 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         for (int i = 0 ; i < 100; i++) {
             assertThat(queue.offer(i)).isTrue();
         }
-        Assert.assertEquals(100, queue.size());
+        Assertions.assertEquals(100, queue.size());
         Set<Integer> batch = new HashSet<Integer>();
         assertThat(queue.remainingCapacity()).isEqualTo(0);
         int count = queue.drainTo(batch, 10);
         assertThat(queue.remainingCapacity()).isEqualTo(10);
-        Assert.assertEquals(10, count);
-        Assert.assertEquals(10, batch.size());
-        Assert.assertEquals(90, queue.size());
+        Assertions.assertEquals(10, count);
+        Assertions.assertEquals(10, batch.size());
+        Assertions.assertEquals(90, queue.size());
         queue.drainTo(batch, 10);
         assertThat(queue.remainingCapacity()).isEqualTo(20);
         queue.drainTo(batch, 20);
         assertThat(queue.remainingCapacity()).isEqualTo(40);
         queue.drainTo(batch, 60);
         assertThat(queue.remainingCapacity()).isEqualTo(100);
-        Assert.assertEquals(0, queue.size());
+        Assertions.assertEquals(0, queue.size());
     }
 
     @Test
@@ -646,7 +637,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
                 int item = queue.take();
                 assertThat(item > 0 && item <= total).isTrue();
             } catch (InterruptedException exception) {
-                Assert.fail();
+                Assertions.fail();
             }
             count++;
         }
@@ -667,7 +658,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         queue1.drainTo(dst);
         assertThat(queue1.remainingCapacity()).isEqualTo(10);
         assertThat(dst).containsExactly(1, 2L, "e");
-        Assert.assertEquals(0, queue1.size());
+        Assertions.assertEquals(0, queue1.size());
     }
 
     @Test
@@ -682,7 +673,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         queue1.drainTo(dst, 2);
         assertThat(queue1.remainingCapacity()).isEqualTo(9);
         assertThat(dst).containsExactly(1, 2L);
-        Assert.assertEquals(1, queue1.size());
+        Assertions.assertEquals(1, queue1.size());
 
         dst.clear();
         queue1.drainTo(dst, 2);
@@ -715,10 +706,10 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
                 System.out.println("Expiry set to [" + i + "]");
                 String poll = q.poll(1, TimeUnit.SECONDS);
                 System.out.println("Message polled from [" + i + "]" + poll);
-                Assert.assertEquals(value, poll);
+                Assertions.assertEquals(value, poll);
             }
         } catch (Exception e) {
-            Assert.fail(e.getLocalizedMessage());
+            Assertions.fail(e.getLocalizedMessage());
         }
     }
     

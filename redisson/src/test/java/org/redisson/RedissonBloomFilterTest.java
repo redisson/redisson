@@ -1,28 +1,35 @@
 package org.redisson;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.redisson.api.RBloomFilter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonBloomFilterTest extends BaseTest {
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testFalseProbability1() {
-        RBloomFilter<String> filter = redisson.getBloomFilter("filter");
-        filter.tryInit(1, -1);
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            RBloomFilter<String> filter = redisson.getBloomFilter("filter");
+            filter.tryInit(1, -1);
+        });
     }
     
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testFalseProbability2() {
-        RBloomFilter<String> filter = redisson.getBloomFilter("filter");
-        filter.tryInit(1, 2);
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            RBloomFilter<String> filter = redisson.getBloomFilter("filter");
+            filter.tryInit(1, 2);
+        });
     }
     
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testSizeZero() {
-        RBloomFilter<String> filter = redisson.getBloomFilter("filter");
-        filter.tryInit(1, 1);
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            RBloomFilter<String> filter = redisson.getBloomFilter("filter");
+            filter.tryInit(1, 1);
+        });
     }
     
     @Test
@@ -47,25 +54,29 @@ public class RedissonBloomFilterTest extends BaseTest {
         assertThat(filter.tryInit(55000001L, 0.03)).isTrue();
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testNotInitializedOnExpectedInsertions() {
-        RBloomFilter<String> filter = redisson.getBloomFilter("filter");
+        Assertions.assertThrows(IllegalStateException.class, () -> {
+            RBloomFilter<String> filter = redisson.getBloomFilter("filter");
+            filter.getExpectedInsertions();
+        });
 
-        filter.getExpectedInsertions();
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testNotInitializedOnContains() {
-        RBloomFilter<String> filter = redisson.getBloomFilter("filter");
-
-        filter.contains("32");
+        Assertions.assertThrows(IllegalStateException.class, () -> {
+            RBloomFilter<String> filter = redisson.getBloomFilter("filter");
+            filter.contains("32");
+        });
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testNotInitializedOnAdd() {
-        RBloomFilter<String> filter = redisson.getBloomFilter("filter");
-
-        filter.add("123");
+        Assertions.assertThrows(IllegalStateException.class, () -> {
+            RBloomFilter<String> filter = redisson.getBloomFilter("filter");
+            filter.add("123");
+        });
     }
 
     @Test

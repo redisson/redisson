@@ -1,9 +1,8 @@
 package org.redisson;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.redisson.api.RList;
 import org.redisson.api.RListMultimap;
-import org.redisson.api.RSetMultimap;
 
 import java.io.Serializable;
 import java.util.*;

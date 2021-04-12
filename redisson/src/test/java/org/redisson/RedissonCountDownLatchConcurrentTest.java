@@ -1,44 +1,39 @@
 package org.redisson;
 
+import org.junit.jupiter.api.*;
+import org.redisson.api.RCountDownLatch;
+import org.redisson.api.RedissonClient;
+
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.junit.After;
-import org.junit.AfterClass;
-
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.redisson.api.RCountDownLatch;
-import org.redisson.api.RedissonClient;
 
 public class RedissonCountDownLatchConcurrentTest {
     
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() throws IOException, InterruptedException {
         if (!RedissonRuntimeEnvironment.isTravis) {
             RedisRunner.startDefaultRedisServerInstance();
         }
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterClass() throws IOException, InterruptedException {
         if (!RedissonRuntimeEnvironment.isTravis) {
             RedisRunner.shutDownDefaultRedisServerInstance();
         }
     }
 
-    @Before
+    @BeforeEach
     public void before() throws IOException, InterruptedException {
         if (RedissonRuntimeEnvironment.isTravis) {
             RedisRunner.startDefaultRedisServerInstance();
         }
     }
 
-    @After
+    @AfterEach
     public void after() throws InterruptedException {
         if (RedissonRuntimeEnvironment.isTravis) {
             RedisRunner.shutDownDefaultRedisServerInstance();
@@ -59,10 +54,10 @@ public class RedissonCountDownLatchConcurrentTest {
             executor.execute(() -> {
                 try {
                     latch.await();
-                    Assert.assertEquals(0, latch.getCount());
-                    Assert.assertEquals(iterations, counter.get());
+                    Assertions.assertEquals(0, latch.getCount());
+                    Assertions.assertEquals(iterations, counter.get());
                 } catch (InterruptedException e) {
-                    Assert.fail();
+                    Assertions.fail();
                 }
             });
         }
@@ -76,7 +71,7 @@ public class RedissonCountDownLatchConcurrentTest {
         }
 
         executor.shutdown();
-        Assert.assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS));
+        Assertions.assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS));
 
         redisson.shutdown();
     }

@@ -11,10 +11,12 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.awaitility.Awaitility;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
 import org.redisson.api.stream.*;
 import org.redisson.client.RedisException;
+import org.redisson.client.WriteRedisConnectionException;
 
 public class RedissonStreamTest extends BaseTest {
 
@@ -145,20 +147,22 @@ public class RedissonStreamTest extends BaseTest {
         assertThat(stream.removeConsumer("testGroup", "consumer2")).isZero();
     }
     
-    @Test(expected = RedisException.class)
+    @Test
     public void testRemoveGroup() {
-        RStream<String, String> stream = redisson.getStream("test");
+        Assertions.assertThrows(RedisException.class, () -> {
+            RStream<String, String> stream = redisson.getStream("test");
 
-        stream.add(StreamAddArgs.entry("0", "0"));
-        
-        stream.createGroup("testGroup");
-        
-        StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1"));
-        StreamMessageId id2 = stream.add(StreamAddArgs.entry("2", "2"));
-        
-        stream.removeGroup("testGroup");
-        
-        stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered());
+            stream.add(StreamAddArgs.entry("0", "0"));
+
+            stream.createGroup("testGroup");
+
+            StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1"));
+            StreamMessageId id2 = stream.add(StreamAddArgs.entry("2", "2"));
+
+            stream.removeGroup("testGroup");
+
+            stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered());
+        });
     }
     
     @Test

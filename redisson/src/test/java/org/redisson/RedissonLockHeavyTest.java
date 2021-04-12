@@ -1,5 +1,12 @@
 package org.redisson;
 
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.redisson.api.RBucket;
+import org.redisson.api.RLock;
+import org.redisson.api.RSemaphore;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.ExecutorService;
@@ -7,37 +14,18 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.redisson.api.RBucket;
-import org.redisson.api.RLock;
-import org.redisson.api.RSemaphore;
-
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)
 public class RedissonLockHeavyTest extends BaseTest {
-    @Parameters
-    public static Collection<Object[]> data() {
 
-        return Arrays.asList(new Object[][] { { 2, 5000 }, { 2, 50000 }, { 5, 50000 }, { 10, 50000 }, { 20, 50000 }, });
+    public static Collection<Arguments> data() {
+        return Arrays.asList(Arguments.of(2, 5000),
+                Arguments.of(2, 50000), Arguments.of(5, 50000),
+                Arguments.of(10, 50000),Arguments.of( 20, 50000));
     }
 
-    private ExecutorService executor;
-    private int threads;
-    private int loops;
-
-    public RedissonLockHeavyTest(int threads, int loops) {
-        this.threads = threads;
-        executor = Executors.newFixedThreadPool(threads);
-        this.loops = loops;
-    }
-
-    @Test
-    public void lockUnlockRLock() throws Exception {
+    @ParameterizedTest
+    @MethodSource("mapClasses")
+    public void lockUnlockRLock(int threads, int loops) throws Exception {
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
         for (int i = 0; i < threads; i++) {
 
             Runnable worker = new Runnable() {
@@ -70,8 +58,11 @@ public class RedissonLockHeavyTest extends BaseTest {
 
     }
     
-    @Test
-    public void tryLockUnlockRLock() throws Exception {
+    @ParameterizedTest
+    @MethodSource("mapClasses")
+    public void tryLockUnlockRLock(int threads, int loops) throws Exception {
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+
         for (int i = 0; i < threads; i++) {
 
             Runnable worker = new Runnable() {

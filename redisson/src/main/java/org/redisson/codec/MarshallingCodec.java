@@ -160,15 +160,18 @@ public class MarshallingCodec extends BaseCodec {
             marshaller.start(new ByteOutputWrapper(out));
             marshaller.writeObject(in);
         } catch (IOException e) {
+            marshaller.finish();
+            marshaller.close();
             out.release();
             throw e;
         } catch (Exception e) {
-            out.release();
-            throw new IOException(e);
-        } finally {
             marshaller.finish();
             marshaller.close();
+            out.release();
+            throw new IOException(e);
         }
+        marshaller.finish();
+        marshaller.close();
         return out;
     };
     

@@ -8,9 +8,9 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Test;
 import org.redisson.RedisRunner.FailedToStartRedisException;
 import org.redisson.RedisRunner.KEYSPACE_EVENTS_OPTIONS;
 import org.redisson.RedisRunner.RedisProcess;
@@ -135,7 +135,7 @@ public class RedissonBucketTest extends BaseTest {
     
     @Test
     public void testSizeInMemory() {
-        Assume.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("4.0.0") > 0);
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("4.0.0") > 0);
         RBucket<Integer> al = redisson.getBucket("test");
         al.set(1234);
         assertThat(al.sizeInMemory()).isEqualTo(54);
@@ -279,7 +279,7 @@ public class RedissonBucketTest extends BaseTest {
 
         Thread.sleep(1100);
 
-        Assert.assertNull(bucket.get());
+        Assertions.assertNull(bucket.get());
     }
 
     @Test
@@ -298,13 +298,13 @@ public class RedissonBucketTest extends BaseTest {
         bucket.set("someValue");
         RBucket<String> bucket2 = redisson.getBucket("test2");
         bucket2.set("someValue2");
-        Assert.assertTrue(bucket.renamenx("test1"));
+        Assertions.assertTrue(bucket.renamenx("test1"));
         bucket.set("value1");
         RBucket<String> oldBucket = redisson.getBucket("test");
-        Assert.assertNull(oldBucket.get());
+        Assertions.assertNull(oldBucket.get());
         RBucket<String> newBucket = redisson.getBucket("test1");
-        Assert.assertEquals("value1", newBucket.get());
-        Assert.assertFalse(newBucket.renamenx("test2"));
+        Assertions.assertEquals("value1", newBucket.get());
+        Assertions.assertFalse(newBucket.renamenx("test2"));
     }
     
     @Test
@@ -362,18 +362,18 @@ public class RedissonBucketTest extends BaseTest {
         bucket.rename("test1");
         bucket.set("value1");
         RBucket<String> oldBucket = redisson.getBucket("test");
-        Assert.assertNull(oldBucket.get());
+        Assertions.assertNull(oldBucket.get());
         RBucket<String> newBucket = redisson.getBucket("test1");
-        Assert.assertEquals("value1", newBucket.get());
+        Assertions.assertEquals("value1", newBucket.get());
     }
 
     @Test
     public void testSetGet() {
         RBucket<String> bucket = redisson.getBucket("test");
-        Assert.assertNull(bucket.get());
+        Assertions.assertNull(bucket.get());
         String value = "somevalue";
         bucket.set(value);
-        Assert.assertEquals(value, bucket.get());
+        Assertions.assertEquals(value, bucket.get());
         
         bucket.set(null);
         bucket.set(null, 1, TimeUnit.DAYS);
@@ -386,37 +386,37 @@ public class RedissonBucketTest extends BaseTest {
         RBucket<String> bucket = redisson.getBucket("test");
         String value = "somevalue";
         bucket.set(value);
-        Assert.assertEquals(value, bucket.get());
-        Assert.assertTrue(bucket.delete());
-        Assert.assertNull(bucket.get());
-        Assert.assertFalse(bucket.delete());
+        Assertions.assertEquals(value, bucket.get());
+        Assertions.assertTrue(bucket.delete());
+        Assertions.assertNull(bucket.get());
+        Assertions.assertFalse(bucket.delete());
     }
 
 
     @Test
     public void testSetExist() {
         RBucket<String> bucket = redisson.getBucket("test");
-        Assert.assertNull(bucket.get());
+        Assertions.assertNull(bucket.get());
         String value = "somevalue";
         bucket.set(value);
-        Assert.assertEquals(value, bucket.get());
+        Assertions.assertEquals(value, bucket.get());
 
-        Assert.assertTrue(bucket.isExists());
+        Assertions.assertTrue(bucket.isExists());
     }
 
     @Test
     public void testSetDeleteNotExist() {
         RBucket<String> bucket = redisson.getBucket("test");
-        Assert.assertNull(bucket.get());
+        Assertions.assertNull(bucket.get());
         String value = "somevalue";
         bucket.set(value);
-        Assert.assertEquals(value, bucket.get());
+        Assertions.assertEquals(value, bucket.get());
 
-        Assert.assertTrue(bucket.isExists());
+        Assertions.assertTrue(bucket.isExists());
 
         bucket.delete();
 
-        Assert.assertFalse(bucket.isExists());
+        Assertions.assertFalse(bucket.isExists());
     }
 
 }

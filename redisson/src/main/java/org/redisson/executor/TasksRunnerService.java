@@ -366,7 +366,7 @@ public class TasksRunnerService implements RemoteExecutorService {
      * 
      * @param requestId
      */
-    private void finish(String requestId, boolean removeTask) {
+    void finish(String requestId, boolean removeTask) {
         String script = "";
         if (removeTask) {
            script +=  "local scheduled = redis.call('zscore', KEYS[5], ARGV[3]);"

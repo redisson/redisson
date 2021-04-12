@@ -29,8 +29,8 @@ import javax.cache.event.CacheEntryListenerException;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.redisson.BaseTest;
 import org.redisson.RedisRunner;
 import org.redisson.RedisRunner.FailedToStartRedisException;
@@ -313,14 +313,14 @@ public class JCacheTest extends BaseTest {
         
         LocalDateTime t = LocalDateTime.now();
         cache.put("1", t);
-        Assert.assertEquals(t, cache.get("1"));
+        Assertions.assertEquals(t, cache.get("1"));
         
         cache.close();
         runner.stop();
     }
 
     @Test
-    public void testRedissonConfig() throws InterruptedException, IllegalArgumentException, URISyntaxException, IOException {
+    public void testRedissonConfig() throws InterruptedException, IllegalArgumentException, IOException {
         RedisProcess runner = new RedisRunner()
                 .nosave()
                 .randomDir()
@@ -335,30 +335,30 @@ public class JCacheTest extends BaseTest {
                 .createCache("test", config);
         
         cache.put("1", "2");
-        Assert.assertEquals("2", cache.get("1"));
+        Assertions.assertEquals("2", cache.get("1"));
         
         cache.put("key", "value");
         String result = cache.getAndRemove("key");
 
-        Assert.assertEquals("value", result);
-        Assert.assertNull(cache.get("key"));
+        Assertions.assertEquals("value", result);
+        Assertions.assertNull(cache.get("key"));
 
         cache.put("key", "value");
         cache.remove("key");
-        Assert.assertNull(cache.get("key"));
+        Assertions.assertNull(cache.get("key"));
         
         cache.close();
         runner.stop();
     }
     
     @Test
-    public void testRedissonInstance() throws InterruptedException, IllegalArgumentException, URISyntaxException {
+    public void testRedissonInstance() throws IllegalArgumentException {
         Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
         
         cache.put("1", "2");
-        Assert.assertEquals("2", cache.get("1"));
+        Assertions.assertEquals("2", cache.get("1"));
         
         cache.close();
     }
@@ -383,16 +383,16 @@ public class JCacheTest extends BaseTest {
         
         String key = "123";
         ExpiredListener clientListener = new ExpiredListener(latch, key, "90");
-        MutableCacheEntryListenerConfiguration<String, String> listenerConfiguration = 
-                new MutableCacheEntryListenerConfiguration<String, String>(FactoryBuilder.factoryOf(clientListener), null, true, true);
+        MutableCacheEntryListenerConfiguration<String, String> listenerConfiguration =
+                new MutableCacheEntryListenerConfiguration<>(FactoryBuilder.factoryOf(clientListener), null, true, true);
         cache.registerCacheEntryListener(listenerConfiguration);
 
         cache.put(key, "90");
-        Assert.assertNotNull(cache.get(key));
+        Assertions.assertNotNull(cache.get(key));
         
         latch.await();
         
-        Assert.assertNull(cache.get(key));
+        Assertions.assertNull(cache.get(key));
         
         cache.close();
         runner.stop();

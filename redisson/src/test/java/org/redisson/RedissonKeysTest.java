@@ -1,26 +1,17 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.redisson.ClusterRunner.ClusterProcesses;
 import org.redisson.RedisRunner.FailedToStartRedisException;
-import org.redisson.api.BatchResult;
-import org.redisson.api.RBatch;
-import org.redisson.api.RBucket;
-import org.redisson.api.RMap;
-import org.redisson.api.RType;
-import org.redisson.api.RedissonClient;
+import org.redisson.api.*;
 import org.redisson.config.Config;
 import org.redisson.connection.balancer.RandomLoadBalancer;
+
+import java.io.IOException;
+import java.util.*;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonKeysTest extends BaseTest {
 
@@ -181,8 +172,8 @@ public class RedissonKeysTest extends BaseTest {
             keys.remove(key);
             iterator.remove();
         }
-        Assert.assertEquals(0, keys.size());
-        Assert.assertFalse(redisson.getKeys().getKeys().iterator().hasNext());
+        Assertions.assertEquals(0, keys.size());
+        Assertions.assertFalse(redisson.getKeys().getKeys().iterator().hasNext());
     }
 
     @Test
@@ -195,9 +186,9 @@ public class RedissonKeysTest extends BaseTest {
 
         assertThat(redisson.getKeys().randomKey()).isIn("test1", "test2");
         redisson.getKeys().delete("test1");
-        Assert.assertEquals("test2", redisson.getKeys().randomKey());
+        Assertions.assertEquals("test2", redisson.getKeys().randomKey());
         redisson.getKeys().flushdb();
-        Assert.assertNull(redisson.getKeys().randomKey());
+        Assertions.assertNull(redisson.getKeys().randomKey());
     }
 
     @Test
@@ -256,8 +247,8 @@ public class RedissonKeysTest extends BaseTest {
         assertThat(map2.isExists()).isTrue();
 
 
-        Assert.assertEquals(4, redisson.getKeys().deleteByPattern("test?"));
-        Assert.assertEquals(0, redisson.getKeys().deleteByPattern("test?"));
+        Assertions.assertEquals(4, redisson.getKeys().deleteByPattern("test?"));
+        Assertions.assertEquals(0, redisson.getKeys().deleteByPattern("test?"));
     }
 
     @Test
@@ -282,7 +273,7 @@ public class RedissonKeysTest extends BaseTest {
         RBatch batch = redisson.createBatch();
         batch.getKeys().deleteByPatternAsync("test?");
         BatchResult<?> r = batch.execute();
-        Assert.assertEquals(4L, r.getResponses().get(0));
+        Assertions.assertEquals(4L, r.getResponses().get(0));
     }
     
     
@@ -318,8 +309,8 @@ public class RedissonKeysTest extends BaseTest {
         RMap<String, String> map = redisson.getMap("map2");
         map.fastPut("1", "2");
 
-        Assert.assertEquals(7, redisson.getKeys().delete("test0", "test1", "test2", "test3", "test10", "test12", "map2"));
-        Assert.assertEquals(0, redisson.getKeys().delete("test0", "test1", "test2", "test3", "test10", "test12", "map2"));
+        Assertions.assertEquals(7, redisson.getKeys().delete("test0", "test1", "test2", "test3", "test10", "test12", "map2"));
+        Assertions.assertEquals(0, redisson.getKeys().delete("test0", "test1", "test2", "test3", "test10", "test12", "map2"));
     }
 
     @Test

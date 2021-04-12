@@ -18,8 +18,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.redisson.api.RFuture;
 import org.redisson.api.RRemoteService;
 import org.redisson.api.RedissonClient;
@@ -414,14 +414,18 @@ public class RedissonRemoteServiceTest extends BaseTest {
         assertThat(executor.awaitTermination(2, TimeUnit.SECONDS)).isTrue();
     }
     
-    @Test(expected = IllegalArgumentException.class)
-    public void testWrongMethodAsync() throws InterruptedException {
-        redisson.getRemoteService().get(RemoteInterfaceWrongMethodAsync.class);
+    @Test
+    public void testWrongMethodAsync() {
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            redisson.getRemoteService().get(RemoteInterfaceWrongMethodAsync.class);
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testWrongParamsAsync() throws InterruptedException {
-        redisson.getRemoteService().get(RemoteInterfaceWrongParamsAsync.class);
+    @Test
+    public void testWrongParamsAsync() {
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            redisson.getRemoteService().get(RemoteInterfaceWrongParamsAsync.class);
+        });
     }
     
     @Test
@@ -581,20 +585,22 @@ public class RedissonRemoteServiceTest extends BaseTest {
         assertThat(concurrencyIsExceeded.get()).isEqualTo(false);
     }
 
-    @Test(expected = RemoteServiceTimeoutException.class)
-    public void testTimeout() throws InterruptedException {
-        RedissonClient r1 = createInstance();
-        r1.getRemoteService().register(RemoteInterface.class, new RemoteImpl());
-        
-        RedissonClient r2 = createInstance();
-        RemoteInterface ri = r2.getRemoteService().get(RemoteInterface.class, 1, TimeUnit.SECONDS);
-        
-        try {
-            ri.timeoutMethod();
-        } finally {
-            r1.shutdown();
-            r2.shutdown();
-        }
+    @Test
+    public void testTimeout() {
+        Assertions.assertThrows(RemoteServiceTimeoutException.class, () -> {
+            RedissonClient r1 = createInstance();
+            r1.getRemoteService().register(RemoteInterface.class, new RemoteImpl());
+            
+            RedissonClient r2 = createInstance();
+            RemoteInterface ri = r2.getRemoteService().get(RemoteInterface.class, 1, TimeUnit.SECONDS);
+            
+            try {
+                ri.timeoutMethod();
+            } finally {
+                r1.shutdown();
+                r2.shutdown();
+            }
+        });
     }
 
     @Test
@@ -610,14 +616,14 @@ public class RedissonRemoteServiceTest extends BaseTest {
 
         try {
             ri.errorMethod();
-            Assert.fail();
+            Assertions.fail();
         } catch (IOException e) {
             assertThat(e.getMessage()).isEqualTo("Checking error throw");
         }
         
         try {
             ri.errorMethodWithCause();
-            Assert.fail();
+            Assertions.fail();
         } catch (Exception e) {
             assertThat(e.getCause()).isInstanceOf(ArithmeticException.class);
             assertThat(e.getCause().getMessage()).isEqualTo("/ by zero");
@@ -643,14 +649,14 @@ public class RedissonRemoteServiceTest extends BaseTest {
 
         try {
             otherServiceRemoteInterface.resultMethod(21L);
-            Assert.fail("Invoking a service in an unregistered custom services namespace should throw");
+            Assertions.fail("Invoking a service in an unregistered custom services namespace should throw");
         } catch (Exception e) {
             assertThat(e).isInstanceOf(RemoteServiceAckTimeoutException.class);
         }
 
         try {
             defaultServiceRemoteInterface.resultMethod(21L);
-            Assert.fail("Invoking a service in the unregistered default services namespace should throw");
+            Assertions.fail("Invoking a service in the unregistered default services namespace should throw");
         } catch (Exception e) {
             assertThat(e).isInstanceOf(RemoteServiceAckTimeoutException.class);
         }
@@ -668,19 +674,19 @@ public class RedissonRemoteServiceTest extends BaseTest {
             try {
                 System.out.println(service.toString());
             } catch (Exception e) {
-                Assert.fail("calling toString on the client service proxy should not make a remote call");
+                Assertions.fail("calling toString on the client service proxy should not make a remote call");
             }
 
             try {
                 assertThat(service.hashCode() == service.hashCode()).isTrue();
             } catch (Exception e) {
-                Assert.fail("calling hashCode on the client service proxy should not make a remote call");
+                Assertions.fail("calling hashCode on the client service proxy should not make a remote call");
             }
 
             try {
                 assertThat(service.equals(service)).isTrue();
             } catch (Exception e) {
-                Assert.fail("calling equals on the client service proxy should not make a remote call");
+                Assertions.fail("calling equals on the client service proxy should not make a remote call");
             }
 
         } finally {
@@ -700,19 +706,19 @@ public class RedissonRemoteServiceTest extends BaseTest {
             try {
                 assertThat(service.resultMethod(21L)).isEqualTo(42L);
             } catch (Exception e) {
-                Assert.fail("Should be compatible with SerializationCodec");
+                Assertions.fail("Should be compatible with SerializationCodec");
             }
 
             try {
                 assertThat(service.doSomethingWithSerializablePojo(new SerializablePojo("test")).getStringField()).isEqualTo("test");
             } catch (Exception e) {
                 e.printStackTrace();
-                Assert.fail("Should be compatible with SerializationCodec");
+                Assertions.fail("Should be compatible with SerializationCodec");
             }
 
             try {
                 assertThat(service.doSomethingWithPojo(new Pojo("test")).getStringField()).isEqualTo("test");
-                Assert.fail("SerializationCodec should not be able to serialize a not serializable class");
+                Assertions.fail("SerializationCodec should not be able to serialize a not serializable class");
             } catch (Exception e) {
                 e.printStackTrace();
                 assertThat(e.getCause()).isInstanceOf(NotSerializableException.class);
@@ -740,14 +746,14 @@ public class RedissonRemoteServiceTest extends BaseTest {
 
             try {
                 service.errorMethod();
-                Assert.fail();
+                Assertions.fail();
             } catch (IOException e) {
                 assertThat(e.getMessage()).isEqualTo("Checking error throw");
             }
 
             try {
                 service.errorMethodWithCause();
-                Assert.fail();
+                Assertions.fail();
             } catch (Exception e) {
                 assertThat(e.getCause()).isInstanceOf(ArithmeticException.class);
                 assertThat(e.getCause().getMessage()).isEqualTo("/ by zero");
@@ -755,7 +761,7 @@ public class RedissonRemoteServiceTest extends BaseTest {
 
             try {
                 service.timeoutMethod();
-                Assert.fail("noAck option should still wait for the server to return a response and throw if the execution timeout is exceeded");
+                Assertions.fail("noAck option should still wait for the server to return a response and throw if the execution timeout is exceeded");
             } catch (Exception e) {
                 assertThat(e).isInstanceOf(RemoteServiceTimeoutException.class);
             }
@@ -781,14 +787,14 @@ public class RedissonRemoteServiceTest extends BaseTest {
 
             try {
                 service.errorMethod().get();
-                Assert.fail();
+                Assertions.fail();
             } catch (Exception e) {
                 assertThat(e.getCause().getMessage()).isEqualTo("Checking error throw");
             }
 
             try {
                 service.errorMethodWithCause().get();
-                Assert.fail();
+                Assertions.fail();
             } catch (Exception e) {
                 assertThat(e.getCause().getCause()).isInstanceOf(ArithmeticException.class);
                 assertThat(e.getCause().getCause().getMessage()).isEqualTo("/ by zero");
@@ -796,7 +802,7 @@ public class RedissonRemoteServiceTest extends BaseTest {
 
             try {
                 service.timeoutMethod().get();
-                Assert.fail("noAck option should still wait for the server to return a response and throw if the execution timeout is exceeded");
+                Assertions.fail("noAck option should still wait for the server to return a response and throw if the execution timeout is exceeded");
             } catch (Exception e) {
                 assertThat(e.getCause()).isInstanceOf(RemoteServiceTimeoutException.class);
             }
@@ -821,7 +827,7 @@ public class RedissonRemoteServiceTest extends BaseTest {
 
             try {
                 service.resultMethod(100L);
-                Assert.fail();
+                Assertions.fail();
             } catch (Exception e) {
                 assertThat(e).isInstanceOf(IllegalArgumentException.class);
             }
@@ -829,13 +835,13 @@ public class RedissonRemoteServiceTest extends BaseTest {
             try {
                 service.errorMethod();
             } catch (IOException e) {
-                Assert.fail("noResult option should not throw server side exception");
+                Assertions.fail("noResult option should not throw server side exception");
             }
 
             try {
                 service.errorMethodWithCause();
             } catch (Exception e) {
-                Assert.fail("noResult option should not throw server side exception");
+                Assertions.fail("noResult option should not throw server side exception");
             }
 
             long time = System.currentTimeMillis();
@@ -845,7 +851,7 @@ public class RedissonRemoteServiceTest extends BaseTest {
 
             try {
                 service.timeoutMethod();
-                Assert.fail("noResult option should still wait for the server to ack the request and throw if the ack timeout is exceeded");
+                Assertions.fail("noResult option should still wait for the server to ack the request and throw if the ack timeout is exceeded");
             } catch (Exception e) {
                 assertThat(e).isInstanceOf(RemoteServiceAckTimeoutException.class);
             }
@@ -871,7 +877,7 @@ public class RedissonRemoteServiceTest extends BaseTest {
 
             try {
                 service.resultMethod(100L);
-                Assert.fail();
+                Assertions.fail();
             } catch (Exception e) {
                 assertThat(e).isInstanceOf(IllegalArgumentException.class);
             }
@@ -879,13 +885,13 @@ public class RedissonRemoteServiceTest extends BaseTest {
             try {
                 service.errorMethod();
             } catch (IOException e) {
-                Assert.fail("noAck with noResult options should not throw server side exception");
+                Assertions.fail("noAck with noResult options should not throw server side exception");
             }
 
             try {
                 service.errorMethodWithCause();
             } catch (Exception e) {
-                Assert.fail("noAck with noResult options should not throw server side exception");
+                Assertions.fail("noAck with noResult options should not throw server side exception");
             }
 
             long time = System.currentTimeMillis();
@@ -896,7 +902,7 @@ public class RedissonRemoteServiceTest extends BaseTest {
             try {
                 invalidService.voidMethod("noAck/noResult", 21L);
             } catch (Exception e) {
-                Assert.fail("noAck with noResult options should not throw any exception even while invoking a service in an unregistered services namespace");
+                Assertions.fail("noAck with noResult options should not throw any exception even while invoking a service in an unregistered services namespace");
             }
         } finally {
             client.shutdown();

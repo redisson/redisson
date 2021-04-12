@@ -1,7 +1,7 @@
 package org.redisson;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.redisson.api.RDeque;
 import org.redisson.api.queue.DequeMoveArgs;
 
@@ -84,9 +84,9 @@ public class RedissonDequeTest extends BaseTest {
         queue1.addFirst(2);
         queue1.addFirst(3);
 
-        Assert.assertEquals(1, (int)queue1.removeLast());
-        Assert.assertEquals(2, (int)queue1.removeLast());
-        Assert.assertEquals(3, (int)queue1.removeLast());
+        Assertions.assertEquals(1, (int)queue1.removeLast());
+        Assertions.assertEquals(2, (int)queue1.removeLast());
+        Assertions.assertEquals(3, (int)queue1.removeLast());
     }
 
     @Test
@@ -96,19 +96,19 @@ public class RedissonDequeTest extends BaseTest {
         queue1.addFirst(2);
         queue1.addFirst(3);
 
-        Assert.assertEquals(3, (int)queue1.removeFirst());
-        Assert.assertEquals(2, (int)queue1.removeFirst());
-        Assert.assertEquals(1, (int)queue1.removeFirst());
+        Assertions.assertEquals(3, (int)queue1.removeFirst());
+        Assertions.assertEquals(2, (int)queue1.removeFirst());
+        Assertions.assertEquals(1, (int)queue1.removeFirst());
     }
 
     @Test
     public void testPeek() {
         RDeque<Integer> queue1 = redisson.getDeque("deque1");
-        Assert.assertNull(queue1.peekFirst());
-        Assert.assertNull(queue1.peekLast());
+        Assertions.assertNull(queue1.peekFirst());
+        Assertions.assertNull(queue1.peekLast());
         queue1.addFirst(2);
-        Assert.assertEquals(2, (int)queue1.peekFirst());
-        Assert.assertEquals(2, (int)queue1.peekLast());
+        Assertions.assertEquals(2, (int)queue1.peekFirst());
+        Assertions.assertEquals(2, (int)queue1.peekLast());
     }
 
     @Test
@@ -196,7 +196,7 @@ public class RedissonDequeTest extends BaseTest {
 
         assertThat(queue).containsExactly(1, 2, 3);
 
-        Assert.assertEquals((Integer)1, queue.poll());
+        Assertions.assertEquals((Integer)1, queue.poll());
     }
 
     @Test

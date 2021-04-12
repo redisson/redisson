@@ -1,33 +1,22 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.redisson.api.*;
+import org.redisson.api.annotation.RInject;
+import org.redisson.api.mapreduce.*;
+import org.redisson.mapreduce.MapReduceTimeoutException;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.redisson.api.RExecutorService;
-import org.redisson.api.RFuture;
-import org.redisson.api.RMap;
-import org.redisson.api.RMapCache;
-import org.redisson.api.RedissonClient;
-import org.redisson.api.WorkerOptions;
-import org.redisson.api.annotation.RInject;
-import org.redisson.api.mapreduce.RCollator;
-import org.redisson.api.mapreduce.RCollector;
-import org.redisson.api.mapreduce.RMapReduce;
-import org.redisson.api.mapreduce.RMapper;
-import org.redisson.api.mapreduce.RReducer;
-import org.redisson.mapreduce.MapReduceTimeoutException;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@RunWith(Parameterized.class)
 public class RedissonMapReduceTest extends BaseTest {
     
     public static class WordMapper implements RMapper<String, String, String, Integer> {
@@ -48,7 +37,7 @@ public class RedissonMapReduceTest extends BaseTest {
         public Integer reduce(String reducedKey, Iterator<Integer> iter) {
             int sum = 0;
             while (iter.hasNext()) {
-               Integer i = (Integer) iter.next();
+               Integer i = iter.next();
                sum += i;
             }
             return sum;
@@ -69,25 +58,21 @@ public class RedissonMapReduceTest extends BaseTest {
         
     }
     
-    @Parameterized.Parameters(name = "{index} - {0}")
     public static Iterable<Object[]> mapClasses() {
         return Arrays.asList(new Object[][]{
             {RMap.class}, {RMapCache.class}
         });
     }
 
-    @Parameterized.Parameter(0)
-    public Class<?> mapClass;
-
-    
-    @Before
+    @BeforeEach
     public void beforeTest() {
         redisson.getExecutorService(RExecutorService.MAPREDUCE_NAME).registerWorkers(WorkerOptions.defaults().workers(3));
     }
     
-    @Test
-    public void testCancel() throws InterruptedException, ExecutionException {
-        RMap<String, String> map = getMap();
+    @ParameterizedTest
+    @MethodSource("mapClasses")
+    public void testCancel(Class<?> mapClass) throws InterruptedException {
+        RMap<String, String> map = getMap(mapClass);
         for (int i = 0; i < 100000; i++) {
             map.put("" + i, "ab cd fjks");
         }
@@ -98,24 +83,28 @@ public class RedissonMapReduceTest extends BaseTest {
         future.cancel(true);
     }
 
-    @Test(expected = MapReduceTimeoutException.class)
-    public void testTimeout() {
-        RMap<String, String> map = getMap();
-        for (int i = 0; i < 100000; i++) {
-            map.put("" + i, "ab cd fjks");
-        }
-        
-        RMapReduce<String, String, String, Integer> mapReduce = map.<String, Integer>mapReduce()
-                .mapper(new WordMapper())
-                .reducer(new WordReducer())
-                .timeout(1, TimeUnit.SECONDS);
-        
-        mapReduce.execute();
+    @ParameterizedTest
+    @MethodSource("mapClasses")
+    public void testTimeout(Class<?> mapClass) {
+        Assertions.assertThrows(MapReduceTimeoutException.class, () -> {
+            RMap<String, String> map = getMap(mapClass);
+            for (int i = 0; i < 100000; i++) {
+                map.put("" + i, "ab cd fjks");
+            }
+
+            RMapReduce<String, String, String, Integer> mapReduce = map.<String, Integer>mapReduce()
+                    .mapper(new WordMapper())
+                    .reducer(new WordReducer())
+                    .timeout(1, TimeUnit.SECONDS);
+
+            mapReduce.execute();
+        });
     }
     
-    @Test
-    public void test() {
-        RMap<String, String> map = getMap();
+    @ParameterizedTest
+    @MethodSource("mapClasses")
+    public void test(Class<?> mapClass) {
+        RMap<String, String> map = getMap(mapClass);
         
         map.put("1", "Alice was beginning to get very tired"); 
         map.put("2", "of sitting by her sister on the bank and");
@@ -179,14 +168,11 @@ public class RedissonMapReduceTest extends BaseTest {
         resultMap.delete();
     }
 
-    private RMap<String, String> getMap() {
-        RMap<String, String> map = null;
+    private RMap<String, String> getMap(Class<?> mapClass) {
         if (RMapCache.class.isAssignableFrom(mapClass)) {
-            map = redisson.getMapCache("map");
-        } else {
-            map = redisson.getMap("map");
+            return redisson.getMapCache("map");
         }
-        return map;
+        return redisson.getMap("map");
     }
     
     public static class WordMapperInject implements RMapper<String, String, String, Integer> {
@@ -217,7 +203,7 @@ public class RedissonMapReduceTest extends BaseTest {
             
             int sum = 0;
             while (iter.hasNext()) {
-               Integer i = (Integer) iter.next();
+               Integer i = iter.next();
                sum += i;
             }
             return sum;
@@ -243,9 +229,10 @@ public class RedissonMapReduceTest extends BaseTest {
         
     }
 
-    @Test
-    public void testCollatorTimeout() {
-        RMap<String, String> map = getMap();
+    @ParameterizedTest
+    @MethodSource("mapClasses")
+    public void testCollatorTimeout(Class<?> mapClass) {
+        RMap<String, String> map = getMap(mapClass);
         map.put("1", "Alice was beginning to get very tired");
         
         RMapReduce<String, String, String, Integer> mapReduce = map.<String, Integer>mapReduce()
@@ -258,9 +245,10 @@ public class RedissonMapReduceTest extends BaseTest {
 
     }
     
-    @Test
-    public void testInjector() {
-        RMap<String, String> map = getMap();
+    @ParameterizedTest
+    @MethodSource("mapClasses")
+    public void testInjector(Class<?> mapClass) {
+        RMap<String, String> map = getMap(mapClass);
 
         map.put("1", "Alice was beginning to get very tired"); 
         

@@ -1,23 +1,21 @@
 package org.redisson.spring.transaction;
 
-import static org.assertj.core.api.Assertions.*;
-
-import java.io.IOException;
-
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.redisson.RedisRunner;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.transaction.TransactionSuspensionNotSupportedException;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-@RunWith(SpringJUnit4ClassRunner.class)
+import java.io.IOException;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@SpringJUnitConfig
 @ContextConfiguration(classes = RedissonTransactionContextConfig.class)
 public class RedissonTransactionManagerTest {
 
@@ -27,12 +25,12 @@ public class RedissonTransactionManagerTest {
     @Autowired
     private TransactionalBean transactionalBean;
     
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() throws IOException, InterruptedException {
         RedisRunner.startDefaultRedisServerInstance();
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterClass() throws IOException, InterruptedException {
         RedisRunner.shutDownDefaultRedisServerInstance();
     }
@@ -48,7 +46,7 @@ public class RedissonTransactionManagerTest {
         
         try {
             transactionalBean.testRollback();
-            Assert.fail();
+            Assertions.fail();
         } catch (IllegalStateException e) {
             // skip
         }
@@ -69,7 +67,7 @@ public class RedissonTransactionManagerTest {
 
         try {
             transactionalBean.testPropagationRequiredWithException();
-            Assert.fail();
+            Assertions.fail();
         } catch (IllegalStateException e) {
             // skip
         }

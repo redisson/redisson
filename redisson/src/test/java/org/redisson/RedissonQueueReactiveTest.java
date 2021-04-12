@@ -2,8 +2,8 @@ package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.redisson.api.RQueueReactive;
 
 public class RedissonQueueReactiveTest extends BaseReactiveTest {
@@ -17,9 +17,9 @@ public class RedissonQueueReactiveTest extends BaseReactiveTest {
         sync(queue.offer(4));
 
         assertThat(sync(queue)).containsExactly(1, 2, 3, 4);
-        Assert.assertEquals((Integer)1, sync(queue.poll()));
+        Assertions.assertEquals((Integer)1, sync(queue.poll()));
         assertThat(sync(queue)).containsExactly(2, 3, 4);
-        Assert.assertEquals((Integer)2, sync(queue.peek()));
+        Assertions.assertEquals((Integer)2, sync(queue.peek()));
     }
 
     @Test
@@ -37,13 +37,13 @@ public class RedissonQueueReactiveTest extends BaseReactiveTest {
         sync(queue.poll());
         sync(queue.poll());
 
-        Assert.assertEquals(0, sync(queue.size()).intValue());
+        Assertions.assertEquals(0, sync(queue.size()).intValue());
     }
 
     @Test
     public void testRemoveEmpty() {
         RQueueReactive<Integer> queue = redisson.getQueue("queue");
-        Assert.assertNull(sync(queue.poll()));
+        Assertions.assertNull(sync(queue.poll()));
     }
 
 }

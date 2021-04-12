@@ -9,8 +9,8 @@ import java.util.Iterator;
 import java.util.PriorityQueue;
 import java.util.Queue;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.redisson.api.RPriorityQueue;
 
 public class RedissonPriorityQueueTest extends BaseTest {
@@ -81,9 +81,9 @@ public class RedissonPriorityQueueTest extends BaseTest {
         list.add("4");
 
         Iterator<String> iter = list.iterator();
-        Assert.assertEquals("1", iter.next());
-        Assert.assertEquals("4", iter.next());
-        Assert.assertFalse(iter.hasNext());
+        Assertions.assertEquals("1", iter.next());
+        Assertions.assertEquals("4", iter.next());
+        Assertions.assertFalse(iter.hasNext());
     }
     
     @Test
@@ -95,12 +95,7 @@ public class RedissonPriorityQueueTest extends BaseTest {
         list.add("5");
         list.add("3");
 
-        for (Iterator<String> iterator = list.iterator(); iterator.hasNext();) {
-            String value = iterator.next();
-            if (value.equals("2")) {
-                iterator.remove();
-            }
-        }
+        list.removeIf(value -> value.equals("2"));
 
         assertThat(list).contains("1", "4", "5", "3");
 
@@ -111,10 +106,10 @@ public class RedissonPriorityQueueTest extends BaseTest {
             iteration++;
         }
 
-        Assert.assertEquals(4, iteration);
+        Assertions.assertEquals(4, iteration);
 
-        Assert.assertEquals(0, list.size());
-        Assert.assertTrue(list.isEmpty());
+        Assertions.assertEquals(0, list.size());
+        Assertions.assertTrue(list.isEmpty());
     }
     
     @Test
@@ -133,14 +128,13 @@ public class RedissonPriorityQueueTest extends BaseTest {
     }
 
     private void checkIterator(Queue<Integer> set, Queue<Integer> setCopy) {
-        for (Iterator<Integer> iterator = set.iterator(); iterator.hasNext();) {
-            Integer value = iterator.next();
+        for (Integer value : set) {
             if (!setCopy.remove(value)) {
-                Assert.fail();
+                Assertions.fail();
             }
         }
 
-        Assert.assertEquals(0, setCopy.size());
+        Assertions.assertEquals(0, setCopy.size());
     }
     
     @Test
@@ -148,21 +142,21 @@ public class RedissonPriorityQueueTest extends BaseTest {
         RPriorityQueue<Integer> set = redisson.getPriorityQueue("set");
 
         boolean setRes = set.trySetComparator(Collections.reverseOrder());
-        Assert.assertTrue(setRes);
-        Assert.assertTrue(set.add(1));
-        Assert.assertTrue(set.add(2));
-        Assert.assertTrue(set.add(3));
-        Assert.assertTrue(set.add(4));
-        Assert.assertTrue(set.add(5));
+        Assertions.assertTrue(setRes);
+        Assertions.assertTrue(set.add(1));
+        Assertions.assertTrue(set.add(2));
+        Assertions.assertTrue(set.add(3));
+        Assertions.assertTrue(set.add(4));
+        Assertions.assertTrue(set.add(5));
         assertThat(set).containsExactly(5, 4, 3, 2, 1);
 
         boolean setRes2 = set.trySetComparator(Collections.reverseOrder(Collections.reverseOrder()));
-        Assert.assertFalse(setRes2);
+        Assertions.assertFalse(setRes2);
         assertThat(set).containsExactly(5, 4, 3, 2, 1);
 
         set.clear();
         boolean setRes3 = set.trySetComparator(Collections.reverseOrder(Collections.reverseOrder()));
-        Assert.assertTrue(setRes3);
+        Assertions.assertTrue(setRes3);
         set.add(3);
         set.add(1);
         set.add(2);
@@ -173,17 +167,17 @@ public class RedissonPriorityQueueTest extends BaseTest {
     @Test
     public void testSort() {
         RPriorityQueue<Integer> set = redisson.getPriorityQueue("set");
-        Assert.assertTrue(set.add(2));
-        Assert.assertTrue(set.add(3));
-        Assert.assertTrue(set.add(1));
-        Assert.assertTrue(set.add(4));
-        Assert.assertTrue(set.add(10));
-        Assert.assertTrue(set.add(-1));
-        Assert.assertTrue(set.add(0));
+        Assertions.assertTrue(set.add(2));
+        Assertions.assertTrue(set.add(3));
+        Assertions.assertTrue(set.add(1));
+        Assertions.assertTrue(set.add(4));
+        Assertions.assertTrue(set.add(10));
+        Assertions.assertTrue(set.add(-1));
+        Assertions.assertTrue(set.add(0));
 
         assertThat(set).containsExactly(-1, 0, 1, 2, 3, 4, 10);
 
-        Assert.assertEquals(-1, (int)set.peek());
+        Assertions.assertEquals(-1, (int)set.peek());
     }
 
     @Test
@@ -196,9 +190,9 @@ public class RedissonPriorityQueueTest extends BaseTest {
         set.add(4);
         set.add(1);
 
-        Assert.assertFalse(set.remove(0));
-        Assert.assertTrue(set.remove(3));
-        Assert.assertTrue(set.remove(1));
+        Assertions.assertFalse(set.remove(0));
+        Assertions.assertTrue(set.remove(3));
+        Assertions.assertTrue(set.remove(1));
 
         assertThat(set).containsExactly(1, 2, 4, 5);
     }
@@ -210,8 +204,8 @@ public class RedissonPriorityQueueTest extends BaseTest {
             set.add(i);
         }
 
-        Assert.assertTrue(set.retainAll(Arrays.asList(1, 2)));
-        Assert.assertEquals(2, set.size());
+        Assertions.assertTrue(set.retainAll(Arrays.asList(1, 2)));
+        Assertions.assertEquals(2, set.size());
     }
 
     @Test
@@ -221,8 +215,8 @@ public class RedissonPriorityQueueTest extends BaseTest {
             set.add(i);
         }
 
-        Assert.assertTrue(set.containsAll(Arrays.asList(30, 11)));
-        Assert.assertFalse(set.containsAll(Arrays.asList(30, 711, 11)));
+        Assertions.assertTrue(set.containsAll(Arrays.asList(30, 11)));
+        Assertions.assertFalse(set.containsAll(Arrays.asList(30, 711, 11)));
     }
 
     @Test
@@ -250,9 +244,9 @@ public class RedissonPriorityQueueTest extends BaseTest {
         set.add(new TestObject("3", "4"));
         set.add(new TestObject("5", "6"));
 
-        Assert.assertTrue(set.contains(new TestObject("2", "3")));
-        Assert.assertTrue(set.contains(new TestObject("1", "2")));
-        Assert.assertFalse(set.contains(new TestObject("1", "9")));
+        Assertions.assertTrue(set.contains(new TestObject("2", "3")));
+        Assertions.assertTrue(set.contains(new TestObject("1", "2")));
+        Assertions.assertFalse(set.contains(new TestObject("1", "9")));
     }
 
     @Test
@@ -265,7 +259,7 @@ public class RedissonPriorityQueueTest extends BaseTest {
         set.add(new TestObject("1", "2"));
         set.add(new TestObject("3", "4"));
 
-        Assert.assertEquals(5, set.size());
+        Assertions.assertEquals(5, set.size());
         
         assertThat(set).containsExactly(new TestObject("1", "2"), new TestObject("1", "2"),
                 new TestObject("2", "3"), new TestObject("3", "4"), new TestObject("5", "6"));
@@ -282,7 +276,7 @@ public class RedissonPriorityQueueTest extends BaseTest {
         set.add(5);
         set.add(5);
 
-        Assert.assertEquals(7, set.size());
+        Assertions.assertEquals(7, set.size());
     }
 
 

@@ -1,10 +1,11 @@
 package org.redisson;
 
+import org.junit.jupiter.api.Test;
+import org.redisson.api.RBitSet;
+
 import java.util.BitSet;
 
-import static org.assertj.core.api.Assertions.*;
-import org.junit.Test;
-import org.redisson.api.RBitSet;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonBitSetTest extends BaseTest {
 

@@ -8,8 +8,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RFuture;
@@ -117,7 +117,7 @@ public class RedissonPriorityBlockingQueueTest extends RedissonBlockingQueueTest
         ArrayList<Object> dst = new ArrayList<Object>();
         queue1.drainTo(dst);
         assertThat(dst).containsExactly(1, 2, 3);
-        Assert.assertEquals(0, queue1.size());
+        Assertions.assertEquals(0, queue1.size());
     }
 
     @Test
@@ -130,7 +130,7 @@ public class RedissonPriorityBlockingQueueTest extends RedissonBlockingQueueTest
         ArrayList<Object> dst = new ArrayList<Object>();
         queue1.drainTo(dst, 2);
         assertThat(dst).containsExactly(1, 2);
-        Assert.assertEquals(1, queue1.size());
+        Assertions.assertEquals(1, queue1.size());
 
         dst.clear();
         queue1.drainTo(dst, 2);

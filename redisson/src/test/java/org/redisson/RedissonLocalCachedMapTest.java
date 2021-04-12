@@ -1,15 +1,9 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicReference;
-
 import org.awaitility.Awaitility;
 import org.awaitility.Durations;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
 import org.redisson.api.LocalCachedMapOptions.EvictionPolicy;
 import org.redisson.api.LocalCachedMapOptions.ReconnectionStrategy;
@@ -25,6 +19,11 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.config.Config;
+
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonLocalCachedMapTest extends BaseMapTest {
 
@@ -151,12 +150,12 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         expectedValuesSet.add(2);
         expectedValuesSet.add(3);
         Set<Object> actualValuesSet = new HashSet<>(m.readAllValues());
-        Assert.assertEquals(expectedValuesSet, actualValuesSet);
+        Assertions.assertEquals(expectedValuesSet, actualValuesSet);
         Map<String, Integer> expectedMap = new HashMap<>();
         expectedMap.put("a", 1);
         expectedMap.put("b", 2);
         expectedMap.put("c", 3);
-        Assert.assertEquals(expectedMap.entrySet(), m.readAllEntrySet());
+        Assertions.assertEquals(expectedMap.entrySet(), m.readAllEntrySet());
     }
     
     @Test
@@ -700,13 +699,13 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         SimpleKey key = new SimpleKey("1");
         SimpleValue value = new SimpleValue("2");
         map.put(key, value);
-        Assert.assertEquals(value, map.putIfAbsent(key, new SimpleValue("3")));
-        Assert.assertEquals(value, map.get(key));
+        Assertions.assertEquals(value, map.putIfAbsent(key, new SimpleValue("3")));
+        Assertions.assertEquals(value, map.get(key));
 
         SimpleKey key1 = new SimpleKey("2");
         SimpleValue value1 = new SimpleValue("4");
-        Assert.assertNull(map.putIfAbsent(key1, value1));
-        Assert.assertEquals(value1, map.get(key1));
+        Assertions.assertNull(map.putIfAbsent(key1, value1));
+        Assertions.assertEquals(value1, map.get(key1));
         assertThat(cache.size()).isEqualTo(2);
     }
     
@@ -734,14 +733,14 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         map.put(new SimpleKey("1"), new SimpleValue("2"));
 
         boolean res = map.remove(new SimpleKey("1"), new SimpleValue("2"));
-        Assert.assertTrue(res);
+        Assertions.assertTrue(res);
 
         Thread.sleep(50);
 
         SimpleValue val1 = map.get(new SimpleKey("1"));
-        Assert.assertNull(val1);
+        Assertions.assertNull(val1);
 
-        Assert.assertEquals(0, map.size());
+        Assertions.assertEquals(0, map.size());
         assertThat(cache.size()).isEqualTo(0);
     }
 
@@ -752,13 +751,13 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         map.put(new SimpleKey("1"), new SimpleValue("2"));
 
         boolean res = map.remove(new SimpleKey("2"), new SimpleValue("1"));
-        Assert.assertFalse(res);
+        Assertions.assertFalse(res);
 
         boolean res1 = map.remove(new SimpleKey("1"), new SimpleValue("3"));
-        Assert.assertFalse(res1);
+        Assertions.assertFalse(res1);
 
         SimpleValue val1 = map.get(new SimpleKey("1"));
-        Assert.assertEquals("2", val1.getValue());
+        Assertions.assertEquals("2", val1.getValue());
         assertThat(cache.size()).isEqualTo(1);
     }
     
@@ -786,10 +785,10 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         map.put(new SimpleKey("1"), new SimpleValue("2"));
 
         boolean res = map.replace(new SimpleKey("1"), new SimpleValue("43"), new SimpleValue("31"));
-        Assert.assertFalse(res);
+        Assertions.assertFalse(res);
 
         SimpleValue val1 = map.get(new SimpleKey("1"));
-        Assert.assertEquals("2", val1.getValue());
+        Assertions.assertEquals("2", val1.getValue());
         assertThat(cache.size()).isEqualTo(1);
     }
 
@@ -800,13 +799,13 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         map.put(new SimpleKey("1"), new SimpleValue("2"));
 
         boolean res = map.replace(new SimpleKey("1"), new SimpleValue("2"), new SimpleValue("3"));
-        Assert.assertTrue(res);
+        Assertions.assertTrue(res);
 
         boolean res1 = map.replace(new SimpleKey("1"), new SimpleValue("2"), new SimpleValue("3"));
-        Assert.assertFalse(res1);
+        Assertions.assertFalse(res1);
 
         SimpleValue val1 = map.get(new SimpleKey("1"));
-        Assert.assertEquals("3", val1.getValue());
+        Assertions.assertEquals("3", val1.getValue());
         assertThat(cache.size()).isEqualTo(1);
     }
     
@@ -833,11 +832,11 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         map.put(new SimpleKey("1"), new SimpleValue("2"));
 
         SimpleValue res = map.replace(new SimpleKey("1"), new SimpleValue("3"));
-        Assert.assertEquals("2", res.getValue());
+        Assertions.assertEquals("2", res.getValue());
         assertThat(cache.size()).isEqualTo(1);
 
         SimpleValue val1 = map.get(new SimpleKey("1"));
-        Assert.assertEquals("3", val1.getValue());
+        Assertions.assertEquals("3", val1.getValue());
     }
     
     @Test
@@ -931,11 +930,11 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
     @Test
     public void testFastPut() {
         RLocalCachedMap<String, Integer> map = redisson.getLocalCachedMap("test", LocalCachedMapOptions.defaults());
-        Assert.assertTrue(map.fastPut("1", 2));
+        Assertions.assertTrue(map.fastPut("1", 2));
         assertThat(map.get("1")).isEqualTo(2);
-        Assert.assertFalse(map.fastPut("1", 3));
+        Assertions.assertFalse(map.fastPut("1", 3));
         assertThat(map.get("1")).isEqualTo(3);
-        Assert.assertEquals(1, map.size());
+        Assertions.assertEquals(1, map.size());
     }
 
     
