@@ -32,11 +32,8 @@ import org.redisson.config.ClusterServersConfig;
 import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.ReadMode;
-import org.redisson.connection.CRC16;
+import org.redisson.connection.*;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
-import org.redisson.connection.MasterSlaveConnectionManager;
-import org.redisson.connection.MasterSlaveEntry;
-import org.redisson.connection.SingleEntry;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedisURI;
 import org.redisson.misc.RedissonPromise;
@@ -494,14 +491,15 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void upDownSlaves(MasterSlaveEntry entry, ClusterPartition currentPart, ClusterPartition newPart, Set<RedisURI> addedSlaves) {
-        currentPart.getFailedSlaveAddresses().stream()
+        List<RedisURI> c = currentPart.getFailedSlaveAddresses().stream()
                 .filter(uri -> !addedSlaves.contains(uri) && !newPart.getFailedSlaveAddresses().contains(uri))
-                .forEach(uri -> {
-                    currentPart.removeFailedSlaveAddress(uri);
-                    if (entry.hasSlave(uri) && entry.slaveUp(uri, FreezeReason.MANAGER)) {
-                        log.info("slave: {} is up for slot ranges: {}", uri, currentPart.getSlotRanges());
-                    }
-                });
+                .collect(Collectors.toList());
+        c.forEach(uri -> {
+            currentPart.removeFailedSlaveAddress(uri);
+            if (entry.hasSlave(uri) && entry.slaveUp(uri, FreezeReason.MANAGER)) {
+                log.info("slave: {} is up for slot ranges: {}", uri, currentPart.getSlotRanges());
+            }
+        });
 
         newPart.getFailedSlaveAddresses().stream()
                 .filter(uri -> !currentPart.getFailedSlaveAddresses().contains(uri))
