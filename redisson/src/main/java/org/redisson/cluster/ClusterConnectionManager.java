@@ -475,7 +475,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         Set<ClusterPartition> lastPartitions = getLastPartitions();
         for (ClusterPartition newPart : newPartitions) {
             for (ClusterPartition currentPart : lastPartitions) {
-                if (!newPart.getMasterAddress().equals(currentPart.getMasterAddress())) {
+                if (!Objects.equals(newPart.getMasterAddress(), currentPart.getMasterAddress())) {
                     continue;
                 }
 
@@ -555,7 +555,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         for (ClusterPartition newPart : newPartitions) {
             boolean masterFound = false;
             for (ClusterPartition currentPart : lastPartitions) {
-                if (!newPart.getMasterAddress().equals(currentPart.getMasterAddress())) {
+                if (!Objects.equals(newPart.getMasterAddress(), currentPart.getMasterAddress())) {
                     continue;
                 }
                 masterFound = true;
@@ -566,7 +566,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 for (Integer slot : currentPart.getSlots()) {
                     ClusterPartition newMasterPart = find(newPartitions, slot);
                     // does partition has a new master?
-                    if (!newMasterPart.getMasterAddress().equals(currentPart.getMasterAddress())) {
+                    if (!Objects.equals(newMasterPart.getMasterAddress(), currentPart.getMasterAddress())) {
                         RedisURI newUri = newMasterPart.getMasterAddress();
                         RedisURI oldUri = currentPart.getMasterAddress();
 
@@ -654,7 +654,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         Set<Integer> changedSlots = new HashSet<>();
         for (ClusterPartition currentPartition : getLastPartitions()) {
             for (ClusterPartition newPartition : newPartitions) {
-                if (!currentPartition.getNodeId().equals(newPartition.getNodeId())) {
+                if (!Objects.equals(currentPartition.getNodeId(), newPartition.getNodeId())) {
                     continue;
                 }
 
