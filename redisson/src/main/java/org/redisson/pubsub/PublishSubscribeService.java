@@ -533,8 +533,7 @@ public class PublishSubscribeService {
     }
 
     private void addFreeConnectionEntry(ChannelName channelName, PubSubConnectionEntry entry) {
-        int slot = connectionManager.calcSlot(channelName.getName());
-        MasterSlaveEntry me = connectionManager.getEntry(slot);
+        MasterSlaveEntry me = getEntry(channelName);
         PubSubEntry psEntry = entry2PubSubConnection.computeIfAbsent(me, e -> new PubSubEntry());
         psEntry.getEntries().add(entry);
     }
