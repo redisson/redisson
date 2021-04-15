@@ -425,13 +425,13 @@ public class JCacheTest extends BaseTest {
         cache.registerCacheEntryListener(listenerConfiguration);
 
         cache.put(key, "80");
-        Assert.assertNotNull(cache.get(key));
+        assertThat(cache.get(key)).isNotNull();
 
         cache.put(key, "90");
 
         latch.await();
 
-        Assert.assertNotNull(cache.get(key));
+        assertThat(cache.get(key)).isNotNull();
 
         cache.close();
         runner.stop();
@@ -466,16 +466,14 @@ public class JCacheTest extends BaseTest {
                 new MutableCacheEntryListenerConfiguration<>(FactoryBuilder.factoryOf(secondClientListener), null, false, false);
         cache.registerCacheEntryListener(secondListenerConfiguration);
 
-
-
         cache.put(key, "80");
-        Assert.assertNotNull(cache.get(key));
+        assertThat(cache.get(key)).isNotNull();
 
         cache.put(key, "90");
 
         latch.await();
 
-        Assert.assertNotNull(cache.get(key));
+        assertThat(cache.get(key)).isNotNull();
 
         cache.close();
         runner.stop();
@@ -506,13 +504,13 @@ public class JCacheTest extends BaseTest {
         cache.registerCacheEntryListener(secondListenerConfiguration);
 
         cache.put(key, "80");
-        Assert.assertNotNull(cache.get(key));
+        assertThat(cache.get(key)).isNotNull();
 
         cache.put(key, "90");
 
         latch.await();
 
-        Assert.assertNotNull(cache.get(key));
+        assertThat(cache.get(key)).isNotNull();
 
         cache.close();
         runner.stop();
@@ -543,13 +541,13 @@ public class JCacheTest extends BaseTest {
         cache.registerCacheEntryListener(listenerConfiguration);
 
         cache.put(key, "80");
-        Assert.assertNotNull(cache.get(key));
+        assertThat(cache.get(key)).isNotNull();
 
         cache.remove(key);
 
         latch.await();
 
-        Assert.assertNull(cache.get(key));
+        assertThat(cache.get(key)).isNull();
 
         cache.close();
         runner.stop();
