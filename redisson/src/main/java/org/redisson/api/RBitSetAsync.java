@@ -26,6 +26,74 @@ import java.util.BitSet;
 public interface RBitSetAsync extends RExpirableAsync {
 
     /**
+     * Returns signed number at specified
+     * <code>offset</code> and <code>size</code>
+     *
+     * @param size - size of signed number up to 64 bits
+     * @param offset - offset of signed number
+     * @return signed number
+     */
+    RFuture<Long> getSignedAsync(int size, long offset);
+
+    /**
+     * Returns previous value of signed number and replaces it
+     * with defined <code>value</code> at specified <code>offset</code>
+     *
+     * @param size - size of signed number up to 64 bits
+     * @param offset - offset of signed number
+     * @param value - value of signed number
+     * @return previous value of signed number
+     */
+    RFuture<Long> setSignedAsync(int size, long offset, long value);
+
+    /**
+     * Increments current signed value by
+     * defined <code>increment</code> value and <code>size</code>
+     * at specified <code>offset</code>
+     * and returns result.
+     *
+     * @param size - size of signed number up to 64 bits
+     * @param offset - offset of signed number
+     * @param increment - increment value
+     * @return result value
+     */
+    RFuture<Long> incrementAndGetSignedAsync(int size, long offset, long increment);
+
+    /**
+     * Returns unsigned number at specified
+     * <code>offset</code> and <code>size</code>
+     *
+     * @param size - size of unsigned number up to 63 bits
+     * @param offset - offset of unsigned number
+     * @return unsigned number
+     */
+    RFuture<Long> getUnsignedAsync(int size, long offset);
+
+    /**
+     * Returns previous value of unsigned number and replaces it
+     * with defined <code>value</code> at specified <code>offset</code>
+     *
+     * @param size - size of unsigned number up to 63 bits
+     * @param offset - offset of unsigned number
+     * @param value - value of unsigned number
+     * @return previous value of unsigned number
+     */
+    RFuture<Long> setUnsignedAsync(int size, long offset, long value);
+
+    /**
+     * Increments current unsigned value by
+     * defined <code>increment</code> value and <code>size</code>
+     * at specified <code>offset</code>
+     * and returns result.
+     *
+     * @param size - size of unsigned number up to 63 bits
+     * @param offset - offset of unsigned number
+     * @param increment - increment value
+     * @return result value
+     */
+    RFuture<Long> incrementAndGetUnsignedAsync(int size, long offset, long increment);
+
+    /**
      * Returns byte number at specified <code>offset</code>
      *
      * @param offset - offset of number
