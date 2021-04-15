@@ -38,6 +38,90 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
     }
 
     @Override
+    public long getSigned(int size, long offset) {
+        return get(getSignedAsync(size, offset));
+    }
+
+    @Override
+    public long setSigned(int size, long offset, long value) {
+        return get(setSignedAsync(size, offset, value));
+    }
+
+    @Override
+    public long incrementAndGetSigned(int size, long offset, long increment) {
+        return get(incrementAndGetSignedAsync(size, offset, increment));
+    }
+
+    @Override
+    public long getUnsigned(int size, long offset) {
+        return get(getUnsignedAsync(size, offset));
+    }
+
+    @Override
+    public long setUnsigned(int size, long offset, long value) {
+        return get(setUnsignedAsync(size, offset, value));
+    }
+
+    @Override
+    public long incrementAndGetUnsigned(int size, long offset, long increment) {
+        return get(incrementAndGetUnsignedAsync(size, offset, increment));
+    }
+
+    @Override
+    public RFuture<Long> getSignedAsync(int size, long offset) {
+        if (size > 64) {
+            throw new IllegalArgumentException("Size can't be greater than 64 bits");
+        }
+        return commandExecutor.readAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_LONG,
+                                            getRawName(), "GET", "i" + size, offset);
+    }
+
+    @Override
+    public RFuture<Long> setSignedAsync(int size, long offset, long value) {
+        if (size > 64) {
+            throw new IllegalArgumentException("Size can't be greater than 64 bits");
+        }
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_LONG,
+                                            getRawName(), "SET", "i" + size, offset, value);
+    }
+
+    @Override
+    public RFuture<Long> incrementAndGetSignedAsync(int size, long offset, long increment) {
+        if (size > 64) {
+            throw new IllegalArgumentException("Size can't be greater than 64 bits");
+        }
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_LONG,
+                                            getRawName(), "INCRBY", "i" + size, offset, increment);
+    }
+
+    @Override
+    public RFuture<Long> getUnsignedAsync(int size, long offset) {
+        if (size > 63) {
+            throw new IllegalArgumentException("Size can't be greater than 63 bits");
+        }
+        return commandExecutor.readAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_LONG,
+                                            getRawName(), "GET", "u" + size, offset);
+    }
+
+    @Override
+    public RFuture<Long> setUnsignedAsync(int size, long offset, long value) {
+        if (size > 63) {
+            throw new IllegalArgumentException("Size can't be greater than 63 bits");
+        }
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_LONG,
+                                            getRawName(), "SET", "u" + size, offset, value);
+    }
+
+    @Override
+    public RFuture<Long> incrementAndGetUnsignedAsync(int size, long offset, long increment) {
+        if (size > 63) {
+            throw new IllegalArgumentException("Size can't be greater than 63 bits");
+        }
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_LONG,
+                                            getRawName(), "INCRBY", "u" + size, offset, increment);
+    }
+
+    @Override
     public byte getByte(long offset) {
         return get(getByteAsync(offset));
     }
