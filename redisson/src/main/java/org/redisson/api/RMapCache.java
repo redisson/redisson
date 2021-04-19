@@ -265,7 +265,30 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V>, RDest
      * @param ttlUnit - time unit
      */
     void putAll(java.util.Map<? extends K, ? extends V> map, long ttl, TimeUnit ttlUnit);
-    
+
+    /**
+     * Updates time to live and max idle time of specified entry by key.
+     * Entry expires when specified time to live or max idle time was reached.
+     * <p>
+     * Returns <code>false</code> if entry already expired or doesn't exist,
+     * otherwise returns <code>true</code>.
+     *
+     * @param key - map key
+     * @param ttl - time to live for key\value entry.
+     *              If <code>0</code> then time to live doesn't affect entry expiration.
+     * @param ttlUnit - time unit
+     * @param maxIdleTime - max idle time for key\value entry.
+     *              If <code>0</code> then max idle time doesn't affect entry expiration.
+     * @param maxIdleUnit - time unit
+     * <p>
+     * if <code>maxIdleTime</code> and <code>ttl</code> params are equal to <code>0</code>
+     * then entry stores infinitely.
+     *
+     * @return returns <code>false</code> if entry already expired or doesn't exist,
+     *         otherwise returns <code>true</code>.
+     */
+    boolean updateEntryExpiration(K key, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
+
     /**
      * Returns the number of entries in cache.
      * This number can reflects expired entries too
