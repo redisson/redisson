@@ -41,6 +41,7 @@ import org.redisson.codec.MapCacheEventCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.eviction.EvictionScheduler;
+import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
 import io.netty.buffer.ByteBuf;
@@ -1256,7 +1257,58 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 System.currentTimeMillis(), ttlTimeout, maxIdleTimeout, maxIdleDelta, encodeMapKey(key), encodeMapValue(value));
         return future;
     }
-    
+
+    @Override
+    public V getWithTTLOnly(K key) {
+        return get(getWithTTLOnlyAsync(key));
+    }
+
+    private RFuture<V> getWithTTLOnlyOperationAsync(K key) {
+        String name = getRawName(key);
+        return commandExecutor.evalReadAsync(name, codec, RedisCommands.EVAL_MAP_VALUE,
+                "local value = redis.call('hget', KEYS[1], ARGV[2]); "
+                        + "if value == false then "
+                            + "return nil; "
+                        + "end; "
+                        + "local t, val = struct.unpack('dLc0', value); "
+                        + "local expireDate = 92233720368547758; " +
+                        "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[2]); "
+                        + "if expireDateScore ~= false then "
+                            + "expireDate = tonumber(expireDateScore) "
+                        + "end; "
+                        + "if expireDate <= tonumber(ARGV[1]) then "
+                            + "return nil; "
+                        + "end; "
+                        + "return val; ",
+                Arrays.asList(name, getTimeoutSetName(name)),
+                System.currentTimeMillis(), encodeMapKey(key));
+    }
+
+    @Override
+    public RFuture<V> getWithTTLOnlyAsync(K key) {
+        checkKey(key);
+
+        RFuture<V> future = getWithTTLOnlyOperationAsync(key);
+        if (hasNoLoader()) {
+            return future;
+        }
+
+        RPromise<V> result = new RedissonPromise<>();
+        future.onComplete((res, e) -> {
+            if (e != null) {
+                result.tryFailure(e);
+                return;
+            }
+
+            if (res == null) {
+                loadValue(key, result, false);
+            } else {
+                result.trySuccess(res);
+            }
+        });
+        return result;
+    }
+
     @Override
     public long remainTimeToLive(K key) {
         return get(remainTimeToLiveAsync(key));

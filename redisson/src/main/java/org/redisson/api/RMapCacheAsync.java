@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.map.MapLoader;
 import org.redisson.api.map.MapWriter;
 
 import java.util.Map;
@@ -271,6 +272,20 @@ public interface RMapCacheAsync<K, V> extends RMapAsync<K, V> {
      *         otherwise returns <code>true</code>.
      */
     RFuture<Boolean> updateEntryExpirationAsync(K key, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
+
+    /**
+     * Returns the value mapped by defined <code>key</code> or {@code null} if value is absent.
+     * <p>
+     * If map doesn't contain value for specified key and {@link MapLoader} is defined
+     * then value will be loaded in read-through mode.
+     * <p>
+     * Idle time of entry is not taken into account.
+     * Entry last access time isn't modified if map limited by size.
+     *
+     * @param key the key
+     * @return the value mapped by defined <code>key</code> or {@code null} if value is absent
+     */
+    RFuture<V> getWithTTLOnlyAsync(K key);
 
     /**
      * Returns the number of entries in cache.

@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.map.MapLoader;
 import org.redisson.api.map.MapWriter;
 import org.redisson.api.map.event.MapEntryListener;
 
@@ -290,6 +291,20 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V>, RDest
     boolean updateEntryExpiration(K key, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
 
     /**
+     * Returns the value mapped by defined <code>key</code> or {@code null} if value is absent.
+     * <p>
+     * If map doesn't contain value for specified key and {@link MapLoader} is defined
+     * then value will be loaded in read-through mode.
+     * <p>
+     * Idle time of entry is not taken into account.
+     * Entry last access time isn't modified if map limited by size.
+     *
+     * @param key the key
+     * @return the value mapped by defined <code>key</code> or {@code null} if value is absent
+     */
+    V getWithTTLOnly(K key);
+
+    /**
      * Returns the number of entries in cache.
      * This number can reflects expired entries too
      * due to non realtime cleanup process.
@@ -300,26 +315,26 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V>, RDest
 
     /**
      * Adds map entry listener
-     * 
+     *
      * @see org.redisson.api.map.event.EntryCreatedListener
      * @see org.redisson.api.map.event.EntryUpdatedListener
      * @see org.redisson.api.map.event.EntryRemovedListener
      * @see org.redisson.api.map.event.EntryExpiredListener
-     * 
+     *
      * @param listener - entry listener
      * @return listener id
      */
     int addListener(MapEntryListener listener);
-    
+
     /**
      * Removes map entry listener
-     * 
+     *
      * @param listenerId - listener id
      */
     void removeListener(int listenerId);
 
     /**
-     * Remaining time to live of map entry associated with a <code>key</code>. 
+     * Remaining time to live of map entry associated with a <code>key</code>.
      *
      * @param key - map key
      * @return time in milliseconds
@@ -327,5 +342,5 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V>, RDest
      *          -1 if the key exists but has no associated expire.
      */
     long remainTimeToLive(K key);
-    
+
 }
