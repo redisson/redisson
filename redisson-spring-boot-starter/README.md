@@ -100,7 +100,7 @@ spring:
 
 ```
 
-### 3. Avaialble Spring Beans:
+### 3. Available Spring Beans:
 
 - `RedissonClient`  
 - `RedissonRxClient`  
