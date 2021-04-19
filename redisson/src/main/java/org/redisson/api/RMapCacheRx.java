@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
+import org.redisson.api.map.MapLoader;
 
 /**
  * <p>Map-based cache with ability to set TTL for each entry via
@@ -216,6 +217,43 @@ public interface RMapCacheRx<K, V> extends RMapRx<K, V>, RDestroyable {
      *         <code>false</code> if key already exists in the hash
      */
     Single<Boolean> fastPutIfAbsent(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
+
+    /**
+     * Updates time to live and max idle time of specified entry by key.
+     * Entry expires when specified time to live or max idle time was reached.
+     * <p>
+     * Returns <code>false</code> if entry already expired or doesn't exist,
+     * otherwise returns <code>true</code>.
+     *
+     * @param key - map key
+     * @param ttl - time to live for key\value entry.
+     *              If <code>0</code> then time to live doesn't affect entry expiration.
+     * @param ttlUnit - time unit
+     * @param maxIdleTime - max idle time for key\value entry.
+     *              If <code>0</code> then max idle time doesn't affect entry expiration.
+     * @param maxIdleUnit - time unit
+     * <p>
+     * if <code>maxIdleTime</code> and <code>ttl</code> params are equal to <code>0</code>
+     * then entry stores infinitely.
+     *
+     * @return returns <code>false</code> if entry already expired or doesn't exist,
+     *         otherwise returns <code>true</code>.
+     */
+    Single<Boolean> updateEntryExpiration(K key, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
+
+    /**
+     * Returns the value mapped by defined <code>key</code> or {@code null} if value is absent.
+     * <p>
+     * If map doesn't contain value for specified key and {@link MapLoader} is defined
+     * then value will be loaded in read-through mode.
+     * <p>
+     * Idle time of entry is not taken into account.
+     * Entry last access time isn't modified if map limited by size.
+     *
+     * @param key the key
+     * @return the value mapped by defined <code>key</code> or {@code null} if value is absent
+     */
+    Maybe<V> getWithTTLOnly(K key);
 
     /**
      * Returns the number of entries in cache.
