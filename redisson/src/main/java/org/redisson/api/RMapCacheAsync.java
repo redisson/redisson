@@ -15,6 +15,9 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.map.MapWriter;
+
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -156,6 +159,20 @@ public interface RMapCacheAsync<K, V> extends RMapAsync<K, V> {
      * @return previous associated value
      */
     RFuture<V> putAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
+
+    /**
+     * Associates the specified <code>value</code> with the specified <code>key</code>
+     * in batch.
+     * <p>
+     * If {@link MapWriter} is defined then new map entries are stored in write-through mode.
+     *
+     * @param map - mappings to be stored in this map
+     * @param ttl - time to live for all key\value entries.
+     *              If <code>0</code> then stores infinitely.
+     * @param ttlUnit - time unit
+     * @return void
+     */
+    RFuture<Void> putAllAsync(Map<? extends K, ? extends V> map, long ttl, TimeUnit ttlUnit);
 
     /**
      * Stores value mapped by key with specified time to live.
