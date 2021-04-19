@@ -1031,6 +1031,82 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
+    public boolean updateEntryExpiration(K key, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
+        return get(updateEntryExpirationAsync(key, ttl, ttlUnit, maxIdleTime, maxIdleUnit));
+    }
+
+    @Override
+    public RFuture<Boolean> updateEntryExpirationAsync(K key, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
+        checkKey(key);
+
+        long currentTime = System.currentTimeMillis();
+        long ttlTimeout = 0;
+        if (ttl > 0) {
+            ttlTimeout = currentTime + ttlUnit.toMillis(ttl);
+        }
+
+        long maxIdleTimeout = 0;
+        if (maxIdleTime > 0) {
+            long maxIdleDelta = maxIdleUnit.toMillis(maxIdleTime);
+            maxIdleTimeout = currentTime + maxIdleDelta;
+        }
+
+        String name = getRawName(key);
+        RFuture<Boolean> future = commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_BOOLEAN,
+                        "local value = redis.call('hget', KEYS[1], ARGV[4]); "
+                        + "local t, val;"
+                        + "if value == false then "
+                            + "return 0; "
+                        + "else "
+                            + "t, val = struct.unpack('dLc0', value); "
+                            + "local expireDate = 92233720368547758; "
+                            + "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[4]); "
+                            + "if expireDateScore ~= false then "
+                                + "expireDate = tonumber(expireDateScore) "
+                            + "end; "
+                            + "if t ~= 0 then "
+                                + "local expireIdle = redis.call('zscore', KEYS[3], ARGV[4]); "
+                                + "if expireIdle ~= false then "
+                                    + "expireDate = math.min(expireDate, tonumber(expireIdle)) "
+                                + "end; "
+                            + "end; "
+                            + "if expireDate <= tonumber(ARGV[1]) then "
+                                + "return 0; "
+                            + "end; "
+                        + "end; " +
+
+                        "if tonumber(ARGV[2]) > 0 then "
+                            + "redis.call('zadd', KEYS[2], ARGV[2], ARGV[4]); "
+                        + "else "
+                            + "redis.call('zrem', KEYS[2], ARGV[4]); "
+                        + "end; "
+                        + "if tonumber(ARGV[3]) > 0 then "
+                            + "redis.call('zadd', KEYS[3], ARGV[3], ARGV[4]); "
+                        + "else "
+                            + "redis.call('zrem', KEYS[3], ARGV[4]); "
+                        + "end; " +
+
+                        // last access time
+                        "local maxSize = tonumber(redis.call('hget', KEYS[5], 'max-size')); " +
+                        "local mode = redis.call('hget', KEYS[5], 'mode'); " +
+                        "if maxSize ~= nil and maxSize ~= 0 then " +
+                           "local currentTime = tonumber(ARGV[1]); " +
+
+                           "if mode == false or mode == 'LRU' then " +
+                               "redis.call('zadd', KEYS[4], currentTime, ARGV[4]); " +
+                           "end; " +
+                           "if mode == 'LFU' then " +
+                                "redis.call('zincrby', KEYS[4], 1, ARGV[4]); " +
+                           "end; " +
+                        "end; " +
+                        "return 1;",
+                Arrays.asList(name, getTimeoutSetName(name), getIdleSetName(name),
+                              getLastAccessTimeSetName(name), getOptionsName(name)),
+                System.currentTimeMillis(), ttlTimeout, maxIdleTimeout, encodeMapKey(key));
+        return future;
+    }
+
+    @Override
     public RFuture<V> putAsync(K key, V value, long ttl, TimeUnit ttlUnit) {
         return putAsync(key, value, ttl, ttlUnit, 0, null);
     }

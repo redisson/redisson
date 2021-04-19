@@ -41,10 +41,20 @@ import org.redisson.eviction.EvictionScheduler;
 public class RedissonMapCacheTest extends BaseMapTest {
 
     @Test
+    public void testUpdateEntryExpiration() throws InterruptedException {
+        RMapCache<Integer, Integer> cache = redisson.getMapCache("testUpdateEntryExpiration");
+        cache.put(1, 2, 3, TimeUnit.SECONDS);
+        Thread.sleep(2000);
+        long ttl = cache.remainTimeToLive(1);
+        assertThat(ttl).isBetween(900L, 1000L);
+        cache.updateEntryExpiration(1, 2, TimeUnit.SECONDS, -1, TimeUnit.SECONDS);
+        long ttl2 = cache.remainTimeToLive(1);
+        assertThat(ttl2).isBetween(1900L, 2000L);
+    }
+
+    @Test
     public void testRemoveListener() {
-        RMapCache<Long, String> rMapCache = redisson.getMapCache("test",
-         LocalCachedMapOptions.<Long, String>defaults().evictionPolicy(LocalCachedMapOptions.EvictionPolicy.LRU)
-        .timeToLive(-1));
+        RMapCache<Long, String> rMapCache = redisson.getMapCache("test");
         rMapCache.trySetMaxSize(5);
         AtomicBoolean removed = new AtomicBoolean();
         rMapCache.addListener(new EntryRemovedListener() {
