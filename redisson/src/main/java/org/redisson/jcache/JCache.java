@@ -2324,9 +2324,9 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                            + "return redis.call('publish', KEYS[6], syncMsg); "
                        + "else "
                            + "redis.call('hset', KEYS[1], ARGV[4], ARGV[6]); "
-                           + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(ARGV[6]), ARGV[6]); "
+                           + "local msg = struct.pack('Lc0Lc0h', string.len(ARGV[4]), ARGV[4], string.len(ARGV[6]), ARGV[6], -1); "
                            + "redis.call('publish', KEYS[4], msg); "
-                           + "local syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[4]), ARGV[4], string.len(ARGV[6]), ARGV[6], ARGV[7]); "
+                           + "local syncMsg = struct.pack('Lc0Lc0hd', string.len(ARGV[4]), ARGV[4], string.len(ARGV[6]), ARGV[6], -1, ARGV[7]); "
                            + "return redis.call('publish', KEYS[6], syncMsg); "
                        + "end; ",
                        Arrays.<Object>asList(getRawName(), getTimeoutSetName(), getRemovedChannelName(), getUpdatedChannelName(),
