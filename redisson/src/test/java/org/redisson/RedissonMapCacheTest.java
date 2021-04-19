@@ -47,9 +47,11 @@ public class RedissonMapCacheTest extends BaseMapTest {
         Thread.sleep(2000);
         long ttl = cache.remainTimeToLive(1);
         assertThat(ttl).isBetween(900L, 1000L);
-        cache.updateEntryExpiration(1, 2, TimeUnit.SECONDS, -1, TimeUnit.SECONDS);
+        assertThat(cache.updateEntryExpiration(1, 2, TimeUnit.SECONDS, -1, TimeUnit.SECONDS)).isTrue();
         long ttl2 = cache.remainTimeToLive(1);
         assertThat(ttl2).isBetween(1900L, 2000L);
+        Thread.sleep(2000);
+        assertThat(cache.updateEntryExpiration(1, 2, TimeUnit.SECONDS, -1, TimeUnit.SECONDS)).isFalse();
     }
 
     @Test
