@@ -1674,7 +1674,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return new RedissonMapIterator<>(RedissonMap.this, pattern, count);
     }
 
-    private void loadValue(K key, RPromise<V> result, boolean replaceValue) {
+    protected void loadValue(K key, RPromise<V> result, boolean replaceValue) {
         RLock lock = getLock(key);
         long threadId = Thread.currentThread().getId();
         lock.lockAsync(threadId).onComplete((res, e) -> {

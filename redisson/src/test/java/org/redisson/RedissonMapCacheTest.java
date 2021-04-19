@@ -41,6 +41,16 @@ import org.redisson.eviction.EvictionScheduler;
 public class RedissonMapCacheTest extends BaseMapTest {
 
     @Test
+    public void testGetWithTTLOnly() throws InterruptedException {
+        RMapCache<Integer, Integer> cache = redisson.getMapCache("testUpdateEntryExpiration");
+        cache.put(1, 2, 3, TimeUnit.SECONDS);
+        Thread.sleep(2000);
+        assertThat(cache.getWithTTLOnly(1)).isEqualTo(2);
+        Thread.sleep(2000);
+        assertThat(cache.getWithTTLOnly(1)).isNull();
+    }
+
+    @Test
     public void testUpdateEntryExpiration() throws InterruptedException {
         RMapCache<Integer, Integer> cache = redisson.getMapCache("testUpdateEntryExpiration");
         cache.put(1, 2, 3, TimeUnit.SECONDS);
