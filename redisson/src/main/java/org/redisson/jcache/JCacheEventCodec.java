@@ -55,6 +55,7 @@ public class JCacheEventCodec extends BaseEventCodec {
                     buf.readShortLE();
                     result.add(null);
                 }
+                copy.release();
             }
             
             if (sync) {
