@@ -3,6 +3,20 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 20-Apr-2021 - 3.15.4 released
+
+Feature - sslProtocols setting added  
+Feature - nameMapper setting added  
+Feature - `getSigned()`, `setSigned()`, `incrementAndGetSigned()`, `getUnsigned()`, `setUnsigned()`, `incrementAndGetUnsigned()` methods added to `RBitSet` object  
+Feature - `updateEntryExpiration()`, `getWithTTLOnly()` methods added to `RMapCache` object  
+
+Improvement - Spring Cache, MyBatis Cache, Hibernate Cache implementations should read data from Redis slave if idleTime and cache size weren't specified  
+
+Fixed - `ClusterConnectionManager.upDownSlaves()` method throws `ConcurrentModificationException`  
+Fixed - `ClusterConnectionManager.checkMasterNodesChange()` method throws NPE  
+Fixed - `JCache` `CacheEntryUpdatedListener` doesn't get old value of changed entry (thanks to @testower)  
+
+
 ### 30-Mar-2021 - 3.15.3 released
 
 Feature - [connectionListener](https://github.com/redisson/redisson/wiki/2.-Configuration#connectionlistener) setting added  
