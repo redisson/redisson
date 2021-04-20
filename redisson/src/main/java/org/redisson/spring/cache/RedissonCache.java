@@ -70,7 +70,13 @@ public class RedissonCache implements Cache {
 
     @Override
     public ValueWrapper get(Object key) {
-        Object value = map.get(key);
+        Object value;
+        if (mapCache != null && config.getMaxIdleTime() == 0 && config.getMaxSize() == 0) {
+            value = mapCache.getWithTTLOnly(key);
+        } else {
+            value = map.get(key);
+        }
+
         if (value == null) {
             addCacheMiss();
         } else {
@@ -80,7 +86,13 @@ public class RedissonCache implements Cache {
     }
 
     public <T> T get(Object key, Class<T> type) {
-        Object value = map.get(key);
+        Object value;
+        if (mapCache != null && config.getMaxIdleTime() == 0 && config.getMaxSize() == 0) {
+            value = mapCache.getWithTTLOnly(key);
+        } else {
+            value = map.get(key);
+        }
+
         if (value == null) {
             addCacheMiss();
         } else {
@@ -151,7 +163,13 @@ public class RedissonCache implements Cache {
     }
 
     public <T> T get(Object key, Callable<T> valueLoader) {
-        Object value = map.get(key);
+        Object value;
+        if (mapCache != null && config.getMaxIdleTime() == 0 && config.getMaxSize() == 0) {
+            value = mapCache.getWithTTLOnly(key);
+        } else {
+            value = map.get(key);
+        }
+
         if (value == null) {
             addCacheMiss();
             RLock lock = map.getLock(key);
