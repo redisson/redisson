@@ -58,6 +58,10 @@ public class RedissonCache implements Cache {
     @Override
     public Object getObject(Object o) {
         check();
+        if (maxIdleTime == 0 && maxSize == 0) {
+            return mapCache.getWithTTLOnly(o);
+        }
+
         return mapCache.get(o);
     }
 
