@@ -47,15 +47,13 @@ public class JCacheEventCodec extends BaseEventCodec {
             result.add(value);
 
             if (expectOldValueInMsg) {
-                ByteBuf copy = buf.copy();
-                if (copy.readShortLE() != -1) {
+                if (buf.getShortLE(buf.readerIndex()) != -1) {
                     Object oldValue = JCacheEventCodec.this.decode(buf, state, codec.getMapValueDecoder());
                     result.add(oldValue);
                 } else {
                     buf.readShortLE();
                     result.add(null);
                 }
-                copy.release();
             }
             
             if (sync) {
