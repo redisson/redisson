@@ -76,6 +76,7 @@ public final class RedisClient {
     private boolean hasOwnExecutor;
     private boolean hasOwnGroup;
     private boolean hasOwnResolver;
+    private volatile boolean shutdown;
 
     public static RedisClient create(RedisClientConfig config) {
         return new RedisClient(config);
@@ -115,7 +116,7 @@ public final class RedisClient {
             resolvedAddrFuture.set(RedissonPromise.newSucceededFuture(resolvedAddr));
         }
         
-        channels = new DefaultChannelGroup(copy.getGroup().next()); 
+        channels = new DefaultChannelGroup(copy.getGroup().next());
         bootstrap = createBootstrap(copy, Type.PLAIN);
         pubSubBootstrap = createBootstrap(copy, Type.PUBSUB);
         
@@ -324,6 +325,7 @@ public final class RedisClient {
     }
 
     public RFuture<Void> shutdownAsync() {
+        shutdown = true;
         RPromise<Void> result = new RedissonPromise<Void>();
         if (channels.isEmpty() || config.getGroup().isShuttingDown()) {
             shutdown(result);
@@ -351,6 +353,10 @@ public final class RedisClient {
         }
         
         return result;
+    }
+
+    public boolean isShutdown() {
+        return shutdown;
     }
 
     private void shutdown(RPromise<Void> result) {

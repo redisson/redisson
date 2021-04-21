@@ -166,7 +166,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     connectionFutures.add(future);
                 }
 
-                RFuture<Void> f = registerSentinel(addr, this.config, null);
+                RedisURI sentinelIp = getIpAddr(connection.getRedisClient().getAddr());
+                RFuture<Void> f = registerSentinel(sentinelIp, this.config, null);
                 connectionFutures.add(f);
 
                 for (RFuture<Void> future : connectionFutures) {
@@ -652,7 +653,9 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     @Override
     public RedisURI applyNatMap(RedisURI address) {
         RedisURI result = natMapper.map(address);
-        log.debug("nat mapped uri: {} to {}", address, result);
+        if (!result.equals(address)) {
+            log.debug("nat mapped uri: {} to {}", address, result);
+        }
         return result;
     }
 
