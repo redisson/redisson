@@ -29,6 +29,7 @@ import java.lang.reflect.Modifier;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 
@@ -87,8 +88,14 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
     
     @Override
     public RFuture<Map<KOut, VOut>> executeAsync() {
-        final RPromise<Map<KOut, VOut>> promise = new RedissonPromise<Map<KOut, VOut>>();
-        final RFuture<Void> future = executeMapperAsync(resultMapName, null);
+        RPromise<Map<KOut, VOut>> promise = new RedissonPromise<Map<KOut, VOut>>();
+        RFuture<Void> future = executeMapperAsync(resultMapName, null);
+        if (timeout > 0) {
+            commandExecutor.getConnectionManager().newTimeout(task -> {
+                promise.cancel(true);
+            }, timeout, TimeUnit.MILLISECONDS);
+        }
+
         addCancelHandling(promise, future);
         future.onComplete((res, e) -> {
             if (e != null) {
@@ -98,10 +105,11 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
             
             RBatch batch = redisson.createBatch();
             RMapAsync<KOut, VOut> resultMap = batch.getMap(resultMapName, objectCodec);
-            resultMap.readAllMapAsync().onComplete(new TransferListener<Map<KOut, VOut>>(promise));
+            resultMap.readAllMapAsync().onComplete(new TransferListener<>(promise));
             resultMap.deleteAsync();
-            batch.executeAsync();
-        });        
+            RFuture<BatchResult<?>> batchFuture = batch.executeAsync();
+            addCancelHandling(promise, batchFuture);
+        });
         return promise;
     }
 
@@ -144,7 +152,7 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
     }
     
     @Override
-    public <R> RFuture<R> executeAsync(final RCollator<KOut, VOut, R> collator) {
+    public <R> RFuture<R> executeAsync(RCollator<KOut, VOut, R> collator) {
         check(collator);
         
         return executeMapperAsync(resultMapName, collator);
