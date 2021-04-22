@@ -94,7 +94,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
             
             Object[] params = coll.stream().map(buf -> toByteArray(buf)).toArray(Object[]::new);
 
-            Mono<Long> m = read(null, StringCodec.INSTANCE, RedisCommands.TOUCH_LONG, params);
+            Mono<Long> m = write(null, StringCodec.INSTANCE, RedisCommands.TOUCH_LONG, params);
             return m.map(v -> new NumericResponse<>(coll, v));
         });
     }
@@ -177,7 +177,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
             
             Object[] params = coll.stream().map(buf -> toByteArray(buf)).toArray(Object[]::new);
 
-            Mono<Long> m = read(null, StringCodec.INSTANCE, RedisCommands.DEL, params);
+            Mono<Long> m = write(null, StringCodec.INSTANCE, RedisCommands.DEL, params);
             return m.map(v -> new NumericResponse<>(coll, v));
         });
     }
@@ -202,7 +202,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
             
             Object[] params = coll.stream().map(buf -> toByteArray(buf)).toArray(Object[]::new);
 
-            Mono<Long> m = read(null, StringCodec.INSTANCE, RedisCommands.UNLINK, params);
+            Mono<Long> m = write(null, StringCodec.INSTANCE, RedisCommands.UNLINK, params);
             return m.map(v -> new NumericResponse<>(coll, v));
         });
     }
@@ -216,7 +216,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
             Assert.notNull(command.getKey(), "Key must not be null!");
 
             byte[] keyBuf = toByteArray(command.getKey());
-            Mono<Boolean> m = read(keyBuf, StringCodec.INSTANCE, EXPIRE, keyBuf, command.getTimeout().getSeconds());
+            Mono<Boolean> m = write(keyBuf, StringCodec.INSTANCE, EXPIRE, keyBuf, command.getTimeout().getSeconds());
             return m.map(v -> new BooleanResponse<>(command, v));
         });
     }
@@ -228,7 +228,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
             Assert.notNull(command.getKey(), "Key must not be null!");
 
             byte[] keyBuf = toByteArray(command.getKey());
-            Mono<Boolean> m = read(keyBuf, StringCodec.INSTANCE, RedisCommands.PEXPIRE, keyBuf);
+            Mono<Boolean> m = write(keyBuf, StringCodec.INSTANCE, RedisCommands.PEXPIRE, keyBuf);
             return m.map(v -> new BooleanResponse<>(command, v));
         });
     }
@@ -242,7 +242,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
             Assert.notNull(command.getKey(), "Key must not be null!");
 
             byte[] keyBuf = toByteArray(command.getKey());
-            Mono<Boolean> m = read(keyBuf, StringCodec.INSTANCE, EXPIREAT, keyBuf, command.getExpireAt().getEpochSecond());
+            Mono<Boolean> m = write(keyBuf, StringCodec.INSTANCE, EXPIREAT, keyBuf, command.getExpireAt().getEpochSecond());
             return m.map(v -> new BooleanResponse<>(command, v));
         });
     }
@@ -254,7 +254,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
             Assert.notNull(command.getKey(), "Key must not be null!");
 
             byte[] keyBuf = toByteArray(command.getKey());
-            Mono<Boolean> m = read(keyBuf, StringCodec.INSTANCE, RedisCommands.PEXPIREAT, keyBuf, command.getExpireAt().toEpochMilli());
+            Mono<Boolean> m = write(keyBuf, StringCodec.INSTANCE, RedisCommands.PEXPIREAT, keyBuf, command.getExpireAt().toEpochMilli());
             return m.map(v -> new BooleanResponse<>(command, v));
         });
     }
@@ -266,7 +266,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
             Assert.notNull(command.getKey(), "Key must not be null!");
 
             byte[] keyBuf = toByteArray(command.getKey());
-            Mono<Boolean> m = read(keyBuf, StringCodec.INSTANCE, RedisCommands.PERSIST, keyBuf);
+            Mono<Boolean> m = write(keyBuf, StringCodec.INSTANCE, RedisCommands.PERSIST, keyBuf);
             return m.map(v -> new BooleanResponse<>(command, v));
         });
     }
@@ -280,7 +280,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
             Assert.notNull(command.getKey(), "Key must not be null!");
 
             byte[] keyBuf = toByteArray(command.getKey());
-            Mono<Long> m = write(keyBuf, StringCodec.INSTANCE, TTL, keyBuf);
+            Mono<Long> m = read(keyBuf, StringCodec.INSTANCE, TTL, keyBuf);
             return m.map(v -> new NumericResponse<>(command, v));
         });
     }
@@ -292,7 +292,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
             Assert.notNull(command.getKey(), "Key must not be null!");
 
             byte[] keyBuf = toByteArray(command.getKey());
-            Mono<Long> m = write(keyBuf, StringCodec.INSTANCE, RedisCommands.PTTL, keyBuf);
+            Mono<Long> m = read(keyBuf, StringCodec.INSTANCE, RedisCommands.PTTL, keyBuf);
             return m.map(v -> new NumericResponse<>(command, v));
         });
     }
