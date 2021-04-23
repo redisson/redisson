@@ -438,22 +438,18 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                         return;
                     }
                     if (newValue != null) {
-                        RFuture<Boolean> replaceFuture = replaceAsync(key, oldValue, newValue);
-                        replaceFuture.onComplete((re, ex1) -> {
+                        RFuture<Boolean> fastPutFuture = fastPutAsync(key, newValue);
+                        fastPutFuture.onComplete((re, ex1) -> {
                             lock.unlockAsync(threadId);
                             if (ex1 != null) {
                                 result.tryFailure(ex1);
                                 return;
                             }
 
-                            if (re) {
-                                result.trySuccess(newValue);
-                            } else {
-                                result.trySuccess(oldValue);
-                            }
+                            result.trySuccess(newValue);
                         });
-                    } else if (remove(key, oldValue)) {
-                        RFuture<Boolean> removeFuture = removeAsync(key, oldValue);
+                    } else {
+                        RFuture<Long> removeFuture = fastRemoveAsync(key);
                         removeFuture.onComplete((re, ex1) -> {
                             lock.unlockAsync(threadId);
                             if (ex1 != null) {
@@ -461,11 +457,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                                 return;
                             }
 
-                            if (re) {
-                                result.trySuccess(null);
-                            } else {
-                                result.trySuccess(oldValue);
-                            }
+                            result.trySuccess(null);
                         });
                     }
                 });
@@ -489,13 +481,11 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
             V newValue = remappingFunction.apply(key, oldValue);
             if (newValue != null) {
-                if (replace(key, oldValue, newValue)) {
-                    return newValue;
-                }
-            } else if (remove(key, oldValue)) {
-                return null;
+                fastPut(key, newValue);
+                return newValue;
             }
-            return oldValue;
+            fastRemove(key);
+            return null;
         } finally {
             lock.unlock();
         }
