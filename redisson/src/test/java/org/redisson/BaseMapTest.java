@@ -175,6 +175,57 @@ public abstract class BaseMapTest extends BaseTest {
         assertThat(map.get("1")).isEqualTo("12");
     }
 
+    public static class MyClass implements Serializable {
+
+        private String name;
+
+        public MyClass(String name) {
+            this.name = name;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            MyClass myClass = (MyClass) o;
+            return Objects.equals(name, myClass.name);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(name);
+        }
+
+        @Override
+        public String toString() {
+            return "MyClass{" +
+                    "name='" + name + '\'' +
+                    '}';
+        }
+    }
+
+    @Test
+    public void testComputeIfPresentMutable() {
+        RMap<String, MyClass> map = getMap("map");
+
+        map.put("1", new MyClass("value1"));
+        map.computeIfPresent("1", (key, value) -> {
+            assertThat(value).isEqualTo(new MyClass("value1"));
+            value.setName("value2");
+            return value;
+        });
+        assertThat(map.get("1")).isEqualTo(new MyClass("value2"));
+    }
+
+
     @Test
     public void testComputeIfAbsent() {
         RMap<String, String> map = getMap("map");
