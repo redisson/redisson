@@ -1,4 +1,4 @@
-# Redisson - Redis Java client<br/>with features of In-Memory Data Grid
+# Redisson - Redis Java client<br/>with features of an In-Memory Data Grid
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.redisson/redisson/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.redisson/redisson)
 [![JavaDoc](http://www.javadoc.io/badge/org.redisson/redisson.svg)](http://www.javadoc.io/doc/org.redisson/redisson)
 [![License](http://img.shields.io/:license-apache-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
