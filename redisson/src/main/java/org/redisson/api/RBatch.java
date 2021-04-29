@@ -429,4 +429,17 @@ public interface RBatch {
      */
     RFuture<BatchResult<?>> executeAsync();
 
+    /**
+     * Discard batched commands and release allocated buffers used for parameters encoding.
+     */
+    void discard();
+
+    /**
+     * Discard batched commands and release allocated buffers used for parameters encoding.
+     *
+     * @return void
+     */
+    RFuture<Void> discardAsync();
+
+
 }

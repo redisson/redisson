@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
 import org.redisson.client.codec.Codec;
 
@@ -415,5 +416,12 @@ public interface RBatchRx {
      * @return List with result object for each command
      */
     Maybe<BatchResult<?>> execute();
+
+    /**
+     * Discard batched commands and release allocated buffers used for parameters encoding.
+     *
+     * @return void
+     */
+    Completable discard();
 
 }

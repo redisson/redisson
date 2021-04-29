@@ -365,4 +365,11 @@ public interface RBatchReactive {
      */
     Mono<BatchResult<?>> execute();
 
+    /**
+     * Discard batched commands and release allocated buffers used for parameters encoding.
+     *
+     * @return void
+     */
+    Mono<Void> discard();
+
 }
