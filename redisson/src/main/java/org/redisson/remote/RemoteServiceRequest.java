@@ -87,7 +87,7 @@ public class RemoteServiceRequest implements Serializable {
     @Override
     public String toString() {
         return "RemoteServiceRequest [requestId=" + id + ", methodName=" + methodName + ", signature="
-                + signature + ", args="
+                + Arrays.toString(signature) + ", args="
                 + Arrays.toString(args) + ", options=" + options + ", date=" + date + "]";
     }
 
