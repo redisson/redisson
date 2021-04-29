@@ -78,4 +78,7 @@ public class CommandReactiveBatchService extends CommandReactiveService {
         return batchService.executeAsync();
     }
 
+    public RFuture<Void> discardAsync() {
+        return batchService.discardAsync();
+    }
 }
