@@ -15,6 +15,7 @@
  */
 package org.redisson.command;
 
+import io.netty.util.ReferenceCountUtil;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import org.redisson.api.BatchOptions;
@@ -167,6 +168,27 @@ public class CommandBatchService extends CommandAsyncService {
         }
         
         return new RedissonPromise<>();
+    }
+
+    public void discard() {
+        get(discardAsync());
+    }
+
+    public RFuture<Void> discardAsync() {
+        if (executed.get()) {
+            throw new IllegalStateException("Batch already executed!");
+        }
+
+        executed.set(true);
+        if (isRedisBasedQueue()) {
+            return writeAllAsync(RedisCommands.DISCARD);
+        }
+
+        commands.values().stream()
+                        .flatMap(e -> e.getCommands().stream())
+                        .flatMap(c -> Arrays.stream(c.getParams()))
+                        .forEach(obj -> ReferenceCountUtil.safeRelease(obj));
+        return RedissonPromise.newSucceededFuture(null);
     }
     
     public BatchResult<?> execute() {

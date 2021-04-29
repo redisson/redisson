@@ -211,7 +211,17 @@ public class RedissonBatch implements RBatch {
     public RFuture<BatchResult<?>> executeAsync() {
         return executorService.executeAsync();
     }
-    
+
+    @Override
+    public void discard() {
+        executorService.discard();
+    }
+
+    @Override
+    public RFuture<Void> discardAsync() {
+        return executorService.discardAsync();
+    }
+
     @Override
     public <K, V> RMultimapAsync<K, V> getSetMultimap(String name) {
         return new RedissonSetMultimap<K, V>(executorService, name);
