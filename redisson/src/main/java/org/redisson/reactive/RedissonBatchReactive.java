@@ -234,6 +234,11 @@ public class RedissonBatchReactive implements RBatchReactive {
     }
 
     @Override
+    public Mono<Void> discard() {
+        return commandExecutor.reactive(() -> executorService.discardAsync());
+    }
+
+    @Override
     public <V> RGeoReactive<V> getGeo(String name) {
         return ReactiveProxyBuilder.create(executorService, new RedissonGeo<V>(executorService, name, null), 
                 new RedissonScoredSortedSetReactive<V>(executorService, name), RGeoReactive.class);

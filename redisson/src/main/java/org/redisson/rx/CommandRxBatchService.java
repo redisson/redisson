@@ -79,4 +79,7 @@ public class CommandRxBatchService extends CommandRxService {
         return batchService.executeAsync();
     }
 
+    public RFuture<Void> discardAsync() {
+        return batchService.discardAsync();
+    }
 }

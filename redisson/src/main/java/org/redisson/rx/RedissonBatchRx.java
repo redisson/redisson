@@ -15,6 +15,7 @@
  */
 package org.redisson.rx;
 
+import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
 import org.redisson.*;
 import org.redisson.api.*;
@@ -242,7 +243,12 @@ public class RedissonBatchRx implements RBatchRx {
     public Maybe<BatchResult<?>> execute() {
         return commandExecutor.flowable(() -> executorService.executeAsync()).singleElement();
     }
-    
+
+    @Override
+    public Completable discard() {
+        return commandExecutor.flowable(() -> executorService.discardAsync()).ignoreElements();
+    }
+
     @Override
     public <V> RGeoRx<V> getGeo(String name) {
         RedissonGeo<V> geo = new RedissonGeo<V>(executorService, name, null);
