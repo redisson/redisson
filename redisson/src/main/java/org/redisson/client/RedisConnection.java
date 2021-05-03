@@ -127,6 +127,9 @@ public class RedisConnection implements RedisCommands {
     }
 
     public void updateChannel(Channel channel) {
+        if (channel == null) {
+            throw new NullPointerException();
+        }
         this.channel = channel;
         channel.attr(CONNECTION).set(this);
     }
