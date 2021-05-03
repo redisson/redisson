@@ -186,9 +186,32 @@ public class RedissonClusterConnectionTest {
             keys.add(key);
             connection.set(key, ("test" + i).getBytes());
         }
-        connection.del(keys.toArray(new byte[0][]));
+        assertThat(connection.del(keys.toArray(new byte[0][]))).isEqualTo(10);
     }
-    
+
+    @Test
+    public void testMSet() {
+        Map<byte[], byte[]> map = new HashMap<>();
+        for (int i = 0; i < 10; i++) {
+            map.put(("test" + i).getBytes(), ("test" + i*100).getBytes());
+        }
+        connection.mSet(map);
+        for (Map.Entry<byte[], byte[]> entry : map.entrySet()) {
+            assertThat(connection.get(entry.getKey())).isEqualTo(entry.getValue());
+        }
+    }
+
+    @Test
+    public void testMGet() {
+        Map<byte[], byte[]> map = new HashMap<>();
+        for (int i = 0; i < 10; i++) {
+            map.put(("test" + i).getBytes(), ("test" + i*100).getBytes());
+        }
+        connection.mSet(map);
+        List<byte[]> r = connection.mGet(map.keySet().toArray(new byte[0][]));
+        assertThat(r).containsExactly(map.values().toArray(new byte[0][]));
+    }
+
     @Test
     public void testResetConfigStats() {
         RedisClusterNode master = getFirstMaster();

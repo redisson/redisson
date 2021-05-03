@@ -15,26 +15,11 @@
  */
 package org.redisson.spring.data.connection;
 
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
-
+import io.netty.util.CharsetUtil;
 import org.redisson.api.BatchResult;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisClient;
-import org.redisson.client.RedisException;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
@@ -47,8 +32,6 @@ import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.client.protocol.decoder.StringMapDataDecoder;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.MasterSlaveEntry;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.data.redis.connection.ClusterInfo;
 import org.springframework.data.redis.connection.DefaultedRedisClusterConnection;
@@ -63,7 +46,10 @@ import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.types.RedisClientInfo;
 import org.springframework.util.Assert;
 
-import io.netty.util.CharsetUtil;
+import java.net.InetSocketAddress;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 /**
  * 
@@ -502,63 +488,6 @@ public class RedissonClusterConnection extends RedissonConnection implements Def
         return false;
     }
 
-    private void checkExecution(RPromise<Long> result, AtomicReference<Throwable> failed,
-                                AtomicLong count, AtomicLong executed) {
-        if (executed.decrementAndGet() == 0) {
-            if (failed.get() != null) {
-                if (count.get() > 0) {
-                    RedisException ex = new RedisException("" + count.get() + " keys has been deleted. But one or more nodes has an error", failed.get());
-                    result.tryFailure(ex);
-                } else {
-                    result.tryFailure(failed.get());
-                }
-            } else {
-                result.trySuccess(count.get());
-            }
-        }
-    }
-
-    private RFuture<Long> executeAsync(RedisStrictCommand<Long> command, byte[] ... keys) {
-        Map<MasterSlaveEntry, List<byte[]>> range2key = new HashMap<>();
-        for (byte[] key : keys) {
-            int slot = executorService.getConnectionManager().calcSlot(key);
-            MasterSlaveEntry entry = executorService.getConnectionManager().getEntry(slot);
-            List<byte[]> list = range2key.computeIfAbsent(entry, k -> new ArrayList<>());
-            list.add(key);
-        }
-
-        RPromise<Long> result = new RedissonPromise<>();
-        AtomicReference<Throwable> failed = new AtomicReference<>();
-        AtomicLong count = new AtomicLong();
-        AtomicLong executed = new AtomicLong(range2key.size());
-        BiConsumer<BatchResult<?>, Throwable> listener = (r, u) -> {
-            if (u == null) {
-                List<Long> result1 = (List<Long>) r.getResponses();
-                for (Long res : result1) {
-                    if (res != null) {
-                        count.addAndGet(res);
-                    }
-                }
-            } else {
-                failed.set(u);
-            }
-
-            checkExecution(result, failed, count, executed);
-        };
-
-        for (Entry<MasterSlaveEntry, List<byte[]>> entry : range2key.entrySet()) {
-            CommandBatchService es = new CommandBatchService(executorService);
-            for (byte[] key : entry.getValue()) {
-                es.writeAsync(entry.getKey(), null, command, key);
-            }
-
-            RFuture<BatchResult<?>> future = es.executeAsync();
-            future.onComplete(listener);
-        }
-
-        return result;
-    }
-
     @Override
     public Long del(byte[]... keys) {
         if (isQueueing() || isPipelined()) {
@@ -569,8 +498,46 @@ public class RedissonClusterConnection extends RedissonConnection implements Def
             return null;
         }
 
-        RFuture<Long> f = executeAsync(RedisCommands.DEL, keys);
-        return sync(f);
+        CommandBatchService es = new CommandBatchService(executorService);
+        for (byte[] key: keys) {
+            es.writeAsync(key, StringCodec.INSTANCE, RedisCommands.DEL, key);
+        }
+        BatchResult<Long> b = (BatchResult<Long>) es.execute();
+        return b.getResponses().stream().collect(Collectors.summarizingLong(v -> v)).getSum();
+    }
+
+    @Override
+    public List<byte[]> mGet(byte[]... keys) {
+        if (isQueueing() || isPipelined()) {
+            for (byte[] key : keys) {
+                read(key, ByteArrayCodec.INSTANCE, RedisCommands.GET, key);
+            }
+            return null;
+        }
+
+        CommandBatchService es = new CommandBatchService(executorService);
+        for (byte[] key: keys) {
+            es.readAsync(key, ByteArrayCodec.INSTANCE, RedisCommands.GET, key);
+        }
+        BatchResult<byte[]> r = (BatchResult<byte[]>) es.execute();
+        return r.getResponses();
+    }
+
+    @Override
+    public Boolean mSet(Map<byte[], byte[]> tuple) {
+        if (isQueueing() || isPipelined()) {
+            for (Entry<byte[], byte[]> entry: tuple.entrySet()) {
+                write(entry.getKey(), StringCodec.INSTANCE, RedisCommands.SET, entry.getKey(), entry.getValue());
+            }
+            return true;
+        }
+
+        CommandBatchService es = new CommandBatchService(executorService);
+        for (Entry<byte[], byte[]> entry: tuple.entrySet()) {
+            es.writeAsync(entry.getKey(), StringCodec.INSTANCE, RedisCommands.SET, entry.getKey(), entry.getValue());
+        }
+        es.execute();
+        return true;
     }
 
 }
