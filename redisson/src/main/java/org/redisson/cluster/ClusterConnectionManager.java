@@ -449,6 +449,13 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     return;
                 }
 
+                if (nodes.isEmpty()) {
+                    log.debug("cluster nodes state got from {}: doesn't contain any nodes", connection.getRedisClient().getAddr());
+                    getShutdownLatch().release();
+                    checkClusterState(cfg, iterator, lastException);
+                    return;
+                }
+
                 lastClusterNode = uri;
 
                 StringBuilder nodesValue = new StringBuilder();
