@@ -349,6 +349,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     protected void startDNSMonitoring(RedisClient masterHost) {
+        String host = masterHost.getConfig().getAddress().getHost();
+        if (NetUtil.createByteArrayFromIpAddressString(host) != null) {
+            return;
+        }
+
         if (config.getDnsMonitoringInterval() != -1) {
             Set<RedisURI> slaveAddresses = config.getSlaveAddresses().stream().map(r -> new RedisURI(r)).collect(Collectors.toSet());
             dnsMonitor = new DNSMonitor(this, masterHost, 
