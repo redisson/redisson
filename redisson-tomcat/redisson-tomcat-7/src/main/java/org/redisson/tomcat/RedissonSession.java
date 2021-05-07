@@ -71,14 +71,16 @@ public class RedissonSession extends StandardSession {
     private Set<String> removedAttributes = Collections.emptySet();
 
     private final boolean broadcastSessionEvents;
+    private final boolean broadcastSessionUpdates;
 
-    public RedissonSession(RedissonSessionManager manager, ReadMode readMode, UpdateMode updateMode, boolean broadcastSessionEvents) {
+    public RedissonSession(RedissonSessionManager manager, ReadMode readMode, UpdateMode updateMode, boolean broadcastSessionEvents, boolean broadcastSessionUpdates) {
         super(manager);
         this.redissonManager = manager;
         this.readMode = readMode;
         this.updateMode = updateMode;
         this.topic = redissonManager.getTopic();
         this.broadcastSessionEvents = broadcastSessionEvents;
+        this.broadcastSessionUpdates = broadcastSessionUpdates;
         
         if (updateMode == UpdateMode.AFTER_REQUEST) {
             removedAttributes = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
@@ -183,7 +185,7 @@ public class RedissonSession extends StandardSession {
         } else {
             map.delete();
         }
-        if (readMode == ReadMode.MEMORY) {
+        if (readMode == ReadMode.MEMORY && this.broadcastSessionUpdates) {
             topic.publish(new AttributesClearMessage(redissonManager.getNodeId(), getId()));
         }
         map = null;
@@ -201,7 +203,7 @@ public class RedissonSession extends StandardSession {
             newMap.put(LAST_ACCESSED_TIME_ATTR, lastAccessedTime);
             newMap.put(THIS_ACCESSED_TIME_ATTR, thisAccessedTime);
             map.putAll(newMap);
-            if (readMode == ReadMode.MEMORY) {
+            if (readMode == ReadMode.MEMORY && this.broadcastSessionUpdates) {
                 topic.publish(createPutAllMessage(newMap));
             }
         }
@@ -253,7 +255,7 @@ public class RedissonSession extends StandardSession {
             return;
         }
         map.fastPut(name, value);
-        if (readMode == ReadMode.MEMORY) {
+        if (readMode == ReadMode.MEMORY && this.broadcastSessionUpdates) {
             try {
                 topic.publish(new AttributeUpdateMessage(redissonManager.getNodeId(), getId(), name, value, this.map.getCodec().getMapValueEncoder()));
             } catch (IOException e) {
@@ -319,7 +321,7 @@ public class RedissonSession extends StandardSession {
             newMap.put(LAST_ACCESSED_TIME_ATTR, lastAccessedTime);
             newMap.put(THIS_ACCESSED_TIME_ATTR, thisAccessedTime);
             map.putAll(newMap);
-            if (readMode == ReadMode.MEMORY) {
+            if (readMode == ReadMode.MEMORY && this.broadcastSessionUpdates) {
                 topic.publish(createPutAllMessage(newMap));
             }
             expireSession();
@@ -399,7 +401,7 @@ public class RedissonSession extends StandardSession {
     private void removeRedisAttribute(String name) {
         if (updateMode == UpdateMode.DEFAULT && map != null) {
             map.fastRemove(name);
-            if (readMode == ReadMode.MEMORY) {
+            if (readMode == ReadMode.MEMORY && this.broadcastSessionUpdates) {
                 topic.publish(new AttributeRemoveMessage(redissonManager.getNodeId(), getId(), new HashSet<String>(Arrays.asList(name))));
             }
         }
@@ -448,7 +450,7 @@ public class RedissonSession extends StandardSession {
         map.putAll(newMap);
         map.fastRemove(removedAttributes.toArray(new String[0]));
         
-        if (readMode == ReadMode.MEMORY) {
+        if (readMode == ReadMode.MEMORY && this.broadcastSessionUpdates) {
             topic.publish(createPutAllMessage(newMap));
             
             if (updateMode == UpdateMode.AFTER_REQUEST) {
