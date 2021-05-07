@@ -48,14 +48,15 @@ public class RedissonSessionManager extends ManagerBase {
     
     private final Log log = LogFactory.getLog(RedissonSessionManager.class);
     
-    private RedissonClient redisson;
+    protected RedissonClient redisson;
     private String configPath;
     
     private ReadMode readMode = ReadMode.REDIS;
     private UpdateMode updateMode = UpdateMode.DEFAULT;
 
-    private String keyPrefix = "";
+    protected String keyPrefix = "";
     private boolean broadcastSessionEvents = false;
+    private boolean broadcastSessionUpdates = true;
 
     private final String nodeId = UUID.randomUUID().toString();
 
@@ -80,7 +81,15 @@ public class RedissonSessionManager extends ManagerBase {
     public void setBroadcastSessionEvents(boolean replicateSessionEvents) {
         this.broadcastSessionEvents = replicateSessionEvents;
     }
-    
+
+    public boolean isBroadcastSessionUpdates() {
+        return broadcastSessionUpdates;
+    }
+
+    public void setBroadcastSessionUpdates(boolean broadcastSessionUpdates) {
+        this.broadcastSessionUpdates = broadcastSessionUpdates;
+    }
+
     public String getReadMode() {
         return readMode.toString();
     }
@@ -194,7 +203,7 @@ public class RedissonSessionManager extends ManagerBase {
     
     @Override
     public Session createEmptySession() {
-        return new RedissonSession(this, readMode, updateMode, broadcastSessionEvents);
+        return new RedissonSession(this, readMode, updateMode, broadcastSessionEvents, this.broadcastSessionUpdates);
     }
     
     @Override
@@ -259,7 +268,7 @@ public class RedissonSessionManager extends ManagerBase {
             }
         }
         
-        if (readMode == ReadMode.MEMORY || broadcastSessionEvents) {
+        if (readMode == ReadMode.MEMORY && this.broadcastSessionUpdates || broadcastSessionEvents) {
             RTopic updatesTopic = getTopic();
             messageListener = new MessageListener<AttributeMessage>() {
                 
@@ -354,7 +363,7 @@ public class RedissonSessionManager extends ManagerBase {
         super.stopInternal();
         
         setState(LifecycleState.STOPPING);
-        
+
         Pipeline pipeline = getContext().getPipeline();
         synchronized (pipeline) {
             if (readMode == ReadMode.REDIS) {
