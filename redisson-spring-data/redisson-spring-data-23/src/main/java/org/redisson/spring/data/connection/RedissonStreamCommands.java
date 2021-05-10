@@ -395,7 +395,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
         return xGroupCreate(key, groupName, readOffset, false);
     }
 
-    private static final RedisStrictCommand<Boolean> XGROUP_BOOLEAN = new RedisStrictCommand<Boolean>("XADD", obj -> ((Long)obj) > 0);
+    private static final RedisStrictCommand<Boolean> XGROUP_BOOLEAN = new RedisStrictCommand<Boolean>("XGROUP", obj -> ((Long)obj) > 0);
 
     @Override
     public Boolean xGroupDelConsumer(byte[] key, Consumer consumer) {

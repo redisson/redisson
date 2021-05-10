@@ -109,7 +109,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
         return connection.write(key, StringCodec.INSTANCE, XGROUP_STRING, "CREATE", key, groupName, readOffset.getOffset(), "MKSTREAM");
     }
 
-    private static final RedisStrictCommand<Boolean> XGROUP_BOOLEAN = new RedisStrictCommand<Boolean>("XADD", obj -> ((Long)obj) > 0);
+    private static final RedisStrictCommand<Boolean> XGROUP_BOOLEAN = new RedisStrictCommand<Boolean>("XGROUP", obj -> ((Long)obj) > 0);
 
     @Override
     public Boolean xGroupDelConsumer(byte[] key, Consumer consumer) {
