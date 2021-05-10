@@ -247,12 +247,12 @@ public class PublishSubscribeService {
                 return;
             }
 
-            MasterSlaveEntry msEntry = Optional.of(connectionManager.getEntry(entry.getClient()))
-                                                .filter(e -> e != entry).orElse(entry);
+            MasterSlaveEntry msEntry = Optional.ofNullable(connectionManager.getEntry(entry.getClient())).orElse(entry);
             PubSubEntry freePubSubConnections = entry2PubSubConnection.getOrDefault(msEntry, new PubSubEntry());
 
             PubSubConnectionEntry freeEntry = freePubSubConnections.getEntries().peek();
             if (freeEntry == null) {
+                freePubSubLock.release();
                 connect(codec, channelName, msEntry, promise, type, lock, listeners);
                 return;
             }
@@ -355,51 +355,52 @@ public class PublishSubscribeService {
         });
         connFuture.onComplete((conn, ex) -> {
             if (ex != null) {
-                freePubSubLock.release();
                 lock.release();
                 promise.tryFailure(ex);
                 return;
             }
 
-            PubSubConnectionEntry entry = new PubSubConnectionEntry(conn, config.getSubscriptionsPerConnection());
-            int remainFreeAmount = entry.tryAcquire();
+            freePubSubLock.acquire(() -> {
+                PubSubConnectionEntry entry = new PubSubConnectionEntry(conn, config.getSubscriptionsPerConnection());
+                int remainFreeAmount = entry.tryAcquire();
 
-            PubSubKey key = new PubSubKey(channelName, msEntry);
-            PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(key, entry);
-            if (oldEntry != null) {
-                msEntry.returnPubSubConnection(entry);
+                PubSubKey key = new PubSubKey(channelName, msEntry);
+                PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(key, entry);
+                if (oldEntry != null) {
+                    msEntry.returnPubSubConnection(conn);
 
-                freePubSubLock.release();
+                    freePubSubLock.release();
 
-                addListeners(channelName, promise, type, lock, oldEntry, listeners);
-                return;
-            }
-
-            if (remainFreeAmount > 0) {
-                addFreeConnectionEntry(channelName, entry);
-            }
-            freePubSubLock.release();
-
-            RFuture<Void> subscribeFuture = addListeners(channelName, promise, type, lock, entry, listeners);
-
-            ChannelFuture future;
-            if (PubSubType.PSUBSCRIBE == type) {
-                future = entry.psubscribe(codec, channelName);
-            } else {
-                future = entry.subscribe(codec, channelName);
-            }
-
-            future.addListener((ChannelFutureListener) future1 -> {
-                if (!future1.isSuccess()) {
-                    if (!promise.isDone()) {
-                        subscribeFuture.cancel(false);
-                    }
+                    addListeners(channelName, promise, type, lock, oldEntry, listeners);
                     return;
                 }
 
-                connectionManager.newTimeout(timeout ->
-                        subscribeFuture.cancel(false),
-                        config.getTimeout(), TimeUnit.MILLISECONDS);
+                if (remainFreeAmount > 0) {
+                    addFreeConnectionEntry(channelName, entry);
+                }
+                freePubSubLock.release();
+
+                RFuture<Void> subscribeFuture = addListeners(channelName, promise, type, lock, entry, listeners);
+
+                ChannelFuture future;
+                if (PubSubType.PSUBSCRIBE == type) {
+                    future = entry.psubscribe(codec, channelName);
+                } else {
+                    future = entry.subscribe(codec, channelName);
+                }
+
+                future.addListener((ChannelFutureListener) future1 -> {
+                    if (!future1.isSuccess()) {
+                        if (!promise.isDone()) {
+                            subscribeFuture.cancel(false);
+                        }
+                        return;
+                    }
+
+                    connectionManager.newTimeout(timeout ->
+                            subscribeFuture.cancel(false),
+                            config.getTimeout(), TimeUnit.MILLISECONDS);
+                });
             });
         });
     }
@@ -420,7 +421,8 @@ public class PublishSubscribeService {
                     executed.set(true);
 
                     if (entry.release() == 1) {
-                        addFreeConnectionEntry(channelName, entry);
+                        MasterSlaveEntry msEntry = getEntry(channelName);
+                        msEntry.returnPubSubConnection(entry.getConnection());
                     }
 
                     result.trySuccess(null);

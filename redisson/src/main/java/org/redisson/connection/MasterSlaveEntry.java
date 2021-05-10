@@ -31,7 +31,6 @@ import org.redisson.connection.balancer.LoadBalancerManager;
 import org.redisson.connection.pool.MasterConnectionPool;
 import org.redisson.connection.pool.MasterPubSubConnectionPool;
 import org.redisson.misc.*;
-import org.redisson.pubsub.PubSubConnectionEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -519,12 +518,12 @@ public class MasterSlaveEntry {
         return slaveBalancer.nextPubSubConnection();
     }
 
-    public void returnPubSubConnection(PubSubConnectionEntry entry) {
+    public void returnPubSubConnection(RedisPubSubConnection connection) {
         if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
-            pubSubConnectionPool.returnConnection(masterEntry, entry.getConnection());
+            pubSubConnectionPool.returnConnection(masterEntry, connection);
             return;
         }
-        slaveBalancer.returnPubSubConnection(entry.getConnection());
+        slaveBalancer.returnPubSubConnection(connection);
     }
 
     public void releaseWrite(RedisConnection connection) {
