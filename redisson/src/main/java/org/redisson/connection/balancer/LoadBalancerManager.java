@@ -294,7 +294,7 @@ public class LoadBalancerManager {
         RPromise<Void> result = new RedissonPromise<Void>();
         CountableListener<Void> listener = new CountableListener<Void>(result, null, client2Entry.values().size());
         for (ClientConnectionsEntry entry : client2Entry.values()) {
-            entry.getClient().shutdownAsync().onComplete(listener);
+            entry.shutdownAsync().onComplete(listener);
         }
         return result;
     }

@@ -123,11 +123,11 @@ public class MasterSlaveEntry {
             }
             
             masterEntry = new ClientConnectionsEntry(
-                    client, 
-                    config.getMasterConnectionMinimumIdleSize(), 
+                    client,
+                    config.getMasterConnectionMinimumIdleSize(),
                     config.getMasterConnectionPoolSize(),
                     config.getSubscriptionConnectionMinimumIdleSize(),
-                    config.getSubscriptionConnectionPoolSize(), 
+                    config.getSubscriptionConnectionPoolSize(),
                     connectionManager,
                     NodeType.MASTER);
     
@@ -440,7 +440,7 @@ public class MasterSlaveEntry {
                 if (oldMaster != masterEntry) {
                     writeConnectionPool.remove(masterEntry);
                     pubSubConnectionPool.remove(masterEntry);
-                    masterEntry.getClient().shutdownAsync();
+                    masterEntry.shutdownAsync();
                     masterEntry = oldMaster;
                 }
                 log.error("Unable to change master from: " + oldMaster.getClient().getAddr() + " to: " + address, e);
@@ -465,7 +465,7 @@ public class MasterSlaveEntry {
                     && slaveBalancer.getAvailableClients() > 1) {
                 slaveDown(newMasterClient.getAddr(), FreezeReason.SYSTEM);
             }
-            oldMaster.getClient().shutdownAsync();
+            oldMaster.shutdownAsync();
             log.info("master {} has changed to {}", oldMaster.getClient().getAddr(), masterEntry.getClient().getAddr());
         });
     }
@@ -478,7 +478,7 @@ public class MasterSlaveEntry {
         RPromise<Void> result = new RedissonPromise<Void>();
         CountableListener<Void> listener = new CountableListener<Void>(result, null, 2);
         if (masterEntry != null) {
-            masterEntry.getClient().shutdownAsync().onComplete(listener);
+            masterEntry.shutdownAsync().onComplete(listener);
         }
         slaveBalancer.shutdownAsync().onComplete(listener);
         return result;
