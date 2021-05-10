@@ -454,7 +454,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
             es.writeAsync(key, LongCodec.INSTANCE, RedisCommands.DEL, key);
         }
         BatchResult<Long> b = (BatchResult<Long>) es.execute();
-        return b.getResponses().stream().collect(Collectors.summarizingLong(v -> v)).getSum();
+        return b.getResponses().stream().mapToLong(v -> v).sum();
     }
 
     @Override
