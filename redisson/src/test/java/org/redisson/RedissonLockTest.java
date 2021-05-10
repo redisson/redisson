@@ -8,8 +8,9 @@ import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.config.Config;
 import org.redisson.connection.balancer.RandomLoadBalancer;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.io.IOException;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 
@@ -47,6 +48,67 @@ public class RedissonLockTest extends BaseConcurrentTest {
             }
             System.out.println(Thread.currentThread().getName() + " ends.");
         }
+    }
+
+    public static class LockThread implements Runnable {
+
+        AtomicBoolean hasFails;
+        RedissonClient redissonClient;
+        String lockName;
+
+        public LockThread(AtomicBoolean hasFails, RedissonClient redissonClient, String lockName) {
+            this.hasFails = hasFails;
+            this.redissonClient = redissonClient;
+            this.lockName = lockName;
+        }
+
+        @Override
+        public void run() {
+            RLock lock = redissonClient.getLock(lockName);
+            try {
+                boolean bLocked = lock.tryLock(100, -1, TimeUnit.MILLISECONDS);
+                if (bLocked) {
+                    lock.unlock();
+                } else {
+                    hasFails.set(true);
+                }
+            } catch (Exception ex) {
+                hasFails.set(true);
+            }
+        }
+    }
+
+    @Test
+    public void testSinglePubSub() throws IOException, InterruptedException, ExecutionException {
+        RedisRunner.RedisProcess runner = new RedisRunner()
+                .port(RedisRunner.findFreePort())
+                .nosave()
+                .randomDir()
+                .run();
+
+        Config config = new Config();
+        config.useSingleServer()
+            .setAddress(runner.getRedisServerAddressAndPort())
+            .setSubscriptionConnectionPoolSize(1)
+            .setSubscriptionsPerConnection(1);
+        ExecutorService executorService = Executors.newFixedThreadPool(4);
+        RedissonClient redissonClient = Redisson.create(config);
+        AtomicBoolean hasFails = new AtomicBoolean();
+
+        for (int i = 0; i < 2; i++) {
+            Future<?> f1 = executorService.submit(new LockThread(hasFails, redissonClient, "Lock1_" + i));
+            Future<?> f2 = executorService.submit(new LockThread(hasFails, redissonClient, "Lock1_" + i));
+            Future<?> f3 = executorService.submit(new LockThread(hasFails, redissonClient, "Lock2_" + i));
+            Future<?> f4 = executorService.submit(new LockThread(hasFails, redissonClient, "Lock2_" + i));
+            f1.get();
+            f2.get();
+            f3.get();
+            f4.get();
+        }
+
+        assertThat(hasFails).isFalse();
+        redissonClient.shutdown();
+        runner.stop();
     }
 
     @Test
