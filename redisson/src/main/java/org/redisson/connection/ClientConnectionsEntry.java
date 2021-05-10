@@ -67,12 +67,12 @@ public class ClientConnectionsEntry {
         this.freeSubscribeConnectionsCounter = new AsyncSemaphore(subscribePoolMaxSize);
 
         if (subscribePoolMaxSize > 0) {
-            connectionManager.getConnectionWatcher().add(subscribePoolMinSize, subscribePoolMaxSize, freeSubscribeConnections, freeSubscribeConnectionsCounter, c -> {
+            connectionManager.getConnectionWatcher().add(this, subscribePoolMinSize, subscribePoolMaxSize, freeSubscribeConnections, freeSubscribeConnectionsCounter, c -> {
                 freeSubscribeConnections.remove(c);
                 return allSubscribeConnections.remove(c);
             });
         }
-        connectionManager.getConnectionWatcher().add(poolMinSize, poolMaxSize, freeConnections, freeConnectionsCounter, c -> {
+        connectionManager.getConnectionWatcher().add(this, poolMinSize, poolMaxSize, freeConnections, freeConnectionsCounter, c -> {
                 freeConnections.remove(c);
                 return allConnections.remove(c);
             });
@@ -113,6 +113,11 @@ public class ClientConnectionsEntry {
     
     public void trySetupFistFail() {
         firstFailTime.compareAndSet(0, System.currentTimeMillis());
+    }
+
+    public RFuture<Void> shutdownAsync() {
+        connectionManager.getConnectionWatcher().remove(this);
+        return client.shutdownAsync();
     }
 
     public RedisClient getClient() {

@@ -26,10 +26,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class IdleConnectionWatcher {
 
@@ -55,37 +58,32 @@ public class IdleConnectionWatcher {
 
     };
 
-    private final Queue<Entry> entries = new ConcurrentLinkedQueue<>();
+    private final Map<ClientConnectionsEntry, Queue<Entry>> entries = new ConcurrentHashMap<>();
     private final ScheduledFuture<?> monitorFuture;
 
     public IdleConnectionWatcher(ConnectionManager manager, MasterSlaveServersConfig config) {
-        monitorFuture = manager.getGroup().scheduleWithFixedDelay(new Runnable() {
+        monitorFuture = manager.getGroup().scheduleWithFixedDelay(() -> {
+            long currTime = System.nanoTime();
+            for (Entry entry : entries.values().stream().flatMap(m -> m.stream()).collect(Collectors.toList())) {
+                if (!validateAmount(entry)) {
+                    continue;
+                }
 
-            @Override
-            public void run() {
-                long currTime = System.nanoTime();
-                for (Entry entry : entries) {
-                    if (!validateAmount(entry)) {
-                        continue;
-                    }
-
-                    for (RedisConnection c : entry.connections) {
-                        long timeInPool = TimeUnit.NANOSECONDS.toMillis(currTime - c.getLastUsageTime());
-                        if (timeInPool > config.getIdleConnectionTimeout()
-                                && validateAmount(entry)
-                                    && entry.deleteHandler.apply(c)) {
-                            ChannelFuture future = c.closeAsync();
-                            future.addListener(new FutureListener<Void>() {
-                                @Override
-                                public void operationComplete(Future<Void> future) throws Exception {
-                                    log.debug("Connection {} has been closed due to idle timeout. Not used for {} ms", c.getChannel(), timeInPool);
-                                }
-                            });
-                        }
+                for (RedisConnection c : entry.connections) {
+                    long timeInPool = TimeUnit.NANOSECONDS.toMillis(currTime - c.getLastUsageTime());
+                    if (timeInPool > config.getIdleConnectionTimeout()
+                            && validateAmount(entry)
+                                && entry.deleteHandler.apply(c)) {
+                        ChannelFuture future = c.closeAsync();
+                        future.addListener(new FutureListener<Void>() {
+                            @Override
+                            public void operationComplete(Future<Void> future) throws Exception {
+                                log.debug("Connection {} has been closed due to idle timeout. Not used for {} ms", c.getChannel(), timeInPool);
+                            }
+                        });
                     }
                 }
             }
-
         }, config.getIdleConnectionTimeout(), config.getIdleConnectionTimeout(), TimeUnit.MILLISECONDS);
     }
 
@@ -93,9 +91,14 @@ public class IdleConnectionWatcher {
         return entry.maximumAmount - entry.freeConnectionsCounter.getCounter() + entry.connections.size() > entry.minimumAmount;
     }
 
-    public void add(int minimumAmount, int maximumAmount, Collection<? extends RedisConnection> connections,
+    public void remove(ClientConnectionsEntry entry) {
+        entries.remove(entry);
+    }
+
+    public void add(ClientConnectionsEntry entry, int minimumAmount, int maximumAmount, Collection<? extends RedisConnection> connections,
                     AsyncSemaphore freeConnectionsCounter, Function<RedisConnection, Boolean> deleteHandler) {
-        entries.add(new Entry(minimumAmount, maximumAmount, connections, freeConnectionsCounter, deleteHandler));
+        Queue<Entry> list = entries.computeIfAbsent(entry, k -> new ConcurrentLinkedQueue<>());
+        list.add(new Entry(minimumAmount, maximumAmount, connections, freeConnectionsCounter, deleteHandler));
     }
     
     public void stop() {
