@@ -25,11 +25,11 @@ import org.redisson.pubsub.AsyncSemaphore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -58,7 +58,7 @@ public class IdleConnectionWatcher {
 
     };
 
-    private final Map<ClientConnectionsEntry, Queue<Entry>> entries = new ConcurrentHashMap<>();
+    private final Map<ClientConnectionsEntry, List<Entry>> entries = new ConcurrentHashMap<>();
     private final ScheduledFuture<?> monitorFuture;
 
     public IdleConnectionWatcher(ConnectionManager manager, MasterSlaveServersConfig config) {
@@ -97,7 +97,7 @@ public class IdleConnectionWatcher {
 
     public void add(ClientConnectionsEntry entry, int minimumAmount, int maximumAmount, Collection<? extends RedisConnection> connections,
                     AsyncSemaphore freeConnectionsCounter, Function<RedisConnection, Boolean> deleteHandler) {
-        Queue<Entry> list = entries.computeIfAbsent(entry, k -> new ConcurrentLinkedQueue<>());
+        List<Entry> list = entries.computeIfAbsent(entry, k -> new ArrayList<>(2));
         list.add(new Entry(minimumAmount, maximumAmount, connections, freeConnectionsCounter, deleteHandler));
     }
     
