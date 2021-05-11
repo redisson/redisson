@@ -178,7 +178,7 @@ public class RedissonStreamTest extends BaseTest {
     }
 
     @Test
-    public void testClaimRemove() {
+    public void testClaimRemove() throws InterruptedException {
         RStream<String, String> stream = redisson.getStream("test");
 
         stream.add(StreamAddArgs.entry("0", "0"));
@@ -198,6 +198,8 @@ public class RedissonStreamTest extends BaseTest {
         assertThat(s2.size()).isEqualTo(2);
 
         stream.remove(id3);
+
+        Thread.sleep(2);
 
         Map<StreamMessageId, Map<String, String>> res = stream.claim("testGroup", "consumer1", 1, TimeUnit.MILLISECONDS, id3, id4);
         assertThat(res.size()).isEqualTo(1);
