@@ -15,6 +15,15 @@
  */
 package org.redisson.jcache;
 
+import com.fasterxml.jackson.core.JacksonException;
+import org.redisson.Redisson;
+import org.redisson.config.Config;
+
+import javax.cache.CacheException;
+import javax.cache.CacheManager;
+import javax.cache.configuration.OptionalFeature;
+import javax.cache.spi.CachingProvider;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -23,15 +32,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-
-import javax.cache.CacheException;
-import javax.cache.CacheManager;
-import javax.cache.configuration.OptionalFeature;
-import javax.cache.spi.CachingProvider;
-
-import org.redisson.Redisson;
-import org.redisson.config.Config;
 
 /**
  * 
@@ -40,8 +40,7 @@ import org.redisson.config.Config;
  */
 public class JCachingProvider implements CachingProvider {
 
-    private final ConcurrentMap<ClassLoader, ConcurrentMap<URI, CacheManager>> managers = 
-                            new ConcurrentHashMap<ClassLoader, ConcurrentMap<URI, CacheManager>>();
+    private final Map<ClassLoader, Map<URI, CacheManager>> managers = new ConcurrentHashMap<>();
     
     private static final String DEFAULT_URI_PATH = "jsr107-default-config";
     private static URI defaulturi;
@@ -66,13 +65,8 @@ public class JCachingProvider implements CachingProvider {
         if (classLoader == null) {
             classLoader = getDefaultClassLoader();
         }
-        
-        ConcurrentMap<URI, CacheManager> value = new ConcurrentHashMap<URI, CacheManager>();
-        ConcurrentMap<URI, CacheManager> oldValue = managers.putIfAbsent(classLoader, value);
-        if (oldValue != null) {
-            value = oldValue;
-        }
-        
+
+        Map<URI, CacheManager> value = managers.computeIfAbsent(classLoader, k -> new ConcurrentHashMap<>());
         CacheManager manager = value.get(uri);
         if (manager != null) {
             return manager;
@@ -106,7 +100,11 @@ public class JCachingProvider implements CachingProvider {
             }
             if (yamlUrl != null) {
                 config = Config.fromYAML(yamlUrl);
+            } else {
+                throw new FileNotFoundException("/redisson-jcache.yaml");
             }
+        } catch (JacksonException e) {
+            throw new CacheException(e);
         } catch (IOException e) {
             try {
                 URL jsonUrl = null;
@@ -115,11 +113,10 @@ public class JCachingProvider implements CachingProvider {
                 } else {
                     jsonUrl = uri.toURL();
                 }
-                if (jsonUrl == null) {
-                    throw new IOException();
+                if (jsonUrl != null) {
+                    config = Config.fromJSON(jsonUrl);
                 }
-                config = Config.fromJSON(jsonUrl);
-            } catch (IOException e2) {
+            } catch (IOException ex) {
                 // skip
             }
         }
