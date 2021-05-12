@@ -216,11 +216,11 @@ public class Config {
         return clusterServersConfig;
     }
 
-    ClusterServersConfig getClusterServersConfig() {
+    protected ClusterServersConfig getClusterServersConfig() {
         return clusterServersConfig;
     }
 
-    void setClusterServersConfig(ClusterServersConfig clusterServersConfig) {
+    protected void setClusterServersConfig(ClusterServersConfig clusterServersConfig) {
         this.clusterServersConfig = clusterServersConfig;
     }
 
@@ -246,11 +246,11 @@ public class Config {
         return replicatedServersConfig;
     }
 
-    ReplicatedServersConfig getReplicatedServersConfig() {
+    protected ReplicatedServersConfig getReplicatedServersConfig() {
         return replicatedServersConfig;
     }
 
-    void setReplicatedServersConfig(ReplicatedServersConfig replicatedServersConfig) {
+    protected void setReplicatedServersConfig(ReplicatedServersConfig replicatedServersConfig) {
         this.replicatedServersConfig = replicatedServersConfig;
     }
 
@@ -296,11 +296,11 @@ public class Config {
         return singleServerConfig;
     }
 
-    SingleServerConfig getSingleServerConfig() {
+    protected SingleServerConfig getSingleServerConfig() {
         return singleServerConfig;
     }
 
-    void setSingleServerConfig(SingleServerConfig singleConnectionConfig) {
+    protected void setSingleServerConfig(SingleServerConfig singleConnectionConfig) {
         this.singleServerConfig = singleConnectionConfig;
     }
 
@@ -325,11 +325,11 @@ public class Config {
         return this.sentinelServersConfig;
     }
 
-    SentinelServersConfig getSentinelServersConfig() {
+    protected SentinelServersConfig getSentinelServersConfig() {
         return sentinelServersConfig;
     }
 
-    void setSentinelServersConfig(SentinelServersConfig sentinelConnectionConfig) {
+    protected void setSentinelServersConfig(SentinelServersConfig sentinelConnectionConfig) {
         this.sentinelServersConfig = sentinelConnectionConfig;
     }
 
@@ -354,11 +354,11 @@ public class Config {
         return masterSlaveServersConfig;
     }
 
-    MasterSlaveServersConfig getMasterSlaveServersConfig() {
+    protected MasterSlaveServersConfig getMasterSlaveServersConfig() {
         return masterSlaveServersConfig;
     }
 
-    void setMasterSlaveServersConfig(MasterSlaveServersConfig masterSlaveConnectionConfig) {
+    protected void setMasterSlaveServersConfig(MasterSlaveServersConfig masterSlaveConnectionConfig) {
         this.masterSlaveServersConfig = masterSlaveConnectionConfig;
     }
 

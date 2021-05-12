@@ -66,7 +66,7 @@ public class ReplicatedServersConfig extends BaseMasterSlaveServersConfig<Replic
     public List<String> getNodeAddresses() {
         return nodeAddresses;
     }
-    void setNodeAddresses(List<String> nodeAddresses) {
+    public void setNodeAddresses(List<String> nodeAddresses) {
         this.nodeAddresses = nodeAddresses;
     }
 

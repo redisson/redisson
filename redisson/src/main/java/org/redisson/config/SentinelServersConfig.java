@@ -111,7 +111,7 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
     public List<String> getSentinelAddresses() {
         return sentinelAddresses;
     }
-    void setSentinelAddresses(List<String> sentinelAddresses) {
+    public void setSentinelAddresses(List<String> sentinelAddresses) {
         this.sentinelAddresses = sentinelAddresses;
     }
 
