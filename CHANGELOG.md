@@ -1,7 +1,25 @@
 Redisson Releases History
 ================================
 
-Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
+Consider __[Redisson PRO](https://redisson.pro)__ version for **ultra-fast performance** and **support by SLA**.
+
+### 12-May-2021 - 3.15.5 released
+
+Feature - `discard()` method added to `RBatch` object  
+Feature - `broadcastSessionUpdates` setting added to Tomcat Session Manager  
+
+Fixed - no error if jcache has wrong configuration in yaml format  
+Fixed - frequent Redis master failover causes memory leak in `IdleConnectionWatcher`  
+Fixed - `RedisStreamCommands.xGroupDelConsumer()` method in Spring Data module uses incorrect Redis command  
+Fixed - `RLock` can't be acquired anymore if pubsub connection limit was reached (thanks to @zhwq1216)  
+Fixed - PubSub Lock entries memory-leak during Lock acquisition (thanks to @zhwq1216)  
+Fixed - dns monitor shouldn't use IP addresses as hostnames  
+Fixed - failover handling stops to work if Redis Cluster node returned empty topology  
+Fixed - `mGet()` and `mSet()` methods of Spring Data `RedissonConnection` object throw CROSSSLOT error  
+Fixed - `touch()`, `mDel()`, `mUnlink()`, `expire()`, `pExpire()`, `expireAt()`, `pExpireAt()`, `persist()` methods of Spring Data `ReactiveKeyCommands` interface should be executed as write operation  
+Fixed - RMap.computeIfPresent() doesn't update mutable objects  
+Fixed - `MapReduce` timeout isn't applied if `ExecutorService` node is down  
+Fixed - Redisson tries reconnect to Redis nodes which marked as shutdown by topology manager  
 
 ### 20-Apr-2021 - 3.15.4 released
 
