@@ -15,7 +15,7 @@
  */
 package org.redisson.jcache;
 
-import com.fasterxml.jackson.core.JacksonException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.redisson.Redisson;
 import org.redisson.config.Config;
 
@@ -103,7 +103,7 @@ public class JCachingProvider implements CachingProvider {
             } else {
                 throw new FileNotFoundException("/redisson-jcache.yaml");
             }
-        } catch (JacksonException e) {
+        } catch (JsonProcessingException e) {
             throw new CacheException(e);
         } catch (IOException e) {
             try {
