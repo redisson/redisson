@@ -202,6 +202,11 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
 
         RPromise<V> result = new RedissonPromise<>();
         future.onComplete((value, e) -> {
+            if (e != null) {
+                result.tryFailure(new CacheException(e));
+                return;
+            }
+
             if (value == null) {
                 cacheManager.getStatBean(this).addMisses(1);
                 if (config.isReadThrough()) {
