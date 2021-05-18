@@ -180,7 +180,7 @@ public final class RedisClient {
         byte[] addr = NetUtil.createByteArrayFromIpAddressString(uri.getHost());
         if (addr != null) {
             try {
-                resolvedAddr = new InetSocketAddress(InetAddress.getByAddress(addr), uri.getPort());
+                resolvedAddr = new InetSocketAddress(InetAddress.getByAddress(uri.getHost(), addr), uri.getPort());
             } catch (UnknownHostException e) {
                 // skip
             }
