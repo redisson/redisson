@@ -28,6 +28,7 @@ import org.redisson.api.RedissonClient;
 import org.redisson.api.WorkerOptions;
 import org.redisson.client.RedisConnection;
 import org.redisson.config.RedissonNodeConfig;
+import org.redisson.config.RedissonNodeFileConfig;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.slf4j.Logger;
@@ -86,13 +87,13 @@ public final class RedissonNode {
         }
         
         String configPath = args[0];
-        RedissonNodeConfig config = null;
+        RedissonNodeFileConfig config = null;
         try {
-            config = RedissonNodeConfig.fromJSON(new File(configPath));
+            config = RedissonNodeFileConfig.fromJSON(new File(configPath));
         } catch (IOException e) {
             // trying next format
             try {
-                config = RedissonNodeConfig.fromYAML(new File(configPath));
+                config = RedissonNodeFileConfig.fromYAML(new File(configPath));
             } catch (IOException e1) {
                 log.error("Can't parse json config " + configPath, e);
                 throw new IllegalArgumentException("Can't parse yaml config " + configPath, e1);
@@ -196,6 +197,16 @@ public final class RedissonNode {
      */
     public static RedissonNode create(RedissonNodeConfig config) {
         return create(config, null);
+    }
+
+    /**
+     * Create Redisson node instance with provided config
+     *
+     * @param config of RedissonNode
+     * @return RedissonNode instance
+     */
+    public static RedissonNode create(RedissonNodeFileConfig config) {
+        return create(new RedissonNodeConfig(config), null);
     }
 
     /**
