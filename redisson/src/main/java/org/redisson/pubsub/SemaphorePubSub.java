@@ -40,8 +40,8 @@ public class SemaphorePubSub extends PublishSubscribe<RedissonLockEntry> {
         if (runnableToExecute != null) {
             runnableToExecute.run();
         }
-        
-        value.getLatch().release(message.intValue());
+
+        value.getLatch().release(Math.min(value.getLatch().getQueueLength(), message.intValue()));
     }
 
 }
