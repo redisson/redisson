@@ -3,6 +3,7 @@ package org.redisson;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -222,6 +223,39 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
         });
 
         assertThat(lockedCounter.get()).isEqualTo(iterations);
+    }
+
+    @Test
+    public void testConcurrencyLoopMax_MultiInstance() throws InterruptedException {
+        final int iterations = 10;
+        final AtomicInteger lockedCounter = new AtomicInteger();
+
+        RSemaphore s = redisson.getSemaphore("test");
+        s.trySetPermits(Integer.MAX_VALUE);
+
+        testMultiInstanceConcurrency(4, r -> {
+            for (int i = 0; i < iterations; i++) {
+                int v = Integer.MAX_VALUE;
+                if (ThreadLocalRandom.current().nextBoolean()) {
+                    v = 1;
+                }
+                try {
+                    r.getSemaphore("test").acquire(v);
+                }catch (InterruptedException e1) {
+                    // TODO Auto-generated catch block
+                    e1.printStackTrace();
+                }
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                lockedCounter.incrementAndGet();
+                r.getSemaphore("test").release(v);
+            }
+        });
+
+        assertThat(lockedCounter.get()).isEqualTo(4 * iterations);
     }
 
     @Test
