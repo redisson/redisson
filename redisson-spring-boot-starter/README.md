@@ -40,7 +40,7 @@ Downgrade `redisson-spring-data` module if necessary to support required Spring 
 
 ### 2. Add settings into `application.settings` file
 
-Common spring boot settings or Redisson settings could be used.
+Common spring boot settings.
 
 ```yaml
 # common spring boot settings
@@ -58,11 +58,13 @@ spring:
     sentinel:
       master:
       nodes:
+```
 
-    # Redisson settings
-    
-    #path to config - redisson.yaml
-    redisson: 
+or Redisson settings can be used.
+
+```yaml
+spring:
+   redisson: 
       file: classpath:redisson.yaml
       config: |
         clusterServersConfig:
