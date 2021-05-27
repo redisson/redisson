@@ -41,7 +41,7 @@ public class SemaphorePubSub extends PublishSubscribe<RedissonLockEntry> {
             runnableToExecute.run();
         }
 
-        value.getLatch().release(Math.min(value.getLatch().getQueueLength(), message.intValue()));
+        value.getLatch().release(Math.min(value.acquired(), message.intValue()));
     }
 
 }

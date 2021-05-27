@@ -20,9 +20,14 @@ import java.util.concurrent.Semaphore;
 
 import org.redisson.misc.RPromise;
 
+/**
+ *
+ * @author Nikita Koksharov
+ *
+ */
 public class RedissonLockEntry implements PubSubEntry<RedissonLockEntry> {
 
-    private int counter;
+    private volatile int counter;
 
     private final Semaphore latch;
     private final RPromise<RedissonLockEntry> promise;
@@ -32,6 +37,10 @@ public class RedissonLockEntry implements PubSubEntry<RedissonLockEntry> {
         super();
         this.latch = new Semaphore(0);
         this.promise = promise;
+    }
+
+    public int acquired() {
+        return counter;
     }
 
     public void acquire() {
