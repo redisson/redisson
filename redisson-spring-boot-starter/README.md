@@ -47,11 +47,11 @@ Common spring boot settings or Redisson settings could be used.
 
 spring:
   redis:
-    database: 
+    database:
     host:
     port:
     password:
-    ssl: 
+    ssl:
     timeout:
     cluster:
       nodes:
@@ -60,9 +60,9 @@ spring:
       nodes:
 
     # Redisson settings
-    
+
     #path to config - redisson.yaml
-    redisson: 
+    redisson:
       file: classpath:redisson.yaml
       config: |
         clusterServersConfig:
@@ -97,15 +97,46 @@ spring:
         nettyThreads: 32
         codec: !<org.redisson.codec.MarshallingCodec> {}
         transportMode: "NIO"
+      alwaysStart: false
 
 ```
 
-### 3. Available Spring Beans:
+### 3. (Optional) Allow application to start if Redis is unavailable
 
-- `RedissonClient`  
-- `RedissonRxClient`  
-- `RedissonReactiveClient`  
-- `RedisTemplate`  
-- `ReactiveRedisTemplate`  
+- Set `spring.redis.redisson.alwaysStart` to `true`.
+- Disable the auto configuration for `RedisAutoConfiguration`.
+- When creating your `CacheManager` bean, specify a `RedissonAutoConfiguration` argument to your bean method.  Invoke `.redisson()` to obtain an `Optional<RedissonClient>`. Return a `NoOpCacheManager` if not present; otherwise, return your `RedissonSpringCacheManager`.
+
+Example:
+
+```java
+@SpringBootApplication(exclude = {RedisAutoConfiguration.class})
+@EnableCaching
+public class MyApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(MyApplication.class, args);
+    }
+
+    @Bean
+    public CacheManager cacheManager(RedissonAutoConfiguration redissonAutoConfiguration) {
+        Optional<RedissonClient> redissonClient = redissonAutoConfiguration.redisson();
+        if (redissonClient.isPresent()) {
+            RedissonSpringCacheManager redissonSpringCacheManager = new RedissonSpringCacheManager(redissonClient.get());
+            return redissonSpringCacheManager;
+        } else {
+            return new NoOpCacheManager();
+        }
+    }
+}
+```
+
+### 4. Available Spring Beans:
+
+- `RedissonClient`
+- `RedissonRxClient`
+- `RedissonReactiveClient`
+- `RedisTemplate`
+- `ReactiveRedisTemplate`
 
 Consider __[Redisson PRO](https://redisson.pro)__ version for **ultra-fast performance** and **support by SLA**.

@@ -30,6 +30,8 @@ public class RedissonProperties {
 
     private String file;
 
+    private boolean alwaysStart = false;
+
     public String getConfig() {
         return config;
     }
@@ -44,5 +46,13 @@ public class RedissonProperties {
 
     public void setFile(String file) {
         this.file = file;
+    }
+
+    public boolean isAlwaysStart() {
+        return alwaysStart;
+    }
+
+    public void setAlwaysStart(boolean alwaysStart) {
+        this.alwaysStart = alwaysStart;
     }
 }

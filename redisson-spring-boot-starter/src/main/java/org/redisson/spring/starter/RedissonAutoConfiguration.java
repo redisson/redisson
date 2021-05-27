@@ -21,6 +21,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
@@ -28,6 +29,8 @@ import org.redisson.api.RedissonReactiveClient;
 import org.redisson.api.RedissonRxClient;
 import org.redisson.config.Config;
 import org.redisson.spring.data.connection.RedissonConnectionFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -63,6 +66,8 @@ public class RedissonAutoConfiguration {
     private static final String REDIS_PROTOCOL_PREFIX = "redis://";
     private static final String REDISS_PROTOCOL_PREFIX = "rediss://";
 
+    static final Logger log = LoggerFactory.getLogger(RedissonAutoConfiguration.class);
+
     @Autowired(required = false)
     private List<RedissonAutoConfigurationCustomizer> redissonAutoConfigurationCustomizers;
 
@@ -77,43 +82,64 @@ public class RedissonAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(name = "redisTemplate")
-    public RedisTemplate<Object, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
-        RedisTemplate<Object, Object> template = new RedisTemplate<Object, Object>();
-        template.setConnectionFactory(redisConnectionFactory);
-        return template;
+    public Optional<RedisTemplate<Object, Object>> redisTemplate(Optional<RedisConnectionFactory> redisConnectionFactory) {
+        if(redisConnectionFactory.isPresent()) {
+            RedisTemplate<Object, Object> template = new RedisTemplate<Object, Object>();
+            template.setConnectionFactory(redisConnectionFactory.get());
+            return Optional.of(template);
+        } else {
+            return Optional.empty();
+        }
     }
 
     @Bean
     @ConditionalOnMissingBean(StringRedisTemplate.class)
-    public StringRedisTemplate stringRedisTemplate(RedisConnectionFactory redisConnectionFactory) {
-        StringRedisTemplate template = new StringRedisTemplate();
-        template.setConnectionFactory(redisConnectionFactory);
-        return template;
+    public Optional<StringRedisTemplate> stringRedisTemplate(Optional<RedisConnectionFactory> redisConnectionFactory) {
+        if(redisConnectionFactory.isPresent()) {
+            StringRedisTemplate template = new StringRedisTemplate();
+            template.setConnectionFactory(redisConnectionFactory.get());
+            return Optional.of(template);
+        } else {
+            return Optional.empty();
+
+        }
     }
 
     @Bean
     @ConditionalOnMissingBean(RedisConnectionFactory.class)
-    public RedissonConnectionFactory redissonConnectionFactory(RedissonClient redisson) {
-        return new RedissonConnectionFactory(redisson);
+    public Optional<RedissonConnectionFactory> redissonConnectionFactory(Optional<RedissonClient> redisson) {
+        if(redisson.isPresent()) {
+            return Optional.of(new RedissonConnectionFactory(redisson.get()));
+        } else {
+            return Optional.empty();
+        }
     }
 
     @Bean
     @Lazy
     @ConditionalOnMissingBean(RedissonReactiveClient.class)
-    public RedissonReactiveClient redissonReactive(RedissonClient redisson) {
-        return redisson.reactive();
+    public Optional<RedissonReactiveClient> redissonReactive(Optional<RedissonClient> redisson) {
+        if(redisson.isPresent()) {
+            return Optional.of(redisson.get().reactive());
+        } else {
+            return Optional.empty();
+        }
     }
 
     @Bean
     @Lazy
     @ConditionalOnMissingBean(RedissonRxClient.class)
-    public RedissonRxClient redissonRxJava(RedissonClient redisson) {
-        return redisson.rxJava();
+    public Optional<RedissonRxClient> redissonRxJava(Optional<RedissonClient> redisson) {
+        if(redisson.isPresent()) {
+            return Optional.of(redisson.get().rxJava());
+        } else {
+            return Optional.empty();
+        }
     }
 
-    @Bean(destroyMethod = "shutdown")
+    @Bean
     @ConditionalOnMissingBean(RedissonClient.class)
-    public RedissonClient redisson() throws IOException {
+    public Optional<RedissonClient> redisson() throws IOException {
         Config config = null;
         Method clusterMethod = ReflectionUtils.findMethod(RedisProperties.class, "getCluster");
         Method timeoutMethod = ReflectionUtils.findMethod(RedisProperties.class, "getTimeout");
@@ -200,7 +226,16 @@ public class RedissonAutoConfiguration {
                 customizer.customize(config);
             }
         }
-        return Redisson.create(config);
+        try {
+            return Optional.of(Redisson.create(config));
+        } catch(Exception e) {
+            if(redissonProperties.isAlwaysStart()) {
+                log.warn("Unable to create the RedissonClient. Configuration indicates to ignore this error.", e);
+                return Optional.empty();
+            } else {
+                throw e;
+            }
+        }
     }
 
     private String[] convert(List<String> nodesObject) {
