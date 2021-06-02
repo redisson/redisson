@@ -27,10 +27,7 @@ import org.redisson.client.codec.*;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
-import org.redisson.client.protocol.convertor.BooleanNullSafeReplayConvertor;
-import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
-import org.redisson.client.protocol.convertor.DoubleReplayConvertor;
-import org.redisson.client.protocol.convertor.VoidReplayConvertor;
+import org.redisson.client.protocol.convertor.*;
 import org.redisson.client.protocol.decoder.*;
 import org.redisson.command.CommandAsyncService;
 import org.redisson.command.CommandBatchService;
@@ -50,6 +47,7 @@ import org.springframework.util.ReflectionUtils;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
@@ -2110,4 +2108,133 @@ public class RedissonConnection extends AbstractRedisConnection {
     public RedisStreamCommands streamCommands() {
         return new RedissonStreamCommands(this);
     }
+
+    private static final RedisStrictCommand<List<Object>> BITFIELD = new RedisStrictCommand<>("BITFIELD", new ObjectListReplayDecoder<>());
+
+    @Override
+    public List<Long> bitField(byte[] key, BitFieldSubCommands subCommands) {
+        List<Object> params = new ArrayList<>();
+        params.add(key);
+
+        boolean writeOp = false;
+        for (BitFieldSubCommands.BitFieldSubCommand subCommand : subCommands) {
+            String size = "u";
+            if (subCommand.getType().isSigned()) {
+                size = "i";
+            }
+            size += subCommand.getType().getBits();
+
+			String offset = "#";
+			if (subCommand.getOffset().isZeroBased()) {
+				offset = "";
+			}
+			offset += subCommand.getOffset().getValue();
+
+			if (subCommand instanceof BitFieldSubCommands.BitFieldGet) {
+			    params.add("GET");
+			    params.add(size);
+			    params.add(offset);
+			} else if (subCommand instanceof BitFieldSubCommands.BitFieldSet) {
+			    writeOp = true;
+			    params.add("SET");
+			    params.add(size);
+			    params.add(offset);
+                params.add(((BitFieldSubCommands.BitFieldSet) subCommand).getValue());
+			} else if (subCommand instanceof BitFieldSubCommands.BitFieldIncrBy) {
+			    writeOp = true;
+			    params.add("INCRBY");
+			    params.add(size);
+			    params.add(offset);
+                params.add(((BitFieldSubCommands.BitFieldIncrBy) subCommand).getValue());
+
+                BitFieldSubCommands.BitFieldIncrBy.Overflow overflow = ((BitFieldSubCommands.BitFieldIncrBy) subCommand).getOverflow();
+                if (overflow != null) {
+                    params.add("OVERFLOW");
+                    params.add(overflow);
+                }
+			}
+		}
+
+        if (writeOp) {
+            return write(key, StringCodec.INSTANCE, BITFIELD, params.toArray());
+        }
+        return read(key, StringCodec.INSTANCE, BITFIELD, params.toArray());
+    }
+
+    @Override
+    public Long exists(byte[]... keys) {
+        return read(keys[0], StringCodec.INSTANCE, RedisCommands.EXISTS_LONG, Arrays.asList(keys).toArray());
+    }
+
+    @Override
+    public Long touch(byte[]... keys) {
+        return read(keys[0], StringCodec.INSTANCE, RedisCommands.TOUCH_LONG, Arrays.asList(keys).toArray());
+    }
+
+    private static final RedisStrictCommand<ValueEncoding> OBJECT_ENCODING = new RedisStrictCommand<ValueEncoding>("OBJECT", "ENCODING", new Convertor<ValueEncoding>() {
+        @Override
+        public ValueEncoding convert(Object obj) {
+            return ValueEncoding.of((String) obj);
+        }
+    });
+
+    @Override
+    public ValueEncoding encodingOf(byte[] key) {
+        Assert.notNull(key, "Key must not be null!");
+        return read(key, StringCodec.INSTANCE, OBJECT_ENCODING, key);
+    }
+
+    private static final RedisStrictCommand<Duration> OBJECT_IDLETIME = new RedisStrictCommand<>("OBJECT", "IDLETIME", new Convertor<Duration>() {
+        @Override
+        public Duration convert(Object obj) {
+            return Duration.ofSeconds((Long)obj);
+        }
+    });
+
+    @Override
+    public Duration idletime(byte[] key) {
+        Assert.notNull(key, "Key must not be null!");
+        return read(key, StringCodec.INSTANCE, OBJECT_IDLETIME, key);
+    }
+
+    private static final RedisStrictCommand<Long> OBJECT_REFCOUNT = new RedisStrictCommand<Long>("OBJECT", "REFCOUNT");
+
+    @Override
+    public Long refcount(byte[] key) {
+        Assert.notNull(key, "Key must not be null!");
+        return read(key, StringCodec.INSTANCE, OBJECT_REFCOUNT, key);
+    }
+
+    private static final RedisStrictCommand<Long> BITPOS = new RedisStrictCommand<>("BITPOS");
+
+    @Override
+    public Long bitPos(byte[] key, boolean bit, org.springframework.data.domain.Range<Long> range) {
+		Assert.notNull(key, "Key must not be null!");
+		Assert.notNull(range, "Range must not be null! Use Range.unbounded() instead.");
+
+        List<Object> params = new ArrayList<>();
+        params.add(key);
+        if (bit) {
+            params.add(1);
+        } else {
+            params.add(0);
+        }
+        if (range.getLowerBound().isBounded()) {
+            params.add(range.getLowerBound().getValue().get());
+            if (range.getUpperBound().isBounded()) {
+                params.add(range.getUpperBound().getValue().get());
+            }
+        }
+
+		return read(key, StringCodec.INSTANCE, BITPOS, params.toArray());
+    }
+
+    @Override
+    public void restore(byte[] key, long ttlInMillis, byte[] serializedValue, boolean replace) {
+        if (replace) {
+            write(key, StringCodec.INSTANCE, RedisCommands.RESTORE, key, ttlInMillis, serializedValue, "REPLACE");
+        }
+        restore(key, ttlInMillis, serializedValue);
+    }
+
 }
