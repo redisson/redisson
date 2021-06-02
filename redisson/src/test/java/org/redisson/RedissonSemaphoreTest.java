@@ -179,6 +179,8 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
     @Test
     public void testDrainPermits() throws InterruptedException {
         RSemaphore s = redisson.getSemaphore("test");
+        assertThat(s.drainPermits()).isZero();
+
         s.trySetPermits(10);
         s.acquire(3);
 

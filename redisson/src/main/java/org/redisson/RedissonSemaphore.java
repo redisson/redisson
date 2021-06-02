@@ -15,16 +15,10 @@
  */
 package org.redisson;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-
+import io.netty.util.Timeout;
+import io.netty.util.TimerTask;
 import org.redisson.api.RFuture;
 import org.redisson.api.RSemaphore;
-import org.redisson.client.codec.IntegerCodec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
@@ -33,8 +27,12 @@ import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 import org.redisson.pubsub.SemaphorePubSub;
 
-import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.concurrent.Semaphore}.
@@ -449,7 +447,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
 
     @Override
     public RFuture<Integer> drainPermitsAsync() {
-        return commandExecutor.evalWriteAsync(getRawName(), IntegerCodec.INSTANCE, RedisCommands.EVAL_LONG,
+        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
                 "local value = redis.call('get', KEYS[1]); " +
                 "if (value == false or value == 0) then " +
                     "return 0; " +
