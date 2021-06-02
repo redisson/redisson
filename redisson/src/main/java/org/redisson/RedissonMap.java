@@ -15,22 +15,9 @@
  */
 package org.redisson;
 
-import java.math.BigDecimal;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-
-import org.redisson.api.MapOptions;
+import io.netty.buffer.ByteBuf;
+import org.redisson.api.*;
 import org.redisson.api.MapOptions.WriteMode;
-import org.redisson.api.RCountDownLatch;
-import org.redisson.api.RFuture;
-import org.redisson.api.RLock;
-import org.redisson.api.RMap;
-import org.redisson.api.RPermitExpirableSemaphore;
-import org.redisson.api.RReadWriteLock;
-import org.redisson.api.RSemaphore;
-import org.redisson.api.RedissonClient;
 import org.redisson.api.mapreduce.RMapReduce;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
@@ -50,7 +37,11 @@ import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.buffer.ByteBuf;
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.concurrent.ConcurrentMap}
@@ -529,8 +520,39 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     public RFuture<Boolean> containsKeyAsync(Object key) {
         checkKey(key);
 
+        RPromise<V> promise = new RedissonPromise<>();
+        return containsKeyAsync(key, promise);
+    }
+
+    protected RFuture<Boolean> containsKeyAsync(Object key, RPromise<V> promise) {
         String name = getRawName(key);
-        return commandExecutor.readAsync(name, codec, RedisCommands.HEXISTS, name, encodeMapKey(key));
+        RFuture<Boolean> future =  commandExecutor.readAsync(name, codec, RedisCommands.HEXISTS, name, encodeMapKey(key));
+        if (hasNoLoader()) {
+            return future;
+        }
+
+        RPromise<Boolean> result = new RedissonPromise<>();
+        future.onComplete((res, e) -> {
+            if (e != null) {
+                result.tryFailure(e);
+                return;
+            }
+
+            if (!res) {
+                loadValue((K) key, promise, false);
+                promise.onComplete((r, ex) -> {
+                    if (ex != null) {
+                        result.tryFailure(ex);
+                        return;
+                    }
+
+                    result.trySuccess(r != null);
+                });
+            } else {
+                result.trySuccess(res);
+            }
+        });
+        return result;
     }
 
     @Override
@@ -1229,7 +1251,15 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     private void checkAndLoadValue(RPromise<Void> result, AtomicInteger counter, Iterator<? extends K> iter,
             K key, Map<K, V> loadedEntires) {
-        containsKeyAsync(key).onComplete((res, e) -> {
+        RPromise<V> valuePromise = new RedissonPromise<>();
+        valuePromise.onComplete((r, e) -> {
+            if (loadedEntires != null && r != null) {
+                loadedEntires.put(key, r);
+            }
+        });
+
+        RFuture<Boolean> future = containsKeyAsync(key, valuePromise);
+        future.onComplete((res, e) -> {
             if (e != null) {
                 result.tryFailure(e);
                 return;

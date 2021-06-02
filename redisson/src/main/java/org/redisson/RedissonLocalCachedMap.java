@@ -202,7 +202,17 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 return RedissonPromise.newSucceededFuture(false);
             }
 
-            return super.containsKeyAsync(key);
+            RPromise<V> promise = new RedissonPromise<>();
+            promise.onComplete((value, e) -> {
+                if (e != null) {
+                    return;
+                }
+
+                if (storeCacheMiss || value != null) {
+                    cachePut(cacheKey, key, value);
+                }
+            });
+            return containsKeyAsync(key, promise);
         }
         return RedissonPromise.newSucceededFuture(true);
     }
