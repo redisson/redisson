@@ -64,6 +64,7 @@ or Redisson settings can be used.
 
 ```yaml
 spring:
+  redis:
    redisson: 
       file: classpath:redisson.yaml
       config: |
