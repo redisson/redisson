@@ -29,7 +29,10 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.NumberConvertor;
-import org.redisson.client.protocol.decoder.*;
+import org.redisson.client.protocol.decoder.MapKeyDecoder;
+import org.redisson.client.protocol.decoder.ObjectMapEntryReplayDecoder;
+import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder;
+import org.redisson.client.protocol.decoder.ObjectSetReplayDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.eviction.EvictionScheduler;
 import org.redisson.misc.RPromise;
@@ -197,9 +200,28 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         checkKey(key);
         
         CacheKey cacheKey = localCacheView.toCacheKey(key);
-        if (!cache.containsKey(cacheKey)) {
+        CacheValue cacheValue = cache.get(cacheKey);
+        if (cacheValue == null) {
             if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
-                return RedissonPromise.newSucceededFuture(false);
+                if (hasNoLoader()) {
+                    return RedissonPromise.newSucceededFuture(false);
+                }
+
+                RPromise<Boolean> result = new RedissonPromise<>();
+                RPromise<V> valuePromise = new RedissonPromise<>();
+                loadValue((K) key, valuePromise, false);
+                valuePromise.onComplete((value, ex) -> {
+                    if (ex != null) {
+                        result.tryFailure(ex);
+                        return;
+                    }
+
+                    if (storeCacheMiss || value != null) {
+                        cachePut(cacheKey, key, value);
+                    }
+                    result.trySuccess(value != null);
+                });
+                return result;
             }
 
             RPromise<V> promise = new RedissonPromise<>();
@@ -214,7 +236,8 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             });
             return containsKeyAsync(key, promise);
         }
-        return RedissonPromise.newSucceededFuture(true);
+
+        return RedissonPromise.newSucceededFuture(cacheValue.getValue() != null);
     }
 
     @Override
@@ -243,7 +266,23 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         }
 
         if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
-            return RedissonPromise.newSucceededFuture(null);
+            if (hasNoLoader()) {
+                return RedissonPromise.newSucceededFuture(null);
+            }
+
+            RPromise<V> result = new RedissonPromise<>();
+            loadValue((K) key, result, false);
+            result.onComplete((value, ex) -> {
+                if (ex != null) {
+                    result.tryFailure(ex);
+                    return;
+                }
+
+                if (storeCacheMiss || value != null) {
+                    cachePut(cacheKey, key, value);
+                }
+            });
+            return result;
         }
 
         RFuture<V> future = super.getAsync((K) key);
@@ -591,11 +630,30 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             }
         }
 
+        RPromise<Map<K, V>> promise = new RedissonPromise<>();
         if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
-            return RedissonPromise.newSucceededFuture(result);
+            if (hasNoLoader()) {
+                return RedissonPromise.newSucceededFuture(result);
+            }
+
+            Set<K> newKeys = new HashSet<>(keys);
+            newKeys.removeAll(result.keySet());
+
+            if (!newKeys.isEmpty()) {
+                loadAllAsync(newKeys, false, 1, result).onComplete((r, ex) -> {
+                    if (ex != null) {
+                        promise.tryFailure(ex);
+                        return;
+                    }
+                    promise.trySuccess(result);
+                });
+            } else {
+                promise.trySuccess(result);
+            }
+
+            return promise;
         }
 
-        RPromise<Map<K, V>> promise = new RedissonPromise<Map<K, V>>();
         RFuture<Map<K, V>> future = super.getAllAsync(mapKeys);
         future.onComplete((map, e) -> {
             if (e != null) {

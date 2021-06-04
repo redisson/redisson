@@ -91,6 +91,38 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         
     }
 
+    @Test
+    public void testMapLoaderGet() {
+        Map<String, String> cache = new HashMap<>();
+        cache.put("1", "11");
+        cache.put("2", "22");
+        cache.put("3", "33");
+
+        LocalCachedMapOptions<String, String> options = LocalCachedMapOptions.<String, String>defaults()
+                                                        .storeMode(LocalCachedMapOptions.StoreMode.LOCALCACHE).loader(createMapLoader(cache));
+        RMap<String, String> map =  redisson.getLocalCachedMap("test", options);
+
+        assertThat(map.size()).isEqualTo(0);
+        assertThat(map.get("1")).isEqualTo("11");
+        assertThat(map.size()).isEqualTo(1);
+        assertThat(map.get("0")).isNull();
+        map.put("0", "00");
+        assertThat(map.get("0")).isEqualTo("00");
+        assertThat(map.size()).isEqualTo(2);
+
+        assertThat(map.containsKey("2")).isTrue();
+        assertThat(map.size()).isEqualTo(3);
+
+        Map<String, String> s = map.getAll(new HashSet<>(Arrays.asList("1", "2", "9", "3")));
+        Map<String, String> expectedMap = new HashMap<>();
+        expectedMap.put("1", "11");
+        expectedMap.put("2", "22");
+        expectedMap.put("3", "33");
+        assertThat(s).isEqualTo(expectedMap);
+        assertThat(map.size()).isEqualTo(4);
+        destroy(map);
+    }
+
     @Override
     protected <K, V> RMap<K, V> getMap(String name) {
         return redisson.getLocalCachedMap(name, LocalCachedMapOptions.<K, V>defaults());
@@ -328,7 +360,9 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         
         assertThat(map2.get("1")).isEqualTo(1);
         assertThat(map2.get("2")).isEqualTo(2);
-        
+
+        Thread.sleep(50);
+
         assertThat(cache1.size()).isEqualTo(2);
         assertThat(cache2.size()).isEqualTo(2);
 

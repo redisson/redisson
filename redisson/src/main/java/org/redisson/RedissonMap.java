@@ -623,6 +623,11 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                 newKeys.removeAll(res.keySet());
                 
                 loadAllAsync(newKeys, false, 1, res).onComplete((r, ex) -> {
+                    if (ex != null) {
+                        result.tryFailure(ex);
+                        return;
+                    }
+
                     result.trySuccess(res);
                 });
             } else {
@@ -1212,7 +1217,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return loadAllAsync((Iterable<K>) keys, replaceExistingValues, parallelism, null);
     }
     
-    private RFuture<Void> loadAllAsync(Iterable<? extends K> keys, boolean replaceExistingValues, int parallelism, Map<K, V> loadedEntires) {
+    protected RFuture<Void> loadAllAsync(Iterable<? extends K> keys, boolean replaceExistingValues, int parallelism, Map<K, V> loadedEntires) {
         if (parallelism < 1) {
             throw new IllegalArgumentException("parallelism can't be lower than 1");
         }
