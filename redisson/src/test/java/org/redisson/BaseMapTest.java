@@ -127,7 +127,7 @@ public abstract class BaseMapTest extends BaseTest {
 
     }
     
-    private void destroy(RMap<?, ?> map) {
+    protected void destroy(RMap<?, ?> map) {
         if (map instanceof RDestroyable) {
             ((RDestroyable) map).destroy();
         }
@@ -1479,6 +1479,9 @@ public abstract class BaseMapTest extends BaseTest {
         map.put("0", "00");
         assertThat(map.get("0")).isEqualTo("00");
         assertThat(map.size()).isEqualTo(2);
+
+        assertThat(map.containsKey("2")).isTrue();
+        assertThat(map.size()).isEqualTo(3);
         
         Map<String, String> s = map.getAll(new HashSet<>(Arrays.asList("1", "2", "9", "3")));
         Map<String, String> expectedMap = new HashMap<>();
