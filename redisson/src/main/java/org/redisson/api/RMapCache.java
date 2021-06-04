@@ -56,7 +56,6 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V>, RDest
      *
      * @param maxSize - max size
      * @param mode - eviction mode
-     * @return void
      */
     void setMaxSize(int maxSize, EvictionMode mode);
 

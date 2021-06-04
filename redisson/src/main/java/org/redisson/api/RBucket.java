@@ -139,7 +139,6 @@ public interface RBucket<V> extends RExpirable, RBucketAsync<V> {
      * Requires <b>Redis 6.0.0 and higher.</b>
      *
      * @param value - value to set
-     * @return void
      */
     void setAndKeepTTL(V value);
 
