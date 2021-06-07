@@ -95,7 +95,12 @@ public class RedissonPriorityQueueTest extends BaseTest {
         list.add("5");
         list.add("3");
 
-        list.removeIf(value -> value.equals("2"));
+        for (Iterator<String> iterator = list.iterator(); iterator.hasNext();) {
+            String value = iterator.next();
+            if (value.equals("2")) {
+                iterator.remove();
+            }
+        }
 
         assertThat(list).contains("1", "4", "5", "3");
 

@@ -92,7 +92,7 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
         RFuture<Void> future = executeMapperAsync(resultMapName, null);
         if (timeout > 0) {
             commandExecutor.getConnectionManager().newTimeout(task -> {
-                promise.cancel(true);
+                promise.tryFailure(new MapReduceTimeoutException());
             }, timeout, TimeUnit.MILLISECONDS);
         }
 
