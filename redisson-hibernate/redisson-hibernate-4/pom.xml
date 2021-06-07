@@ -19,12 +19,12 @@
          <artifactId>hibernate-core</artifactId>
          <version>4.3.11.Final</version>
          <optional>true</optional>
-        <exclusions>
-            <exclusion>
-                <groupId>com.sun</groupId>
-                <artifactId>tools</artifactId>
-            </exclusion>
-         </exclusions>
+         <exclusions>
+             <exclusion>
+                 <groupId>com.sun</groupId>
+                 <artifactId>tools</artifactId>
+             </exclusion>
+          </exclusions>
        </dependency>
 
        <dependency>
@@ -32,12 +32,6 @@
          <artifactId>hibernate-testing</artifactId>
          <version>4.3.11.Final</version>
          <scope>test</scope>
-        <exclusions>
-            <exclusion>
-                <groupId>com.sun</groupId>
-                <artifactId>tools</artifactId>
-            </exclusion>
-         </exclusions>
        </dependency>
     </dependencies>
 
