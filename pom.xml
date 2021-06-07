@@ -19,7 +19,7 @@
     <properties>
         <maven.test.skip>true</maven.test.skip>
         <source.version>1.8</source.version>
-        <test.source.version>1.8</test.source.version>
+        <javadoc.version>8</javadoc.version>
         <release.version>8</release.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
@@ -149,7 +149,56 @@
       <testOutputDirectory>${basedir}/target/test-classes</testOutputDirectory>
       <sourceDirectory>${basedir}/src/main/java</sourceDirectory>
       <testSourceDirectory>${basedir}/src/test/java</testSourceDirectory>
+      
+      <plugins>
+          <plugin>
+         	<groupId>org.sonatype.plugins</groupId>
+         	<artifactId>nexus-staging-maven-plugin</artifactId>
+         	<version>1.6.8</version>
+         	<extensions>true</extensions>
+                <configuration>
+                    <serverId>ossrepo</serverId>
+                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                    <stagingProgressTimeoutMinutes>15</stagingProgressTimeoutMinutes>
+ 		</configuration>
+          </plugin>
 
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-release-plugin</artifactId>
+            <version>2.5.3</version>
+            <configuration>
+                <autoVersionSubmodules>true</autoVersionSubmodules>
+                <useReleaseProfile>true</useReleaseProfile>
+                <releaseProfiles>release</releaseProfiles>
+                <goals>deploy</goals>
+            </configuration>
+          </plugin>
+
+          <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-enforcer-plugin</artifactId>
+              <version>3.0.0-M3</version>
+              <executions>
+                  <execution>
+                      <id>enforce-maven</id>
+                      <goals>
+                          <goal>enforce</goal>
+                      </goals>
+                      <configuration>
+                          <rules>
+                              <requireMavenVersion>
+                                  <version>3.0.5</version>
+                              </requireMavenVersion>
+                          </rules>
+                      </configuration>
+                  </execution>
+              </executions>
+          </plugin>
+      </plugins>
+
+      <pluginManagement>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -167,19 +216,6 @@
                     </archive>
                 </configuration>
             </plugin>
-
-       	<plugin>
-       		<groupId>org.sonatype.plugins</groupId>
-       		<artifactId>nexus-staging-maven-plugin</artifactId>
-       		<version>1.6.8</version>
-       		<extensions>true</extensions>
-       		<configuration>
-       			<serverId>ossrepo</serverId>
-       			<nexusUrl>https://oss.sonatype.org/</nexusUrl>
-       			<autoReleaseAfterClose>true</autoReleaseAfterClose>
-                <stagingProgressTimeoutMinutes>15</stagingProgressTimeoutMinutes>
-       		</configuration>
-       	</plugin>
 
 <!--
             <plugin>
@@ -226,50 +262,22 @@
             </plugin>
 -->
 
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-release-plugin</artifactId>
-            <version>2.5.3</version>
-   		<configuration>
-   			<autoVersionSubmodules>true</autoVersionSubmodules>
-   			<useReleaseProfile>true</useReleaseProfile>
-   			<releaseProfiles>release</releaseProfiles>
-   			<goals>deploy</goals>
-   		</configuration>
-            </plugin>
-
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
                     <source>${source.version}</source>
                     <target>${source.version}</target>
-<!--
                     <release>${release.version}</release>
--->
                     <optimize>true</optimize>
                     <showDeprecation>true</showDeprecation>
                 </configuration>
-                <executions>
-                    <execution>
-                        <id>default-testCompile</id>
-                        <phase>process-test-sources</phase>
-                        <goals>
-                            <goal>testCompile</goal>
-                        </goals>
-                        <configuration>
-                            <fork>true</fork>
-                            <source>${test.source.version}</source>
-                            <target>${test.source.version}</target>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
 
             <plugin>
          	<groupId>org.apache.maven.plugins</groupId>
          	<artifactId>maven-javadoc-plugin</artifactId>
-         	<version>3.2.0</version>
+         	<version>3.3.0</version>
          	<executions>
                    <execution>
                      <id>attach-javadocs</id>
@@ -279,33 +287,15 @@
                    </execution>
          	</executions>
                 <configuration>
+                    <source>${javadoc.version}</source>
                     <level>public</level>
                     <doclint>none</doclint>
                     <quiet>true</quiet>
                 </configuration>
             </plugin>
 
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-enforcer-plugin</artifactId>
-                <version>3.0.0-M3</version>
-                <executions>
-                    <execution>
-                        <id>enforce-maven</id>
-                        <goals>
-                            <goal>enforce</goal>
-                        </goals>
-                        <configuration>
-                            <rules>
-                                <requireMavenVersion>
-                                    <version>3.0.5</version>
-                                </requireMavenVersion>
-                            </rules>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
+      </pluginManagement>
   </build>
 
 </project>
