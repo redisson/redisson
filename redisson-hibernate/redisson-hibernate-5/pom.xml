@@ -19,6 +19,12 @@
          <artifactId>hibernate-core</artifactId>
          <version>5.1.16.Final</version>
          <optional>true</optional>
+         <exclusions>
+             <exclusion>
+                 <groupId>com.sun</groupId>
+                 <artifactId>tools</artifactId>
+             </exclusion>
+          </exclusions>
        </dependency>
 
        <dependency>
