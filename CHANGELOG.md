@@ -3,6 +3,19 @@ Redisson Releases History
 
 Consider __[Redisson PRO](https://redisson.pro)__ version for **ultra-fast performance** and **support by SLA**.
 
+### 07-Jun-2021 - 3.15.6 released
+
+Fixed - `RedisSentinel.getMaster()` method throws NPE  
+Fixed - `RSemaphore.drainPermits()` throws `ClassCastException`  
+Fixed - missed implementation of few methods in Spring Data's RedissonConnection  
+Fixed - `RLocalCachedMap.containsKey()` method doesn't invoke map loader  
+Fixed - `RSemaphore` permits can't be acquired due to "Maximum permit count exceeded" error  
+Fixed - `RedissonNode` unable to start due to `ClassNotFoundException`  
+Fixed - SENTINEL SENTINELS command timeout (thanks to @zhwq1216)  
+Fixed - `JCachingProvider` shouldn't depend on class from Jackson 2.12.x  
+Fixed - `JCache.get()` method swallows Redis errors
+Fixed - `RLocalCachedMap` doesn't used MapLoader if storeMode = LOCALCACHE  
+
 ### 12-May-2021 - 3.15.5 released
 
 Feature - `discard()` method added to `RBatch` object  
