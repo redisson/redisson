@@ -21,4 +21,4 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-maven-
     - name: Build with Maven
-      run: mvn -X -B verify --file pom.xml
+      run: mvn -B verify --file pom.xml
