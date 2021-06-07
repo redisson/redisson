@@ -250,12 +250,12 @@ public class SentinelRedisNode implements RedisSentinel, RedisSentinelAsync {
 
     @Override
     public RFuture<Map<String, String>> getMasterAsync(String masterName) {
-        return executeAsync(null, null, -1, RedisCommands.SENTINEL_MASTER, masterName);
+        return executeAsync(null, StringCodec.INSTANCE, -1, RedisCommands.SENTINEL_MASTER, masterName);
     }
 
     @Override
     public RFuture<Void> failoverAsync(String masterName) {
-        return executeAsync(null, null, -1, RedisCommands.SENTINEL_FAILOVER, masterName);
+        return executeAsync(null, StringCodec.INSTANCE, -1, RedisCommands.SENTINEL_FAILOVER, masterName);
     }
 
     @Override
