@@ -66,10 +66,10 @@ public class RedissonBlockingDequeTest extends BaseTest {
     @Test
     public void testPollLastAndOfferFirstTo() throws InterruptedException {
         RBlockingDeque<String> blockingDeque = redisson.getBlockingDeque("blocking_deque");
-        long start = System.currentTimeMillis();
-        String redisTask = blockingDeque.pollLastAndOfferFirstTo("deque", 1, TimeUnit.SECONDS);
-        assertThat(System.currentTimeMillis() - start).isBetween(950L, 1100L);
-        assertThat(redisTask).isNull();
+        Awaitility.await().between(Duration.ofMillis(1000), Duration.ofMillis(1200)).untilAsserted(() -> {
+            String redisTask = blockingDeque.pollLastAndOfferFirstTo("deque", 1, TimeUnit.SECONDS);
+            assertThat(redisTask).isNull();
+        });
     }
     
     @Test
