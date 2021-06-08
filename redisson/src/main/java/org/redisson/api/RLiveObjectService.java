@@ -158,6 +158,8 @@ public interface RLiveObjectService {
     /**
      * Returns proxied attached objects for the detached objects. Stores all the
      * <b>NON NULL</b> field values.
+     * <p>
+     * Executed in a batch mode.
      *
      * @param <T> Entity type
      * @param detachedObjects - not proxied objects
