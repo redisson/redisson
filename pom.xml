@@ -59,6 +59,7 @@
         <module>redisson-spring-boot-starter</module>
         <module>redisson-mybatis</module>
         <module>redisson-hibernate</module>
+        <module>redisson-helidon</module>
     </modules>
 
     <profiles>
