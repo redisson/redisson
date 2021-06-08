@@ -14,7 +14,7 @@ Maven
      <dependency>
          <groupId>org.redisson</groupId>
          <artifactId>redisson-spring-boot-starter</artifactId>
-         <version>3.15.5</version>
+         <version>3.15.6</version>
      </dependency>
 ```
 
@@ -40,7 +40,7 @@ Downgrade `redisson-spring-data` module if necessary to support required Spring 
 
 ### 2. Add settings into `application.settings` file
 
-Common spring boot settings.
+Using common spring boot settings:
 
 ```yaml
 # common spring boot settings
@@ -60,7 +60,7 @@ spring:
       nodes:
 ```
 
-or Redisson settings can be used.
+Using Redisson settings:
 
 ```yaml
 spring:
