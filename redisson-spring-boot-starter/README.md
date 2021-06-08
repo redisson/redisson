@@ -21,7 +21,7 @@ Maven
 Gradle
 
 ```groovy
-     compile 'org.redisson:redisson-spring-boot-starter:3.15.5'
+     compile 'org.redisson:redisson-spring-boot-starter:3.15.6'
 ```
 
 
