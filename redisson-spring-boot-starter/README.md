@@ -43,8 +43,6 @@ Downgrade `redisson-spring-data` module if necessary to support required Spring 
 Using common spring boot settings:
 
 ```yaml
-# common spring boot settings
-
 spring:
   redis:
     database: 
