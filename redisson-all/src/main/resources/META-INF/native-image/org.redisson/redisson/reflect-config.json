@@ -462,15 +462,7 @@
 },
 {
   "name":"org.redisson.executor.RemoteExecutorService",
-  "methods":[
-    {"name":"executeCallable","parameterTypes":["org.redisson.executor.params.TaskParameters"] }, 
-    {"name":"executeRunnable","parameterTypes":["org.redisson.executor.params.TaskParameters"] }, 
-    {"name":"schedule","parameterTypes":["org.redisson.executor.params.ScheduledCronExpressionParameters"] }, 
-    {"name":"scheduleAtFixedRate","parameterTypes":["org.redisson.executor.params.ScheduledAtFixedRateParameters"] }, 
-    {"name":"scheduleCallable","parameterTypes":["org.redisson.executor.params.ScheduledParameters"] }, 
-    {"name":"scheduleRunnable","parameterTypes":["org.redisson.executor.params.ScheduledParameters"] }, 
-    {"name":"scheduleWithFixedDelay","parameterTypes":["org.redisson.executor.params.ScheduledWithFixedDelayParameters"] }
-  ]
+  "allPublicMethods":true
 },
 {
   "name":"org.redisson.executor.RemoteExecutorServiceAsync",
