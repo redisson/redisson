@@ -113,12 +113,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-          <groupId>io.micronaut.test</groupId>
-          <artifactId>micronaut-test-junit5</artifactId>
-          <version>2.0.0</version>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>1.2.3</version>
