@@ -11,7 +11,7 @@
     <artifactId>redisson-tomcat</artifactId>
     <packaging>pom</packaging>
 
-    <name>Redisson/Tomcat</name>
+    <name>Redisson/Tomcat Session Manager</name>
 
     <modules>
         <module>redisson-tomcat-7</module>
