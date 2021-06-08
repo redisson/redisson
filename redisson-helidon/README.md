@@ -11,17 +11,17 @@ Supports Helidon 1.4.x - 2.3.x
 Maven  
 
 ```xml  
-     <dependency>
-         <groupId>org.redisson</groupId>
-         <artifactId>redisson-helidon</artifactId>
-         <version>3.16.0</version>
-     </dependency>
+<dependency>
+    <groupId>org.redisson</groupId>
+    <artifactId>redisson-helidon</artifactId>
+    <version>3.16.0</version>
+</dependency>
 ```
 
 Gradle
 
 ```groovy
-     compile 'org.redisson:redisson-helidon:3.16.0'
+compile 'org.redisson:redisson-helidon:3.16.0'
 ```
 
 ### 2. Add settings into `META-INF/microprofile-config.properties` file
