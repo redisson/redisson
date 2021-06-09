@@ -22,6 +22,7 @@
         <javadoc.version>8</javadoc.version>
         <release.version>8</release.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
 
     <scm>
@@ -60,6 +61,7 @@
         <module>redisson-mybatis</module>
         <module>redisson-hibernate</module>
         <module>redisson-helidon</module>
+        <module>redisson-quarkus</module>
     </modules>
 
     <profiles>

@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.redisson</groupId>
+        <artifactId>redisson-quarkus-20-parent</artifactId>
+        <version>3.15.7-SNAPSHOT</version>
+        <relativePath>../</relativePath>
+    </parent>
+
+    <artifactId>redisson-quarkus-20-integration-tests</artifactId>
+
+    <name>Redisson/Quarkus v2.0.x integration Tests</name>
+
+    <dependencies>
+      <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-resteasy</artifactId>
+      </dependency>
+      <dependency>
+        <groupId>org.redisson</groupId>
+        <artifactId>redisson-quarkus-20</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-junit5</artifactId>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.rest-assured</groupId>
+        <artifactId>rest-assured</artifactId>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+          <groupId>org.jboss.logging</groupId>
+          <artifactId>commons-logging-jboss-logging</artifactId>
+          <scope>test</scope>
+      </dependency>
+    </dependencies>
+
+    <build>
+      <plugins>
+        <plugin>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-maven-plugin</artifactId>
+          <executions>
+            <execution>
+              <goals>
+                <goal>build</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </build>
+    <profiles>
+      <profile>
+        <id>native-image</id>
+        <activation>
+          <property>
+            <name>native</name>
+          </property>
+        </activation>
+        <build>
+          <plugins>
+            <plugin>
+              <artifactId>maven-surefire-plugin</artifactId>
+              <configuration>
+                <skipTests>${native.surefire.skip}</skipTests>
+              </configuration>
+            </plugin>
+            <plugin>
+              <artifactId>maven-failsafe-plugin</artifactId>
+              <executions>
+                <execution>
+                  <goals>
+                    <goal>integration-test</goal>
+                    <goal>verify</goal>
+                  </goals>
+                  <configuration>
+                    <systemPropertyVariables>
+                      <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
+                      <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                      <maven.home>${maven.home}</maven.home>
+                    </systemPropertyVariables>
+                  </configuration>
+                </execution>
+              </executions>
+            </plugin>
+          </plugins>
+        </build>
+        <properties>
+          <quarkus.package.type>native</quarkus.package.type>
+          <quarkus.native.additional-build-args>--allow-incomplete-classpath</quarkus.native.additional-build-args>
+        </properties>
+      </profile>
+    </profiles>
+</project>
