@@ -78,11 +78,11 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
     
     @Override
     protected void releaseConnection(RPromise<R> attemptPromise, RFuture<RedisConnection> connectionFuture) {
-        if (RedisCommands.EXEC.getName().equals(command.getName())) {
+        if (RedisCommands.EXEC.getName().equals(command.getName())
+                || RedisCommands.DISCARD.getName().equals(command.getName())) {
             super.releaseConnection(attemptPromise, connectionFuture);
-        }
-        if (RedisCommands.DISCARD.getName().equals(command.getName())) {
-            super.releaseConnection(attemptPromise, connectionFuture);
+        } else {
+            connectionManager.getShutdownLatch().release();
         }
     }
     
@@ -95,17 +95,13 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
         }
         if (RedisCommands.DISCARD.getName().equals(command.getName())) {
             super.handleSuccess(promise, connectionFuture, null);
-            if (executed.compareAndSet(false, true)) {
-                connectionFuture.getNow().forceFastReconnectAsync().onComplete((r, e) -> {
-                    releaseConnection(promise, connectionFuture);
-                });
-            }
             return;
         }
 
         try {
             BatchPromise<R> batchPromise = (BatchPromise<R>) promise;
             RPromise<R> sentPromise = (RPromise<R>) batchPromise.getSentPromise();
+            System.out.println("res " + res);
             super.handleSuccess(sentPromise, connectionFuture, null);
         } finally {
             latch.countDown();
