@@ -131,6 +131,8 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
     
     @Override
     protected void sendCommand(RPromise<R> attemptPromise, RedisConnection connection) {
+        connection.setQueued(true);
+
         MasterSlaveEntry msEntry = getEntry(source);
         ConnectionEntry connectionEntry = connections.get(msEntry);
 
