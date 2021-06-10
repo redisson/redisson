@@ -101,7 +101,6 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
         try {
             BatchPromise<R> batchPromise = (BatchPromise<R>) promise;
             RPromise<R> sentPromise = (RPromise<R>) batchPromise.getSentPromise();
-            System.out.println("res " + res);
             super.handleSuccess(sentPromise, connectionFuture, null);
         } finally {
             latch.countDown();
