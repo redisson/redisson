@@ -63,7 +63,7 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
         RedisConnection connection = RedisConnection.getFrom(ctx.channel());
         CommandData<?, ?> commandData = connection.getCurrentCommand();
         RFuture<String> future;
-        if (commandData == null || !commandData.isBlockingCommand()) {
+        if ((commandData == null || !commandData.isBlockingCommand()) && !connection.isQueued()) {
             future = connection.async(StringCodec.INSTANCE, RedisCommands.PING);
         } else {
             future = null;

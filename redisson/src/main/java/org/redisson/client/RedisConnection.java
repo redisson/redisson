@@ -50,6 +50,7 @@ public class RedisConnection implements RedisCommands {
 
     private volatile RPromise<Void> fastReconnect;
     private volatile boolean closed;
+    private volatile boolean queued;
     volatile Channel channel;
 
     private RPromise<?> connectionPromise;
@@ -73,6 +74,14 @@ public class RedisConnection implements RedisCommands {
         if (connectedListener != null) {
             connectedListener.run();
         }
+    }
+
+    public boolean isQueued() {
+        return queued;
+    }
+
+    public void setQueued(boolean queued) {
+        this.queued = queued;
     }
 
     public void setConnectedListener(Runnable connectedListener) {
