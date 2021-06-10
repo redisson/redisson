@@ -34,6 +34,39 @@
     <build>
       <plugins>
         <plugin>
+            <groupId>com.mycila</groupId>
+            <artifactId>license-maven-plugin</artifactId>
+            <version>4.1</version>
+            <configuration>
+                <basedir>${basedir}</basedir>
+                <header>${basedir}/../../../header.txt</header>
+                <quiet>false</quiet>
+                <failIfMissing>true</failIfMissing>
+                <aggregate>false</aggregate>
+                <includes>
+                    <include>src/main/java/</include>
+                </includes>
+                <excludes>
+                    <exclude>target/**</exclude>
+                </excludes>
+                <useDefaultExcludes>true</useDefaultExcludes>
+                <mapping>
+                    <java>JAVADOC_STYLE</java>
+                </mapping>
+                <strictCheck>true</strictCheck>
+                <useDefaultMapping>true</useDefaultMapping>
+                <encoding>UTF-8</encoding>
+            </configuration>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>check</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+
+        <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
           <configuration>
             <annotationProcessorPaths>
