@@ -556,10 +556,24 @@ public class RedissonBatchTest extends BaseTest {
         
         redisson.shutdown();
     }
-    
-    @ParameterizedTest
-@MethodSource("data")
 
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testShutdownTimeout(BatchOptions batchOptions) {
+        org.junit.jupiter.api.Assertions.assertTimeout(Duration.ofMillis(500), () -> {
+            RedissonClient redisson = createInstance();
+
+            RBatch batch = redisson.createBatch(batchOptions);
+            for (int i = 0; i < 10; i++) {
+                RFuture<Void> f = batch.getBucket("test").setAsync(123);
+            }
+            batch.execute();
+            redisson.shutdown();
+        });
+    }
+
+    @ParameterizedTest
+    @MethodSource("data")
     public void testBatchBigRequest(BatchOptions batchOptions) {
         Config config = createConfig();
         config.useSingleServer().setTimeout(15000);
