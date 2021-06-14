@@ -2,11 +2,9 @@ package org.redisson.micronaut;
 
 import io.micronaut.context.ApplicationContext;
 import io.micronaut.context.event.ApplicationEventListener;
-import io.micronaut.session.Session;
 import io.micronaut.session.event.AbstractSessionEvent;
 import io.micronaut.session.event.SessionCreatedEvent;
 import io.micronaut.session.event.SessionDeletedEvent;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RedissonClient;
 import org.redisson.micronaut.session.RedissonSession;
@@ -17,10 +15,9 @@ import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Nikita Koksharov
