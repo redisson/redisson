@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class RedissonCacheTest {
 
     @Test
-    public void test1() throws InterruptedException {
+    public void testCache() throws InterruptedException {
         Map<String, Object> map = new HashMap<>();
         map.put("redisson.threads", "10");
         map.put("redisson.single-server-config.address", "redis://127.0.0.1:6379");
