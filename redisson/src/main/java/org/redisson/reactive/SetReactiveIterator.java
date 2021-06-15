@@ -15,15 +15,12 @@
  */
 package org.redisson.reactive;
 
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
-import java.util.function.LongConsumer;
-
+import org.redisson.ScanResult;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
-import org.redisson.client.protocol.decoder.ListScanResult;
-
 import reactor.core.publisher.FluxSink;
+
+import java.util.function.Consumer;
 
 /**
  * 
@@ -35,62 +32,15 @@ public abstract class SetReactiveIterator<V> implements Consumer<FluxSink<V>> {
 
     @Override
     public void accept(FluxSink<V> emitter) {
-        emitter.onRequest(new LongConsumer() {
-            
-            private long nextIterPos;
-            private RedisClient client;
-            private AtomicLong elementsRead = new AtomicLong();
-            
-            private boolean finished;
-            private volatile boolean completed;
-            private AtomicLong readAmount = new AtomicLong();
-            
+        emitter.onRequest(new IteratorConsumer<V>(emitter) {
             @Override
-            public void accept(long value) {
-                readAmount.addAndGet(value);
-                if (completed || elementsRead.get() == 0) {
-                    nextValues(emitter);
-                    completed = false;
-                }
+            protected boolean tryAgain() {
+                return SetReactiveIterator.this.tryAgain();
             }
-            
-            protected void nextValues(FluxSink<V> emitter) {
-                scanIterator(client, nextIterPos).onComplete((res, e) -> {
-                    if (e != null) {
-                        emitter.error(e);
-                        return;
-                    }
-                    
-                    if (finished) {
-                        client = null;
-                        nextIterPos = 0;
-                        return;
-                    }
 
-                    client = res.getRedisClient();
-                    nextIterPos = res.getPos();
-
-                    for (Object val : res.getValues()) {
-                        emitter.next((V) val);
-                        elementsRead.incrementAndGet();
-                    }
-                    
-                    if (elementsRead.get() >= readAmount.get()) {
-                        emitter.complete();
-                        elementsRead.set(0);
-                        completed = true;
-                        return;
-                    }
-                    if (res.getPos() == 0 && !tryAgain()) {
-                        finished = true;
-                        emitter.complete();
-                    }
-                    
-                    if (finished || completed) {
-                        return;
-                    }
-                    nextValues(emitter);
-                });
+            @Override
+            protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
+                return SetReactiveIterator.this.scanIterator(client, nextIterPos);
             }
         });
     }
@@ -99,6 +49,6 @@ public abstract class SetReactiveIterator<V> implements Consumer<FluxSink<V>> {
         return false;
     }
     
-    protected abstract RFuture<ListScanResult<Object>> scanIterator(RedisClient client, long nextIterPos);
+    protected abstract RFuture<ScanResult<Object>> scanIterator(RedisClient client, long nextIterPos);
 
 }

@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.redisson.RedissonMap;
 import org.redisson.RedissonMultiLock;
 import org.redisson.RedissonObject;
+import org.redisson.ScanResult;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.api.RMap;
@@ -177,20 +178,28 @@ public class BaseTransactionalMap<K, V> {
         return result;
     }
     
-    protected MapScanResult<Object, Object> scanIterator(String name, RedisClient client,
+    protected ScanResult<Map.Entry<Object, Object>> scanIterator(String name, RedisClient client,
             long startPos, String pattern, int count) {
-        MapScanResult<Object, Object> res = ((RedissonMap<?, ?>) map).scanIterator(name, client, startPos, pattern, count);
+        ScanResult<Map.Entry<Object, Object>> res = ((RedissonMap<?, ?>) map).scanIterator(name, client, startPos, pattern, count);
         Map<HashValue, MapEntry> newstate = new HashMap<HashValue, MapEntry>(state);
-        for (Iterator<Object> iterator = res.getMap().keySet().iterator(); iterator.hasNext();) {
-            Object entry = iterator.next();
-            MapEntry mapEntry = newstate.remove(toKeyHash(entry));
+        Map<Object, Object> newres = null;
+        for (Iterator<Map.Entry<Object, Object>> iterator = res.getValues().iterator(); iterator.hasNext();) {
+            Object key = iterator.next();
+            MapEntry mapEntry = newstate.remove(toKeyHash(key));
             if (mapEntry != null) {
                 if (mapEntry == MapEntry.NULL) {
                     iterator.remove();
                     continue;
                 }
-                
-                res.getMap().put(entry, mapEntry.getValue());
+
+                if (newres == null) {
+                    newres = new HashMap<>();
+                    for (Entry<Object, Object> e : res.getValues()) {
+                        newres.put(e.getKey(), e.getValue());
+                    }
+                }
+
+                newres.put(key, mapEntry.getValue());
             }
         }
         
@@ -199,9 +208,20 @@ public class BaseTransactionalMap<K, V> {
                 if (entry.getValue() == MapEntry.NULL) {
                     continue;
                 }
-                
-                res.getMap().put(entry.getValue().getKey(), entry.getValue().getValue());
+
+                if (newres == null) {
+                    newres = new HashMap<>();
+                    for (Entry<Object, Object> e : res.getValues()) {
+                        newres.put(e.getKey(), e.getValue());
+                    }
+                }
+
+                newres.put(entry.getValue().getKey(), entry.getValue().getValue());
             }
+        }
+
+        if (newres != null) {
+            return new MapScanResult<>(res.getPos(), newres);
         }
 
         return res;

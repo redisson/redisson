@@ -57,4 +57,12 @@ public class ListScanResult<V> implements ScanResult<V> {
         return client;
     }
 
+    @Override
+    public String toString() {
+        return "ListScanResult{" +
+                "pos=" + pos +
+                ", values=" + values +
+                ", client=" + client +
+                '}';
+    }
 }

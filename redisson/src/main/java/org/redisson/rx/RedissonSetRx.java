@@ -20,9 +20,9 @@ import io.reactivex.rxjava3.core.Single;
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonObject;
 import org.redisson.ScanIterator;
+import org.redisson.ScanResult;
 import org.redisson.api.*;
 import org.redisson.client.RedisClient;
-import org.redisson.client.protocol.decoder.ListScanResult;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.Set}
@@ -61,7 +61,7 @@ public class RedissonSetRx<V> {
     public Flowable<V> iterator(String pattern, int count) {
         return new SetRxIterator<V>() {
             @Override
-            protected RFuture<ListScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
+            protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
                 return ((ScanIterator) instance).scanIteratorAsync(((RedissonObject) instance).getRawName(), client, nextIterPos, pattern, count);
             }
         }.create();

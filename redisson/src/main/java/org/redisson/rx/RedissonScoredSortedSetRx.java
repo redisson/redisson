@@ -15,14 +15,13 @@
  */
 package org.redisson.rx;
 
+import io.reactivex.rxjava3.core.Flowable;
 import org.redisson.RedissonScoredSortedSet;
+import org.redisson.ScanResult;
 import org.redisson.api.RFuture;
 import org.redisson.api.RObject;
 import org.redisson.api.RScoredSortedSetAsync;
 import org.redisson.client.RedisClient;
-import org.redisson.client.protocol.decoder.ListScanResult;
-
-import io.reactivex.rxjava3.core.Flowable;
 
 /**
  * 
@@ -41,7 +40,7 @@ public class RedissonScoredSortedSetRx<V>  {
     private Flowable<V> scanIteratorReactive(String pattern, int count) {
         return new SetRxIterator<V>() {
             @Override
-            protected RFuture<ListScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
+            protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
                 return ((RedissonScoredSortedSet<V>) instance).scanIteratorAsync(client, nextIterPos, pattern, count);
             }
         }.create();

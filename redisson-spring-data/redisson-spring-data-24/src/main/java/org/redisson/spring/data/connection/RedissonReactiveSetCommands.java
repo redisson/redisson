@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.reactivestreams.Publisher;
+import org.redisson.ScanResult;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.ByteArrayCodec;
@@ -267,7 +268,7 @@ public class RedissonReactiveSetCommands extends RedissonBaseReactive implements
             byte[] keyBuf = toByteArray(command.getKey());
             Flux<byte[]> flux = Flux.create(new SetReactiveIterator<byte[]>() {
                 @Override
-                protected RFuture<ListScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
+                protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
                     if (command.getOptions().getPattern() == null) {
                         return executorService.readAsync(client, keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.SSCAN, 
                                 keyBuf, nextIterPos, "COUNT", Optional.ofNullable(command.getOptions().getCount()).orElse(10L));

@@ -1,5 +1,6 @@
 package org.redisson;
 
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RBucketReactive;
@@ -7,11 +8,32 @@ import org.redisson.api.RKeysReactive;
 import org.redisson.api.RMapReactive;
 import reactor.core.publisher.Flux;
 
+import java.time.Duration;
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonKeysReactiveTest extends BaseReactiveTest {
+
+    @Test
+    public void testKeysByPatternIterator() {
+        for (int i = 0; i < 100; i++) {
+            redisson.getBucket("key" + i).set(1).block();
+        }
+
+        Flux<String> p = redisson.getKeys().getKeysByPattern(null);
+        AtomicInteger i = new AtomicInteger();
+        p.doOnNext(t -> {
+            i.incrementAndGet();
+        }).doOnSubscribe(s -> {
+            s.request(100);
+        }).subscribe();
+
+        Awaitility.await().atMost(Duration.ofSeconds(1)).untilAsserted(() -> {
+            assertThat(i.get()).isEqualTo(100);
+        });
+    }
 
     @Test
     public void testGetKeys() {

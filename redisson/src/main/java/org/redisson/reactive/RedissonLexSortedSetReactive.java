@@ -17,11 +17,10 @@ package org.redisson.reactive;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonScoredSortedSet;
+import org.redisson.ScanResult;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLexSortedSet;
 import org.redisson.client.RedisClient;
-import org.redisson.client.protocol.decoder.ListScanResult;
-
 import reactor.core.publisher.Flux;
 
 
@@ -50,7 +49,7 @@ public class RedissonLexSortedSetReactive {
     private Publisher<String> scanIteratorReactive(final String pattern, final int count) {
         return Flux.create(new SetReactiveIterator<String>() {
             @Override
-            protected RFuture<ListScanResult<Object>> scanIterator(final RedisClient client, final long nextIterPos) {
+            protected RFuture<ScanResult<Object>> scanIterator(final RedisClient client, final long nextIterPos) {
                 return ((RedissonScoredSortedSet<String>) instance).scanIteratorAsync(client, nextIterPos, pattern, count);
             }
         });

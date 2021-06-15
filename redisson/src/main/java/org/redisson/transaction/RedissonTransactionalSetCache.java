@@ -15,6 +15,15 @@
  */
 package org.redisson.transaction;
 
+import org.redisson.RedissonSetCache;
+import org.redisson.ScanResult;
+import org.redisson.api.RFuture;
+import org.redisson.api.mapreduce.RCollectionMapReduce;
+import org.redisson.client.RedisClient;
+import org.redisson.client.codec.Codec;
+import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.transaction.operation.TransactionalOperation;
+
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Date;
@@ -22,15 +31,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.redisson.RedissonSetCache;
-import org.redisson.api.RFuture;
-import org.redisson.api.mapreduce.RCollectionMapReduce;
-import org.redisson.client.RedisClient;
-import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.decoder.ListScanResult;
-import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.transaction.operation.TransactionalOperation;
 
 /**
  * 
@@ -101,7 +101,7 @@ public class RedissonTransactionalSetCache<V> extends RedissonSetCache<V> {
     }
 
     @Override
-    public ListScanResult<Object> scanIterator(String name, RedisClient client, long startPos, String pattern, int count) {
+    public ScanResult<Object> scanIterator(String name, RedisClient client, long startPos, String pattern, int count) {
         checkState();
         return transactionalSet.scanIterator(name, client, startPos, pattern, count);
     }

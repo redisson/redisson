@@ -83,7 +83,7 @@ public class RedissonMapRxIterator<K, V, M> {
                     client = res.getRedisClient();
                     nextIterPos = res.getPos();
                     
-                    for (Entry<Object, Object> entry : res.getMap().entrySet()) {
+                    for (Entry<Object, Object> entry : res.getValues()) {
                         M val = getValue(entry);
                         p.onNext(val);
                         elementsRead.incrementAndGet();
