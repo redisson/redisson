@@ -15,18 +15,15 @@
  */
 package org.redisson.reactive;
 
-import java.util.AbstractMap;
-import java.util.Map.Entry;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
-import java.util.function.LongConsumer;
-
 import org.redisson.RedissonMap;
+import org.redisson.ScanResult;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
-import org.redisson.client.protocol.decoder.MapScanResult;
-
 import reactor.core.publisher.FluxSink;
+
+import java.util.AbstractMap;
+import java.util.Map.Entry;
+import java.util.function.Consumer;
 
 /**
  * 
@@ -50,64 +47,21 @@ public class MapReactiveIterator<K, V, M> implements Consumer<FluxSink<M>> {
     
     @Override
     public void accept(FluxSink<M> emitter) {
-        emitter.onRequest(new LongConsumer() {
-
-            private long nextIterPos;
-            private RedisClient client;
-            private AtomicLong elementsRead = new AtomicLong();
-            
-            private boolean finished;
-            private volatile boolean completed;
-            private AtomicLong readAmount = new AtomicLong();
-            
+        emitter.onRequest(new IteratorConsumer<M>(emitter) {
             @Override
-            public void accept(long value) {
-                readAmount.addAndGet(value);
-                if (completed || elementsRead.get() == 0) {
-                    nextValues(emitter);
-                    completed = false;
-                }
-            };
-            
-            protected void nextValues(FluxSink<M> emitter) {
-                        scanIterator(client, nextIterPos).onComplete((res, e) -> {
-                            if (e != null) {
-                                emitter.error(e);
-                                return;
-                            }
+            protected boolean tryAgain() {
+                return MapReactiveIterator.this.tryAgain();
+            }
 
-                            if (finished) {
-                                client = null;
-                                nextIterPos = 0;
-                                return;
-                            }
+            @Override
+            protected Object transformValue(Object value) {
+                return getValue((Entry<Object, Object>) value);
+            }
 
-                            client = res.getRedisClient();
-                            nextIterPos = res.getPos();
-                            
-                            for (Entry<Object, Object> entry : res.getMap().entrySet()) {
-                                M val = getValue(entry);
-                                emitter.next(val);
-                                elementsRead.incrementAndGet();
-                            }
-                            
-                            if (elementsRead.get() >= readAmount.get()) {
-                                emitter.complete();
-                                elementsRead.set(0);
-                                completed = true;
-                                return;
-                            }
-                            if (res.getPos() == 0 && !tryAgain()) {
-                                finished = true;
-                                emitter.complete();
-                            }
-                            
-                            if (finished || completed) {
-                                return;
-                            }
-                            nextValues(emitter);
-                        });
-                    }
+            @Override
+            protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
+                return MapReactiveIterator.this.scanIterator(client, nextIterPos);
+            }
         });
     }
 
@@ -126,8 +80,8 @@ public class MapReactiveIterator<K, V, M> implements Consumer<FluxSink<M>> {
         };
     }
 
-    public RFuture<MapScanResult<Object, Object>> scanIterator(RedisClient client, long nextIterPos) {
-        return map.scanIteratorAsync(map.getRawName(), client, nextIterPos, pattern, count);
+    public RFuture<ScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
+        return (RFuture<ScanResult<Object>>) (Object) map.scanIteratorAsync(map.getRawName(), client, nextIterPos, pattern, count);
     }
 
 }

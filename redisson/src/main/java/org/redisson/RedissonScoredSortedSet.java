@@ -19,15 +19,10 @@ import org.redisson.api.*;
 import org.redisson.api.listener.ScoredSortedSetAddListener;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.RedisClient;
-import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.DoubleCodec;
-import org.redisson.client.codec.IntegerCodec;
-import org.redisson.client.codec.LongCodec;
-import org.redisson.client.codec.StringCodec;
+import org.redisson.client.codec.*;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.ScoredEntry;
-import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.iterator.RedissonBaseIterator;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
@@ -36,15 +31,8 @@ import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -499,17 +487,17 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZRANK_INT, getRawName(), encode(o));
     }
 
-    private ListScanResult<Object> scanIterator(RedisClient client, long startPos, String pattern, int count) {
-        RFuture<ListScanResult<Object>> f = scanIteratorAsync(client, startPos, pattern, count);
+    private ScanResult<Object> scanIterator(RedisClient client, long startPos, String pattern, int count) {
+        RFuture<ScanResult<Object>> f = scanIteratorAsync(client, startPos, pattern, count);
         return get(f);
     }
     
-    public RFuture<ListScanResult<Object>> scanIteratorAsync(RedisClient client, long startPos, String pattern, int count) {
+    public RFuture<ScanResult<Object>> scanIteratorAsync(RedisClient client, long startPos, String pattern, int count) {
         if (pattern == null) {
-            RFuture<ListScanResult<Object>> f = commandExecutor.readAsync(client, getRawName(), codec, RedisCommands.ZSCAN, getRawName(), startPos, "COUNT", count);
+            RFuture<ScanResult<Object>> f = commandExecutor.readAsync(client, getRawName(), codec, RedisCommands.ZSCAN, getRawName(), startPos, "COUNT", count);
             return f;
         }
-        RFuture<ListScanResult<Object>> f = commandExecutor.readAsync(client, getRawName(), codec, RedisCommands.ZSCAN, getRawName(), startPos, "MATCH", pattern, "COUNT", count);
+        RFuture<ScanResult<Object>> f = commandExecutor.readAsync(client, getRawName(), codec, RedisCommands.ZSCAN, getRawName(), startPos, "MATCH", pattern, "COUNT", count);
         return f;
     }
 
@@ -529,11 +517,11 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public Iterator<V> iterator(final String pattern, final int count) {
+    public Iterator<V> iterator(String pattern, int count) {
         return new RedissonBaseIterator<V>() {
 
             @Override
-            protected ListScanResult<Object> iterator(RedisClient client, long nextIterPos) {
+            protected ScanResult<Object> iterator(RedisClient client, long nextIterPos) {
                 return scanIterator(client, nextIterPos, pattern, count);
             }
 

@@ -18,11 +18,11 @@ package org.redisson.rx;
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonObject;
 import org.redisson.RedissonTimeSeries;
+import org.redisson.ScanResult;
 import org.redisson.api.RFuture;
 import org.redisson.api.RTimeSeries;
 import org.redisson.api.RedissonRxClient;
 import org.redisson.client.RedisClient;
-import org.redisson.client.protocol.decoder.ListScanResult;
 
 /**
  *
@@ -43,7 +43,7 @@ public class RedissonTimeSeriesRx<V> {
     public Publisher<V> iterator() {
         return new SetRxIterator<V>() {
             @Override
-            protected RFuture<ListScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
+            protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
                 return ((RedissonTimeSeries) instance).scanIteratorAsync(((RedissonObject) instance).getRawName(), client, nextIterPos, 10);
             }
         }.create();

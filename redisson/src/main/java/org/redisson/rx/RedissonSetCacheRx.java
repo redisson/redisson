@@ -19,9 +19,9 @@ import io.reactivex.rxjava3.core.Single;
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonObject;
 import org.redisson.ScanIterator;
+import org.redisson.ScanResult;
 import org.redisson.api.*;
 import org.redisson.client.RedisClient;
-import org.redisson.client.protocol.decoder.ListScanResult;
 
 /**
  *
@@ -42,7 +42,7 @@ public class RedissonSetCacheRx<V> {
     public Publisher<V> iterator() {
         return new SetRxIterator<V>() {
             @Override
-            protected RFuture<ListScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
+            protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
                 return ((ScanIterator) instance).scanIteratorAsync(((RedissonObject) instance).getRawName(), client, nextIterPos, null, 10);
             }
         }.create();

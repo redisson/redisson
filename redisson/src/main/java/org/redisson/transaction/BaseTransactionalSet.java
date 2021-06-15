@@ -19,9 +19,9 @@ import io.netty.buffer.ByteBuf;
 import org.redisson.RedissonMultiLock;
 import org.redisson.RedissonObject;
 import org.redisson.RedissonSet;
+import org.redisson.ScanResult;
 import org.redisson.api.*;
 import org.redisson.client.RedisClient;
-import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.Hash;
 import org.redisson.misc.HashValue;
@@ -152,13 +152,13 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
         return set.containsAsync(value);
     }
     
-    protected abstract ListScanResult<Object> scanIteratorSource(String name, RedisClient client,
-            long startPos, String pattern, int count);
+    protected abstract ScanResult<Object> scanIteratorSource(String name, RedisClient client,
+                                                             long startPos, String pattern, int count);
     
-    protected ListScanResult<Object> scanIterator(String name, RedisClient client,
+    protected ScanResult<Object> scanIterator(String name, RedisClient client,
             long startPos, String pattern, int count) {
-        ListScanResult<Object> res = scanIteratorSource(name, client, startPos, pattern, count);
-        Map<HashValue, Object> newstate = new HashMap<HashValue, Object>(state);
+        ScanResult<Object> res = scanIteratorSource(name, client, startPos, pattern, count);
+        Map<HashValue, Object> newstate = new HashMap<>(state);
         for (Iterator<Object> iterator = res.getValues().iterator(); iterator.hasNext();) {
             Object entry = iterator.next();
             Object value = newstate.remove(toHash(entry));
@@ -182,7 +182,7 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
     protected abstract RFuture<Set<V>> readAllAsyncSource();
     
     public RFuture<Set<V>> readAllAsync() {
-        RPromise<Set<V>> result = new RedissonPromise<Set<V>>();
+        RPromise<Set<V>> result = new RedissonPromise<>();
         RFuture<Set<V>> future = readAllAsyncSource();
         future.onComplete((res, e) -> {
             if (e != null) {
@@ -191,7 +191,7 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
             }
             
             Set<V> set = future.getNow();
-            Map<HashValue, Object> newstate = new HashMap<HashValue, Object>(state);
+            Map<HashValue, Object> newstate = new HashMap<>(state);
             for (Iterator<V> iterator = set.iterator(); iterator.hasNext();) {
                 V key = iterator.next();
                 Object value = newstate.remove(toHash(key));
@@ -220,7 +220,7 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
     }
     
     public RFuture<Boolean> addAsync(V value, TransactionalOperation operation) {
-        RPromise<Boolean> result = new RedissonPromise<Boolean>();
+        RPromise<Boolean> result = new RedissonPromise<>();
         executeLocked(result, value, new Runnable() {
             @Override
             public void run() {

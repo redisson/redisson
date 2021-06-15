@@ -15,33 +15,18 @@
  */
 package org.redisson;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Stream;
-
-import org.redisson.api.RCountDownLatch;
-import org.redisson.api.RFuture;
-import org.redisson.api.RLock;
-import org.redisson.api.RPermitExpirableSemaphore;
-import org.redisson.api.RReadWriteLock;
-import org.redisson.api.RSemaphore;
-import org.redisson.api.RSet;
-import org.redisson.api.RedissonClient;
-import org.redisson.api.SortOrder;
+import org.redisson.api.*;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.iterator.RedissonBaseIterator;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
 import org.redisson.misc.RedissonPromise;
+
+import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.Set}
@@ -96,7 +81,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
     }
 
     @Override
-    public ListScanResult<Object> scanIterator(String name, RedisClient client, long startPos, String pattern, int count) {
+    public ScanResult<Object> scanIterator(String name, RedisClient client, long startPos, String pattern, int count) {
         return get(scanIteratorAsync(name, client, startPos, pattern, count));
     }
 
@@ -115,7 +100,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
         return new RedissonBaseIterator<V>() {
 
             @Override
-            protected ListScanResult<Object> iterator(RedisClient client, long nextIterPos) {
+            protected ScanResult<Object> iterator(RedisClient client, long nextIterPos) {
                 return scanIterator(getRawName(), client, nextIterPos, pattern, count);
             }
 
@@ -668,7 +653,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
     }
 
     @Override
-    public RFuture<ListScanResult<Object>> scanIteratorAsync(String name, RedisClient client, long startPos,
+    public RFuture<ScanResult<Object>> scanIteratorAsync(String name, RedisClient client, long startPos,
             String pattern, int count) {
         if (pattern == null) {
             return commandExecutor.readAsync(client, name, codec, RedisCommands.SSCAN, name, startPos, "COUNT", count);

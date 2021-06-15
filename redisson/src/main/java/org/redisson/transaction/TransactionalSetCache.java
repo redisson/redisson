@@ -17,12 +17,12 @@ package org.redisson.transaction;
 
 import org.redisson.RedissonSetCache;
 import org.redisson.ScanIterator;
+import org.redisson.ScanResult;
 import org.redisson.api.RCollectionAsync;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.api.RSetCache;
 import org.redisson.client.RedisClient;
-import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.transaction.operation.TransactionalOperation;
 import org.redisson.transaction.operation.set.AddCacheOperation;
@@ -52,8 +52,8 @@ public class TransactionalSetCache<V> extends BaseTransactionalSet<V> {
     }
 
     @Override
-    protected ListScanResult<Object> scanIteratorSource(String name, RedisClient client, long startPos,
-            String pattern, int count) {
+    protected ScanResult<Object> scanIteratorSource(String name, RedisClient client, long startPos,
+                                                    String pattern, int count) {
         return ((ScanIterator) set).scanIterator(name, client, startPos, pattern, count);
     }
 

@@ -15,16 +15,15 @@
  */
 package org.redisson.reactive;
 
-import java.util.concurrent.Callable;
-
 import org.redisson.RedissonScoredSortedSet;
+import org.redisson.ScanResult;
 import org.redisson.api.RFuture;
 import org.redisson.api.RScoredSortedSetAsync;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.decoder.ListScanResult;
-
 import reactor.core.publisher.Flux;
+
+import java.util.concurrent.Callable;
 
 /**
  * 
@@ -73,7 +72,7 @@ public class RedissonScoredSortedSetReactive<V>  {
     private Flux<V> scanIteratorReactive(String pattern, int count) {
         return Flux.create(new SetReactiveIterator<V>() {
             @Override
-            protected RFuture<ListScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
+            protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
                 return ((RedissonScoredSortedSet<V>) instance).scanIteratorAsync(client, nextIterPos, pattern, count);
             }
         });
