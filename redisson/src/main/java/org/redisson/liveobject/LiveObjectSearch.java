@@ -103,7 +103,11 @@ public class LiveObjectSearch {
                 if (ids.isEmpty()) {
                     return Collections.emptySet();
                 }
-                allIds.retainAll(ids);
+                if (!allIds.isEmpty()) {
+                    allIds.retainAll(ids);
+                } else {
+                    allIds.addAll(ids);
+                }
                 if (allIds.isEmpty()) {
                     return Collections.emptySet();
                 }

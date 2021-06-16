@@ -360,6 +360,39 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     }
 
     @Test
+    public void testFindIn() {
+        RLiveObjectService s = redisson.getLiveObjectService();
+        TestIndexed t1 = new TestIndexed("1");
+        t1.setNum1(1);
+        t1.setName1("common");
+        t1.setName2("value1");
+        t1 = s.persist(t1);
+
+        TestIndexed t2 = new TestIndexed("2");
+        t2.setNum1(1);
+        t2.setName1("common");
+        t2.setName2("value2");
+        t2 = s.persist(t2);
+
+        TestIndexed t3 = new TestIndexed("3");
+        t3.setNum1(1);
+        t3.setName1("common");
+        t3.setName2("value3");
+        t3 = s.persist(t3);
+
+        RScoredSortedSet<Object> t = redisson.getScoredSortedSet("redisson_live_object_index:{org.redisson.RedissonLiveObjectServiceTest$TestIndexed}:num2");
+        assertThat(t).hasSize(3);
+
+        Collection<TestIndexed> objects2 = s.find(TestIndexed.class, Conditions.and(
+                Conditions.in("num1", 1, 2),
+                Conditions.in("name2", "value1", "value2")));
+        assertThat(objects2).hasSize(2);
+        for (TestIndexed testIndexed : objects2) {
+            assertThat(testIndexed.getId()).isIn("1", "2");
+        }
+    }
+
+    @Test
     public void testFindEq2() {
         RLiveObjectService s = redisson.getLiveObjectService();
         TestIndexed t1 = new TestIndexed("1");
