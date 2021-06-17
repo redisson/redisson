@@ -70,7 +70,7 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
 
     @Override
     public RFuture<Boolean> expireAsync(Instant instant) {
-        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.PEXPIREAT, getRawName(), instant.toEpochMilli());
+        return expireAtAsync(instant.toEpochMilli(), getRawName());
     }
 
     @Override

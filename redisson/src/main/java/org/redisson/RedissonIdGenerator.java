@@ -160,8 +160,8 @@ public class RedissonIdGenerator extends RedissonExpirable implements RIdGenerat
     }
 
     @Override
-    public RFuture<Boolean> expireAtAsync(long timestamp) {
-        return expireAtAsync(timestamp, getRawName(), getAllocationSizeName());
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String... keys) {
+        return super.expireAtAsync(timestamp, getRawName(), getAllocationSizeName());
     }
 
     @Override

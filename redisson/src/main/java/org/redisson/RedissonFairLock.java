@@ -297,8 +297,8 @@ public class RedissonFairLock extends RedissonLock implements RLock {
     }
 
     @Override
-    public RFuture<Boolean> expireAtAsync(long timestamp) {
-        return expireAtAsync(timestamp, getRawName(), threadsQueueName, timeoutSetName);
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String... keys) {
+        return super.expireAtAsync(timestamp, getRawName(), threadsQueueName, timeoutSetName);
     }
 
     @Override

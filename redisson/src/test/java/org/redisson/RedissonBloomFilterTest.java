@@ -4,6 +4,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RBloomFilter;
 
+import java.time.Instant;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonBloomFilterTest extends BaseTest {
@@ -61,6 +63,19 @@ public class RedissonBloomFilterTest extends BaseTest {
             filter.getExpectedInsertions();
         });
 
+    }
+
+    @Test
+    public void testExpire() throws InterruptedException {
+        RBloomFilter<String> filter = redisson.getBloomFilter("filter");
+        filter.tryInit(55000000L, 0.03);
+
+        filter.add("test");
+        filter.expire(Instant.now().plusSeconds(2));
+
+        Thread.sleep(2100);
+
+        assertThat(redisson.getKeys().count()).isZero();
     }
 
     @Test

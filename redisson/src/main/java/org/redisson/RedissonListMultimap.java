@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -239,7 +240,12 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
             public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
                 throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
             }
-            
+
+            @Override
+            public RFuture<Boolean> expireAsync(Instant instant) {
+                throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
+            }
+
             @Override
             public RFuture<Boolean> expireAtAsync(long timestamp) {
                 throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");

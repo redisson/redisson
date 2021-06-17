@@ -429,8 +429,8 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
     }
 
     @Override
-    public RFuture<Boolean> expireAtAsync(long timestamp) {
-        return expireAtAsync(timestamp, getRawName(), getComparatorKeyName());
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String... keys) {
+        return super.expireAtAsync(timestamp, getRawName(), getComparatorKeyName());
     }
 
     @Override
