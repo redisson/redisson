@@ -563,8 +563,22 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
         });
     }
 
+    private static final RedisStrictCommand<Long> ZREMRANGEBYLEX = new RedisStrictCommand<>("ZREMRANGEBYLEX");
+
     @Override
     public Flux<NumericResponse<ZRemRangeByLexCommand, Long>> zRemRangeByLex(Publisher<ZRemRangeByLexCommand> commands) {
-        return null;
+        return execute(commands, command -> {
+
+            Assert.notNull(command.getKey(), "Key must not be null!");
+            Assert.notNull(command.getRange(), "Range must not be null!");
+
+            byte[] keyBuf = toByteArray(command.getKey());
+
+            String start = toLexLowerBound(command.getRange(), "-");
+            String end = toLexUpperBound(command.getRange(), "+");
+
+            Mono<Long> m = write(keyBuf, StringCodec.INSTANCE, ZREMRANGEBYLEX, keyBuf, start, end);
+            return m.map(v -> new NumericResponse<>(command, v));
+        });
     }
 }
