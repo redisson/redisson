@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
@@ -200,6 +201,11 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
     @Override
     public RFuture<Boolean> deleteAsync() {
         return baseCache.deleteAsync();
+    }
+
+    @Override
+    public RFuture<Boolean> expireAsync(Instant instant) {
+        return expireAtAsync(instant.toEpochMilli());
     }
 
     @Override

@@ -282,8 +282,8 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
     }
 
     @Override
-    public RFuture<Boolean> expireAtAsync(long timestamp) {
-        return expireAtAsync(timestamp, getRawName(), getSubscribersName(), getMapName(), getCounter(), getTimeout());
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String... keys) {
+        return super.expireAtAsync(timestamp, getRawName(), getSubscribersName(), getMapName(), getCounter(), getTimeout());
     }
 
     @Override

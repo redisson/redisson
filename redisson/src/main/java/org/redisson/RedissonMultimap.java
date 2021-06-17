@@ -344,7 +344,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     }
 
     @Override
-    public RFuture<Boolean> expireAtAsync(long timestamp) {
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String... keys) {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local entries = redis.call('hgetall', KEYS[1]); " +
                 "for i, v in ipairs(entries) do " +

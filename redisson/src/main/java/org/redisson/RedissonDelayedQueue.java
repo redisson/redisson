@@ -440,8 +440,8 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
     }
 
     @Override
-    public RFuture<Boolean> expireAtAsync(long timestamp) {
-        return expireAtAsync(timestamp, queueName, timeoutSetName);
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String... keys) {
+        return super.expireAtAsync(timestamp, queueName, timeoutSetName);
     }
 
     @Override

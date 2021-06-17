@@ -368,8 +368,8 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
     }
 
     @Override
-    public RFuture<Boolean> expireAtAsync(long timestamp) {
-        return expireAtAsync(timestamp, getRawName(), getSemaphoreName());
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String... keys) {
+        return super.expireAtAsync(timestamp, getRawName(), getSemaphoreName());
     }
 
     @Override

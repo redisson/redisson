@@ -563,8 +563,8 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
     }
 
     @Override
-    public RFuture<Boolean> expireAtAsync(long timestamp) {
-        return expireAtAsync(timestamp, getRawName(), getTimeoutSetName());
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String... keys) {
+        return super.expireAtAsync(timestamp, getRawName(), getTimeoutSetName());
     }
 
     @Override
