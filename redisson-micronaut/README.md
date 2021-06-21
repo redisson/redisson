@@ -58,8 +58,11 @@ redisson:
 
 <br/>
 
-**Map Cache** settings:
+<details>
+    <summary><b>Map Cache</b> settings. Click to expand!</summary>
 
+<br/>
+    
 | | |
 |-|-|
 |Setting name| `redisson.caches.[CACHE_NAME].max-size` |
@@ -139,11 +142,13 @@ redisson:
       expire-after-write: 200s
       expire-after-access: 30s
 ```
+</details>
+
+<details>
+    <summary><b>Clustered Map Cache</b> settings (<i>available only in [Redisson PRO](http://redisson.pro)</i>. Click to expand!</summary>
 
 <br/>
-
-**Clustered Map Cache** settings (<i>available only in [Redisson PRO](http://redisson.pro)</i>):
-
+    
 | | |
 |-|-|
 |Setting name| `redisson.clustered-caches.[CACHE_NAME].max-size` |
@@ -222,11 +227,13 @@ redisson:
       expire-after-write: 200s
       expire-after-access: 30s
 ```
+</details>
+    
+<details>
+    <summary><b>Clustered Local Cached Map Cache</b> settings (<i>available only in [Redisson PRO](http://redisson.pro)</i>. Click to expand!</summary>
 
 <br/>
-
-**Clustered Local Cached Map Cache** settings (<i>available only in [Redisson PRO](http://redisson.pro)</i>):
-
+    
 | | |
 |-|-|
 |Setting name| `redisson.clustered-local-caches.[CACHE_NAME].max-size` |
@@ -366,11 +373,13 @@ redisson:
       expire-after-write: 200s
       expire-after-access: 30s
 ```
+</details>
+    
+<details>
+    <summary><b>Local Cached Map Cache</b> settings (<i>available only in [Redisson PRO](http://redisson.pro)</i>. Click to expand!</summary>
 
 <br/>
-
-**Local Cached Map Cache** settings (<i>available only in [Redisson PRO](http://redisson.pro)</i>):
-
+    
 | | |
 |-|-|
 |Setting name| `redisson.local-caches.[CACHE_NAME].max-size` |
@@ -510,7 +519,8 @@ redisson:
       expire-after-write: 200s
       expire-after-access: 30s
 ```
-
+</details>
+    
 #### 2.3 Session settings
 
 [Session](https://docs.micronaut.io/latest/api/io/micronaut/session/Session.html) store implementation.
