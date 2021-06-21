@@ -54,6 +54,11 @@ redisson:
 |redisson.caches.*.codec|java.lang.Class|Redis data codec applied to cache entries. Default is MarshallingCodec codec.|
 |redisson.caches.*.expire-after-write|java.time.Duration|Cache entry time to live duration applied after each write operation.|
 |redisson.caches.*.expire-after-access|java.time.Duration|Cache entry time to live duration applied after each read operation.|
+|redisson.caches.*.write-behind-batch-size|java.lang.Integer|Write behind tasks batch size. During MapWriter methods execution all updates accumulated into a batch of specified size. Default is <code>50</code>.|
+|redisson.caches.*.write-behind-delay|java.lang.Integer|Write behind tasks execution delay. All updates would be applied with lag not more than specified delay. Default is <code>1000</code> milliseconds.|
+|redisson.caches.*.writer|java.lang.Class|MapWriter object used for write-through operations|
+|redisson.caches.*.write-mode|java.lang.String|Write mode. Default is `WRITE_THROUGH`|
+|redisson.caches.*.loader|java.lang.Class|MapLoader object used to load entries during read-operations execution|
 
 Config example:
 ```yaml
