@@ -48,17 +48,138 @@ redisson:
 
 #### 2.2 Cache settings
 
-|Setting name|Type|Description|
-|------------|----|-----------|
-|redisson.caches.*.max-size|java.lang.Integer|Max size of this cache. Superfluous elements are evicted using LRU algorithm. If <code>0</code> the cache is unbounded (default).|
-|redisson.caches.*.codec|java.lang.Class|Redis data codec applied to cache entries. Default is MarshallingCodec codec.|
-|redisson.caches.*.expire-after-write|java.time.Duration|Cache entry time to live duration applied after each write operation.|
-|redisson.caches.*.expire-after-access|java.time.Duration|Cache entry time to live duration applied after each read operation.|
-|redisson.caches.*.write-behind-batch-size|java.lang.Integer|Write behind tasks batch size. During MapWriter methods execution all updates accumulated into a batch of specified size. Default is <code>50</code>.|
-|redisson.caches.*.write-behind-delay|java.lang.Integer|Write behind tasks execution delay. All updates would be applied with lag not more than specified delay. Default is <code>1000</code> milliseconds.|
-|redisson.caches.*.writer|java.lang.Class|MapWriter object used for write-through operations|
-|redisson.caches.*.write-mode|java.lang.String|Write mode. Default is `WRITE_THROUGH`|
-|redisson.caches.*.loader|java.lang.Class|MapLoader object used to load entries during read-operations execution|
+Map Cache:
+
+| | |
+|-|-|
+|Setting name| `redisson.caches.[CACHE_NAME].max-size` |
+|Type| `java.lang.Integer` |
+|Description| Max size of this cache. Superfluous elements are evicted using LRU algorithm. If <code>0</code> the cache is unbounded. |
+|Default value| `0` |
+
+| | |
+|-|-|
+|Setting name| `redisson.caches.[CACHE_NAME].codec` |
+|Type| `java.lang.Class` |
+|Description| Redis data codec applied to cache entries. |
+|Default value| `MarshallingCodec` |
+
+| | |
+|-|-|
+|Setting name| `redisson.caches.[CACHE_NAME].expire-after-write` |
+|Type| `java.time.Duration` |
+|Description| Cache entry time to live duration applied after each write operation. Disabled if value is <code>0</code>. |
+|Default value| `0` |
+
+| | |
+|-|-|
+|Setting name| `redisson.caches.[CACHE_NAME].expire-after-access` |
+|Type| `java.time.Duration` |
+|Description| Cache entry time to live duration applied after each read operation. Disabled if value is <code>0</code>. |
+|Default value| `0` |
+
+| | |
+|-|-|
+|Setting name| `redisson.caches.[CACHE_NAME].write-behind-batch-size` |
+|Type| `java.lang.Integer` |
+|Description| Write behind tasks batch size. During `MapWriter` methods execution all updates accumulated into a batch of specified size. |
+|Default value| `50` |
+
+| | |
+|-|-|
+|Setting name| `redisson.caches.[CACHE_NAME].write-behind-delay` |
+|Type| `java.time.Duration` |
+|Description| Write behind tasks execution delay. All updates would be applied with lag not more than specified delay. |
+|Default value| `1000ms` |
+
+| | |
+|-|-|
+|Setting name| `redisson.caches.[CACHE_NAME].writer` |
+|Type| `java.lang.Class` |
+|Description| `MapWriter` object used for write-through operations |
+|Default value| `null` |
+
+| | |
+|-|-|
+|Setting name| `redisson.caches.[CACHE_NAME].write-mode` |
+|Type| `java.lang.String` |
+|Description| Write mode. Default is `WRITE_THROUGH` |
+|Default value| `null` |
+
+| | |
+|-|-|
+|Setting name| `redisson.caches.[CACHE_NAME].loader` |
+|Type| `java.lang.Class` |
+|Description| `MapLoader` object used to load entries during read-operations execution |
+|Default value| `null` |
+
+<br/>
+
+Clustered Map Cache (<i>available only in [Redisson PRO](http://redisson.pro)</i>):
+
+| | |
+|-|-|
+|Setting name| `redisson.clustered-caches.[CACHE_NAME].max-size` |
+|Type| `java.lang.Integer` |
+|Description| Max size of this cache. Superfluous elements are evicted using LRU algorithm. If <code>0</code> the cache is unbounded. |
+|Default value| `0` |
+
+| | |
+|-|-|
+|Setting name| `redisson.clustered-caches.[CACHE_NAME].codec` |
+|Type| `java.lang.Class` |
+|Description| Redis data codec applied to cache entries. |
+|Default value| `MarshallingCodec` |
+
+| | |
+|-|-|
+|Setting name| `redisson.clustered-caches.[CACHE_NAME].expire-after-write` |
+|Type| `java.time.Duration` |
+|Description| Cache entry time to live duration applied after each write operation. Disabled if value is <code>0</code>. |
+|Default value| `0` |
+
+| | |
+|-|-|
+|Setting name| `redisson.clustered-caches.[CACHE_NAME].expire-after-access` |
+|Type| `java.time.Duration` |
+|Description| Cache entry time to live duration applied after each read operation. Disabled if value is <code>0</code>. |
+|Default value| `0` |
+
+| | |
+|-|-|
+|Setting name| `redisson.clustered-caches.[CACHE_NAME].write-behind-batch-size` |
+|Type| `java.lang.Integer` |
+|Description| Write behind tasks batch size. During `MapWriter` methods execution all updates accumulated into a batch of specified size. |
+|Default value| `50` |
+
+| | |
+|-|-|
+|Setting name| `redisson.clustered-caches.[CACHE_NAME].write-behind-delay` |
+|Type| `java.time.Duration` |
+|Description| Write behind tasks execution delay. All updates would be applied with lag not more than specified delay. |
+|Default value| `1000ms` |
+
+| | |
+|-|-|
+|Setting name| `redisson.clustered-caches.[CACHE_NAME].writer` |
+|Type| `java.lang.Class` |
+|Description| `MapWriter` object used for write-through operations |
+|Default value| `null` |
+
+| | |
+|-|-|
+|Setting name| `redisson.clustered-caches.[CACHE_NAME].write-mode` |
+|Type| `java.lang.String` |
+|Description| Write mode. Default is `WRITE_THROUGH` |
+|Default value| `null` |
+
+| | |
+|-|-|
+|Setting name| `redisson.clustered-caches.[CACHE_NAME].loader` |
+|Type| `java.lang.Class` |
+|Description| `MapLoader` object used to load entries during read-operations execution |
+|Default value| `null` |
+
 
 Config example:
 ```yaml
