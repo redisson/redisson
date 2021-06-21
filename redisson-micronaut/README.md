@@ -145,7 +145,7 @@ redisson:
 </details>
 
 <details>
-    <summary><b>Clustered Map Cache</b> settings (<i>available only in [Redisson PRO](http://redisson.pro)</i>. Click to expand!</summary>
+    <summary><b>Clustered Map Cache</b> settings (<i>available only in <a href="https://redisson.pro">Redisson PRO</a></i>. Click to expand!</summary>
 
 <br/>
     
@@ -230,7 +230,7 @@ redisson:
 </details>
     
 <details>
-    <summary><b>Clustered Local Cached Map Cache</b> settings (<i>available only in [Redisson PRO](http://redisson.pro)</i>. Click to expand!</summary>
+    <summary><b>Clustered Local Cached Map Cache</b> settings (<i>available only in <a href="https://redisson.pro">Redisson PRO</a></i>. Click to expand!</summary>
 
 <br/>
     
@@ -376,7 +376,7 @@ redisson:
 </details>
     
 <details>
-    <summary><b>Local Cached Map Cache</b> settings (<i>available only in [Redisson PRO](http://redisson.pro)</i>. Click to expand!</summary>
+    <summary><b>Local Cached Map Cache</b> settings (<i>available only in <a href="https://redisson.pro">Redisson PRO</a></i>. Click to expand!</summary>
 
 <br/>
     
