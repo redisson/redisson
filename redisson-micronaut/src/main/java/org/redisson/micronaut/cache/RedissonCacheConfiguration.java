@@ -15,13 +15,8 @@
  */
 package org.redisson.micronaut.cache;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
 import io.micronaut.context.annotation.EachProperty;
 import io.micronaut.context.annotation.Parameter;
-import io.micronaut.core.naming.Named;
-import org.redisson.client.codec.Codec;
-
-import java.time.Duration;
 
 /**
  * Micronaut Cache settings.
@@ -30,81 +25,10 @@ import java.time.Duration;
  *
  */
 @EachProperty("redisson.caches")
-public class RedissonCacheConfiguration implements Named {
-
-    private final String name;
-
-    private Codec codec;
-    private Duration expireAfterWrite;
-    private Duration expireAfterAccess;
-    private int maxSize;
+public class RedissonCacheConfiguration extends BaseCacheConfiguration {
 
     public RedissonCacheConfiguration(@Parameter String name) {
-        this.name = name;
-    }
-
-    @NonNull
-    @Override
-    public String getName() {
-        return name;
-    }
-
-    public Codec getCodec() {
-        return codec;
-    }
-
-    /**
-     * Redis data codec applied to cache entries.
-     * Default is MarshallingCodec codec
-     *
-     * @see org.redisson.client.codec.Codec
-     * @see org.redisson.codec.MarshallingCodec
-     *
-     * @param codec - data codec
-     * @return config
-     */
-    public void setCodec(Codec codec) {
-        this.codec = codec;
-    }
-
-    public Duration getExpireAfterWrite() {
-        return expireAfterWrite;
-    }
-
-    /**
-     * Cache entry time to live duration applied after each write operation.
-     *
-     * @param expireAfterWrite - time to live duration
-     */
-    public void setExpireAfterWrite(Duration expireAfterWrite) {
-        this.expireAfterWrite = expireAfterWrite;
-    }
-
-    public Duration getExpireAfterAccess() {
-        return expireAfterAccess;
-    }
-
-    /**
-     * Cache entry time to live duration applied after each read operation.
-     *
-     * @param expireAfterAccess - time to live duration
-     */
-    public void setExpireAfterAccess(Duration expireAfterAccess) {
-        this.expireAfterAccess = expireAfterAccess;
-    }
-
-    public int getMaxSize() {
-        return maxSize;
-    }
-
-    /**
-     * Max size of this cache. Superfluous elements are evicted using LRU algorithm.
-     *
-     * @param maxSize - max size
-     *                  If <code>0</code> the cache is unbounded (default).
-     */
-    public void setMaxSize(int maxSize) {
-        this.maxSize = maxSize;
+        super(name);
     }
 
 }
