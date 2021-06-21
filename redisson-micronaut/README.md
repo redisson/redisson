@@ -578,5 +578,3 @@ public class CarsService {
     }    
 }
 ```
-
-Consider __[Redisson PRO](https://redisson.pro)__ version for **ultra-fast performance** and **support by SLA**.
