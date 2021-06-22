@@ -1,11 +1,17 @@
 package org.redisson;
 
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import org.redisson.api.RBlockingDequeReactive;
 import org.redisson.api.RBlockingQueueReactive;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -18,6 +24,30 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonBlockingQueueReactiveTest extends BaseReactiveTest {
+
+    @Test
+    public void testTakeElements2() throws InterruptedException {
+        RBlockingDequeReactive<Long> queue = redisson.getBlockingDeque("test");
+
+        Mono<Void> mono = Flux.range(1, 100)
+                            .flatMap(s -> queue.add(Long.valueOf(s)))
+                            .then();
+
+        StepVerifier.create(mono).verifyComplete();
+
+        AtomicInteger counter = new AtomicInteger();
+        queue.takeElements()
+                .doOnNext(e -> {
+                    counter.incrementAndGet();
+                })
+                .delayElements(Duration.ofMillis(2))
+                .repeat()
+                .subscribe();
+
+        Awaitility.await().atMost(Duration.ofSeconds(1)).untilAsserted(() -> {
+            assertThat(counter.get()).isEqualTo(100);
+        });
+    }
 
     @Test
     public void testTakeElements() {
