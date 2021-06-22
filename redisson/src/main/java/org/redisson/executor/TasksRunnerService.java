@@ -367,6 +367,10 @@ public class TasksRunnerService implements RemoteExecutorService {
      * @param requestId
      */
     void finish(String requestId, boolean removeTask) {
+        if (Thread.currentThread().isInterrupted()) {
+            return;
+        }
+
         String script = "";
         if (removeTask) {
            script +=  "local scheduled = redis.call('zscore', KEYS[5], ARGV[3]);"
@@ -384,10 +388,11 @@ public class TasksRunnerService implements RemoteExecutorService {
                     + "end;"
                 + "end;";  
 
-        commandExecutor.get(commandExecutor.evalWriteAsync(name, StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
+        RFuture<Object> f = commandExecutor.evalWriteAsync(name, StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 script,
-                Arrays.<Object>asList(tasksCounterName, statusName, terminationTopicName, tasksName, schedulerQueueName, tasksRetryIntervalName),
-                RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE, requestId));
+                Arrays.asList(tasksCounterName, statusName, terminationTopicName, tasksName, schedulerQueueName, tasksRetryIntervalName),
+                RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE, requestId);
+        commandExecutor.get(f);
     }
 
 }
