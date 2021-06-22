@@ -15,14 +15,13 @@
  */
 package org.redisson.reactive;
 
+import org.redisson.api.RFuture;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
+
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.redisson.api.RFuture;
-
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxSink;
 
 /**
  * 
@@ -31,7 +30,7 @@ import reactor.core.publisher.FluxSink;
  */
 public class ElementsStream {
 
-    private static <V> void take(final Callable<RFuture<V>> factory, final FluxSink<V> emitter, final AtomicLong counter, final AtomicReference<RFuture<V>> futureRef) {
+    private static <V> void take(Callable<RFuture<V>> factory, FluxSink<V> emitter, AtomicLong counter, AtomicReference<RFuture<V>> futureRef) {
         RFuture<V> future;
         try {
             future = factory.call();
@@ -48,7 +47,7 @@ public class ElementsStream {
             
             emitter.next(res);
             if (counter.decrementAndGet() == 0) {
-                emitter.complete();
+                return;
             }
             
             take(factory, emitter, counter, futureRef);
@@ -56,14 +55,14 @@ public class ElementsStream {
     }
     
     public static <V> Flux<V> takeElements(Callable<RFuture<V>> callable) {
-        return Flux.<V>create(emitter -> {
+        return Flux.create(emitter -> {
+            AtomicReference<RFuture<V>> futureRef = new AtomicReference<RFuture<V>>();
             emitter.onRequest(n -> {
                 AtomicLong counter = new AtomicLong(n);
-                AtomicReference<RFuture<V>> futureRef = new AtomicReference<RFuture<V>>();
                 take(callable, emitter, counter, futureRef);
-                emitter.onDispose(() -> {
-                    futureRef.get().cancel(true);
-                });
+            });
+            emitter.onDispose(() -> {
+                futureRef.get().cancel(true);
             });
         });
     }
