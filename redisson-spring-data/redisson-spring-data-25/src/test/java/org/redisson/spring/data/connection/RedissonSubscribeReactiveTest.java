@@ -15,7 +15,30 @@ import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.data.redis.listener.ChannelTopic;
 import reactor.core.publisher.Mono;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class RedissonSubscribeReactiveTest extends BaseConnectionTest {
+
+    @Test
+    public void testPubSub() {
+        RedissonConnectionFactory factory = new RedissonConnectionFactory(redisson);
+        AtomicLong counter = new AtomicLong();
+
+        ReactiveStringRedisTemplate template = new ReactiveStringRedisTemplate(factory);
+        template.listenTo(ChannelTopic.of("test")).flatMap(message -> {
+            counter.incrementAndGet();
+            return Mono.empty();
+        }).subscribe();
+
+        for (int i = 0; i < 40; i++) {
+            ReactiveRedisConnection connection = factory.getReactiveConnection();
+            connection.pubSubCommands().publish(ByteBuffer.wrap("test".getBytes()), ByteBuffer.wrap("msg".getBytes())).block();
+        }
+
+        Awaitility.await().atMost(Duration.ONE_SECOND).untilAsserted(() -> {
+            assertThat(counter.get()).isEqualTo(40);
+        });
+    }
 
     @Test
     public void testTemplate() {

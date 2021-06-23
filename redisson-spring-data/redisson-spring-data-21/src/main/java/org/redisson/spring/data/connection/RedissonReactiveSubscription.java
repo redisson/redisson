@@ -37,7 +37,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -223,7 +222,6 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
             emitter.onRequest(n -> {
 
                 monosListener.addListener(() -> {
-                    AtomicLong counter = new AtomicLong(n);
                     BaseRedisPubSubListener listener = new BaseRedisPubSubListener() {
                         @Override
                         public void onPatternMessage(CharSequence pattern, CharSequence channel, Object message) {
@@ -234,11 +232,6 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
                             emitter.next(new PatternMessage<>(ByteBuffer.wrap(pattern.toString().getBytes()),
                                                                 ByteBuffer.wrap(channel.toString().getBytes()),
                                                                 ByteBuffer.wrap((byte[])message)));
-
-                            if (counter.decrementAndGet() == 0) {
-                                disposable.dispose();
-                                emitter.complete();
-                            }
                         }
 
                         @Override
@@ -248,11 +241,6 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
                             }
 
                             emitter.next(new ChannelMessage<>(ByteBuffer.wrap(channel.toString().getBytes()), ByteBuffer.wrap((byte[])msg)));
-
-                            if (counter.decrementAndGet() == 0) {
-                                disposable.dispose();
-                                emitter.complete();
-                            }
                         }
                     };
 
