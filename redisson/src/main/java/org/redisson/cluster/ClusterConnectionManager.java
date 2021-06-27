@@ -658,14 +658,23 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
     
     private void checkSlotsMigration(Collection<ClusterPartition> newPartitions) {
+        Set<ClusterPartition> clusterLastPartitions = getLastPartitions();
+
+        // https://github.com/redisson/redisson/issues/3635
+        Map<String, MasterSlaveEntry> nodeEntry = new HashMap<>();
+        clusterLastPartitions.forEach(partition -> {
+            nodeEntry.put(partition.getNodeId(), getEntry(partition.slots().nextSetBit(0)));
+        });
+
         Set<Integer> changedSlots = new HashSet<>();
-        for (ClusterPartition currentPartition : getLastPartitions()) {
+        for (ClusterPartition currentPartition : clusterLastPartitions) {
+            String nodeId = currentPartition.getNodeId();
             for (ClusterPartition newPartition : newPartitions) {
-                if (!Objects.equals(currentPartition.getNodeId(), newPartition.getNodeId())) {
+                if (!Objects.equals(nodeId, newPartition.getNodeId())) {
                     continue;
                 }
 
-                MasterSlaveEntry entry = getEntry(currentPartition.slots().nextSetBit(0));
+                MasterSlaveEntry entry = nodeEntry.get(nodeId);
                 BitSet addedSlots = newPartition.copySlots();
                 addedSlots.andNot(currentPartition.slots());
                 currentPartition.addSlots(addedSlots);
