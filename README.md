@@ -31,7 +31,9 @@ JDK compatibility:  1.8 - 16, Android
     Lock, FairLock, MultiLock, RedLock, ReadWriteLock, Semaphore, PermitExpirableSemaphore, CountDownLatch
 * [Distributed services](https://github.com/redisson/redisson/wiki/9.-distributed-services)  
     Remote service, Live Object service, Executor service, Scheduler service, MapReduce service
-* [Spring Framework](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#141-spring-framework)
+* [Helidon](https://github.com/redisson/redisson/tree/master/redisson-helidon) integration  
+* [Micronaut](https://github.com/redisson/redisson/tree/master/redisson-micronaut) integration  
+* [Quarkus](https://github.com/redisson/redisson/tree/master/redisson-quarkus) integration  
 * [Spring Cache](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#142-spring-cache) implementation
 * [Spring Transaction API](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#148-spring-transaction-manager) implementation
 * [Spring Data Redis](https://github.com/redisson/redisson/tree/master/redisson-spring-data) integration
