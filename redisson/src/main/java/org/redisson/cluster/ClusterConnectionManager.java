@@ -699,6 +699,13 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 if (!removedSlots.isEmpty()) {
                     log.info("{} slots removed from {}", removedSlots.cardinality(), currentPartition.getMasterAddress());
                 }
+
+                if (!addedSlots.isEmpty() || !removedSlots.isEmpty()) {
+                    // https://github.com/redisson/redisson/issues/3695, slotRanges not update when slots of node changed.
+                    Set<ClusterSlotRange> slotRanges = currentPartition.getSlotRanges();
+                    slotRanges.clear();
+                    slotRanges.addAll(newPartition.getSlotRanges());
+                }
                 break;
             }
         }
