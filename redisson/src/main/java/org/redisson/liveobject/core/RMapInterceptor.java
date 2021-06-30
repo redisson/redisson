@@ -15,6 +15,7 @@
  */
 package org.redisson.liveobject.core;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import org.redisson.api.RMap;
@@ -35,7 +36,11 @@ public class RMapInterceptor {
             @Origin Method method,
             @AllArguments Object[] args,
             @FieldValue("liveObjectLiveMap") RMap<?, ?> map
-    ) throws Exception {
-        return method.invoke(map, args);
+    ) throws Throwable {
+        try {
+            return method.invoke(map, args);
+        } catch (InvocationTargetException e) {
+            throw e.getCause();
+        }
     }
 }
