@@ -14,14 +14,14 @@ Maven
      <dependency>
          <groupId>org.redisson</groupId>
          <artifactId>redisson-spring-boot-starter</artifactId>
-         <version>3.15.6</version>
+         <version>3.16.0</version>
      </dependency>
 ```
 
 Gradle
 
 ```groovy
-     compile 'org.redisson:redisson-spring-boot-starter:3.15.6'
+     compile 'org.redisson:redisson-spring-boot-starter:3.16.0'
 ```
 
 
@@ -37,6 +37,7 @@ Downgrade `redisson-spring-data` module if necessary to support required Spring 
 |redisson-spring-data-22     |2.2.x              |
 |redisson-spring-data-23     |2.3.x              |
 |redisson-spring-data-24     |2.4.x              |
+|redisson-spring-data-25     |2.5.x              |
 
 ### 2. Add settings into `application.settings` file
 
