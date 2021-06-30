@@ -84,10 +84,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -107,7 +103,7 @@
       	<dependency>
       		<groupId>org.springframework.session</groupId>
       		<artifactId>spring-session-core</artifactId>
-                <scope>test</scope>
+            <scope>test</scope>
       	</dependency>
 
       	<dependency>
@@ -129,7 +125,7 @@
 
         <dependency>
             <groupId>org.redisson</groupId>
-            <artifactId>redisson-spring-data-24</artifactId>
+            <artifactId>redisson-spring-data-25</artifactId>
             <version>${project.version}</version>
         </dependency>
 
