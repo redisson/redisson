@@ -31,7 +31,9 @@ JDK compatibility:  1.8 - 16, Android
     Lock, FairLock, MultiLock, RedLock, ReadWriteLock, Semaphore, PermitExpirableSemaphore, CountDownLatch
 * [Distributed services](https://github.com/redisson/redisson/wiki/9.-distributed-services)  
     Remote service, Live Object service, Executor service, Scheduler service, MapReduce service
-* [Spring Framework](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#141-spring-framework)
+* [Helidon](https://github.com/redisson/redisson/tree/master/redisson-helidon) integration  
+* [Micronaut](https://github.com/redisson/redisson/tree/master/redisson-micronaut) integration  
+* [Quarkus](https://github.com/redisson/redisson/tree/master/redisson-quarkus) integration  
 * [Spring Cache](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#142-spring-cache) implementation
 * [Spring Transaction API](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#148-spring-transaction-manager) implementation
 * [Spring Data Redis](https://github.com/redisson/redisson/tree/master/redisson-spring-data) integration
@@ -102,14 +104,14 @@ Used by
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>3.15.6</version>
+       <version>3.16.0</version>
     </dependency>  
 
 #### Gradle
-    compile 'org.redisson:redisson:3.15.6'  
+    compile 'org.redisson:redisson:3.16.0'  
 
 #### SBT
-    libraryDependencies += "org.redisson" % "redisson" % "3.15.6"
+    libraryDependencies += "org.redisson" % "redisson" % "3.16.0"
 
 #### Java
 
@@ -167,8 +169,8 @@ Consider __[Redisson PRO](https://redisson.pro)__ version for **ultra-fast perfo
 
 ## Downloads
    
-[Redisson 3.15.6](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.15.6&e=jar),
-[Redisson node 3.15.6](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.15.6&e=jar)  
+[Redisson 3.16.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.16.0&e=jar),
+[Redisson node 3.16.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.16.0&e=jar)  
 
 ## FAQs
 
