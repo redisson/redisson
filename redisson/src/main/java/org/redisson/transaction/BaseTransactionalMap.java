@@ -184,8 +184,8 @@ public class BaseTransactionalMap<K, V> {
         Map<HashValue, MapEntry> newstate = new HashMap<HashValue, MapEntry>(state);
         Map<Object, Object> newres = null;
         for (Iterator<Map.Entry<Object, Object>> iterator = res.getValues().iterator(); iterator.hasNext();) {
-            Object key = iterator.next();
-            MapEntry mapEntry = newstate.remove(toKeyHash(key));
+            Map.Entry<Object, Object> entry = iterator.next();
+            MapEntry mapEntry = newstate.remove(toKeyHash(entry.getKey()));
             if (mapEntry != null) {
                 if (mapEntry == MapEntry.NULL) {
                     iterator.remove();
@@ -199,7 +199,7 @@ public class BaseTransactionalMap<K, V> {
                     }
                 }
 
-                newres.put(key, mapEntry.getValue());
+                newres.put(entry.getKey(), mapEntry.getValue());
             }
         }
         
