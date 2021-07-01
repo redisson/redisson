@@ -38,14 +38,14 @@ public class BucketSetOperation<V> extends TransactionalOperation {
     private TimeUnit timeUnit;
     private String transactionId;
     
-    public BucketSetOperation(String name, String lockName, Codec codec, Object value, long timeToLive, TimeUnit timeUnit, String transactionId) {
-        this(name, lockName, codec, value, transactionId);
+    public BucketSetOperation(String name, String lockName, Codec codec, Object value, long timeToLive, TimeUnit timeUnit, String transactionId, long threadId) {
+        this(name, lockName, codec, value, transactionId, threadId);
         this.timeToLive = timeToLive;
         this.timeUnit = timeUnit;
     }
     
-    public BucketSetOperation(String name, String lockName, Codec codec, Object value, String transactionId) {
-        super(name, codec);
+    public BucketSetOperation(String name, String lockName, Codec codec, Object value, String transactionId, long threadId) {
+        super(name, codec, threadId);
         this.value = value;
         this.lockName = lockName;
         this.transactionId = transactionId;
@@ -60,13 +60,13 @@ public class BucketSetOperation<V> extends TransactionalOperation {
             bucket.setAsync((V) value);
         }
         RedissonLock lock = new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
-        lock.unlockAsync();
+        lock.unlockAsync(getThreadId());
     }
 
     @Override
     public void rollback(CommandAsyncExecutor commandExecutor) {
         RedissonLock lock = new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
-        lock.unlockAsync();
+        lock.unlockAsync(getThreadId());
     }
     
     public Object getValue() {

@@ -119,7 +119,7 @@ public class BaseTransactionalMap<K, V> {
     }
     
     public RFuture<Boolean> unlinkAsync(CommandAsyncExecutor commandExecutor) {
-        return deleteAsync(commandExecutor, new UnlinkOperation(map.getName(), null));
+        return deleteAsync(commandExecutor, new UnlinkOperation(map.getName()));
     }
     
     public RFuture<Boolean> touchAsync(CommandAsyncExecutor commandExecutor) {
