@@ -112,9 +112,10 @@ public class RedissonTransactionalBuckets extends RedissonBuckets {
         checkState();
         
         RPromise<Void> result = new RedissonPromise<>();
+        long currentThreadId = Thread.currentThread().getId();
         executeLocked(result, () -> {
             for (Entry<String, ?> entry : buckets.entrySet()) {
-                operations.add(new BucketSetOperation<>(entry.getKey(), getLockName(entry.getKey()), codec, entry.getValue(), transactionId));
+                operations.add(new BucketSetOperation<>(entry.getKey(), getLockName(entry.getKey()), codec, entry.getValue(), transactionId, currentThreadId));
                 if (entry.getValue() == null) {
                     state.put(entry.getKey(), NULL);
                 } else {

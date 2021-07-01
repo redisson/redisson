@@ -33,8 +33,8 @@ public class BucketGetAndDeleteOperation<V> extends TransactionalOperation {
     private String lockName;
     private String transactionId;
     
-    public BucketGetAndDeleteOperation(String name, String lockName, Codec codec, String transactionId) {
-        super(name, codec);
+    public BucketGetAndDeleteOperation(String name, String lockName, Codec codec, String transactionId, long threadId) {
+        super(name, codec, threadId);
         this.lockName = lockName;
         this.transactionId = transactionId;
     }
@@ -44,13 +44,13 @@ public class BucketGetAndDeleteOperation<V> extends TransactionalOperation {
         RedissonBucket<V> bucket = new RedissonBucket<V>(codec, commandExecutor, name);
         bucket.getAndDeleteAsync();
         RedissonLock lock = new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
-        lock.unlockAsync();
+        lock.unlockAsync(getThreadId());
     }
 
     @Override
     public void rollback(CommandAsyncExecutor commandExecutor) {
         RedissonLock lock = new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
-        lock.unlockAsync();
+        lock.unlockAsync(getThreadId());
     }
     
     public String getLockName() {

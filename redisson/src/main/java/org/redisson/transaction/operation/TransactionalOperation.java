@@ -27,6 +27,7 @@ public abstract class TransactionalOperation {
 
     protected Codec codec;
     protected String name;
+    protected long threadId;
     
     public TransactionalOperation() {
     }
@@ -35,7 +36,17 @@ public abstract class TransactionalOperation {
         this.name = name;
         this.codec = codec;
     }
-    
+
+    public TransactionalOperation(String name, Codec codec, long threadId) {
+        this.name = name;
+        this.codec = codec;
+        this.threadId = threadId;
+    }
+
+    public long getThreadId() {
+        return threadId;
+    }
+
     public Codec getCodec() {
         return codec;
     }

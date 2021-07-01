@@ -30,11 +30,11 @@ public class TouchOperation extends TransactionalOperation {
     private String lockName;
     
     public TouchOperation(String name) {
-        this(name, null);
+        this(name, null, 0);
     }
     
-    public TouchOperation(String name, String lockName) {
-        super(name, null);
+    public TouchOperation(String name, String lockName, long threadId) {
+        super(name, null, threadId);
         this.lockName = lockName;
     }
 
@@ -43,13 +43,13 @@ public class TouchOperation extends TransactionalOperation {
         RKeys keys = new RedissonKeys(commandExecutor);
         keys.touchAsync(getName());
         RedissonLock lock = new RedissonLock(commandExecutor, lockName);
-        lock.unlockAsync();
+        lock.unlockAsync(getThreadId());
     }
 
     @Override
     public void rollback(CommandAsyncExecutor commandExecutor) {
         RedissonLock lock = new RedissonLock(commandExecutor, lockName);
-        lock.unlockAsync();
+        lock.unlockAsync(getThreadId());
     }
     
     public String getLockName() {

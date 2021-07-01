@@ -35,8 +35,8 @@ public class BucketCompareAndSetOperation<V> extends TransactionalOperation {
     private String lockName;
     private String transactionId;
     
-    public BucketCompareAndSetOperation(String name, String lockName, Codec codec, V expected, V value, String transactionId) {
-        super(name, codec);
+    public BucketCompareAndSetOperation(String name, String lockName, Codec codec, V expected, V value, String transactionId, long threadId) {
+        super(name, codec, threadId);
         this.expected = expected;
         this.value = value;
         this.lockName = lockName;
@@ -48,13 +48,13 @@ public class BucketCompareAndSetOperation<V> extends TransactionalOperation {
         RedissonBucket<V> bucket = new RedissonBucket<V>(codec, commandExecutor, name);
         bucket.compareAndSetAsync(expected, value);
         RedissonLock lock = new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
-        lock.unlockAsync();
+        lock.unlockAsync(getThreadId());
     }
 
     @Override
     public void rollback(CommandAsyncExecutor commandExecutor) {
         RedissonLock lock = new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
-        lock.unlockAsync();
+        lock.unlockAsync(getThreadId());
     }
     
     public V getExpected() {

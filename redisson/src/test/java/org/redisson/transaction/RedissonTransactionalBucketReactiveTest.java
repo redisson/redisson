@@ -10,8 +10,28 @@ import org.redisson.BaseReactiveTest;
 import org.redisson.api.RBucketReactive;
 import org.redisson.api.RTransactionReactive;
 import org.redisson.api.TransactionOptions;
+import org.redisson.client.codec.LongCodec;
 
 public class RedissonTransactionalBucketReactiveTest extends BaseReactiveTest {
+
+    @Test
+    public void testLock() {
+        redisson.getBucket("e:1", LongCodec.INSTANCE).set(1L).block();
+        redisson.getBucket("e:2", LongCodec.INSTANCE).set(1L).block();
+
+        for (int j = 0; j < 10; j++) {
+            RTransactionReactive transaction = redisson.createTransaction(TransactionOptions.defaults().timeout(30, TimeUnit.SECONDS));
+            RBucketReactive<Long> e1 = transaction.getBucket("e:1", LongCodec.INSTANCE);
+            RBucketReactive<Long> e2 = transaction.getBucket("e:2", LongCodec.INSTANCE);
+            e1.get().map(i -> i + 1).flatMap(e1::set).block();
+            e2.get().map(i -> i - 1).flatMap(e2::set).block();
+
+            transaction.commit().block();
+        }
+
+        assertThat(redisson.getBucket("e:1", LongCodec.INSTANCE).get().block()).isEqualTo(11L);
+        assertThat(redisson.getBucket("e:2", LongCodec.INSTANCE).get().block()).isEqualTo(-9L);
+    }
 
     @Test
     public void testTimeout() throws InterruptedException {
