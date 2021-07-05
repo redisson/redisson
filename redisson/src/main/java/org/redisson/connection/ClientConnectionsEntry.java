@@ -61,7 +61,7 @@ public class ClientConnectionsEntry {
     public ClientConnectionsEntry(RedisClient client, int poolMinSize, int poolMaxSize, int subscribePoolMinSize, int subscribePoolMaxSize,
             ConnectionManager connectionManager, NodeType nodeType) {
         this.client = client;
-        this.freeConnectionsCounter = new AsyncSemaphore(20);
+        this.freeConnectionsCounter = new AsyncSemaphore(poolMaxSize);
         this.connectionManager = connectionManager;
         this.nodeType = nodeType;
         this.freeSubscribeConnectionsCounter = new AsyncSemaphore(subscribePoolMaxSize);
@@ -161,8 +161,7 @@ public class ClientConnectionsEntry {
     }
 
     public RedisConnection pollConnection() {
-        return freeConnections.peek();
-//        return freeConnections.poll();
+        return freeConnections.poll();
     }
 
     public void releaseConnection(RedisConnection connection) {
@@ -176,9 +175,7 @@ public class ClientConnectionsEntry {
         }
 
         connection.setLastUsageTime(System.nanoTime());
-        if (freeConnections.isEmpty()) {
-            freeConnections.add(connection);
-        }
+        freeConnections.add(connection);
     }
 
     public RFuture<RedisConnection> connect() {
