@@ -9,7 +9,7 @@
     </parent>
 
     <properties>
-        <spring-boot.version>2.4.4</spring-boot.version>
+        <spring-boot.version>2.5.2</spring-boot.version>
     </properties>
 
     <artifactId>redisson-spring-boot-starter</artifactId>
@@ -106,10 +106,16 @@
             <scope>test</scope>
       	</dependency>
 
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <scope>test</scope>
+        </dependency>
+
       	<dependency>
-      		<groupId>org.springframework.session</groupId>
-      		<artifactId>spring-session-data-redis</artifactId>
-                <scope>test</scope>
+            <groupId>org.springframework.session</groupId>
+            <artifactId>spring-session-data-redis</artifactId>
+            <scope>test</scope>
       	</dependency>
 <!--
         <dependency>
