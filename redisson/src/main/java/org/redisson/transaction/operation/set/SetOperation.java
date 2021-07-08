@@ -39,6 +39,11 @@ public abstract class SetOperation extends TransactionalOperation {
         this.transactionId = transactionId;
     }
 
+    public SetOperation(String name, Codec codec, String transactionId, long threadId) {
+        super(name, codec, threadId);
+        this.transactionId = transactionId;
+    }
+
     protected RLock getLock(RSetCache<?> setCache, CommandAsyncExecutor commandExecutor, Object value) {
         String lockName = ((RedissonSetCache<?>) setCache).getLockByValue(value, "lock");
         return new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
