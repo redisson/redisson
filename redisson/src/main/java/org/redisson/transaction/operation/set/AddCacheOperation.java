@@ -33,8 +33,7 @@ public class AddCacheOperation extends SetOperation {
     private Object value;
     private long ttl;
     private TimeUnit timeUnit;
-    private long threadId;
-    
+
     public AddCacheOperation(RObject set, Object value, String transactionId, long threadId) {
         this(set, value, 0, null, transactionId, threadId);
     }
@@ -44,11 +43,10 @@ public class AddCacheOperation extends SetOperation {
     }
 
     public AddCacheOperation(String name, Codec codec, Object value, long ttl, TimeUnit timeUnit, String transactionId, long threadId) {
-        super(name, codec, transactionId);
+        super(name, codec, transactionId, threadId);
         this.value = value;
         this.timeUnit = timeUnit;
         this.ttl = ttl;
-        this.threadId = threadId;
     }
 
     @Override
@@ -64,7 +62,7 @@ public class AddCacheOperation extends SetOperation {
 
     @Override
     public void rollback(CommandAsyncExecutor commandExecutor) {
-        RSetCache<Object> set = new RedissonSetCache<Object>(codec, null, commandExecutor, name, null);
+        RSetCache<Object> set = new RedissonSetCache<>(codec, null, commandExecutor, name, null);
         getLock(set, commandExecutor, value).unlockAsync(threadId);
     }
 

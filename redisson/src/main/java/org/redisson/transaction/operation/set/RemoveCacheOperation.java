@@ -29,28 +29,26 @@ import org.redisson.command.CommandAsyncExecutor;
 public class RemoveCacheOperation extends SetOperation {
 
     private Object value;
-    private long threadId;
 
     public RemoveCacheOperation(RObject set, Object value, String transactionId, long threadId) {
         this(set.getName(), set.getCodec(), value, transactionId, threadId);
     }
     
     public RemoveCacheOperation(String name, Codec codec, Object value, String transactionId, long threadId) {
-        super(name, codec, transactionId);
+        super(name, codec, transactionId, threadId);
         this.value = value;
-        this.threadId = threadId;
     }
 
     @Override
     public void commit(CommandAsyncExecutor commandExecutor) {
-        RSetCache<Object> set = new RedissonSetCache<Object>(codec, null, commandExecutor, name, null);
+        RSetCache<Object> set = new RedissonSetCache<>(codec, null, commandExecutor, name, null);
         set.removeAsync(value);
         getLock(set, commandExecutor, value).unlockAsync(threadId);
     }
 
     @Override
     public void rollback(CommandAsyncExecutor commandExecutor) {
-        RSetCache<Object> set = new RedissonSetCache<Object>(codec, null, commandExecutor, name, null);
+        RSetCache<Object> set = new RedissonSetCache<>(codec, null, commandExecutor, name, null);
         getLock(set, commandExecutor, value).unlockAsync(threadId);
     }
     

@@ -29,29 +29,27 @@ import org.redisson.command.CommandAsyncExecutor;
 public class AddOperation extends SetOperation {
 
     private Object value;
-    private long threadId;
-    
+
     public AddOperation(RObject set, Object value, String transactionId, long threadId) {
         this(set.getName(), set.getCodec(), value, transactionId, threadId);
     }
     
     public AddOperation(String name, Codec codec, Object value, String transactionId, long threadId) {
-        super(name, codec, transactionId);
+        super(name, codec, transactionId, threadId);
         this.value = value;
-        this.threadId = threadId;
     }
 
     @Override
     public void commit(CommandAsyncExecutor commandExecutor) {
         RSet<Object> set = new RedissonSet<Object>(codec, commandExecutor, name, null);
         set.addAsync(value);
-        getLock(set, commandExecutor, value).unlockAsync();
+        getLock(set, commandExecutor, value).unlockAsync(threadId);
     }
 
     @Override
     public void rollback(CommandAsyncExecutor commandExecutor) {
         RSet<Object> set = new RedissonSet<Object>(codec, commandExecutor, name, null);
-        getLock(set, commandExecutor, value).unlockAsync();
+        getLock(set, commandExecutor, value).unlockAsync(threadId);
     }
 
     public Object getValue() {
