@@ -157,9 +157,18 @@ public class ClientConnectionsEntry {
         return freeConnectionsCounter.getCounter();
     }
 
+    private boolean isPolled(RedisCommand<?> command) {
+        return command == null
+                || RedisCommands.FLUSHDB.getName().equals(command.getName())
+                || RedisCommands.FLUSHALL.getName().equals(command.getName())
+                || RedisCommands.BLOCKING_COMMAND_NAMES.contains(command.getName())
+                || RedisCommands.BLOCKING_COMMANDS.contains(command)
+                || RedisCommands.PUBSUB_COMMANDS.contains(command.getName())
+                || RedisCommands.SCAN_COMMANDS.contains(command.getName());
+    }
+
     public void acquireConnection(Runnable runnable, RedisCommand<?> command) {
-        if (command == null || RedisCommands.BLOCKING_COMMAND_NAMES.contains(command.getName())
-                || RedisCommands.BLOCKING_COMMANDS.contains(command)) {
+        if (isPolled(command)) {
             freeConnectionsCounter.acquire(runnable);
             return;
         }
@@ -178,9 +187,7 @@ public class ClientConnectionsEntry {
     AtomicBoolean lock = new AtomicBoolean();
 
     public RedisConnection pollConnection(RedisCommand<?> command) {
-        if (command == null
-                || RedisCommands.BLOCKING_COMMAND_NAMES.contains(command.getName())
-                    || RedisCommands.BLOCKING_COMMANDS.contains(command)) {
+        if (isPolled(command)) {
             while (true) {
                 if (lock.compareAndSet(false, true)) {
                     RedisConnection c = freeConnections.poll();
