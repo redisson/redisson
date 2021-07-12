@@ -233,7 +233,9 @@ public class RedisExecutor<V, R> {
 
                 if (attempt == attempts) {
                     // filled out in connectionFuture or writeFuture handler
-                    attemptPromise.tryFailure(exception);
+                    if (exception != null) {
+                        attemptPromise.tryFailure(exception);
+                    }
                     return;
                 }
                 if (!attemptPromise.cancel(false)) {
