@@ -58,6 +58,19 @@ public class BaseRedisBatchExecutor<V, R> extends RedisExecutor<V, R> {
         this.options = options;
         this.index = index;
         this.executed = executed;
+
+        if (options.getRetryAttempts() > 0) {
+            this.attempts = options.getRetryAttempts();
+        }
+        if (options.getRetryInterval() > 0) {
+            this.retryInterval  = options.getRetryInterval();
+        }
+        if (options.getResponseTimeout() > 0) {
+            this.responseTimeout = options.getResponseTimeout();
+        }
+        if (options.getSyncSlaves() > 0) {
+            this.responseTimeout += options.getSyncTimeout();
+        }
     }
 
     protected final MasterSlaveEntry getEntry(NodeSource source) {
