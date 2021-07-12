@@ -15,18 +15,17 @@
  */
 package org.redisson.client;
 
+import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.RedissonShutdownException;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.CommandsQueue;
-import org.redisson.client.protocol.CommandData;
-import org.redisson.client.protocol.CommandsData;
-import org.redisson.client.protocol.QueueCommand;
-import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.handler.CommandsQueuePubSub;
+import org.redisson.client.protocol.*;
 import org.redisson.misc.LogHelper;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
@@ -58,6 +57,9 @@ public class RedisConnection implements RedisCommands {
     private Runnable connectedListener;
     private Runnable disconnectedListener;
 
+    private volatile boolean pooled;
+    private AtomicInteger usage = new AtomicInteger();
+
     public <C> RedisConnection(RedisClient redisClient, Channel channel, RPromise<C> connectionPromise) {
         this.redisClient = redisClient;
         this.connectionPromise = connectionPromise;
@@ -74,6 +76,26 @@ public class RedisConnection implements RedisCommands {
         if (connectedListener != null) {
             connectedListener.run();
         }
+    }
+
+    public int incUsage() {
+        return usage.incrementAndGet();
+    }
+
+    public int getUsage() {
+        return usage.get();
+    }
+
+    public int decUsage() {
+        return usage.decrementAndGet();
+    }
+
+    public boolean isPooled() {
+        return pooled;
+    }
+
+    public void setPooled(boolean pooled) {
+        this.pooled = pooled;
     }
 
     public boolean isQueued() {
@@ -107,7 +129,17 @@ public class RedisConnection implements RedisCommands {
     }
 
     public CommandData<?, ?> getCurrentCommand() {
-        QueueCommand command = channel.attr(CommandsQueue.CURRENT_COMMAND).get();
+        Queue<QueueCommandHolder> queue = channel.attr(CommandsQueue.COMMANDS_QUEUE).get();
+        if (queue != null) {
+            QueueCommandHolder holder = queue.peek();
+            if (holder != null) {
+                if (holder.getCommand() instanceof CommandData) {
+                    return (CommandData<?, ?>) holder.getCommand();
+                }
+            }
+        }
+
+        QueueCommand command = channel.attr(CommandsQueuePubSub.CURRENT_COMMAND).get();
         if (command instanceof CommandData) {
             return (CommandData<?, ?>) command;
         }

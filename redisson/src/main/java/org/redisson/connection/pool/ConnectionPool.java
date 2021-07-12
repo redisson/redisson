@@ -172,12 +172,11 @@ abstract class ConnectionPool<T extends RedisConnection> {
                         }
                 });
             }
-        });
-
+        }, null);
     }
 
-    protected void acquireConnection(ClientConnectionsEntry entry, Runnable runnable) {
-        entry.acquireConnection(runnable);
+    protected void acquireConnection(ClientConnectionsEntry entry, Runnable runnable, RedisCommand<?> command) {
+        entry.acquireConnection(runnable, command);
     }
 
     protected abstract int getMinimumIdleSize(ClientConnectionsEntry entry);
@@ -235,7 +234,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
                 @Override
                 public void run() {
                     executed = true;
-                    connectTo(entry, result);
+                    connectTo(entry, result, command);
                 }
                 
                 @Override
@@ -248,7 +247,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
             };
             
             result.onComplete(callback);
-            acquireConnection(entry, callback);
+            acquireConnection(entry, callback, command);
         
             return result;
         }
@@ -261,20 +260,20 @@ abstract class ConnectionPool<T extends RedisConnection> {
         return true;
     }
 
-    protected T poll(ClientConnectionsEntry entry) {
-        return (T) entry.pollConnection();
+    protected T poll(ClientConnectionsEntry entry, RedisCommand<?> command) {
+        return (T) entry.pollConnection(command);
     }
 
     protected RFuture<T> connect(ClientConnectionsEntry entry) {
         return (RFuture<T>) entry.connect();
     }
 
-    private void connectTo(ClientConnectionsEntry entry, RPromise<T> promise) {
+    private void connectTo(ClientConnectionsEntry entry, RPromise<T> promise, RedisCommand<?> command) {
         if (promise.isDone()) {
             releaseConnection(entry);
             return;
         }
-        T conn = poll(entry);
+        T conn = poll(entry, command);
         if (conn != null) {
             if (!conn.isActive() && entry.getNodeType() == NodeType.SLAVE) {
                 entry.trySetupFistFail();

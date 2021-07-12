@@ -31,12 +31,6 @@
  */
 package org.redisson.client.handler;
 
-import org.redisson.client.ChannelName;
-import org.redisson.client.protocol.CommandData;
-import org.redisson.client.protocol.RedisCommands;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufUtil;
@@ -46,6 +40,11 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.MessageToByteEncoder;
 import io.netty.util.CharsetUtil;
+import org.redisson.client.ChannelName;
+import org.redisson.client.protocol.CommandData;
+import org.redisson.client.protocol.RedisCommands;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Redis protocol command encoder

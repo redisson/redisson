@@ -87,8 +87,13 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
         ch.pipeline().addLast(
             connectionWatchdog,
             CommandEncoder.INSTANCE,
-            CommandBatchEncoder.INSTANCE,
-            new CommandsQueue());
+            CommandBatchEncoder.INSTANCE);
+
+        if (type == Type.PLAIN) {
+            ch.pipeline().addLast(new CommandsQueue());
+        } else {
+            ch.pipeline().addLast(new CommandsQueuePubSub());
+        }
 
         if (pingConnectionHandler != null) {
             ch.pipeline().addLast(pingConnectionHandler);

@@ -203,7 +203,7 @@ public class MasterSlaveEntry {
             reattachBlockingQueue(connection.getCurrentCommand());
         }
         while (true) {
-            RedisConnection connection = entry.pollConnection();
+            RedisConnection connection = entry.pollConnection(null);
             if (connection == null) {
                 break;
             }
