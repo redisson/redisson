@@ -47,10 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Redis protocol command decoder
@@ -72,9 +69,18 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         this.scheme = scheme;
     }
 
+    protected QueueCommand getCommand(ChannelHandlerContext ctx) {
+        Queue<QueueCommandHolder> queue = ctx.channel().attr(CommandsQueue.COMMANDS_QUEUE).get();
+        QueueCommandHolder holder = queue.peek();
+        if (holder != null) {
+            return holder.getCommand();
+        }
+        return null;
+    }
+
     @Override
     protected final void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
-        QueueCommand data = ctx.channel().attr(CommandsQueue.CURRENT_COMMAND).get();
+        QueueCommand data = getCommand(ctx);
 
         if (state() == null) {
             state(new State());
@@ -206,10 +212,8 @@ public class CommandDecoder extends ReplayingDecoder<State> {
     }
 
     protected void sendNext(Channel channel) {
-        CommandsQueue handler = channel.pipeline().get(CommandsQueue.class);
-        if (handler != null) {
-            handler.sendNextCommand(channel);
-        }
+        Queue<QueueCommandHolder> queue = channel.attr(CommandsQueue.COMMANDS_QUEUE).get();
+        queue.poll();
         state(null);
     }
 
@@ -219,6 +223,10 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         Throwable error = null;
         while (in.writerIndex() > in.readerIndex()) {
             CommandData<Object, Object> commandData = null;
+
+            if (commandBatch.getCommands().size() == i) {
+                break;
+            }
 
             checkpoint();
             state().setBatchIndex(i);

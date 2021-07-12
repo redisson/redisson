@@ -15,18 +15,19 @@
  */
 package org.redisson.client.handler;
 
-import io.netty.channel.*;
+import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import io.netty.util.AttributeKey;
-import org.redisson.client.ChannelName;
 import org.redisson.client.WriteRedisConnectionException;
-import org.redisson.client.protocol.CommandData;
-import org.redisson.client.protocol.QueueCommand;
-import org.redisson.client.protocol.QueueCommandHolder;
+import org.redisson.client.protocol.*;
 import org.redisson.misc.LogHelper;
 
-import java.util.List;
+import java.net.SocketAddress;
+import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  *
@@ -36,82 +37,61 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class CommandsQueue extends ChannelDuplexHandler {
 
-    public static final AttributeKey<QueueCommand> CURRENT_COMMAND = AttributeKey.valueOf("promise");
+    public static final AttributeKey<Queue<QueueCommandHolder>> COMMANDS_QUEUE = AttributeKey.valueOf("COMMANDS_QUEUE");
 
-    private final Queue<QueueCommandHolder> queue = new ConcurrentLinkedQueue<>();
+    @Override
+    public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise) throws Exception {
+        super.connect(ctx, remoteAddress, localAddress, promise);
 
-    private final ChannelFutureListener listener = future -> {
-        if (!future.isSuccess() && future.channel().isActive()) {
-            sendNextCommand(future.channel());
-        }
-    };
-
-    public void sendNextCommand(Channel channel) {
-        QueueCommand command = channel.attr(CommandsQueue.CURRENT_COMMAND).getAndSet(null);
-        if (command != null) {
-            queue.poll();
-        } else {
-            QueueCommandHolder c = queue.peek();
-            if (c != null) {
-                QueueCommand data = c.getCommand();
-                List<CommandData<Object, Object>> pubSubOps = data.getPubSubOperations();
-                if (!pubSubOps.isEmpty()) {
-                    queue.poll();
-                }
-            }
-        }
-        sendData(channel);
+        ctx.channel().attr(COMMANDS_QUEUE).set(new ConcurrentLinkedQueue<>());
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        while (true) {
-            QueueCommandHolder command = queue.poll();
-            if (command == null) {
-                break;
+        Queue<QueueCommandHolder> queue = ctx.channel().attr(COMMANDS_QUEUE).get();
+        Iterator<QueueCommandHolder> iterator = queue.iterator();
+        while (iterator.hasNext()) {
+            QueueCommandHolder command = iterator.next();
+
+            CommandData cc = (CommandData) command.getCommand();
+            RedisCommand cmd = cc.getCommand();
+            if (RedisCommands.BLOCKING_COMMAND_NAMES.contains(cmd.getName())
+                || RedisCommands.BLOCKING_COMMANDS.contains(cmd)) {
+                continue;
             }
-            
+
+            iterator.remove();
             command.getChannelPromise().tryFailure(
-                    new WriteRedisConnectionException("Channel has been closed! Can't write command: " 
+                    new WriteRedisConnectionException("Channel has been closed! Can't write command: "
                                 + LogHelper.toString(command.getCommand()) + " to channel: " + ctx.channel()));
         }
-        
+
         super.channelInactive(ctx);
     }
-    
+
+    private final AtomicBoolean lock = new AtomicBoolean();
+
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         if (msg instanceof QueueCommand) {
             QueueCommand data = (QueueCommand) msg;
-            QueueCommandHolder holder = queue.peek();
-            if (holder != null && holder.getCommand() == data) {
-                super.write(ctx, msg, promise);
-            } else {
-                queue.add(new QueueCommandHolder(data, promise));
-                sendData(ctx.channel());
+            QueueCommandHolder holder = new QueueCommandHolder(data, promise);
+
+            Queue<QueueCommandHolder> queue = ctx.channel().attr(COMMANDS_QUEUE).get();
+
+            while (true) {
+                if (lock.compareAndSet(false, true)) {
+                    try {
+                        queue.add(holder);
+                        ctx.writeAndFlush(data, holder.getChannelPromise());
+                    } finally {
+                        lock.set(false);
+                    }
+                    break;
+                }
             }
         } else {
             super.write(ctx, msg, promise);
-        }
-    }
-
-    private void sendData(Channel ch) {
-        QueueCommandHolder command = queue.peek();
-        if (command != null && command.trySend()) {
-            QueueCommand data = command.getCommand();
-            List<CommandData<Object, Object>> pubSubOps = data.getPubSubOperations();
-            if (!pubSubOps.isEmpty()) {
-                for (CommandData<Object, Object> cd : pubSubOps) {
-                    for (Object channel : cd.getParams()) {
-                        ch.pipeline().get(CommandPubSubDecoder.class).addPubSubCommand((ChannelName) channel, cd);
-                    }
-                }
-            } else {
-                ch.attr(CURRENT_COMMAND).set(data);
-            }
-
-            command.getChannelPromise().addListener(listener);
-            ch.writeAndFlush(data, command.getChannelPromise());
         }
     }
 

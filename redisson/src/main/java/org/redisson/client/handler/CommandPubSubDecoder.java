@@ -17,16 +17,14 @@ package org.redisson.client.handler;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 import org.redisson.client.ChannelName;
 import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
-import org.redisson.client.protocol.CommandData;
-import org.redisson.client.protocol.Decoder;
-import org.redisson.client.protocol.QueueCommand;
-import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.*;
 import org.redisson.client.protocol.decoder.ListObjectDecoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.client.protocol.pubsub.Message;
@@ -62,6 +60,20 @@ public class CommandPubSubDecoder extends CommandDecoder {
     public void addPubSubCommand(ChannelName channel, CommandData<Object, Object> data) {
         String operation = data.getCommand().getName().toLowerCase();
         commands.put(new PubSubKey(channel, operation), data);
+    }
+
+    @Override
+    protected QueueCommand getCommand(ChannelHandlerContext ctx) {
+        return ctx.channel().attr(CommandsQueuePubSub.CURRENT_COMMAND).get();
+    }
+
+    @Override
+    protected void sendNext(Channel channel) {
+        CommandsQueuePubSub handler = channel.pipeline().get(CommandsQueuePubSub.class);
+        if (handler != null) {
+            handler.sendNextCommand(channel);
+        }
+        state(null);
     }
 
     @Override

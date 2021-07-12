@@ -66,8 +66,49 @@ public class RedissonTest extends BaseTest {
                 }
             }
         }
-        
+    }
 
+    @Test
+    public void testPerformance() throws InterruptedException {
+        Config config = createConfig();
+        config.useSingleServer().setConnectionPoolSize(1).setConnectionMinimumIdleSize(1);
+        RedissonClient inst = Redisson.create(config);
+        RAtomicLong s = inst.getAtomicLong("counter");
+
+        ExecutorService ex = Executors.newFixedThreadPool(16);
+        for (int i = 0; i < 500_000; i++) {
+            ex.execute(() -> {
+                long t = s.incrementAndGet();
+            });
+        }
+
+        ex.shutdown();
+        assertThat(ex.awaitTermination(5, TimeUnit.SECONDS)).isTrue();
+        inst.shutdown();
+    }
+
+    @Test
+    public void testResponseHandling() throws InterruptedException {
+        List<Integer> list = new ArrayList<>();
+        for (int i = 0; i < 10000; i++) {
+            list.add(i);
+        }
+
+        RList<Integer> l = redisson.getList("test");
+        l.addAll(list);
+        ExecutorService e = Executors.newFixedThreadPool(8);
+        AtomicInteger counter = new AtomicInteger();
+        for (int i = 0; i < 100; i++) {
+            e.submit(() -> {
+                for (int k = 0; k < 10000; k++) {
+                    assertThat(l.get(k)).isEqualTo(k);
+                    counter.incrementAndGet();
+                }
+            });
+        }
+        e.shutdown();
+        assertThat(e.awaitTermination(30, TimeUnit.SECONDS)).isTrue();
+        assertThat(counter.get()).isEqualTo(10000 * 100);
     }
     
     @Test
