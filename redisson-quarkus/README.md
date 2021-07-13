@@ -6,7 +6,7 @@ Supports Quarkus 1.6.x - 2.0.x
 
 ## Native image with RemoteService
 
-Add **dynamic-proxy.json** and **reflection-config.json** files in `quarkus.native.additional-build-args` setting.
+To use RemoteService in native image add **dynamic-proxy.json** and **reflection-config.json** files in `quarkus.native.additional-build-args` setting.
 
 ```
 -H:DynamicProxyConfigurationResources=dynamic-proxy.json,-H:ReflectionConfigurationFiles=reflection-config.json
