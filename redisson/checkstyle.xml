@@ -226,7 +226,9 @@
         <!--module name="TodoComment"/-->
         <module name="UpperEll"/>
 
+        <!--
 	<module name="BooleanExpressionComplexity"/>
+        -->
     </module>
 
     <module name="SuppressionFilter">
