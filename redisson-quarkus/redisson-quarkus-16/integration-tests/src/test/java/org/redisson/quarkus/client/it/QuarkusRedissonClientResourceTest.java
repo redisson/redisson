@@ -12,6 +12,15 @@ import io.quarkus.test.junit.QuarkusTest;
 public class QuarkusRedissonClientResourceTest {
 
     @Test
+    public void testRemoteService() {
+        given()
+                .when().get("/quarkus-redisson-client/remoteService")
+                .then()
+                .statusCode(200)
+                .body(is("executed"));
+    }
+
+    @Test
     public void testMap() {
         given()
                 .when().get("/quarkus-redisson-client/map")
