@@ -4,6 +4,31 @@ Integrates Redisson with [Quarkus](https://quarkus.io/) framework.
 
 Supports Quarkus 1.6.x - 2.0.x  
 
+## Native image with RemoteService
+
+Add **dynamic-proxy.json** and **reflection-config.json** files in `quarkus.native.additional-build-args` setting.
+
+```
+-H:DynamicProxyConfigurationResources=dynamic-proxy.json,-H:ReflectionConfigurationFiles=reflection-config.json
+```
+
+dynamic-proxy.json:
+```
+[
+    ["<Remote Service interface name>"]
+]
+```
+
+reflection-config.json:
+```
+[
+   {
+     "name":"<Remote Service interface name>",
+     "allDeclaredMethods":true
+   }
+]
+```
+
 ## Usage  
 
 ### 1. Add `redisson-quarkus` dependency into your project:  
