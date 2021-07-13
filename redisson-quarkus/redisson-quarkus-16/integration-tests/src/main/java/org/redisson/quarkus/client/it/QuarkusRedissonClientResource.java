@@ -56,6 +56,17 @@ public class QuarkusRedissonClientResource {
     }
 
     @GET
+    @Path("/remoteService")
+    public String remoteService() {
+        RRemoteService t = redisson.getRemoteService("test");
+
+        t.register(RemService.class, new RemoteServiceImpl());
+
+        RemService rs = t.get(RemService.class);
+        return rs.executeMe();
+    }
+
+    @GET
     @Path("/pingAll")
     public String pingAll() {
         redisson.getRedisNodes(RedisNodes.SINGLE).pingAll();
