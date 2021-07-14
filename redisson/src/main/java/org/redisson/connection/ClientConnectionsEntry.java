@@ -51,7 +51,7 @@ public class ClientConnectionsEntry {
     private final Queue<RedisConnection> allConnections = new ConcurrentLinkedQueue<>();
     private final Deque<RedisConnection> freeConnections = new ConcurrentLinkedDeque<>();
     private final AsyncSemaphore freeConnectionsCounter;
-    private Iterator<RedisConnection> iter;
+    private volatile Iterator<RedisConnection> iter;
 
     public enum FreezeReason {MANAGER, RECONNECT, SYSTEM}
 
@@ -190,13 +190,23 @@ public class ClientConnectionsEntry {
         if (isPolled(command)) {
             while (true) {
                 if (lock.compareAndSet(false, true)) {
-                    RedisConnection c = freeConnections.poll();
-                    lock.set(false);
-                    if (c != null) {
-                        c.incUsage();
-                        c.setPooled(true);
+                    if (!iter.hasNext()) {
+                        iter = freeConnections.iterator();
                     }
-                    return c;
+                    try {
+                        if (iter.hasNext()) {
+                            RedisConnection c = iter.next();
+                            iter.remove();
+                            if (c != null) {
+                                c.incUsage();
+                                c.setPooled(true);
+                            }
+                            return c;
+                        }
+                        return null;
+                    } finally {
+                        lock.set(false);
+                    }
                 }
             }
         }
