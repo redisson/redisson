@@ -157,6 +157,8 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
                     if (res) {
                         // reschedule itself
                         renewExpiration();
+                    } else {
+                        cancelExpirationRenewal(null);
                     }
                 });
             }
