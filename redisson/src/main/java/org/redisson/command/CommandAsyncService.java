@@ -602,17 +602,21 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             }
             return writeAsync((String) null, codec, command, keys);
         }
-
-        Map<MasterSlaveEntry, List<String>> range2key = new HashMap<>();
+        Map<MasterSlaveEntry, Map<Integer,List<String>>> entry2slot = new HashMap<>();
+        int countSlot = 0;
         for (String key : keys) {
             int slot = connectionManager.calcSlot(key);
             MasterSlaveEntry entry = connectionManager.getEntry(slot);
-            List<String> list = range2key.computeIfAbsent(entry, k -> new ArrayList<>());
+            Map<Integer,List<String>> slot2keys = entry2slot.computeIfAbsent(entry, k -> new HashMap<>());
+            if(slot2keys.get(slot) == null){
+                countSlot++;
+            }
+            List<String> list = slot2keys.computeIfAbsent(slot, k -> new ArrayList<>());
             list.add(key);
         }
 
         RPromise<R> result = new RedissonPromise<>();
-        AtomicLong executed = new AtomicLong(keys.length);
+        AtomicLong executed = new AtomicLong(countSlot);
         AtomicReference<Throwable> failed = new AtomicReference<>();
         BiConsumer<T, Throwable> listener = (res, ex) -> {
             if (ex != null) {
@@ -632,7 +636,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             }
         };
 
-        for (Entry<MasterSlaveEntry, List<String>> entry : range2key.entrySet()) {
+        for (Entry<MasterSlaveEntry, Map<Integer,List<String>>> entry2slotEntry : entry2slot.entrySet()) {
+
             // executes in batch due to CROSSLOT error
             CommandBatchService executorService;
             if (this instanceof CommandBatchService) {
@@ -641,17 +646,18 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 executorService = new CommandBatchService(this);
             }
 
-            for (String key : entry.getValue()) {
+            Map<Integer,List<String>> slot2keylist = entry2slotEntry.getValue();
+            for (Entry<Integer,List<String>> slot2keylistEntry : slot2keylist.entrySet()) {
                 RedisCommand<T> c = command;
-                RedisCommand<T> newCommand = callback.createCommand(key);
+                RedisCommand<T> newCommand = callback.createCommand(slot2keylistEntry.getValue());
                 if (newCommand != null) {
                     c = newCommand;
                 }
                 if (readOnly) {
-                    RFuture<T> f = executorService.readAsync(entry.getKey(), codec, c, key);
+                    RFuture<T> f = executorService.readAsync(entry2slotEntry.getKey(), codec, c, slot2keylistEntry.getValue().toArray());
                     f.onComplete(listener);
                 } else {
-                    RFuture<T> f = executorService.writeAsync(entry.getKey(), codec, c, key);
+                    RFuture<T> f = executorService.writeAsync(entry2slotEntry.getKey(), codec, c, slot2keylistEntry.getValue().toArray());
                     f.onComplete(listener);
                 }
             }

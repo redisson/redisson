@@ -101,7 +101,7 @@ public class RedissonBuckets implements RBuckets {
 
             @Override
             public RedisCommand<Map<Object, Object>> createCommand(Object param) {
-                return new RedisCommand<Map<Object, Object>>("MGET", new BucketsDecoder(param.toString()));
+                return new RedisCommand<Map<Object, Object>>("MGET", new BucketsDecoder(param));
             }
         }, keys);
     }

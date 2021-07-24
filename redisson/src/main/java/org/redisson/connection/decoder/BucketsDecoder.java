@@ -18,10 +18,7 @@ package org.redisson.connection.decoder;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 
@@ -30,9 +27,9 @@ import java.util.Map;
  */
 public class BucketsDecoder implements MultiDecoder<Map<Object, Object>> {
 
-    private final String key;
+    private final Object key;
     
-    public BucketsDecoder(String key) {
+    public BucketsDecoder(Object key) {
         this.key = key;
     }
 
@@ -42,7 +39,18 @@ public class BucketsDecoder implements MultiDecoder<Map<Object, Object>> {
             return new HashMap<Object, Object>();
         }
 
-        return Collections.singletonMap(key, parts.get(0));
+        Map<Object, Object> result = new LinkedHashMap<Object, Object>(parts.size());
+
+        List<String> keys = (List<String>) key;
+
+        for(int index = 0; index < keys.size(); index++){
+            Object value = parts.get(index);
+            if (value == null) {
+                continue;
+            }
+            result.put(keys.get(index),value);
+        }
+        return result;
     }
 
 }
