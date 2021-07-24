@@ -52,11 +52,7 @@ public class CommandsQueue extends ChannelDuplexHandler {
         Iterator<QueueCommandHolder> iterator = queue.iterator();
         while (iterator.hasNext()) {
             QueueCommandHolder command = iterator.next();
-
-            CommandData cc = (CommandData) command.getCommand();
-            RedisCommand cmd = cc.getCommand();
-            if (RedisCommands.BLOCKING_COMMAND_NAMES.contains(cmd.getName())
-                || RedisCommands.BLOCKING_COMMANDS.contains(cmd)) {
+            if (command.getCommand().isBlockingCommand()) {
                 continue;
             }
 
