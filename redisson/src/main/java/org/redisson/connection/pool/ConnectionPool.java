@@ -228,29 +228,12 @@ abstract class ConnectionPool<T extends RedisConnection> {
     protected final RFuture<T> acquireConnection(RedisCommand<?> command, ClientConnectionsEntry entry) {
         RPromise<T> result = new RedissonPromise<T>();
 
-            AcquireCallback<T> callback = new AcquireCallback<T>() {
-                boolean executed;
-                
-                @Override
-                public void run() {
-                    executed = true;
-                    connectTo(entry, result, command);
-                }
-                
-                @Override
-                public void accept(T t, Throwable u) {
-                    if (executed) {
-                        return;
-                    }
-                    entry.removeConnection(this);
-                }
-            };
-            
-            result.onComplete(callback);
-            acquireConnection(entry, callback, command);
-        
-            return result;
-        }
+        Runnable callback = () -> {
+            connectTo(entry, result, command);
+        };
+        acquireConnection(entry, callback, command);
+        return result;
+    }
         
     protected boolean tryAcquireConnection(ClientConnectionsEntry entry) {
         if (entry.getNodeType() == NodeType.SLAVE && entry.isFailed()) {

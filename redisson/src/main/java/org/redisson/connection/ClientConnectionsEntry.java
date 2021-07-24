@@ -176,10 +176,6 @@ public class ClientConnectionsEntry {
         runnable.run();
     }
     
-    public void removeConnection(Runnable runnable) {
-        freeConnectionsCounter.remove(runnable);
-    }
-
     public void releaseConnection() {
         freeConnectionsCounter.release();
     }
