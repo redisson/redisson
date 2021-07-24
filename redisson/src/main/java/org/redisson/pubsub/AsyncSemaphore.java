@@ -60,11 +60,6 @@ public class AsyncSemaphore {
     }
 
     private void tryRun() {
-        if (counter.get() == 0
-                || listeners.peek() == null) {
-            return;
-        }
-
         if (counter.decrementAndGet() >= 0) {
             Runnable listener = listeners.poll();
             if (listener == null) {
@@ -74,7 +69,9 @@ public class AsyncSemaphore {
 
             listener.run();
         } else {
-            counter.incrementAndGet();
+            if (counter.incrementAndGet() > 0) {
+                tryRun();
+            }
         }
     }
 
