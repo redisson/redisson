@@ -112,7 +112,14 @@ public class JsonJacksonCodec extends BaseCodec {
         this(createObjectMapper(classLoader, codec.mapObjectMapper.copy()));
     }
 
+    private static boolean warmedup = false;
+
     private void warmup() {
+        if (getValueEncoder() == null || getValueDecoder() == null || warmedup) {
+            return;
+        }
+        warmedup = true;
+
         try {
             ByteBuf d = getValueEncoder().encode("testValue");
             getValueDecoder().decode(d, null);

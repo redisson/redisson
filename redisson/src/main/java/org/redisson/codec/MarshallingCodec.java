@@ -227,7 +227,14 @@ public class MarshallingCodec extends BaseCodec {
         warmup();
     }
 
+    private static boolean warmedup = false;
+
     private void warmup() {
+        if (warmedup) {
+            return;
+        }
+        warmedup = true;
+
         try {
             ByteBuf d = getValueEncoder().encode("testValue");
             getValueDecoder().decode(d, null);
