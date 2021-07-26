@@ -58,6 +58,7 @@ public class CommandBatchService extends CommandAsyncService {
 
         boolean firstCommand = true;
         RFuture<RedisConnection> connectionFuture;
+        Runnable cancelCallback;
         
         public RFuture<RedisConnection> getConnectionFuture() {
             return connectionFuture;
@@ -74,7 +75,15 @@ public class CommandBatchService extends CommandAsyncService {
         public void setFirstCommand(boolean firstCommand) {
             this.firstCommand = firstCommand;
         }
-        
+
+        public Runnable getCancelCallback() {
+            return cancelCallback;
+        }
+
+        public void setCancelCallback(Runnable cancelCallback) {
+            this.cancelCallback = cancelCallback;
+        }
+
     }
     
     public static class Entry {
@@ -368,6 +377,10 @@ public class CommandBatchService extends CommandAsyncService {
         Timeout timeout = connectionManager.newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
+                connections.values().forEach(c -> {
+                    c.getCancelCallback().run();
+                });
+
                 resultPromise.tryFailure(new RedisTimeoutException("Response timeout for queued commands " + responseTimeout + ": " +
                         commands.values().stream()
                                 .flatMap(e -> e.getCommands().stream().map(d -> d.getCommand()))

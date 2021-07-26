@@ -35,6 +35,7 @@ import org.redisson.misc.RedissonPromise;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -227,6 +228,11 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
             }
             connectionFuture.syncUninterruptibly();
             entry.setConnectionFuture(connectionFuture);
+
+            entry.setCancelCallback(() -> {
+                handleError(connectionFuture, new CancellationException());
+            });
+
             return connectionFuture;
         }
     }
