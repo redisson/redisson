@@ -185,7 +185,7 @@ public class RedissonBatchTest extends BaseTest {
 
 	public RFuture<BatchResult<?>> executeBatch(RedissonClient client, BatchOptions batchOptions) {
 		RBatch batch = client.createBatch(batchOptions);
-		for (int i = 0; i < 10; i++) {
+		for (int i = 0; i < 50; i++) {
 			String key = "" + i;
 			batch.getBucket(key).getAsync();
 		}
@@ -254,7 +254,7 @@ public class RedissonBatchTest extends BaseTest {
         
         BatchOptions batchOptions = BatchOptions.defaults().executionMode(ExecutionMode.REDIS_WRITE_ATOMIC);
         RBatch batch1 = redisson.createBatch(batchOptions);
-        for (int i = 0; i < 25000; i++) {
+        for (int i = 0; i < 150000; i++) {
             batch1.getBucket("test").setAsync(123);
         }
 
