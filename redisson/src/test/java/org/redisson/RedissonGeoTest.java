@@ -49,6 +49,8 @@ public class RedissonGeoTest extends BaseTest {
 
     @Test
     public void testTryAdd() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
+
         RGeo<String> geo = redisson.getGeo("test");
         assertThat(geo.add(2.51, 3.12, "city1")).isEqualTo(1);
         assertThat(geo.tryAdd(2.5, 3.1, "city1")).isFalse();
@@ -153,6 +155,8 @@ public class RedissonGeoTest extends BaseTest {
 
     @Test
     public void testBox() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
+
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
@@ -164,6 +168,8 @@ public class RedissonGeoTest extends BaseTest {
 
     @Test
     public void testBoxWithDistance() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
+
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
@@ -178,6 +184,8 @@ public class RedissonGeoTest extends BaseTest {
 
     @Test
     public void testBoxWithPosition() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
+
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
@@ -192,6 +200,8 @@ public class RedissonGeoTest extends BaseTest {
 
     @Test
     public void testBoxStoreSearch() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
+
         RGeo<String> geoSource = redisson.getGeo("test");
         RGeo<String> geoDest = redisson.getGeo("test-store");
         geoSource.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
@@ -204,6 +214,8 @@ public class RedissonGeoTest extends BaseTest {
 
     @Test
     public void testBoxStoreSorted() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
+
         RGeo<String> geoSource = redisson.getGeo("test");
         RGeo<String> geoDest = redisson.getGeo("test-store");
         geoSource.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));

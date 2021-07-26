@@ -1,6 +1,7 @@
 package org.redisson;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RDeque;
 import org.redisson.api.queue.DequeMoveArgs;
@@ -27,6 +28,8 @@ public class RedissonDequeTest extends BaseTest {
 
     @Test
     public void testMove() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
+
         RDeque<Integer> deque1 = redisson.getDeque("deque1");
         RDeque<Integer> deque2 = redisson.getDeque("deque2");
 

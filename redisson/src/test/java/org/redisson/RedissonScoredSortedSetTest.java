@@ -33,6 +33,8 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testRandom() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
+
         RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("test");
         set.add(1, 10);
         set.add(2, 20);
@@ -1327,6 +1329,8 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testReadIntersection() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
+
         RScoredSortedSet<String> set1 = redisson.getScoredSortedSet("simple1");
         set1.add(1, "one");
         set1.add(2, "two");
@@ -1432,6 +1436,8 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testRangeTo() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
+
         RScoredSortedSet<Integer> set1 = redisson.getScoredSortedSet("simple1");
         for (int i = 0; i < 10; i++) {
             set1.add(i, i);
@@ -1445,6 +1451,8 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testRevRange() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
+
         RScoredSortedSet<Integer> set1 = redisson.getScoredSortedSet("simple1");
         for (int i = 0; i < 10; i++) {
             set1.add(i, i);
@@ -1458,6 +1466,8 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testRangeToScored() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
+
         RScoredSortedSet<Integer> set1 = redisson.getScoredSortedSet("simple1");
         for (int i = 0; i < 10; i++) {
             set1.add(i, i);
@@ -1471,6 +1481,8 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testReadUnion() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
+
         RScoredSortedSet<String> set1 = redisson.getScoredSortedSet("simple1");
         set1.add(1, "one");
         set1.add(2, "two");
