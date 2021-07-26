@@ -3,6 +3,21 @@ Redisson Releases History
 
 Consider __[Redisson PRO](https://redisson.pro)__ version for **ultra-fast performance** and **support by SLA**.
 
+### 26-Jul-2021 - 3.16.1 released
+Improvement - MarshallingCodec and JsonJacksonCodec warmup added  
+Improvement - performance improvement for connection pool with few connections  
+
+Fixed - connection leak after command error if Batch executed in REDIS_WRITE_ATOMIC mode
+Fixed - AsyncSemaphore race condition issue  
+Fixed - Quarkus native remote service invocation fails  
+Fixed - `nameMapper` setting isn't applied to `RTopic` object  
+Fixed - Batch in REDIS_WRITE_ATOMIC mode doesn't respect batch settings  
+Fixed - `UndeclaredThrowableException` is thrown when cache down while executing `RLiveObjectService.get()` method  
+Fixed - Reactive Transactions aren't unlocking transactional locks  
+Fixed - keySet() method of transactional map throws Exception  
+Fixed - lock expiration renewal should be canceled if owner doesn't exist (thanks to @regidio)  
+
+
 ### 28-Jun-2021 - 3.16.0 released
 Feature - GraalVM native-image support  
 Feature - Spring Data Redis 2.5.x support  
