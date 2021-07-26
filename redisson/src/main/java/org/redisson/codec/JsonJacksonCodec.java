@@ -111,7 +111,17 @@ public class JsonJacksonCodec extends BaseCodec {
     public JsonJacksonCodec(ClassLoader classLoader, JsonJacksonCodec codec) {
         this(createObjectMapper(classLoader, codec.mapObjectMapper.copy()));
     }
-    
+
+    private void warmup() {
+        try {
+            ByteBuf d = getValueEncoder().encode("testValue");
+            getValueDecoder().decode(d, null);
+            d.release();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     protected static ObjectMapper createObjectMapper(ClassLoader classLoader, ObjectMapper om) {
         TypeFactory tf = TypeFactory.defaultInstance().withClassLoader(classLoader);
         om.setTypeFactory(tf);
@@ -122,6 +132,7 @@ public class JsonJacksonCodec extends BaseCodec {
         this.mapObjectMapper = mapObjectMapper.copy();
         init(this.mapObjectMapper);
         initTypeInclusion(this.mapObjectMapper);
+        warmup();
     }
 
     protected void initTypeInclusion(ObjectMapper mapObjectMapper) {
