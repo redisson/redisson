@@ -64,7 +64,9 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         super(commandExecutor, name);
         this.redisson = redisson;
         this.options = options;
-        if (options != null && options.getWriteMode() == WriteMode.WRITE_BEHIND) {
+        if (options != null
+                && options.getWriteMode() == WriteMode.WRITE_BEHIND
+                    && options.getWriter() != null) {
             this.writeBehindService = writeBehindService;
             writeBehindTask = writeBehindService.start(name, options);
         } else {
@@ -77,7 +79,9 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         super(codec, commandExecutor, name);
         this.redisson = redisson;
         this.options = options;
-        if (options != null && options.getWriteMode() == WriteMode.WRITE_BEHIND) {
+        if (options != null
+                && options.getWriteMode() == WriteMode.WRITE_BEHIND
+                    && options.getWriter() != null) {
             this.writeBehindService = writeBehindService;
             writeBehindTask = writeBehindService.start(name, options);
         } else {
