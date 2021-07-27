@@ -30,7 +30,7 @@ Maven
      <dependency>
          <groupId>org.redisson</groupId>
          <artifactId>redisson-mybatis</artifactId>
-         <version>3.15.6</version>
+         <version>3.16.1</version>
      </dependency>
 ```
 

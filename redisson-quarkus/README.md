@@ -4,9 +4,10 @@ Integrates Redisson with [Quarkus](https://quarkus.io/) framework.
 
 Supports Quarkus 1.6.x - 2.0.x  
 
-## Native image with RemoteService
-
-To use RemoteService in native image add **dynamic-proxy.json** and **reflection-config.json** files in `quarkus.native.additional-build-args` setting.
+<details>
+    <summary><b>Native image with RemoteService</b>. Click to expand!</summary>
+<br/>
+To use RemoteService in native image add <b>dynamic-proxy.json</b> and <b>reflection-config.json</b> files in `quarkus.native.additional-build-args` setting.
 
 ```
 -H:DynamicProxyConfigurationResources=dynamic-proxy.json,-H:ReflectionConfigurationFiles=reflection-config.json
@@ -27,7 +28,8 @@ reflection-config.json:
      "allDeclaredMethods":true
    }
 ]
-```
+``` 
+</details>
 
 ## Usage  
 
@@ -42,7 +44,7 @@ Maven
     <artifactId>redisson-quarkus-16</artifactId>
     <!-- for Quarkus v2.0.x -->
     <artifactId>redisson-quarkus-20</artifactId>
-    <version>3.16.0</version>
+    <version>3.16.1</version>
 </dependency>
 ```
 
@@ -50,9 +52,9 @@ Gradle
 
 ```groovy
 // for Quarkus v1.6.x - v1.13.x
-compile 'org.redisson:redisson-quarkus-16:3.16.0'
+compile 'org.redisson:redisson-quarkus-16:3.16.1'
 // for Quarkus v2.0.x
-compile 'org.redisson:redisson-quarkus-20:3.16.0'
+compile 'org.redisson:redisson-quarkus-20:3.16.1'
 ```
 
 ### 2. Add settings into `application.properties` file

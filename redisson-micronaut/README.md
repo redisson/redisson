@@ -14,14 +14,14 @@ Maven
 <dependency>
     <groupId>org.redisson</groupId>
     <artifactId>redisson-micronaut</artifactId>
-    <version>3.16.0</version>
+    <version>3.16.1</version>
 </dependency>
 ```
 
 Gradle
 
 ```groovy
-compile 'org.redisson:redisson-micronaut:3.16.0'
+compile 'org.redisson:redisson-micronaut:3.16.1'
 ```
 
 ### 2. Add settings into `application.yml` file
