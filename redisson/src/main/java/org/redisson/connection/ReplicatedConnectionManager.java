@@ -75,10 +75,6 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
 
             Role role = Role.valueOf(connection.sync(RedisCommands.INFO_REPLICATION).get(ROLE_KEY));
             if (Role.master.equals(role)) {
-                if (currentMaster.get() != null) {
-                    stopThreads();
-                    throw new RedisException("Multiple masters detected");
-                }
                 currentMaster.set(addr);
                 log.info("{} is the master", addr);
                 this.config.setMasterAddress(addr.toString());
