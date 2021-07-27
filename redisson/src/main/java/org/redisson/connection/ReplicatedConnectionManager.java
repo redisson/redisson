@@ -20,7 +20,6 @@ import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
-import org.redisson.client.RedisException;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.*;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
