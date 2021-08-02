@@ -97,6 +97,11 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
     }
 
     @Override
+    protected void startDNSMonitoring(RedisClient masterHost) {
+        // disabled
+    }
+
+    @Override
     protected MasterSlaveServersConfig create(BaseMasterSlaveServersConfig<?> cfg) {
         MasterSlaveServersConfig res = super.create(cfg);
         res.setDatabase(((ReplicatedServersConfig) cfg).getDatabase());
