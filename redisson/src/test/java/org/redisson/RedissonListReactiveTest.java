@@ -5,15 +5,34 @@ import org.junit.jupiter.api.Test;
 import org.redisson.api.RListReactive;
 import org.redisson.client.RedisException;
 import reactor.core.publisher.BaseSubscriber;
+import reactor.core.publisher.Flux;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.Predicate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonListReactiveTest extends BaseReactiveTest {
+
+    @Test
+    public void testIteratorFilter() {
+        for (int i = 0; i < 10; i++) {
+            RListReactive<String> testList = redisson.getList("list");
+            testList.delete().block();
+            testList.add("1").block();
+            testList.add("2").block();
+            testList.add("1").block();
+            testList.add("2").block();
+            Predicate<String> lambdaPredicate = (String s) -> s.equals("2");
+            Flux<String> ret = testList.iterator().filter(lambdaPredicate);
+            List<String> s = ret.collectList().block();
+            assertThat(s).containsExactly("2", "2");
+        }
+    }
 
     @Test
     public void testHashCode() throws InterruptedException {
