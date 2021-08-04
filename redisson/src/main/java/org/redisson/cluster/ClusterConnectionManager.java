@@ -566,8 +566,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     continue;
                 }
                 masterFound = true;
-                // skip the new master if it is marked as failed or has no slots
-                if (newPart.isMasterFail() || newPart.getSlotsAmount() == 0) {
+                // skip master if it is not marked as failed or has no slots
+                if (!newPart.isMasterFail() || newPart.getSlotsAmount() == 0) {
                     continue;
                 }
                 for (Integer slot : currentPart.getSlots()) {
