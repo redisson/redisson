@@ -566,8 +566,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     continue;
                 }
                 masterFound = true;
-                // current master marked as failed
-                if (!newPart.isMasterFail() || newPart.getSlotsAmount() == 0) {
+                // skip the new master if it is marked as failed or has no slots
+                if (newPart.isMasterFail() || newPart.getSlotsAmount() == 0) {
                     continue;
                 }
                 for (Integer slot : currentPart.getSlots()) {
@@ -593,7 +593,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 break;
             }
 
-            if (!masterFound && newPart.getSlotsAmount() > 0) {
+            if (!masterFound && !newPart.isMasterFail() && newPart.getSlotsAmount() > 0) {
                 addedPartitions.put(newPart.getMasterAddress(), newPart);
             }
         }
