@@ -67,12 +67,7 @@ public abstract class BaseRemoteProxy {
     private final Map<Class<?>, String> requestQueueNameCache = new ConcurrentHashMap<>();
     
     public String getRequestQueueName(Class<?> remoteInterface) {
-        String str = requestQueueNameCache.get(remoteInterface);
-        if (str == null) {
-            str = "{" + name + ":" + remoteInterface.getName() + "}";
-            requestQueueNameCache.put(remoteInterface, str);
-        }
-        return str;
+        return requestQueueNameCache.computeIfAbsent(remoteInterface, k -> "{" + name + ":" + k.getName() + "}");
     }
     
     protected RFuture<RemoteServiceAck> tryPollAckAgainAsync(RemoteInvocationOptions optionsCopy,
