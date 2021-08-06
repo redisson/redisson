@@ -2,7 +2,6 @@ package org.redisson;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
 import org.redisson.api.*;
 import org.redisson.api.annotation.*;
 import org.redisson.api.condition.Conditions;
@@ -18,6 +17,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *
@@ -357,6 +357,23 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         public void setNum2(int num2) {
             this.num2 = num2;
         }
+    }
+
+    @Test
+    public void testIndexedPersist() {
+        RLiveObjectService liveObjectService = redisson.getLiveObjectService();
+        TestIndexed item1 = new TestIndexed("1");
+        item1.setName1("testnma");
+        item1.setName2("gfgfgf");
+        item1.setNum1(123);
+
+        TestIndexed item2 = new TestIndexed("2");
+
+        List<TestIndexed> s = liveObjectService.persist(item1, item2);
+        assertThat(s.get(0).getId()).isEqualTo(item1.getId());
+        assertThat(s.get(1).getId()).isEqualTo(item2.getId());
+
+        redisson.shutdown();
     }
 
     @Test

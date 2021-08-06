@@ -210,7 +210,9 @@ public class AccessorInterceptor {
             }
         }
 
-        ce.execute();
+        if (ce != commandExecutor) {
+            ce.execute();
+        }
     }
 
     private void removeAsync(CommandBatchService ce, String name, String mapName, Codec codec, Object value, String fieldName) {
