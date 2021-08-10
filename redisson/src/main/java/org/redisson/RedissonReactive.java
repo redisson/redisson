@@ -514,6 +514,7 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public void shutdown() {
+        writeBehindService.stop();
         connectionManager.shutdown();
     }
 

@@ -72,56 +72,62 @@ public class MapWriteBehindTask {
 
             commandExecutor.getConnectionManager().getExecutor().execute(() -> {
                 if (task != null) {
-                    if (task instanceof MapWriterTask.Remove) {
-                            for (Object key : task.getKeys()) {
-                                try {
-                                    deletedKeys.add(key);
-                                    if (deletedKeys.size() == options.getWriteBehindBatchSize()) {
-                                        options.getWriter().delete(deletedKeys);
-                                        deletedKeys.clear();
-
-                                    }
-                                } catch (Exception exception) {
-                                    log.error("Unable to delete keys: " + deletedKeys, exception);
-                                }
-                            }
-                    } else {
-                        for (Entry<Object, Object> entry : task.getMap().entrySet()) {
-                            try {
-                                addedMap.put(entry.getKey(), entry.getValue());
-                                if (addedMap.size() == options.getWriteBehindBatchSize()) {
-                                    options.getWriter().write(addedMap);
-                                    addedMap.clear();
-                                }
-                            } catch (Exception exception) {
-                                log.error("Unable to add keys: " + addedMap, exception);
-                            }
-                        }
-                    }
-
+                    processTask(addedMap, deletedKeys, task);
                     pollTask(addedMap, deletedKeys);
                 } else {
-                    try {
-                        if (!deletedKeys.isEmpty()) {
-                            options.getWriter().delete(deletedKeys);
-                            deletedKeys.clear();
-                        }
-                    } catch (Exception exception) {
-                        log.error("Unable to delete keys: " + deletedKeys, exception);
-                    }
-                    try {
-                        if (!addedMap.isEmpty()) {
-                            options.getWriter().write(addedMap);
-                            addedMap.clear();
-                        }
-                    } catch (Exception exception) {
-                        log.error("Unable to add keys: " + addedMap, exception);
-                    }
-
+                    flushTasks(addedMap, deletedKeys);
                     enqueueTask();
                 }
             });
         });
+    }
+
+    private void flushTasks(Map<Object, Object> addedMap, List<Object> deletedKeys) {
+        try {
+            if (!deletedKeys.isEmpty()) {
+                options.getWriter().delete(deletedKeys);
+                deletedKeys.clear();
+            }
+        } catch (Exception exception) {
+            log.error("Unable to delete keys: " + deletedKeys, exception);
+        }
+        try {
+            if (!addedMap.isEmpty()) {
+                options.getWriter().write(addedMap);
+                addedMap.clear();
+            }
+        } catch (Exception exception) {
+            log.error("Unable to add keys: " + addedMap, exception);
+        }
+    }
+
+    private void processTask(Map<Object, Object> addedMap, List<Object> deletedKeys, MapWriterTask task) {
+        if (task instanceof MapWriterTask.Remove) {
+            for (Object key : task.getKeys()) {
+                try {
+                    deletedKeys.add(key);
+                    if (deletedKeys.size() == options.getWriteBehindBatchSize()) {
+                        options.getWriter().delete(deletedKeys);
+                        deletedKeys.clear();
+
+                    }
+                } catch (Exception exception) {
+                    log.error("Unable to delete keys: " + deletedKeys, exception);
+                }
+            }
+        } else {
+            for (Entry<Object, Object> entry : task.getMap().entrySet()) {
+                try {
+                    addedMap.put(entry.getKey(), entry.getValue());
+                    if (addedMap.size() == options.getWriteBehindBatchSize()) {
+                        options.getWriter().write(addedMap);
+                        addedMap.clear();
+                    }
+                } catch (Exception exception) {
+                    log.error("Unable to add keys: " + addedMap, exception);
+                }
+            }
+        }
     }
 
     private void enqueueTask() {
@@ -142,5 +148,12 @@ public class MapWriteBehindTask {
 
     public void stop() {
         isStarted.set(false);
+
+        Map<Object, Object> addedMap = new LinkedHashMap<>();
+        List<Object> deletedKeys = new ArrayList<>();
+        for (MapWriterTask task : writeBehindTasks.readAll()) {
+            processTask(addedMap, deletedKeys, task);
+        }
+        flushTasks(addedMap, deletedKeys);
     }
 }

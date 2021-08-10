@@ -49,7 +49,11 @@ public class WriteBehindService {
         task.start();
         return task;
     }
-    
+
+    public void stop() {
+        tasks.values().forEach(t -> t.stop());
+    }
+
     public void stop(String name) {
         MapWriteBehindTask task = tasks.remove(name);
         task.stop();

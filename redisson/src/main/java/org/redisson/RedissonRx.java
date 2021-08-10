@@ -523,6 +523,7 @@ public class RedissonRx implements RedissonRxClient {
 
     @Override
     public void shutdown() {
+        writeBehindService.stop();
         connectionManager.shutdown();
     }
 
