@@ -1200,6 +1200,10 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     
     @Override
     public RFuture<Void> loadAllAsync(boolean replaceExistingValues, int parallelism) {
+        if (options.getLoader() == null) {
+            throw new NullPointerException("MapLoader isn't defined");
+        }
+
         Iterable<K> keys;
         try {
             keys = options.getLoader().loadAllKeys();
@@ -1217,10 +1221,14 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     
     @Override
     public RFuture<Void> loadAllAsync(Set<? extends K> keys, boolean replaceExistingValues, int parallelism) {
-        return loadAllAsync((Iterable<K>) keys, replaceExistingValues, parallelism, null);
+        return loadAllAsync(keys, replaceExistingValues, parallelism, null);
     }
     
     protected RFuture<Void> loadAllAsync(Iterable<? extends K> keys, boolean replaceExistingValues, int parallelism, Map<K, V> loadedEntires) {
+        if (options.getLoader() == null) {
+            throw new NullPointerException("MapLoader isn't defined");
+        }
+
         if (parallelism < 1) {
             throw new IllegalArgumentException("parallelism can't be lower than 1");
         }
