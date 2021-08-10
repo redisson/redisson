@@ -84,23 +84,23 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
         NONE, 
         
         /**
-         * Least Recently Used local cache.
+         * Least Recently Used local cache eviction policy.
          */
         LRU, 
         
         /**
-         * Least Frequently Used local cache.
+         * Least Frequently Used local cache eviction policy.
          */
         LFU, 
         
         /**
-         * Local cache with Soft Reference used for values.
+         * Local cache  eviction policy with Soft Reference used for values.
          * All references will be collected by GC
          */
         SOFT, 
 
         /**
-         * Local cache with Weak Reference used for values. 
+         * Local cache eviction policy with Weak Reference used for values.
          * All references will be collected by GC
          */
         WEAK
@@ -222,7 +222,16 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     public SyncStrategy getSyncStrategy() {
         return syncStrategy;
     }
-    
+
+    /**
+     * Defines strategy for load missed local cache updates after Redis connection failure.
+     *
+     * @param reconnectionStrategy
+     *          <p><code>CLEAR</code> - clear local cache if map instance has been disconnected for a while.
+     *          <p><code>LOAD</code> - store invalidated entry hash in invalidation log for 10 minutes. Cache keys for stored invalidated entry hashes will be removed if LocalCachedMap instance has been disconnected less than 10 minutes or whole cache will be cleaned otherwise
+     *          <p><code>NONE</code> - Default. No reconnection handling
+     * @return LocalCachedMapOptions instance
+     */
     public LocalCachedMapOptions<K, V> reconnectionStrategy(ReconnectionStrategy reconnectionStrategy) {
         if (reconnectionStrategy == null) {
             throw new NullPointerException("reconnectionStrategy can't be null");
@@ -232,6 +241,15 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
         return this;
     }
 
+    /**
+     * Defines local cache synchronization strategy.
+     *
+     * @param syncStrategy
+     *          <p><code>INVALIDATE</code> - Default. Invalidate cache entry across all LocalCachedMap instances on map entry change
+     *          <p><code>UPDATE</code> - Insert/update cache entry across all LocalCachedMap instances on map entry change
+     *          <p><code>NONE</code> - No synchronizations on map changes
+     * @return LocalCachedMapOptions instance
+     */
     public LocalCachedMapOptions<K, V> syncStrategy(SyncStrategy syncStrategy) {
         if (syncStrategy == null) {
             throw new NullPointerException("syncStrategy can't be null");
