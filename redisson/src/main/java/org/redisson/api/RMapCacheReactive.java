@@ -15,10 +15,10 @@
  */
 package org.redisson.api;
 
-import java.util.concurrent.TimeUnit;
-
 import org.redisson.api.map.MapLoader;
 import reactor.core.publisher.Mono;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * <p>Map-based cache with ability to set TTL for each entry via
@@ -49,7 +49,16 @@ public interface RMapCacheReactive<K, V> extends RMapReactive<K, V>, RDestroyabl
      * @return void
      */
     Mono<Void> setMaxSize(int maxSize);
-    
+
+    /**
+     * Sets max size of the map and overrides current value.
+     * Superfluous elements are evicted using defined algorithm.
+     *
+     * @param maxSize - max size
+     * @param mode - eviction mode
+     */
+    Mono<Void> setMaxSize(int maxSize, EvictionMode mode);
+
     /**
      * Tries to set max size of the map. 
      * Superfluous elements are evicted using LRU algorithm. 
@@ -58,7 +67,17 @@ public interface RMapCacheReactive<K, V> extends RMapReactive<K, V>, RDestroyabl
      * @return <code>true</code> if max size has been successfully set, otherwise <code>false</code>.
      */
     Mono<Boolean> trySetMaxSize(int maxSize);
-    
+
+    /**
+     * Tries to set max size of the map.
+     * Superfluous elements are evicted using defined algorithm.
+     *
+     * @param maxSize - max size
+     * @param mode - eviction mode
+     * @return <code>true</code> if max size has been successfully set, otherwise <code>false</code>.
+     */
+    Mono<Boolean> trySetMaxSize(int maxSize, EvictionMode mode);
+
     /**
      * If the specified key is not already associated
      * with a value, associate it with the given value.

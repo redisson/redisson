@@ -15,12 +15,12 @@
  */
 package org.redisson.api;
 
-import java.util.concurrent.TimeUnit;
-
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
 import org.redisson.api.map.MapLoader;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * <p>Map-based cache with ability to set TTL for each entry via
@@ -51,7 +51,16 @@ public interface RMapCacheRx<K, V> extends RMapRx<K, V>, RDestroyable {
      * @return void
      */
     Completable setMaxSize(int maxSize);
-    
+
+    /**
+     * Sets max size of the map and overrides current value.
+     * Superfluous elements are evicted using defined algorithm.
+     *
+     * @param maxSize - max size
+     * @param mode - eviction mode
+     */
+    Completable setMaxSize(int maxSize, EvictionMode mode);
+
     /**
      * Tries to set max size of the map. 
      * Superfluous elements are evicted using LRU algorithm. 
@@ -60,7 +69,17 @@ public interface RMapCacheRx<K, V> extends RMapRx<K, V>, RDestroyable {
      * @return <code>true</code> if max size has been successfully set, otherwise <code>false</code>.
      */
     Single<Boolean> trySetMaxSize(int maxSize);
-    
+
+    /**
+     * Tries to set max size of the map.
+     * Superfluous elements are evicted using defined algorithm.
+     *
+     * @param maxSize - max size
+     * @param mode - eviction mode
+     * @return <code>true</code> if max size has been successfully set, otherwise <code>false</code>.
+     */
+    Single<Boolean> trySetMaxSize(int maxSize, EvictionMode mode);
+
     /**
      * If the specified key is not already associated
      * with a value, associate it with the given value.
