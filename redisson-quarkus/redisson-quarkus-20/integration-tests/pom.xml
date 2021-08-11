@@ -38,6 +38,18 @@
           <artifactId>commons-logging-jboss-logging</artifactId>
           <scope>test</scope>
       </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers</artifactId>
+        <version>1.14.3</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>junit-jupiter</artifactId>
+        <scope>test</scope>
+      </dependency>
+
     </dependencies>
 
     <build>
@@ -126,7 +138,6 @@
         </build>
         <properties>
           <quarkus.package.type>native</quarkus.package.type>
-          <quarkus.native.additional-build-args>--allow-incomplete-classpath</quarkus.native.additional-build-args>
         </properties>
       </profile>
     </profiles>

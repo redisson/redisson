@@ -21,6 +21,7 @@ import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import org.redisson.RedissonExecutorService;
 import org.redisson.RedissonShutdownException;
+import org.redisson.TaskInjector;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RemoteInvocationOptions;
@@ -38,8 +39,6 @@ import org.redisson.misc.HashValue;
 import org.redisson.misc.Injector;
 import org.redisson.remote.RequestId;
 import org.redisson.remote.ResponseEntry;
-import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor;
 
 import java.io.ByteArrayInputStream;
 import java.io.ObjectInput;
@@ -53,43 +52,43 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Executor service runs Callable and Runnable tasks.
- * 
+ *
  * @author Nikita Koksharov
  *
  */
 public class TasksRunnerService implements RemoteExecutorService {
 
     private static final Map<HashValue, Codec> CODECS = new LRUCacheMap<HashValue, Codec>(500, 0, 0);
-    
+
     private final Codec codec;
     private final String name;
     private final CommandAsyncExecutor commandExecutor;
 
     private final RedissonClient redisson;
-    
+
     private String tasksCounterName;
     private String statusName;
     private String terminationTopicName;
-    private String tasksName; 
+    private String tasksName;
     private String schedulerQueueName;
     private String schedulerChannelName;
     private String tasksRetryIntervalName;
     private String tasksExpirationTimeName;
 
-    private BeanFactory beanFactory;
+    private TaskInjector injector;
     private ConcurrentMap<String, ResponseEntry> responses;
-    
+
     public TasksRunnerService(CommandAsyncExecutor commandExecutor, RedissonClient redisson, Codec codec, String name, ConcurrentMap<String, ResponseEntry> responses) {
         this.commandExecutor = commandExecutor;
         this.name = name;
         this.redisson = redisson;
         this.responses = responses;
-        
+
         this.codec = codec;
     }
-    
-    public void setBeanFactory(BeanFactory beanFactory) {
-        this.beanFactory = beanFactory;
+
+    public void setTaskInjector(TaskInjector injector) {
+        this.injector = injector;
     }
 
     public void setTasksExpirationTimeName(String tasksExpirationTimeName) {
@@ -291,7 +290,7 @@ public class TasksRunnerService implements RemoteExecutorService {
                 classLoaderCodec = this.codec.getClass().getConstructor(ClassLoader.class).newInstance(cl);
                 CODECS.put(hash, classLoaderCodec);
             }
-            
+
             T task;
             if (params.getLambdaBody() != null) {
                 ByteArrayInputStream is = new ByteArrayInputStream(params.getLambdaBody());
@@ -313,11 +312,9 @@ public class TasksRunnerService implements RemoteExecutorService {
 
             Injector.inject(task, RedissonClient.class, redisson);
             Injector.inject(task, String.class, params.getRequestId());
-            
-            if (beanFactory != null) {
-                AutowiredAnnotationBeanPostProcessor bpp = new AutowiredAnnotationBeanPostProcessor();
-                bpp.setBeanFactory(beanFactory);
-                bpp.processInjection(task);
+
+            if (injector != null) {
+                injector.process(task);
             }
             
             return task;
@@ -386,7 +383,7 @@ public class TasksRunnerService implements RemoteExecutorService {
                         + "redis.call('set', KEYS[2], ARGV[2]);"
                         + "redis.call('publish', KEYS[3], ARGV[2]);"
                     + "end;"
-                + "end;";  
+                + "end;";
 
         RFuture<Object> f = commandExecutor.evalWriteAsync(name, StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 script,

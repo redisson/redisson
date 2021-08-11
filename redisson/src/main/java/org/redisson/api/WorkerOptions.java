@@ -20,13 +20,13 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.TaskInjector;
 import org.redisson.api.executor.TaskListener;
 import org.redisson.config.Config;
-import org.springframework.beans.factory.BeanFactory;
 
 /**
  * Configuration for RExecutorService workers.
- * 
+ *
  * @author Nikita Koksharov
  *
  */
@@ -34,17 +34,17 @@ public final class WorkerOptions {
 
     private int workers = 1;
     private ExecutorService executorService;
-    private BeanFactory beanFactory;
+    private TaskInjector injector;
     private long taskTimeout;
     private List<TaskListener> listeners = new ArrayList<>();
-    
+
     private WorkerOptions() {
     }
-    
+
     public static WorkerOptions defaults() {
         return new WorkerOptions();
     }
-    
+
     public int getWorkers() {
         return workers;
     }
@@ -52,7 +52,7 @@ public final class WorkerOptions {
     /**
      * Defines workers amount used to execute tasks.
      * Default is <code>1</code>.
-     * 
+     *
      * @param workers - workers amount
      * @return self instance
      */
@@ -60,31 +60,32 @@ public final class WorkerOptions {
         this.workers = workers;
         return this;
     }
-    
-    public BeanFactory getBeanFactory() {
-        return beanFactory;
+
+    public TaskInjector getTaskInjector() {
+        return injector;
     }
-    
+
     /**
-     * Defines Spring BeanFactory instance to execute tasks with Spring's '@Autowired', 
+     * Defines injector to execute tasks with annotation e.g. Spring's '@Autowired',
      * '@Value' or JSR-330's '@Inject' annotation.
-     * 
-     * @param beanFactory - Spring BeanFactory instance
+     *
+     * @see org.redisson.spring.misc.BeanFactoryAdapter
+     * @param injector - a custom injector instance e.g. org.redisson.spring.misc.BeanFactoryAdapter
      * @return self instance
      */
-    public WorkerOptions beanFactory(BeanFactory beanFactory) {
-        this.beanFactory = beanFactory;
+    public WorkerOptions taskInjector(TaskInjector injector) {
+        this.injector = injector;
         return this;
     }
-    
+
     public ExecutorService getExecutorService() {
         return executorService;
     }
-    
+
     /**
      * Defines custom ExecutorService to execute tasks.
      * {@link Config#setExecutor(ExecutorService)} is used by default.
-     * 
+     *
      * @param executorService - custom ExecutorService
      * @return self instance
      */

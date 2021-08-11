@@ -17,22 +17,54 @@
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-arc</artifactId>
       </dependency>
+
       <dependency>
-          <groupId>org.redisson</groupId>
-          <artifactId>redisson</artifactId>
-          <version>${project.version}</version>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-spring-beans-api</artifactId>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-spring-core-api</artifactId>
       </dependency>
 
-          <dependency>
-              <groupId>jakarta.enterprise</groupId>
-              <artifactId>jakarta.enterprise.cdi-api</artifactId>
-          </dependency>
+      <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-netty</artifactId>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-transport-native-epoll</artifactId>
+        <classifier>linux-x86_64</classifier>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-transport-native-kqueue</artifactId>
+        <classifier>osx-x86_64</classifier>
+      </dependency>
 
-          <dependency>
-              <groupId>org.graalvm.nativeimage</groupId>
-              <artifactId>svm</artifactId>
-              <scope>provided</scope>
-          </dependency>
+      <dependency>
+        <groupId>org.redisson</groupId>
+        <artifactId>redisson</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.jaxrs</groupId>
+            <artifactId>jackson-jaxrs-yaml-provider</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-text</artifactId>
+            <version>1.9</version>
+        </dependency>
+
+
+        <dependency>
+        <groupId>org.graalvm.nativeimage</groupId>
+        <artifactId>svm</artifactId>
+        <scope>provided</scope>
+      </dependency>
 
     </dependencies>
 

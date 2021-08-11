@@ -144,8 +144,8 @@ public final class RedissonNode {
             
             WorkerOptions options = WorkerOptions.defaults()
                                                 .workers(mapReduceWorkers)
-                                                .beanFactory(config.getBeanFactory());
-            
+                                                .taskInjector(config.getTaskInjector());
+
             redisson.getExecutorService(RExecutorService.MAPREDUCE_NAME).registerWorkers(options);
             log.info("{} map reduce worker(s) registered", mapReduceWorkers);
         }
@@ -156,8 +156,8 @@ public final class RedissonNode {
             
             WorkerOptions options = WorkerOptions.defaults()
                                                 .workers(workers)
-                                                .beanFactory(config.getBeanFactory());
-            
+                                                .taskInjector(config.getTaskInjector());
+
             redisson.getExecutorService(name).registerWorkers(options);
             log.info("{} worker(s) registered for ExecutorService with '{}' name", workers, name);
         }

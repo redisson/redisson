@@ -4,11 +4,13 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 
+import io.quarkus.test.junit.TestProfile;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
+@TestProfile(value = RedissonProfile.class)
 public class QuarkusRedissonClientResourceTest {
 
     @Test

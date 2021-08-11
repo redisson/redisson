@@ -15,31 +15,63 @@
  */
 package io.quarkus.redisson.client.runtime;
 
+import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import org.redisson.config.TransportMode;
 
 import java.util.Map;
 import java.util.Optional;
 
 /**
  *
- * @author Nikita Koksharov
+ * @author ineednousername https://github.com/ineednousername
  *
  */
-//@ConfigRoot(name = "redisson", phase = ConfigPhase.RUN_TIME)
-public class RedissonConfig {
+@ConfigRoot(name = "redisson", phase = ConfigPhase.RUN_TIME)
+public class RedissonRuntimeConfig {
 
     /**
      * Redis uri
      */
-//    @ConfigItem
+    @ConfigItem
     public Optional<String> codec;
+
+    /**
+     * empty javadoc
+     */
+    @ConfigItem
+    public Optional<Integer> threads;
+
+    /**
+     * empty javadoc
+     */
+    @ConfigItem(name = "netty-threads")
+    public Optional<Integer> nettyThreads;
+
+
+    /**
+     * empty javadoc
+     */
+    @ConfigItem(name = "transport-mode")
+    public Optional<TransportMode> transportMode;
+
 
     /**
      * Redis cluster config
      */
-//    @ConfigItem
-    public Optional<Map<String, String>> clusterServersConfig;
+    @ConfigItem(name = ConfigItem.PARENT)
+    public Map<String, NamedRuntimeConfig> serversConfig;
 
+
+    @ConfigGroup
+    public static class NamedRuntimeConfig {
+
+        /**
+         *
+         */
+        @ConfigItem(name = ConfigItem.PARENT)
+        public Map<String, String> configs;
+    }
 }

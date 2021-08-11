@@ -70,7 +70,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     private final String schedulerChannelName;
     private final String tasksRetryIntervalName;
     private final String tasksExpirationTimeName;
-    
+
     private final String workersChannelName;
     private final String workersSemaphoreName;
     private final String workersCounterName;
@@ -305,8 +305,8 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         service.setSchedulerQueueName(schedulerQueueName);
         service.setTasksExpirationTimeName(tasksExpirationTimeName);
         service.setTasksRetryIntervalName(tasksRetryIntervalName);
-        service.setBeanFactory(options.getBeanFactory());
-        
+        service.setTaskInjector(options.getTaskInjector());
+
         ExecutorService es = commandExecutor.getConnectionManager().getExecutor();
         if (options.getExecutorService() != null) {
             es = options.getExecutorService();
@@ -323,7 +323,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             }
         });
     }
-    
+
     @Override
     public void registerWorkers(int workers, ExecutorService executor) {
         registerWorkers(WorkerOptions.defaults().workers(workers).executorService(executor));

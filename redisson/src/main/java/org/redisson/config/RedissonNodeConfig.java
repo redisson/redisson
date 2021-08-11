@@ -15,17 +15,17 @@
  */
 package org.redisson.config;
 
-import org.springframework.beans.factory.BeanFactory;
+import org.redisson.TaskInjector;
 
 /**
  * Redisson Node configuration
- * 
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonNodeConfig extends RedissonNodeFileConfig {
-    
-    private BeanFactory beanFactory;
+
+    private TaskInjector injector;
 
     public RedissonNodeConfig() {
         super();
@@ -34,24 +34,25 @@ public class RedissonNodeConfig extends RedissonNodeFileConfig {
     public RedissonNodeConfig(Config oldConf) {
         super(oldConf);
     }
-    
+
     public RedissonNodeConfig(RedissonNodeConfig oldConf) {
         super(oldConf);
-        this.beanFactory = oldConf.beanFactory;
+        this.injector = oldConf.injector;
     }
-    
-    public BeanFactory getBeanFactory() {
-        return beanFactory;
+
+    public TaskInjector getTaskInjector() {
+        return injector;
     }
 
     /**
-     * Defines Spring Bean Factory instance to execute tasks with Spring's '@Autowired', 
+     * Defines injector to execute tasks with annotation e.g. Spring's '@Autowired',
      * '@Value' or JSR-330's '@Inject' annotation.
-     * 
-     * @param beanFactory - Spring BeanFactory instance
+     *
+     * @see org.redisson.spring.misc.BeanFactoryAdapter
+     * @param injector - a custom injector instance e.g. org.redisson.spring.misc.BeanFactoryAdapter
      */
-    public void setBeanFactory(BeanFactory beanFactory) {
-        this.beanFactory = beanFactory;
+    public void setTaskInjector(TaskInjector injector) {
+        this.injector = injector;
     }
 
 }

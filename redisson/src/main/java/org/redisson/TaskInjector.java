@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.quarkus.redisson.client.deployment;
-
-import io.quarkus.builder.item.SimpleBuildItem;
+package org.redisson;
 
 /**
- * @author Nikita Koksharov
+ * Defines a custom injector to execute tasks with Annotations e.g: Spring's '@Autowired',
+ * '@Value' or JSR-330's '@Inject' annotation.
  */
-public final class RedissonClientItemBuild extends SimpleBuildItem {
+public interface TaskInjector {
+
+    <T> void process(T task);
 }
