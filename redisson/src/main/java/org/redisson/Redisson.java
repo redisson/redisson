@@ -654,12 +654,14 @@ public class Redisson implements RedissonClient {
 
     @Override
     public void shutdown() {
+        writeBehindService.stop();
         connectionManager.shutdown();
     }
 
 
     @Override
     public void shutdown(long quietPeriod, long timeout, TimeUnit unit) {
+        writeBehindService.stop();
         connectionManager.shutdown(quietPeriod, timeout, unit);
     }
 
