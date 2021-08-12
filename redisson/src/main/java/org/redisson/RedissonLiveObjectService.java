@@ -175,6 +175,14 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
     @Override
     public <T> List<T> persist(T... detachedObjects) {
+        return persist(RCascadeType.PERSIST, detachedObjects);
+    }
+
+    public <T> List<T> merge(T... detachedObjects) {
+        return persist(RCascadeType.MERGE, detachedObjects);
+    }
+
+    public <T> List<T> persist(RCascadeType type, T... detachedObjects) {
         CommandBatchService batchService = new CommandBatchService(commandExecutor);
 
         Map<Class<?>, Class<?>> classCache = new HashMap<>();
@@ -191,19 +199,21 @@ public class RedissonLiveObjectService implements RLiveObjectService {
             name2id.put(liveMap.getName(), id);
         }
 
-        CommandBatchService checkExecutor = new CommandBatchService(batchService);
-        for (Entry<String, Object> entry : name2id.entrySet()) {
-            RMap<String, Object> map = new RedissonMap<>(checkExecutor, entry.getKey(), null, null, null);
-            map.containsKeyAsync("redisson_live_object");
-        }
+        if (type == RCascadeType.PERSIST) {
+            CommandBatchService checkExecutor = new CommandBatchService(batchService);
+            for (Entry<String, Object> entry : name2id.entrySet()) {
+                RMap<String, Object> map = new RedissonMap<>(checkExecutor, entry.getKey(), null, null, null);
+                map.containsKeyAsync("redisson_live_object");
+            }
 
-        BatchResult<?> checkResponse = checkExecutor.execute();
-        for (int i = 0; i < checkResponse.getResponses().size(); i++) {
-            Boolean value = (Boolean) checkResponse.getResponses().get(i);
-            if (value) {
-                List<Object> list = new ArrayList<>(name2id.values());
-                Object id = list.get(i);
-                throw new IllegalArgumentException("Object with id=" + id + " already exists.");
+            BatchResult<?> checkResponse = checkExecutor.execute();
+            for (int i = 0; i < checkResponse.getResponses().size(); i++) {
+                Boolean value = (Boolean) checkResponse.getResponses().get(i);
+                if (value) {
+                    List<Object> list = new ArrayList<>(name2id.values());
+                    Object id = list.get(i);
+                    throw new IllegalArgumentException("Object with id=" + id + " already exists.");
+                }
             }
         }
 
