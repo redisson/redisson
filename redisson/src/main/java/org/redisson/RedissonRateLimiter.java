@@ -211,8 +211,8 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
                      + "end;"
 
                      + "if tonumber(currentValue) < tonumber(ARGV[1]) then "
-                         + "local nearest = redis.call('zrangebyscore', permitsName, '(' .. (tonumber(ARGV[2]) - interval), '+inf', 'withscores', 'limit', 0, 1); "
-                         + "return tonumber(nearest[2]) - (tonumber(ARGV[2]) - interval);"
+                         + "local firstValue = redis.call('zrange', permitsName, 0, 0, 'withscores'); "
+                         + "return 3 + interval - (tonumber(ARGV[2]) - tonumber(firstValue[2]));"
                      + "else "
                          + "redis.call('zadd', permitsName, ARGV[2], struct.pack('fI', ARGV[3], ARGV[1])); "
                          + "redis.call('decrby', valueName, ARGV[1]); "

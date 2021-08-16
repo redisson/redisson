@@ -185,6 +185,56 @@ public class RedissonRateLimiterTest extends BaseTest {
     }
 
     @Test
+    public void testConcurrency2() throws InterruptedException {
+        RRateLimiter rr = redisson.getRateLimiter("test");
+        rr.trySetRate(RateType.OVERALL, 18, 1, RateIntervalUnit.SECONDS);
+
+        Queue<Long> queue = new ConcurrentLinkedQueue<Long>();
+        AtomicLong counter = new AtomicLong();
+        ExecutorService pool = Executors.newFixedThreadPool(8);
+        for (int i = 0; i < 8; i++) {
+            pool.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        while (true) {
+                            rr.acquire();
+                            queue.add(System.currentTimeMillis());
+                            if (counter.incrementAndGet() > 1000) {
+                                break;
+                            }
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        }
+
+        pool.shutdown();
+        assertThat(pool.awaitTermination(2, TimeUnit.MINUTES)).isTrue();
+
+        int count = 0;
+        long start = 0;
+        boolean skip = true;
+        for (Long value : queue) {
+            if (start == 0) {
+                start = value;
+            }
+            count++;
+            if (value - start >= 1000) {
+                if (!skip) {
+                    assertThat(count).isLessThanOrEqualTo(18);
+                } else {
+                    skip = false;
+                }
+                start = 0;
+                count = 0;
+            }
+        }
+    }
+
+    @Test
     public void testConcurrency() throws InterruptedException {
         RRateLimiter rr = redisson.getRateLimiter("test");
         assertThat(rr.trySetRate(RateType.OVERALL, 10, 1, RateIntervalUnit.SECONDS)).isTrue();
