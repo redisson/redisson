@@ -1,0 +1,6 @@
+[
+{ 
+ "name":"org.redisson.quarkus.client.it.RemService", 
+ "allDeclaredMethods":true
+}
+]
