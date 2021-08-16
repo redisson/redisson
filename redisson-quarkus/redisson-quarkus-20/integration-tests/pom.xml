@@ -126,7 +126,7 @@
         </build>
         <properties>
           <quarkus.package.type>native</quarkus.package.type>
-          <quarkus.native.additional-build-args>--allow-incomplete-classpath</quarkus.native.additional-build-args>
+          <quarkus.native.additional-build-args>--report-unsupported-elements-at-runtime,--allow-incomplete-classpath,-H:ReflectionConfigurationFiles=reflection-config.json,-H:DynamicProxyConfigurationResources=config.xml</quarkus.native.additional-build-args>
         </properties>
       </profile>
     </profiles>
