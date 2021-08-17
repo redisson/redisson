@@ -126,7 +126,6 @@
         </build>
         <properties>
           <quarkus.package.type>native</quarkus.package.type>
-          <quarkus.native.additional-build-args>--allow-incomplete-classpath</quarkus.native.additional-build-args>
         </properties>
       </profile>
     </profiles>

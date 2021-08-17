@@ -14,9 +14,13 @@
     <name>Redisson/Quarkus v2.0.x deployment</name>
 
     <dependencies>
+     <dependency>
+       <groupId>io.quarkus</groupId>
+       <artifactId>quarkus-arc-deployment</artifactId>
+      </dependency>
       <dependency>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-arc-deployment</artifactId>
+        <artifactId>quarkus-netty-deployment</artifactId>
       </dependency>
       <dependency>
         <groupId>org.redisson</groupId>

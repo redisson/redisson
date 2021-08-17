@@ -18,6 +18,7 @@ import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.RInject;
 import org.redisson.config.Config;
 import org.redisson.config.RedissonNodeConfig;
+import org.redisson.spring.misc.BeanFactoryAdapter;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -82,7 +83,7 @@ public class RedissonExecutorServiceSpringTest extends BaseTest {
             Config config = BaseTest.createConfig();
             RedissonNodeConfig nodeConfig = new RedissonNodeConfig(config);
             nodeConfig.setExecutorServiceWorkers(Collections.singletonMap(EXECUTOR_NAME, 1));
-            nodeConfig.setBeanFactory(beanFactory);
+            nodeConfig.setTaskInjector(BeanFactoryAdapter.create(beanFactory));
             RedissonNode node = RedissonNode.create(nodeConfig);
             node.start();
             return node;

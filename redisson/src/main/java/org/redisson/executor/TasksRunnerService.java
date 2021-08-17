@@ -21,6 +21,7 @@ import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import org.redisson.RedissonExecutorService;
 import org.redisson.RedissonShutdownException;
+import org.redisson.TaskInjector;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RemoteInvocationOptions;
@@ -38,8 +39,6 @@ import org.redisson.misc.HashValue;
 import org.redisson.misc.Injector;
 import org.redisson.remote.RequestId;
 import org.redisson.remote.ResponseEntry;
-import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor;
 
 import java.io.ByteArrayInputStream;
 import java.io.ObjectInput;
@@ -76,7 +75,7 @@ public class TasksRunnerService implements RemoteExecutorService {
     private String tasksRetryIntervalName;
     private String tasksExpirationTimeName;
 
-    private BeanFactory beanFactory;
+    private TaskInjector injector;
     private ConcurrentMap<String, ResponseEntry> responses;
     
     public TasksRunnerService(CommandAsyncExecutor commandExecutor, RedissonClient redisson, Codec codec, String name, ConcurrentMap<String, ResponseEntry> responses) {
@@ -87,9 +86,9 @@ public class TasksRunnerService implements RemoteExecutorService {
         
         this.codec = codec;
     }
-    
-    public void setBeanFactory(BeanFactory beanFactory) {
-        this.beanFactory = beanFactory;
+
+    public void setTaskInjector(TaskInjector injector) {
+        this.injector = injector;
     }
 
     public void setTasksExpirationTimeName(String tasksExpirationTimeName) {
@@ -313,11 +312,9 @@ public class TasksRunnerService implements RemoteExecutorService {
 
             Injector.inject(task, RedissonClient.class, redisson);
             Injector.inject(task, String.class, params.getRequestId());
-            
-            if (beanFactory != null) {
-                AutowiredAnnotationBeanPostProcessor bpp = new AutowiredAnnotationBeanPostProcessor();
-                bpp.setBeanFactory(beanFactory);
-                bpp.processInjection(task);
+
+            if (injector != null) {
+                injector.process(task);
             }
             
             return task;
