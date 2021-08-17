@@ -2290,6 +2290,36 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     }
 
     @Test
+    public void testBatchedMerge() {
+        Assertions.assertTimeout(Duration.ofSeconds(10), () -> {
+            RLiveObjectService s = redisson.getLiveObjectService();
+
+            List<TestREntity> objects = new ArrayList<>();
+            int objectsAmount = 100000;
+            for (int i = 0; i < objectsAmount; i++) {
+                TestREntity e = new TestREntity();
+                e.setName("" + i);
+                e.setValue("value" + i);
+                objects.add(e);
+            }
+            List<Object> attachedObjects = s.merge(objects.toArray());
+            assertThat(attachedObjects).hasSize(objectsAmount);
+
+            objects.clear();
+            for (int i = 0; i < objectsAmount; i++) {
+                TestREntity e = (TestREntity) attachedObjects.get(i);
+                e.setName("" + i);
+                e.setValue("value" + i*1000);
+                objects.add(e);
+            }
+            List<Object> attachedObjects2 = s.merge(objects.toArray());
+            assertThat(attachedObjects2).hasSize(objectsAmount);
+
+            assertThat(redisson.getKeys().count()).isEqualTo(objectsAmount);
+        });
+    }
+
+    @Test
     public void testBatchedPersist() {
         Assertions.assertTimeout(Duration.ofSeconds(40), () -> {
             RLiveObjectService s = redisson.getLiveObjectService();

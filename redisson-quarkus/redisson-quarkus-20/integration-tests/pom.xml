@@ -126,6 +126,7 @@
         </build>
         <properties>
           <quarkus.package.type>native</quarkus.package.type>
+          <quarkus.native.additional-build-args>-H:ReflectionConfigurationFiles=reflection-config.json,-H:DynamicProxyConfigurationResources=config.xml</quarkus.native.additional-build-args>
         </properties>
       </profile>
     </profiles>
