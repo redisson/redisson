@@ -206,7 +206,11 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
 
                      + "if released > 0 then "
                           + "redis.call('zremrangebyscore', permitsName, 0, tonumber(ARGV[2]) - interval); "
-                          + "currentValue = tonumber(currentValue) + released; "
+                          + "if tonumber(currentValue) + released > tonumber(rate) then "
+                               + "currentValue = tonumber(rate) - redis.call('zcard', permitsName); "
+                          + "else "
+                               + "currentValue = tonumber(currentValue) + released; "
+                          + "end; "
                           + "redis.call('set', valueName, currentValue);"
                      + "end;"
 
