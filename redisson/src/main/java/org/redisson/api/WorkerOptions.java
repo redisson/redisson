@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 import org.redisson.TaskInjector;
 import org.redisson.api.executor.TaskListener;
 import org.redisson.config.Config;
-import org.springframework.beans.factory.BeanFactory;
 
 /**
  * Configuration for RExecutorService workers.
