@@ -130,6 +130,49 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
+                <groupId>org.assertj</groupId>
+                <artifactId>assertj-core</artifactId>
+                <version>3.18.1</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.awaitility</groupId>
+                <artifactId>awaitility</artifactId>
+                <version>4.0.3</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+               <groupId>org.jmockit</groupId>
+               <artifactId>jmockit</artifactId>
+               <version>1.49</version>
+               <scope>test</scope>
+            </dependency>
+            <dependency>
+               <groupId>org.jooq</groupId>
+               <artifactId>joor-java-8</artifactId>
+               <version>0.9.12</version>
+               <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-engine</artifactId>
+                <version>5.7.1</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-params</artifactId>
+                <version>5.7.1</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>1.2.3</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-bom</artifactId>
                 <version>4.1.66.Final</version>
