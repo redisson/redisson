@@ -499,8 +499,12 @@ public class RedisExecutor<V, R> {
             writeFuture = connection.send(new CommandsData(main, list, false, false));
         } else {
             if (log.isDebugEnabled()) {
-                log.debug("acquired connection for command {} and params {} from slot {} using node {}... {}",
-                        command, LogHelper.toString(params), source, connection.getRedisClient().getAddr(), connection);
+                String connectionType = " ";
+                if (connection instanceof RedisPubSubConnection) {
+                    connectionType = " pubsub ";
+                }
+                log.debug("acquired{}connection for command {} and params {} from slot {} using node {}... {}",
+                        connectionType, command, LogHelper.toString(params), source, connection.getRedisClient().getAddr(), connection);
             }
             writeFuture = connection.send(new CommandData<>(attemptPromise, codec, command, params));
         }
@@ -521,8 +525,13 @@ public class RedisExecutor<V, R> {
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("connection released for command {} and params {} from slot {} using connection {}",
-                    command, LogHelper.toString(params), source, connection);
+            String connectionType = " ";
+            if (connection instanceof RedisPubSubConnection) {
+                connectionType = " pubsub ";
+            }
+
+            log.debug("connection{}released for command {} and params {} from slot {} using connection {}",
+                    connectionType, command, LogHelper.toString(params), source, connection);
         }
     }
 
