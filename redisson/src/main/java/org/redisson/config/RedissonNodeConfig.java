@@ -16,6 +16,8 @@
 package org.redisson.config;
 
 import org.redisson.TaskInjector;
+import org.redisson.spring.misc.BeanFactoryAdapter;
+import org.springframework.beans.factory.BeanFactory;
 
 /**
  * Redisson Node configuration
@@ -53,6 +55,17 @@ public class RedissonNodeConfig extends RedissonNodeFileConfig {
      */
     public void setTaskInjector(TaskInjector injector) {
         this.injector = injector;
+    }
+
+    /**
+     * Defines Spring Bean Factory instance to execute tasks with Spring's '@Autowired',
+     * '@Value' or JSR-330's '@Inject' annotation.
+     *
+     * @param beanFactory - Spring BeanFactory instance
+     * @deprecated use {@link #setTaskInjector( TaskInjector)}
+     */
+    public void setBeanFactory(BeanFactory beanFactory) {
+        this.injector = BeanFactoryAdapter.create(beanFactory);
     }
 
 }

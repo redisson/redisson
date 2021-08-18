@@ -23,6 +23,8 @@ import java.util.concurrent.TimeUnit;
 import org.redisson.TaskInjector;
 import org.redisson.api.executor.TaskListener;
 import org.redisson.config.Config;
+import org.redisson.spring.misc.BeanFactoryAdapter;
+import org.springframework.beans.factory.BeanFactory;
 
 /**
  * Configuration for RExecutorService workers.
@@ -75,6 +77,19 @@ public final class WorkerOptions {
      */
     public WorkerOptions taskInjector(TaskInjector injector) {
         this.injector = injector;
+        return this;
+    }
+
+    /**
+     * Defines Spring BeanFactory instance to execute tasks with Spring's '@Autowired',
+     * '@Value' or JSR-330's '@Inject' annotation.
+     *
+     * @param beanFactory - Spring BeanFactory instance
+     * @return self instance
+     * @deprecated use {@link #taskInjector( TaskInjector)} instead
+     */
+    public WorkerOptions beanFactory(BeanFactory beanFactory) {
+        this.injector = BeanFactoryAdapter.create(beanFactory);
         return this;
     }
     
