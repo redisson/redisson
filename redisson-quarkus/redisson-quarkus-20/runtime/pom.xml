@@ -20,15 +20,6 @@
 
       <dependency>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-spring-beans-api</artifactId>
-      </dependency>
-      <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-spring-core-api</artifactId>
-      </dependency>
-
-      <dependency>
-        <groupId>io.quarkus</groupId>
         <artifactId>quarkus-netty</artifactId>
       </dependency>
       <dependency>
