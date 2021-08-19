@@ -497,8 +497,9 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
                 "if (value == false) then "
                   + "value = 0;"
               + "end;"
-              + "redis.call('set', KEYS[1], value + ARGV[1]); ",
-                Arrays.<Object>asList(getRawName(), getChannelName()), permits);
+              + "redis.call('set', KEYS[1], value + ARGV[1]); "
+              + "redis.call('publish', KEYS[2], value + ARGV[1]); ",
+                Arrays.asList(getRawName(), getChannelName()), permits);
     }
 
 

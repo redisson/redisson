@@ -3,6 +3,8 @@ package org.redisson;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -12,6 +14,32 @@ import org.junit.jupiter.api.Test;
 import org.redisson.api.RSemaphore;
 
 public class RedissonSemaphoreTest extends BaseConcurrentTest {
+
+    @Test
+    public void testAcquireAfterAddPermits() throws InterruptedException {
+        RSemaphore s = redisson.getSemaphore("test");
+
+        CountDownLatch l = new CountDownLatch(1);
+        Thread t1 = new Thread(() -> {
+            s.addPermits(1);
+            try {
+                s.acquire(2);
+                l.countDown();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+
+        t1.start();
+        t1.join(1000);
+        assertThat(l.await(1, TimeUnit.SECONDS)).isFalse();
+        s.acquire();
+        Thread.sleep(1000);
+        s.release();
+        assertThat(l.await(1, TimeUnit.SECONDS)).isFalse();
+        s.addPermits(1);
+        assertThat(l.await(1, TimeUnit.SECONDS)).isTrue();
+    }
 
     @Test
     public void testZero() throws InterruptedException {
