@@ -132,13 +132,13 @@
             <dependency>
                 <groupId>org.assertj</groupId>
                 <artifactId>assertj-core</artifactId>
-                <version>3.18.1</version>
+                <version>3.20.2</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.awaitility</groupId>
                 <artifactId>awaitility</artifactId>
-                <version>4.0.3</version>
+                <version>4.1.0</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
@@ -150,25 +150,25 @@
             <dependency>
                <groupId>org.jooq</groupId>
                <artifactId>joor-java-8</artifactId>
-               <version>0.9.12</version>
+               <version>0.9.14</version>
                <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter-engine</artifactId>
-                <version>5.7.1</version>
+                <version>5.7.2</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter-params</artifactId>
-                <version>5.7.1</version>
+                <version>5.7.2</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
-                <version>1.2.3</version>
+                <version>1.2.5</version>
                 <scope>test</scope>
             </dependency>
 
