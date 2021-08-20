@@ -15,14 +15,11 @@
  */
 package org.redisson.micronaut.session;
 
-import io.micronaut.context.BeanLocator;
 import io.micronaut.context.annotation.Primary;
 import io.micronaut.context.annotation.Replaces;
 import io.micronaut.context.annotation.Requires;
 import io.micronaut.context.event.ApplicationEventPublisher;
-import io.micronaut.core.serialize.ObjectSerializer;
 import io.micronaut.core.util.StringUtils;
-import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.session.InMemorySessionStore;
 import io.micronaut.session.SessionIdGenerator;
 import io.micronaut.session.SessionSettings;
@@ -40,13 +37,11 @@ import org.redisson.codec.CompositeCodec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Named;
 import javax.inject.Singleton;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
 
 /**
  *
