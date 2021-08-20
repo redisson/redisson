@@ -767,7 +767,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     private Collection<ClusterPartition> parsePartitions(List<ClusterNodeInfo> nodes) {
         Map<String, ClusterPartition> partitions = new HashMap<>();
         for (ClusterNodeInfo clusterNodeInfo : nodes) {
-            if (clusterNodeInfo.containsFlag(Flag.NOADDR) || clusterNodeInfo.containsFlag(Flag.HANDSHAKE)) {
+            if (clusterNodeInfo.containsFlag(Flag.NOADDR)
+                    || clusterNodeInfo.containsFlag(Flag.HANDSHAKE)
+                        || clusterNodeInfo.getAddress() == null) {
                 // skip it
                 continue;
             }
