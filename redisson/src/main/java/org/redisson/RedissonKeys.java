@@ -317,6 +317,10 @@ public class RedissonKeys implements RKeys {
 
     @Override
     public RFuture<Long> unlinkAsync(String... keys) {
+        if (keys.length == 0) {
+            return RedissonPromise.newSucceededFuture(0L);
+        }
+
         return commandExecutor.writeBatchedAsync(null, RedisCommands.UNLINK, new SlotCallback<Long, Long>() {
             AtomicLong results = new AtomicLong();
 
@@ -334,6 +338,10 @@ public class RedissonKeys implements RKeys {
 
     @Override
     public RFuture<Long> deleteAsync(String... keys) {
+        if (keys.length == 0) {
+            return RedissonPromise.newSucceededFuture(0L);
+        }
+
         return commandExecutor.writeBatchedAsync(null, RedisCommands.DEL, new SlotCallback<Long, Long>() {
             AtomicLong results = new AtomicLong();
 
