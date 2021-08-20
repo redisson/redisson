@@ -1,15 +1,14 @@
 package org.redisson.spring.starter;
 
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-@RunWith(SpringRunner.class)
+@SpringJUnitConfig
 @SpringBootTest(
         classes = RedissonApplication.class,
         properties = {
@@ -25,7 +24,7 @@ public class RedissonCacheManagerAutoConfigurationTest {
     @Test
     public void testApp() {
         Cache cache = cacheManager.getCache("test");
-        Assert.assertNotNull(cache);
+        Assertions.assertThat(cache).isNotNull();
     }
     
 }
