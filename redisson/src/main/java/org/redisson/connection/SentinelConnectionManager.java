@@ -247,6 +247,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     
     @Override
     protected void startDNSMonitoring(RedisClient masterHost) {
+        super.startDNSMonitoring();
+
         if (config.getDnsMonitoringInterval() == -1 || sentinelHosts.isEmpty()) {
             return;
         }
