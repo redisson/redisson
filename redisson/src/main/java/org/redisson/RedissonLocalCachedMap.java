@@ -29,10 +29,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.NumberConvertor;
-import org.redisson.client.protocol.decoder.MapKeyDecoder;
-import org.redisson.client.protocol.decoder.ObjectMapEntryReplayDecoder;
-import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder;
-import org.redisson.client.protocol.decoder.ObjectSetReplayDecoder;
+import org.redisson.client.protocol.decoder.*;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.eviction.EvictionScheduler;
 import org.redisson.misc.RPromise;
@@ -51,7 +48,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     public static final String DISABLED_KEYS_SUFFIX = "disabled-keys";
     public static final String DISABLED_ACK_SUFFIX = ":topic";
 
-    private static final RedisCommand<Set<Object>> ALL_KEYS = new RedisCommand<Set<Object>>("EVAL", new MapKeyDecoder(new ObjectSetReplayDecoder<Object>()));
+    private static final RedisCommand<Set<Object>> ALL_VALUES = new RedisCommand<Set<Object>>("EVAL", new MapValueDecoder(new ObjectSetReplayDecoder<Object>()));
     private static final RedisCommand<Set<Entry<Object, Object>>> ALL_ENTRIES = new RedisCommand<>("EVAL", new ObjectMapEntryReplayDecoder());
     private static final RedisCommand<Map<Object, Object>> ALL_MAP = new RedisCommand<Map<Object, Object>>("EVAL", new ObjectMapReplayDecoder());
     
@@ -866,7 +863,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         }
 
         RPromise<Collection<V>> promise = new RedissonPromise<Collection<V>>();
-        RFuture<Collection<V>> future = commandExecutor.evalReadAsync(getRawName(), codec, ALL_KEYS,
+        RFuture<Collection<V>> future = commandExecutor.evalReadAsync(getRawName(), codec, ALL_VALUES,
                 "local entries = redis.call('hgetall', KEYS[1]); "
               + "local result = {};"
               + "for j, v in ipairs(entries) do "

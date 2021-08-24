@@ -1,5 +1,7 @@
 package org.redisson;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.awaitility.Awaitility;
 import org.awaitility.Durations;
 import org.junit.jupiter.api.Assertions;
@@ -18,6 +20,8 @@ import org.redisson.client.codec.IntegerCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.codec.CompositeCodec;
+import org.redisson.codec.JsonJacksonCodec;
+import org.redisson.codec.TypedJsonJacksonCodec;
 import org.redisson.config.Config;
 
 import java.util.*;
@@ -166,8 +170,23 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         
         assertThat(m.size()).isEqualTo(10000);
     }
-    
-    
+
+    @Test
+    public void testReadAllValues2() {
+        ObjectMapper objectMapper = new JsonJacksonCodec().getObjectMapper()
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        Codec codec = new TypedJsonJacksonCodec(String.class, SimpleValue.class, objectMapper);
+
+        RLocalCachedMap<String, SimpleValue> map1 = redisson.getLocalCachedMap("test", codec, LocalCachedMapOptions.defaults());
+        RLocalCachedMap<String, SimpleValue> map2 = redisson.getLocalCachedMap("test", codec, LocalCachedMapOptions.defaults());
+        map1.put("key", new SimpleValue("3"));
+        Collection<SimpleValue> s = map1.readAllValues();
+        assertThat(s).hasSize(1);
+        Collection<SimpleValue> s2 = map2.readAllValues();
+        assertThat(s2).hasSize(1);
+    }
+
+
     @Test
     public void testReadValuesAndEntries() {
         RLocalCachedMap<Object, Object> m = redisson.getLocalCachedMap("testValuesWithNearCache2",
@@ -885,13 +904,12 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
 
         assertThat(map.readAllValues().size()).isEqualTo(3);
         Map<SimpleKey, SimpleValue> testMap = new HashMap<>(map);
-        assertThat(map.readAllValues()).containsOnlyElementsOf(testMap.values());
+        assertThat(map.readAllValues()).containsAll(testMap.values());
         
         RMap<SimpleKey, SimpleValue> map2 = redisson.getLocalCachedMap("simple", LocalCachedMapOptions.defaults());
-        assertThat(map2.readAllValues()).containsOnlyElementsOf(testMap.values());
+        assertThat(map2.readAllValues()).containsAll(testMap.values());
     }
 
-    
     @Test
     public void testInvalidationOnFastRemove() throws InterruptedException {
         new InvalidationTest() {
@@ -935,7 +953,7 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
     }
     
     @Test
-    public void testFastRemoveEmpty() throws InterruptedException, ExecutionException {
+    public void testFastRemoveEmpty()  {
         LocalCachedMapOptions options = LocalCachedMapOptions.defaults()
                 .evictionPolicy(EvictionPolicy.NONE)
                 .cacheSize(3)
