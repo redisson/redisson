@@ -504,7 +504,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 InetAddress ia = InetAddress.getByAddress(host, addr);
                 host = ia.getHostAddress();
             } catch (UnknownHostException e) {
-                e.printStackTrace();
+                throw new RuntimeException(e);
             }
         }
         RedisURI uri = new RedisURI(scheme + "://" + host + ":" + port);
