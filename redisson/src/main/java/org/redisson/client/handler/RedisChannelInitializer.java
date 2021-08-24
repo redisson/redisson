@@ -163,13 +163,7 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
         
         SSLParameters sslParams = new SSLParameters();
         if (config.isSslEnableEndpointIdentification()) {
-            // TODO remove for JDK 1.7+
-            try {
-                Method method = sslParams.getClass().getDeclaredMethod("setEndpointIdentificationAlgorithm", String.class);
-                method.invoke(sslParams, "HTTPS");
-            } catch (Exception e) {
-                throw new SSLException(e);
-            }
+            sslParams.setEndpointIdentificationAlgorithm("HTTPS");
         } else {
             if (config.getSslTruststore() == null) {
                 sslContextBuilder.trustManager(InsecureTrustManagerFactory.INSTANCE);
