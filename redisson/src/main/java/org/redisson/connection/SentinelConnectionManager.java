@@ -36,7 +36,9 @@ import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -495,6 +497,16 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private RedisURI toURI(String host, String port) {
+        // convert IPv6 address to unified compressed format
+        if (NetUtil.isValidIpV6Address(host)) {
+            byte[] addr = NetUtil.createByteArrayFromIpAddressString(host);
+            try {
+                InetAddress ia = InetAddress.getByAddress(host, addr);
+                host = ia.getHostAddress();
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            }
+        }
         RedisURI uri = new RedisURI(scheme + "://" + host + ":" + port);
         return applyNatMap(uri);
     }
