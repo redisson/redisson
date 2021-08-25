@@ -75,4 +75,4 @@ Tomcat 9.x - [redisson-tomcat-9-3.16.1.jar](https://repository.sonatype.org/serv
 
 Tomcat 10.x - [redisson-tomcat-10-3.16.1.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-10&v=3.16.1&e=jar)  
 
-Consider __[Redisson PRO](https://redisson.pro)__ version for **ultra-fast performance** and **support by SLA**.
+Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
