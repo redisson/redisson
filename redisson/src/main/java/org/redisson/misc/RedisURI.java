@@ -15,6 +15,8 @@
  */
 package org.redisson.misc;
 
+import io.netty.util.NetUtil;
+
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -79,7 +81,11 @@ public class RedisURI {
     public int getPort() {
         return port;
     }
-    
+
+    public boolean isIP() {
+        return NetUtil.createByteArrayFromIpAddressString(host) != null;
+    }
+
     private static String trimIpv6Brackets(String host) {
         if (host.startsWith("[") && host.endsWith("]")) {
             return host.substring(1, host.length() - 1);

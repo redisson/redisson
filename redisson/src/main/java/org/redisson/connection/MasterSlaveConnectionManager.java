@@ -250,8 +250,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
 
             if (connection.isActive()) {
-                boolean isHostname = NetUtil.createByteArrayFromIpAddressString(addr.getHost()) == null;
-                if (isHostname) {
+                if (!addr.isIP()) {
                     RedisURI address = new RedisURI(addr.getScheme()
                                  + "://" + connection.getRedisClient().getAddr().getAddress().getHostAddress()
                                  + ":" + connection.getRedisClient().getAddr().getPort());
@@ -349,8 +348,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     protected void startDNSMonitoring(RedisClient masterHost) {
-        String host = masterHost.getConfig().getAddress().getHost();
-        if (NetUtil.createByteArrayFromIpAddressString(host) != null) {
+        if (masterHost.getConfig().getAddress().isIP()) {
             return;
         }
 
