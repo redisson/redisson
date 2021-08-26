@@ -235,6 +235,7 @@ redisson:
     <summary><b>Clustered Local Cached Map Cache</b> settings. Click to expand!</summary>
 
 <br/>
+    
 _This feature is available only in [Redisson PRO](https://redisson.pro)_
     
 | | |
