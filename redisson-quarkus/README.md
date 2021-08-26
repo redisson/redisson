@@ -83,4 +83,4 @@ quarkus.redisson.netty-threads=32
 RedissonClient redisson;
 ```
 
-Consider __[Redisson PRO](https://redisson.pro)__ version for **ultra-fast performance** and **support by SLA**.
+Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
