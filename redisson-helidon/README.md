@@ -51,4 +51,4 @@ private RedissonClient redisson;
 
 For injection without @Named annotation use instance name - `default`. 
 
-Consider __[Redisson PRO](https://redisson.pro)__ version for **ultra-fast performance** and **support by SLA**.
+Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
