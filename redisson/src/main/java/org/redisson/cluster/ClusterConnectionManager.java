@@ -771,7 +771,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
     
     private RFuture<Collection<ClusterPartition>> parsePartitions(List<ClusterNodeInfo> nodes) {
-        Map<String, ClusterPartition> partitions = new HashMap<>();
+        Map<String, ClusterPartition> partitions = new ConcurrentHashMap<>();
         AsyncCountDownLatch latch = new AsyncCountDownLatch();
         int counter = 0;
         for (ClusterNodeInfo clusterNodeInfo : nodes) {
