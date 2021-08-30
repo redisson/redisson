@@ -830,14 +830,20 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
         RPromise<Collection<ClusterPartition>> result = new RedissonPromise<>();
         latch.latch(() -> {
-            addCascadeSlaves(partitions);
-            result.trySuccess(partitions.values());
+            addCascadeSlaves(partitions.values());
+
+            List<ClusterPartition> ps = partitions.values()
+                                            .stream()
+                                            .filter(cp -> cp.getType() == Type.MASTER
+                                                            && cp.getMasterAddress() != null)
+                                            .collect(Collectors.toList());
+            result.trySuccess(ps);
         }, counter);
         return result;
     }
 
-    private void addCascadeSlaves(Map<String, ClusterPartition> partitions) {
-        Iterator<ClusterPartition> iter = partitions.values().iterator();
+    private void addCascadeSlaves(Collection<ClusterPartition> partitions) {
+        Iterator<ClusterPartition> iter = partitions.iterator();
         while (iter.hasNext()) {
             ClusterPartition cp = iter.next();
             if (cp.getType() != Type.SLAVE) {
