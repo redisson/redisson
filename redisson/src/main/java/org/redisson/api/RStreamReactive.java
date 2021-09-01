@@ -700,7 +700,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
 
     /**
      * Removes messages by id.
-     * 
+     *
      * @param ids - id of messages to remove
      * @return deleted messages amount
      */
@@ -708,7 +708,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
 
     /**
      * Trims stream to specified size
-     * 
+     *
      * @param size - new size of stream
      * @return number of deleted messages
      */
@@ -716,7 +716,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
 
     /**
      * Trims stream to few tens of entries more than specified length to trim.
-     * 
+     *
      * @param size - new size of stream
      * @return number of deleted messages
      */
@@ -725,48 +725,85 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
     /**
      * Trims stream to specified size
      *
+     * @deprecated - use {@link #trim(TrimStrategy, TrimParam)} instead
+     *
      * @param strategy - trim strategy
      * @param threshold - new size of stream
      * @return number of deleted messages
      */
+    @Deprecated
     Mono<Long> trim(TrimStrategy strategy, int threshold);
 
     /**
+     * Trims stream with a custom strategy
+     *
+     * @param strategy - trim strategy
+     * @param param - a param specific for the strategy
+     * @return number of deleted messages
+     */
+    Mono<Long> trim(TrimStrategy strategy, TrimParam param);
+
+    /**
      * Trims stream using almost exact trimming threshold.
+     *
+     * @deprecated - use {@link #trimNonStrict(TrimStrategy, TrimParam)} instead
      *
      * @param strategy - trim strategy
      * @param threshold - trim threshold
      * @return number of deleted messages
      */
+    @Deprecated
     Mono<Long> trimNonStrict(TrimStrategy strategy, int threshold);
 
     /**
+     * Trims stream using almost exact trimming with a custom strategy
+     *
+     * @param strategy - trim strategy
+     * @param param - a param specific for the strategy
+     * @return number of deleted messages
+     */
+    Mono<Long> trimNonStrict(TrimStrategy strategy, TrimParam param);
+
+    /**
      * Trims stream using almost exact trimming threshold up to limit.
+     *
+     * @deprecated - use {@link #trimNonStrict(TrimStrategy, TrimParam, int)} instead
      *
      * @param strategy - trim strategy
      * @param threshold - trim threshold
      * @param limit - trim limit
      * @return number of deleted messages
      */
+    @Deprecated
     Mono<Long> trimNonStrict(TrimStrategy strategy, int threshold, int limit);
 
     /**
+     * Trims stream using almost exact trimming with a custom strategy up to limit.
+     *
+     * @param strategy - trim strategy
+     * @param param - a param specific for the strategy
+     * @param limit - trim limit
+     * @return number of deleted messages
+     */
+    Mono<Long> trimNonStrict(TrimStrategy strategy, TrimParam param, int limit);
+
+    /**
      * Returns information about this stream.
-     * 
+     *
      * @return info object
      */
     Mono<StreamInfo<K, V>> getInfo();
-    
+
     /**
      * Returns list of objects with information about groups belonging to this stream.
-     * 
-     * @return list of info objects 
+     *
+     * @return list of info objects
      */
     Mono<List<StreamGroup>> listGroups();
 
     /**
      * Returns list of objects with information about group customers for specified <code>groupName</code>.
-     * 
+     *
      * @param groupName - name of group
      * @return list of info objects
      */

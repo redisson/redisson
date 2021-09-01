@@ -653,17 +653,17 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      */
     @Deprecated
     Single<Map<String, Map<StreamMessageId, Map<K, V>>>> read(int count, long timeout, TimeUnit unit, StreamMessageId id, String name2, StreamMessageId id2, String name3, StreamMessageId id3);
-    
+
     /*
      * Use read(StreamMultiReadArgs) method instead
      *
      */
     @Deprecated
     Single<Map<String, Map<StreamMessageId, Map<K, V>>>> read(int count, long timeout, TimeUnit unit, StreamMessageId id, Map<String, StreamMessageId> nameToId);
-    
+
     /**
      * Returns stream data in range by specified start Stream ID (included) and end Stream ID (included).
-     * 
+     *
      * @param startId - start Stream ID
      * @param endId - end Stream ID
      * @return stream data mapped by Stream ID
@@ -672,36 +672,36 @@ public interface RStreamRx<K, V> extends RExpirableRx {
 
     /**
      * Returns stream data in range by specified start Stream ID (included) and end Stream ID (included).
-     * 
+     *
      * @param count - stream data size limit
      * @param startId - start Stream ID
      * @param endId - end Stream ID
      * @return stream data mapped by Stream ID
      */
     Single<Map<StreamMessageId, Map<K, V>>> range(int count, StreamMessageId startId, StreamMessageId endId);
-    
+
     /**
      * Returns stream data in reverse order in range by specified start Stream ID (included) and end Stream ID (included).
-     * 
+     *
      * @param startId - start Stream ID
      * @param endId - end Stream ID
      * @return stream data mapped by Stream ID
      */
     Single<Map<StreamMessageId, Map<K, V>>> rangeReversed(StreamMessageId startId, StreamMessageId endId);
-    
+
     /**
      * Returns stream data in reverse order in range by specified start Stream ID (included) and end Stream ID (included).
-     * 
+     *
      * @param count - stream data size limit
      * @param startId - start Stream ID
      * @param endId - end Stream ID
      * @return stream data mapped by Stream ID
      */
     Single<Map<StreamMessageId, Map<K, V>>> rangeReversed(int count, StreamMessageId startId, StreamMessageId endId);
-    
+
     /**
      * Removes messages by id.
-     * 
+     *
      * @param ids - id of messages to remove
      * @return deleted messages amount
      */
@@ -709,7 +709,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
 
     /**
      * Trims stream to specified size
-     * 
+     *
      * @param size - new size of stream
      * @return number of deleted messages
      */
@@ -717,7 +717,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
 
     /**
      * Trims stream to few tens of entries more than specified length to trim.
-     * 
+     *
      * @param size - new size of stream
      * @return number of deleted messages
      */
@@ -726,62 +726,99 @@ public interface RStreamRx<K, V> extends RExpirableRx {
     /**
      * Trims stream to specified size
      *
+     * @deprecated - use {@link #trim(TrimStrategy, TrimParam)} instead
+     *
      * @param strategy - trim strategy
      * @param threshold - new size of stream
      * @return number of deleted messages
      */
+    @Deprecated
     Single<Long> trim(TrimStrategy strategy, int threshold);
 
     /**
+     * Trims stream with a custom strategy
+     *
+     * @param strategy - trim strategy
+     * @param param - a param specific for the strategy
+     * @return number of deleted messages
+     */
+    Single<Long> trim(TrimStrategy strategy, TrimParam param);
+
+    /**
      * Trims stream using almost exact trimming threshold.
+     *
+     * @deprecated - use {@link #trimNonStrict(TrimStrategy, TrimParam)} instead
      *
      * @param strategy - trim strategy
      * @param threshold - trim threshold
      * @return number of deleted messages
      */
+    @Deprecated
     Single<Long> trimNonStrict(TrimStrategy strategy, int threshold);
 
     /**
+     * Trims stream using almost exact trimming with a custom strategy
+     *
+     * @param strategy - trim strategy
+     * @param param - a param specific for the strategy
+     * @return number of deleted messages
+     */
+    Single<Long> trimNonStrict(TrimStrategy strategy, TrimParam param);
+
+    /**
      * Trims stream using almost exact trimming threshold up to limit.
+     *
+     * @deprecated - use {@link #trimNonStrict(TrimStrategy, TrimParam, int)} instead
      *
      * @param strategy - trim strategy
      * @param threshold - trim threshold
      * @param limit - trim limit
      * @return number of deleted messages
      */
+    @Deprecated
     Single<Long> trimNonStrict(TrimStrategy strategy, int threshold, int limit);
 
     /**
+     * Trims stream using almost exact trimming with a custom strategy up to limit.
+     *
+     * @param strategy - trim strategy
+     * @param param - a param specific for the strategy
+     * @param limit - trim limit
+     * @return number of deleted messages
+     */
+    Single<Long> trimNonStrict(TrimStrategy strategy, TrimParam param, int limit);
+
+    /**
      * Returns information about this stream.
-     * 
+     *
      * @return info object
      */
     Single<StreamInfo<K, V>> getInfo();
-    
+
     /**
      * Returns list of objects with information about groups belonging to this stream.
-     * 
-     * @return list of info objects 
+     *
+     * @return list of info objects
      */
     Single<List<StreamGroup>> listGroups();
 
     /**
      * Returns list of objects with information about group customers for specified <code>groupName</code>.
-     * 
+     *
      * @param groupName - name of group
      * @return list of info objects
      */
     Single<List<StreamConsumer>> listConsumers(String groupName);
-    
+
     /**
      * Returns stream data of pending messages by group name.
      * Limited by start Stream Message ID and end Stream Message ID and count.
      * <p>
      * {@link StreamMessageId#MAX} is used as max Stream Message ID
      * {@link StreamMessageId#MIN} is used as min Stream Message ID
-     * 
+     *
      * @see #listPending
-     * 
+     *
      * @param groupName - name of group
      * @param startId - start Stream Message ID
      * @param endId - end Stream Message ID
@@ -789,16 +826,16 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * @return map
      */
     Single<Map<StreamMessageId, Map<K, V>>> pendingRange(String groupName, StreamMessageId startId, StreamMessageId endId, int count);
-    
+
     /**
      * Returns stream data of pending messages by group and customer name.
      * Limited by start Stream Message ID and end Stream Message ID and count.
      * <p>
      * {@link StreamMessageId#MAX} is used as max Stream Message ID
      * {@link StreamMessageId#MIN} is used as min Stream Message ID
-     * 
+     *
      * @see #listPending
-     * 
+     *
      * @param consumerName - name of consumer
      * @param groupName - name of group
      * @param startId - start Stream Message ID
@@ -807,5 +844,5 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * @return map
      */
     Single<Map<StreamMessageId, Map<K, V>>> pendingRange(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, int count);
-    
+
 }

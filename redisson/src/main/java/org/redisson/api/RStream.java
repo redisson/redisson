@@ -751,15 +751,15 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
 
     /**
      * Removes messages by id.
-     * 
+     *
      * @param ids - id of messages to remove
      * @return deleted messages amount
      */
     long remove(StreamMessageId... ids);
-    
+
     /**
      * Trims stream using MAXLEN strategy to specified size
-     * 
+     *
      * @param size - new size of stream
      * @return number of deleted messages
      */
@@ -768,15 +768,27 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
     /**
      * Trims stream to specified size
      *
+     * @deprecated - use {@link #trim(TrimStrategy, TrimParam)} instead
+     *
      * @param strategy - trim strategy
      * @param threshold - new size of stream
      * @return number of deleted messages
      */
+    @Deprecated
     long trim(TrimStrategy strategy, int threshold);
 
     /**
+     * Trims stream with a custom strategy
+     *
+     * @param strategy - trim strategy
+     * @param trimParam - a param specific for the strategy
+     * @return number of deleted messages
+     */
+    long trim(TrimStrategy strategy, TrimParam param);
+
+    /**
      * Trims stream using MAXLEN strategy to almost exact trimming threshold..
-     * 
+     *
      * @param size - new size of stream
      * @return number of deleted messages
      */
@@ -785,6 +797,8 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
     /**
      * Trims stream using almost exact trimming threshold.
      *
+     * @deprecated - use {@link #trimNonStrict(TrimStrategy, TrimParam)} instead
+     *
      * @param strategy - trim strategy
      * @param threshold - trim threshold
      * @return number of deleted messages
@@ -792,7 +806,18 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
     long trimNonStrict(TrimStrategy strategy, int threshold);
 
     /**
+     * Trims stream using almost exact trimming with a custom strategy
+     *
+     * @param strategy - trim strategy
+     * @param trimParam - a param specific for the strategy
+     * @return number of deleted messages
+     */
+    long trimNonStrict(TrimStrategy strategy, TrimParam param);
+
+    /**
      * Trims stream using almost exact trimming threshold up to limit.
+     *
+     * @deprecated - use {@link #trimNonStrict(TrimStrategy, TrimParam, int)} instead
      *
      * @param strategy - trim strategy
      * @param threshold - trim threshold
@@ -802,25 +827,35 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
     long trimNonStrict(TrimStrategy strategy, int threshold, int limit);
 
     /**
+     * Trims stream using almost exact trimming with a custom strategy up to limit.
+     *
+     * @param strategy - trim strategy
+     * @param trimParam - a param specific for the strategy
+     * @param limit - trim limit
+     * @return number of deleted messages
+     */
+    long trimNonStrict(TrimStrategy strategy, TrimParam param, int limit);
+
+    /**
      * Returns information about this stream.
-     * 
+     *
      * @return info object
      */
     StreamInfo<K, V> getInfo();
-    
+
     /**
      * Returns list of common info about groups belonging to this stream.
-     * 
-     * @return list of info objects 
+     *
+     * @return list of info objects
      */
     List<StreamGroup> listGroups();
 
     /**
      * Returns list of common info about group customers for specified <code>groupName</code>.
-     * 
+     *
      * @param groupName - name of group
      * @return list of info objects
      */
     List<StreamConsumer> listConsumers(String groupName);
-    
+
 }

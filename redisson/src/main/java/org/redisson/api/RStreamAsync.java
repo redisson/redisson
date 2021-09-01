@@ -804,11 +804,23 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
     /**
      * Trims stream to specified size
      *
+     * @deprecated - use {@link #trimAsync(TrimStrategy, TrimParam)} instead
+     *
      * @param strategy - trim strategy
      * @param threshold - new size of stream
      * @return number of deleted messages
      */
+    @Deprecated
     RFuture<Long> trimAsync(TrimStrategy strategy, int threshold);
+
+    /**
+     * Trims stream with a custom strategy
+     *
+     * @param strategy - trim strategy
+     * @param param - a param specific for the strategy
+     * @return number of deleted messages
+     */
+    RFuture<Long> trimAsync(TrimStrategy strategy, TrimParam param);
 
     /**
      * Trims stream using MAXLEN strategy to almost exact trimming threshold.
@@ -821,21 +833,45 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
     /**
      * Trims stream using almost exact trimming threshold.
      *
+     * @deprecated - use {@link #trimNonStrictAsync(TrimStrategy, TrimParam)} instead
+     *
      * @param strategy - trim strategy
      * @param threshold - trim threshold
      * @return number of deleted messages
      */
+    @Deprecated
     RFuture<Long> trimNonStrictAsync(TrimStrategy strategy, int threshold);
 
     /**
+     * Trims stream with a custom strategy using almost exact trimming threshold.
+     *
+     * @param strategy - trim strategy
+     * @param param - a param specific for the strategy
+     * @return number of deleted messages
+     */
+    RFuture<Long> trimNonStrictAsync(TrimStrategy strategy, TrimParam param);
+
+    /**
      * Trims stream using almost exact trimming threshold up to limit.
+     *
+     * @deprecated - use {@link #trimNonStrictAsync(TrimStrategy, TrimParam, int)} instead
      *
      * @param strategy - trim strategy
      * @param threshold - trim threshold
      * @param limit - trim limit
      * @return number of deleted messages
      */
+    @Deprecated
     RFuture<Long> trimNonStrictAsync(TrimStrategy strategy, int threshold, int limit);
+
+    /**
+     * Trims stream with a custom strategy using almost exact trimming threshold up to limit.
+     *
+     * @param strategy - trim strategy
+     * @param param - a param specific for the strategy
+     * @return number of deleted messages
+     */
+    RFuture<Long> trimNonStrictAsync(TrimStrategy strategy, TrimParam param, int limit);
 
     /**
      * Returns information about this stream.

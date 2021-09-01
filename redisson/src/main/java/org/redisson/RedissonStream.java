@@ -1156,8 +1156,18 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
 
     @Override
+    public long trim(TrimStrategy strategy, TrimParam param) {
+        return get(trimAsync(strategy, param));
+    }
+
+    @Override
     public long trimNonStrict(TrimStrategy strategy, int threshold, int limit) {
         return get(trimNonStrictAsync(strategy, threshold, limit));
+    }
+
+    @Override
+    public long trimNonStrict(TrimStrategy strategy, TrimParam param, int limit) {
+        return get(trimNonStrictAsync(strategy, param, limit));
     }
 
     @Override
@@ -1167,9 +1177,21 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
 
     @Override
+    public RFuture<Long> trimAsync(TrimStrategy strategy, TrimParam param) {
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XTRIM,
+                                            getRawName(), strategy.toString(), param.getValue());
+    }
+
+    @Override
     public RFuture<Long> trimNonStrictAsync(TrimStrategy strategy, int threshold, int limit) {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XTRIM,
                                     getRawName(), strategy.toString(), "~", threshold, "LIMIT", limit);
+    }
+
+    @Override
+    public RFuture<Long> trimNonStrictAsync(TrimStrategy strategy, TrimParam param, int limit) {
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XTRIM,
+                                    getRawName(), strategy.toString(), "~", param.getValue(), "LIMIT", limit);
     }
 
     @Override
@@ -1178,11 +1200,21 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
 
     @Override
+    public long trimNonStrict(TrimStrategy strategy, TrimParam param) {
+        return get(trimNonStrictAsync(strategy, param));
+    }
+
+    @Override
     public RFuture<Long> trimNonStrictAsync(TrimStrategy strategy, int threshold) {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XTRIM,
                                     getRawName(), strategy.toString(), "~", threshold);
     }
 
+    @Override
+    public RFuture<Long> trimNonStrictAsync(TrimStrategy strategy, TrimParam param) {
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XTRIM,
+                                    getRawName(), strategy.toString(), "~", param.getValue());
+    }
     @Override
     public RFuture<Long> trimAsync(int count) {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XTRIM, getRawName(), "MAXLEN", count);
