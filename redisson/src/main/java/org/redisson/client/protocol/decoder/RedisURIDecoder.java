@@ -19,10 +19,8 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
+import org.redisson.misc.RedisURI;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.util.List;
 
 /**
@@ -30,7 +28,7 @@ import java.util.List;
  * @author Nikita Koksharov
  *
  */
-public class InetSocketAddressDecoder implements MultiDecoder<InetSocketAddress> {
+public class RedisURIDecoder implements MultiDecoder<RedisURI> {
 
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
@@ -38,15 +36,11 @@ public class InetSocketAddressDecoder implements MultiDecoder<InetSocketAddress>
     }
     
     @Override
-    public InetSocketAddress decode(List<Object> parts, State state) {
+    public RedisURI decode(List<Object> parts, State state) {
         if (parts.isEmpty()) {
             return null;
         }
-        try {
-            return new InetSocketAddress(InetAddress.getByName((String) parts.get(0)), Integer.valueOf((String) parts.get(1)));
-        } catch (UnknownHostException e) {
-            throw new IllegalStateException(e);
-        }
+        return new RedisURI("redis", (String) parts.get(0), Integer.valueOf((String) parts.get(1)));
     }
 
 }

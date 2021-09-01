@@ -24,8 +24,8 @@ import org.redisson.client.protocol.convertor.*;
 import org.redisson.client.protocol.decoder.*;
 import org.redisson.client.protocol.pubsub.PubSubStatusDecoder;
 import org.redisson.cluster.ClusterNodeInfo;
+import org.redisson.misc.RedisURI;
 
-import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -459,8 +459,8 @@ public interface RedisCommands {
     RedisStrictCommand<Void> SENTINEL_REMOVE = new RedisStrictCommand<Void>("SENTINEL", "REMOVE", new VoidReplayConvertor());
     RedisStrictCommand<Void> SENTINEL_MONITOR = new RedisStrictCommand<Void>("SENTINEL", "MONITOR", new VoidReplayConvertor());
     
-    RedisStrictCommand<InetSocketAddress> SENTINEL_GET_MASTER_ADDR_BY_NAME = new RedisStrictCommand<>("SENTINEL", "GET-MASTER-ADDR-BY-NAME",
-            new InetSocketAddressDecoder());
+    RedisStrictCommand<RedisURI> SENTINEL_GET_MASTER_ADDR_BY_NAME = new RedisStrictCommand<>("SENTINEL", "GET-MASTER-ADDR-BY-NAME",
+            new RedisURIDecoder());
     RedisCommand<List<Map<String, String>>> SENTINEL_MASTERS = new RedisCommand<List<Map<String, String>>>("SENTINEL", "MASTERS",
             new ListMultiDecoder2(new ListResultReplayDecoder(), new ObjectMapReplayDecoder()));
     RedisCommand<Map<String, String>> SENTINEL_MASTER = new RedisCommand("SENTINEL", "MASTER", new ObjectMapReplayDecoder());

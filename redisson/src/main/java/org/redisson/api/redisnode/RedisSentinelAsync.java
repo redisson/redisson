@@ -16,8 +16,8 @@
 package org.redisson.api.redisnode;
 
 import org.redisson.api.RFuture;
+import org.redisson.misc.RedisURI;
 
-import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
 
@@ -35,7 +35,7 @@ public interface RedisSentinelAsync extends RedisNodeAsync {
      * @param masterName - name of master
      * @return network address
      */
-    RFuture<InetSocketAddress> getMasterAddrAsync(String masterName);
+    RFuture<RedisURI> getMasterAddrAsync(String masterName);
 
     /**
      * Returns list of map containing info regarding Redis Sentinel server

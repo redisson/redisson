@@ -691,6 +691,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     protected RFuture<RedisURI> resolveIP(RedisURI address) {
+        return resolveIP(address.getScheme(), address);
+    }
+
+    protected RFuture<RedisURI> resolveIP(String scheme, RedisURI address) {
         if (address.isIP()) {
             return RedissonPromise.newSucceededFuture(address);
         }
@@ -707,7 +711,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
 
             InetSocketAddress s = f.getNow();
-            RedisURI uri = new RedisURI(address.getScheme() + "://" + s.getAddress().getHostAddress() + ":" + address.getPort());
+            RedisURI uri = new RedisURI(scheme + "://" + s.getAddress().getHostAddress() + ":" + address.getPort());
             result.trySuccess(uri);
         });
         return result;

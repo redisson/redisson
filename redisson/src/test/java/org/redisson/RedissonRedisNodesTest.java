@@ -9,6 +9,7 @@ import org.redisson.client.protocol.Time;
 import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.config.Config;
 import org.redisson.connection.balancer.RandomLoadBalancer;
+import org.redisson.misc.RedisURI;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -275,8 +276,8 @@ public class RedissonRedisNodesTest extends BaseTest {
 
         for (RedisSentinel sentinel : nodes.getSentinels()) {
             Assertions.assertTrue(sentinel.ping());
-            InetSocketAddress addr = sentinel.getMasterAddr("myMaster");
-            assertThat(addr.getAddress().getHostAddress()).isEqualTo("127.0.0.1");
+            RedisURI addr = sentinel.getMasterAddr("myMaster");
+            assertThat(addr.getHost()).isEqualTo("127.0.0.1");
             assertThat(addr.getPort()).isEqualTo(master.getRedisServerPort());
 
             Map<String, String> masterMap = sentinel.getMaster("myMaster");

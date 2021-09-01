@@ -28,6 +28,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.Time;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
+import org.redisson.misc.RedisURI;
 import org.redisson.misc.RedissonPromise;
 
 import java.net.InetSocketAddress;
@@ -199,7 +200,7 @@ public class SentinelRedisNode implements RedisSentinel, RedisSentinelAsync {
     }
 
     @Override
-    public InetSocketAddress getMasterAddr(String masterName) {
+    public RedisURI getMasterAddr(String masterName) {
         return commandAsyncService.get(getMasterAddrAsync(masterName));
     }
 
@@ -229,7 +230,7 @@ public class SentinelRedisNode implements RedisSentinel, RedisSentinelAsync {
     }
 
     @Override
-    public RFuture<InetSocketAddress> getMasterAddrAsync(String masterName) {
+    public RFuture<RedisURI> getMasterAddrAsync(String masterName) {
         return executeAsync(null, StringCodec.INSTANCE, -1, RedisCommands.SENTINEL_GET_MASTER_ADDR_BY_NAME, masterName);
     }
 
