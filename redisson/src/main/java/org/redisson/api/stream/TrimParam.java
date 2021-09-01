@@ -56,10 +56,11 @@ public abstract class TrimParam {
 
 	/**
 	 * Creates a param compatible with the {@link TrimStrategy.MINID}.
-	 * The id will be fromValue exactly matching the passed-in StreamMessageId
+	 * The min-id will be required to exactly match the passed-in {@link StreamMessageId}
 	 */
 	public static TrimParam minId(StreamMessageId id) {
-		return fromValue(String.join("-", String.valueOf(id.getId0()), String.valueOf(id.getId1())));
+		Object stringId = id.toString();
+		return fromValue(stringId);
 	}
 
 	/**
