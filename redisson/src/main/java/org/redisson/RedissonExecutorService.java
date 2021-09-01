@@ -305,8 +305,10 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         service.setSchedulerQueueName(schedulerQueueName);
         service.setTasksExpirationTimeName(tasksExpirationTimeName);
         service.setTasksRetryIntervalName(tasksRetryIntervalName);
-        service.setBeanFactory(options.getBeanFactory());
-        
+        if (options.getTasksInjector() != null) {
+            service.setTasksInjector(options.getTasksInjector());
+        }
+
         ExecutorService es = commandExecutor.getConnectionManager().getExecutor();
         if (options.getExecutorService() != null) {
             es = options.getExecutorService();

@@ -22,6 +22,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.executor.TaskListener;
 import org.redisson.config.Config;
+import org.redisson.executor.SpringTasksInjector;
+import org.redisson.executor.TasksInjector;
 import org.springframework.beans.factory.BeanFactory;
 
 /**
@@ -34,6 +36,7 @@ public final class WorkerOptions {
 
     private int workers = 1;
     private ExecutorService executorService;
+    private TasksInjector tasksInjector;
     private BeanFactory beanFactory;
     private long taskTimeout;
     private List<TaskListener> listeners = new ArrayList<>();
@@ -74,9 +77,14 @@ public final class WorkerOptions {
      */
     public WorkerOptions beanFactory(BeanFactory beanFactory) {
         this.beanFactory = beanFactory;
+        this.tasksInjector = new SpringTasksInjector(beanFactory);
         return this;
     }
-    
+
+    public TasksInjector getTasksInjector() {
+        return tasksInjector;
+    }
+
     public ExecutorService getExecutorService() {
         return executorService;
     }
