@@ -37,12 +37,28 @@ public interface RDequeAsync<V> extends RQueueAsync<V> {
     RFuture<Integer> addFirstIfExistsAsync(V... elements);
 
     /**
+     * Adds elements at the head of deque.
+     *
+     * @param elements - elements to add
+     * @return length of the deque
+     */
+    RFuture<Integer> addFirstAsync(V... elements);
+
+    /**
      * Adds element at the tail of existing deque.
      *
      * @param elements - elements to add
      * @return length of the list
      */
     RFuture<Integer> addLastIfExistsAsync(V... elements);
+
+    /**
+     * Adds elements at the tail of deque.
+     *
+     * @param elements - elements to add
+     * @return length of the deque
+     */
+    RFuture<Integer> addLastAsync(V... elements);
 
     /**
      * Removes last occurrence of element <code>o</code>

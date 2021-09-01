@@ -44,6 +44,22 @@ public interface RDequeReactive<V> extends RQueueReactive<V> {
      */
     Mono<Integer> addLastIfExists(V... elements);
 
+    /**
+     * Adds elements at the head of deque.
+     *
+     * @param elements - elements to add
+     * @return length of the deque
+     */
+    Mono<Integer> addFirst(V... elements);
+
+    /**
+     * Adds elements at the tail of deque.
+     *
+     * @param elements - elements to add
+     * @return length of the deque
+     */
+    Mono<Integer> addLast(V... elements);
+
     Flux<V> descendingIterator();
 
     /**

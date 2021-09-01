@@ -38,12 +38,28 @@ public interface RDeque<V> extends Deque<V>, RQueue<V>, RDequeAsync<V> {
     int addFirstIfExists(V... elements);
 
     /**
+     * Adds elements at the head of deque.
+     *
+     * @param elements - elements to add
+     * @return length of the deque
+     */
+    int addFirst(V... elements);
+
+    /**
      * Adds element at the tail of existing deque.
      *
      * @param elements - elements to add
      * @return length of the list
      */
     int addLastIfExists(V... elements);
+
+    /**
+     * Adds elements at the tail of deque.
+     *
+     * @param elements - elements to add
+     * @return length of the deque
+     */
+    int addLast(V... elements);
 
     /**
      * Retrieves and removes the tail elements of this queue.

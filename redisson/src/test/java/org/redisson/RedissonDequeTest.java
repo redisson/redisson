@@ -141,6 +141,16 @@ public class RedissonDequeTest extends BaseTest {
    }
 
     @Test
+    public void testAddFirstLastMulti() {
+        RDeque<Integer> queue = redisson.getDeque("deque");
+        queue.addAll(Arrays.asList(1, 2, 3, 4));
+        queue.addFirst(0, 1, 0);
+        queue.addLast(10, 20, 10);
+
+        assertThat(queue).containsExactly(0, 1, 0, 1, 2, 3, 4, 10, 20, 10);
+    }
+
+    @Test
     public void testAddFirst() {
         RDeque<Integer> queue = redisson.getDeque("deque");
         queue.addFirst(1);

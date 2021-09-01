@@ -46,6 +46,22 @@ public interface RDequeRx<V> extends RQueueRx<V> {
      */
     Single<Integer> addLastIfExists(V... elements);
 
+    /**
+     * Adds elements at the head of deque.
+     *
+     * @param elements - elements to add
+     * @return length of the deque
+     */
+    Single<Integer> addFirst(V... elements);
+
+    /**
+     * Adds elements at the tail of deque.
+     *
+     * @param elements - elements to add
+     * @return length of the deque
+     */
+    Single<Integer> addLast(V... elements);
+
     Flowable<V> descendingIterator();
 
     /**

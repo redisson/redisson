@@ -60,6 +60,32 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
     }
 
     @Override
+    public int addFirst(V... elements) {
+        return get(addFirstAsync(elements));
+    }
+
+    @Override
+    public int addLast(V... elements) {
+        return get(addLastAsync(elements));
+    }
+
+    @Override
+    public RFuture<Integer> addFirstAsync(V... elements) {
+        List<Object> args = new ArrayList<>(elements.length + 1);
+        args.add(getRawName());
+        encode(args, Arrays.asList(elements));
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.LPUSH, args.toArray());
+    }
+
+    @Override
+    public RFuture<Integer> addLastAsync(V... elements) {
+        List<Object> args = new ArrayList<>(elements.length + 1);
+        args.add(getRawName());
+        encode(args, Arrays.asList(elements));
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.RPUSH, args.toArray());
+    }
+
+    @Override
     public RFuture<Integer> addFirstIfExistsAsync(V... elements) {
         List<Object> args = new ArrayList<>(elements.length + 1);
         args.add(getRawName());
