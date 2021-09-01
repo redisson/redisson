@@ -19,6 +19,10 @@
         <artifactId>quarkus-arc-deployment</artifactId>
       </dependency>
       <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-netty-deployment</artifactId>
+      </dependency>
+      <dependency>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-quarkus-20</artifactId>
         <version>${project.version}</version>

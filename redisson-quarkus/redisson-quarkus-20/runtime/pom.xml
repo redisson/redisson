@@ -17,6 +17,22 @@
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-arc</artifactId>
       </dependency>
+
+      <dependency>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-netty</artifactId>
+      </dependency>
+      <dependency>
+          <groupId>io.netty</groupId>
+          <artifactId>netty-transport-native-epoll</artifactId>
+          <classifier>linux-x86_64</classifier>
+      </dependency>
+      <dependency>
+          <groupId>io.netty</groupId>
+          <artifactId>netty-transport-native-kqueue</artifactId>
+          <classifier>osx-x86_64</classifier>
+      </dependency>
+
       <dependency>
           <groupId>org.redisson</groupId>
           <artifactId>redisson</artifactId>
