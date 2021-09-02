@@ -16,5 +16,5 @@ Note that redis shouldn't be running - the build will start instances as needed.
 export REDIS_BIN=<path to redis binaries>
 
 # And finally running the build
-mvn -DargLine="-Xmx2g -DredisBinary=$REDIS_BIN/redis-server" -Punit-test clean test -e -X
+mvn -DargLine="-Xmx2g -DredisBinary=$REDIS_BIN/redis-server" -Punit-test clean test -e
 ```
