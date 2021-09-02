@@ -77,7 +77,9 @@ public final class WorkerOptions {
      */
     public WorkerOptions beanFactory(BeanFactory beanFactory) {
         this.beanFactory = beanFactory;
-        this.tasksInjector = new SpringTasksInjector(beanFactory);
+        if (beanFactory != null) {
+            this.tasksInjector = new SpringTasksInjector(beanFactory);
+        }
         return this;
     }
 
