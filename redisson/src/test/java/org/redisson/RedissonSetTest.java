@@ -43,6 +43,17 @@ public class RedissonSetTest extends BaseTest {
     }
 
     @Test
+    public void testRemoveAllCounted() {
+        RSet<Integer> set = redisson.getSet("list", IntegerCodec.INSTANCE);
+        set.add(0);
+        set.add(1);
+        set.add(2);
+        set.add(3);
+
+        assertThat(set.removeAllCounted(Arrays.asList(1, 2, 3, 4, 5))).isEqualTo(3);
+    }
+
+    @Test
     public void testTryAdd() {
         RSet<String> set = redisson.getSet("list", IntegerCodec.INSTANCE);
         Set<String> names = new HashSet<>();

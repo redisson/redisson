@@ -251,6 +251,23 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
     }
 
     @Override
+    public RFuture<Integer> addAllCountedAsync(Collection<? extends V> c) {
+        if (c.isEmpty()) {
+            return RedissonPromise.newSucceededFuture(0);
+        }
+
+        List<Object> args = new ArrayList<>(c.size() + 1);
+        args.add(getRawName());
+        encode(args, c);
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SADD, args.toArray());
+    }
+
+    @Override
+    public int addAllCounted(Collection<? extends V> c) {
+        return get(addAllCountedAsync(c));
+    }
+
+    @Override
     public boolean retainAll(Collection<?> c) {
         return get(retainAllAsync(c));
     }
@@ -284,6 +301,24 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
         encode(args, c);
         
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SREM_SINGLE, args.toArray());
+    }
+
+    @Override
+    public int removeAllCounted(Collection<? extends V> c) {
+        return get(removeAllCountedAsync(c));
+    }
+
+    @Override
+    public RFuture<Integer> removeAllCountedAsync(Collection<? extends V> c) {
+        if (c.isEmpty()) {
+            return RedissonPromise.newSucceededFuture(0);
+        }
+
+        List<Object> args = new ArrayList<Object>(c.size() + 1);
+        args.add(getRawName());
+        encode(args, c);
+
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SREM, args.toArray());
     }
 
     @Override

@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import java.util.Collection;
 import java.util.Set;
 
 import io.reactivex.rxjava3.core.Flowable;
@@ -29,6 +30,24 @@ import io.reactivex.rxjava3.core.Single;
  * @param <V> type of value
  */
 public interface RSetRx<V> extends RCollectionRx<V>, RSortableRx<Set<V>> {
+
+    /**
+     * Adds all elements contained in the specified collection.
+     * Returns number of added elements.
+     *
+     * @param c - collection of elements to add
+     * @return number of added elements
+     */
+    Single<Integer> addAllCounted(Collection<? extends V> c);
+
+    /**
+     * Removes all elements contained in the specified collection.
+     * Returns number of removed elements.
+     *
+     * @param c - collection of elements to add
+     * @return number of removed elements
+     */
+    Single<Integer> removeAllCounted(Collection<? extends V> c);
 
     /**
      * Returns <code>RPermitExpirableSemaphore</code> instance associated with <code>value</code>

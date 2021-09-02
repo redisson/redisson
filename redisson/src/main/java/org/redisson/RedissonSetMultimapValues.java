@@ -87,37 +87,37 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
 
     @Override
     public RFuture<Boolean> clearExpireAsync() {
-        throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
+        throw new UnsupportedOperationException("This operation is not supported for SetMultimap values");
     }
 
     @Override
     public RFuture<Boolean> expireAsync(Instant instant) {
-        throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
+        throw new UnsupportedOperationException("This operation is not supported for SetMultimap values");
     }
 
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
-        throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
+        throw new UnsupportedOperationException("This operation is not supported for SetMultimap values");
     }
     
     @Override
     public RFuture<Boolean> expireAtAsync(long timestamp) {
-        throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
+        throw new UnsupportedOperationException("This operation is not supported for SetMultimap values");
     }
     
     @Override
     public RFuture<Long> remainTimeToLiveAsync() {
-        throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
+        throw new UnsupportedOperationException("This operation is not supported for SetMultimap values");
     }
     
     @Override
     public RFuture<Void> renameAsync(String newName) {
-        throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
+        throw new UnsupportedOperationException("This operation is not supported for SetMultimap values");
     }
     
     @Override
     public RFuture<Boolean> renamenxAsync(String newName) {
-        throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
+        throw new UnsupportedOperationException("This operation is not supported for SetMultimap values");
     }
     
     @Override
@@ -414,6 +414,29 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         args.add(getRawName());
         encodeMapValues(args, c);
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SADD_BOOL, args.toArray());
+    }
+
+    @Override
+    public RFuture<Integer> addAllCountedAsync(Collection<? extends V> c) {
+        List<Object> args = new ArrayList<>(c.size() + 1);
+        args.add(getRawName());
+        encodeMapValues(args, c);
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SADD, args.toArray());
+    }
+
+    @Override
+    public int addAllCounted(Collection<? extends V> c) {
+        return get(addAllCountedAsync(c));
+    }
+
+    @Override
+    public int removeAllCounted(Collection<? extends V> c) {
+        throw new UnsupportedOperationException("This operation is not supported for SetMultimap values");
+    }
+
+    @Override
+    public RFuture<Integer> removeAllCountedAsync(Collection<? extends V> c) {
+        throw new UnsupportedOperationException("This operation is not supported for SetMultimap values");
     }
 
     @Override

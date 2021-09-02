@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import java.util.Collection;
 import java.util.Set;
 
 /**
@@ -138,5 +139,23 @@ public interface RSetAsync<V> extends RCollectionAsync<V>, RSortableAsync<Set<V>
      *          otherwise <code>false</code>.
      */
     RFuture<Boolean> tryAddAsync(V... values);
+
+    /**
+     * Adds all elements contained in the specified collection.
+     * Returns number of added elements.
+     *
+     * @param c - collection of elements to add
+     * @return number of added elements
+     */
+    RFuture<Integer> addAllCountedAsync(Collection<? extends V> c);
+
+    /**
+     * Removes all elements contained in the specified collection.
+     * Returns number of removed elements.
+     *
+     * @param c - collection of elements to add
+     * @return number of removed elements
+     */
+    RFuture<Integer> removeAllCountedAsync(Collection<? extends V> c);
 
 }

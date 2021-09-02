@@ -18,6 +18,7 @@ package org.redisson.api;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Collection;
 import java.util.Set;
 
 /**
@@ -28,6 +29,24 @@ import java.util.Set;
  * @param <V> type of value
  */
 public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReactive<Set<V>> {
+
+    /**
+     * Adds all elements contained in the specified collection.
+     * Returns number of added elements.
+     *
+     * @param c - collection of elements to add
+     * @return number of added elements
+     */
+    Mono<Integer> addAllCounted(Collection<? extends V> c);
+
+    /**
+     * Removes all elements contained in the specified collection.
+     * Returns number of removed elements.
+     *
+     * @param c - collection of elements to add
+     * @return number of removed elements
+     */
+    Mono<Integer> removeAllCounted(Collection<? extends V> c);
 
     /**
      * Returns <code>RPermitExpirableSemaphore</code> instance associated with <code>value</code>
