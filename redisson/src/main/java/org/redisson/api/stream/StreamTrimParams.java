@@ -15,41 +15,39 @@
  */
 package org.redisson.api.stream;
 
-import java.util.Map;
+import org.redisson.api.StreamMessageId;
 
 /**
  *
  * @author Nikita Koksharov
  *
  */
-public class StreamAddParams<K, V> extends StreamTrimParams {
+public class StreamTrimParams {
 
-    private Map<K, V> entries;
-    private boolean noMakeStream;
-    private boolean trimStrict;
+    private int maxLen;
+    private StreamMessageId minId;
+    private int limit;
 
-    public StreamAddParams(Map<K, V> entries) {
-        this.entries = entries;
+    public int getMaxLen() {
+        return maxLen;
+    }
+    public void setMaxLen(int maxLen) {
+        this.maxLen = maxLen;
     }
 
-    public Map<K, V> getEntries() {
-        return entries;
+    public StreamMessageId getMinId() {
+        return minId;
+    }
+    public void setMinId(StreamMessageId minId) {
+        this.minId = minId;
     }
 
-    public boolean isNoMakeStream() {
-        return noMakeStream;
+    public int getLimit() {
+        return limit;
     }
 
-    public void setNoMakeStream(boolean noMakeStream) {
-        this.noMakeStream = noMakeStream;
-    }
-
-    public boolean isTrimStrict() {
-        return trimStrict;
-    }
-
-    public void setTrimStrict(boolean trimStrict) {
-        this.trimStrict = trimStrict;
+    public void setLimit(int limit) {
+        this.limit = limit;
     }
 
 }

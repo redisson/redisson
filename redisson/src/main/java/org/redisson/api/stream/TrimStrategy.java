@@ -20,6 +20,7 @@ package org.redisson.api.stream;
  * @author Nikita Koksharov
  *
  */
+@Deprecated
 public enum TrimStrategy {
 
     MAXLEN,

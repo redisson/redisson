@@ -15,41 +15,13 @@
  */
 package org.redisson.api.stream;
 
-import java.util.Map;
-
 /**
  *
  * @author Nikita Koksharov
  *
  */
-public class StreamAddParams<K, V> extends StreamTrimParams {
+public interface StreamTrimArgsSource {
 
-    private Map<K, V> entries;
-    private boolean noMakeStream;
-    private boolean trimStrict;
-
-    public StreamAddParams(Map<K, V> entries) {
-        this.entries = entries;
-    }
-
-    public Map<K, V> getEntries() {
-        return entries;
-    }
-
-    public boolean isNoMakeStream() {
-        return noMakeStream;
-    }
-
-    public void setNoMakeStream(boolean noMakeStream) {
-        this.noMakeStream = noMakeStream;
-    }
-
-    public boolean isTrimStrict() {
-        return trimStrict;
-    }
-
-    public void setTrimStrict(boolean trimStrict) {
-        this.trimStrict = trimStrict;
-    }
+    StreamTrimParams getParams();
 
 }

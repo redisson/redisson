@@ -15,41 +15,27 @@
  */
 package org.redisson.api.stream;
 
-import java.util.Map;
-
 /**
+ * Arguments object for Stream trim method.
  *
  * @author Nikita Koksharov
  *
  */
-public class StreamAddParams<K, V> extends StreamTrimParams {
+public interface StreamTrimLimitArgs<T> {
 
-    private Map<K, V> entries;
-    private boolean noMakeStream;
-    private boolean trimStrict;
+    /**
+     * Defines no limit of evicted objects for trim command.
+     *
+     * @return arguments object
+     */
+    T noLimit();
 
-    public StreamAddParams(Map<K, V> entries) {
-        this.entries = entries;
-    }
-
-    public Map<K, V> getEntries() {
-        return entries;
-    }
-
-    public boolean isNoMakeStream() {
-        return noMakeStream;
-    }
-
-    public void setNoMakeStream(boolean noMakeStream) {
-        this.noMakeStream = noMakeStream;
-    }
-
-    public boolean isTrimStrict() {
-        return trimStrict;
-    }
-
-    public void setTrimStrict(boolean trimStrict) {
-        this.trimStrict = trimStrict;
-    }
+    /**
+     * Defines limit of evicted objects for trim command.
+     *
+     * @param size max amount of evicted objects
+     * @return arguments object
+     */
+    T limit(int size);
 
 }

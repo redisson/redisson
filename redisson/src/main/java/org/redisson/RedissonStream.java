@@ -911,12 +911,19 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
             params.add("NOMKSTREAM");
         }
 
-        if (pps.getTrimThreshold() > 0) {
-            params.add(pps.getTrimStrategy().toString());
+        if (pps.getMaxLen() > 0) {
+            params.add("MAXLEN");
             if (!pps.isTrimStrict()) {
                 params.add("~");
             }
-            params.add(pps.getTrimThreshold());
+            params.add(pps.getMaxLen());
+        }
+        if (pps.getMinId() != null) {
+            params.add("MINID");
+            if (!pps.isTrimStrict()) {
+                params.add("~");
+            }
+            params.add(pps.getMinId());
         }
 
         if (pps.getLimit() > 0) {
@@ -1360,6 +1367,54 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     public Map<StreamMessageId, Map<K, V>> pendingRange(String groupName, StreamMessageId startId, StreamMessageId endId,
             int count) {
         return get(pendingRangeAsync(groupName, startId, endId, count));
+    }
+
+    @Override
+    public long trim(StreamTrimArgs args) {
+        return get(trimAsync(args));
+    }
+
+    public RFuture<Long> trimAsync(StreamTrimArgs args) {
+        return trimAsync(args, true);
+    }
+
+    private RFuture<Long> trimAsync(StreamTrimArgs args, boolean trimStrict) {
+        StreamTrimArgsSource source = (StreamTrimArgsSource) args;
+        StreamTrimParams pps = source.getParams();
+
+        List<Object> params = new LinkedList<>();
+        params.add(getRawName());
+
+        if (pps.getMaxLen() > 0) {
+            params.add("MAXLEN");
+            if (!trimStrict) {
+                params.add("~");
+            }
+            params.add(pps.getMaxLen());
+        }
+        if (pps.getMinId() != null) {
+            params.add("MINID");
+            if (!trimStrict) {
+                params.add("~");
+            }
+            params.add(pps.getMinId());
+        }
+
+        if (pps.getLimit() > 0) {
+            params.add("LIMIT");
+            params.add(pps.getLimit());
+        }
+
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XTRIM, params.toArray());
+    }
+
+    @Override
+    public long trimNonStrict(StreamTrimArgs args) {
+        return get(trimNonStrictAsync(args));
+    }
+
+    public RFuture<Long> trimNonStrictAsync(StreamTrimArgs args) {
+        return trimAsync(args, false);
     }
 
 }

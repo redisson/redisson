@@ -756,39 +756,49 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
      * @return deleted messages amount
      */
     long remove(StreamMessageId... ids);
-    
+
     /**
-     * Trims stream using MAXLEN strategy to specified size
-     * 
-     * @param size - new size of stream
+     * Trims stream using strict trimming.
+     *
+     * @param args - method arguments object
      * @return number of deleted messages
      */
+    long trim(StreamTrimArgs args);
+
+    /**
+     * Trims stream using non-strict trimming.
+     *
+     * @param args - method arguments object
+     * @return number of deleted messages
+     */
+    long trimNonStrict(StreamTrimArgs args);
+
+    /*
+     * Use trim(StreamTrimArgs) method instead
+     *
+     */
+    @Deprecated
     long trim(int size);
 
-    /**
-     * Trims stream to specified size
+    /*
+     * Use trim(StreamTrimArgs) method instead
      *
-     * @param strategy - trim strategy
-     * @param threshold - new size of stream
-     * @return number of deleted messages
      */
+    @Deprecated
     long trim(TrimStrategy strategy, int threshold);
 
-    /**
-     * Trims stream using MAXLEN strategy to almost exact trimming threshold..
-     * 
-     * @param size - new size of stream
-     * @return number of deleted messages
+    /*
+     * Use trimNonStrict(StreamTrimArgs) method instead
+     *
      */
+    @Deprecated
     long trimNonStrict(int size);
 
-    /**
-     * Trims stream using almost exact trimming threshold.
+    /*
+     * Use trimNonStrict(StreamTrimArgs) method instead
      *
-     * @param strategy - trim strategy
-     * @param threshold - trim threshold
-     * @return number of deleted messages
      */
+    @Deprecated
     long trimNonStrict(TrimStrategy strategy, int threshold);
 
     /**
@@ -799,6 +809,7 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
      * @param limit - trim limit
      * @return number of deleted messages
      */
+    @Deprecated
     long trimNonStrict(TrimStrategy strategy, int threshold, int limit);
 
     /**

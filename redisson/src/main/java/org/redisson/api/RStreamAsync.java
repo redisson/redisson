@@ -793,12 +793,17 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      */
     RFuture<Long> removeAsync(StreamMessageId... ids);
 
+    RFuture<Long> trimAsync(StreamTrimArgs args);
+
+    RFuture<Long> trimNonStrictAsync(StreamTrimArgs args);
+
     /**
      * Trims stream using MAXLEN strategy to specified size
      * 
      * @param size - new size of stream
      * @return number of deleted messages
      */
+    @Deprecated
     RFuture<Long> trimAsync(int size);
 
     /**
@@ -808,6 +813,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param threshold - new size of stream
      * @return number of deleted messages
      */
+    @Deprecated
     RFuture<Long> trimAsync(TrimStrategy strategy, int threshold);
 
     /**
@@ -816,6 +822,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param size - new size of stream
      * @return number of deleted messages
      */
+    @Deprecated
     RFuture<Long> trimNonStrictAsync(int size);
 
     /**
@@ -825,6 +832,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param threshold - trim threshold
      * @return number of deleted messages
      */
+    @Deprecated
     RFuture<Long> trimNonStrictAsync(TrimStrategy strategy, int threshold);
 
     /**
@@ -835,6 +843,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param limit - trim limit
      * @return number of deleted messages
      */
+    @Deprecated
     RFuture<Long> trimNonStrictAsync(TrimStrategy strategy, int threshold, int limit);
 
     /**

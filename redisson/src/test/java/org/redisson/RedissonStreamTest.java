@@ -1,22 +1,17 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.time.Duration;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
 import org.redisson.api.stream.*;
 import org.redisson.client.RedisException;
-import org.redisson.client.WriteRedisConnectionException;
+
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonStreamTest extends BaseTest {
 
@@ -93,7 +88,7 @@ public class RedissonStreamTest extends BaseTest {
         stream.add(StreamAddArgs.entry("1", "1"));
         stream.add(StreamAddArgs.entry("2", "2"));
 
-        assertThat(stream.trim(2)).isEqualTo(1);
+        assertThat(stream.trim(StreamTrimArgs.maxLen(2).noLimit())).isEqualTo(1);
     }
 
     @Test
@@ -479,13 +474,13 @@ public class RedissonStreamTest extends BaseTest {
         Map<String, String> entries1 = new HashMap<>();
         entries1.put("1", "11");
         entries1.put("3", "31");
-        stream.add(new StreamMessageId(1), StreamAddArgs.entries(entries1).trim(TrimStrategy.MAXLEN, 1));
+        stream.add(new StreamMessageId(1), StreamAddArgs.entries(entries1).trimNonStrict().maxLen(1).noLimit());
         assertThat(stream.size()).isEqualTo(1);
         
         Map<String, String> entries2 = new HashMap<>();
         entries2.put("5", "55");
         entries2.put("7", "77");
-        stream.add(new StreamMessageId(2), StreamAddArgs.entries(entries2).trim(TrimStrategy.MAXLEN, 1));
+        stream.add(new StreamMessageId(2), StreamAddArgs.entries(entries2).trimNonStrict().maxLen(1).noLimit());
 
         Map<StreamMessageId, Map<String, String>> r2 = stream.rangeReversed(10, StreamMessageId.MAX, StreamMessageId.MIN);
         assertThat(r2.keySet()).containsExactly(new StreamMessageId(2), new StreamMessageId(1));
@@ -501,13 +496,13 @@ public class RedissonStreamTest extends BaseTest {
         Map<String, String> entries1 = new HashMap<>();
         entries1.put("1", "11");
         entries1.put("3", "31");
-        stream.add(new StreamMessageId(1), StreamAddArgs.entries(entries1).trim(TrimStrategy.MAXLEN, 1));
+        stream.add(new StreamMessageId(1), StreamAddArgs.entries(entries1).trimNonStrict().maxLen(1).noLimit());
         assertThat(stream.size()).isEqualTo(1);
         
         Map<String, String> entries2 = new HashMap<>();
         entries2.put("5", "55");
         entries2.put("7", "77");
-        stream.add(new StreamMessageId(2), StreamAddArgs.entries(entries2).trim(TrimStrategy.MAXLEN, 1));
+        stream.add(new StreamMessageId(2), StreamAddArgs.entries(entries2).trimNonStrict().maxLen(1).noLimit());
 
         Map<StreamMessageId, Map<String, String>> r = stream.range(10, new StreamMessageId(0), new StreamMessageId(1));
         assertThat(r).hasSize(1);
@@ -600,13 +595,13 @@ public class RedissonStreamTest extends BaseTest {
         Map<String, String> entries1 = new HashMap<>();
         entries1.put("1", "11");
         entries1.put("3", "31");
-        stream.add(new StreamMessageId(1), StreamAddArgs.entries(entries1).trim(TrimStrategy.MAXLEN, 1));
+        stream.add(new StreamMessageId(1), StreamAddArgs.entries(entries1).trimNonStrict().maxLen(1).noLimit());
         assertThat(stream.size()).isEqualTo(1);
         
         Map<String, String> entries2 = new HashMap<>();
         entries2.put("5", "55");
         entries2.put("7", "77");
-        stream.add(new StreamMessageId(2), StreamAddArgs.entries(entries2).trim(TrimStrategy.MAXLEN, 1));
+        stream.add(new StreamMessageId(2), StreamAddArgs.entries(entries2).trimNonStrict().maxLen(1).noLimit());
         assertThat(stream.size()).isEqualTo(2);
     }
     
@@ -647,17 +642,17 @@ public class RedissonStreamTest extends BaseTest {
         Map<String, String> entries1 = new LinkedHashMap<>();
         entries1.put("1", "11");
         entries1.put("3", "31");
-        stream.add(new StreamMessageId(1), StreamAddArgs.entries(entries1).trim(TrimStrategy.MAXLEN, 1));
+        stream.add(new StreamMessageId(1), StreamAddArgs.entries(entries1).trimNonStrict().maxLen(1).noLimit());
 
         Map<String, String> entries2 = new LinkedHashMap<>();
         entries2.put("5", "55");
         entries2.put("7", "77");
-        stream.add(new StreamMessageId(2), StreamAddArgs.entries(entries2).trim(TrimStrategy.MAXLEN, 1));
+        stream.add(new StreamMessageId(2), StreamAddArgs.entries(entries2).trimNonStrict().maxLen(1).noLimit());
 
         Map<String, String> entries3 = new LinkedHashMap<>();
         entries3.put("15", "05");
         entries3.put("17", "07");
-        stream.add(new StreamMessageId(3), StreamAddArgs.entries(entries3).trim(TrimStrategy.MAXLEN, 1));
+        stream.add(new StreamMessageId(3), StreamAddArgs.entries(entries3).trimNonStrict().maxLen(1).noLimit());
         
         Map<StreamMessageId, Map<String, String>> result = stream.read(StreamReadArgs.greaterThan(new StreamMessageId(0, 0)).count(10));
         assertThat(result).hasSize(3);
@@ -673,7 +668,7 @@ public class RedissonStreamTest extends BaseTest {
         Map<String, String> entries1 = new LinkedHashMap<>();
         entries1.put("1", "11");
         entries1.put("3", "31");
-        stream.add(new StreamMessageId(1), StreamAddArgs.entries(entries1).trim(TrimStrategy.MAXLEN, 1));
+        stream.add(new StreamMessageId(1), StreamAddArgs.entries(entries1).trimNonStrict().maxLen(1).noLimit());
      
         Map<StreamMessageId, Map<String, String>> result = stream.read(StreamReadArgs.greaterThan(new StreamMessageId(0, 0)).count(10));
         assertThat(result).hasSize(1);
@@ -706,7 +701,7 @@ public class RedissonStreamTest extends BaseTest {
         entries.put("6", "61");
         entries.put("4", "41");
         StreamMessageId id = new StreamMessageId(12, 42);
-        stream.add(id, StreamAddArgs.entries(entries).trim(TrimStrategy.MAXLEN, 10));
+        stream.add(id, StreamAddArgs.entries(entries).trimNonStrict().maxLen(10).noLimit());
         assertThat(stream.size()).isEqualTo(1);
 
         Map<StreamMessageId, Map<String, String>> res = stream.read(StreamReadArgs.greaterThan(new StreamMessageId(10, 42)));
@@ -715,7 +710,7 @@ public class RedissonStreamTest extends BaseTest {
         entries.clear();
         entries.put("1", "11");
         entries.put("3", "31");
-        stream.add(new StreamMessageId(Long.MAX_VALUE), StreamAddArgs.entries(entries).trim(TrimStrategy.MAXLEN, 1));
+        stream.add(new StreamMessageId(Long.MAX_VALUE), StreamAddArgs.entries(entries).trimNonStrict().maxLen(1).noLimit());
         assertThat(stream.size()).isEqualTo(2);
     }
 
@@ -765,7 +760,7 @@ public class RedissonStreamTest extends BaseTest {
         entries.put("6", "61");
         entries.put("4", "41");
         StreamMessageId id = new StreamMessageId(12, 42);
-        stream.add(id, StreamAddArgs.entries(entries).trim(TrimStrategy.MAXLEN, 10));
+        stream.add(id, StreamAddArgs.entries(entries).trimNonStrict().maxLen(10).noLimit());
 
         List<StreamGroup> s = stream.listGroups();
         assertThat(s).isEmpty();
@@ -813,13 +808,13 @@ public class RedissonStreamTest extends BaseTest {
         entries.put("6", "61");
         entries.put("4", "41");
         StreamMessageId id = new StreamMessageId(12, 42);
-        stream.add(id, StreamAddArgs.entries(entries).trim(TrimStrategy.MAXLEN, 10));
+        stream.add(id, StreamAddArgs.entries(entries).trimNonStrict().maxLen(10).noLimit());
 
         Map<String, String> lastEntries = new HashMap<>();
         lastEntries.put("10", "52");
         lastEntries.put("44", "89");
         StreamMessageId lastId = new StreamMessageId(12, 43);
-        stream.add(lastId, StreamAddArgs.entries(lastEntries).trim(TrimStrategy.MAXLEN, 10));
+        stream.add(lastId, StreamAddArgs.entries(lastEntries).trimNonStrict().maxLen(10).noLimit());
 
         StreamInfo<String, String> info = stream.getInfo();
         assertThat(info.getLength()).isEqualTo(2);

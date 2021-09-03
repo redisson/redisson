@@ -28,41 +28,45 @@ import java.util.Map;
 public interface StreamAddArgs<K, V> {
 
     /**
-     * Define to not create stream automatically if it doesn't exist
+     * Define to not create stream automatically if it doesn't exist.
      *
      * @return arguments object
      */
     StreamAddArgs<K, V> noMakeStream();
 
     /**
-     * Defines trim strategy and threshold.
-     * Trims stream using almost exact trimming.
+     * Defines strict trimming.
      *
-     * @param strategy - trim strategy
-     * @param threshold - trim threshold
      * @return arguments object
      */
+    StreamTrimStrategyArgs<StreamAddArgs<K, V>> trim();
+
+    /**
+     * Defines non-strict trimming.
+     *
+     * @return arguments object
+     */
+    StreamTrimStrategyArgs<StreamAddArgs<K, V>> trimNonStrict();
+
+    /*
+     * Use trimNonStrict() method instead
+     *
+     */
+    @Deprecated
     StreamAddArgs<K, V> trim(TrimStrategy strategy, int threshold);
 
-    /**
-     * Defines trim strategy, threshold and limit.
-     * Trims stream using almost exact trimming threshold up to limit.
+    /*
+     * Use trimNonStrict() method instead
      *
-     * @param strategy - trim strategy
-     * @param threshold - trim threshold
-     * @param limit - trim limit
-     * @return arguments object
      */
+    @Deprecated
     StreamAddArgs<K, V> trim(TrimStrategy strategy, int threshold, int limit);
 
-    /**
-     * Defines trim strategy and threshold.
-     * Trims stream using strict trimming.
+    /*
+     * Use trim() method instead
      *
-     * @param strategy - trim strategy
-     * @param threshold - trim threshold
-     * @return arguments object
      */
+    @Deprecated
     StreamAddArgs<K, V> trimStrict(TrimStrategy strategy, int threshold);
 
     /**

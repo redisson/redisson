@@ -707,47 +707,54 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
     Mono<Long> remove(StreamMessageId... ids);
 
     /**
-     * Trims stream to specified size
-     * 
-     * @param size - new size of stream
+     * Trims stream using strict trimming.
+     *
+     * @param args - method arguments object
      * @return number of deleted messages
      */
+    Mono<Long> trim(StreamTrimArgs args);
+
+    /**
+     * Trims stream using non-strict trimming.
+     *
+     * @param args - method arguments object
+     * @return number of deleted messages
+     */
+    Mono<Long> trimNonStrict(StreamTrimArgs args);
+
+    /*
+     * Use trim(StreamTrimArgs) method instead
+     *
+     */
+    @Deprecated
     Mono<Long> trim(int size);
 
-    /**
-     * Trims stream to few tens of entries more than specified length to trim.
-     * 
-     * @param size - new size of stream
-     * @return number of deleted messages
+    /*
+     * Use trimNonStrict(StreamTrimArgs) method instead
+     *
      */
+    @Deprecated
     Mono<Long> trimNonStrict(int size);
 
-    /**
-     * Trims stream to specified size
+    /*
+     * Use trim(StreamTrimArgs) method instead
      *
-     * @param strategy - trim strategy
-     * @param threshold - new size of stream
-     * @return number of deleted messages
      */
+    @Deprecated
     Mono<Long> trim(TrimStrategy strategy, int threshold);
 
-    /**
-     * Trims stream using almost exact trimming threshold.
+    /*
+     * Use trimNonStrict(StreamTrimArgs) method instead
      *
-     * @param strategy - trim strategy
-     * @param threshold - trim threshold
-     * @return number of deleted messages
      */
+    @Deprecated
     Mono<Long> trimNonStrict(TrimStrategy strategy, int threshold);
 
-    /**
-     * Trims stream using almost exact trimming threshold up to limit.
+    /*
+     * Use trimNonStrict(StreamTrimArgs) method instead
      *
-     * @param strategy - trim strategy
-     * @param threshold - trim threshold
-     * @param limit - trim limit
-     * @return number of deleted messages
      */
+    @Deprecated
     Mono<Long> trimNonStrict(TrimStrategy strategy, int threshold, int limit);
 
     /**
