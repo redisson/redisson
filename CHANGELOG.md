@@ -3,6 +3,34 @@ Redisson Releases History
 
 Consider __[Redisson PRO](https://redisson.pro)__ version for **ultra-fast performance** and **support by SLA**.
 
+### 3-Sep-2021 - 3.16.2 released
+Feature - Micronaut 3.0 integration  
+Feature - added batched `merge()` method to `RLiveObjectService` interface  
+Feature - resolve hostnames used in Redis Cluster topology  
+Feature - resolve hostnames used in Redis Sentinel topology  
+Feature - added batched `addLast()` and `addFirst()` methods to `RDeque`, `RDequeRx` and `RDequeReactive` interfaces  
+Feature - added `addAllCounted()` and `removeAllCounted()` methods to `RSet`, `RSetRx` and `RSetReactive` interfaces  
+
+Fixed - Redis Stream trim command with MINID strategy is not fully supported  
+Fixed - Quarkus requires `AutowiredAnnotationBeanPostProcessor` class during native image execution  
+Fixed - issues with Quarkus Netty dependencies  
+Fixed - `MOVED redirection loop detected` error in Redis Cluster  
+Fixed - handling master with empty slots in Redis Cluster topology  
+Fixed - SentinelConnectionManager should use unified compressed format for IPv6  
+Fixed - `RLocalCachedMap.readAllValues()` method uses key decoder instead of value  
+Fixed - empty array passed to `RKeys.delete()` method causes thread blocking  
+Fixed - cluster partition without address causes NPE  
+Fixed - threads waiting for `RSemaphore` permits acquisition unable to acquire them if permits added  
+Fixed - `RRateLimiter` allows limit overcome  
+Fixed - `RMapCacheReactive` and `RMapCacheRx` interfaces miss method to define eviction algorithm  
+Fixed - write-behind tasks aren't flushed after Redisson `shutdown()` method invocation  
+Fixed - LiveObjects with indexed field can't be stored using batch persist method  
+Fixed - failed master shouldn't skipped in Redis Cluster topology scan (thanks to @JerryWzc)  
+Fixed - `RListReactive` iterator with filter returns non-deterministic result  
+Fixed - `replicatedServers` mode should use ip addresses if nodes defined using hostnames  
+Fixed - multiple masters check removed for `replicatedServers` mode  
+Fixed - `MapWriter` should be defined along with writeBehind settings  
+
 ### 26-Jul-2021 - 3.16.1 released
 Improvement - MarshallingCodec and JsonJacksonCodec warmup added  
 Improvement - performance improvement for connection pool with few connections  
