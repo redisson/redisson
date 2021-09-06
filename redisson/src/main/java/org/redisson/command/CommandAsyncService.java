@@ -49,6 +49,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -603,16 +604,18 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             return writeAsync((String) null, codec, command, keys);
         }
 
-        Map<MasterSlaveEntry, List<String>> range2key = new HashMap<>();
-        for (String key : keys) {
-            int slot = connectionManager.calcSlot(key);
-            MasterSlaveEntry entry = connectionManager.getEntry(slot);
-            List<String> list = range2key.computeIfAbsent(entry, k -> new ArrayList<>());
-            list.add(key);
-        }
+        Map<MasterSlaveEntry, Map<Integer, List<String>>> entry2keys = Arrays.stream(keys).collect(
+                Collectors.groupingBy(k -> {
+                    int slot = connectionManager.calcSlot(k);
+                    return connectionManager.getEntry(slot);
+                }, Collectors.groupingBy(k -> {
+                    return connectionManager.calcSlot(k);
+                        }, Collectors.toList())));
+
+        long total = entry2keys.values().stream().mapToInt(m -> m.size()).sum();
 
         RPromise<R> result = new RedissonPromise<>();
-        AtomicLong executed = new AtomicLong(keys.length);
+        AtomicLong executed = new AtomicLong(total);
         AtomicReference<Throwable> failed = new AtomicReference<>();
         BiConsumer<T, Throwable> listener = (res, ex) -> {
             if (ex != null) {
@@ -632,7 +635,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             }
         };
 
-        for (Entry<MasterSlaveEntry, List<String>> entry : range2key.entrySet()) {
+        for (Entry<MasterSlaveEntry, Map<Integer, List<String>>> entry : entry2keys.entrySet()) {
             // executes in batch due to CROSSLOT error
             CommandBatchService executorService;
             if (this instanceof CommandBatchService) {
@@ -641,17 +644,17 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 executorService = new CommandBatchService(this);
             }
 
-            for (String key : entry.getValue()) {
+            for (List<String> groupedKeys : entry.getValue().values()) {
                 RedisCommand<T> c = command;
-                RedisCommand<T> newCommand = callback.createCommand(key);
+                RedisCommand<T> newCommand = callback.createCommand(groupedKeys);
                 if (newCommand != null) {
                     c = newCommand;
                 }
                 if (readOnly) {
-                    RFuture<T> f = executorService.readAsync(entry.getKey(), codec, c, key);
+                    RFuture<T> f = executorService.readAsync(entry.getKey(), codec, c, groupedKeys.toArray());
                     f.onComplete(listener);
                 } else {
-                    RFuture<T> f = executorService.writeAsync(entry.getKey(), codec, c, key);
+                    RFuture<T> f = executorService.writeAsync(entry.getKey(), codec, c, groupedKeys.toArray());
                     f.onComplete(listener);
                 }
             }

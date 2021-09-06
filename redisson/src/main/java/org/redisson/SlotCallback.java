@@ -17,6 +17,8 @@ package org.redisson;
 
 import org.redisson.client.protocol.RedisCommand;
 
+import java.util.List;
+
 /**
  * 
  * @author Nikita Koksharov
@@ -26,7 +28,7 @@ import org.redisson.client.protocol.RedisCommand;
  */
 public interface SlotCallback<T, R> {
 
-    default RedisCommand<T> createCommand(Object param) {
+    default RedisCommand<T> createCommand(List<String> param) {
         return null;
     }
     
