@@ -13,9 +13,9 @@ Maven
 ```xml  
 <dependency>
     <groupId>org.redisson</groupId>
-    <!-- for Quarkus v2.0.x - v2.5.x -->
+    <!-- for Micronaut v2.0.x - v2.5.x -->
     <artifactId>redisson-micronaut-20</artifactId>
-    <!-- for Quarkus v3.0.x -->
+    <!-- for Micronaut v3.0.x -->
     <artifactId>redisson-micronaut-30</artifactId>
     <version>3.16.2</version>
 </dependency>
