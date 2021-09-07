@@ -150,7 +150,7 @@ public class RedissonBuckets implements RBuckets {
                 }
                 return params.toArray();
             }
-        }, buckets.keySet().toArray(new String[]{}));
+        }, buckets.keySet().toArray(new String[]{}), buckets);
     }
 
 }
