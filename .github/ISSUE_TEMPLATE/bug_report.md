@@ -8,7 +8,7 @@ assignees: ''
 ---
 
 <!--
-Сonsider Redisson PRO https://redisson.pro version for advanced features and support by SLA.
+Try Redisson PRO https://redisson.pro with ultra-fast performance and support by SLA.
 -->
 
 **Expected behavior**
