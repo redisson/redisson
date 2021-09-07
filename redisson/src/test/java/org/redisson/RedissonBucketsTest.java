@@ -45,12 +45,12 @@ public class RedissonBucketsTest extends BaseTest {
         Map<String, Integer> map = new HashMap<>();
         for (int i = 0; i < 10; i++) {
             map.put("test" + i, i);
-            redisson.getBucket("test" + i).set(i);
         }
         for (int i = 10; i < size; i++) {
             map.put("test" + i + "{" + (i%100)+ "}", i);
-            redisson.getBucket("test" + i + "{" + (i%100)+ "}").set(i);
         }
+
+        redisson.getBuckets().set(map);
         
         Set<String> queryKeys = new HashSet<>(map.keySet());
         queryKeys.add("test_invalid");

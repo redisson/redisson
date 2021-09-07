@@ -651,10 +651,10 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                     c = newCommand;
                 }
                 if (readOnly) {
-                    RFuture<T> f = executorService.readAsync(entry.getKey(), codec, c, groupedKeys.toArray());
+                    RFuture<T> f = executorService.readAsync(entry.getKey(), codec, c, callback.createParams(groupedKeys));
                     f.onComplete(listener);
                 } else {
-                    RFuture<T> f = executorService.writeAsync(entry.getKey(), codec, c, groupedKeys.toArray());
+                    RFuture<T> f = executorService.writeAsync(entry.getKey(), codec, c, callback.createParams(groupedKeys));
                     f.onComplete(listener);
                 }
             }
