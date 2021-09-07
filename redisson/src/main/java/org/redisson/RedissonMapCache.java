@@ -2309,7 +2309,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             RFuture<Map<String, String>> serverFuture = commandExecutor.readAsync((String) null, StringCodec.INSTANCE, RedisCommands.INFO_SERVER);
             serverFuture.syncUninterruptibly();
             String os = serverFuture.getNow().get("os");
-            if (os.contains("Windows")) {
+            if (os == null || os.contains("Windows")) {
                 osType = BaseEventCodec.OSType.WINDOWS;
             } else if (os.contains("NONSTOP")) {
                 osType = BaseEventCodec.OSType.HPNONSTOP;
