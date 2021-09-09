@@ -183,7 +183,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
     @Override
     public RFuture<Byte> getByteAsync(long offset) {
-        return commandExecutor.readAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_BYTE,
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_BYTE,
                                             getRawName(), "GET", "i8", offset);
     }
 
@@ -201,7 +201,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
     @Override
     public RFuture<Short> getShortAsync(long offset) {
-        return commandExecutor.readAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_SHORT,
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_SHORT,
                                             getRawName(), "GET", "i16", offset);
     }
 
@@ -219,7 +219,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
     @Override
     public RFuture<Integer> getIntegerAsync(long offset) {
-        return commandExecutor.readAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_INT,
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_INT,
                                             getRawName(), "GET", "i32", offset);
     }
 
@@ -237,7 +237,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
     @Override
     public RFuture<Long> getLongAsync(long offset) {
-        return commandExecutor.readAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_LONG,
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_LONG,
                                             getRawName(), "GET", "i64", offset);
     }
 
