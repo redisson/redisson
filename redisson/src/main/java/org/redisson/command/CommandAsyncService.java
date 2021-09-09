@@ -112,6 +112,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         try {
             future.await();
         } catch (InterruptedException e) {
+            future.cancel(true);
             Thread.currentThread().interrupt();
             throw new RedisException(e);
         }
