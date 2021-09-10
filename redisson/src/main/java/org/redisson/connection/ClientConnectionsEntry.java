@@ -243,8 +243,7 @@ public class ClientConnectionsEntry {
             freeConnections.add(connection);
             return;
         }
-        connection.decUsage();
-        if (connection.isPooled() && connection.getUsage() == 0) {
+        if (connection.decUsage() == 0 && connection.isPooled()) {
             freeConnections.add(connection);
             connection.setPooled(false);
         }
