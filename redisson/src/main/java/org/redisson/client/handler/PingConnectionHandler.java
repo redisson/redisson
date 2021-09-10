@@ -61,9 +61,8 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
 
     private void sendPing(ChannelHandlerContext ctx) {
         RedisConnection connection = RedisConnection.getFrom(ctx.channel());
-        CommandData<?, ?> commandData = connection.getCurrentCommand();
         RFuture<String> future;
-        if ((commandData == null || !commandData.isBlockingCommand()) && !connection.isQueued()) {
+        if (connection.getUsage() == 0) {
             future = connection.async(StringCodec.INSTANCE, RedisCommands.PING);
         } else {
             future = null;
@@ -73,12 +72,6 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
             @Override
             public void run(Timeout timeout) throws Exception {
                 if (connection.isClosed() || ctx.isRemoved()) {
-                    return;
-                }
-
-                CommandData<?, ?> commandData = connection.getCurrentCommand();
-                if (commandData != null && commandData.isBlockingCommand()) {
-                    sendPing(ctx);
                     return;
                 }
 

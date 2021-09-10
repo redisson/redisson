@@ -49,7 +49,6 @@ public class RedisConnection implements RedisCommands {
 
     private volatile RPromise<Void> fastReconnect;
     private volatile boolean closed;
-    private volatile boolean queued;
     volatile Channel channel;
 
     private RPromise<?> connectionPromise;
@@ -96,14 +95,6 @@ public class RedisConnection implements RedisCommands {
 
     public void setPooled(boolean pooled) {
         this.pooled = pooled;
-    }
-
-    public boolean isQueued() {
-        return queued;
-    }
-
-    public void setQueued(boolean queued) {
-        this.queued = queued;
     }
 
     public void setConnectedListener(Runnable connectedListener) {
