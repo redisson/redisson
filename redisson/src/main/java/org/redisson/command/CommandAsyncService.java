@@ -588,20 +588,35 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     
     @Override
     public <T, R> RFuture<R> readBatchedAsync(Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, String... keys) {
-        return executeBatchedAsync(true, codec, command, callback, keys);
+        return executeBatchedAsync(true, codec, command, callback, keys, null);
+    }
+
+    @Override
+    public <T, R> RFuture<R> writeBatchedAsync(Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, String... keys) {
+        return executeBatchedAsync(false, codec, command, callback, keys, null);
     }
     
     @Override
-    public <T, R> RFuture<R> writeBatchedAsync(Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, String... keys) {
-        return executeBatchedAsync(false, codec, command, callback, keys);
+    public <T, R> RFuture<R> writeBatchedAsync(Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, String[] keys, Map<String, ?> valueMap) {
+        return executeBatchedAsync(false, codec, command, callback, keys, valueMap);
     }
     
-    private <T, R> RFuture<R> executeBatchedAsync(boolean readOnly, Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, String... keys) {
+    private <T, R> RFuture<R> executeBatchedAsync(boolean readOnly, Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, String[] keys, Map<String, ?> valueMap) {
         if (!connectionManager.isClusterMode()) {
-            if (readOnly) {
-                return readAsync((String) null, codec, command, keys);
+            List<Object> params = null;
+            if (valueMap != null) {
+                params = new ArrayList<>(keys.length * 2);
+                for (String key : keys) {
+                    params.add(key);
+                    params.add(valueMap.get(key));
+                }
+            } else {
+                params = Arrays.asList(keys);
             }
-            return writeAsync((String) null, codec, command, keys);
+            if (readOnly) {
+                return readAsync((String) null, codec, command, params.toArray());
+            }
+            return writeAsync((String) null, codec, command, params.toArray());
         }
 
         Map<MasterSlaveEntry, Map<Integer, List<String>>> entry2keys = Arrays.stream(keys).collect(

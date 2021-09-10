@@ -28,6 +28,7 @@ import org.redisson.liveobject.core.RedissonObjectBuilder;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -115,7 +116,9 @@ public interface CommandAsyncExecutor {
     ByteBuf encodeMapValue(Codec codec, Object value);
 
     <T, R> RFuture<R> readBatchedAsync(Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, String... keys);
-    
+
     <T, R> RFuture<R> writeBatchedAsync(Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, String... keys);
+    
+    <T, R> RFuture<R> writeBatchedAsync(Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, String[] keys, Map<String, ?> valueMap);
     
 }
