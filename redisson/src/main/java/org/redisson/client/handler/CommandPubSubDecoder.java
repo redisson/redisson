@@ -77,7 +77,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
     }
 
     @Override
-    protected void decodeCommand(Channel channel, ByteBuf in, QueueCommand data) throws Exception {
+    protected void decodeCommand(Channel channel, ByteBuf in, QueueCommand data, int endIndex) throws Exception {
         if (data == null) {
             try {
                 while (in.writerIndex() > in.readerIndex()) {
