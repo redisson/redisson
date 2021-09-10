@@ -57,7 +57,7 @@ public final class LogHelper {
             if (RedisCommands.AUTH.equals(cd.getCommand())) {
                 return cd.getCommand() + ", params: (password masked)";
             }
-            return cd.getCommand() + ", params: " + LogHelper.toString(cd.getParams());
+            return cd.getCommand() + ", promise: " + cd.getPromise() + ", params: " + LogHelper.toString(cd.getParams());
         } else if (object instanceof ByteBuf) {
             final ByteBuf byteBuf = (ByteBuf) object;
             // can't be used due to Buffer Leak error is appeared in log
