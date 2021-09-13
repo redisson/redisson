@@ -1,7 +1,7 @@
 Redisson Releases History
 ================================
 
-Consider __[Redisson PRO](https://redisson.pro)__ version for **ultra-fast performance** and **support by SLA**.
+Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
 ### 3-Sep-2021 - 3.16.2 released
 Feature - Micronaut 3.0 integration  
