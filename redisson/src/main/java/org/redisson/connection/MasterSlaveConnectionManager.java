@@ -712,6 +712,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
             InetSocketAddress s = f.getNow();
             RedisURI uri = new RedisURI(scheme + "://" + s.getAddress().getHostAddress() + ":" + address.getPort());
+            uri = applyNatMap(uri);
             result.trySuccess(uri);
         });
         return result;
