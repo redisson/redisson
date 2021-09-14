@@ -434,7 +434,7 @@ public class RedissonTest extends BaseTest {
         
         System.out.println("errors " + errors + " success " + success + " readonly " + readonlyErrors);
         
-        assertThat(errors).isLessThan(800);
+        assertThat(errors).isLessThan(820);
         assertThat(readonlyErrors).isZero();
         
         redisson.shutdown();
