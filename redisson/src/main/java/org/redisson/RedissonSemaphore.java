@@ -471,7 +471,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
     public RFuture<Integer> drainPermitsAsync() {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
                 "local value = redis.call('get', KEYS[1]); " +
-                "if (value == false or value == 0) then " +
+                "if (value == false) then " +
                     "return 0; " +
                 "end; " +
                 "redis.call('set', KEYS[1], 0); " +
@@ -498,7 +498,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
     public RFuture<Boolean> trySetPermitsAsync(int permits) {
         RFuture<Boolean> future = commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local value = redis.call('get', KEYS[1]); " +
-                        "if (value == false or value == 0) then "
+                        "if (value == false) then "
                         + "redis.call('set', KEYS[1], ARGV[1]); "
                         + "redis.call('publish', KEYS[2], ARGV[1]); "
                         + "return 1;"
