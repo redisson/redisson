@@ -1,5 +1,6 @@
 package org.redisson;
 
+import net.bytebuddy.utility.RandomString;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assumptions;
@@ -14,6 +15,7 @@ import org.redisson.client.*;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.cluster.ClusterNodeInfo;
+import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.config.Config;
 import org.redisson.config.SubscriptionMode;
 
@@ -240,7 +242,40 @@ public class RedissonBatchTest extends BaseTest {
             }
         });
     }
-    
+
+    @Test
+    public void testSkipResult() throws InterruptedException {
+        ExecutorService e = Executors.newFixedThreadPool(8);
+        Queue<RFuture<?>> futures = new ConcurrentLinkedQueue<>();
+        for (int i = 0; i < 8; i++) {
+            e.submit(() -> {
+                for (int j = 0; j < 3000; j++) {
+                    try {
+                        if (ThreadLocalRandom.current().nextBoolean()) {
+                            RBatch b = redisson.createBatch(BatchOptions.defaults());
+                            RBucketAsync<Object> bucket = b.getBucket(RandomString.make(10), new JsonJacksonCodec());
+                            bucket.trySetAsync("test");
+                            RFuture<BatchResult<?>> f = b.executeAsync();
+                            futures.add(f);
+                        } else {
+                            RMap<Integer, Integer> map = redisson.getMap("test", new JsonJacksonCodec());
+                            RFuture<Integer> f = map.addAndGetAsync(1, 2);
+                            futures.add(f);
+                        }
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            });
+        }
+        e.shutdown();
+        assertThat(e.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
+
+        for (RFuture<?> future : futures) {
+            future.syncUninterruptibly();
+        }
+    }
+
     @ParameterizedTest
     @MethodSource("data")
     public void testConnectionLeakAfterError() throws InterruptedException {
@@ -261,6 +296,9 @@ public class RedissonBatchTest extends BaseTest {
         Assertions.assertThatThrownBy(() -> {
             batch1.execute();
         });
+
+        // time to reconnect broken connection
+        Thread.sleep(300);
 
         redisson.getBucket("test3").set(4);
         assertThat(redisson.getBucket("test3").get()).isEqualTo(4);

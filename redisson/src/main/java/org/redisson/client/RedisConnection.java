@@ -15,11 +15,11 @@
  */
 package org.redisson.client;
 
-import java.util.Queue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.util.AttributeKey;
+import io.netty.util.Timeout;
 import org.redisson.RedissonShutdownException;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
@@ -30,11 +30,11 @@ import org.redisson.misc.LogHelper;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.util.AttributeKey;
-import io.netty.util.Timeout;
+import java.util.Deque;
+import java.util.Queue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 
@@ -57,7 +57,7 @@ public class RedisConnection implements RedisCommands {
     private Runnable disconnectedListener;
 
     private volatile boolean pooled;
-    private AtomicInteger usage = new AtomicInteger();
+    private final AtomicInteger usage = new AtomicInteger();
 
     public <C> RedisConnection(RedisClient redisClient, Channel channel, RPromise<C> connectionPromise) {
         this.redisClient = redisClient;
@@ -117,6 +117,19 @@ public class RedisConnection implements RedisCommands {
     
     public static <C extends RedisConnection> C getFrom(Channel channel) {
         return (C) channel.attr(RedisConnection.CONNECTION).get();
+    }
+
+    public CommandData<?, ?> getLastCommand() {
+        Deque<QueueCommandHolder> queue = channel.attr(CommandsQueue.COMMANDS_QUEUE).get();
+        if (queue != null) {
+            QueueCommandHolder holder = queue.peekLast();
+            if (holder != null) {
+                if (holder.getCommand() instanceof CommandData) {
+                    return (CommandData<?, ?>) holder.getCommand();
+                }
+            }
+        }
+        return null;
     }
 
     public CommandData<?, ?> getCurrentCommand() {
@@ -320,7 +333,7 @@ public class RedisConnection implements RedisCommands {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "@" + System.identityHashCode(this) + " [redisClient=" + redisClient + ", channel=" + channel + ", currentCommand=" + getCurrentCommand() + "]";
+        return getClass().getSimpleName() + "@" + System.identityHashCode(this) + " [redisClient=" + redisClient + ", channel=" + channel + ", currentCommand=" + getCurrentCommand() + ", usage=" + usage + "]";
     }
 
 }
