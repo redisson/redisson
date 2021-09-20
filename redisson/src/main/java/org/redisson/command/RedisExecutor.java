@@ -505,7 +505,10 @@ public class RedisExecutor<V, R> {
                         connectionType, command, LogHelper.toString(params), source, connection.getRedisClient().getAddr(), connection);
             }
             writeFuture = connection.send(new CommandData<>(attemptPromise, codec, command, params));
-            release(connection);
+
+            if (connectionManager.getConfig().getMasterConnectionPoolSize() < 10) {
+                release(connection);
+            }
         }
     }
     
@@ -516,7 +519,11 @@ public class RedisExecutor<V, R> {
 
         RedisConnection connection = connectionFuture.getNow();
         connectionManager.getShutdownLatch().release();
-        if (source.getRedirect() == Redirect.ASK || getClass() != RedisExecutor.class) {
+        if (connectionManager.getConfig().getMasterConnectionPoolSize() < 10) {
+            if (source.getRedirect() == Redirect.ASK || getClass() != RedisExecutor.class) {
+                release(connection);
+            }
+        } else {
             release(connection);
         }
 
