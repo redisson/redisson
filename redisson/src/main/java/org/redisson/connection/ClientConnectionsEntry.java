@@ -168,64 +168,28 @@ public class ClientConnectionsEntry {
     }
 
     public void acquireConnection(Runnable runnable, RedisCommand<?> command) {
-        if (isPolled(command)) {
-            freeConnectionsCounter.acquire(runnable);
-            return;
-        }
-
-        runnable.run();
+        freeConnectionsCounter.acquire(runnable);
     }
     
     public void releaseConnection() {
         freeConnectionsCounter.release();
     }
 
-    AtomicBoolean lock = new AtomicBoolean();
+    public void addConnection(RedisConnection conn) {
+        conn.setLastUsageTime(System.nanoTime());
+        if (conn instanceof RedisPubSubConnection) {
+            freeSubscribeConnections.add((RedisPubSubConnection) conn);
+        } else {
+            freeConnections.add(conn);
+        }
+    }
 
     public RedisConnection pollConnection(RedisCommand<?> command) {
-        if (isPolled(command)) {
-            while (true) {
-                if (lock.compareAndSet(false, true)) {
-                    if (!iter.hasNext()) {
-                        iter = freeConnections.iterator();
-                    }
-                    try {
-                        if (iter.hasNext()) {
-                            RedisConnection c = iter.next();
-                            iter.remove();
-                            if (c != null) {
-                                c.incUsage();
-                                c.setPooled(true);
-                            }
-                            return c;
-                        }
-                        return null;
-                    } finally {
-                        lock.set(false);
-                    }
-                }
-            }
+        RedisConnection c = freeConnections.poll();
+        if (c != null) {
+            c.incUsage();
         }
-
-        while (true) {
-            if (lock.compareAndSet(false, true)) {
-                if (!iter.hasNext()) {
-                    iter = freeConnections.iterator();
-                }
-                try {
-                    if (iter.hasNext()) {
-                        RedisConnection c = iter.next();
-                        if (c != null) {
-                            c.incUsage();
-                        }
-                        return c;
-                    }
-                    return null;
-                } finally {
-                    lock.set(false);
-                }
-            }
-        }
+        return c;
     }
 
     public void releaseConnection(RedisConnection connection) {
@@ -238,15 +202,9 @@ public class ClientConnectionsEntry {
             return;
         }
 
+        connection.decUsage();
         connection.setLastUsageTime(System.nanoTime());
-        if (connection.getUsage() == 0) {
-            freeConnections.add(connection);
-            return;
-        }
-        if (connection.decUsage() == 0 && connection.isPooled()) {
-            freeConnections.add(connection);
-            connection.setPooled(false);
-        }
+        freeConnections.add(connection);
     }
 
     public RFuture<RedisConnection> connect() {

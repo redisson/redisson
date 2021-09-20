@@ -180,13 +180,11 @@ public class RedisExecutor<V, R> {
                 }
 
                 if (connectionFuture.cancel(false)) {
-                    if (exception == null) {
-                        exception = new RedisTimeoutException("Unable to acquire connection! " + connectionFuture +
-                                    "Increase connection pool size. "
-                                    + "Node source: " + source
-                                    + ", command: " + LogHelper.toString(command, params)
-                                    + " after " + attempt + " retry attempts");
-                    }
+                    exception = new RedisTimeoutException("Unable to acquire connection! " + connectionFuture +
+                                "Increase connection pool size. "
+                                + "Node source: " + source
+                                + ", command: " + LogHelper.toString(command, params)
+                                + " after " + attempt + " retry attempts");
                 } else {
                     if (connectionFuture.isSuccess()) {
                         if (writeFuture == null || !writeFuture.isDone()) {
@@ -275,7 +273,7 @@ public class RedisExecutor<V, R> {
 
         if (!future.isSuccess()) {
             exception = new WriteRedisConnectionException(
-                    "Unable to write command into connection! Node source: " + source + ", connection: " + connection +
+                    "Unable to write command into connection! Increase connection pool size. Node source: " + source + ", connection: " + connection +
                     ", command: " + LogHelper.toString(command, params)
                     + " after " + attempt + " retry attempts", future.cause());
             if (attempt == attempts) {
@@ -507,6 +505,7 @@ public class RedisExecutor<V, R> {
                         connectionType, command, LogHelper.toString(params), source, connection.getRedisClient().getAddr(), connection);
             }
             writeFuture = connection.send(new CommandData<>(attemptPromise, codec, command, params));
+            release(connection);
         }
     }
     
@@ -517,10 +516,8 @@ public class RedisExecutor<V, R> {
 
         RedisConnection connection = connectionFuture.getNow();
         connectionManager.getShutdownLatch().release();
-        if (readOnlyMode) {
-            connectionManager.releaseRead(source, connection);
-        } else {
-            connectionManager.releaseWrite(source, connection);
+        if (source.getRedirect() == Redirect.ASK || getClass() != RedisExecutor.class) {
+            release(connection);
         }
 
         if (log.isDebugEnabled()) {
@@ -531,6 +528,14 @@ public class RedisExecutor<V, R> {
 
             log.debug("connection{}released for command {} and params {} from slot {} using connection {}",
                     connectionType, command, LogHelper.toString(params), source, connection);
+        }
+    }
+
+    private void release(RedisConnection connection) {
+        if (readOnlyMode) {
+            connectionManager.releaseRead(source, connection);
+        } else {
+            connectionManager.releaseWrite(source, connection);
         }
     }
 
