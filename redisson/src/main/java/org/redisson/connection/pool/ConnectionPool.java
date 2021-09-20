@@ -120,7 +120,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
                 promise.onComplete((conn, e) -> {
                         if (e == null) {
                             if (!initPromise.isDone()) {
-                                releaseConnection(entry, conn);
+                                entry.addConnection(conn);
                             } else {
                                 conn.closeAsync();
                             }
