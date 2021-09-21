@@ -3,6 +3,20 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 21-Sep-2021 - 3.16.3 released
+Improvement - `RBuckets.get()` method should group keys by slot in Redis Cluster mode  
+Improvement - `RBatch` result decoding optimization  
+
+Fixed - RExecutorService, RRemoteService execution may hang if connection used for tasks pooling was interrupted  
+Fixed - RBatch with skipResult() option affects result of other commands (regression since 3.16.1)  
+Fixed - connection leak (regression since 3.16.1)  
+Fixed - `getBuckets().set()` method throws CROSSSLOT error (thanks to @mikawudi)  
+Fixed - `RedissonMapCache.addListener()` method throws NPE  
+Fixed - master-host of Slave node isn't resolved in Sentinel mode  
+Fixed - interrupted `RLock.tryLock()` method keeps renewing lock indefinitely (thanks to @Cesarla)  
+Fixed - don't ping connection if it's in use  
+Fixed - `natMapper` isn't applied to resolved Sentinel and Cluster hosts  
+
 ### 3-Sep-2021 - 3.16.2 released
 Feature - Micronaut 3.0 integration  
 Feature - added batched `merge()` method to `RLiveObjectService` interface  
