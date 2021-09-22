@@ -50,7 +50,6 @@ public class ClientConnectionsEntry {
     private final Queue<RedisConnection> allConnections = new ConcurrentLinkedQueue<>();
     private final Deque<RedisConnection> freeConnections = new ConcurrentLinkedDeque<>();
     private final AsyncSemaphore freeConnectionsCounter;
-    private volatile Iterator<RedisConnection> iter;
 
     public enum FreezeReason {MANAGER, RECONNECT, SYSTEM}
 
@@ -82,8 +81,6 @@ public class ClientConnectionsEntry {
                 freeConnections.remove(c);
                 return allConnections.remove(c);
             });
-
-        iter = freeConnections.iterator();
     }
     
     public boolean isMasterForRead() {
@@ -150,20 +147,6 @@ public class ClientConnectionsEntry {
     public void reset() {
         freeConnectionsCounter.removeListeners();
         freeSubscribeConnectionsCounter.removeListeners();
-    }
-
-    public int getFreeAmount() {
-        return freeConnectionsCounter.getCounter();
-    }
-
-    private boolean isPolled(RedisCommand<?> command) {
-        return command == null
-                || RedisCommands.FLUSHDB.getName().equals(command.getName())
-                || RedisCommands.FLUSHALL.getName().equals(command.getName())
-                || RedisCommands.BLOCKING_COMMAND_NAMES.contains(command.getName())
-                || RedisCommands.BLOCKING_COMMANDS.contains(command)
-                || RedisCommands.PUBSUB_COMMANDS.contains(command.getName())
-                || RedisCommands.SCAN_COMMANDS.contains(command.getName());
     }
 
     public void acquireConnection(Runnable runnable, RedisCommand<?> command) {
