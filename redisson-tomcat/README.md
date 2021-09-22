@@ -65,14 +65,14 @@ Amount of Redisson instances created by Tomcat for multiple contexts could be re
 ### 2. Copy two jars into `TOMCAT_BASE/lib` directory:
 
   
-[redisson-all-3.16.2.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.16.2&e=jar)
+[redisson-all-3.16.3.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.16.3&e=jar)
   
-Tomcat 7.x - [redisson-tomcat-7-3.16.2.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-7&v=3.16.2&e=jar)  
+Tomcat 7.x - [redisson-tomcat-7-3.16.3.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-7&v=3.16.3&e=jar)  
 
-Tomcat 8.x - [redisson-tomcat-8-3.16.2.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-8&v=3.16.2&e=jar)  
+Tomcat 8.x - [redisson-tomcat-8-3.16.3.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-8&v=3.16.3&e=jar)  
 
-Tomcat 9.x - [redisson-tomcat-9-3.16.2.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-9&v=3.16.2&e=jar)  
+Tomcat 9.x - [redisson-tomcat-9-3.16.3.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-9&v=3.16.3&e=jar)  
 
-Tomcat 10.x - [redisson-tomcat-10-3.16.2.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-10&v=3.16.2&e=jar)  
+Tomcat 10.x - [redisson-tomcat-10-3.16.3.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-10&v=3.16.3&e=jar)  
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
