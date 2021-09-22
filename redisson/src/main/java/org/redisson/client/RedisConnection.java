@@ -59,7 +59,6 @@ public class RedisConnection implements RedisCommands {
     private Runnable connectedListener;
     private Runnable disconnectedListener;
 
-    private volatile boolean pooled;
     private final AtomicInteger usage = new AtomicInteger();
 
     public <C> RedisConnection(RedisClient redisClient, Channel channel, RPromise<C> connectionPromise) {
@@ -92,14 +91,6 @@ public class RedisConnection implements RedisCommands {
 
     public int decUsage() {
         return usage.decrementAndGet();
-    }
-
-    public boolean isPooled() {
-        return pooled;
-    }
-
-    public void setPooled(boolean pooled) {
-        this.pooled = pooled;
     }
 
     public void setConnectedListener(Runnable connectedListener) {
