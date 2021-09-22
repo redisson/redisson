@@ -29,6 +29,8 @@ import org.redisson.client.protocol.*;
 import org.redisson.misc.LogHelper;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Deque;
 import java.util.Queue;
@@ -43,6 +45,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class RedisConnection implements RedisCommands {
 
+    private static final Logger LOG = LoggerFactory.getLogger(RedisConnection.class);
     private static final AttributeKey<RedisConnection> CONNECTION = AttributeKey.valueOf("connection");
 
     final RedisClient redisClient;
@@ -65,6 +68,8 @@ public class RedisConnection implements RedisCommands {
 
         updateChannel(channel);
         lastUsageTime = System.nanoTime();
+
+        LOG.debug("Connection created " + redisClient);
     }
     
     protected RedisConnection(RedisClient redisClient) {
