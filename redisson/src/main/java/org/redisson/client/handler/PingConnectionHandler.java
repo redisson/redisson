@@ -18,8 +18,6 @@ package org.redisson.client.handler;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnection;
