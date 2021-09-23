@@ -66,23 +66,21 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
             future = null;
         }
 
-        config.getTimer().newTimeout(new TimerTask() {
-            @Override
-            public void run(Timeout timeout) throws Exception {
-                if (connection.isClosed() || ctx.isRemoved()) {
-                    return;
-                }
+        config.getTimer().newTimeout(timeout -> {
+            if (connection.isClosed() || ctx.isRemoved()) {
+                return;
+            }
 
-                if (future != null
+            if (connection.getUsage() == 0
+                    && future != null
                         && (future.cancel(false) || !future.isSuccess())) {
-                    ctx.channel().close();
-                    if (future.cause() != null && !future.isCancelled()) {
-                        log.error("Unable to send PING command over channel: " + ctx.channel(), future.cause());
-                    }
-                    log.debug("channel: {} closed due to PING response timeout set in {} ms", ctx.channel(), config.getPingConnectionInterval());
-                } else {
-                    sendPing(ctx);
+                ctx.channel().close();
+                if (future.cause() != null && !future.isCancelled()) {
+                    log.error("Unable to send PING command over channel: " + ctx.channel(), future.cause());
                 }
+                log.debug("channel: {} closed due to PING response timeout set in {} ms", ctx.channel(), config.getPingConnectionInterval());
+            } else {
+                sendPing(ctx);
             }
         }, config.getPingConnectionInterval(), TimeUnit.MILLISECONDS);
     }
