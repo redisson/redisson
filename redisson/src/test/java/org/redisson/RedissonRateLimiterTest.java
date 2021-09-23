@@ -1,24 +1,48 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.time.Duration;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RRateLimiter;
+import org.redisson.api.RScoredSortedSet;
 import org.redisson.api.RateIntervalUnit;
 import org.redisson.api.RateType;
 
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class RedissonRateLimiterTest extends BaseTest {
+
+    @Test
+    public void testRateValue() throws InterruptedException {
+        RRateLimiter rateLimiter = redisson.getRateLimiter("test1");
+        int rate = 10_000;
+        rateLimiter.setRate(RateType.OVERALL, rate, 10_000, RateIntervalUnit.MILLISECONDS);
+
+        ExecutorService e = Executors.newFixedThreadPool(200);
+        for (int i = 0; i < 200; i++) {
+            e.execute(() -> {
+                while (true) {
+                    rateLimiter.acquire();
+                }
+            });
+        }
+
+        RScoredSortedSet<Object> sortedSet = redisson.getScoredSortedSet("{test1}:permits");
+        List<Integer> sizes = new ArrayList<>();
+        for (int i = 0; i < 20; i++) {
+            sizes.add(sortedSet.size());
+            Thread.sleep(1000);
+        }
+
+        assertThat(sizes.stream().filter(s -> s == rate).count()).isGreaterThan(16);
+        e.shutdownNow();
+    }
 
     @Test
     public void testExpire() throws InterruptedException {
