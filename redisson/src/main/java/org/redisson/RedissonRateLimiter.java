@@ -15,6 +15,8 @@
  */
 package org.redisson;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.redisson.api.*;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
@@ -180,6 +182,10 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
     }
     
     private <T> RFuture<T> tryAcquireAsync(RedisCommand<T> command, Long value) {
+        ByteBuf buf = Unpooled.copyLong(ThreadLocalRandom.current().nextLong());
+        byte[] random = buf.array();
+        buf.release();
+
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, command,
                 "local rate = redis.call('hget', KEYS[1], 'rate');"
               + "local interval = redis.call('hget', KEYS[1], 'interval');"
@@ -229,7 +235,7 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
                      + "return nil; "
               + "end;",
                 Arrays.asList(getRawName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName()),
-                value, System.currentTimeMillis(), ThreadLocalRandom.current().nextLong());
+                value, System.currentTimeMillis(), random);
     }
 
     @Override
