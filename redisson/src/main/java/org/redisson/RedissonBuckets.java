@@ -108,17 +108,30 @@ public class RedissonBuckets implements RBuckets {
             return RedissonPromise.newSucceededFuture(false);
         }
 
-        List<Object> params = new ArrayList<Object>(buckets.size());
-        for (Entry<String, ?> entry : buckets.entrySet()) {
-            params.add(entry.getKey());
-            try {
-                params.add(codec.getValueEncoder().encode(entry.getValue()));
-            } catch (IOException e) {
-                throw new IllegalArgumentException(e);
+        return commandExecutor.writeBatchedAsync(codec, RedisCommands.MSET, new SlotCallback<Void, Boolean>() {
+            @Override
+            public void onSlotResult(Void result) {
             }
-        }
 
-        return commandExecutor.writeAsync(params.get(0).toString(), RedisCommands.MSETNX, params.toArray());
+            @Override
+            public Boolean onFinish() {
+                return true;
+            }
+
+            @Override
+            public Object[] createParams(List<String> keys) {
+                List<Object> params = new ArrayList<>(keys.size());
+                for (String key : keys) {
+                    params.add(key);
+                    try {
+                        params.add(codec.getValueEncoder().encode(buckets.get(key)));
+                    } catch (IOException e) {
+                        throw new IllegalArgumentException(e);
+                    }
+                }
+                return params.toArray();
+            }
+        }, buckets.keySet().toArray(new String[]{}));
     }
 
     @Override
