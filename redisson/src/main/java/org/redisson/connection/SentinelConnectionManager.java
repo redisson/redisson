@@ -70,6 +70,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     private boolean usePassword = false;
     private String scheme;
     private boolean checkSlaveStatusWithSyncing;
+    private boolean sentinelsDiscovery;
 
     public SentinelConnectionManager(SentinelServersConfig cfg, Config config, UUID id) {
         super(config, id);
@@ -84,6 +85,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         this.config = create(cfg);
         this.sentinelPassword = cfg.getSentinelPassword();
         this.checkSlaveStatusWithSyncing = cfg.isCheckSlaveStatusWithSyncing();
+        this.sentinelsDiscovery = cfg.isSentinelsDiscovery();
         initTimer(this.config);
 
         this.natMapper = cfg.getNatMapper();
@@ -186,7 +188,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             }
         }
 
-        if (cfg.isCheckSentinelsList()) {
+        if (cfg.isCheckSentinelsList() && cfg.isSentinelsDiscovery()) {
             if (sentinels.isEmpty()) {
                 stopThreads();
                 throw new RedisConnectionException("SENTINEL SENTINELS command returns empty result! Set checkSentinelsList = false to avoid this check.", lastException);
@@ -387,6 +389,10 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private RFuture<List<Map<String, String>>> checkSentinelsChange(SentinelServersConfig cfg, RedisConnection connection) {
+        if (!sentinelsDiscovery) {
+            return RedissonPromise.newSucceededFuture(null);
+        }
+
         RFuture<List<Map<String, String>>> sentinelsFuture = connection.async(StringCodec.INSTANCE, RedisCommands.SENTINEL_SENTINELS, cfg.getMasterName());
         sentinelsFuture.onComplete((list, e) -> {
             if (e != null || list.isEmpty()) {
