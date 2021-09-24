@@ -1497,12 +1497,17 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_LONG,
                 "local maxSize = tonumber(redis.call('hget', KEYS[6], 'max-size')); "
-                        + "if maxSize ~= nil and maxSize ~= 0 then "
-                        + "    redis.call('zrem', KEYS[5], unpack(ARGV)); "
-                        + "end; " +
-                        "redis.call('zrem', KEYS[3], unpack(ARGV)); " +
-                        "redis.call('zrem', KEYS[2], unpack(ARGV)); " +
-                        "for i, key in ipairs(ARGV) do "
+
+                        + "for i=1, #ARGV, 5000 do "
+                            + "if maxSize ~= nil and maxSize ~= 0 then "
+                                + "redis.call('zrem', KEYS[5], unpack(ARGV, i, math.min(i+4999, table.getn(ARGV)))) "
+                            + "end; "
+
+                            + "redis.call('zrem', KEYS[3], unpack(ARGV, i, math.min(i+4999, table.getn(ARGV)))) "
+                            + "redis.call('zrem', KEYS[2], unpack(ARGV, i, math.min(i+4999, table.getn(ARGV)))) "
+                        + "end; "
+
+                      + "for i, key in ipairs(ARGV) do "
                         + "local v = redis.call('hget', KEYS[1], key); "
                         + "if v ~= false then "
                             + "local t, val = struct.unpack('dLc0', v); "
@@ -1510,7 +1515,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "redis.call('publish', KEYS[4], msg); "
                         + "end; " +
                         "end; " +
-                        "return redis.call('hdel', KEYS[1], unpack(ARGV)); ",
+
+                        "local n = 0;" +
+                        "for i=1, #ARGV, 5000 do "
+                          + "n = n + redis.call('hdel', KEYS[1], unpack(ARGV, i, math.min(i+4999, table.getn(ARGV)))) "
+                      + "end; "
+
+                      + "return n; ",
                 Arrays.asList(getRawName(), getTimeoutSetName(), getIdleSetName(), getRemovedChannelName(), getLastAccessTimeSetName(), getOptionsName()),
                 params.toArray());
     }
