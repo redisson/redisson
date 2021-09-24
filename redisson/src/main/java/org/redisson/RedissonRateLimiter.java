@@ -182,9 +182,8 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
     }
     
     private <T> RFuture<T> tryAcquireAsync(RedisCommand<T> command, Long value) {
-        ByteBuf buf = Unpooled.copyLong(ThreadLocalRandom.current().nextLong());
-        byte[] random = buf.array();
-        buf.release();
+        byte[] random = new byte[8];
+        ThreadLocalRandom.current().nextBytes(random);
 
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, command,
                 "local rate = redis.call('hget', KEYS[1], 'rate');"
