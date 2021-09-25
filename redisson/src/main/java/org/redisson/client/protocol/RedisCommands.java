@@ -15,10 +15,7 @@
  */
 package org.redisson.client.protocol;
 
-import org.redisson.api.FastAutoClaimResult;
-import org.redisson.api.RType;
-import org.redisson.api.StreamInfo;
-import org.redisson.api.StreamMessageId;
+import org.redisson.api.*;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.convertor.*;
 import org.redisson.client.protocol.decoder.*;
@@ -234,6 +231,7 @@ public interface RedisCommands {
     RedisStrictCommand<Long> EVAL_LONG_SAFE = new RedisStrictCommand<Long>("EVAL", new LongReplayConvertor());
     RedisStrictCommand<Void> EVAL_VOID = new RedisStrictCommand<Void>("EVAL", new VoidReplayConvertor());
     RedisCommand<Object> EVAL_FIRST_LIST = new RedisCommand<Object>("EVAL", new ListFirstObjectDecoder());
+    RedisCommand<LockInfo> EVAL_LOCK_INFO = new RedisCommand<LockInfo>("EVAL", new LockInfoDecoder());
     RedisCommand<List<Object>> EVAL_LIST = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<Object>());
     RedisCommand<List<Object>> EVAL_LIST_REVERSE = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<>(true));
     RedisCommand<List<Integer>> EVAL_INT_LIST = new RedisCommand("EVAL", new ObjectListReplayDecoder<Integer>(), new IntegerReplayConvertor());
