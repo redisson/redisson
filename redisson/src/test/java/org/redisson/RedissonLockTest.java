@@ -2,6 +2,7 @@ package org.redisson;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.redisson.api.LockInfo;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.WriteRedisConnectionException;
@@ -76,6 +77,29 @@ public class RedissonLockTest extends BaseConcurrentTest {
                 hasFails.set(true);
             }
         }
+    }
+
+    @Test
+    public void testLockInfo() throws InterruptedException {
+        Runnable runnable = () -> {
+            RLock lock = redisson.getLock("lock-info-test");
+            lock.lock();
+            Long threadId = Thread.currentThread().getId();
+            LockInfo lockInfo = lock.getLockInfo();
+            Assertions.assertTrue(lockInfo.isLocked());
+            Assertions.assertEquals(threadId, lockInfo.getThreadOwnerId());
+            Assertions.assertTrue(lock.isHeldByThread(threadId));
+        };
+        Thread worker = new Thread(runnable);
+        worker.start();
+        worker.join();
+    }
+
+    @Test
+    public void testLockInfoNonPresent() {
+        RLock lock = redisson.getLock("free-lock");
+        LockInfo lockInfo = lock.getLockInfo();
+        Assertions.assertFalse(lockInfo.isLocked());
     }
 
     @Test

@@ -17,12 +17,10 @@ package org.redisson;
 
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
-import org.redisson.api.BatchOptions;
-import org.redisson.api.BatchResult;
-import org.redisson.api.RFuture;
-import org.redisson.api.RLock;
+import org.redisson.api.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
@@ -208,6 +206,26 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
         }
     }
 
+    protected <T> RFuture<T> evalReadAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
+        CommandBatchService executorService = createCommandBatchService();
+        RFuture<T> result = executorService.evalReadAsync(key, codec, evalCommandType, script, keys, params);
+        if (commandExecutor instanceof CommandBatchService) {
+            return result;
+        }
+
+        RPromise<T> r = new RedissonPromise<>();
+        RFuture<BatchResult<?>> future = executorService.executeAsync();
+        future.onComplete((res, ex) -> {
+            if (ex != null) {
+                r.tryFailure(ex);
+                return;
+            }
+
+            r.trySuccess(result.getNow());
+        });
+        return r;
+    }
+
     protected <T> RFuture<T> evalWriteAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
         CommandBatchService executorService = createCommandBatchService();
         RFuture<T> result = executorService.evalWriteAsync(key, codec, evalCommandType, script, keys, params);
@@ -324,4 +342,21 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
     }
 
     protected abstract RFuture<Boolean> unlockInnerAsync(long threadId);
+
+    public RFuture<LockInfo> getLockInfoAsync() {
+        return evalReadAsync(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_LOCK_INFO,
+                "if(redis.call('exists', KEYS[1]) == 1) then " +
+                        "local ownerInfo = redis.call('hkeys', KEYS[1])[1];" +
+                        "local ttl = redis.call('pttl', KEYS[1]);" +
+                        "return {ownerInfo, ttl};" +
+                        "end;" +
+                        "return {};",
+                Collections.singletonList(getName())
+        );
+    }
+
+    @Override
+    public LockInfo getLockInfo() {
+        return get(getLockInfoAsync());
+    }
 }

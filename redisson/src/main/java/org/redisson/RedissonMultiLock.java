@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 
+import org.redisson.api.LockInfo;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.api.RLockAsync;
@@ -556,4 +557,13 @@ public class RedissonMultiLock implements RLock {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public RFuture<LockInfo> getLockInfoAsync() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public LockInfo getLockInfo() {
+        throw new UnsupportedOperationException();
+    }
 }
