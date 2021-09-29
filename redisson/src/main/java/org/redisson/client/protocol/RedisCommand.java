@@ -107,6 +107,11 @@ public class RedisCommand<R> {
         return convertor;
     }
 
+    public boolean isBlockingCommand() {
+        return RedisCommands.BLOCKING_COMMAND_NAMES.contains(getName())
+                || RedisCommands.BLOCKING_COMMANDS.contains(this);
+    }
+
     public String toString() {
         StringBuilder str = new StringBuilder();
         str.append("(").append(name);
