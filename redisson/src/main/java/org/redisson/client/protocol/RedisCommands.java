@@ -502,4 +502,11 @@ public interface RedisCommands {
     RedisStrictCommand<Map<String, String>> INFO_COMMANDSTATS = new RedisStrictCommand<Map<String, String>>("INFO", "COMMANDSTATS", new StringMapDataDecoder());
     RedisStrictCommand<Map<String, String>> INFO_CLUSTER = new RedisStrictCommand<Map<String, String>>("INFO", "CLUSTER", new StringMapDataDecoder());
     RedisStrictCommand<Map<String, String>> INFO_KEYSPACE = new RedisStrictCommand<Map<String, String>>("INFO", "KEYSPACE", new StringMapDataDecoder());
+
+    Set<String> NO_RETRY = new HashSet<>(
+            Arrays.asList(LPOP.getName(), RPOP.getName(), LPUSH.getName(), RPUSH.getName(),
+                    LPUSHX.getName(), RPUSHX.getName(), GEOADD.getName(), XADD.getName(), APPEND.getName(),
+                    DECR.getName(), "DECRBY", INCR.getName(), INCRBY.getName(), ZINCRBY.getName(),
+                    "HINCRBYFLOAT", "HINCRBY", "INCRBYFLOAT"));
+
 }

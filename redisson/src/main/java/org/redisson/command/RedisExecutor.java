@@ -289,9 +289,7 @@ public class RedisExecutor<V, R> {
 
     private void scheduleResponseTimeout(RPromise<R> attemptPromise, RedisConnection connection) {
         long timeoutTime = responseTimeout;
-        if (command != null
-                && (RedisCommands.BLOCKING_COMMAND_NAMES.contains(command.getName())
-                        || RedisCommands.BLOCKING_COMMANDS.contains(command))) {
+        if (command != null && command.isBlockingCommand()) {
             Long popTimeout = null;
             if (RedisCommands.BLOCKING_COMMANDS.contains(command)) {
                 for (int i = 0; i < params.length-1; i++) {
@@ -343,7 +341,8 @@ public class RedisExecutor<V, R> {
     }
 
     protected boolean isResendAllowed(int attempt, int attempts) {
-        return attempt < attempts;
+        return attempt < attempts
+                && (command == null || (!command.isBlockingCommand() && !RedisCommands.NO_RETRY.contains(command.getName())));
     }
 
     private void handleBlockingOperations(RPromise<R> attemptPromise, RedisConnection connection, Long popTimeout) {
