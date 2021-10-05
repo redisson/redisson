@@ -161,7 +161,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
                 index = res.getIndex() + 1;
             }
                 
-            commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
+            get(commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
                "local len = redis.call('llen', KEYS[1]);"
                 + "if tonumber(ARGV[1]) < len then "
                     + "local pivot = redis.call('lindex', KEYS[1], ARGV[1]);"
@@ -169,8 +169,8 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
                     + "return;"
                 + "end;"
                 + "redis.call('rpush', KEYS[1], ARGV[2]);", 
-                    Arrays.<Object>asList(getRawName()),
-                    index, encode(value));
+                    Arrays.asList(getRawName()),
+                    index, encode(value)));
             return true;
         } finally {
             lock.unlock();
