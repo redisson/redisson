@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,6 @@
  */
 package org.redisson;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.redisson.api.RBuckets;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
@@ -36,6 +27,11 @@ import org.redisson.connection.decoder.BucketsDecoder;
 import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.misc.RedissonPromise;
 
+import java.io.IOException;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * 
  * @author Nikita Koksharov
@@ -45,7 +41,7 @@ public class RedissonBuckets implements RBuckets {
 
     protected final Codec codec;
     protected final CommandAsyncExecutor commandExecutor;
-    
+
     public RedissonBuckets(CommandAsyncExecutor commandExecutor) {
         this(commandExecutor.getConnectionManager().getCodec(), commandExecutor);
     }
@@ -83,7 +79,7 @@ public class RedissonBuckets implements RBuckets {
         
         RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("MGET", new MapGetAllDecoder(Arrays.<Object>asList(keys), 0));
         return commandExecutor.readBatchedAsync(commandCodec, command, new SlotCallback<Map<Object, Object>, Map<String, V>>() {
-            Map<String, V> results = new ConcurrentHashMap<>();
+            final Map<String, V> results = new ConcurrentHashMap<>();
 
             @Override
             public void onSlotResult(Map<Object, Object> result) {
@@ -100,8 +96,8 @@ public class RedissonBuckets implements RBuckets {
             }
 
             @Override
-            public RedisCommand<Map<Object, Object>> createCommand(Object param) {
-                return new RedisCommand<Map<Object, Object>>("MGET", new BucketsDecoder(param.toString()));
+            public RedisCommand<Map<Object, Object>> createCommand(List<String> keys) {
+                return new RedisCommand<>("MGET", new BucketsDecoder(keys));
             }
         }, keys);
     }
@@ -131,17 +127,30 @@ public class RedissonBuckets implements RBuckets {
             return RedissonPromise.newSucceededFuture(null);
         }
 
-        List<Object> params = new ArrayList<Object>(buckets.size());
-        for (Entry<String, ?> entry : buckets.entrySet()) {
-            params.add(entry.getKey());
-            try {
-                params.add(codec.getValueEncoder().encode(entry.getValue()));
-            } catch (IOException e) {
-                throw new IllegalArgumentException(e);
+        return commandExecutor.writeBatchedAsync(codec, RedisCommands.MSET, new SlotCallback<Void, Void>() {
+            @Override
+            public void onSlotResult(Void result) {
             }
-        }
 
-        return commandExecutor.writeAsync(params.get(0).toString(), RedisCommands.MSET, params.toArray());
+            @Override
+            public Void onFinish() {
+                return null;
+            }
+
+            @Override
+            public Object[] createParams(List<String> keys) {
+                List<Object> params = new ArrayList<>(keys.size());
+                for (String key : keys) {
+                    params.add(key);
+                    try {
+                        params.add(codec.getValueEncoder().encode(buckets.get(key)));
+                    } catch (IOException e) {
+                        throw new IllegalArgumentException(e);
+                    }
+                }
+                return params.toArray();
+            }
+        }, buckets.keySet().toArray(new String[]{}), buckets);
     }
 
 }

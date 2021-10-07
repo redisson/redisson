@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -105,6 +105,11 @@ public class RedisCommand<R> {
 
     public Convertor<R> getConvertor() {
         return convertor;
+    }
+
+    public boolean isBlockingCommand() {
+        return RedisCommands.BLOCKING_COMMAND_NAMES.contains(getName())
+                || RedisCommands.BLOCKING_COMMANDS.contains(this);
     }
 
     public String toString() {

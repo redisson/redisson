@@ -1,31 +1,27 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.redisson.api.*;
+import org.redisson.api.geo.GeoSearchArgs;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.redisson.api.GeoEntry;
-import org.redisson.api.GeoOrder;
-import org.redisson.api.GeoPosition;
-import org.redisson.api.GeoUnit;
-import org.redisson.api.RGeo;
-import org.redisson.api.geo.GeoSearchArgs;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonGeoTest extends BaseTest {
 
-    @BeforeClass
+    @BeforeAll
     public static void checkRedisVersion() throws IOException, InterruptedException {
         boolean running = RedisRunner.isDefaultRedisServerInstanceRunning();
         if (!running) {
             RedisRunner.startDefaultRedisServerInstance();
         }
-        Assume.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("3.1.0") > 0);
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("3.1.0") > 0);
         if (!running) {
             RedisRunner.shutDownDefaultRedisServerInstance();
         }
@@ -53,6 +49,8 @@ public class RedissonGeoTest extends BaseTest {
 
     @Test
     public void testTryAdd() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
+
         RGeo<String> geo = redisson.getGeo("test");
         assertThat(geo.add(2.51, 3.12, "city1")).isEqualTo(1);
         assertThat(geo.tryAdd(2.5, 3.1, "city1")).isFalse();
@@ -157,6 +155,8 @@ public class RedissonGeoTest extends BaseTest {
 
     @Test
     public void testBox() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
+
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
@@ -168,6 +168,8 @@ public class RedissonGeoTest extends BaseTest {
 
     @Test
     public void testBoxWithDistance() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
+
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
@@ -182,6 +184,8 @@ public class RedissonGeoTest extends BaseTest {
 
     @Test
     public void testBoxWithPosition() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
+
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
@@ -196,6 +200,8 @@ public class RedissonGeoTest extends BaseTest {
 
     @Test
     public void testBoxStoreSearch() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
+
         RGeo<String> geoSource = redisson.getGeo("test");
         RGeo<String> geoDest = redisson.getGeo("test-store");
         geoSource.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
@@ -208,6 +214,8 @@ public class RedissonGeoTest extends BaseTest {
 
     @Test
     public void testBoxStoreSorted() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
+
         RGeo<String> geoSource = redisson.getGeo("test");
         RGeo<String> geoDest = redisson.getGeo("test-store");
         geoSource.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ public class RedissonIdGenerator extends RedissonExpirable implements RIdGenerat
     }
 
     private String getAllocationSizeName() {
-        return suffixName(getName(), "allocation");
+        return suffixName(getRawName(), "allocation");
     }
 
     @Override
@@ -63,10 +63,10 @@ public class RedissonIdGenerator extends RedissonExpirable implements RIdGenerat
 
     @Override
     public RFuture<Boolean> tryInitAsync(long value, long allocationSize) {
-        return commandExecutor.evalWriteAsync(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                           "redis.call('setnx', KEYS[1], ARGV[1]); "
                         + "return redis.call('setnx', KEYS[2], ARGV[2]); ",
-                Arrays.asList(getName(), getAllocationSizeName()), value, allocationSize);
+                Arrays.asList(getRawName(), getAllocationSizeName()), value, allocationSize);
     }
 
     private final AtomicLong start = new AtomicLong();
@@ -96,7 +96,7 @@ public class RedissonIdGenerator extends RedissonExpirable implements RIdGenerat
                     pp.trySuccess(start.incrementAndGet());
                 } else {
                     try {
-                        RFuture<List<Object>> future = commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_LIST,
+                        RFuture<List<Object>> future = commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_LIST,
                               "local allocationSize = redis.call('get', KEYS[2]); " +
                                     "if allocationSize == false then " +
                                         "allocationSize = 5000; " +
@@ -109,7 +109,7 @@ public class RedissonIdGenerator extends RedissonExpirable implements RIdGenerat
                                     "end; " +
                                     "redis.call('incrby', KEYS[1], allocationSize); " +
                                     "return {value, allocationSize}; ",
-                            Arrays.asList(getName(), getAllocationSizeName()));
+                            Arrays.asList(getRawName(), getAllocationSizeName()));
                         List<Object> res = get(future);
 
                         long value = (long) res.get(0);
@@ -146,27 +146,27 @@ public class RedissonIdGenerator extends RedissonExpirable implements RIdGenerat
 
     @Override
     public RFuture<Boolean> deleteAsync() {
-        return deleteAsync(getName(), getAllocationSizeName());
+        return deleteAsync(getRawName(), getAllocationSizeName());
     }
 
     @Override
     public RFuture<Long> sizeInMemoryAsync() {
-        return super.sizeInMemoryAsync(Arrays.asList(getName(), getAllocationSizeName()));
+        return super.sizeInMemoryAsync(Arrays.asList(getRawName(), getAllocationSizeName()));
     }
 
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
-        return expireAsync(timeToLive, timeUnit, getName(), getAllocationSizeName());
+        return expireAsync(timeToLive, timeUnit, getRawName(), getAllocationSizeName());
     }
 
     @Override
-    public RFuture<Boolean> expireAtAsync(long timestamp) {
-        return expireAtAsync(timestamp, getName(), getAllocationSizeName());
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String... keys) {
+        return super.expireAtAsync(timestamp, getRawName(), getAllocationSizeName());
     }
 
     @Override
     public RFuture<Boolean> clearExpireAsync() {
-        return clearExpireAsync(getName(), getAllocationSizeName());
+        return clearExpireAsync(getRawName(), getAllocationSizeName());
     }
 
 }

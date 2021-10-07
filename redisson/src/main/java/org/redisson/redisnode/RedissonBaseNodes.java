@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import org.redisson.api.RFuture;
 import org.redisson.api.redisnode.BaseRedisNodes;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
@@ -41,9 +42,11 @@ import java.util.concurrent.TimeUnit;
 public class RedissonBaseNodes implements BaseRedisNodes {
 
     ConnectionManager connectionManager;
+    CommandAsyncExecutor commandExecutor;
 
-    public RedissonBaseNodes(ConnectionManager connectionManager) {
+    public RedissonBaseNodes(ConnectionManager connectionManager, CommandAsyncExecutor commandExecutor) {
         this.connectionManager = connectionManager;
+        this.commandExecutor = commandExecutor;
     }
 
     protected <T extends org.redisson.api.redisnode.RedisNode> Collection<T> getNodes(NodeType type) {
@@ -52,14 +55,14 @@ public class RedissonBaseNodes implements BaseRedisNodes {
         for (MasterSlaveEntry masterSlaveEntry : entries) {
             if (masterSlaveEntry.getAllEntries().isEmpty()
                     && type == NodeType.MASTER) {
-                RedisNode entry = new RedisNode(masterSlaveEntry.getClient(), connectionManager.getCommandExecutor(), NodeType.MASTER);
+                RedisNode entry = new RedisNode(masterSlaveEntry.getClient(), commandExecutor, NodeType.MASTER);
                 result.add((T) entry);
             }
 
             for (ClientConnectionsEntry slaveEntry : masterSlaveEntry.getAllEntries()) {
                 if (slaveEntry.getFreezeReason() != ClientConnectionsEntry.FreezeReason.MANAGER
                         && slaveEntry.getNodeType() == type) {
-                    RedisNode entry = new RedisNode(slaveEntry.getClient(), connectionManager.getCommandExecutor(), slaveEntry.getNodeType());
+                    RedisNode entry = new RedisNode(slaveEntry.getClient(), commandExecutor, slaveEntry.getNodeType());
                     result.add((T) entry);
                 }
             }
@@ -74,13 +77,13 @@ public class RedissonBaseNodes implements BaseRedisNodes {
             if (nodeType == NodeType.MASTER
                     && masterSlaveEntry.getAllEntries().isEmpty()
                         && RedisURI.compare(masterSlaveEntry.getClient().getAddr(), addr)) {
-                return new RedisNode(masterSlaveEntry.getClient(), connectionManager.getCommandExecutor(), NodeType.MASTER);
+                return new RedisNode(masterSlaveEntry.getClient(), commandExecutor, NodeType.MASTER);
             }
 
             for (ClientConnectionsEntry entry : masterSlaveEntry.getAllEntries()) {
                 if (RedisURI.compare(entry.getClient().getAddr(), addr)
                         && entry.getFreezeReason() != ClientConnectionsEntry.FreezeReason.MANAGER) {
-                    return new RedisNode(entry.getClient(), connectionManager.getCommandExecutor(), entry.getNodeType());
+                    return new RedisNode(entry.getClient(), commandExecutor, entry.getNodeType());
                 }
             }
         }
@@ -92,13 +95,13 @@ public class RedissonBaseNodes implements BaseRedisNodes {
         List<RedisNode> result = new ArrayList<>();
         for (MasterSlaveEntry masterSlaveEntry : entries) {
             if (masterSlaveEntry.getAllEntries().isEmpty()) {
-                RedisNode masterEntry = new RedisNode(masterSlaveEntry.getClient(), connectionManager.getCommandExecutor(), NodeType.MASTER);
+                RedisNode masterEntry = new RedisNode(masterSlaveEntry.getClient(), commandExecutor, NodeType.MASTER);
                 result.add(masterEntry);
             }
 
             for (ClientConnectionsEntry slaveEntry : masterSlaveEntry.getAllEntries()) {
                 if (slaveEntry.getFreezeReason() != ClientConnectionsEntry.FreezeReason.MANAGER) {
-                    RedisNode entry = new RedisNode(slaveEntry.getClient(), connectionManager.getCommandExecutor(), slaveEntry.getNodeType());
+                    RedisNode entry = new RedisNode(slaveEntry.getClient(), commandExecutor, slaveEntry.getNodeType());
                     result.add(entry);
                 }
             }

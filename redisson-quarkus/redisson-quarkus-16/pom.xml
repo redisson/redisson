@@ -1,0 +1,66 @@
+<!--
+
+    Copyright (c) 2013-2021 Nikita Koksharov
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.redisson</groupId>
+        <artifactId>redisson-quarkus</artifactId>
+        <version>3.16.4-SNAPSHOT</version>
+        <relativePath>../</relativePath>
+    </parent>
+
+    <artifactId>redisson-quarkus-16-parent</artifactId>
+    <packaging>pom</packaging>
+
+    <name>Redisson/Quarkus v1.6.x - 1.13.x integration</name>
+
+     <modules>
+       <module>deployment</module>
+       <module>runtime</module>
+       <module>integration-tests</module>
+     </modules>
+
+     <properties>
+       <quarkus.version>1.13.6.Final</quarkus.version>
+     </properties>
+
+     <dependencyManagement>
+       <dependencies>
+         <dependency>
+           <groupId>io.quarkus</groupId>
+           <artifactId>quarkus-bom</artifactId>
+           <version>${quarkus.version}</version>
+           <type>pom</type>
+           <scope>import</scope>
+         </dependency>
+       </dependencies>
+     </dependencyManagement>
+
+     <build>
+       <pluginManagement>
+         <plugins>
+           <plugin>
+             <groupId>io.quarkus</groupId>
+             <artifactId>quarkus-maven-plugin</artifactId>
+             <version>${quarkus.version}</version>
+           </plugin>
+         </plugins>
+       </pluginManagement>
+     </build>
+</project>

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,11 @@
  */
 package org.redisson.config;
 
-import java.net.URL;
-
+import org.redisson.api.NameMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.net.URL;
 
 /**
  * 
@@ -86,11 +87,15 @@ public class BaseConfig<T extends BaseConfig<T>> {
     
     private String sslKeystorePassword;
 
+    private String[] sslProtocols;
+
     private int pingConnectionInterval = 30000;
 
     private boolean keepAlive;
     
-    private boolean tcpNoDelay;
+    private boolean tcpNoDelay = true;
+
+    private NameMapper nameMapper = NameMapper.direct();
 
     
     BaseConfig() {
@@ -112,9 +117,11 @@ public class BaseConfig<T extends BaseConfig<T>> {
         setSslTruststorePassword(config.getSslTruststorePassword());
         setSslKeystore(config.getSslKeystore());
         setSslKeystorePassword(config.getSslKeystorePassword());
+        setSslProtocols(config.getSslProtocols());
         setPingConnectionInterval(config.getPingConnectionInterval());
         setKeepAlive(config.isKeepAlive());
         setTcpNoDelay(config.isTcpNoDelay());
+        setNameMapper(config.getNameMapper());
     }
 
     /**
@@ -380,6 +387,24 @@ public class BaseConfig<T extends BaseConfig<T>> {
         return (T) this;
     }
 
+    public String[] getSslProtocols() {
+        return sslProtocols;
+    }
+
+    /**
+     * Defines SSL protocols.
+     * Example values: TLSv1.3, TLSv1.2, TLSv1.1, TLSv1
+     * <p>
+     * Default is <code>null</code>
+     *
+     * @param sslProtocols - protocols
+     * @return config
+     */
+    public T setSslProtocols(String[] sslProtocols) {
+        this.sslProtocols = sslProtocols;
+        return (T) this;
+    }
+
     public int getPingConnectionInterval() {
         return pingConnectionInterval;
     }
@@ -422,7 +447,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
     /**
      * Enables TCP noDelay for connection
      * <p>
-     * Default is <code>false</code>
+     * Default is <code>true</code>
      * 
      * @param tcpNoDelay - boolean value
      * @return config
@@ -432,6 +457,20 @@ public class BaseConfig<T extends BaseConfig<T>> {
         return (T) this;
     }
 
-    
-    
+
+    public NameMapper getNameMapper() {
+        return nameMapper;
+    }
+
+    /**
+     * Defines Name mapper which maps Redisson object name.
+     * Applied to all Redisson objects.
+     *
+     * @param nameMapper - name mapper object
+     * @return config
+     */
+    public T setNameMapper(NameMapper nameMapper) {
+        this.nameMapper = nameMapper;
+        return (T) this;
+    }
 }

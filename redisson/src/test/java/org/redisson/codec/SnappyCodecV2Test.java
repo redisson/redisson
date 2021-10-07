@@ -6,10 +6,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.Assert;
-import org.junit.Test;
-
 import io.netty.buffer.ByteBuf;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class SnappyCodecV2Test {
 
@@ -32,7 +31,7 @@ public class SnappyCodecV2Test {
         List<TestObject> list = getData();
         ByteBuf t = c.getValueEncoder().encode(list);
         Object decodedList = c.getValueDecoder().decode(t, null);
-        Assert.assertEquals(list, decodedList);
+        Assertions.assertEquals(list, decodedList);
     }
 
     private List<TestObject> getData() {

@@ -6,8 +6,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.redisson.api.RTopicReactive;
@@ -58,7 +58,7 @@ public class RedissonTopicReactiveTest extends BaseReactiveTest {
         MessageListener listener = new MessageListener() {
             @Override
             public void onMessage(CharSequence channel, Object msg) {
-                Assert.fail();
+                Assertions.fail();
             }
         };
         
@@ -76,7 +76,7 @@ public class RedissonTopicReactiveTest extends BaseReactiveTest {
         MessageListener listener = new MessageListener() {
             @Override
             public void onMessage(CharSequence channel, Object msg) {
-                Assert.fail();
+                Assertions.fail();
             }
         };
         

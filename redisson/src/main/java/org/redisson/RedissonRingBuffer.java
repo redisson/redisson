@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,17 +45,17 @@ public class RedissonRingBuffer<V> extends RedissonQueue<V> implements RRingBuff
     
     public RedissonRingBuffer(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name, redisson);
-        settingsName = prefixName("redisson_rb", getName());
+        settingsName = prefixName("redisson_rb", getRawName());
     }
     
     public RedissonRingBuffer(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(codec, commandExecutor, name, redisson);
-        settingsName = prefixName("redisson_rb", getName());
+        settingsName = prefixName("redisson_rb", getRawName());
     }
 
     @Override
     public RFuture<Boolean> trySetCapacityAsync(int capacity) {
-        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.SETNX, settingsName, capacity);
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.SETNX, settingsName, capacity);
     }
     
     @Override
@@ -65,11 +65,11 @@ public class RedissonRingBuffer<V> extends RedissonQueue<V> implements RRingBuff
 
     @Override
     public RFuture<Void> setCapacityAsync(int capacity) {
-        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
+        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 "redis.call('set', KEYS[2], ARGV[1]); " +
                       "local len = redis.call('llen', KEYS[1]); " +
                       "redis.call('ltrim', KEYS[1], len - tonumber(ARGV[1]), len - 1); ",
-             Arrays.asList(getName(), settingsName), capacity);
+             Arrays.asList(getRawName(), settingsName), capacity);
     }
 
     @Override
@@ -79,7 +79,7 @@ public class RedissonRingBuffer<V> extends RedissonQueue<V> implements RRingBuff
 
     @Override
     public RFuture<Boolean> addAsync(V e) {
-        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local limit = redis.call('get', KEYS[2]); "
               + "assert(limit ~= false, 'RingBuffer capacity is not defined'); "
               + "local size = redis.call('rpush', KEYS[1], ARGV[1]); "
@@ -88,7 +88,7 @@ public class RedissonRingBuffer<V> extends RedissonQueue<V> implements RRingBuff
                   + "redis.call('lpop', KEYS[1]); "
               + "end; "
               + "return 1; ",
-             Arrays.asList(getName(), settingsName), encode(e));
+             Arrays.asList(getRawName(), settingsName), encode(e));
     }
 
     @Override
@@ -99,7 +99,7 @@ public class RedissonRingBuffer<V> extends RedissonQueue<V> implements RRingBuff
 
         List<Object> args = new ArrayList<>(c.size());
         encode(args, c);
-        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local limit = redis.call('get', KEYS[2]); "
               + "assert(limit ~= false, 'RingBuffer capacity is not defined'); "
 
@@ -113,7 +113,7 @@ public class RedissonRingBuffer<V> extends RedissonQueue<V> implements RRingBuff
                   + "redis.call('ltrim', KEYS[1], extraSize, -1); "
               + "end; "
               + "return 1; ",
-             Arrays.asList(getName(), settingsName), args.toArray());
+             Arrays.asList(getRawName(), settingsName), args.toArray());
     }
     
     @Override
@@ -123,18 +123,18 @@ public class RedissonRingBuffer<V> extends RedissonQueue<V> implements RRingBuff
 
     @Override
     public RFuture<Integer> remainingCapacityAsync() {
-        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
+        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
                 "local limit = redis.call('get', KEYS[2]); "
               + "assert(limit ~= false, 'RingBuffer capacity is not defined'); "
               + "local size = redis.call('llen', KEYS[1]); "
               + "return math.max(tonumber(limit) - size, 0); ",
-             Arrays.asList(getName(), settingsName));
+             Arrays.asList(getRawName(), settingsName));
         
     }
 
     @Override
     public RFuture<Integer> capacityAsync() {
-        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, GET_INTEGER, settingsName);
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, GET_INTEGER, settingsName);
     }
 
     @Override

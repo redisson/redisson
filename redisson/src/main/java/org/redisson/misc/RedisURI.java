@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 package org.redisson.misc;
+
+import io.netty.util.NetUtil;
 
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
@@ -79,7 +81,11 @@ public class RedisURI {
     public int getPort() {
         return port;
     }
-    
+
+    public boolean isIP() {
+        return NetUtil.createByteArrayFromIpAddressString(host) != null;
+    }
+
     private static String trimIpv6Brackets(String host) {
         if (host.startsWith("[") && host.endsWith("]")) {
             return host.substring(1, host.length() - 1);

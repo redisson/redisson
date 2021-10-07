@@ -7,9 +7,9 @@ import java.io.Serializable;
 import java.util.Collections;
 import java.util.concurrent.Callable;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.redisson.BaseTest;
 import org.redisson.RedisRunner.FailedToStartRedisException;
 import org.redisson.RedissonNode;
@@ -92,12 +92,12 @@ public class RedissonExecutorServiceSpringTest extends BaseTest {
 
     private static AnnotationConfigApplicationContext context;
     
-    @BeforeClass
+    @BeforeAll
     public static void beforeTest() throws FailedToStartRedisException, IOException, InterruptedException {
         context = new AnnotationConfigApplicationContext(Application.class);
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterTest() {
         context.close();
     }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,12 +42,12 @@ public class RedissonReadWriteLock extends RedissonExpirable implements RReadWri
 
     @Override
     public RLock readLock() {
-        return new RedissonReadLock(commandExecutor, getName());
+        return new RedissonReadLock(commandExecutor, getRawName());
     }
 
     @Override
     public RLock writeLock() {
-        return new RedissonWriteLock(commandExecutor, getName());
+        return new RedissonWriteLock(commandExecutor, getRawName());
     }
 
 }

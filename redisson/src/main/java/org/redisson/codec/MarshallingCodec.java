@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,18 +15,16 @@
  */
 package org.redisson.codec;
 
-import java.io.IOException;
-import java.util.Locale;
-
-import org.jboss.marshalling.*;
-import org.redisson.client.codec.BaseCodec;
-import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Decoder;
-import org.redisson.client.protocol.Encoder;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.util.concurrent.FastThreadLocal;
+import org.jboss.marshalling.*;
+import org.redisson.client.codec.BaseCodec;
+import org.redisson.client.protocol.Decoder;
+import org.redisson.client.protocol.Encoder;
+
+import java.io.IOException;
+import java.util.Locale;
 
 /**
  * JBoss Marshalling codec.
@@ -141,39 +139,40 @@ public class MarshallingCodec extends BaseCodec {
         
     }
     
-    private final Decoder<Object> decoder = new Decoder<Object>() {
-        
-        @Override
-        public Object decode(ByteBuf buf, State state) throws IOException {
-            Unmarshaller unmarshaller = decoderThreadLocal.get();
-            try {
-                unmarshaller.start(new ByteInputWrapper(buf));
-                return unmarshaller.readObject();
-            } catch (ClassNotFoundException e) {
-                throw new IOException(e);
-            } finally {
-                unmarshaller.finish();
-                unmarshaller.close();
-            }
+    private final Decoder<Object> decoder = (buf, state) -> {
+        Unmarshaller unmarshaller = decoderThreadLocal.get();
+        try {
+            unmarshaller.start(new ByteInputWrapper(buf));
+            return unmarshaller.readObject();
+        } catch (ClassNotFoundException e) {
+            throw new IOException(e);
+        } finally {
+            unmarshaller.finish();
+            unmarshaller.close();
         }
     };
     
-    private final Encoder encoder = new Encoder() {
-        
-        @Override
-        public ByteBuf encode(Object in) throws IOException {
-            ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
+    private final Encoder encoder = in -> {
+        ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
 
-            Marshaller marshaller = encoderThreadLocal.get();
-            try {
-                marshaller.start(new ByteOutputWrapper(out));
-                marshaller.writeObject(in);
-            } finally {
-                marshaller.finish();
-                marshaller.close();
-            }
-            return out;
+        Marshaller marshaller = encoderThreadLocal.get();
+        try {
+            marshaller.start(new ByteOutputWrapper(out));
+            marshaller.writeObject(in);
+        } catch (IOException e) {
+            marshaller.finish();
+            marshaller.close();
+            out.release();
+            throw e;
+        } catch (Exception e) {
+            marshaller.finish();
+            marshaller.close();
+            out.release();
+            throw new IOException(e);
         }
+        marshaller.finish();
+        marshaller.close();
+        return out;
     };
     
     private final MarshallerFactory factory;
@@ -195,6 +194,7 @@ public class MarshallingCodec extends BaseCodec {
         this(Protocol.RIVER, null);
         configuration.setClassResolver(new SimpleClassResolver(classLoader));
         this.classLoader = classLoader;
+        warmup();
     }
     
     public MarshallingCodec(ClassLoader classLoader, MarshallingCodec codec) {
@@ -212,6 +212,7 @@ public class MarshallingCodec extends BaseCodec {
         config.setVersion(codec.configuration.getVersion());
         this.configuration = config;
         this.classLoader = classLoader;
+        warmup();
     }
     
     public MarshallingCodec(Protocol protocol, MarshallingConfiguration configuration) {
@@ -223,8 +224,26 @@ public class MarshallingCodec extends BaseCodec {
             configuration = createConfig();
         }
         this.configuration = configuration;
+        warmup();
     }
-    
+
+    private static boolean warmedup = false;
+
+    private void warmup() {
+        if (warmedup) {
+            return;
+        }
+        warmedup = true;
+
+        try {
+            ByteBuf d = getValueEncoder().encode("testValue");
+            getValueDecoder().decode(d, null);
+            d.release();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     @Override
     public Decoder<Object> getValueDecoder() {
         return decoder;

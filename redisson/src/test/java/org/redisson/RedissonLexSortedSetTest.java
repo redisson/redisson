@@ -1,12 +1,12 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.redisson.api.RLexSortedSet;
 
 import java.util.Arrays;
 
-import org.junit.Assert;
-import org.junit.Test;
-import org.redisson.api.RLexSortedSet;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonLexSortedSetTest extends BaseTest {
 
@@ -22,26 +22,26 @@ public class RedissonLexSortedSetTest extends BaseTest {
     @Test
     public void testPollLast() {
         RLexSortedSet set = redisson.getLexSortedSet("simple");
-        Assert.assertNull(set.pollLast());
+        Assertions.assertNull(set.pollLast());
 
         set.add("a");
         set.add("b");
         set.add("c");
 
-        Assert.assertEquals("c", set.pollLast());
+        Assertions.assertEquals("c", set.pollLast());
         assertThat(set).containsExactly("a", "b");
     }
 
     @Test
     public void testPollFirst() {
         RLexSortedSet set = redisson.getLexSortedSet("simple");
-        Assert.assertNull(set.pollFirst());
+        Assertions.assertNull(set.pollFirst());
 
         set.add("a");
         set.add("b");
         set.add("c");
 
-        Assert.assertEquals("a", set.pollFirst());
+        Assertions.assertEquals("a", set.pollFirst());
         assertThat(set).containsExactly("b", "c");
     }
 
@@ -53,27 +53,27 @@ public class RedissonLexSortedSetTest extends BaseTest {
         set.add("c");
         set.add("d");
 
-        Assert.assertEquals("a", set.first());
-        Assert.assertEquals("d", set.last());
+        Assertions.assertEquals("a", set.first());
+        Assertions.assertEquals("d", set.last());
     }
     
     @Test
     public void testRemoveLexRangeTail() {
         RLexSortedSet set = redisson.getLexSortedSet("simple");
-        Assert.assertTrue(set.add("a"));
-        Assert.assertFalse(set.add("a"));
-        Assert.assertTrue(set.add("b"));
-        Assert.assertTrue(set.add("c"));
-        Assert.assertTrue(set.add("d"));
-        Assert.assertTrue(set.add("e"));
-        Assert.assertTrue(set.add("f"));
-        Assert.assertTrue(set.add("g"));
+        Assertions.assertTrue(set.add("a"));
+        Assertions.assertFalse(set.add("a"));
+        Assertions.assertTrue(set.add("b"));
+        Assertions.assertTrue(set.add("c"));
+        Assertions.assertTrue(set.add("d"));
+        Assertions.assertTrue(set.add("e"));
+        Assertions.assertTrue(set.add("f"));
+        Assertions.assertTrue(set.add("g"));
 
-        Assert.assertEquals(0, (int)set.removeRangeTail("z", false));
+        Assertions.assertEquals(0, (int)set.removeRangeTail("z", false));
 
-        Assert.assertEquals(4, (int)set.removeRangeTail("c", false));
+        Assertions.assertEquals(4, (int)set.removeRangeTail("c", false));
         assertThat(set).containsExactly("a", "b", "c");
-        Assert.assertEquals(1, (int)set.removeRangeTail("c", true));
+        Assertions.assertEquals(1, (int)set.removeRangeTail("c", true));
         assertThat(set).containsExactly("a", "b");
     }
 
@@ -89,9 +89,9 @@ public class RedissonLexSortedSetTest extends BaseTest {
         set.add("f");
         set.add("g");
 
-        Assert.assertEquals(2, (int)set.removeRangeHead("c", false));
+        Assertions.assertEquals(2, (int)set.removeRangeHead("c", false));
         assertThat(set).containsExactly("c", "d", "e", "f", "g");
-        Assert.assertEquals(1, (int)set.removeRangeHead("c", true));
+        Assertions.assertEquals(1, (int)set.removeRangeHead("c", true));
         assertThat(set).containsExactly("d", "e", "f", "g");
     }
 
@@ -106,7 +106,7 @@ public class RedissonLexSortedSetTest extends BaseTest {
         set.add("f");
         set.add("g");
 
-        Assert.assertEquals(5, set.removeRange("aaa", true, "g", false));
+        Assertions.assertEquals(5, set.removeRange("aaa", true, "g", false));
         assertThat(set).containsExactly("a", "g");
     }
 
@@ -114,14 +114,14 @@ public class RedissonLexSortedSetTest extends BaseTest {
     @Test
     public void testLexRangeTail() {
         RLexSortedSet set = redisson.getLexSortedSet("simple");
-        Assert.assertTrue(set.add("a"));
-        Assert.assertFalse(set.add("a"));
-        Assert.assertTrue(set.add("b"));
-        Assert.assertTrue(set.add("c"));
-        Assert.assertTrue(set.add("d"));
-        Assert.assertTrue(set.add("e"));
-        Assert.assertTrue(set.add("f"));
-        Assert.assertTrue(set.add("g"));
+        Assertions.assertTrue(set.add("a"));
+        Assertions.assertFalse(set.add("a"));
+        Assertions.assertTrue(set.add("b"));
+        Assertions.assertTrue(set.add("c"));
+        Assertions.assertTrue(set.add("d"));
+        Assertions.assertTrue(set.add("e"));
+        Assertions.assertTrue(set.add("f"));
+        Assertions.assertTrue(set.add("g"));
 
         assertThat(set.rangeTail("c", false)).containsExactly("d", "e", "f", "g");
         assertThat(set.rangeTail("c", true)).containsExactly("c", "d", "e", "f", "g");
@@ -168,14 +168,14 @@ public class RedissonLexSortedSetTest extends BaseTest {
     @Test
     public void testLexRangeTailReversed() {
         RLexSortedSet set = redisson.getLexSortedSet("simple");
-        Assert.assertTrue(set.add("a"));
-        Assert.assertFalse(set.add("a"));
-        Assert.assertTrue(set.add("b"));
-        Assert.assertTrue(set.add("c"));
-        Assert.assertTrue(set.add("d"));
-        Assert.assertTrue(set.add("e"));
-        Assert.assertTrue(set.add("f"));
-        Assert.assertTrue(set.add("g"));
+        Assertions.assertTrue(set.add("a"));
+        Assertions.assertFalse(set.add("a"));
+        Assertions.assertTrue(set.add("b"));
+        Assertions.assertTrue(set.add("c"));
+        Assertions.assertTrue(set.add("d"));
+        Assertions.assertTrue(set.add("e"));
+        Assertions.assertTrue(set.add("f"));
+        Assertions.assertTrue(set.add("g"));
 
         assertThat(set.rangeTailReversed("c", false)).containsExactly("g", "f", "e", "d");
         assertThat(set.rangeTailReversed("c", true)).containsExactly("g", "f", "e", "d", "c");

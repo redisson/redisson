@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,21 +15,19 @@
  */
 package org.redisson.reactive;
 
-import java.util.concurrent.Callable;
-
 import org.redisson.api.BatchOptions;
 import org.redisson.api.BatchResult;
 import org.redisson.api.RFuture;
-import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
-import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.NodeSource;
+import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.misc.RPromise;
-
 import reactor.core.publisher.Mono;
+
+import java.util.concurrent.Callable;
 
 /**
  * 
@@ -40,9 +38,9 @@ public class CommandReactiveBatchService extends CommandReactiveService {
 
     private final CommandBatchService batchService;
 
-    public CommandReactiveBatchService(ConnectionManager connectionManager, BatchOptions options) {
-        super(connectionManager);
-        batchService = new CommandBatchService(connectionManager, options);
+    public CommandReactiveBatchService(ConnectionManager connectionManager, CommandReactiveExecutor commandExecutor, BatchOptions options) {
+        super(connectionManager, commandExecutor.getObjectBuilder());
+        batchService = new CommandBatchService(commandExecutor, options, RedissonObjectBuilder.ReferenceType.REACTIVE);
     }
 
     @Override
@@ -80,10 +78,7 @@ public class CommandReactiveBatchService extends CommandReactiveService {
         return batchService.executeAsync();
     }
 
-    @Override
-    public CommandAsyncExecutor enableRedissonReferenceSupport(RedissonReactiveClient redissonReactive) {
-        batchService.enableRedissonReferenceSupport(redissonReactive);
-        return super.enableRedissonReferenceSupport(redissonReactive);
+    public RFuture<Void> discardAsync() {
+        return batchService.discardAsync();
     }
-    
 }

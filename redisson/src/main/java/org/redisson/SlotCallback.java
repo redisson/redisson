@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@ package org.redisson;
 
 import org.redisson.client.protocol.RedisCommand;
 
+import java.util.List;
+
 /**
  * 
  * @author Nikita Koksharov
@@ -26,10 +28,14 @@ import org.redisson.client.protocol.RedisCommand;
  */
 public interface SlotCallback<T, R> {
 
-    default RedisCommand<T> createCommand(Object param) {
+    default RedisCommand<T> createCommand(List<String> params) {
         return null;
     }
-    
+
+    default Object[] createParams(List<String> params) {
+        return params.toArray();
+    }
+
     void onSlotResult(T result);
 
     R onFinish();

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,12 +67,7 @@ public abstract class BaseRemoteProxy {
     private final Map<Class<?>, String> requestQueueNameCache = new ConcurrentHashMap<>();
     
     public String getRequestQueueName(Class<?> remoteInterface) {
-        String str = requestQueueNameCache.get(remoteInterface);
-        if (str == null) {
-            str = "{" + name + ":" + remoteInterface.getName() + "}";
-            requestQueueNameCache.put(remoteInterface, str);
-        }
-        return str;
+        return requestQueueNameCache.computeIfAbsent(remoteInterface, k -> "{" + name + ":" + k.getName() + "}");
     }
     
     protected RFuture<RemoteServiceAck> tryPollAckAgainAsync(RemoteInvocationOptions optionsCopy,

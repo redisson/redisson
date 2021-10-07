@@ -168,7 +168,7 @@
         <module name="EqualsAvoidNull"/>
         <!--module name="HiddenField"/-->
         <module name="IllegalInstantiation"/>
-        <module name="IllegalThrows"/>
+        <!--module name="IllegalThrows"/-->
         <module name="InnerAssignment"/>
         <module name="MultipleVariableDeclarations"/>
         <!--module name="MagicNumber"/-->
@@ -226,7 +226,9 @@
         <!--module name="TodoComment"/-->
         <module name="UpperEll"/>
 
+        <!--
 	<module name="BooleanExpressionComplexity"/>
+        -->
     </module>
 
     <module name="SuppressionFilter">

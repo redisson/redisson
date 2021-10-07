@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,6 @@ import io.netty.util.ReferenceCountUtil;
 import org.redisson.RedissonReference;
 import org.redisson.SlotCallback;
 import org.redisson.api.RFuture;
-import org.redisson.api.RedissonClient;
-import org.redisson.api.RedissonReactiveClient;
-import org.redisson.api.RedissonRxClient;
 import org.redisson.cache.LRUCacheMap;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisException;
@@ -34,8 +31,6 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.codec.ReferenceCodecProvider;
-import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
@@ -54,6 +49,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -65,40 +61,18 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     static final Logger log = LoggerFactory.getLogger(CommandAsyncService.class);
 
     final ConnectionManager connectionManager;
-    protected RedissonObjectBuilder objectBuilder;
+    final RedissonObjectBuilder objectBuilder;
+    final RedissonObjectBuilder.ReferenceType referenceType;
 
-    public CommandAsyncService(ConnectionManager connectionManager) {
+    public CommandAsyncService(ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder, RedissonObjectBuilder.ReferenceType referenceType) {
         this.connectionManager = connectionManager;
+        this.objectBuilder = objectBuilder;
+        this.referenceType = referenceType;
     }
 
     @Override
     public ConnectionManager getConnectionManager() {
         return connectionManager;
-    }
-
-    @Override
-    public CommandAsyncExecutor enableRedissonReferenceSupport(RedissonClient redisson) {
-        enableRedissonReferenceSupport(redisson.getConfig(), redisson, null, null);
-        return this;
-    }
-
-    @Override
-    public CommandAsyncExecutor enableRedissonReferenceSupport(RedissonReactiveClient redissonReactive) {
-        enableRedissonReferenceSupport(redissonReactive.getConfig(), null, redissonReactive, null);
-        return this;
-    }
-    
-    @Override
-    public CommandAsyncExecutor enableRedissonReferenceSupport(RedissonRxClient redissonRx) {
-        enableRedissonReferenceSupport(redissonRx.getConfig(), null, null, redissonRx);
-        return this;
-    }
-
-    private void enableRedissonReferenceSupport(Config config, RedissonClient redisson, RedissonReactiveClient redissonReactive, RedissonRxClient redissonRx) {
-        Codec codec = config.getCodec();
-        objectBuilder = new RedissonObjectBuilder(config, redisson, redissonReactive, redissonRx);
-        ReferenceCodecProvider codecProvider = objectBuilder.getReferenceCodecProvider();
-        codecProvider.registerCodec((Class<Codec>) codec.getClass(), codec);
     }
 
     private boolean isRedissonReferenceSupportEnabled() {
@@ -138,6 +112,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         try {
             future.await();
         } catch (InterruptedException e) {
+            future.cancel(true);
             Thread.currentThread().interrupt();
             throw new RedisException(e);
         }
@@ -528,7 +503,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             args.addAll(Arrays.asList(params));
 
             RedisExecutor<T, R> executor = new RedisExecutor<>(readOnlyMode, nodeSource, codec, cmd,
-                                                        args.toArray(), promise, false, connectionManager, objectBuilder);
+                                                        args.toArray(), promise, false, connectionManager, objectBuilder, referenceType);
             executor.execute();
 
             promise.onComplete((res, e) -> {
@@ -601,7 +576,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     public <V, R> void async(boolean readOnlyMode, NodeSource source, Codec codec,
             RedisCommand<V> command, Object[] params, RPromise<R> mainPromise, 
             boolean ignoreRedirect) {
-        RedisExecutor<V, R> executor = new RedisExecutor<>(readOnlyMode, source, codec, command, params, mainPromise, ignoreRedirect, connectionManager, objectBuilder);
+        RedisExecutor<V, R> executor = new RedisExecutor<>(readOnlyMode, source, codec, command, params, mainPromise,
+                                                    ignoreRedirect, connectionManager, objectBuilder, referenceType);
         executor.execute();
     }
 
@@ -613,32 +589,49 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     
     @Override
     public <T, R> RFuture<R> readBatchedAsync(Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, String... keys) {
-        return executeBatchedAsync(true, codec, command, callback, keys);
+        return executeBatchedAsync(true, codec, command, callback, keys, null);
+    }
+
+    @Override
+    public <T, R> RFuture<R> writeBatchedAsync(Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, String... keys) {
+        return executeBatchedAsync(false, codec, command, callback, keys, null);
     }
     
     @Override
-    public <T, R> RFuture<R> writeBatchedAsync(Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, String... keys) {
-        return executeBatchedAsync(false, codec, command, callback, keys);
+    public <T, R> RFuture<R> writeBatchedAsync(Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, String[] keys, Map<String, ?> valueMap) {
+        return executeBatchedAsync(false, codec, command, callback, keys, valueMap);
     }
     
-    private <T, R> RFuture<R> executeBatchedAsync(boolean readOnly, Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, String... keys) {
+    private <T, R> RFuture<R> executeBatchedAsync(boolean readOnly, Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, String[] keys, Map<String, ?> valueMap) {
         if (!connectionManager.isClusterMode()) {
-            if (readOnly) {
-                return readAsync((String) null, codec, command, keys);
+            List<Object> params = null;
+            if (valueMap != null) {
+                params = new ArrayList<>(keys.length * 2);
+                for (String key : keys) {
+                    params.add(key);
+                    params.add(valueMap.get(key));
+                }
+            } else {
+                params = Arrays.asList(keys);
             }
-            return writeAsync((String) null, codec, command, keys);
+            if (readOnly) {
+                return readAsync((String) null, codec, command, params.toArray());
+            }
+            return writeAsync((String) null, codec, command, params.toArray());
         }
 
-        Map<MasterSlaveEntry, List<String>> range2key = new HashMap<>();
-        for (String key : keys) {
-            int slot = connectionManager.calcSlot(key);
-            MasterSlaveEntry entry = connectionManager.getEntry(slot);
-            List<String> list = range2key.computeIfAbsent(entry, k -> new ArrayList<>());
-            list.add(key);
-        }
+        Map<MasterSlaveEntry, Map<Integer, List<String>>> entry2keys = Arrays.stream(keys).collect(
+                Collectors.groupingBy(k -> {
+                    int slot = connectionManager.calcSlot(k);
+                    return connectionManager.getEntry(slot);
+                }, Collectors.groupingBy(k -> {
+                    return connectionManager.calcSlot(k);
+                        }, Collectors.toList())));
+
+        long total = entry2keys.values().stream().mapToInt(m -> m.size()).sum();
 
         RPromise<R> result = new RedissonPromise<>();
-        AtomicLong executed = new AtomicLong(keys.length);
+        AtomicLong executed = new AtomicLong(total);
         AtomicReference<Throwable> failed = new AtomicReference<>();
         BiConsumer<T, Throwable> listener = (res, ex) -> {
             if (ex != null) {
@@ -658,26 +651,26 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             }
         };
 
-        for (Entry<MasterSlaveEntry, List<String>> entry : range2key.entrySet()) {
+        for (Entry<MasterSlaveEntry, Map<Integer, List<String>>> entry : entry2keys.entrySet()) {
             // executes in batch due to CROSSLOT error
             CommandBatchService executorService;
             if (this instanceof CommandBatchService) {
                 executorService = (CommandBatchService) this;
             } else {
-                executorService = new CommandBatchService(connectionManager);
+                executorService = new CommandBatchService(this);
             }
 
-            for (String key : entry.getValue()) {
+            for (List<String> groupedKeys : entry.getValue().values()) {
                 RedisCommand<T> c = command;
-                RedisCommand<T> newCommand = callback.createCommand(key);
+                RedisCommand<T> newCommand = callback.createCommand(groupedKeys);
                 if (newCommand != null) {
                     c = newCommand;
                 }
                 if (readOnly) {
-                    RFuture<T> f = executorService.readAsync(entry.getKey(), codec, c, key);
+                    RFuture<T> f = executorService.readAsync(entry.getKey(), codec, c, callback.createParams(groupedKeys));
                     f.onComplete(listener);
                 } else {
-                    RFuture<T> f = executorService.writeAsync(entry.getKey(), codec, c, key);
+                    RFuture<T> f = executorService.writeAsync(entry.getKey(), codec, c, callback.createParams(groupedKeys));
                     f.onComplete(listener);
                 }
             }

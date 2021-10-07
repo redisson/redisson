@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-parent</artifactId>
-        <version>3.15.2-SNAPSHOT</version>
+        <version>3.16.4-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
@@ -87,11 +87,6 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-transport-native-kqueue</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.marshalling</groupId>
-            <artifactId>jboss-marshalling-river</artifactId>
-            <version>2.0.9.Final</version>
         </dependency>
         <dependency>
             <groupId>org.xerial.snappy</groupId>

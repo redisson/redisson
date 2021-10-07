@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,15 @@
  */
 package org.redisson.reactive;
 
-import java.util.concurrent.Callable;
-
 import org.redisson.RedissonScoredSortedSet;
+import org.redisson.ScanResult;
 import org.redisson.api.RFuture;
 import org.redisson.api.RScoredSortedSetAsync;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.decoder.ListScanResult;
-
 import reactor.core.publisher.Flux;
+
+import java.util.concurrent.Callable;
 
 /**
  * 
@@ -73,14 +72,14 @@ public class RedissonScoredSortedSetReactive<V>  {
     private Flux<V> scanIteratorReactive(String pattern, int count) {
         return Flux.create(new SetReactiveIterator<V>() {
             @Override
-            protected RFuture<ListScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
+            protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
                 return ((RedissonScoredSortedSet<V>) instance).scanIteratorAsync(client, nextIterPos, pattern, count);
             }
         });
     }
 
     public String getName() {
-        return ((RedissonScoredSortedSet<V>) instance).getName();
+        return ((RedissonScoredSortedSet<V>) instance).getRawName();
     }
     
     public Flux<V> iterator() {

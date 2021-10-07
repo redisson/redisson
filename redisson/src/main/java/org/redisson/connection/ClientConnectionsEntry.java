@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,15 @@ import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.config.ReadMode;
 import org.redisson.pubsub.AsyncSemaphore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Deque;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -43,7 +46,7 @@ public class ClientConnectionsEntry {
     private final AsyncSemaphore freeSubscribeConnectionsCounter;
 
     private final Queue<RedisConnection> allConnections = new ConcurrentLinkedQueue<>();
-    private final Queue<RedisConnection> freeConnections = new ConcurrentLinkedQueue<>();
+    private final Deque<RedisConnection> freeConnections = new ConcurrentLinkedDeque<>();
     private final AsyncSemaphore freeConnectionsCounter;
 
     public enum FreezeReason {MANAGER, RECONNECT, SYSTEM}
@@ -67,12 +70,12 @@ public class ClientConnectionsEntry {
         this.freeSubscribeConnectionsCounter = new AsyncSemaphore(subscribePoolMaxSize);
 
         if (subscribePoolMaxSize > 0) {
-            connectionManager.getConnectionWatcher().add(subscribePoolMinSize, subscribePoolMaxSize, freeSubscribeConnections, freeSubscribeConnectionsCounter, c -> {
+            connectionManager.getConnectionWatcher().add(this, subscribePoolMinSize, subscribePoolMaxSize, freeSubscribeConnections, freeSubscribeConnectionsCounter, c -> {
                 freeSubscribeConnections.remove(c);
                 return allSubscribeConnections.remove(c);
             });
         }
-        connectionManager.getConnectionWatcher().add(poolMinSize, poolMaxSize, freeConnections, freeConnectionsCounter, c -> {
+        connectionManager.getConnectionWatcher().add(this, poolMinSize, poolMaxSize, freeConnections, freeConnectionsCounter, c -> {
                 freeConnections.remove(c);
                 return allConnections.remove(c);
             });
@@ -115,6 +118,11 @@ public class ClientConnectionsEntry {
         firstFailTime.compareAndSet(0, System.currentTimeMillis());
     }
 
+    public RFuture<Void> shutdownAsync() {
+        connectionManager.getConnectionWatcher().remove(this);
+        return client.shutdownAsync();
+    }
+
     public RedisClient getClient() {
         return client;
     }
@@ -139,24 +147,29 @@ public class ClientConnectionsEntry {
         freeSubscribeConnectionsCounter.removeListeners();
     }
 
-    public int getFreeAmount() {
-        return freeConnectionsCounter.getCounter();
-    }
-
-    public void acquireConnection(Runnable runnable) {
+    public void acquireConnection(Runnable runnable, RedisCommand<?> command) {
         freeConnectionsCounter.acquire(runnable);
     }
     
-    public void removeConnection(Runnable runnable) {
-        freeConnectionsCounter.remove(runnable);
-    }
-
     public void releaseConnection() {
         freeConnectionsCounter.release();
     }
 
-    public RedisConnection pollConnection() {
-        return freeConnections.poll();
+    public void addConnection(RedisConnection conn) {
+        conn.setLastUsageTime(System.nanoTime());
+        if (conn instanceof RedisPubSubConnection) {
+            freeSubscribeConnections.add((RedisPubSubConnection) conn);
+        } else {
+            freeConnections.add(conn);
+        }
+    }
+
+    public RedisConnection pollConnection(RedisCommand<?> command) {
+        RedisConnection c = freeConnections.poll();
+        if (c != null) {
+            c.incUsage();
+        }
+        return c;
     }
 
     public void releaseConnection(RedisConnection connection) {
@@ -169,6 +182,7 @@ public class ClientConnectionsEntry {
             return;
         }
 
+        connection.decUsage();
         connection.setLastUsageTime(System.nanoTime());
         freeConnections.add(connection);
     }

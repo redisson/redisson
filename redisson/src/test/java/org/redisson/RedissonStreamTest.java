@@ -1,19 +1,17 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.redisson.api.*;
+import org.redisson.api.stream.*;
+import org.redisson.client.RedisException;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.Duration;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Test;
-import org.redisson.api.*;
-import org.redisson.api.stream.StreamAddArgs;
-import org.redisson.api.stream.TrimStrategy;
-import org.redisson.client.RedisException;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonStreamTest extends BaseTest {
 
@@ -28,13 +26,13 @@ public class RedissonStreamTest extends BaseTest {
         StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1"));
         StreamMessageId id2 = stream.add(StreamAddArgs.entry("2", "2"));
 
-        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1");
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered());
         assertThat(s.size()).isEqualTo(2);
 
         StreamMessageId id3 = stream.add(StreamAddArgs.entry("3", "33"));
         StreamMessageId id4 = stream.add(StreamAddArgs.entry("4", "44"));
 
-        Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup", "consumer2");
+        Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup", "consumer2", StreamReadGroupArgs.neverDelivered());
         assertThat(s2.size()).isEqualTo(2);
 
         AutoClaimResult<String, String> res = stream.autoClaim("testGroup", "consumer1", 1, TimeUnit.MILLISECONDS, id3, 2);
@@ -56,13 +54,13 @@ public class RedissonStreamTest extends BaseTest {
         StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1"));
         StreamMessageId id2 = stream.add(StreamAddArgs.entry("2", "2"));
 
-        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1");
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered());
         assertThat(s.size()).isEqualTo(2);
 
         StreamMessageId id3 = stream.add(StreamAddArgs.entry("3", "3"));
         StreamMessageId id4 = stream.add(StreamAddArgs.entry("4", "4"));
 
-        Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup", "consumer2");
+        Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup", "consumer2", StreamReadGroupArgs.neverDelivered());
         assertThat(s2.size()).isEqualTo(2);
 
         List<PendingEntry> list = stream.listPending("testGroup", StreamMessageId.MIN, StreamMessageId.MAX, 1, TimeUnit.MILLISECONDS, 10);
@@ -90,14 +88,14 @@ public class RedissonStreamTest extends BaseTest {
         stream.add(StreamAddArgs.entry("1", "1"));
         stream.add(StreamAddArgs.entry("2", "2"));
 
-        assertThat(stream.trim(2)).isEqualTo(1);
+        assertThat(stream.trim(StreamTrimArgs.maxLen(2).noLimit())).isEqualTo(1);
     }
 
     @Test
     public void testPendingEmpty() {
         RStream<Object, Object> stream = redisson.getStream("test");
         stream.createGroup("testGroup");
-        PendingResult result = stream.listPending("testGroup");
+        PendingResult result = stream.getPendingInfo("testGroup");
         assertThat(result.getTotal()).isZero();
         assertThat(result.getHighestId()).isNull();
         assertThat(result.getLowestId()).isNull();
@@ -117,12 +115,12 @@ public class RedissonStreamTest extends BaseTest {
         StreamMessageId id2 = stream.add(StreamAddArgs.entry("2", "2"));
         System.out.println("id2 " + id2);
 
-        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1");
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered());
         assertThat(s.size()).isEqualTo(2);
         
         stream.updateGroupMessageId("testGroup", id);
         
-        Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup", "consumer2");
+        Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup", "consumer2", StreamReadGroupArgs.neverDelivered());
         assertThat(s2.size()).isEqualTo(2);
     }
     
@@ -137,27 +135,29 @@ public class RedissonStreamTest extends BaseTest {
         StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1"));
         StreamMessageId id2 = stream.add(StreamAddArgs.entry("2", "2"));
 
-        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1");
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered());
         assertThat(s.size()).isEqualTo(2);
         
         assertThat(stream.removeConsumer("testGroup", "consumer1")).isEqualTo(2);
         assertThat(stream.removeConsumer("testGroup", "consumer2")).isZero();
     }
     
-    @Test(expected = RedisException.class)
+    @Test
     public void testRemoveGroup() {
-        RStream<String, String> stream = redisson.getStream("test");
+        Assertions.assertThrows(RedisException.class, () -> {
+            RStream<String, String> stream = redisson.getStream("test");
 
-        stream.add(StreamAddArgs.entry("0", "0"));
-        
-        stream.createGroup("testGroup");
-        
-        StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1"));
-        StreamMessageId id2 = stream.add(StreamAddArgs.entry("2", "2"));
-        
-        stream.removeGroup("testGroup");
-        
-        stream.readGroup("testGroup", "consumer1");
+            stream.add(StreamAddArgs.entry("0", "0"));
+
+            stream.createGroup("testGroup");
+
+            StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1"));
+            StreamMessageId id2 = stream.add(StreamAddArgs.entry("2", "2"));
+
+            stream.removeGroup("testGroup");
+
+            stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered());
+        });
     }
     
     @Test
@@ -173,7 +173,7 @@ public class RedissonStreamTest extends BaseTest {
     }
 
     @Test
-    public void testClaimRemove() {
+    public void testClaimRemove() throws InterruptedException {
         RStream<String, String> stream = redisson.getStream("test");
 
         stream.add(StreamAddArgs.entry("0", "0"));
@@ -183,16 +183,18 @@ public class RedissonStreamTest extends BaseTest {
         StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1"));
         StreamMessageId id2 = stream.add(StreamAddArgs.entry("2", "2"));
 
-        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1");
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered());
         assertThat(s.size()).isEqualTo(2);
 
         StreamMessageId id3 = stream.add(StreamAddArgs.entry("3", "33"));
         StreamMessageId id4 = stream.add(StreamAddArgs.entry("4", "44"));
 
-        Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup", "consumer2");
+        Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup", "consumer2", StreamReadGroupArgs.neverDelivered());
         assertThat(s2.size()).isEqualTo(2);
 
         stream.remove(id3);
+
+        Thread.sleep(2);
 
         Map<StreamMessageId, Map<String, String>> res = stream.claim("testGroup", "consumer1", 1, TimeUnit.MILLISECONDS, id3, id4);
         assertThat(res.size()).isEqualTo(1);
@@ -210,13 +212,13 @@ public class RedissonStreamTest extends BaseTest {
         StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1"));
         StreamMessageId id2 = stream.add(StreamAddArgs.entry("2", "2"));
         
-        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1");
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered());
         assertThat(s.size()).isEqualTo(2);
         
         StreamMessageId id3 = stream.add(StreamAddArgs.entry("3", "33"));
         StreamMessageId id4 = stream.add(StreamAddArgs.entry("4", "44"));
         
-        Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup", "consumer2");
+        Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup", "consumer2", StreamReadGroupArgs.neverDelivered());
         assertThat(s2.size()).isEqualTo(2);
         
         Map<StreamMessageId, Map<String, String>> res = stream.claim("testGroup", "consumer1", 1, TimeUnit.MILLISECONDS, id3, id4);
@@ -239,13 +241,13 @@ public class RedissonStreamTest extends BaseTest {
         StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1"));
         StreamMessageId id2 = stream.add(StreamAddArgs.entry("2", "2"));
 
-        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup3", "consumer1");
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup3", "consumer1", StreamReadGroupArgs.neverDelivered());
         assertThat(s.size()).isEqualTo(2);
 
         StreamMessageId id3 = stream.add(StreamAddArgs.entry("3", "33"));
         StreamMessageId id4 = stream.add(StreamAddArgs.entry("4", "44"));
 
-        Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup3", "consumer2");
+        Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup3", "consumer2", StreamReadGroupArgs.neverDelivered());
         assertThat(s2.size()).isEqualTo(2);
 
         FastAutoClaimResult res = stream.fastAutoClaim("testGroup3", "consumer1", 1, TimeUnit.MILLISECONDS, id3, 10);
@@ -264,13 +266,13 @@ public class RedissonStreamTest extends BaseTest {
         StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1"));
         StreamMessageId id2 = stream.add(StreamAddArgs.entry("2", "2"));
         
-        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup3", "consumer1");
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup3", "consumer1", StreamReadGroupArgs.neverDelivered());
         assertThat(s.size()).isEqualTo(2);
         
         StreamMessageId id3 = stream.add(StreamAddArgs.entry("3", "33"));
         StreamMessageId id4 = stream.add(StreamAddArgs.entry("4", "44"));
         
-        Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup3", "consumer2");
+        Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup3", "consumer2", StreamReadGroupArgs.neverDelivered());
         assertThat(s2.size()).isEqualTo(2);
         
         List<StreamMessageId> res = stream.fastClaim("testGroup3", "consumer1", 1, TimeUnit.MILLISECONDS, id3, id4);
@@ -289,16 +291,16 @@ public class RedissonStreamTest extends BaseTest {
         StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1"));
         StreamMessageId id2 = stream.add(StreamAddArgs.entry("2", "2"));
         
-        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1");
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered());
         assertThat(s.size()).isEqualTo(2);
         
         StreamMessageId id3 = stream.add(StreamAddArgs.entry("3", "3"));
         StreamMessageId id4 = stream.add(StreamAddArgs.entry("4", "4"));
         
-        Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup", "consumer2");
+        Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup", "consumer2", StreamReadGroupArgs.neverDelivered());
         assertThat(s2.size()).isEqualTo(2);
         
-        PendingResult pi = stream.listPending("testGroup");
+        PendingResult pi = stream.getPendingInfo("testGroup");
         assertThat(pi.getLowestId()).isEqualTo(id1);
         assertThat(pi.getHighestId()).isEqualTo(id4);
         assertThat(pi.getTotal()).isEqualTo(4);
@@ -332,7 +334,7 @@ public class RedissonStreamTest extends BaseTest {
         StreamMessageId id1 = stream.add(StreamAddArgs.entry("11", "12"));
         StreamMessageId id2 = stream.add(StreamAddArgs.entry("21", "22"));
         
-        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1");
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered());
         assertThat(s.size()).isEqualTo(2);
         
         Map<StreamMessageId, Map<String, String>> pres = stream.pendingRange("testGroup", StreamMessageId.MIN, StreamMessageId.MAX, 10);
@@ -360,7 +362,7 @@ public class RedissonStreamTest extends BaseTest {
         StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1"));
         StreamMessageId id2 = stream.add(StreamAddArgs.entry("2", "2"));
         
-        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1");
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered());
         assertThat(s.size()).isEqualTo(2);
 
         assertThat(stream.ack("testGroup", id1, id2)).isEqualTo(2);
@@ -384,7 +386,7 @@ public class RedissonStreamTest extends BaseTest {
         StreamMessageId id22 = stream2.add(StreamAddArgs.entry("2", "2"));
         StreamMessageId id23 = stream2.add(StreamAddArgs.entry("3", "3"));
         
-        Map<String, Map<StreamMessageId, Map<String, String>>> s2 = stream1.readGroup("testGroup", "consumer1", id11, Collections.singletonMap("test2", id21));
+        Map<String, Map<StreamMessageId, Map<String, String>>> s2 = stream1.readGroup("testGroup", "consumer1", StreamMultiReadGroupArgs.greaterThan(id11, Collections.singletonMap("test2", id21)));
         assertThat(s2).isEmpty();
     }
 
@@ -400,7 +402,7 @@ public class RedissonStreamTest extends BaseTest {
         stream.add(StreamAddArgs.entry("2", "2"));
         stream.add(StreamAddArgs.entry("3", "3"));
 
-        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1", 3, 5, TimeUnit.SECONDS);
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered().count(3).timeout(Duration.ofSeconds(5)));
         assertThat(s.values().iterator().next().keySet()).containsAnyOf("1", "2", "3");
         assertThat(s.size()).isEqualTo(3);
 
@@ -429,7 +431,7 @@ public class RedissonStreamTest extends BaseTest {
         stream.createGroup("testGroup", StreamMessageId.ALL);
         stream.add(StreamAddArgs.entry("1", "2"));
         
-        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1");
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered());
         assertThat(s).hasSize(1);
     }
     
@@ -445,7 +447,7 @@ public class RedissonStreamTest extends BaseTest {
         stream.add(StreamAddArgs.entry("2", "2"));
         stream.add(StreamAddArgs.entry("3", "3"));
         
-        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1");
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered());
         assertThat(s.values().iterator().next().keySet()).containsAnyOf("1", "2", "3");
         assertThat(s.size()).isEqualTo(3);
 
@@ -453,14 +455,14 @@ public class RedissonStreamTest extends BaseTest {
         stream.add(StreamAddArgs.entry("2", "2"));
         stream.add(StreamAddArgs.entry("3", "3"));
         
-        Map<StreamMessageId, Map<String, String>> s1 = stream.readGroup("testGroup", "consumer1", 1);
+        Map<StreamMessageId, Map<String, String>> s1 = stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered().count(1));
         assertThat(s1.size()).isEqualTo(1);
         
         StreamMessageId id = stream.add(StreamAddArgs.entry("1", "1"));
         stream.add(StreamAddArgs.entry("2", "2"));
         stream.add(StreamAddArgs.entry("3", "3"));
         
-        Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup", "consumer1", id);
+        Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.greaterThan(id));
         assertThat(s2).isEmpty();
     }
     
@@ -472,13 +474,13 @@ public class RedissonStreamTest extends BaseTest {
         Map<String, String> entries1 = new HashMap<>();
         entries1.put("1", "11");
         entries1.put("3", "31");
-        stream.add(new StreamMessageId(1), StreamAddArgs.entries(entries1).trim(TrimStrategy.MAXLEN, 1));
+        stream.add(new StreamMessageId(1), StreamAddArgs.entries(entries1).trimNonStrict().maxLen(1).noLimit());
         assertThat(stream.size()).isEqualTo(1);
         
         Map<String, String> entries2 = new HashMap<>();
         entries2.put("5", "55");
         entries2.put("7", "77");
-        stream.add(new StreamMessageId(2), StreamAddArgs.entries(entries2).trim(TrimStrategy.MAXLEN, 1));
+        stream.add(new StreamMessageId(2), StreamAddArgs.entries(entries2).trimNonStrict().maxLen(1).noLimit());
 
         Map<StreamMessageId, Map<String, String>> r2 = stream.rangeReversed(10, StreamMessageId.MAX, StreamMessageId.MIN);
         assertThat(r2.keySet()).containsExactly(new StreamMessageId(2), new StreamMessageId(1));
@@ -494,13 +496,13 @@ public class RedissonStreamTest extends BaseTest {
         Map<String, String> entries1 = new HashMap<>();
         entries1.put("1", "11");
         entries1.put("3", "31");
-        stream.add(new StreamMessageId(1), StreamAddArgs.entries(entries1).trim(TrimStrategy.MAXLEN, 1));
+        stream.add(new StreamMessageId(1), StreamAddArgs.entries(entries1).trimNonStrict().maxLen(1).noLimit());
         assertThat(stream.size()).isEqualTo(1);
         
         Map<String, String> entries2 = new HashMap<>();
         entries2.put("5", "55");
         entries2.put("7", "77");
-        stream.add(new StreamMessageId(2), StreamAddArgs.entries(entries2).trim(TrimStrategy.MAXLEN, 1));
+        stream.add(new StreamMessageId(2), StreamAddArgs.entries(entries2).trimNonStrict().maxLen(1).noLimit());
 
         Map<StreamMessageId, Map<String, String>> r = stream.range(10, new StreamMessageId(0), new StreamMessageId(1));
         assertThat(r).hasSize(1);
@@ -533,12 +535,14 @@ public class RedissonStreamTest extends BaseTest {
             }
         };
         t.start();
-        
-        long start = System.currentTimeMillis();
-        Map<String, Map<StreamMessageId, Map<String, String>>> s = stream.read(2, 5, TimeUnit.SECONDS, new StreamMessageId(0), "test1", StreamMessageId.NEWEST);
-        assertThat(System.currentTimeMillis() - start).isBetween(1900L, 2200L);
-        assertThat(s).hasSize(1);
-        assertThat(s.get("test").get(new StreamMessageId(1))).isEqualTo(entries1);
+
+        Awaitility.await().between(Duration.ofMillis(1900), Duration.ofMillis(2200)).untilAsserted(() -> {
+            Map<String, Map<StreamMessageId, Map<String, String>>> s = stream.read(StreamMultiReadArgs.greaterThan(new StreamMessageId(0), "test1", StreamMessageId.NEWEST)
+                    .timeout(Duration.ofSeconds(5))
+                    .count(2));
+            assertThat(s).hasSize(1);
+            assertThat(s.get("test").get(new StreamMessageId(1))).isEqualTo(entries1);
+        });
     }
     
     @Test
@@ -562,13 +566,13 @@ public class RedissonStreamTest extends BaseTest {
             }
         };
         t.start();
-        
-        long start = System.currentTimeMillis();
-        Map<StreamMessageId, Map<String, String>> s = stream.read(2, 4, TimeUnit.SECONDS, new StreamMessageId(0));
-        assertThat(System.currentTimeMillis() - start).isBetween(1900L, 2200L);
-        assertThat(s).hasSize(1);
-        assertThat(s.get(new StreamMessageId(1))).isEqualTo(entries1);
-        
+
+        Awaitility.await().between(Duration.ofMillis(1900), Duration.ofMillis(2200)).untilAsserted(() -> {
+            Map<StreamMessageId, Map<String, String>> s = stream.read(StreamReadArgs.greaterThan(new StreamMessageId(0)).count(2).timeout(Duration.ofSeconds(4)));
+            assertThat(s).hasSize(1);
+            assertThat(s.get(new StreamMessageId(1))).isEqualTo(entries1);
+        });
+
         StreamMessageId id0 = stream.add(StreamAddArgs.entry("11", "11"));
         stream.add(StreamAddArgs.entry("22", "22"));
 
@@ -576,8 +580,9 @@ public class RedissonStreamTest extends BaseTest {
         
         StreamMessageId id1 = stream2.add(StreamAddArgs.entry("33", "33"));
         stream2.add(StreamAddArgs.entry("44", "44"));
-        
-        Map<String, Map<StreamMessageId, Map<String, String>>> s2 = stream.read(5, TimeUnit.SECONDS, id0, Collections.singletonMap("test2", id1));
+
+        Map<String, Map<StreamMessageId, Map<String, String>>> s2 = stream.read(StreamMultiReadArgs.greaterThan(id0, "test2", id1)
+                                                                            .timeout(Duration.ofSeconds(5)));
         assertThat(s2.values().iterator().next().values().iterator().next().keySet()).containsAnyOf("11", "22", "33", "44");
         assertThat(s2.keySet()).containsExactlyInAnyOrder("test", "test2");
     }
@@ -590,20 +595,21 @@ public class RedissonStreamTest extends BaseTest {
         Map<String, String> entries1 = new HashMap<>();
         entries1.put("1", "11");
         entries1.put("3", "31");
-        stream.add(new StreamMessageId(1), StreamAddArgs.entries(entries1).trim(TrimStrategy.MAXLEN, 1));
+        stream.add(new StreamMessageId(1), StreamAddArgs.entries(entries1).trimNonStrict().maxLen(1).noLimit());
         assertThat(stream.size()).isEqualTo(1);
         
         Map<String, String> entries2 = new HashMap<>();
         entries2.put("5", "55");
         entries2.put("7", "77");
-        stream.add(new StreamMessageId(2), StreamAddArgs.entries(entries2).trim(TrimStrategy.MAXLEN, 1));
+        stream.add(new StreamMessageId(2), StreamAddArgs.entries(entries2).trimNonStrict().maxLen(1).noLimit());
         assertThat(stream.size()).isEqualTo(2);
     }
     
     @Test
     public void testReadMultiKeysEmpty() {
         RStream<String, String> stream = redisson.getStream("test2");
-        Map<String, Map<StreamMessageId, Map<String, String>>> s = stream.read(10, new StreamMessageId(0), "test1", new StreamMessageId(0));
+        Map<String, Map<StreamMessageId, Map<String, String>>> s = stream.read(StreamMultiReadArgs.greaterThan(new StreamMessageId(0), "test1", new StreamMessageId(0))
+                                                                            .count(10));
         assertThat(s).isEmpty();
     }
     
@@ -621,8 +627,9 @@ public class RedissonStreamTest extends BaseTest {
         entries2.put("5", "55");
         entries2.put("6", "66");
         stream2.add(StreamAddArgs.entries(entries2));
-        
-        Map<String, Map<StreamMessageId, Map<String, String>>> s = stream2.read(10, new StreamMessageId(0), "test1", new StreamMessageId(0));
+
+        Map<String, Map<StreamMessageId, Map<String, String>>> s = stream2.read(StreamMultiReadArgs.greaterThan(new StreamMessageId(0), "test1", new StreamMessageId(0))
+                                                                            .count(10));
         assertThat(s).hasSize(2);
         assertThat(s.get("test1").values().iterator().next()).isEqualTo(entries1);
         assertThat(s.get("test2").values().iterator().next()).isEqualTo(entries2);
@@ -635,19 +642,19 @@ public class RedissonStreamTest extends BaseTest {
         Map<String, String> entries1 = new LinkedHashMap<>();
         entries1.put("1", "11");
         entries1.put("3", "31");
-        stream.add(new StreamMessageId(1), StreamAddArgs.entries(entries1).trim(TrimStrategy.MAXLEN, 1));
+        stream.add(new StreamMessageId(1), StreamAddArgs.entries(entries1).trimNonStrict().maxLen(1).noLimit());
 
         Map<String, String> entries2 = new LinkedHashMap<>();
         entries2.put("5", "55");
         entries2.put("7", "77");
-        stream.add(new StreamMessageId(2), StreamAddArgs.entries(entries2).trim(TrimStrategy.MAXLEN, 1));
+        stream.add(new StreamMessageId(2), StreamAddArgs.entries(entries2).trimNonStrict().maxLen(1).noLimit());
 
         Map<String, String> entries3 = new LinkedHashMap<>();
         entries3.put("15", "05");
         entries3.put("17", "07");
-        stream.add(new StreamMessageId(3), StreamAddArgs.entries(entries3).trim(TrimStrategy.MAXLEN, 1));
+        stream.add(new StreamMessageId(3), StreamAddArgs.entries(entries3).trimNonStrict().maxLen(1).noLimit());
         
-        Map<StreamMessageId, Map<String, String>> result = stream.read(10, new StreamMessageId(0, 0));
+        Map<StreamMessageId, Map<String, String>> result = stream.read(StreamReadArgs.greaterThan(new StreamMessageId(0, 0)).count(10));
         assertThat(result).hasSize(3);
         assertThat(result.get(new StreamMessageId(4))).isNull();
         assertThat(result.get(new StreamMessageId(1))).isEqualTo(entries1);
@@ -661,9 +668,9 @@ public class RedissonStreamTest extends BaseTest {
         Map<String, String> entries1 = new LinkedHashMap<>();
         entries1.put("1", "11");
         entries1.put("3", "31");
-        stream.add(new StreamMessageId(1), StreamAddArgs.entries(entries1).trim(TrimStrategy.MAXLEN, 1));
+        stream.add(new StreamMessageId(1), StreamAddArgs.entries(entries1).trimNonStrict().maxLen(1).noLimit());
      
-        Map<StreamMessageId, Map<String, String>> result = stream.read(10, new StreamMessageId(0, 0));
+        Map<StreamMessageId, Map<String, String>> result = stream.read(StreamReadArgs.greaterThan(new StreamMessageId(0, 0)).count(10));
         assertThat(result).hasSize(1);
         assertThat(result.get(new StreamMessageId(4))).isNull();
         assertThat(result.get(new StreamMessageId(1))).isEqualTo(entries1);
@@ -672,7 +679,7 @@ public class RedissonStreamTest extends BaseTest {
     @Test
     public void testReadEmpty() {
         RStream<String, String> stream2 = redisson.getStream("test");
-        Map<StreamMessageId, Map<String, String>> result2 = stream2.read(10, new StreamMessageId(0, 0));
+        Map<StreamMessageId, Map<String, String>> result2 = stream2.read(StreamReadArgs.greaterThan(new StreamMessageId(0, 0)).count(10));
         assertThat(result2).isEmpty();
     }
     
@@ -694,16 +701,16 @@ public class RedissonStreamTest extends BaseTest {
         entries.put("6", "61");
         entries.put("4", "41");
         StreamMessageId id = new StreamMessageId(12, 42);
-        stream.add(id, StreamAddArgs.entries(entries).trim(TrimStrategy.MAXLEN, 10));
+        stream.add(id, StreamAddArgs.entries(entries).trimNonStrict().maxLen(10).noLimit());
         assertThat(stream.size()).isEqualTo(1);
 
-        Map<StreamMessageId, Map<String, String>> res = stream.read(new StreamMessageId(10, 42));
+        Map<StreamMessageId, Map<String, String>> res = stream.read(StreamReadArgs.greaterThan(new StreamMessageId(10, 42)));
         assertThat(res.get(id).size()).isEqualTo(2);
         
         entries.clear();
         entries.put("1", "11");
         entries.put("3", "31");
-        stream.add(new StreamMessageId(Long.MAX_VALUE), StreamAddArgs.entries(entries).trim(TrimStrategy.MAXLEN, 1));
+        stream.add(new StreamMessageId(Long.MAX_VALUE), StreamAddArgs.entries(entries).trimNonStrict().maxLen(1).noLimit());
         assertThat(stream.size()).isEqualTo(2);
     }
 
@@ -725,7 +732,7 @@ public class RedissonStreamTest extends BaseTest {
         stream.add(StreamAddArgs.entry("2", "2"));
         stream.add(StreamAddArgs.entry("3", "3"));
         
-        Map<StreamMessageId, Map<String, String>> map = stream.readGroup("testGroup", "consumer1");
+        Map<StreamMessageId, Map<String, String>> map = stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered());
         assertThat(map.size()).isEqualTo(6);
         
         List<StreamConsumer> s1 = stream.listConsumers("testGroup");
@@ -734,7 +741,7 @@ public class RedissonStreamTest extends BaseTest {
         assertThat(s1.get(0).getPending()).isEqualTo(6);
         assertThat(s1.get(0).getIdleTime()).isLessThan(100L);
 
-        Map<StreamMessageId, Map<String, String>> map2 = stream.readGroup("testGroup2", "consumer2");
+        Map<StreamMessageId, Map<String, String>> map2 = stream.readGroup("testGroup2", "consumer2", StreamReadGroupArgs.neverDelivered());
         assertThat(map2.size()).isEqualTo(6);
         
         List<StreamConsumer> s2 = stream.listConsumers("testGroup2");
@@ -753,7 +760,7 @@ public class RedissonStreamTest extends BaseTest {
         entries.put("6", "61");
         entries.put("4", "41");
         StreamMessageId id = new StreamMessageId(12, 42);
-        stream.add(id, StreamAddArgs.entries(entries).trim(TrimStrategy.MAXLEN, 10));
+        stream.add(id, StreamAddArgs.entries(entries).trimNonStrict().maxLen(10).noLimit());
 
         List<StreamGroup> s = stream.listGroups();
         assertThat(s).isEmpty();
@@ -801,13 +808,13 @@ public class RedissonStreamTest extends BaseTest {
         entries.put("6", "61");
         entries.put("4", "41");
         StreamMessageId id = new StreamMessageId(12, 42);
-        stream.add(id, StreamAddArgs.entries(entries).trim(TrimStrategy.MAXLEN, 10));
+        stream.add(id, StreamAddArgs.entries(entries).trimNonStrict().maxLen(10).noLimit());
 
         Map<String, String> lastEntries = new HashMap<>();
         lastEntries.put("10", "52");
         lastEntries.put("44", "89");
         StreamMessageId lastId = new StreamMessageId(12, 43);
-        stream.add(lastId, StreamAddArgs.entries(lastEntries).trim(TrimStrategy.MAXLEN, 10));
+        stream.add(lastId, StreamAddArgs.entries(lastEntries).trimNonStrict().maxLen(10).noLimit());
 
         StreamInfo<String, String> info = stream.getInfo();
         assertThat(info.getLength()).isEqualTo(2);

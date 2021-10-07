@@ -1,12 +1,12 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.redisson.api.RDequeReactive;
 
 import java.util.Arrays;
 
-import org.junit.Assert;
-import org.junit.Test;
-import org.redisson.api.RDequeReactive;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonDequeReactiveTest extends BaseReactiveTest {
 
@@ -43,9 +43,9 @@ public class RedissonDequeReactiveTest extends BaseReactiveTest {
         sync(queue1.addFirst(2));
         sync(queue1.addFirst(3));
 
-        Assert.assertEquals(1, (int)sync(queue1.removeLast()));
-        Assert.assertEquals(2, (int)sync(queue1.removeLast()));
-        Assert.assertEquals(3, (int)sync(queue1.removeLast()));
+        Assertions.assertEquals(1, (int)sync(queue1.removeLast()));
+        Assertions.assertEquals(2, (int)sync(queue1.removeLast()));
+        Assertions.assertEquals(3, (int)sync(queue1.removeLast()));
     }
 
     @Test
@@ -55,19 +55,19 @@ public class RedissonDequeReactiveTest extends BaseReactiveTest {
         sync(queue1.addFirst(2));
         sync(queue1.addFirst(3));
 
-        Assert.assertEquals(3, (int)sync(queue1.removeFirst()));
-        Assert.assertEquals(2, (int)sync(queue1.removeFirst()));
-        Assert.assertEquals(1, (int)sync(queue1.removeFirst()));
+        Assertions.assertEquals(3, (int)sync(queue1.removeFirst()));
+        Assertions.assertEquals(2, (int)sync(queue1.removeFirst()));
+        Assertions.assertEquals(1, (int)sync(queue1.removeFirst()));
     }
 
     @Test
     public void testPeek() {
         RDequeReactive<Integer> queue1 = redisson.getDeque("deque1");
-        Assert.assertNull(sync(queue1.peekFirst()));
-        Assert.assertNull(sync(queue1.peekLast()));
+        Assertions.assertNull(sync(queue1.peekFirst()));
+        Assertions.assertNull(sync(queue1.peekLast()));
         sync(queue1.addFirst(2));
-        Assert.assertEquals(2, (int)sync(queue1.peekFirst()));
-        Assert.assertEquals(2, (int)sync(queue1.peekLast()));
+        Assertions.assertEquals(2, (int)sync(queue1.peekFirst()));
+        Assertions.assertEquals(2, (int)sync(queue1.peekLast()));
     }
 
     @Test

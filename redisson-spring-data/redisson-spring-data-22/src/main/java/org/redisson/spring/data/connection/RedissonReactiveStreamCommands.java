@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -195,6 +195,10 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
             if (command.getReadOptions().getBlock() != null && command.getReadOptions().getBlock() > 0) {
                 params.add("BLOCK");
                 params.add(command.getReadOptions().getBlock());
+            }
+
+            if (command.getConsumer() != null && command.getReadOptions().isNoack()) {
+                params.add("NOACK");
             }
 
             params.add("STREAMS");

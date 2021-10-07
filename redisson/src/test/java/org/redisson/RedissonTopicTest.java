@@ -1,46 +1,12 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
-
-import java.io.IOException;
-import java.io.Serializable;
-import java.time.Duration;
-import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
-
 import org.awaitility.Awaitility;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
 import org.redisson.ClusterRunner.ClusterProcesses;
 import org.redisson.RedisRunner.KEYSPACE_EVENTS_OPTIONS;
 import org.redisson.RedisRunner.RedisProcess;
-import org.redisson.api.RFuture;
-import org.redisson.api.RLock;
-import org.redisson.api.RPatternTopic;
-import org.redisson.api.RSet;
-import org.redisson.api.RTopic;
-import org.redisson.api.RedissonClient;
-import org.redisson.api.listener.BaseStatusListener;
-import org.redisson.api.listener.MessageListener;
-import org.redisson.api.listener.PatternMessageListener;
-import org.redisson.api.listener.PatternStatusListener;
-import org.redisson.api.listener.StatusListener;
+import org.redisson.api.*;
+import org.redisson.api.listener.*;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnection;
@@ -49,38 +15,49 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
-import org.redisson.client.protocol.decoder.StringListReplayDecoder;
 import org.redisson.cluster.ClusterNodeInfo;
 import org.redisson.config.Config;
 import org.redisson.config.SubscriptionMode;
-import org.redisson.connection.CRC16;
-import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.connection.balancer.RandomLoadBalancer;
+
+import java.io.IOException;
+import java.io.Serializable;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 public class RedissonTopicTest {
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() throws IOException, InterruptedException {
         if (!RedissonRuntimeEnvironment.isTravis) {
             RedisRunner.startDefaultRedisServerInstance();
         }
     }
 
-    @AfterClass
-    public static void afterClass() throws IOException, InterruptedException {
+    @AfterAll
+    public static void afterClass() throws InterruptedException {
         if (!RedissonRuntimeEnvironment.isTravis) {
             RedisRunner.shutDownDefaultRedisServerInstance();
         }
     }
 
-    @Before
+    @BeforeEach
     public void before() throws IOException, InterruptedException {
         if (RedissonRuntimeEnvironment.isTravis) {
             RedisRunner.startDefaultRedisServerInstance();
         }
     }
 
-    @After
+    @AfterEach
     public void after() throws InterruptedException {
         if (RedissonRuntimeEnvironment.isTravis) {
             RedisRunner.shutDownDefaultRedisServerInstance();
@@ -227,7 +204,7 @@ public class RedissonTopicTest {
             futures.add(s);
         }
         executor.shutdown();
-        Assert.assertTrue(executor.awaitTermination(120, TimeUnit.SECONDS));
+        assertThat(executor.awaitTermination(120, TimeUnit.SECONDS)).isTrue();
 
         for (Future<?> future : futures) {
             future.get();
@@ -344,7 +321,7 @@ public class RedissonTopicTest {
         final RTopic topic1 = redisson1.getTopic("topic1");
         final CountDownLatch messageRecieved = new CountDownLatch(3);
         int listenerId = topic1.addListener(Message.class, (channel, msg) -> {
-            Assert.assertEquals(msg, new Message("test"));
+            assertThat(msg).isEqualTo(new Message("test"));
             messageRecieved.countDown();
         });
 
@@ -360,7 +337,7 @@ public class RedissonTopicTest {
         });
         topic2.publish(new Message("123"));
 
-        Assert.assertTrue(messageRecieved.await(5, TimeUnit.SECONDS));
+        assertThat(messageRecieved.await(5, TimeUnit.SECONDS)).isTrue();
 
         redisson1.shutdown();
         redisson2.shutdown();
@@ -374,7 +351,7 @@ public class RedissonTopicTest {
         int listenerId = topic1.addListener(new BaseStatusListener() {
             @Override
             public void onSubscribe(String channel) {
-                Assert.assertEquals("topic1", channel);
+                assertThat(channel).isEqualTo("topic1");
                 l.countDown();
             }
         });
@@ -384,14 +361,14 @@ public class RedissonTopicTest {
         int listenerId2 = topic1.addListener(new BaseStatusListener() {
             @Override
             public void onUnsubscribe(String channel) {
-                Assert.assertEquals("topic1", channel);
+                assertThat(channel).isEqualTo("topic1");
                 l.countDown();
             }
         });
         topic1.removeListener(listenerId);
         topic1.removeListener(listenerId2);
-        
-        Assert.assertTrue(l.await(5, TimeUnit.SECONDS));
+
+        assertThat(l.await(5, TimeUnit.SECONDS)).isTrue();
     }
 
     @Test
@@ -495,11 +472,11 @@ public class RedissonTopicTest {
         RedissonClient redisson = BaseTest.createInstance();
         RTopic topic1 = redisson.getTopic("topic1");
         int listenerId = topic1.addListener(Message.class, (channel, msg) -> {
-            Assert.fail();
+            Assertions.fail();
         });
         topic1.addListener(Message.class, (channel, msg) -> {
-            Assert.assertEquals("topic1", channel.toString());
-            Assert.assertEquals(new Message("123"), msg);
+            assertThat(channel.toString()).isEqualTo("topic1");
+            assertThat(msg).isEqualTo(new Message("123"));
             messageRecieved.countDown();
         });
         topic1.removeListener(listenerId);
@@ -507,7 +484,7 @@ public class RedissonTopicTest {
         topic1 = redisson.getTopic("topic1");
         topic1.publish(new Message("123"));
 
-        Assert.assertTrue(messageRecieved.await(5, TimeUnit.SECONDS));
+        assertThat(messageRecieved.await(5, TimeUnit.SECONDS)).isTrue();
 
         redisson.shutdown();
     }
@@ -613,7 +590,7 @@ public class RedissonTopicTest {
         MessageListener listener = new MessageListener() {
             @Override
             public void onMessage(CharSequence channel, Object msg) {
-                Assert.fail();
+                Assertions.fail();
             }
         };
         
@@ -634,7 +611,7 @@ public class RedissonTopicTest {
         RedissonClient redisson1 = BaseTest.createInstance();
         RTopic topic1 = redisson1.getTopic("topic");
         int listenerId = topic1.addListener(Message.class, (channel, msg) -> {
-            Assert.fail();
+            Assertions.fail();
         });
         Thread.sleep(1000);
         topic1.removeListener(listenerId);
@@ -643,12 +620,12 @@ public class RedissonTopicTest {
         RedissonClient redisson2 = BaseTest.createInstance();
         RTopic topic2 = redisson2.getTopic("topic");
         topic2.addListener(Message.class, (channel, msg) -> {
-            Assert.assertEquals(new Message("123"), msg);
+            assertThat(msg).isEqualTo(new Message("123"));
             messageRecieved.countDown();
         });
         topic2.publish(new Message("123"));
 
-        Assert.assertTrue(messageRecieved.await(5, TimeUnit.SECONDS));
+        assertThat(messageRecieved.await(5, TimeUnit.SECONDS)).isTrue();
 
         redisson1.shutdown();
         redisson2.shutdown();
@@ -661,14 +638,14 @@ public class RedissonTopicTest {
         RedissonClient redisson1 = BaseTest.createInstance();
         RTopic topic1 = redisson1.getTopic("topic");
         topic1.addListener(Message.class, (channel, msg) -> {
-            Assert.assertEquals(new Message("123"), msg);
+            assertThat(msg).isEqualTo(new Message("123"));
             messageRecieved.countDown();
         });
 
         RedissonClient redisson2 = BaseTest.createInstance();
         RTopic topic2 = redisson2.getTopic("topic");
         topic2.addListener(Message.class, (channel, msg) -> {
-            Assert.assertEquals(new Message("123"), msg);
+            assertThat(msg).isEqualTo(new Message("123"));
             messageRecieved.countDown();
         });
         topic2.publish(new Message("123"));
@@ -687,7 +664,7 @@ public class RedissonTopicTest {
         RedissonClient redisson1 = BaseTest.createInstance();
         RTopic topic1 = redisson1.getTopic("topic");
         topic1.addListener(Message.class, (channel, msg) -> {
-            Assert.assertEquals(new Message("123"), msg);
+            assertThat(msg).isEqualTo(new Message("123"));
             messageRecieved.countDown();
             counter.incrementAndGet();
         });
@@ -695,7 +672,7 @@ public class RedissonTopicTest {
         RedissonClient redisson2 = BaseTest.createInstance();
         RTopic topic2 = redisson2.getTopic("topic");
         topic2.addListener(Message.class, (channel, msg) -> {
-            Assert.assertEquals(new Message("123"), msg);
+            assertThat(msg).isEqualTo(new Message("123"));
             messageRecieved.countDown();
         });
 
@@ -708,7 +685,7 @@ public class RedissonTopicTest {
 
         Thread.sleep(1000);
 
-        Assert.assertEquals(count, counter.get());
+        assertThat(count).isEqualTo(counter.get());
 
         redisson1.shutdown();
         redisson2.shutdown();
@@ -719,7 +696,7 @@ public class RedissonTopicTest {
         RedissonClient redisson1 = BaseTest.createInstance();
         RTopic topic1 = redisson1.getTopic("topic");
         int id = topic1.addListener(Message.class, (channel, msg) -> {
-            Assert.fail();
+            Assertions.fail();
         });
 
         RedissonClient redisson2 = BaseTest.createInstance();
@@ -905,7 +882,7 @@ public class RedissonTopicTest {
         System.out.println("Failover Finished, start to see Subscribe timeouts now. Can't recover this without a refresh of redison client ");
         Thread.sleep(java.time.Duration.ofSeconds(10).toMillis());
 
-        Assert.assertFalse(exceptionDetected.get());
+        assertThat(exceptionDetected.get()).isFalse();
 
         executor1.shutdownNow();
 
@@ -1043,8 +1020,8 @@ public class RedissonTopicTest {
         redisson.getTopic("topic").publish(1);
         
         await().atMost(20, TimeUnit.SECONDS).until(() -> subscriptions.get() == 2);
-        Assert.assertTrue(executed.get());
-        
+        assertThat(executed.get()).isTrue();
+
         redisson.shutdown();
         sentinel1.stop();
         sentinel2.stop();
@@ -1201,7 +1178,7 @@ public class RedissonTopicTest {
         redisson.getTopic("topic").publish(1);
         
         await().atMost(20, TimeUnit.SECONDS).until(() -> subscriptions.get() == 2);
-        Assert.assertTrue(executed.get());
+        assertThat(executed.get()).isTrue();
         
         redisson.shutdown();
         sentinel1.stop();
@@ -1324,6 +1301,7 @@ public class RedissonTopicTest {
                 executed.set(true);
             }
         });
+        assertThat(topic.countListeners()).isEqualTo(2);
         
         sendCommands(redisson, "topic");
         
@@ -1343,7 +1321,8 @@ public class RedissonTopicTest {
         redisson.getTopic("topic").publish(1);
         
         await().atMost(75, TimeUnit.SECONDS).until(() -> subscriptions.get() == 2);
-        Assert.assertTrue(executed.get());
+        assertThat(topic.countListeners()).isEqualTo(2);
+        assertThat(executed.get()).isTrue();
         
         redisson.shutdown();
         process.shutdown();
@@ -1412,7 +1391,7 @@ public class RedissonTopicTest {
         redisson.getTopic("3").publish(1);
         
         await().atMost(75, TimeUnit.SECONDS).until(() -> subscriptions.get() == 2);
-        Assert.assertTrue(executed.get());
+        assertThat(executed.get()).isTrue();
         
         redisson.shutdown();
         process.shutdown();
@@ -1452,7 +1431,7 @@ public class RedissonTopicTest {
         });
         topic.addListener(String.class,
                 (pattern, channel, msg) -> messagesReceived.incrementAndGet());
-        Assert.assertEquals(1, subscriptions.get());
+        assertThat(subscriptions.get()).isEqualTo(1);
 
         sendCommands(redisson, "dummy").join();
         await().atMost(30, TimeUnit.SECONDS).until(() -> messagesReceived.get() == 100);

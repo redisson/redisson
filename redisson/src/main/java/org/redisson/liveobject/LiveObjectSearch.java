@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.redisson.liveobject;
 
+import org.redisson.RedissonObject;
 import org.redisson.RedissonScoredSortedSet;
 import org.redisson.RedissonSet;
 import org.redisson.RedissonSetMultimap;
@@ -65,7 +66,7 @@ public class LiveObjectSearch {
                 } else {
                     RSetMultimap<Object, Object> map = new RedissonSetMultimap<>(namingScheme.getCodec(), commandExecutor, indexName);
                     RSet<Object> values = map.get(eqc.getValue());
-                    eqNames.add(values.getName());
+                    eqNames.add(((RedissonObject) values).getRawName());
                 }
             }
             if (cond instanceof LTCondition) {
@@ -102,7 +103,11 @@ public class LiveObjectSearch {
                 if (ids.isEmpty()) {
                     return Collections.emptySet();
                 }
-                allIds.retainAll(ids);
+                if (!allIds.isEmpty()) {
+                    allIds.retainAll(ids);
+                } else {
+                    allIds.addAll(ids);
+                }
                 if (allIds.isEmpty()) {
                     return Collections.emptySet();
                 }
@@ -203,7 +208,7 @@ public class LiveObjectSearch {
                 } else {
                     RSetMultimap<Object, Object> map = new RedissonSetMultimap<>(namingScheme.getCodec(), commandExecutor, indexName);
                     RSet<Object> values = map.get(eqc.getValue());
-                    eqNames.add(values.getName());
+                    eqNames.add(((RedissonObject) values).getRawName());
                 }
             }
             if (cond instanceof GTCondition) {

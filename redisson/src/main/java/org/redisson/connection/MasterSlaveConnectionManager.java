@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,40 +15,6 @@
  */
 package org.redisson.connection;
 
-import java.net.InetSocketAddress;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import io.netty.util.*;
-import io.netty.util.Timer;
-import io.netty.util.TimerTask;
-import org.redisson.ElementsSubscribeService;
-import org.redisson.Version;
-import org.redisson.api.NodeType;
-import org.redisson.api.RFuture;
-import org.redisson.client.RedisClient;
-import org.redisson.client.RedisClientConfig;
-import org.redisson.client.RedisConnection;
-import org.redisson.client.RedisException;
-import org.redisson.client.RedisNodeNotFoundException;
-import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.RedisCommand;
-import org.redisson.cluster.ClusterSlotRange;
-import org.redisson.command.CommandSyncService;
-import org.redisson.config.*;
-import org.redisson.misc.CountableListener;
-import org.redisson.misc.InfinitySemaphoreLatch;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedisURI;
-import org.redisson.misc.RedissonPromise;
-import org.redisson.pubsub.PublishSubscribeService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.EpollDatagramChannel;
 import io.netty.channel.epoll.EpollEventLoopGroup;
@@ -60,14 +26,36 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.resolver.AddressResolver;
 import io.netty.resolver.AddressResolverGroup;
 import io.netty.resolver.DefaultAddressResolverGroup;
 import io.netty.resolver.dns.DnsServerAddressStreamProviders;
-import io.netty.util.concurrent.DefaultThreadFactory;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.ImmediateEventExecutor;
-import io.netty.util.concurrent.Promise;
+import io.netty.util.Timer;
+import io.netty.util.TimerTask;
+import io.netty.util.*;
+import io.netty.util.concurrent.*;
 import io.netty.util.internal.PlatformDependent;
+import org.redisson.ElementsSubscribeService;
+import org.redisson.Version;
+import org.redisson.api.NodeType;
+import org.redisson.api.RFuture;
+import org.redisson.client.*;
+import org.redisson.client.codec.Codec;
+import org.redisson.client.protocol.RedisCommand;
+import org.redisson.cluster.ClusterSlotRange;
+import org.redisson.config.*;
+import org.redisson.misc.*;
+import org.redisson.pubsub.PublishSubscribeService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.InetSocketAddress;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -135,8 +123,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     
     private final ExecutorService executor; 
     
-    private final CommandSyncService commandExecutor;
-
     private final Config cfg;
 
     protected final AddressResolverGroup<InetSocketAddress> resolverGroup;
@@ -212,7 +198,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
         this.cfg = cfg;
         this.codec = cfg.getCodec();
-        this.commandExecutor = new CommandSyncService(this);
+
+        if (cfg.getConnectionListener() != null) {
+            connectionEventsHub.addListener(cfg.getConnectionListener());
+        }
     }
     
     protected void closeNodeConnections() {
@@ -222,7 +211,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
     
     protected void closeNodeConnection(RedisConnection conn) {
-        if (nodeConnections.values().remove(conn)) {
+        if (nodeConnections.values().removeAll(Arrays.asList(conn))) {
             conn.closeAsync();
         }
     }
@@ -230,6 +219,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected final void disconnectNode(RedisURI addr) {
         RedisConnection conn = nodeConnections.remove(addr);
         if (conn != null) {
+            nodeConnections.values().removeAll(Arrays.asList(conn));
             conn.closeAsync();
         }
     }
@@ -242,8 +232,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         RedisConnection conn = nodeConnections.get(addr);
         if (conn != null) {
             if (!conn.isActive()) {
-                nodeConnections.remove(addr);
-                conn.closeAsync();
+                closeNodeConnection(conn);
             } else {
                 return RedissonPromise.newSucceededFuture(conn);
             }
@@ -259,14 +248,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
 
             if (connection.isActive()) {
-                boolean isHostname = NetUtil.createByteArrayFromIpAddressString(addr.getHost()) == null;
-                RedisURI address = addr;
-                if (isHostname) {
-                    address = new RedisURI(addr.getScheme()
+                if (!addr.isIP()) {
+                    RedisURI address = new RedisURI(addr.getScheme()
                                  + "://" + connection.getRedisClient().getAddr().getAddress().getHostAddress()
                                  + ":" + connection.getRedisClient().getAddr().getPort());
+                    nodeConnections.put(address, connection);
                 }
-                nodeConnections.put(address, connection);
+                nodeConnections.put(addr, connection);
                 result.trySuccess(connection);
             } else {
                 connection.closeAsync();
@@ -287,11 +275,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return false;
     }
     
-    @Override
-    public CommandSyncService getCommandExecutor() {
-        return commandExecutor;
-    }
-
     @Override
     public IdleConnectionWatcher getConnectionWatcher() {
         return connectionWatcher;
@@ -363,6 +346,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     protected void startDNSMonitoring(RedisClient masterHost) {
+        if (masterHost.getConfig().getAddress().isIP()) {
+            return;
+        }
+
         if (config.getDnsMonitoringInterval() != -1) {
             Set<RedisURI> slaveAddresses = config.getSlaveAddresses().stream().map(r -> new RedisURI(r)).collect(Collectors.toSet());
             dnsMonitor = new DNSMonitor(this, masterHost, 
@@ -385,6 +372,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         c.setSslTruststorePassword(cfg.getSslTruststorePassword());
         c.setSslKeystore(cfg.getSslKeystore());
         c.setSslKeystorePassword(cfg.getSslKeystorePassword());
+        c.setSslProtocols(cfg.getSslProtocols());
         
         c.setRetryInterval(cfg.getRetryInterval());
         c.setRetryAttempts(cfg.getRetryAttempts());
@@ -409,6 +397,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         c.setSubscriptionMode(cfg.getSubscriptionMode());
         c.setDnsMonitoringInterval(cfg.getDnsMonitoringInterval());
         c.setKeepAlive(cfg.isKeepAlive());
+        c.setTcpNoDelay(cfg.isTcpNoDelay());
+        c.setNameMapper(cfg.getNameMapper());
 
         return c;
     }
@@ -455,6 +445,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
               .setSslTruststorePassword(config.getSslTruststorePassword())
               .setSslKeystore(config.getSslKeystore())
               .setSslKeystorePassword(config.getSslKeystorePassword())
+              .setSslProtocols(config.getSslProtocols())
               .setClientName(config.getClientName())
               .setKeepPubSubOrder(cfg.isKeepPubSubOrder())
               .setPingConnectionInterval(config.getPingConnectionInterval())
@@ -698,4 +689,33 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     public RedisURI applyNatMap(RedisURI address) {
         return address;
     }
+
+    protected RFuture<RedisURI> resolveIP(RedisURI address) {
+        return resolveIP(address.getScheme(), address);
+    }
+
+    protected RFuture<RedisURI> resolveIP(String scheme, RedisURI address) {
+        if (address.isIP()) {
+            return RedissonPromise.newSucceededFuture(address);
+        }
+
+        RPromise<RedisURI> result = new RedissonPromise<>();
+        AddressResolver<InetSocketAddress> resolver = resolverGroup.getResolver(getGroup().next());
+        InetSocketAddress addr = InetSocketAddress.createUnresolved(address.getHost(), address.getPort());
+        Future<InetSocketAddress> future = resolver.resolve(addr);
+        future.addListener((FutureListener<InetSocketAddress>) f -> {
+            if (!f.isSuccess()) {
+                log.error("Unable to resolve " + address, f.cause());
+                result.tryFailure(f.cause());
+                return;
+            }
+
+            InetSocketAddress s = f.getNow();
+            RedisURI uri = new RedisURI(scheme + "://" + s.getAddress().getHostAddress() + ":" + address.getPort());
+            uri = applyNatMap(uri);
+            result.trySuccess(uri);
+        });
+        return result;
+    }
+
 }

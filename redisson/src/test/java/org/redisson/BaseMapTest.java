@@ -1,8 +1,8 @@
 package org.redisson;
 
-import org.assertj.core.api.Assertions;
-import org.junit.Assume;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
 import org.redisson.api.map.MapLoader;
 import org.redisson.api.map.MapWriter;
@@ -15,6 +15,7 @@ import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.config.Config;
 
 import java.io.Serializable;
+import java.time.Duration;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
@@ -126,7 +127,7 @@ public abstract class BaseMapTest extends BaseTest {
 
     }
     
-    private void destroy(RMap<?, ?> map) {
+    protected void destroy(RMap<?, ?> map) {
         if (map instanceof RDestroyable) {
             ((RDestroyable) map).destroy();
         }
@@ -173,6 +174,57 @@ public abstract class BaseMapTest extends BaseTest {
         });
         assertThat(map.get("1")).isEqualTo("12");
     }
+
+    public static class MyClass implements Serializable {
+
+        private String name;
+
+        public MyClass(String name) {
+            this.name = name;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            MyClass myClass = (MyClass) o;
+            return Objects.equals(name, myClass.name);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(name);
+        }
+
+        @Override
+        public String toString() {
+            return "MyClass{" +
+                    "name='" + name + '\'' +
+                    '}';
+        }
+    }
+
+    @Test
+    public void testComputeIfPresentMutable() {
+        RMap<String, MyClass> map = getMap("map");
+
+        map.put("1", new MyClass("value1"));
+        map.computeIfPresent("1", (key, value) -> {
+            assertThat(value).isEqualTo(new MyClass("value1"));
+            value.setName("value2");
+            return value;
+        });
+        assertThat(map.get("1")).isEqualTo(new MyClass("value2"));
+    }
+
 
     @Test
     public void testComputeIfAbsent() {
@@ -338,7 +390,7 @@ public abstract class BaseMapTest extends BaseTest {
         map.put("ar_deaths", "0");
 
         RMap<String, String> rmap = getMap("123");
-        Assume.assumeTrue(!(rmap instanceof RLocalCachedMap));
+        Assumptions.assumeTrue(!(rmap instanceof RLocalCachedMap));
         
         rmap.putAll(map);
 
@@ -353,18 +405,22 @@ public abstract class BaseMapTest extends BaseTest {
         destroy(rmap);
     }
     
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testNullValue() {
-        RMap<Integer, String> map = getMap("simple12");
-        destroy(map);
-        map.put(1, null);
+        Assertions.assertThrows(NullPointerException.class, () -> {
+            RMap<Integer, String> map = getMap("simple12");
+            destroy(map);
+            map.put(1, null);
+        });
     }
     
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testNullKey() {
-        RMap<Integer, String> map = getMap("simple12");
-        destroy(map);
-        map.put(null, "1");
+        Assertions.assertThrows(NullPointerException.class, () -> {
+            RMap<Integer, String> map = getMap("simple12");
+            destroy(map);
+            map.put(null, "1");
+        });
     }
 
     @Test
@@ -550,22 +606,24 @@ public abstract class BaseMapTest extends BaseTest {
         destroy(map);
     }
 
-    @Test(timeout = 5000)
-    public void testDeserializationErrorReturnsErrorImmediately() throws Exception {
-        RMap<String, SimpleObjectWithoutDefaultConstructor> map = getMap("deserializationFailure", new JsonJacksonCodec());
-        Assume.assumeTrue(!(map instanceof RLocalCachedMap));
-        SimpleObjectWithoutDefaultConstructor object = new SimpleObjectWithoutDefaultConstructor("test-val");
+    @Test
+    public void testDeserializationErrorReturnsErrorImmediately() {
+        Assertions.assertTimeout(Duration.ofSeconds(5), () -> {
+            RMap<String, SimpleObjectWithoutDefaultConstructor> map = getMap("deserializationFailure", new JsonJacksonCodec());
+            Assumptions.assumeTrue(!(map instanceof RLocalCachedMap));
+            SimpleObjectWithoutDefaultConstructor object = new SimpleObjectWithoutDefaultConstructor("test-val");
 
-        assertThat(object.getTestField()).isEqualTo("test-val");
-        map.put("test-key", object);
+            assertThat(object.getTestField()).isEqualTo("test-val");
+            map.put("test-key", object);
 
-        try {
-            map.get("test-key");
-            Assertions.fail("Expected exception from map.get() call");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        destroy(map);
+            try {
+                map.get("test-key");
+                Assertions.fail("Expected exception from map.get() call");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            destroy(map);
+        });
     }
 
     public static class SimpleObjectWithoutDefaultConstructor {
@@ -686,7 +744,7 @@ public abstract class BaseMapTest extends BaseTest {
     }
     
     @Test
-    public void testRemoveValue() {
+    public void testRemoveValue() throws InterruptedException {
         RMap<SimpleKey, SimpleValue> map = getMap("simple");
         map.put(new SimpleKey("1"), new SimpleValue("2"));
 
@@ -992,9 +1050,9 @@ public abstract class BaseMapTest extends BaseTest {
     
     @Test
     public void testValueSize() {
-        Assume.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("3.2.0") > 0);
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("3.2.0") > 0);
         RMap<String, String> map = getMap("getAll");
-        Assume.assumeTrue(!(map instanceof RMapCache));
+        Assumptions.assumeTrue(!(map instanceof RMapCache));
         map.put("1", "1234");
         assertThat(map.valueSize("4")).isZero();
         assertThat(map.valueSize("1")).isEqualTo(7);
@@ -1421,6 +1479,9 @@ public abstract class BaseMapTest extends BaseTest {
         map.put("0", "00");
         assertThat(map.get("0")).isEqualTo("00");
         assertThat(map.size()).isEqualTo(2);
+
+        assertThat(map.containsKey("2")).isTrue();
+        assertThat(map.size()).isEqualTo(3);
         
         Map<String, String> s = map.getAll(new HashSet<>(Arrays.asList("1", "2", "9", "3")));
         Map<String, String> expectedMap = new HashMap<>();

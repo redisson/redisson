@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,14 +22,11 @@ import java.util.Map;
  * @author Nikita Koksharov
  *
  */
-public class StreamAddParams<K, V> {
+public class StreamAddParams<K, V> extends StreamTrimParams {
 
     private Map<K, V> entries;
     private boolean noMakeStream;
     private boolean trimStrict;
-    private TrimStrategy trimStrategy;
-    private int trimThreshold;
-    private int limit;
 
     public StreamAddParams(Map<K, V> entries) {
         this.entries = entries;
@@ -55,27 +52,4 @@ public class StreamAddParams<K, V> {
         this.trimStrict = trimStrict;
     }
 
-    public TrimStrategy getTrimStrategy() {
-        return trimStrategy;
-    }
-
-    public void setTrimStrategy(TrimStrategy trimStrategy) {
-        this.trimStrategy = trimStrategy;
-    }
-
-    public int getTrimThreshold() {
-        return trimThreshold;
-    }
-
-    public void setTrimThreshold(int trimThreshold) {
-        this.trimThreshold = trimThreshold;
-    }
-
-    public int getLimit() {
-        return limit;
-    }
-
-    public void setLimit(int limit) {
-        this.limit = limit;
-    }
 }

@@ -1,10 +1,8 @@
 package org.redisson;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.redisson.api.RTimeSeriesReactive;
-import org.redisson.api.RTimeSeriesRx;
 import org.redisson.api.TimeSeriesEntry;
-import org.redisson.rx.BaseRxTest;
 
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;

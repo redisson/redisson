@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,7 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
                 dest = new byte[len];
                 System.arraycopy(b, off, dest, 0, len);
             }
-            get(commandExecutor.writeAsync(getName(), codec, RedisCommands.APPEND, getName(), dest));
+            get(commandExecutor.writeAsync(getRawName(), codec, RedisCommands.APPEND, getRawName(), dest));
         }
         
     }
@@ -125,7 +125,7 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
                 throw new IndexOutOfBoundsException();
             }
 
-            byte[] data = get(commandExecutor.readAsync(getName(), codec, RedisCommands.GETRANGE, getName(), index, index+len-1));
+            byte[] data = get(commandExecutor.readAsync(getRawName(), codec, RedisCommands.GETRANGE, getRawName(), index, index+len-1));
             if (data.length == 0) {
                 return -1;
             }
@@ -142,8 +142,8 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
 
         @Override
         public int read(ByteBuffer dst) throws IOException {
-            byte[] data = get(commandExecutor.readAsync(getName(), codec, RedisCommands.GETRANGE,
-                        getName(), position, position+dst.remaining()-1));
+            byte[] data = get(commandExecutor.readAsync(getRawName(), codec, RedisCommands.GETRANGE,
+                        getRawName(), position, position+dst.remaining()-1));
             if (data.length == 0) {
                 return -1;
             }
@@ -155,7 +155,7 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
         @Override
         public int write(ByteBuffer src) throws IOException {
             ByteBuf b = Unpooled.wrappedBuffer(src);
-            get(commandExecutor.writeAsync(getName(), codec, RedisCommands.SETRANGE, getName(), position, b));
+            get(commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SETRANGE, getRawName(), position, b));
 
             position += b.readableBytes();
             return b.readableBytes();
@@ -179,14 +179,14 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
 
         @Override
         public SeekableByteChannel truncate(long size) throws IOException {
-            get(commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
+            get(commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 "local len = redis.call('strlen', KEYS[1]); " +
                         "if tonumber(ARGV[1]) >= len then " +
                             "return;" +
                         "end;"
                       + "local limitedValue = redis.call('getrange', KEYS[1], 0, tonumber(ARGV[1])-1); "
                       + "redis.call('set', KEYS[1], limitedValue); ",
-             Arrays.asList(getName()), size));
+             Arrays.asList(getRawName()), size));
             return this;
         }
 
@@ -227,8 +227,8 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
         @Override
         public Future<Integer> read(ByteBuffer dst) {
             RPromise<Integer> result = new RedissonPromise<>();
-            RFuture<byte[]> res = commandExecutor.readAsync(getName(), codec, RedisCommands.GETRANGE,
-                        getName(), position, position + dst.remaining() - 1);
+            RFuture<byte[]> res = commandExecutor.readAsync(getRawName(), codec, RedisCommands.GETRANGE,
+                        getRawName(), position, position + dst.remaining() - 1);
             res.onComplete((data, e) -> {
                 if (e != null) {
                     result.tryFailure(e);
@@ -264,7 +264,7 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
             RPromise<Integer> result = new RedissonPromise<>();
 
             ByteBuf b = Unpooled.wrappedBuffer(src);
-            RFuture<Long> res = commandExecutor.writeAsync(getName(), codec, RedisCommands.SETRANGE, getName(), position, b);
+            RFuture<Long> res = commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SETRANGE, getRawName(), position, b);
             res.onComplete((r, e) -> {
                 if (e != null) {
                     result.tryFailure(e);

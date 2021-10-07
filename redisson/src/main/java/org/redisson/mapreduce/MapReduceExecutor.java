@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,25 +15,21 @@
  */
 package org.redisson.mapreduce;
 
-import java.lang.reflect.Modifier;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.Callable;
-
-import org.redisson.api.RBatch;
-import org.redisson.api.RExecutorService;
-import org.redisson.api.RFuture;
-import org.redisson.api.RMapAsync;
-import org.redisson.api.RObject;
-import org.redisson.api.RedissonClient;
+import org.redisson.api.*;
 import org.redisson.api.mapreduce.RCollator;
 import org.redisson.api.mapreduce.RMapReduceExecutor;
 import org.redisson.api.mapreduce.RReducer;
 import org.redisson.client.codec.Codec;
-import org.redisson.connection.ConnectionManager;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 import org.redisson.misc.TransferListener;
+
+import java.lang.reflect.Modifier;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 
@@ -53,14 +49,14 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
     final Codec objectCodec;
     final String objectName;
     final Class<?> objectClass;
-    
+    final CommandAsyncExecutor commandExecutor;
 
-    private ConnectionManager connectionManager;
+
     RReducer<KOut, VOut> reducer;
     M mapper;
     long timeout;
     
-    MapReduceExecutor(RObject object, RedissonClient redisson, ConnectionManager connectionManager) {
+    MapReduceExecutor(RObject object, RedissonClient redisson, CommandAsyncExecutor commandExecutor) {
         this.objectName = object.getName();
         this.objectCodec = object.getCodec();
         this.objectClass = object.getClass();
@@ -69,7 +65,7 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
         UUID id = UUID.randomUUID();
         this.resultMapName = object.getName() + ":result:" + id;
         this.executorService = redisson.getExecutorService(RExecutorService.MAPREDUCE_NAME);
-        this.connectionManager = connectionManager;
+        this.commandExecutor = commandExecutor;
     }
 
     protected void check(Object task) {
@@ -87,13 +83,19 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
     
     @Override
     public Map<KOut, VOut> execute() {
-        return connectionManager.getCommandExecutor().get(executeAsync());
+        return commandExecutor.get(executeAsync());
     }
     
     @Override
     public RFuture<Map<KOut, VOut>> executeAsync() {
-        final RPromise<Map<KOut, VOut>> promise = new RedissonPromise<Map<KOut, VOut>>();
-        final RFuture<Void> future = executeMapperAsync(resultMapName, null);
+        RPromise<Map<KOut, VOut>> promise = new RedissonPromise<Map<KOut, VOut>>();
+        RFuture<Void> future = executeMapperAsync(resultMapName, null);
+        if (timeout > 0) {
+            commandExecutor.getConnectionManager().newTimeout(task -> {
+                promise.tryFailure(new MapReduceTimeoutException());
+            }, timeout, TimeUnit.MILLISECONDS);
+        }
+
         addCancelHandling(promise, future);
         future.onComplete((res, e) -> {
             if (e != null) {
@@ -103,10 +105,11 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
             
             RBatch batch = redisson.createBatch();
             RMapAsync<KOut, VOut> resultMap = batch.getMap(resultMapName, objectCodec);
-            resultMap.readAllMapAsync().onComplete(new TransferListener<Map<KOut, VOut>>(promise));
+            resultMap.readAllMapAsync().onComplete(new TransferListener<>(promise));
             resultMap.deleteAsync();
-            batch.executeAsync();
-        });        
+            RFuture<BatchResult<?>> batchFuture = batch.executeAsync();
+            addCancelHandling(promise, batchFuture);
+        });
         return promise;
     }
 
@@ -120,7 +123,7 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
     
     @Override
     public void execute(String resultMapName) {
-        connectionManager.getCommandExecutor().get(executeAsync(resultMapName));
+        commandExecutor.get(executeAsync(resultMapName));
     }
     
     @Override
@@ -145,11 +148,11 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
     
     @Override
     public <R> R execute(RCollator<KOut, VOut, R> collator) {
-        return connectionManager.getCommandExecutor().get(executeAsync(collator));
+        return commandExecutor.get(executeAsync(collator));
     }
     
     @Override
-    public <R> RFuture<R> executeAsync(final RCollator<KOut, VOut, R> collator) {
+    public <R> RFuture<R> executeAsync(RCollator<KOut, VOut, R> collator) {
         check(collator);
         
         return executeMapperAsync(resultMapName, collator);

@@ -1,7 +1,7 @@
 package org.redisson;
 
 import org.awaitility.Awaitility;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.redisson.api.RReliableTopic;
 
 import java.time.Duration;

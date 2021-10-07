@@ -1,8 +1,8 @@
 package org.redisson;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
@@ -18,13 +18,13 @@ public class RedissonLockExpirationRenewalTest {
 
     private RedissonClient redisson;
 
-    @Before
+    @BeforeEach
     public void before() throws IOException, InterruptedException {
         RedisRunner.startDefaultRedisServerInstance();
         redisson = createInstance();
     }
 
-    @After
+    @AfterEach
     public void after() throws InterruptedException {
         redisson.shutdown();
         RedisRunner.shutDownDefaultRedisServerInstance();

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,17 +30,15 @@ public class MoveOperation extends SetOperation {
 
     private String destinationName;
     private Object value;
-    private long threadId;
-    
+
     public MoveOperation(RObject set, String destinationName, long threadId, Object value, String transactionId) {
         this(set.getName(), set.getCodec(), destinationName, threadId, value, transactionId);
     }
     
     public MoveOperation(String name, Codec codec, String destinationName, long threadId, Object value, String transactionId) {
-        super(name, codec, transactionId);
+        super(name, codec, transactionId, threadId);
         this.destinationName = destinationName;
         this.value = value;
-        this.threadId = threadId;
     }
 
     @Override

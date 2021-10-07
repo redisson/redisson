@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.redisson.executor;
 
 import org.redisson.RedissonExecutorService;
+import org.redisson.RedissonObject;
 import org.redisson.RedissonRemoteService;
 import org.redisson.RedissonShutdownException;
 import org.redisson.api.RFuture;
@@ -23,7 +24,7 @@ import org.redisson.api.RMap;
 import org.redisson.api.executor.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.command.CommandAsyncService;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
 import org.redisson.remote.*;
 import org.slf4j.Logger;
@@ -58,13 +59,13 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
     private List<TaskSuccessListener> successListeners;
 
     public RedissonExecutorRemoteService(Codec codec, String name,
-            CommandAsyncService commandExecutor, String executorId, ConcurrentMap<String, ResponseEntry> responses) {
+                                         CommandAsyncExecutor commandExecutor, String executorId, ConcurrentMap<String, ResponseEntry> responses) {
         super(codec, name, commandExecutor, executorId, responses);
     }
 
     @Override
     protected RFuture<RemoteServiceRequest> getTask(String requestId, RMap<String, RemoteServiceRequest> tasks) {
-        return commandExecutor.evalWriteAsync(tasks.getName(), codec, RedisCommands.EVAL_OBJECT,
+        return commandExecutor.evalWriteAsync(((RedissonObject) tasks).getRawName(), codec, RedisCommands.EVAL_OBJECT,
                   "local value = redis.call('zscore', KEYS[2], ARGV[1]); " +
                   "if (value ~= false and tonumber(value) < tonumber(ARGV[2])) then "
                     + "redis.call('zrem', KEYS[2], ARGV[1]); "
@@ -85,7 +86,7 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
                     + "return nil;"
                 + "end;"
                 + "return redis.call('hget', KEYS[1], ARGV[1]); ",
-        Arrays.asList(tasks.getName(), tasksExpirationTimeName, tasksCounterName, statusName,
+        Arrays.asList(((RedissonObject) tasks).getRawName(), tasksExpirationTimeName, tasksCounterName, statusName,
                             tasksRetryIntervalName, terminationTopicName, schedulerQueueName),
         requestId, System.currentTimeMillis(), RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE);
     }

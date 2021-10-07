@@ -1,7 +1,7 @@
 package org.redisson;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.redisnode.RedisNodes;
 import org.redisson.api.redisnode.*;
@@ -9,6 +9,7 @@ import org.redisson.client.protocol.Time;
 import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.config.Config;
 import org.redisson.connection.balancer.RandomLoadBalancer;
+import org.redisson.misc.RedisURI;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -274,9 +275,9 @@ public class RedissonRedisNodesTest extends BaseTest {
         assertThat(nodes.getMaster()).isNotNull();
 
         for (RedisSentinel sentinel : nodes.getSentinels()) {
-            Assert.assertTrue(sentinel.ping());
-            InetSocketAddress addr = sentinel.getMasterAddr("myMaster");
-            assertThat(addr.getAddress().getHostAddress()).isEqualTo("127.0.0.1");
+            Assertions.assertTrue(sentinel.ping());
+            RedisURI addr = sentinel.getMasterAddr("myMaster");
+            assertThat(addr.getHost()).isEqualTo("127.0.0.1");
             assertThat(addr.getPort()).isEqualTo(master.getRedisServerPort());
 
             Map<String, String> masterMap = sentinel.getMaster("myMaster");
@@ -292,7 +293,7 @@ public class RedissonRedisNodesTest extends BaseTest {
             assertThat(slaves).hasSize(2);
         }
         nodes.getSlaves().forEach((node) -> {
-            Assert.assertTrue(node.ping());
+            Assertions.assertTrue(node.ping());
         });
 
         redisson.shutdown();
@@ -346,8 +347,8 @@ public class RedissonRedisNodesTest extends BaseTest {
         RedisSingle nodes = redisson.getRedisNodes(RedisNodes.SINGLE);
         RedisMaster node = nodes.getInstance();
 
-        Assert.assertTrue(node.ping());
-        Assert.assertTrue(nodes.pingAll());
+        Assertions.assertTrue(node.ping());
+        Assertions.assertTrue(nodes.pingAll());
     }
 
 }

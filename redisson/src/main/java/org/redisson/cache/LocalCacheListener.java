@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -139,7 +139,7 @@ public abstract class LocalCacheListener {
     public void add(Map<?, ?> cache) {
         this.cache = cache;
         
-        invalidationTopic = new RedissonTopic(LocalCachedMessageCodec.INSTANCE, commandExecutor, getInvalidationTopicName());
+        invalidationTopic = RedissonTopic.createRaw(LocalCachedMessageCodec.INSTANCE, commandExecutor, getInvalidationTopicName());
 
         if (options.getReconnectionStrategy() != ReconnectionStrategy.NONE) {
             reconnectionListenerId = invalidationTopic.addListener(new BaseStatusListener() {
@@ -173,7 +173,7 @@ public abstract class LocalCacheListener {
                         
                         disableKeys(requestId, keysToDisable, m.getTimeout());
                         
-                        RedissonTopic topic = new RedissonTopic(LocalCachedMessageCodec.INSTANCE, 
+                        RedissonTopic topic = RedissonTopic.createRaw(LocalCachedMessageCodec.INSTANCE,
                                                             commandExecutor, RedissonObject.suffixName(name, requestId + DISABLED_ACK_SUFFIX));
                         topic.publishAsync(new LocalCachedMapDisableAck());
                     }

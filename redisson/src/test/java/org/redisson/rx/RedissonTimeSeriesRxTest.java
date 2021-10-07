@@ -1,13 +1,10 @@
 package org.redisson.rx;
 
-import org.junit.Test;
-import org.redisson.BaseTest;
-import org.redisson.api.RTimeSeries;
+import org.junit.jupiter.api.Test;
 import org.redisson.api.RTimeSeriesRx;
 import org.redisson.api.TimeSeriesEntry;
 
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;

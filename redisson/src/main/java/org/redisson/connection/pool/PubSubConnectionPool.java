@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package org.redisson.connection.pool;
 
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisPubSubConnection;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ClientConnectionsEntry;
@@ -40,7 +41,7 @@ public class PubSubConnectionPool extends ConnectionPool<RedisPubSubConnection> 
     }
     
     @Override
-    protected RedisPubSubConnection poll(ClientConnectionsEntry entry) {
+    protected RedisPubSubConnection poll(ClientConnectionsEntry entry, RedisCommand<?> command) {
         return entry.pollSubscribeConnection();
     }
 
@@ -55,7 +56,7 @@ public class PubSubConnectionPool extends ConnectionPool<RedisPubSubConnection> 
     }
 
     @Override
-    protected void acquireConnection(ClientConnectionsEntry entry, Runnable runnable) {
+    protected void acquireConnection(ClientConnectionsEntry entry, Runnable runnable, RedisCommand<?> command) {
         entry.acquireSubscribeConnection(runnable);
     }
     

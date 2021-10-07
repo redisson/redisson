@@ -1,12 +1,29 @@
 package org.redisson;
 
-import java.util.BitSet;
-
-import static org.assertj.core.api.Assertions.*;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.redisson.api.RBitSet;
 
+import java.util.BitSet;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class RedissonBitSetTest extends BaseTest {
+
+    @Test
+    public void testUnsigned() {
+        RBitSet bs = redisson.getBitSet("testUnsigned");
+        assertThat(bs.setUnsigned(8, 1, 120)).isZero();
+        assertThat(bs.incrementAndGetUnsigned(8, 1, 1)).isEqualTo(121);
+        assertThat(bs.getUnsigned(8, 1)).isEqualTo(121);
+    }
+
+    @Test
+    public void testSigned() {
+        RBitSet bs = redisson.getBitSet("testSigned");
+        assertThat(bs.setSigned(8, 1, -120)).isZero();
+        assertThat(bs.incrementAndGetSigned(8, 1, 1)).isEqualTo(-119);
+        assertThat(bs.getSigned(8, 1)).isEqualTo(-119);
+    }
 
     @Test
     public void testIncrement() {

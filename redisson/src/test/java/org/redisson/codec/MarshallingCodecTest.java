@@ -4,7 +4,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
 import org.assertj.core.api.Assertions;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
@@ -37,12 +37,9 @@ public class MarshallingCodecTest {
     @Test
     public void testEncodeNonSerializable() throws IOException {
         MarshallingCodec m = new MarshallingCodec();
-        try {
-            ByteBuf t = m.getValueEncoder().encode(new NonSerializable());
-            Assertions.fail("Exception should be thrown");
-        } catch (Exception e) {
-            // skip
-        }
+        org.junit.jupiter.api.Assertions.assertThrows(IOException.class, () -> {
+            m.getValueEncoder().encode(new NonSerializable());
+        });
         ByteBuf d = m.getValueEncoder().encode("test");
         Object s = m.getValueDecoder().decode(d, null);
         Assertions.assertThat(s).isEqualTo("test");

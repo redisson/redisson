@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,7 +92,7 @@ public class MapOptions<K, V> {
     
     /**
      * Sets write behind tasks batch size. 
-     * During MapWriter methods execution all updates accumulated into a batch of specified size.
+     * All updates accumulated into a batch of specified size and written with {@link MapWriter}.
      * <p>
      * Default is <code>50</code>
      * 
@@ -108,7 +108,8 @@ public class MapOptions<K, V> {
     }
     
     /**
-     * Sets write behind tasks execution delay. All updates would be applied with lag not more than specified delay.   
+     * Sets write behind tasks execution delay.
+     * All updates written with {@link MapWriter} and lag not more than specified delay.
      * <p>
      * Default is <code>1000</code> milliseconds
      * 

@@ -6,7 +6,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 
@@ -39,7 +39,7 @@ public abstract class BaseConcurrentTest extends BaseTest {
         }
 
         executor.shutdown();
-        Assert.assertTrue(executor.awaitTermination(RedissonRuntimeEnvironment.isTravis ? 10 : 3, TimeUnit.MINUTES));
+        Assertions.assertTrue(executor.awaitTermination(RedissonRuntimeEnvironment.isTravis ? 10 : 3, TimeUnit.MINUTES));
 
         System.out.println("multi: " + (System.currentTimeMillis() - watch));
 
@@ -56,7 +56,7 @@ public abstract class BaseConcurrentTest extends BaseTest {
 
         group.shutdownGracefully();
         executor.shutdown();
-        Assert.assertTrue(executor.awaitTermination(5, TimeUnit.MINUTES));
+        Assertions.assertTrue(executor.awaitTermination(5, TimeUnit.MINUTES));
     }
 
     protected void testMultiInstanceConcurrencySequentiallyLaunched(int iterations, final RedissonRunnable runnable) throws InterruptedException {
@@ -75,7 +75,7 @@ public abstract class BaseConcurrentTest extends BaseTest {
         }
 
         executor.shutdown();
-        Assert.assertTrue(executor.awaitTermination(5, TimeUnit.MINUTES));
+        Assertions.assertTrue(executor.awaitTermination(5, TimeUnit.MINUTES));
 
         System.out.println("multi: " + (System.currentTimeMillis() - watch));
 
@@ -86,7 +86,7 @@ public abstract class BaseConcurrentTest extends BaseTest {
         }
 
         executor.shutdown();
-        Assert.assertTrue(executor.awaitTermination(5, TimeUnit.MINUTES));
+        Assertions.assertTrue(executor.awaitTermination(5, TimeUnit.MINUTES));
     }
 
     protected void testSingleInstanceConcurrency(int iterations, final RedissonRunnable runnable) throws InterruptedException {
@@ -103,7 +103,7 @@ public abstract class BaseConcurrentTest extends BaseTest {
         }
 
         pool.shutdown();
-        Assert.assertTrue(pool.awaitTermination(RedissonRuntimeEnvironment.isTravis ? 20 : 3, TimeUnit.MINUTES));
+        Assertions.assertTrue(pool.awaitTermination(RedissonRuntimeEnvironment.isTravis ? 20 : 3, TimeUnit.MINUTES));
 
         System.out.println(System.currentTimeMillis() - watch);
 

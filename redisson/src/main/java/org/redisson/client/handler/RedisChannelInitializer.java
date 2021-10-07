@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,28 +15,11 @@
  */
 package org.redisson.client.handler;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.Method;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
-
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLParameters;
-import javax.net.ssl.TrustManagerFactory;
-
-import io.netty.channel.*;
-import org.redisson.client.RedisClient;
-import org.redisson.client.RedisClientConfig;
-import org.redisson.client.RedisConnection;
-import org.redisson.config.SslProvider;
-
 import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelInitializer;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
@@ -44,6 +27,19 @@ import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.util.NetUtil;
+import org.redisson.client.RedisClient;
+import org.redisson.client.RedisClientConfig;
+import org.redisson.client.RedisConnection;
+import org.redisson.config.SslProvider;
+
+import javax.net.ssl.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 
 /**
  * 
@@ -87,8 +83,13 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
         ch.pipeline().addLast(
             connectionWatchdog,
             CommandEncoder.INSTANCE,
-            CommandBatchEncoder.INSTANCE,
-            new CommandsQueue());
+            CommandBatchEncoder.INSTANCE);
+
+        if (type == Type.PLAIN) {
+            ch.pipeline().addLast(new CommandsQueue());
+        } else {
+            ch.pipeline().addLast(new CommandsQueuePubSub());
+        }
 
         if (pingConnectionHandler != null) {
             ch.pipeline().addLast(pingConnectionHandler);
@@ -117,6 +118,7 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
         }
         
         SslContextBuilder sslContextBuilder = SslContextBuilder.forClient().sslProvider(provided);
+        sslContextBuilder.protocols(config.getSslProtocols());
         if (config.getSslTruststore() != null) {
             KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
             
@@ -157,13 +159,7 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
         
         SSLParameters sslParams = new SSLParameters();
         if (config.isSslEnableEndpointIdentification()) {
-            // TODO remove for JDK 1.7+
-            try {
-                Method method = sslParams.getClass().getDeclaredMethod("setEndpointIdentificationAlgorithm", String.class);
-                method.invoke(sslParams, "HTTPS");
-            } catch (Exception e) {
-                throw new SSLException(e);
-            }
+            sslParams.setEndpointIdentificationAlgorithm("HTTPS");
         } else {
             if (config.getSslTruststore() == null) {
                 sslContextBuilder.trustManager(InsecureTrustManagerFactory.INSTANCE);

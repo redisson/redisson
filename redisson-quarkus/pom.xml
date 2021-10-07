@@ -1,0 +1,60 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.redisson</groupId>
+        <artifactId>redisson-parent</artifactId>
+        <version>3.16.4-SNAPSHOT</version>
+        <relativePath>../</relativePath>
+    </parent>
+
+    <artifactId>redisson-quarkus</artifactId>
+    <packaging>pom</packaging>
+
+    <name>Redisson/Quarkus integration</name>
+
+    <modules>
+        <module>redisson-quarkus-16</module>
+        <module>redisson-quarkus-20</module>
+    </modules>
+
+     <properties>
+       <compiler-plugin.version>3.8.1</compiler-plugin.version>
+       <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
+       <failsafe-plugin.version>${surefire-plugin.version}</failsafe-plugin.version>
+     </properties>
+
+     <build>
+       <pluginManagement>
+         <plugins>
+           <plugin>
+             <artifactId>maven-surefire-plugin</artifactId>
+             <version>${surefire-plugin.version}</version>
+             <configuration>
+               <systemPropertyVariables>
+                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                 <maven.home>${maven.home}</maven.home>
+                 <maven.repo>${settings.localRepository}</maven.repo>
+               </systemPropertyVariables>
+             </configuration>
+           </plugin>
+           <plugin>
+             <artifactId>maven-failsafe-plugin</artifactId>
+             <version>${failsafe-plugin.version}</version>
+             <configuration>
+               <systemPropertyVariables>
+                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                 <maven.home>${maven.home}</maven.home>
+                 <maven.repo>${settings.localRepository}</maven.repo>
+               </systemPropertyVariables>
+             </configuration>
+           </plugin>
+           <plugin>
+             <artifactId>maven-compiler-plugin</artifactId>
+             <version>${compiler-plugin.version}</version>
+           </plugin>
+         </plugins>
+       </pluginManagement>
+     </build>
+
+</project>

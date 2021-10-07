@@ -1,8 +1,9 @@
 package org.redisson.mybatis;
 
-import static org.assertj.core.api.Assertions.*;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  *
@@ -13,7 +14,7 @@ public class RedissonCacheTest {
 
     private RedissonCache cache;
 
-    @Before
+    @BeforeEach
     public void before() {
         cache = new RedissonCache("redisson");
         cache.setTimeToLive(1000);

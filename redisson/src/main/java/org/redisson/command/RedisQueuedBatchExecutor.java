@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import org.redisson.misc.RedissonPromise;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -53,12 +54,12 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
     
     @SuppressWarnings("ParameterNumber")
     public RedisQueuedBatchExecutor(boolean readOnlyMode, NodeSource source, Codec codec, RedisCommand<V> command,
-            Object[] params, RPromise<R> mainPromise, boolean ignoreRedirect, ConnectionManager connectionManager,
-            RedissonObjectBuilder objectBuilder, ConcurrentMap<MasterSlaveEntry, Entry> commands,
-            ConcurrentMap<MasterSlaveEntry, ConnectionEntry> connections, BatchOptions options, AtomicInteger index,
-            AtomicBoolean executed, AsyncCountDownLatch latch) {
+                                    Object[] params, RPromise<R> mainPromise, boolean ignoreRedirect, ConnectionManager connectionManager,
+                                    RedissonObjectBuilder objectBuilder, ConcurrentMap<MasterSlaveEntry, Entry> commands,
+                                    ConcurrentMap<MasterSlaveEntry, ConnectionEntry> connections, BatchOptions options, AtomicInteger index,
+                                    AtomicBoolean executed, AsyncCountDownLatch latch, RedissonObjectBuilder.ReferenceType referenceType) {
         super(readOnlyMode, source, codec, command, params, mainPromise, ignoreRedirect, connectionManager, objectBuilder,
-                commands, options, index, executed);
+                commands, options, index, executed, referenceType);
         
         this.connections = connections;
         this.latch = latch;
@@ -78,11 +79,11 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
     
     @Override
     protected void releaseConnection(RPromise<R> attemptPromise, RFuture<RedisConnection> connectionFuture) {
-        if (RedisCommands.EXEC.getName().equals(command.getName())) {
+        if (RedisCommands.EXEC.getName().equals(command.getName())
+                || RedisCommands.DISCARD.getName().equals(command.getName())) {
             super.releaseConnection(attemptPromise, connectionFuture);
-        }
-        if (RedisCommands.DISCARD.getName().equals(command.getName())) {
-            super.releaseConnection(attemptPromise, connectionFuture);
+        } else {
+            connectionManager.getShutdownLatch().release();
         }
     }
     
@@ -95,11 +96,6 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
         }
         if (RedisCommands.DISCARD.getName().equals(command.getName())) {
             super.handleSuccess(promise, connectionFuture, null);
-            if (executed.compareAndSet(false, true)) {
-                connectionFuture.getNow().forceFastReconnectAsync().onComplete((r, e) -> {
-                    releaseConnection(promise, connectionFuture);
-                });
-            }
             return;
         }
 
@@ -230,6 +226,11 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
             }
             connectionFuture.syncUninterruptibly();
             entry.setConnectionFuture(connectionFuture);
+
+            entry.setCancelCallback(() -> {
+                handleError(connectionFuture, new CancellationException());
+            });
+
             return connectionFuture;
         }
     }

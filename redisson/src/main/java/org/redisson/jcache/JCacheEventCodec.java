@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import java.util.List;
 public class JCacheEventCodec extends BaseEventCodec {
 
     private final boolean sync;
+    private final boolean expectOldValueInMsg;
     
     private final Decoder<Object> decoder = new Decoder<Object>() {
         @Override
@@ -44,6 +45,16 @@ public class JCacheEventCodec extends BaseEventCodec {
 
             Object value = JCacheEventCodec.this.decode(buf, state, codec.getMapValueDecoder());
             result.add(value);
+
+            if (expectOldValueInMsg) {
+                if (buf.getShortLE(buf.readerIndex()) != -1) {
+                    Object oldValue = JCacheEventCodec.this.decode(buf, state, codec.getMapValueDecoder());
+                    result.add(oldValue);
+                } else {
+                    buf.readShortLE();
+                    result.add(null);
+                }
+            }
             
             if (sync) {
                 double syncId = buf.readDoubleLE();
@@ -57,6 +68,13 @@ public class JCacheEventCodec extends BaseEventCodec {
     public JCacheEventCodec(Codec codec, OSType osType, boolean sync) {
         super(codec, osType);
         this.sync = sync;
+        this.expectOldValueInMsg = false;
+    }
+
+    public JCacheEventCodec(Codec codec, OSType osType, boolean sync, boolean expectOldValueInMsg) {
+        super(codec, osType);
+        this.sync = sync;
+        this.expectOldValueInMsg = expectOldValueInMsg;
     }
 
     @Override

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,6 @@ package org.redisson.command;
 import io.netty.buffer.ByteBuf;
 import org.redisson.SlotCallback;
 import org.redisson.api.RFuture;
-import org.redisson.api.RedissonClient;
-import org.redisson.api.RedissonReactiveClient;
-import org.redisson.api.RedissonRxClient;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
@@ -31,6 +28,7 @@ import org.redisson.liveobject.core.RedissonObjectBuilder;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -43,12 +41,6 @@ public interface CommandAsyncExecutor {
     
     ConnectionManager getConnectionManager();
 
-    CommandAsyncExecutor enableRedissonReferenceSupport(RedissonClient redisson);
-    
-    CommandAsyncExecutor enableRedissonReferenceSupport(RedissonReactiveClient redissonReactive);
-    
-    CommandAsyncExecutor enableRedissonReferenceSupport(RedissonRxClient redissonReactive);
-    
     <V> RedisException convertException(RFuture<V> future);
 
     void syncSubscription(RFuture<?> future);
@@ -124,7 +116,9 @@ public interface CommandAsyncExecutor {
     ByteBuf encodeMapValue(Codec codec, Object value);
 
     <T, R> RFuture<R> readBatchedAsync(Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, String... keys);
-    
+
     <T, R> RFuture<R> writeBatchedAsync(Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, String... keys);
+    
+    <T, R> RFuture<R> writeBatchedAsync(Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, String[] keys, Map<String, ?> valueMap);
     
 }

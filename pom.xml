@@ -3,7 +3,7 @@
 
     <groupId>org.redisson</groupId>
     <artifactId>redisson-parent</artifactId>
-    <version>3.15.2-SNAPSHOT</version>
+    <version>3.16.4-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Redisson</name>
@@ -19,9 +19,10 @@
     <properties>
         <maven.test.skip>true</maven.test.skip>
         <source.version>1.8</source.version>
-        <test.source.version>1.8</test.source.version>
+        <javadoc.version>8</javadoc.version>
         <release.version>8</release.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
 
     <scm>
@@ -59,6 +60,9 @@
         <module>redisson-spring-boot-starter</module>
         <module>redisson-mybatis</module>
         <module>redisson-hibernate</module>
+        <module>redisson-helidon</module>
+        <module>redisson-quarkus</module>
+        <module>redisson-micronaut</module>
     </modules>
 
     <profiles>
@@ -126,16 +130,59 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
+                <groupId>org.assertj</groupId>
+                <artifactId>assertj-core</artifactId>
+                <version>3.20.2</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.awaitility</groupId>
+                <artifactId>awaitility</artifactId>
+                <version>4.1.0</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+               <groupId>org.jmockit</groupId>
+               <artifactId>jmockit</artifactId>
+               <version>1.49</version>
+               <scope>test</scope>
+            </dependency>
+            <dependency>
+               <groupId>org.jooq</groupId>
+               <artifactId>joor-java-8</artifactId>
+               <version>0.9.14</version>
+               <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-engine</artifactId>
+                <version>5.7.2</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-params</artifactId>
+                <version>5.7.2</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>1.2.5</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-bom</artifactId>
-                <version>4.1.59.Final</version>
+                <version>4.1.68.Final</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
-                <version>2.12.1</version>
+                <version>2.12.5</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -149,7 +196,56 @@
       <testOutputDirectory>${basedir}/target/test-classes</testOutputDirectory>
       <sourceDirectory>${basedir}/src/main/java</sourceDirectory>
       <testSourceDirectory>${basedir}/src/test/java</testSourceDirectory>
+      
+      <plugins>
+          <plugin>
+         	<groupId>org.sonatype.plugins</groupId>
+         	<artifactId>nexus-staging-maven-plugin</artifactId>
+         	<version>1.6.8</version>
+         	<extensions>true</extensions>
+                <configuration>
+                    <serverId>ossrepo</serverId>
+                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                    <stagingProgressTimeoutMinutes>15</stagingProgressTimeoutMinutes>
+ 		</configuration>
+          </plugin>
 
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-release-plugin</artifactId>
+            <version>2.5.3</version>
+            <configuration>
+                <autoVersionSubmodules>true</autoVersionSubmodules>
+                <useReleaseProfile>true</useReleaseProfile>
+                <releaseProfiles>release</releaseProfiles>
+                <goals>deploy</goals>
+            </configuration>
+          </plugin>
+
+          <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-enforcer-plugin</artifactId>
+              <version>3.0.0-M3</version>
+              <executions>
+                  <execution>
+                      <id>enforce-maven</id>
+                      <goals>
+                          <goal>enforce</goal>
+                      </goals>
+                      <configuration>
+                          <rules>
+                              <requireMavenVersion>
+                                  <version>3.0.5</version>
+                              </requireMavenVersion>
+                          </rules>
+                      </configuration>
+                  </execution>
+              </executions>
+          </plugin>
+      </plugins>
+
+      <pluginManagement>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -167,19 +263,6 @@
                     </archive>
                 </configuration>
             </plugin>
-
-       	<plugin>
-       		<groupId>org.sonatype.plugins</groupId>
-       		<artifactId>nexus-staging-maven-plugin</artifactId>
-       		<version>1.6.8</version>
-       		<extensions>true</extensions>
-       		<configuration>
-       			<serverId>ossrepo</serverId>
-       			<nexusUrl>https://oss.sonatype.org/</nexusUrl>
-       			<autoReleaseAfterClose>true</autoReleaseAfterClose>
-                <stagingProgressTimeoutMinutes>15</stagingProgressTimeoutMinutes>
-       		</configuration>
-       	</plugin>
 
 <!--
             <plugin>
@@ -226,50 +309,22 @@
             </plugin>
 -->
 
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-release-plugin</artifactId>
-            <version>2.5.3</version>
-   		<configuration>
-   			<autoVersionSubmodules>true</autoVersionSubmodules>
-   			<useReleaseProfile>true</useReleaseProfile>
-   			<releaseProfiles>release</releaseProfiles>
-   			<goals>deploy</goals>
-   		</configuration>
-            </plugin>
-
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
                     <source>${source.version}</source>
                     <target>${source.version}</target>
-<!--
                     <release>${release.version}</release>
--->
                     <optimize>true</optimize>
                     <showDeprecation>true</showDeprecation>
                 </configuration>
-                <executions>
-                    <execution>
-                        <id>default-testCompile</id>
-                        <phase>process-test-sources</phase>
-                        <goals>
-                            <goal>testCompile</goal>
-                        </goals>
-                        <configuration>
-                            <fork>true</fork>
-                            <source>${test.source.version}</source>
-                            <target>${test.source.version}</target>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
 
             <plugin>
          	<groupId>org.apache.maven.plugins</groupId>
          	<artifactId>maven-javadoc-plugin</artifactId>
-         	<version>3.2.0</version>
+         	<version>3.3.0</version>
          	<executions>
                    <execution>
                      <id>attach-javadocs</id>
@@ -279,33 +334,15 @@
                    </execution>
          	</executions>
                 <configuration>
+                    <source>${javadoc.version}</source>
                     <level>public</level>
                     <doclint>none</doclint>
                     <quiet>true</quiet>
                 </configuration>
             </plugin>
 
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-enforcer-plugin</artifactId>
-                <version>3.0.0-M3</version>
-                <executions>
-                    <execution>
-                        <id>enforce-maven</id>
-                        <goals>
-                            <goal>enforce</goal>
-                        </goals>
-                        <configuration>
-                            <rules>
-                                <requireMavenVersion>
-                                    <version>3.0.5</version>
-                                </requireMavenVersion>
-                            </rules>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
+      </pluginManagement>
   </build>
 
 </project>

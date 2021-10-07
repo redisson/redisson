@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
 
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.PEXPIRE, getName(), timeUnit.toMillis(timeToLive));
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.PEXPIRE, getRawName(), timeUnit.toMillis(timeToLive));
     }
 
     @Override
@@ -70,7 +70,7 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
 
     @Override
     public RFuture<Boolean> expireAsync(Instant instant) {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.PEXPIREAT, getName(), instant.toEpochMilli());
+        return expireAtAsync(instant.toEpochMilli(), getRawName());
     }
 
     @Override
@@ -90,7 +90,7 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
 
     @Override
     public RFuture<Boolean> clearExpireAsync() {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.PERSIST, getName());
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.PERSIST, getRawName());
     }
 
     @Override
@@ -100,11 +100,11 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
 
     @Override
     public RFuture<Long> remainTimeToLiveAsync() {
-        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.PTTL, getName());
+        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.PTTL, getRawName());
     }
 
     protected RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String... keys) {
-        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                   "local result = 0;"
                 + "for j = 1, #KEYS, 1 do "
                     + "local expireSet = redis.call('pexpire', KEYS[j], ARGV[1]); "
@@ -116,7 +116,7 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
     }
 
     protected RFuture<Boolean> expireAtAsync(long timestamp, String... keys) {
-        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                   "local result = 0;"
                 + "for j = 1, #KEYS, 1 do "
                     + "local expireSet = redis.call('pexpireat', KEYS[j], ARGV[1]); "
@@ -128,7 +128,7 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
     }
 
     protected RFuture<Boolean> clearExpireAsync(String... keys) {
-        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                   "local result = 0;"
                 + "for j = 1, #KEYS, 1 do "
                     + "local expireSet = redis.call('persist', KEYS[j]); "

@@ -1,35 +1,23 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
-
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
-import org.redisson.api.annotation.RCascade;
-import org.redisson.api.annotation.REntity;
-import org.redisson.api.annotation.RFieldAccessor;
-import org.redisson.api.annotation.RId;
-import org.redisson.api.annotation.RIndex;
+import org.redisson.api.annotation.*;
 import org.redisson.api.condition.Conditions;
 import org.redisson.config.Config;
-import org.redisson.connection.balancer.RandomLoadBalancer;
 import org.redisson.liveobject.resolver.DefaultNamingScheme;
 import org.redisson.liveobject.resolver.LongGenerator;
 import org.redisson.liveobject.resolver.UUIDGenerator;
+
+import java.io.IOException;
+import java.io.Serializable;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.*;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *
@@ -368,6 +356,56 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
 
         public void setNum2(int num2) {
             this.num2 = num2;
+        }
+    }
+
+    @Test
+    public void testIndexedPersist() {
+        RLiveObjectService liveObjectService = redisson.getLiveObjectService();
+        TestIndexed item1 = new TestIndexed("1");
+        item1.setName1("testnma");
+        item1.setName2("gfgfgf");
+        item1.setNum1(123);
+
+        TestIndexed item2 = new TestIndexed("2");
+
+        List<TestIndexed> s = liveObjectService.persist(item1, item2);
+        assertThat(s.get(0).getId()).isEqualTo(item1.getId());
+        assertThat(s.get(1).getId()).isEqualTo(item2.getId());
+
+        redisson.shutdown();
+    }
+
+    @Test
+    public void testFindIn() {
+        RLiveObjectService s = redisson.getLiveObjectService();
+        TestIndexed t1 = new TestIndexed("1");
+        t1.setNum1(1);
+        t1.setName1("common");
+        t1.setName2("value1");
+        t1 = s.persist(t1);
+
+        TestIndexed t2 = new TestIndexed("2");
+        t2.setNum1(1);
+        t2.setName1("common");
+        t2.setName2("value2");
+        t2 = s.persist(t2);
+
+        TestIndexed t3 = new TestIndexed("3");
+        t3.setNum1(1);
+        t3.setName1("common");
+        t3.setName2("value3");
+        t3 = s.persist(t3);
+
+        RScoredSortedSet<Object> t = redisson.getScoredSortedSet("redisson_live_object_index:{org.redisson.RedissonLiveObjectServiceTest$TestIndexed}:num2");
+        assertThat(t).hasSize(3);
+
+        Collection<TestIndexed> objects2 = s.find(TestIndexed.class, Conditions.and(
+                Conditions.in("num1", 1, 2),
+                Conditions.in("name2", "value1", "value2")));
+        assertThat(objects2).hasSize(2);
+        for (TestIndexed testIndexed : objects2) {
+            assertThat(testIndexed.getId()).isIn("1", "2");
         }
     }
 
@@ -1923,12 +1961,14 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         assertThat(se.getItem("2")).isEqualTo(2);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testObjectShouldNotBeAttached() {
-        Customer customer = new Customer("12");
-        customer = redisson.getLiveObjectService().persist(customer);
-        Order order = new Order();
-        customer.getOrders().add(order);
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            Customer customer = new Customer("12");
+            customer = redisson.getLiveObjectService().persist(customer);
+            Order order = new Order();
+            customer.getOrders().add(order);
+        });
     }
     
     @Test
@@ -2249,22 +2289,54 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         }
     }
 
-    @Test(timeout = 40*1000)
+    @Test
+    public void testBatchedMerge() {
+        Assertions.assertTimeout(Duration.ofSeconds(10), () -> {
+            RLiveObjectService s = redisson.getLiveObjectService();
+
+            List<TestREntity> objects = new ArrayList<>();
+            int objectsAmount = 100000;
+            for (int i = 0; i < objectsAmount; i++) {
+                TestREntity e = new TestREntity();
+                e.setName("" + i);
+                e.setValue("value" + i);
+                objects.add(e);
+            }
+            List<Object> attachedObjects = s.merge(objects.toArray());
+            assertThat(attachedObjects).hasSize(objectsAmount);
+
+            objects.clear();
+            for (int i = 0; i < objectsAmount; i++) {
+                TestREntity e = (TestREntity) attachedObjects.get(i);
+                e.setName("" + i);
+                e.setValue("value" + i*1000);
+                objects.add(e);
+            }
+            List<Object> attachedObjects2 = s.merge(objects.toArray());
+            assertThat(attachedObjects2).hasSize(objectsAmount);
+
+            assertThat(redisson.getKeys().count()).isEqualTo(objectsAmount);
+        });
+    }
+
+    @Test
     public void testBatchedPersist() {
-        RLiveObjectService s = redisson.getLiveObjectService();
+        Assertions.assertTimeout(Duration.ofSeconds(40), () -> {
+            RLiveObjectService s = redisson.getLiveObjectService();
 
-        List<TestREntity> objects = new ArrayList<>();
-        int objectsAmount = 1000000;
-        for (int i = 0; i < objectsAmount; i++) {
-            TestREntity e = new TestREntity();
-            e.setName("" + i);
-            e.setValue("value" + i);
-            objects.add(e);
-        }
-        List<Object> attachedObjects = s.persist(objects.toArray());
-        assertThat(attachedObjects).hasSize(objectsAmount);
+            List<TestREntity> objects = new ArrayList<>();
+            int objectsAmount = 1000000;
+            for (int i = 0; i < objectsAmount; i++) {
+                TestREntity e = new TestREntity();
+                e.setName("" + i);
+                e.setValue("value" + i);
+                objects.add(e);
+            }
+            List<Object> attachedObjects = s.persist(objects.toArray());
+            assertThat(attachedObjects).hasSize(objectsAmount);
 
-        assertThat(redisson.getKeys().count()).isEqualTo(objectsAmount);
+            assertThat(redisson.getKeys().count()).isEqualTo(objectsAmount);
+        });
     }
 
     @Test

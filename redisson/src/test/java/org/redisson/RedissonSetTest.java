@@ -12,8 +12,8 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.redisson.ClusterRunner.ClusterProcesses;
 import org.redisson.RedisRunner.FailedToStartRedisException;
 import org.redisson.api.RFuture;
@@ -40,6 +40,17 @@ public class RedissonSetTest extends BaseTest {
             this.lng = lng;
         }
 
+    }
+
+    @Test
+    public void testRemoveAllCounted() {
+        RSet<Integer> set = redisson.getSet("list", IntegerCodec.INSTANCE);
+        set.add(0);
+        set.add(1);
+        set.add(2);
+        set.add(3);
+
+        assertThat(set.removeAllCounted(Arrays.asList(1, 2, 3, 4, 5))).isEqualTo(3);
     }
 
     @Test
@@ -401,7 +412,7 @@ public class RedissonSetTest extends BaseTest {
         sb.setLng(1L);
         RSet<SimpleBean> set = redisson.getSet("simple");
         set.add(sb);
-        Assert.assertEquals(sb.getLng(), set.iterator().next().getLng());
+        Assertions.assertEquals(sb.getLng(), set.iterator().next().getLng());
     }
 
     @Test
@@ -412,13 +423,13 @@ public class RedissonSetTest extends BaseTest {
         set.add(sb);
 
         for (Long l : set) {
-            Assert.assertEquals(sb.getClass(), l.getClass());
+            Assertions.assertEquals(sb.getClass(), l.getClass());
         }
 
         Object[] arr = set.toArray();
 
         for (Object o : arr) {
-            Assert.assertEquals(sb.getClass(), o.getClass());
+            Assertions.assertEquals(sb.getClass(), o.getClass());
         }
     }
 
@@ -426,9 +437,9 @@ public class RedissonSetTest extends BaseTest {
     public void testAddAsync() throws InterruptedException, ExecutionException {
         RSet<Integer> set = redisson.getSet("simple");
         RFuture<Boolean> future = set.addAsync(2);
-        Assert.assertTrue(future.get());
+        Assertions.assertTrue(future.get());
 
-        Assert.assertTrue(set.contains(2));
+        Assertions.assertTrue(set.contains(2));
     }
 
     @Test
@@ -438,15 +449,15 @@ public class RedissonSetTest extends BaseTest {
         set.add(3);
         set.add(7);
 
-        Assert.assertTrue(set.removeAsync(1).get());
-        Assert.assertFalse(set.contains(1));
+        Assertions.assertTrue(set.removeAsync(1).get());
+        Assertions.assertFalse(set.contains(1));
         assertThat(set).containsOnly(3, 7);
 
-        Assert.assertFalse(set.removeAsync(1).get());
+        Assertions.assertFalse(set.removeAsync(1).get());
         assertThat(set).containsOnly(3, 7);
 
         set.removeAsync(3).get();
-        Assert.assertFalse(set.contains(3));
+        Assertions.assertFalse(set.contains(3));
         assertThat(set).contains(7);
     }
 
@@ -475,10 +486,10 @@ public class RedissonSetTest extends BaseTest {
             iteration++;
         }
 
-        Assert.assertEquals(4, iteration);
+        Assertions.assertEquals(4, iteration);
 
-        Assert.assertEquals(0, list.size());
-        Assert.assertTrue(list.isEmpty());
+        Assertions.assertEquals(0, list.size());
+        Assertions.assertTrue(list.isEmpty());
     }
 
     @Test
@@ -500,11 +511,11 @@ public class RedissonSetTest extends BaseTest {
         for (Iterator<Long> iterator = set.iterator(); iterator.hasNext();) {
             Long value = iterator.next();
             if (!setCopy.remove(value)) {
-                Assert.fail();
+                Assertions.fail();
             }
         }
 
-        Assert.assertEquals(0, setCopy.size());
+        Assertions.assertEquals(0, setCopy.size());
     }
 
     @Test
@@ -523,9 +534,9 @@ public class RedissonSetTest extends BaseTest {
             set.add(i);
         }
 
-        Assert.assertTrue(set.retainAll(Arrays.asList(1, 2)));
+        Assertions.assertTrue(set.retainAll(Arrays.asList(1, 2)));
         assertThat(set).containsOnly(1, 2);
-        Assert.assertEquals(2, set.size());
+        Assertions.assertEquals(2, set.size());
     }
 
     @Test
@@ -584,8 +595,8 @@ public class RedissonSetTest extends BaseTest {
             iterator.remove();
             cnt++;
         }
-        Assert.assertEquals(0, set.size());
-        Assert.assertEquals(10000, cnt);
+        Assertions.assertEquals(0, set.size());
+        Assertions.assertEquals(10000, cnt);
     }
 
     @Test
@@ -595,9 +606,9 @@ public class RedissonSetTest extends BaseTest {
             set.add(i);
         }
 
-        Assert.assertTrue(set.containsAll(Collections.emptyList()));
-        Assert.assertTrue(set.containsAll(Arrays.asList(30, 11)));
-        Assert.assertFalse(set.containsAll(Arrays.asList(30, 711, 11)));
+        Assertions.assertTrue(set.containsAll(Collections.emptyList()));
+        Assertions.assertTrue(set.containsAll(Arrays.asList(30, 11)));
+        Assertions.assertFalse(set.containsAll(Arrays.asList(30, 711, 11)));
     }
 
     @Test
@@ -625,9 +636,9 @@ public class RedissonSetTest extends BaseTest {
         set.add(new TestObject("3", "4"));
         set.add(new TestObject("5", "6"));
 
-        Assert.assertTrue(set.contains(new TestObject("2", "3")));
-        Assert.assertTrue(set.contains(new TestObject("1", "2")));
-        Assert.assertFalse(set.contains(new TestObject("1", "9")));
+        Assertions.assertTrue(set.contains(new TestObject("2", "3")));
+        Assertions.assertTrue(set.contains(new TestObject("1", "2")));
+        Assertions.assertFalse(set.contains(new TestObject("1", "9")));
     }
 
     @Test
@@ -640,7 +651,7 @@ public class RedissonSetTest extends BaseTest {
         set.add(new TestObject("3", "4"));
         set.add(new TestObject("5", "6"));
 
-        Assert.assertEquals(4, set.size());
+        Assertions.assertEquals(4, set.size());
     }
 
     @Test
@@ -654,7 +665,7 @@ public class RedissonSetTest extends BaseTest {
         set.add(5);
         set.add(5);
 
-        Assert.assertEquals(5, set.size());
+        Assertions.assertEquals(5, set.size());
     }
 
 
@@ -667,8 +678,8 @@ public class RedissonSetTest extends BaseTest {
         set.add(4);
         set.add(5);
 
-        Assert.assertTrue(set.retainAll(Collections.<Integer>emptyList()));
-        Assert.assertEquals(0, set.size());
+        Assertions.assertTrue(set.retainAll(Collections.<Integer>emptyList()));
+        Assertions.assertEquals(0, set.size());
     }
 
     @Test
@@ -677,7 +688,7 @@ public class RedissonSetTest extends BaseTest {
         set.add(1);
         set.add(2);
 
-        Assert.assertFalse(set.retainAll(Arrays.asList(1, 2))); // nothing changed
+        Assertions.assertFalse(set.retainAll(Arrays.asList(1, 2))); // nothing changed
         assertThat(set).containsOnly(1, 2);
     }
 
@@ -812,10 +823,10 @@ public class RedissonSetTest extends BaseTest {
 
         set.add(1);
 
-        Assert.assertFalse(set.move("otherSet", 2));
+        Assertions.assertFalse(set.move("otherSet", 2));
 
-        Assert.assertEquals(1, set.size());
-        Assert.assertEquals(0, otherSet.size());
+        Assertions.assertEquals(1, set.size());
+        Assertions.assertEquals(0, otherSet.size());
     }
     
     
@@ -828,8 +839,8 @@ public class RedissonSetTest extends BaseTest {
         list.add(4);
         list.add(5);
 
-        Assert.assertFalse(list.removeAll(Collections.emptyList()));
-        Assert.assertFalse(Arrays.asList(1).removeAll(Collections.emptyList()));
+        Assertions.assertFalse(list.removeAll(Collections.emptyList()));
+        Assertions.assertFalse(Arrays.asList(1).removeAll(Collections.emptyList()));
     }
 
     @Test
@@ -841,17 +852,17 @@ public class RedissonSetTest extends BaseTest {
         list.add(4);
         list.add(5);
 
-        Assert.assertFalse(list.removeAll(Collections.emptyList()));
-        Assert.assertTrue(list.removeAll(Arrays.asList(3, 2, 10, 6)));
+        Assertions.assertFalse(list.removeAll(Collections.emptyList()));
+        Assertions.assertTrue(list.removeAll(Arrays.asList(3, 2, 10, 6)));
 
         assertThat(list).containsExactlyInAnyOrder(1, 4, 5);
 
-        Assert.assertTrue(list.removeAll(Arrays.asList(4)));
+        Assertions.assertTrue(list.removeAll(Arrays.asList(4)));
 
         assertThat(list).containsExactlyInAnyOrder(1, 5);
 
-        Assert.assertTrue(list.removeAll(Arrays.asList(1, 5, 1, 5)));
+        Assertions.assertTrue(list.removeAll(Arrays.asList(1, 5, 1, 5)));
 
-        Assert.assertTrue(list.isEmpty());
+        Assertions.assertTrue(list.isEmpty());
     }
 }

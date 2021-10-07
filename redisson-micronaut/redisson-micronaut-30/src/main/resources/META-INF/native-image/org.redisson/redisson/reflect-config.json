@@ -1,0 +1,479 @@
+[
+{
+  "name":"io.netty.buffer.AbstractByteBufAllocator",
+  "allDeclaredMethods":true
+},
+{
+  "name":"io.netty.buffer.AbstractReferenceCountedByteBuf",
+  "fields":[{"name":"refCnt", "allowUnsafeAccess":true}]
+},
+{
+  "name":"io.netty.util.ReferenceCountUtil",
+  "allDeclaredMethods":true
+},
+{
+  "name":"io.netty.channel.EventLoopGroup",
+  "allDeclaredMethods":true
+},
+{
+  "name":"io.netty.channel.socket.nio.NioDatagramChannel",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.netty.channel.socket.nio.NioSocketChannel",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.netty.handler.codec.ByteToMessageDecoder",
+  "methods":[
+    {"name":"channelInactive","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, 
+    {"name":"channelRead","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] }, 
+    {"name":"channelReadComplete","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, 
+    {"name":"userEventTriggered","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] }
+  ]
+},
+{
+  "name":"io.netty.handler.codec.MessageToMessageDecoder",
+  "methods":[{"name":"channelRead","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] }]
+},
+{
+  "name":"io.netty.handler.codec.MessageToMessageEncoder",
+  "methods":[{"name":"write","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object","io.netty.channel.ChannelPromise"] }]
+},
+{
+  "name":"io.netty.handler.codec.dns.DatagramDnsQueryEncoder"
+},
+{
+  "name":"io.netty.resolver.dns.DnsNameResolver$1"
+},
+{
+  "name":"io.netty.resolver.dns.DnsNameResolver$3"
+},
+{
+  "name":"io.netty.resolver.dns.DnsNameResolver$DnsResponseHandler",
+  "methods":[
+    {"name":"channelActive","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, 
+    {"name":"channelRead","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] }, 
+    {"name":"exceptionCaught","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Throwable"] }
+  ]
+},
+{
+  "name":"io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueColdProducerFields",
+  "fields":[{"name":"producerLimit", "allowUnsafeAccess":true}]
+},
+{
+  "name":"io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueConsumerFields",
+  "fields":[{"name":"consumerIndex", "allowUnsafeAccess":true}]
+},
+{
+  "name":"io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueProducerFields",
+  "fields":[{"name":"producerIndex", "allowUnsafeAccess":true}]
+},
+{
+  "name":"io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueueConsumerIndexField",
+  "fields":[{"name":"consumerIndex", "allowUnsafeAccess":true}]
+},
+{
+  "name":"io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueueProducerIndexField",
+  "fields":[{"name":"producerIndex", "allowUnsafeAccess":true}]
+},
+{
+  "name":"io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueueProducerLimitField",
+  "fields":[{"name":"producerLimit", "allowUnsafeAccess":true}]
+},
+{
+  "name":"java.sql.Date"
+},
+{
+  "name":"java.sql.Timestamp"
+},
+{
+  "name":"java.util.Collections$ReverseComparator2",
+  "allDeclaredFields":true
+},
+{
+  "name":"java.util.Collections$UnmodifiableCollection",
+  "allDeclaredFields":true
+},
+{
+  "name":"java.util.Collections$UnmodifiableList",
+  "allDeclaredFields":true
+},
+{
+  "name":"java.util.Collections$UnmodifiableMap",
+  "allDeclaredFields":true
+},
+{
+  "name":"java.util.Collections$UnmodifiableMap$UnmodifiableEntrySet",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":["java.util.Set"] }]
+},
+{
+  "name":"java.util.Collections$UnmodifiableRandomAccessList",
+  "allDeclaredFields":true
+},
+{
+  "name":"java.util.Collections$UnmodifiableSet",
+  "allDeclaredFields":true
+},
+{
+  "name":"java.util.Collections$UnmodifiableSortedMap",
+  "allDeclaredFields":true
+},
+{
+  "name":"java.util.Collections$UnmodifiableSortedSet",
+  "allDeclaredFields":true
+},
+{
+  "name":"java.util.EnumMap",
+  "fields":[{"name":"keyType"}]
+},
+{
+  "name":"java.util.EnumSet$SerializationProxy",
+  "fields":[
+    {"name":"elementType"}, 
+    {"name":"elements"}
+  ]
+},
+{
+  "name":"java.util.HashSet",
+  "allDeclaredMethods":true,
+  "allDeclaredConstructors":true
+},
+{
+  "name":"org.redisson.RedissonAtomicDouble",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonAtomicLong",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonBatch",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonBinaryStream",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonBitSet",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonBlockingDeque",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonBlockingQueue",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonBloomFilter",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonBoundedBlockingQueue",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonBucket",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonBuckets",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonCountDownLatch",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonDelayedQueue",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonDeque",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonDoubleAdder",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonExecutorService",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonFairLock",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonGeo",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonHyperLogLog",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonIdGenerator",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonKeys",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonLexSortedSet",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonList",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonListMultimap",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonListMultimapCache",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonListMultimapValues",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonLiveObjectService",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonLocalCachedMap",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonLock",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonLongAdder",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonMap",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonMapCache",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonMultiLock",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonMultimap",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonMultimapCache",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonPatternTopic",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonPermitExpirableSemaphore",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonPriorityBlockingDeque",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonPriorityBlockingQueue",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonPriorityDeque",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonPriorityQueue",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonQueue",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonQueueSemaphore",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonRateLimiter",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonReadLock",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonReadWriteLock",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonRedLock",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonReliableTopic",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonRemoteService",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonRingBuffer",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonScoredSortedSet",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonScript",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonSemaphore",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonSet",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonSetCache",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonSetMultimap",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonSetMultimapCache",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonSetMultimapValues",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonSortedSet",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonSpinLock",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonStream",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonTimeSeries",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonTopic",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonTransferQueue",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.RedissonWriteLock",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.config.BaseConfig",
+  "allDeclaredFields":true,
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.config.BaseMasterSlaveServersConfig",
+  "allDeclaredFields":true,
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.config.ClusterServersConfig",
+  "allDeclaredFields":true,
+  "allDeclaredMethods":true,
+  "allDeclaredConstructors":true
+},
+{
+  "name":"org.redisson.config.Config",
+  "allDeclaredFields":true,
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.config.ConfigSupport$ClassMixIn",
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.config.ConfigSupport$ConfigMixIn",
+  "allDeclaredFields":true,
+  "allDeclaredMethods":true
+},
+{
+  "name":"org.redisson.config.MasterSlaveServersConfig",
+  "allDeclaredFields":true,
+  "allDeclaredMethods":true,
+  "allDeclaredConstructors":true
+},
+{
+  "name":"org.redisson.config.RedissonNodeFileConfig",
+  "allDeclaredFields":true,
+  "allDeclaredMethods":true,
+  "allDeclaredConstructors":true
+},
+{
+  "name":"org.redisson.config.ReplicatedServersConfig",
+  "allDeclaredFields":true,
+  "allDeclaredMethods":true,
+  "allDeclaredConstructors":true
+},
+{
+  "name":"org.redisson.config.SentinelServersConfig",
+  "allDeclaredFields":true,
+  "allDeclaredMethods":true,
+  "allDeclaredConstructors":true
+},
+{
+  "name":"org.redisson.config.SingleServerConfig",
+  "allDeclaredFields":true,
+  "allDeclaredMethods":true,
+  "allDeclaredConstructors":true
+},
+{
+  "name":"org.redisson.executor.RemoteExecutorService",
+  "methods":[
+    {"name":"executeCallable","parameterTypes":["org.redisson.executor.params.TaskParameters"] }, 
+    {"name":"executeRunnable","parameterTypes":["org.redisson.executor.params.TaskParameters"] }, 
+    {"name":"schedule","parameterTypes":["org.redisson.executor.params.ScheduledCronExpressionParameters"] }, 
+    {"name":"scheduleAtFixedRate","parameterTypes":["org.redisson.executor.params.ScheduledAtFixedRateParameters"] }, 
+    {"name":"scheduleCallable","parameterTypes":["org.redisson.executor.params.ScheduledParameters"] }, 
+    {"name":"scheduleRunnable","parameterTypes":["org.redisson.executor.params.ScheduledParameters"] }, 
+    {"name":"scheduleWithFixedDelay","parameterTypes":["org.redisson.executor.params.ScheduledWithFixedDelayParameters"] }
+  ]
+},
+{
+  "name":"org.redisson.executor.RemoteExecutorServiceAsync",
+  "allPublicMethods":true
+}
+]

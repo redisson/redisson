@@ -12,12 +12,13 @@ Redisson provides various MyBatis Cache implementations including those with fea
 
 Below is the list of all available implementations with local cache and/or data partitioning support:
 
-|Class name | Local cache | Data partitioning |
-| ------------- | ------------- | ------------|
-|RedissonCache<br/>&nbsp; | :heavy_multiplication_x: | :heavy_multiplication_x: |
-|RedissonLocalCachedCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub>  | :heavy_check_mark: | :heavy_multiplication_x: |
-|RedissonClusteredCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | :heavy_multiplication_x: | :heavy_check_mark: |
-|RedissonClusteredLocalCachedCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | :heavy_check_mark: | :heavy_check_mark: |
+|Class name | Local cache | Data<br/>partitioning | Ultra-fast read/write |
+| ------------- | :-----------: | :----------:| :----------:|
+|RedissonCache<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
+|RedissonCache<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
+|RedissonLocalCachedCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ❌ | ✔️ |
+|RedissonClusteredCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
+|RedissonClusteredLocalCachedCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
 
 ## MyBatis Cache Usage
 
@@ -29,14 +30,14 @@ Maven
      <dependency>
          <groupId>org.redisson</groupId>
          <artifactId>redisson-mybatis</artifactId>
-         <version>3.15.1</version>
+         <version>3.16.2</version>
      </dependency>
 ```
 
 Gradle
 
 ```groovy
-     compile 'org.redisson:redisson-mybatis:3.15.1'
+     compile 'org.redisson:redisson-mybatis:3.16.2'
 ```
 
 ### 2. Specify MyBatis cache settings

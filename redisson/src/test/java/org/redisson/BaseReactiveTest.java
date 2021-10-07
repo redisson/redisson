@@ -1,8 +1,8 @@
 package org.redisson;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.reactivestreams.Publisher;
 import org.redisson.api.RCollectionReactive;
 import org.redisson.api.RScoredSortedSetReactive;
@@ -18,19 +18,19 @@ public abstract class BaseReactiveTest {
 
     protected static RedissonReactiveClient redisson;
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() throws IOException, InterruptedException {
         RedisRunner.startDefaultRedisServerInstance();
         redisson = createInstance();
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterClass() throws InterruptedException {
         redisson.shutdown();
         RedisRunner.shutDownDefaultRedisServerInstance();
     }
 
-    @Before
+    @BeforeEach
     public void before() throws IOException, InterruptedException {
         sync(redisson.getKeys().flushall());
     }
@@ -61,7 +61,7 @@ public abstract class BaseReactiveTest {
 
     public static RedissonReactiveClient createInstance() {
         Config config = BaseTest.createConfig();
-        return Redisson.createReactive(config);
+        return Redisson.create(config).reactive();
     }
 
 }

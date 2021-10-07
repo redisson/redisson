@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ public class AsyncSemaphore {
 
     private final AtomicInteger counter;
     private final Queue<Runnable> listeners = new ConcurrentLinkedQueue<>();
-    private final Set<Runnable> removedListeners = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     public AsyncSemaphore(int permits) {
         counter = new AtomicInteger(permits);
@@ -40,25 +39,19 @@ public class AsyncSemaphore {
         acquire(runnable);
         
         try {
-            boolean r = latch.await(timeoutMillis, TimeUnit.MILLISECONDS);
-            if (!r) {
-                remove(runnable);
-            }
-            return r;
+            return latch.await(timeoutMillis, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
-            remove(runnable);
             Thread.currentThread().interrupt();
             return false;
         }
     }
 
     public int queueSize() {
-        return listeners.size() - removedListeners.size();
+        return listeners.size();
     }
     
     public void removeListeners() {
         listeners.clear();
-        removedListeners.clear();
     }
     
     public void acquire(Runnable listener) {
@@ -67,11 +60,6 @@ public class AsyncSemaphore {
     }
 
     private void tryRun() {
-        if (counter.get() == 0
-                || listeners.peek() == null) {
-            return;
-        }
-
         if (counter.decrementAndGet() >= 0) {
             Runnable listener = listeners.poll();
             if (listener == null) {
@@ -79,19 +67,12 @@ public class AsyncSemaphore {
                 return;
             }
 
-            if (removedListeners.remove(listener)) {
-                counter.incrementAndGet();
-                tryRun();
-            } else {
-                listener.run();
-            }
+            listener.run();
         } else {
-            counter.incrementAndGet();
+            if (counter.incrementAndGet() > 0) {
+                tryRun();
+            }
         }
-    }
-
-    public void remove(Runnable listener) {
-        removedListeners.add(listener);
     }
 
     public int getCounter() {

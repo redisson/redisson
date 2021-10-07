@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.reactivestreams.Publisher;
+import org.redisson.ScanResult;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.ByteArrayCodec;
@@ -266,7 +267,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
             byte[] keyBuf = toByteArray(command.getKey());
             Flux<Tuple> flux = Flux.create(new SetReactiveIterator<Tuple>() {
                 @Override
-                protected RFuture<ListScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
+                protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
                     if (command.getOptions().getPattern() == null) {
                         return executorService.readAsync(client, keyBuf, ByteArrayCodec.INSTANCE, ZSCAN, 
                                 keyBuf, nextIterPos, "COUNT", Optional.ofNullable(command.getOptions().getCount()).orElse(10L));

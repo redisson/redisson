@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,27 +15,28 @@
  */
 package org.redisson.client;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import org.redisson.RedissonShutdownException;
-import org.redisson.api.RFuture;
-import org.redisson.client.codec.Codec;
-import org.redisson.client.handler.CommandsQueue;
-import org.redisson.client.protocol.CommandData;
-import org.redisson.client.protocol.CommandsData;
-import org.redisson.client.protocol.QueueCommand;
-import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommands;
-import org.redisson.misc.LogHelper;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
-
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.util.AttributeKey;
 import io.netty.util.Timeout;
+import org.redisson.RedissonShutdownException;
+import org.redisson.api.RFuture;
+import org.redisson.client.codec.Codec;
+import org.redisson.client.handler.CommandsQueue;
+import org.redisson.client.handler.CommandsQueuePubSub;
+import org.redisson.client.protocol.*;
+import org.redisson.misc.LogHelper;
+import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Deque;
+import java.util.Queue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 
@@ -44,6 +45,7 @@ import io.netty.util.Timeout;
  */
 public class RedisConnection implements RedisCommands {
 
+    private static final Logger LOG = LoggerFactory.getLogger(RedisConnection.class);
     private static final AttributeKey<RedisConnection> CONNECTION = AttributeKey.valueOf("connection");
 
     final RedisClient redisClient;
@@ -57,12 +59,16 @@ public class RedisConnection implements RedisCommands {
     private Runnable connectedListener;
     private Runnable disconnectedListener;
 
+    private final AtomicInteger usage = new AtomicInteger();
+
     public <C> RedisConnection(RedisClient redisClient, Channel channel, RPromise<C> connectionPromise) {
         this.redisClient = redisClient;
         this.connectionPromise = connectionPromise;
 
         updateChannel(channel);
         lastUsageTime = System.nanoTime();
+
+        LOG.debug("Connection created " + redisClient);
     }
     
     protected RedisConnection(RedisClient redisClient) {
@@ -73,6 +79,18 @@ public class RedisConnection implements RedisCommands {
         if (connectedListener != null) {
             connectedListener.run();
         }
+    }
+
+    public int incUsage() {
+        return usage.incrementAndGet();
+    }
+
+    public int getUsage() {
+        return usage.get();
+    }
+
+    public int decUsage() {
+        return usage.decrementAndGet();
     }
 
     public void setConnectedListener(Runnable connectedListener) {
@@ -97,8 +115,31 @@ public class RedisConnection implements RedisCommands {
         return (C) channel.attr(RedisConnection.CONNECTION).get();
     }
 
+    public CommandData<?, ?> getLastCommand() {
+        Deque<QueueCommandHolder> queue = channel.attr(CommandsQueue.COMMANDS_QUEUE).get();
+        if (queue != null) {
+            QueueCommandHolder holder = queue.peekLast();
+            if (holder != null) {
+                if (holder.getCommand() instanceof CommandData) {
+                    return (CommandData<?, ?>) holder.getCommand();
+                }
+            }
+        }
+        return null;
+    }
+
     public CommandData<?, ?> getCurrentCommand() {
-        QueueCommand command = channel.attr(CommandsQueue.CURRENT_COMMAND).get();
+        Queue<QueueCommandHolder> queue = channel.attr(CommandsQueue.COMMANDS_QUEUE).get();
+        if (queue != null) {
+            QueueCommandHolder holder = queue.peek();
+            if (holder != null) {
+                if (holder.getCommand() instanceof CommandData) {
+                    return (CommandData<?, ?>) holder.getCommand();
+                }
+            }
+        }
+
+        QueueCommand command = channel.attr(CommandsQueuePubSub.CURRENT_COMMAND).get();
         if (command instanceof CommandData) {
             return (CommandData<?, ?>) command;
         }
@@ -127,6 +168,9 @@ public class RedisConnection implements RedisCommands {
     }
 
     public void updateChannel(Channel channel) {
+        if (channel == null) {
+            throw new NullPointerException();
+        }
         this.channel = channel;
         channel.attr(CONNECTION).set(this);
     }
@@ -285,7 +329,7 @@ public class RedisConnection implements RedisCommands {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "@" + System.identityHashCode(this) + " [redisClient=" + redisClient + ", channel=" + channel + ", currentCommand=" + getCurrentCommand() + "]";
+        return getClass().getSimpleName() + "@" + System.identityHashCode(this) + " [redisClient=" + redisClient + ", channel=" + channel + ", currentCommand=" + getCurrentCommand() + ", usage=" + usage + "]";
     }
 
 }

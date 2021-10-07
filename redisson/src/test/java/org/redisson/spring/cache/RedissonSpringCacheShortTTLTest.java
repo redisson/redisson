@@ -1,20 +1,9 @@
 package org.redisson.spring.cache;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
-
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.redisson.BaseTest;
 import org.redisson.RedisRunner;
 import org.redisson.RedisRunner.FailedToStartRedisException;
@@ -30,7 +19,16 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Service;
 
-@RunWith(Parameterized.class)
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class RedissonSpringCacheShortTTLTest {
 
     public static class SampleObject implements Serializable {
@@ -129,53 +127,46 @@ public class RedissonSpringCacheShortTTLTest {
 
     private static Map<Class<?>, AnnotationConfigApplicationContext> contexts;
 
-    @Parameterized.Parameters(name = "{index} - {0}")
-    public static Iterable<Class<?>[]> data() throws IOException, InterruptedException {
-        return Arrays.asList(new Class<?>[][]{
-            {Application.class},
-            {JsonConfigApplication.class}
-        });
+    public static List<Class<?>> data() {
+        return Arrays.asList(Application.class, JsonConfigApplication.class);
     }
 
-    @Parameterized.Parameter(0)
-    public Class<?> contextClass;
-    public AnnotationConfigApplicationContext context;
-    
-    @Before
-    public void dbefore() {
-        context = contexts.get(contextClass);
-    }
-    
-    @BeforeClass
+    @BeforeAll
     public static void before() throws FailedToStartRedisException, IOException, InterruptedException {
         RedisRunner.startDefaultRedisServerInstance();
-        contexts = StreamSupport.stream(RedissonSpringCacheShortTTLTest.data().spliterator(), false)
-                          .collect(Collectors.toMap(e -> e[0], e -> new AnnotationConfigApplicationContext(e[0])));
+        contexts = data().stream().collect(Collectors.toMap(e -> e, e -> new AnnotationConfigApplicationContext(e)));
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void testPutGet() throws InterruptedException {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testPutGet(Class<?> contextClass) throws InterruptedException {
+        AnnotationConfigApplicationContext context = contexts.get(contextClass);
         SampleBean bean = context.getBean(SampleBean.class);
         bean.store("object1", new SampleObject("name1", "value1"));
         SampleObject s = bean.read("object1");
         assertThat(s.getName()).isEqualTo("name1");
         assertThat(s.getValue()).isEqualTo("value1");
-        
+
         Thread.sleep(1100);
-        
-        bean.read("object1");
+
+        Assertions.assertThrows(IllegalStateException.class, () -> {
+            bean.read("object1");
+        });
     }
 
-    
-    @Test(expected = IllegalStateException.class)
-    public void testPutGetSync() throws InterruptedException {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testPutGetSync(Class<?> contextClass) throws InterruptedException {
+        AnnotationConfigApplicationContext context = contexts.get(contextClass);
         SampleBean bean = context.getBean(SampleBean.class);
         bean.readNullSync("object1");
         assertThat(bean.read("object1")).isNull();
-        
+
         Thread.sleep(1100);
-        
-        bean.read("object1");
+
+        Assertions.assertThrows(IllegalStateException.class, () -> {
+            bean.read("object1");
+        });
     }
 
 }

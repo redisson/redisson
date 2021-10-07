@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -130,7 +130,7 @@ public class RedissonConnection extends AbstractRedisConnection {
     public void openPipeline() {
         BatchOptions options = BatchOptions.defaults()
                 .executionMode(ExecutionMode.IN_MEMORY);
-        this.executorService = new CommandBatchService(redisson.getConnectionManager(), options);
+        this.executorService = new CommandBatchService(executorService, options);
     }
 
     @Override
@@ -1426,13 +1426,13 @@ public class RedissonConnection extends AbstractRedisConnection {
         if (isPipelined()) {
             BatchOptions options = BatchOptions.defaults()
                     .executionMode(ExecutionMode.IN_MEMORY_ATOMIC);
-            this.executorService = new CommandBatchService(redisson.getConnectionManager(), options);
+            this.executorService = new CommandBatchService(executorService, options);
             return;
         }
         
         BatchOptions options = BatchOptions.defaults()
             .executionMode(ExecutionMode.REDIS_WRITE_ATOMIC);
-        this.executorService = new CommandBatchService(redisson.getConnectionManager(), options);
+        this.executorService = new CommandBatchService(executorService, options);
     }
 
     @Override
@@ -1523,7 +1523,7 @@ public class RedissonConnection extends AbstractRedisConnection {
     public void subscribe(MessageListener listener, byte[]... channels) {
         checkSubscription();
         
-        subscription = new RedissonSubscription(redisson.getConnectionManager(), redisson.getConnectionManager().getSubscribeService(), listener);
+        subscription = new RedissonSubscription(executorService, redisson.getConnectionManager().getSubscribeService(), listener);
         subscription.subscribe(channels);
     }
 
@@ -1544,7 +1544,7 @@ public class RedissonConnection extends AbstractRedisConnection {
     public void pSubscribe(MessageListener listener, byte[]... patterns) {
         checkSubscription();
         
-        subscription = new RedissonSubscription(redisson.getConnectionManager(), redisson.getConnectionManager().getSubscribeService(), listener);
+        subscription = new RedissonSubscription(executorService, redisson.getConnectionManager().getSubscribeService(), listener);
         subscription.pSubscribe(patterns);
     }
 

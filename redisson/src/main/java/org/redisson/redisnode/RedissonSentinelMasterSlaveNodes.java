@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package org.redisson.redisnode;
 
 import org.redisson.api.redisnode.RedisSentinel;
 import org.redisson.api.redisnode.RedisSentinelMasterSlave;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.SentinelConnectionManager;
 import org.redisson.misc.RedisURI;
@@ -31,15 +32,14 @@ import java.util.stream.Collectors;
  */
 public class RedissonSentinelMasterSlaveNodes extends RedissonMasterSlaveNodes implements RedisSentinelMasterSlave {
 
-    public RedissonSentinelMasterSlaveNodes(ConnectionManager connectionManager) {
-        super(connectionManager);
+    public RedissonSentinelMasterSlaveNodes(ConnectionManager connectionManager, CommandAsyncExecutor commandExecutor) {
+        super(connectionManager, commandExecutor);
     }
-
 
     @Override
     public Collection<RedisSentinel> getSentinels() {
         return ((SentinelConnectionManager) connectionManager).getSentinels().stream()
-                .map(c -> new SentinelRedisNode(c, connectionManager.getCommandExecutor()))
+                .map(c -> new SentinelRedisNode(c, commandExecutor))
                     .collect(Collectors.toList());
     }
 
@@ -48,7 +48,7 @@ public class RedissonSentinelMasterSlaveNodes extends RedissonMasterSlaveNodes i
         RedisURI addr = new RedisURI(address);
         return ((SentinelConnectionManager) connectionManager).getSentinels().stream()
                 .filter(c -> RedisURI.compare(c.getAddr(), addr))
-                .map(c -> new SentinelRedisNode(c, connectionManager.getCommandExecutor()))
+                .map(c -> new SentinelRedisNode(c, commandExecutor))
                 .findFirst().orElse(null);
     }
 }

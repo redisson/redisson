@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package org.redisson;
 
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
-import org.redisson.client.protocol.decoder.ListScanResult;
 
 /**
  * 
@@ -26,9 +25,9 @@ import org.redisson.client.protocol.decoder.ListScanResult;
  */
 public interface ScanIterator {
 
-    ListScanResult<Object> scanIterator(String name, RedisClient client, long startPos, String pattern, int count);
+    ScanResult<Object> scanIterator(String name, RedisClient client, long startPos, String pattern, int count);
 
-    RFuture<ListScanResult<Object>> scanIteratorAsync(String name, RedisClient client, long startPos, String pattern, int count);
+    RFuture<ScanResult<Object>> scanIteratorAsync(String name, RedisClient client, long startPos, String pattern, int count);
     
     boolean remove(Object value);
     

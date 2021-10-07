@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
-import org.redisson.Redisson;
 import org.redisson.RedissonExecutorService;
 import org.redisson.RedissonShutdownException;
 import org.redisson.api.RFuture;
@@ -32,15 +31,13 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.codec.CustomObjectInputStream;
-import org.redisson.command.CommandExecutor;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.executor.params.*;
 import org.redisson.misc.Hash;
 import org.redisson.misc.HashValue;
 import org.redisson.misc.Injector;
 import org.redisson.remote.RequestId;
 import org.redisson.remote.ResponseEntry;
-import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor;
 
 import java.io.ByteArrayInputStream;
 import java.io.ObjectInput;
@@ -64,7 +61,7 @@ public class TasksRunnerService implements RemoteExecutorService {
     
     private final Codec codec;
     private final String name;
-    private final CommandExecutor commandExecutor;
+    private final CommandAsyncExecutor commandExecutor;
 
     private final RedissonClient redisson;
     
@@ -77,10 +74,10 @@ public class TasksRunnerService implements RemoteExecutorService {
     private String tasksRetryIntervalName;
     private String tasksExpirationTimeName;
 
-    private BeanFactory beanFactory;
+    private TasksInjector tasksInjector;
     private ConcurrentMap<String, ResponseEntry> responses;
     
-    public TasksRunnerService(CommandExecutor commandExecutor, RedissonClient redisson, Codec codec, String name, ConcurrentMap<String, ResponseEntry> responses) {
+    public TasksRunnerService(CommandAsyncExecutor commandExecutor, RedissonClient redisson, Codec codec, String name, ConcurrentMap<String, ResponseEntry> responses) {
         this.commandExecutor = commandExecutor;
         this.name = name;
         this.redisson = redisson;
@@ -88,9 +85,9 @@ public class TasksRunnerService implements RemoteExecutorService {
         
         this.codec = codec;
     }
-    
-    public void setBeanFactory(BeanFactory beanFactory) {
-        this.beanFactory = beanFactory;
+
+    public void setTasksInjector(TasksInjector tasksInjector) {
+        this.tasksInjector = tasksInjector;
     }
 
     public void setTasksExpirationTimeName(String tasksExpirationTimeName) {
@@ -127,16 +124,16 @@ public class TasksRunnerService implements RemoteExecutorService {
 
     @Override
     public void scheduleAtFixedRate(ScheduledAtFixedRateParameters params) {
-        long newStartTime = System.currentTimeMillis() + params.getPeriod();
+        long start = System.nanoTime();
+        executeRunnable(params, false);
+        long spent = params.getSpentTime()
+                                + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+
+        long newStartTime = System.currentTimeMillis() + Math.max(params.getPeriod() - spent, 0);
         params.setStartTime(newStartTime);
-        RFuture<Void> future = asyncScheduledServiceAtFixed(params.getExecutorId(), params.getRequestId()).scheduleAtFixedRate(params);
-        try {
-            executeRunnable(params);
-        } catch (Exception e) {
-            // cancel task if it throws an exception
-            future.cancel(true);
-            throw e;
-        }
+        spent = Math.max(spent - params.getPeriod(), 0);
+        params.setSpentTime(spent);
+        asyncScheduledServiceAtFixed(params.getExecutorId(), params.getRequestId()).scheduleAtFixedRate(params);
     }
     
     @Override
@@ -231,7 +228,7 @@ public class TasksRunnerService implements RemoteExecutorService {
             return;
         }
 
-        ((Redisson) redisson).getConnectionManager().newTimeout(new TimerTask() {
+        commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
                 renewRetryTime(requestId);
@@ -315,10 +312,8 @@ public class TasksRunnerService implements RemoteExecutorService {
             Injector.inject(task, RedissonClient.class, redisson);
             Injector.inject(task, String.class, params.getRequestId());
             
-            if (beanFactory != null) {
-                AutowiredAnnotationBeanPostProcessor bpp = new AutowiredAnnotationBeanPostProcessor();
-                bpp.setBeanFactory(beanFactory);
-                bpp.processInjection(task);
+            if (tasksInjector != null) {
+                tasksInjector.inject(task);
             }
             
             return task;
@@ -367,7 +362,11 @@ public class TasksRunnerService implements RemoteExecutorService {
      * 
      * @param requestId
      */
-    private void finish(String requestId, boolean removeTask) {
+    void finish(String requestId, boolean removeTask) {
+        if (Thread.currentThread().isInterrupted()) {
+            return;
+        }
+
         String script = "";
         if (removeTask) {
            script +=  "local scheduled = redis.call('zscore', KEYS[5], ARGV[3]);"
@@ -385,10 +384,11 @@ public class TasksRunnerService implements RemoteExecutorService {
                     + "end;"
                 + "end;";  
 
-        commandExecutor.evalWrite(name, StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
+        RFuture<Object> f = commandExecutor.evalWriteAsync(name, StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 script,
-                Arrays.<Object>asList(tasksCounterName, statusName, terminationTopicName, tasksName, schedulerQueueName, tasksRetryIntervalName),
+                Arrays.asList(tasksCounterName, statusName, terminationTopicName, tasksName, schedulerQueueName, tasksRetryIntervalName),
                 RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE, requestId);
+        commandExecutor.get(f);
     }
 
 }

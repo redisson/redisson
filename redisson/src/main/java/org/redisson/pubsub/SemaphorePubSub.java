@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,8 +40,8 @@ public class SemaphorePubSub extends PublishSubscribe<RedissonLockEntry> {
         if (runnableToExecute != null) {
             runnableToExecute.run();
         }
-        
-        value.getLatch().release(message.intValue());
+
+        value.getLatch().release(Math.min(value.acquired(), message.intValue()));
     }
 
 }

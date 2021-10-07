@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.executor.TaskListener;
 import org.redisson.config.Config;
+import org.redisson.executor.SpringTasksInjector;
+import org.redisson.executor.TasksInjector;
 import org.springframework.beans.factory.BeanFactory;
 
 /**
@@ -34,6 +36,7 @@ public final class WorkerOptions {
 
     private int workers = 1;
     private ExecutorService executorService;
+    private TasksInjector tasksInjector;
     private BeanFactory beanFactory;
     private long taskTimeout;
     private List<TaskListener> listeners = new ArrayList<>();
@@ -74,9 +77,16 @@ public final class WorkerOptions {
      */
     public WorkerOptions beanFactory(BeanFactory beanFactory) {
         this.beanFactory = beanFactory;
+        if (beanFactory != null) {
+            this.tasksInjector = new SpringTasksInjector(beanFactory);
+        }
         return this;
     }
-    
+
+    public TasksInjector getTasksInjector() {
+        return tasksInjector;
+    }
+
     public ExecutorService getExecutorService() {
         return executorService;
     }

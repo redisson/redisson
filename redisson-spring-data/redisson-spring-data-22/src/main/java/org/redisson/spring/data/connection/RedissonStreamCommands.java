@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -109,7 +109,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
         return connection.write(key, StringCodec.INSTANCE, XGROUP_STRING, "CREATE", key, groupName, readOffset.getOffset(), "MKSTREAM");
     }
 
-    private static final RedisStrictCommand<Boolean> XGROUP_BOOLEAN = new RedisStrictCommand<Boolean>("XADD", obj -> ((Long)obj) > 0);
+    private static final RedisStrictCommand<Boolean> XGROUP_BOOLEAN = new RedisStrictCommand<Boolean>("XGROUP", obj -> ((Long)obj) > 0);
 
     @Override
     public Boolean xGroupDelConsumer(byte[] key, Consumer consumer) {
@@ -295,6 +295,10 @@ public class RedissonStreamCommands implements RedisStreamCommands {
         if (readOptions.getBlock() != null && readOptions.getBlock() > 0) {
             params.add("BLOCK");
             params.add(readOptions.getBlock());
+        }
+
+        if (readOptions.isNoack()) {
+            params.add("NOACK");
         }
 
         params.add("STREAMS");

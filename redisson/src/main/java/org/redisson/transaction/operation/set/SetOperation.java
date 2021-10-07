@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,11 @@ public abstract class SetOperation extends TransactionalOperation {
 
     public SetOperation(String name, Codec codec, String transactionId) {
         super(name, codec);
+        this.transactionId = transactionId;
+    }
+
+    public SetOperation(String name, Codec codec, String transactionId, long threadId) {
+        super(name, codec, threadId);
         this.transactionId = transactionId;
     }
 

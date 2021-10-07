@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
 
         this.evictionScheduler = evictionScheduler;
         if (evictionScheduler != null) {
-            evictionScheduler.scheduleTimeSeries(getName(), getTimeoutSetName());
+            evictionScheduler.scheduleTimeSeries(getRawName(), getTimeoutSetName());
         }
     }
 
@@ -57,12 +57,12 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
 
         this.evictionScheduler = evictionScheduler;
         if (evictionScheduler != null) {
-            evictionScheduler.scheduleTimeSeries(getName(), getTimeoutSetName());
+            evictionScheduler.scheduleTimeSeries(getRawName(), getTimeoutSetName());
         }
     }
 
     String getTimeoutSetName() {
-        return prefixName("redisson__ts_ttl", getName());
+        return prefixName("redisson__ts_ttl", getRawName());
     }
 
     @Override
@@ -114,13 +114,13 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
             params.add(encode(entry.getValue()));
         }
 
-        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_VOID,
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
        "for i = 1, #ARGV, 3 do " +
                 "local val = struct.pack('LLc0', tonumber(ARGV[i+1]), string.len(ARGV[i+2]), ARGV[i+2]); " +
                 "redis.call('zadd', KEYS[1], ARGV[i+1], val); " +
                 "redis.call('zadd', KEYS[2], ARGV[i], val); " +
              "end; ",
-            Arrays.asList(getName(), getTimeoutSetName()),
+            Arrays.asList(getRawName(), getTimeoutSetName()),
             params.toArray());
     }
 
@@ -131,10 +131,10 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
 
     @Override
     public RFuture<Integer> sizeAsync() {
-        return commandExecutor.evalReadAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
+        return commandExecutor.evalReadAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
        "local values = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1]);" +
              "return redis.call('zcard', KEYS[1]) - #values;",
-            Arrays.asList(getName(), getTimeoutSetName()),
+            Arrays.asList(getRawName(), getTimeoutSetName()),
             System.currentTimeMillis());
     }
 
@@ -145,7 +145,7 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
 
     @Override
     public RFuture<V> getAsync(long timestamp) {
-        return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_OBJECT,
+        return commandExecutor.evalReadAsync(getRawName(), codec, RedisCommands.EVAL_OBJECT,
        "local values = redis.call('zrangebyscore', KEYS[1], ARGV[2], ARGV[2]);" +
              "if #values == 0 then " +
                  "return nil;" +
@@ -157,7 +157,7 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
              "end;" +
              "local t, val = struct.unpack('LLc0', values[1]); " +
              "return val;",
-            Arrays.asList(getName(), getTimeoutSetName()),
+            Arrays.asList(getRawName(), getTimeoutSetName()),
             System.currentTimeMillis(), timestamp);
     }
 
@@ -168,7 +168,7 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
 
     @Override
     public RFuture<Boolean> removeAsync(long timestamp) {
-        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
        "local values = redis.call('zrangebyscore', KEYS[1], ARGV[2], ARGV[2]);" +
              "if #values == 0 then " +
                  "return 0;" +
@@ -181,7 +181,7 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
              "redis.call('zrem', KEYS[2], values[1]); " +
              "redis.call('zrem', KEYS[1], values[1]); " +
              "return 1;",
-            Arrays.asList(getName(), getTimeoutSetName()),
+            Arrays.asList(getRawName(), getTimeoutSetName()),
             System.currentTimeMillis(), timestamp);
     }
 
@@ -246,7 +246,7 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
     }
 
     private <T> RFuture<T> listTimestampAsync(int startScore, int limit, RedisCommand<?> evalCommandType) {
-        return commandExecutor.evalReadAsync(getName(), codec, evalCommandType,
+        return commandExecutor.evalReadAsync(getRawName(), codec, evalCommandType,
                "local values;" +
                "if ARGV[2] == '0' then " +
                     "values = redis.call('zrangebyscore', KEYS[2], ARGV[1], '+inf', 'limit', 0, ARGV[3]);" +
@@ -260,12 +260,12 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
                  "table.insert(result, t);" +
              "end;" +
              "return result;",
-            Arrays.asList(getName(), getTimeoutSetName()),
+            Arrays.asList(getRawName(), getTimeoutSetName()),
             System.currentTimeMillis(), startScore, limit);
     }
 
     private <T> RFuture<T> listAsync(int startScore, int limit, RedisCommand<?> evalCommandType) {
-        return commandExecutor.evalReadAsync(getName(), codec, evalCommandType,
+        return commandExecutor.evalReadAsync(getRawName(), codec, evalCommandType,
                "local values;" +
                "if ARGV[2] == '0' then " +
                     "values = redis.call('zrangebyscore', KEYS[2], ARGV[1], '+inf', 'limit', 0, ARGV[3]);" +
@@ -279,7 +279,7 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
                  "table.insert(result, val);" +
              "end;" +
              "return result;",
-            Arrays.asList(getName(), getTimeoutSetName()),
+            Arrays.asList(getRawName(), getTimeoutSetName()),
             System.currentTimeMillis(), startScore, limit);
     }
 
@@ -290,7 +290,7 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
 
     @Override
     public RFuture<Integer> removeRangeAsync(long startTimestamp, long endTimestamp) {
-        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
+        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
        "local values = redis.call('zrangebyscore', KEYS[1], ARGV[2], ARGV[3]);" +
              "if #values == 0 then " +
                  "return nil;" +
@@ -307,7 +307,7 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
                  "end;" +
              "end;" +
              "return counter;",
-            Arrays.asList(getName(), getTimeoutSetName()),
+            Arrays.asList(getRawName(), getTimeoutSetName()),
             System.currentTimeMillis(), startTimestamp, endTimestamp);
     }
 
@@ -340,7 +340,7 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
     }
 
     public RFuture<Collection<TimeSeriesEntry<V>>> entryRangeAsync(boolean reverse, long startTimestamp, long endTimestamp) {
-        return commandExecutor.evalReadAsync(getName(), codec, ENTRIES,
+        return commandExecutor.evalReadAsync(getRawName(), codec, ENTRIES,
              "local result = {}; " +
 
              "local values;" +
@@ -362,13 +362,13 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
                  "end;" +
              "end;" +
              "return result;",
-            Arrays.asList(getName(), getTimeoutSetName()),
+            Arrays.asList(getRawName(), getTimeoutSetName()),
             System.currentTimeMillis(), startTimestamp, endTimestamp, Boolean.compare(reverse, false));
     }
 
     @Override
     public RFuture<Collection<V>> rangeAsync(long startTimestamp, long endTimestamp) {
-        return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_LIST,
+        return commandExecutor.evalReadAsync(getRawName(), codec, RedisCommands.EVAL_LIST,
        "local values = redis.call('zrangebyscore', KEYS[1], ARGV[2], ARGV[3]);" +
              "if #values == 0 then " +
                  "return nil;" +
@@ -383,7 +383,7 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
                  "end;" +
              "end;" +
              "return result;",
-            Arrays.asList(getName(), getTimeoutSetName()),
+            Arrays.asList(getRawName(), getTimeoutSetName()),
             System.currentTimeMillis(), startTimestamp, endTimestamp);
     }
 
@@ -394,7 +394,7 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
 
     @Override
     public RFuture<Collection<V>> rangeReversedAsync(long startTimestamp, long endTimestamp) {
-        return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_LIST,
+        return commandExecutor.evalReadAsync(getRawName(), codec, RedisCommands.EVAL_LIST,
        "local values = redis.call('zrevrangebyscore', KEYS[1], ARGV[3], ARGV[2]);" +
              "if #values == 0 then " +
                  "return nil;" +
@@ -409,7 +409,7 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
                  "end;" +
              "end;" +
              "return result;",
-            Arrays.asList(getName(), getTimeoutSetName()),
+            Arrays.asList(getRawName(), getTimeoutSetName()),
             System.currentTimeMillis(), startTimestamp, endTimestamp);
     }
 
@@ -461,7 +461,7 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
     }
 
     private <T> RFuture<T> pollAsync(int startScore, int limit, RedisCommand<?> command) {
-        return commandExecutor.evalWriteAsync(getName(), codec, command,
+        return commandExecutor.evalWriteAsync(getRawName(), codec, command,
                "local values;" +
                "if ARGV[2] == '0' then " +
                     "values = redis.call('zrangebyscore', KEYS[2], ARGV[1], '+inf', 'limit', 0, ARGV[3]);" +
@@ -477,7 +477,7 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
                  "table.insert(result, val);" +
              "end;" +
              "return result;",
-            Arrays.asList(getName(), getTimeoutSetName()),
+            Arrays.asList(getRawName(), getTimeoutSetName()),
             System.currentTimeMillis(), startScore, limit);
     }
 
@@ -519,7 +519,7 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
 
             @Override
             protected ListScanResult<Object> iterator(RedisClient client, long nextIterPos) {
-                return scanIterator(getName(), client, nextIterPos, count);
+                return scanIterator(getRawName(), client, nextIterPos, count);
             }
 
             @Override
@@ -548,33 +548,33 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
     @Override
     public void destroy() {
         if (evictionScheduler != null) {
-            evictionScheduler.remove(getName());
+            evictionScheduler.remove(getRawName());
         }
     }
 
     @Override
     public RFuture<Boolean> deleteAsync() {
-        return deleteAsync(getName(), getTimeoutSetName());
+        return deleteAsync(getRawName(), getTimeoutSetName());
     }
 
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
-        return expireAsync(timeToLive, timeUnit, getName(), getTimeoutSetName());
+        return expireAsync(timeToLive, timeUnit, getRawName(), getTimeoutSetName());
     }
 
     @Override
-    public RFuture<Boolean> expireAtAsync(long timestamp) {
-        return expireAtAsync(timestamp, getName(), getTimeoutSetName());
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String... keys) {
+        return super.expireAtAsync(timestamp, getRawName(), getTimeoutSetName());
     }
 
     @Override
     public RFuture<Boolean> clearExpireAsync() {
-        return clearExpireAsync(getName(), getTimeoutSetName());
+        return clearExpireAsync(getRawName(), getTimeoutSetName());
     }
 
     @Override
     public RFuture<Long> sizeInMemoryAsync() {
-        List<Object> keys = Arrays.<Object>asList(getName(), getTimeoutSetName());
+        List<Object> keys = Arrays.<Object>asList(getRawName(), getTimeoutSetName());
         return super.sizeInMemoryAsync(keys);
     }
 

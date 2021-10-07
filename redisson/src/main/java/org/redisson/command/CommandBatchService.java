@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.redisson.command;
 
+import io.netty.util.ReferenceCountUtil;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import org.redisson.api.BatchOptions;
@@ -57,6 +58,7 @@ public class CommandBatchService extends CommandAsyncService {
 
         boolean firstCommand = true;
         RFuture<RedisConnection> connectionFuture;
+        Runnable cancelCallback;
         
         public RFuture<RedisConnection> getConnectionFuture() {
             return connectionFuture;
@@ -73,7 +75,15 @@ public class CommandBatchService extends CommandAsyncService {
         public void setFirstCommand(boolean firstCommand) {
             this.firstCommand = firstCommand;
         }
-        
+
+        public Runnable getCancelCallback() {
+            return cancelCallback;
+        }
+
+        public void setCancelCallback(Runnable cancelCallback) {
+            this.cancelCallback = cancelCallback;
+        }
+
     }
     
     public static class Entry {
@@ -103,30 +113,39 @@ public class CommandBatchService extends CommandAsyncService {
     }
 
     private final AsyncCountDownLatch latch = new AsyncCountDownLatch();
-    private AtomicInteger index = new AtomicInteger();
+    private final AtomicInteger index = new AtomicInteger();
 
-    private ConcurrentMap<MasterSlaveEntry, Entry> commands = new ConcurrentHashMap<>();
-    private ConcurrentMap<MasterSlaveEntry, ConnectionEntry> connections = new ConcurrentHashMap<>();
+    private final ConcurrentMap<MasterSlaveEntry, Entry> commands = new ConcurrentHashMap<>();
+    private final ConcurrentMap<MasterSlaveEntry, ConnectionEntry> connections = new ConcurrentHashMap<>();
     
-    private BatchOptions options = BatchOptions.defaults();
+    private final BatchOptions options;
     
-    private Map<RFuture<?>, List<CommandBatchService>> nestedServices = new ConcurrentHashMap<>();
+    private final Map<RFuture<?>, List<CommandBatchService>> nestedServices = new ConcurrentHashMap<>();
 
-    private AtomicBoolean executed = new AtomicBoolean();
+    private final AtomicBoolean executed = new AtomicBoolean();
 
-    public CommandBatchService(ConnectionManager connectionManager) {
-        super(connectionManager);
+    public CommandBatchService(CommandAsyncExecutor executor) {
+        this(executor, RedissonObjectBuilder.ReferenceType.DEFAULT);
     }
-    
-    public CommandBatchService(ConnectionManager connectionManager, BatchOptions options) {
-        super(connectionManager);
+
+    public CommandBatchService(CommandAsyncExecutor executor, RedissonObjectBuilder.ReferenceType referenceType) {
+        this(executor.getConnectionManager(), BatchOptions.defaults(), executor.getObjectBuilder(), referenceType);
+    }
+
+    public CommandBatchService(CommandAsyncExecutor executor, BatchOptions options) {
+        this(executor.getConnectionManager(), options, executor.getObjectBuilder(), RedissonObjectBuilder.ReferenceType.DEFAULT);
+    }
+
+    public CommandBatchService(CommandAsyncExecutor executor, BatchOptions options, RedissonObjectBuilder.ReferenceType referenceType) {
+        this(executor.getConnectionManager(), options, executor.getObjectBuilder(), referenceType);
+    }
+
+    private CommandBatchService(ConnectionManager connectionManager, BatchOptions options,
+                                    RedissonObjectBuilder objectBuilder, RedissonObjectBuilder.ReferenceType referenceType) {
+        super(connectionManager, objectBuilder, referenceType);
         this.options = options;
     }
 
-    public void setObjectBuilder(RedissonObjectBuilder objectBuilder) {
-        this.objectBuilder = objectBuilder;
-    }
-    
     public BatchOptions getOptions() {
         return options;
     }
@@ -141,11 +160,11 @@ public class CommandBatchService extends CommandAsyncService {
         if (isRedisBasedQueue()) {
             boolean isReadOnly = options.getExecutionMode() == ExecutionMode.REDIS_READ_ATOMIC;
             RedisExecutor<V, R> executor = new RedisQueuedBatchExecutor<>(isReadOnly, nodeSource, codec, command, params, mainPromise,
-                    false, connectionManager, objectBuilder, commands, connections, options, index, executed, latch);
+                    false, connectionManager, objectBuilder, commands, connections, options, index, executed, latch, referenceType);
             executor.execute();
         } else {
             RedisExecutor<V, R> executor = new RedisBatchExecutor<>(readOnlyMode, nodeSource, codec, command, params, mainPromise, 
-                    false, connectionManager, objectBuilder, commands, options, index, executed);
+                    false, connectionManager, objectBuilder, commands, options, index, executed, referenceType);
             executor.execute();
         }
         
@@ -158,6 +177,27 @@ public class CommandBatchService extends CommandAsyncService {
         }
         
         return new RedissonPromise<>();
+    }
+
+    public void discard() {
+        get(discardAsync());
+    }
+
+    public RFuture<Void> discardAsync() {
+        if (executed.get()) {
+            throw new IllegalStateException("Batch already executed!");
+        }
+
+        executed.set(true);
+        if (isRedisBasedQueue()) {
+            return writeAllAsync(RedisCommands.DISCARD);
+        }
+
+        commands.values().stream()
+                        .flatMap(e -> e.getCommands().stream())
+                        .flatMap(c -> Arrays.stream(c.getParams()))
+                        .forEach(obj -> ReferenceCountUtil.safeRelease(obj));
+        return RedissonPromise.newSucceededFuture(null);
     }
     
     public BatchResult<?> execute() {
@@ -278,10 +318,12 @@ public class CommandBatchService extends CommandAsyncService {
                         if (commandEntry.getPromise().isCancelled()) {
                             continue;
                         }
-                        
+
                         Object entryResult = commandEntry.getPromise().getNow();
                         try {
-                            entryResult = RedisExecutor.tryHandleReference(objectBuilder, entryResult);
+                            if (objectBuilder != null) {
+                                entryResult = objectBuilder.tryHandleReference(entryResult, referenceType);
+                            }
                         } catch (ReflectiveOperationException exc) {
                             log.error("Unable to handle reference from " + entryResult, exc);
                         }
@@ -312,7 +354,7 @@ public class CommandBatchService extends CommandAsyncService {
         
         for (Map.Entry<MasterSlaveEntry, Entry> e : commands.entrySet()) {
             RedisCommonBatchExecutor executor = new RedisCommonBatchExecutor(new NodeSource(e.getKey()), voidPromise,
-                                                    connectionManager, this.options, e.getValue(), slots);
+                                                    connectionManager, this.options, e.getValue(), slots, referenceType);
             executor.execute();
         }
         return promise;
@@ -335,6 +377,10 @@ public class CommandBatchService extends CommandAsyncService {
         Timeout timeout = connectionManager.newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
+                connections.values().forEach(c -> {
+                    c.getCancelCallback().run();
+                });
+
                 resultPromise.tryFailure(new RedisTimeoutException("Response timeout for queued commands " + responseTimeout + ": " +
                         commands.values().stream()
                                 .flatMap(e -> e.getCommands().stream().map(d -> d.getCommand()))
@@ -432,7 +478,9 @@ public class CommandBatchService extends CommandAsyncService {
                             } else if (!commandEntry.getCommand().getName().equals(RedisCommands.MULTI.getName())
                                     && !commandEntry.getCommand().getName().equals(RedisCommands.EXEC.getName())) {
                                 Object entryResult = commandEntry.getPromise().getNow();
-                                entryResult = RedisExecutor.tryHandleReference(objectBuilder, entryResult);
+                                if (objectBuilder != null) {
+                                    entryResult = objectBuilder.tryHandleReference(entryResult, referenceType);
+                                }
                                 responses.add(entryResult);
                             }
                         }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,12 +40,12 @@ public class RedisBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R> {
 
     @SuppressWarnings("ParameterNumber")
     public RedisBatchExecutor(boolean readOnlyMode, NodeSource source, Codec codec, RedisCommand<V> command,
-            Object[] params, RPromise<R> mainPromise, boolean ignoreRedirect, ConnectionManager connectionManager,
-            RedissonObjectBuilder objectBuilder, ConcurrentMap<MasterSlaveEntry, Entry> commands,
-            BatchOptions options, AtomicInteger index,
-            AtomicBoolean executed) {
+                              Object[] params, RPromise<R> mainPromise, boolean ignoreRedirect, ConnectionManager connectionManager,
+                              RedissonObjectBuilder objectBuilder, ConcurrentMap<MasterSlaveEntry, Entry> commands,
+                              BatchOptions options, AtomicInteger index,
+                              AtomicBoolean executed, RedissonObjectBuilder.ReferenceType referenceType) {
         super(readOnlyMode, source, codec, command, params, mainPromise, ignoreRedirect, connectionManager, objectBuilder,
-                commands, options, index, executed);
+                commands, options, index, executed, referenceType);
     }
     
     @Override

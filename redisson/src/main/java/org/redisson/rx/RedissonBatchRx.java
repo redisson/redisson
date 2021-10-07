@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.redisson.rx;
 
+import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
 import org.redisson.*;
 import org.redisson.api.*;
@@ -35,7 +36,7 @@ public class RedissonBatchRx implements RBatchRx {
 
     public RedissonBatchRx(EvictionScheduler evictionScheduler, ConnectionManager connectionManager, CommandRxExecutor commandExecutor, BatchOptions options) {
         this.evictionScheduler = evictionScheduler;
-        this.executorService = new CommandRxBatchService(connectionManager, options);
+        this.executorService = new CommandRxBatchService(connectionManager, commandExecutor, options);
         this.commandExecutor = commandExecutor;
     }
 
@@ -242,9 +243,10 @@ public class RedissonBatchRx implements RBatchRx {
     public Maybe<BatchResult<?>> execute() {
         return commandExecutor.flowable(() -> executorService.executeAsync()).singleElement();
     }
-    
-    public void enableRedissonReferenceSupport(RedissonRxClient redissonRx) {
-        this.executorService.enableRedissonReferenceSupport(redissonRx);
+
+    @Override
+    public Completable discard() {
+        return commandExecutor.flowable(() -> executorService.discardAsync()).ignoreElements();
     }
 
     @Override

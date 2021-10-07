@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.command.CommandExecutor;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
@@ -69,25 +69,25 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
 
     private Comparator comparator = Comparator.naturalOrder();
 
-    CommandExecutor commandExecutor;
+    CommandAsyncExecutor commandExecutor;
     
     RLock lock;
     private RBucket<String> comparatorHolder;
 
-    public RedissonPriorityQueue(CommandExecutor commandExecutor, String name, RedissonClient redisson) {
+    public RedissonPriorityQueue(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name, redisson);
         this.commandExecutor = commandExecutor;
 
         comparatorHolder = redisson.getBucket(getComparatorKeyName(), StringCodec.INSTANCE);
-        lock = redisson.getLock("redisson_sortedset_lock:{" + getName() + "}");
+        lock = redisson.getLock("redisson_sortedset_lock:{" + getRawName() + "}");
     }
 
-    public RedissonPriorityQueue(Codec codec, CommandExecutor commandExecutor, String name, RedissonClient redisson) {
+    public RedissonPriorityQueue(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(codec, commandExecutor, name, redisson);
         this.commandExecutor = commandExecutor;
 
         comparatorHolder = redisson.getBucket(getComparatorKeyName(), StringCodec.INSTANCE);
-        lock = redisson.getLock("redisson_sortedset_lock:{" + getName() + "}");
+        lock = redisson.getLock("redisson_sortedset_lock:{" + getRawName() + "}");
     }
 
     private void loadComparator() {
@@ -143,7 +143,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
     @Override
     public boolean contains(Object o) {
         checkComparator();
-        return binarySearch((V) o, codec).getIndex() >= 0;
+        return binarySearch((V) o).getIndex() >= 0;
     }
 
     @Override
@@ -153,7 +153,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
         try {
             checkComparator();
     
-            BinarySearchResult<V> res = binarySearch(value, codec);
+            BinarySearchResult<V> res = binarySearch(value);
             int index = 0;
             if (res.getIndex() < 0) {
                 index = -(res.getIndex() + 1);
@@ -161,7 +161,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
                 index = res.getIndex() + 1;
             }
                 
-            commandExecutor.evalWrite(getName(), RedisCommands.EVAL_VOID, 
+            get(commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
                "local len = redis.call('llen', KEYS[1]);"
                 + "if tonumber(ARGV[1]) < len then "
                     + "local pivot = redis.call('lindex', KEYS[1], ARGV[1]);"
@@ -169,8 +169,8 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
                     + "return;"
                 + "end;"
                 + "redis.call('rpush', KEYS[1], ARGV[2]);", 
-                    Arrays.<Object>asList(getName()), 
-                    index, encode(value));
+                    Arrays.asList(getRawName()),
+                    index, encode(value)));
             return true;
         } finally {
             lock.unlock();
@@ -195,7 +195,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
         try {
             checkComparator();
             
-            BinarySearchResult<V> res = binarySearch((V) value, codec);
+            BinarySearchResult<V> res = binarySearch((V) value);
             if (res.getIndex() < 0) {
                 return false;
             }
@@ -211,7 +211,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
     public boolean containsAll(Collection<?> c) {
         checkComparator();
         for (Object object : c) {
-            if (binarySearch((V) object, codec).getIndex() < 0) {
+            if (binarySearch((V) object).getIndex() < 0) {
                 return false;
             }
         }
@@ -265,12 +265,12 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
 
     @Override
     public RFuture<V> pollAsync() {
-        return wrapLockedAsync(RedisCommands.LPOP, getName());
+        return wrapLockedAsync(RedisCommands.LPOP, getRawName());
     }
 
     protected <T> RFuture<V> wrapLockedAsync(RedisCommand<T> command, Object... params) {
         return wrapLockedAsync(() -> {
-            return commandExecutor.writeAsync(getName(), codec, command, params);
+            return commandExecutor.writeAsync(getRawName(), codec, command, params);
         });
     };
 
@@ -332,7 +332,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
     }
 
     private String getComparatorKeyName() {
-        return suffixName(getName(), "redisson_sortedset_comparator");
+        return suffixName(getRawName(), "redisson_sortedset_comparator");
     }
 
     @Override
@@ -340,7 +340,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
         String className = comparator.getClass().getName();
         String comparatorSign = className + ":" + calcClassSign(className);
 
-        Boolean res = get(commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.SETNX, getComparatorKeyName(), comparatorSign));
+        Boolean res = get(commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.SETNX, getComparatorKeyName(), comparatorSign));
         if (res) {
             this.comparator = comparator;
         }
@@ -361,7 +361,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
     }
     
     // TODO optimize: get three values each time instead of single
-    public BinarySearchResult<V> binarySearch(V value, Codec codec) {
+    public BinarySearchResult<V> binarySearch(V value) {
         int size = size();
         int upperIndex = size - 1;
         int lowerIndex = 0;
@@ -415,27 +415,27 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
 
     @Override
     public RFuture<V> pollLastAndOfferFirstToAsync(String queueName) {
-        return wrapLockedAsync(RedisCommands.RPOPLPUSH, getName(), queueName);
+        return wrapLockedAsync(RedisCommands.RPOPLPUSH, getRawName(), queueName);
     }
 
     @Override
     public RFuture<Boolean> deleteAsync() {
-        return deleteAsync(getName(), getComparatorKeyName());
+        return deleteAsync(getRawName(), getComparatorKeyName());
     }
 
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
-        return expireAsync(timeToLive, timeUnit, getName(), getComparatorKeyName());
+        return expireAsync(timeToLive, timeUnit, getRawName(), getComparatorKeyName());
     }
 
     @Override
-    public RFuture<Boolean> expireAtAsync(long timestamp) {
-        return expireAtAsync(timestamp, getName(), getComparatorKeyName());
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String... keys) {
+        return super.expireAtAsync(timestamp, getRawName(), getComparatorKeyName());
     }
 
     @Override
     public RFuture<Boolean> clearExpireAsync() {
-        return clearExpireAsync(getName(), getComparatorKeyName());
+        return clearExpireAsync(getRawName(), getComparatorKeyName());
     }
 
     @Override
@@ -456,7 +456,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
     @Override
     public RFuture<List<V>> pollAsync(int limit) {
         return wrapLockedAsync(() -> {
-            return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_LIST,
+            return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_LIST,
                        "local result = {};"
                      + "for i = 1, ARGV[1], 1 do " +
                            "local value = redis.call('lpop', KEYS[1]);" +
@@ -467,7 +467,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
                            "end;" +
                        "end; " +
                        "return result;",
-                    Collections.singletonList(getName()), limit);
+                    Collections.singletonList(getRawName()), limit);
         });
     }
 }

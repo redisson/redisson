@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -428,5 +428,18 @@ public interface RBatch {
      * @return List with result object for each command
      */
     RFuture<BatchResult<?>> executeAsync();
+
+    /**
+     * Discard batched commands and release allocated buffers used for parameters encoding.
+     */
+    void discard();
+
+    /**
+     * Discard batched commands and release allocated buffers used for parameters encoding.
+     *
+     * @return void
+     */
+    RFuture<Void> discardAsync();
+
 
 }

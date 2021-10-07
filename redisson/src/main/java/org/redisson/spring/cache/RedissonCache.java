@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,7 +70,13 @@ public class RedissonCache implements Cache {
 
     @Override
     public ValueWrapper get(Object key) {
-        Object value = map.get(key);
+        Object value;
+        if (mapCache != null && config.getMaxIdleTime() == 0 && config.getMaxSize() == 0) {
+            value = mapCache.getWithTTLOnly(key);
+        } else {
+            value = map.get(key);
+        }
+
         if (value == null) {
             addCacheMiss();
         } else {
@@ -80,7 +86,13 @@ public class RedissonCache implements Cache {
     }
 
     public <T> T get(Object key, Class<T> type) {
-        Object value = map.get(key);
+        Object value;
+        if (mapCache != null && config.getMaxIdleTime() == 0 && config.getMaxSize() == 0) {
+            value = mapCache.getWithTTLOnly(key);
+        } else {
+            value = map.get(key);
+        }
+
         if (value == null) {
             addCacheMiss();
         } else {
@@ -151,7 +163,13 @@ public class RedissonCache implements Cache {
     }
 
     public <T> T get(Object key, Callable<T> valueLoader) {
-        Object value = map.get(key);
+        Object value;
+        if (mapCache != null && config.getMaxIdleTime() == 0 && config.getMaxSize() == 0) {
+            value = mapCache.getWithTTLOnly(key);
+        } else {
+            value = map.get(key);
+        }
+
         if (value == null) {
             addCacheMiss();
             RLock lock = map.getLock(key);

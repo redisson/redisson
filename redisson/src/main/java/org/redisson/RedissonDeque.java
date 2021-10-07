@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,14 @@
  */
 package org.redisson;
 
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 import org.redisson.api.RDeque;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
+import org.redisson.api.queue.DequeMoveArgs;
+import org.redisson.api.queue.DequeMoveParams;
+import org.redisson.api.queue.DequeMoveSource;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
@@ -60,13 +60,45 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
     }
 
     @Override
+    public int addFirst(V... elements) {
+        return get(addFirstAsync(elements));
+    }
+
+    @Override
+    public int addLast(V... elements) {
+        return get(addLastAsync(elements));
+    }
+
+    @Override
+    public RFuture<Integer> addFirstAsync(V... elements) {
+        List<Object> args = new ArrayList<>(elements.length + 1);
+        args.add(getRawName());
+        encode(args, Arrays.asList(elements));
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.LPUSH, args.toArray());
+    }
+
+    @Override
+    public RFuture<Integer> addLastAsync(V... elements) {
+        List<Object> args = new ArrayList<>(elements.length + 1);
+        args.add(getRawName());
+        encode(args, Arrays.asList(elements));
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.RPUSH, args.toArray());
+    }
+
+    @Override
     public RFuture<Integer> addFirstIfExistsAsync(V... elements) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LPUSHX, getName(), encode(elements));
+        List<Object> args = new ArrayList<>(elements.length + 1);
+        args.add(getRawName());
+        encode(args, Arrays.asList(elements));
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.LPUSHX, args.toArray());
     }
 
     @Override
     public RFuture<Integer> addLastIfExistsAsync(V... elements) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.RPUSHX, getName(), encode(elements));
+        List<Object> args = new ArrayList<>(elements.length + 1);
+        args.add(getRawName());
+        encode(args, Arrays.asList(elements));
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.RPUSHX, args.toArray());
     }
 
     @Override
@@ -76,7 +108,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public RFuture<Void> addFirstAsync(V e) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LPUSH_VOID, getName(), encode(e));
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.LPUSH_VOID, getRawName(), encode(e));
     }
 
     @Override
@@ -86,9 +118,21 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public RFuture<Void> addLastAsync(V e) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.RPUSH_VOID, getName(), encode(e));
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.RPUSH_VOID, getRawName(), encode(e));
     }
 
+    @Override
+    public V move(DequeMoveArgs args) {
+        return get(moveAsync(args));
+    }
+
+    @Override
+    public RFuture<V> moveAsync(DequeMoveArgs args) {
+        DequeMoveSource source = (DequeMoveSource) args;
+        DequeMoveParams pp = source.getParams();
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.LMOVE, getRawName(),
+                                                pp.getDestName(), pp.getSourceDirection(), pp.getDestDirection());
+    }
 
     @Override
     public Iterator<V> descendingIterator() {
@@ -128,7 +172,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public RFuture<V> getLastAsync() {
-        return commandExecutor.readAsync(getName(), codec, LRANGE_SINGLE, getName(), -1, -1);
+        return commandExecutor.readAsync(getRawName(), codec, LRANGE_SINGLE, getRawName(), -1, -1);
     }
 
     @Override
@@ -147,7 +191,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public RFuture<Boolean> offerFirstAsync(V e) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LPUSH_BOOLEAN, getName(), encode(e));
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.LPUSH_BOOLEAN, getRawName(), encode(e));
     }
 
     @Override
@@ -202,7 +246,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public RFuture<V> pollLastAsync() {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.RPOP, getName());
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.RPOP, getRawName());
     }
 
     @Override
@@ -212,7 +256,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public RFuture<List<V>> pollLastAsync(int limit) {
-        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_LIST,
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_LIST,
                    "local result = {};"
                  + "for i = 1, ARGV[1], 1 do " +
                        "local value = redis.call('rpop', KEYS[1]);" +
@@ -223,7 +267,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
                        "end;" +
                    "end; " +
                    "return result;",
-                Collections.singletonList(getName()), limit);
+                Collections.singletonList(getRawName()), limit);
     }
 
     @Override
@@ -268,7 +312,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public RFuture<V> removeLastAsync() {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.RPOP, getName());
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.RPOP, getRawName());
     }
 
     @Override

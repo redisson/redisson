@@ -1,6 +1,6 @@
 package org.redisson;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.redisson.api.RSet;
 import org.redisson.api.RSetMultimap;
 

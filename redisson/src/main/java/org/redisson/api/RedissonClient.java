@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1136,7 +1136,21 @@ public interface RedissonClient {
      * @return LiveObjectService object
      */
     RLiveObjectService getLiveObjectService();
-    
+
+    /**
+     * Returns RxJava Redisson instance
+     *
+     * @return redisson instance
+     */
+    RedissonRxClient rxJava();
+
+    /**
+     * Returns Reactive Redisson instance
+     *
+     * @return redisson instance
+     */
+    RedissonReactiveClient reactive();
+
     /**
      * Shutdown Redisson instance but <b>NOT</b> Redis server
      * 

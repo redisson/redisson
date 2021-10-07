@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.redisson.Redisson;
 import org.redisson.RedissonKeys;
+import org.redisson.RedissonReactive;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.RedisCommands;
@@ -150,12 +151,12 @@ public class RedissonConnectionFactory implements RedisConnectionFactory,
 
     @Override
     public ReactiveRedisConnection getReactiveConnection() {
-        return new RedissonReactiveRedisConnection(new CommandReactiveService(((RedissonKeys)redisson.getKeys()).getConnectionManager()));
+        return new RedissonReactiveRedisConnection(((RedissonReactive)redisson.reactive()).getCommandExecutor());
     }
 
     @Override
     public ReactiveRedisClusterConnection getReactiveClusterConnection() {
-        return new RedissonReactiveRedisClusterConnection(new CommandReactiveService(((RedissonKeys)redisson.getKeys()).getConnectionManager()));
+        return new RedissonReactiveRedisClusterConnection(((RedissonReactive)redisson.reactive()).getCommandExecutor());
     }
 
 }

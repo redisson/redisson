@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -126,7 +126,7 @@ public class RedissonSpinLock extends RedissonBaseLock {
     <T> RFuture<T> tryLockInnerAsync(long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
         internalLockLeaseTime = unit.toMillis(leaseTime);
 
-        return evalWriteAsync(getName(), LongCodec.INSTANCE, command,
+        return evalWriteAsync(getRawName(), LongCodec.INSTANCE, command,
                 "if (redis.call('exists', KEYS[1]) == 0) then " +
                         "redis.call('hincrby', KEYS[1], ARGV[2], 1); " +
                         "redis.call('pexpire', KEYS[1], ARGV[1]); " +
@@ -138,7 +138,7 @@ public class RedissonSpinLock extends RedissonBaseLock {
                         "return nil; " +
                         "end; " +
                         "return redis.call('pttl', KEYS[1]);",
-                Collections.singletonList(getName()), internalLockLeaseTime, getLockName(threadId));
+                Collections.singletonList(getRawName()), internalLockLeaseTime, getLockName(threadId));
     }
 
     @Override
@@ -198,18 +198,18 @@ public class RedissonSpinLock extends RedissonBaseLock {
     @Override
     public RFuture<Boolean> forceUnlockAsync() {
         cancelExpirationRenewal(null);
-        return evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if (redis.call('del', KEYS[1]) == 1) then "
                         + "return 1 "
                         + "else "
                         + "return 0 "
                         + "end",
-                Collections.singletonList(getName()));
+                Collections.singletonList(getRawName()));
     }
 
 
     protected RFuture<Boolean> unlockInnerAsync(long threadId) {
-        return evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if (redis.call('hexists', KEYS[1], ARGV[2]) == 0) then " +
                         "return nil;" +
                         "end; " +
@@ -222,7 +222,7 @@ public class RedissonSpinLock extends RedissonBaseLock {
                         "return 1; " +
                         "end; " +
                         "return nil;",
-                Collections.singletonList(getName()), internalLockLeaseTime, getLockName(threadId));
+                Collections.singletonList(getRawName()), internalLockLeaseTime, getLockName(threadId));
     }
 
     @Override

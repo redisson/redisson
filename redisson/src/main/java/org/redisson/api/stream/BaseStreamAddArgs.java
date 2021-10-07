@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,19 +48,27 @@ class BaseStreamAddArgs<K, V> implements StreamAddArgs<K, V>, StreamAddArgsSourc
 
     @Override
     public StreamAddArgs<K, V> trimStrict(TrimStrategy strategy, int threshold) {
-        params.setTrimStrategy(strategy);
-        params.setTrimThreshold(threshold);
+        params.setMaxLen(threshold);
         params.setTrimStrict(true);
         return this;
     }
 
     @Override
     public StreamAddArgs<K, V> trim(TrimStrategy strategy, int threshold, int limit) {
-        params.setTrimStrategy(strategy);
-        params.setTrimThreshold(threshold);
+        params.setMaxLen(threshold);
         params.setTrimStrict(false);
         params.setLimit(limit);
         return this;
     }
 
+    @Override
+    public StreamTrimStrategyArgs<StreamAddArgs<K, V>> trim() {
+        params.setTrimStrict(true);
+        return new BaseStreamTrimArgs<>(params, this);
+    }
+
+    @Override
+    public StreamTrimStrategyArgs<StreamAddArgs<K, V>> trimNonStrict() {
+        return new BaseStreamTrimArgs<>(params, this);
+    }
 }

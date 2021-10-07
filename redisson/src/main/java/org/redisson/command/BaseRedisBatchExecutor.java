@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,17 +47,30 @@ public class BaseRedisBatchExecutor<V, R> extends RedisExecutor<V, R> {
     
     @SuppressWarnings("ParameterNumber")
     public BaseRedisBatchExecutor(boolean readOnlyMode, NodeSource source, Codec codec, RedisCommand<V> command,
-            Object[] params, RPromise<R> mainPromise, boolean ignoreRedirect,
-            ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder, 
-            ConcurrentMap<MasterSlaveEntry, Entry> commands,
-            BatchOptions options, AtomicInteger index, AtomicBoolean executed) {
+                                  Object[] params, RPromise<R> mainPromise, boolean ignoreRedirect,
+                                  ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder,
+                                  ConcurrentMap<MasterSlaveEntry, Entry> commands,
+                                  BatchOptions options, AtomicInteger index, AtomicBoolean executed, RedissonObjectBuilder.ReferenceType referenceType) {
         
         super(readOnlyMode, source, codec, command, params, mainPromise, ignoreRedirect, connectionManager,
-                objectBuilder);
+                objectBuilder, referenceType);
         this.commands = commands;
         this.options = options;
         this.index = index;
         this.executed = executed;
+
+        if (options.getRetryAttempts() > 0) {
+            this.attempts = options.getRetryAttempts();
+        }
+        if (options.getRetryInterval() > 0) {
+            this.retryInterval  = options.getRetryInterval();
+        }
+        if (options.getResponseTimeout() > 0) {
+            this.responseTimeout = options.getResponseTimeout();
+        }
+        if (options.getSyncSlaves() > 0) {
+            this.responseTimeout += options.getSyncTimeout();
+        }
     }
 
     protected final MasterSlaveEntry getEntry(NodeSource source) {

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ public class RedissonReadLock extends RedissonLock implements RLock {
 
     @Override
     String getChannelName() {
-        return prefixName("redisson_rwlock", getName());
+        return prefixName("redisson_rwlock", getRawName());
     }
     
     String getWriteLockName(long threadId) {
@@ -50,14 +50,12 @@ public class RedissonReadLock extends RedissonLock implements RLock {
     }
 
     String getReadWriteTimeoutNamePrefix(long threadId) {
-        return suffixName(getName(), getLockName(threadId)) + ":rwlock_timeout"; 
+        return suffixName(getRawName(), getLockName(threadId)) + ":rwlock_timeout";
     }
     
     @Override
     <T> RFuture<T> tryLockInnerAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
-        internalLockLeaseTime = unit.toMillis(leaseTime);
-
-        return evalWriteAsync(getName(), LongCodec.INSTANCE, command,
+        return evalWriteAsync(getRawName(), LongCodec.INSTANCE, command,
                                 "local mode = redis.call('hget', KEYS[1], 'mode'); " +
                                 "if (mode == false) then " +
                                   "redis.call('hset', KEYS[1], 'mode', 'read'); " +
@@ -77,8 +75,8 @@ public class RedissonReadLock extends RedissonLock implements RLock {
                                   "return nil; " +
                                 "end;" +
                                 "return redis.call('pttl', KEYS[1]);",
-                        Arrays.<Object>asList(getName(), getReadWriteTimeoutNamePrefix(threadId)), 
-                        internalLockLeaseTime, getLockName(threadId), getWriteLockName(threadId));
+                        Arrays.<Object>asList(getRawName(), getReadWriteTimeoutNamePrefix(threadId)),
+                        unit.toMillis(leaseTime), getLockName(threadId), getWriteLockName(threadId));
     }
 
     @Override
@@ -86,7 +84,7 @@ public class RedissonReadLock extends RedissonLock implements RLock {
         String timeoutPrefix = getReadWriteTimeoutNamePrefix(threadId);
         String keyPrefix = getKeyPrefix(threadId, timeoutPrefix);
 
-        return evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local mode = redis.call('hget', KEYS[1], 'mode'); " +
                 "if (mode == false) then " +
                     "redis.call('publish', KEYS[2], ARGV[1]); " +
@@ -129,7 +127,7 @@ public class RedissonReadLock extends RedissonLock implements RLock {
                 "redis.call('del', KEYS[1]); " +
                 "redis.call('publish', KEYS[2], ARGV[1]); " +
                 "return 1; ",
-                Arrays.<Object>asList(getName(), getChannelName(), timeoutPrefix, keyPrefix), 
+                Arrays.<Object>asList(getRawName(), getChannelName(), timeoutPrefix, keyPrefix),
                 LockPubSub.UNLOCK_MESSAGE, getLockName(threadId));
     }
 
@@ -142,7 +140,7 @@ public class RedissonReadLock extends RedissonLock implements RLock {
         String timeoutPrefix = getReadWriteTimeoutNamePrefix(threadId);
         String keyPrefix = getKeyPrefix(threadId, timeoutPrefix);
         
-        return evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local counter = redis.call('hget', KEYS[1], ARGV[2]); " +
                 "if (counter ~= false) then " +
                     "redis.call('pexpire', KEYS[1], ARGV[1]); " +
@@ -162,7 +160,7 @@ public class RedissonReadLock extends RedissonLock implements RLock {
                     "return 1; " +
                 "end; " +
                 "return 0;",
-            Arrays.<Object>asList(getName(), keyPrefix), 
+            Arrays.<Object>asList(getRawName(), keyPrefix),
             internalLockLeaseTime, getLockName(threadId));
     }
     
@@ -174,19 +172,19 @@ public class RedissonReadLock extends RedissonLock implements RLock {
     @Override
     public RFuture<Boolean> forceUnlockAsync() {
         cancelExpirationRenewal(null);
-        return evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if (redis.call('hget', KEYS[1], 'mode') == 'read') then " +
                     "redis.call('del', KEYS[1]); " +
                     "redis.call('publish', KEYS[2], ARGV[1]); " +
                     "return 1; " +
                 "end; " +
                 "return 0; ",
-                Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.UNLOCK_MESSAGE);
+                Arrays.<Object>asList(getRawName(), getChannelName()), LockPubSub.UNLOCK_MESSAGE);
     }
 
     @Override
     public boolean isLocked() {
-        RFuture<String> future = commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.HGET, getName(), "mode");
+        RFuture<String> future = commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.HGET, getRawName(), "mode");
         String res = get(future);
         return "read".equals(res);
     }

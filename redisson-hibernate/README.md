@@ -1,24 +1,25 @@
 # Redis based Hibernate Cache implementation
 
-Implements [Hibernate 2nd level Cache](https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#caching) provider based on Redis.  
+Implements [Hibernate 2nd level Cache](https://docs.jboss.org/hibernate/orm/5.5/userguide/html_single/Hibernate_User_Guide.html#caching) provider based on Redis.  
 Supports all Hibernate cache strategies: `READ_ONLY`, `NONSTRICT_READ_WRITE`, `READ_WRITE` and `TRANSACTIONAL`.  
 
-Compatible with Hibernate 4.x, 5.1.x, 5.2.x and 5.3.3+ up to 5.4.x
+Compatible with Hibernate 4.x, 5.1.x, 5.2.x and 5.3.3+ up to 5.5.x
 
 Redisson provides various Hibernate Cache factories including those with features below:
 
-**local cache** - so called `near cache`, which is useful for use cases when Hibernate Cache used mostly for read operations and/or network roundtrips are undesirable. It caches Map entries on Redisson side and executes read operations up to **5x faster** in comparison with common implementation. All local caches with the same name connected to the same pub/sub channel which is used for messaging between them. In particular to send entity update or entity invalidate event.
+**local cache** - so called `near cache`, which is useful for use cases when Hibernate Cache used mostly for read operations and/or network roundtrips are undesirable. It caches Map entries on Redisson side and executes read operations up to **5x faster** in comparison with common implementation. Local cache instances with the same name connected to the same pub/sub channel. This channel is used for exchanging of update/invalidate events between instances.  
 
-**data partitioning** - it allows to scale available memory, read/write operations and entry eviction process for individual Hibernate Cache instance in Redis cluster.
+**data partitioning** - data partitioning in cluster mode. Scales available memory, read/write operations and entry eviction process for individual Hibernate Cache instance in Redis cluster.
 
 Below is the list of all available factories with local cache and/or data partitioning support:
 
-|Class name | Local cache | Data partitioning |
-| ------------- | ------------- | ------------|
-|RedissonRegionFactory<br/>&nbsp; | :heavy_multiplication_x: | :heavy_multiplication_x: |
-|RedissonLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub>  | :heavy_check_mark: | :heavy_multiplication_x: |
-|RedissonClusteredRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | :heavy_multiplication_x: | :heavy_check_mark: |
-|RedissonClusteredLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | :heavy_check_mark: | :heavy_check_mark: |
+|Class name | Local cache | Data<br/>partitioning | Ultra-fast read/write |
+| ------------- | :-----------: | :----------:| :----------:|
+|RedissonRegionFactory<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
+|RedissonRegionFactory<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
+|RedissonLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ❌ | ✔️ |
+|RedissonClusteredRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
+|RedissonClusteredLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
 
 ## Hibernate Cache Usage
 
@@ -35,9 +36,9 @@ Maven
          <artifactId>redisson-hibernate-5</artifactId>
          <!-- for Hibernate v5.2.x -->
          <artifactId>redisson-hibernate-52</artifactId>
-         <!-- for Hibernate v5.3.3+ - v5.4.x -->
+         <!-- for Hibernate v5.3.3+ - v5.5.x -->
          <artifactId>redisson-hibernate-53</artifactId>
-         <version>3.15.1</version>
+         <version>3.16.2</version>
      </dependency>
 ```
 
@@ -45,13 +46,13 @@ Gradle
 
 ```groovy
      // for Hibernate v4.x
-     compile 'org.redisson:redisson-hibernate-4:3.15.1'
+     compile 'org.redisson:redisson-hibernate-4:3.16.2'
      // for Hibernate v5.0.x - v5.1.x
-     compile 'org.redisson:redisson-hibernate-5:3.15.1'
+     compile 'org.redisson:redisson-hibernate-5:3.16.2'
      // for Hibernate v5.2.x
-     compile 'org.redisson:redisson-hibernate-52:3.15.1'
-     // for Hibernate v5.3.3+ - v5.4.x
-     compile 'org.redisson:redisson-hibernate-53:3.15.1'
+     compile 'org.redisson:redisson-hibernate-52:3.16.2'
+     // for Hibernate v5.3.3+ - v5.5.x
+     compile 'org.redisson:redisson-hibernate-53:3.16.2'
 ```
 
 ### 2. Specify hibernate cache settings

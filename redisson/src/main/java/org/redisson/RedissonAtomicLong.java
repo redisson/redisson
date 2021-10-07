@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     @Override
     public RFuture<Long> addAndGetAsync(long delta) {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.INCRBY, getName(), delta);
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.INCRBY, getRawName(), delta);
     }
 
     @Override
@@ -55,7 +55,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     @Override
     public RFuture<Boolean> compareAndSetAsync(long expect, long update) {
-        return commandExecutor.evalWriteAsync(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                   "local currValue = redis.call('get', KEYS[1]); "
                   + "if currValue == ARGV[1] "
                           + "or (tonumber(ARGV[1]) == 0 and currValue == false) then "
@@ -64,7 +64,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
                    + "else "
                      + "return 0 "
                    + "end",
-                Collections.<Object>singletonList(getName()), expect, update);
+                Collections.<Object>singletonList(getRawName()), expect, update);
     }
     
     @Override
@@ -74,11 +74,11 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
     
     @Override
     public RFuture<Long> getAndDeleteAsync() {
-        return commandExecutor.evalWriteAsync(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_LONG_SAFE,
+        return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_LONG_SAFE,
                    "local currValue = redis.call('get', KEYS[1]); "
                  + "redis.call('del', KEYS[1]); "
                  + "return currValue; ",
-                Collections.<Object>singletonList(getName()));
+                Collections.<Object>singletonList(getRawName()));
     }
 
     @Override
@@ -88,7 +88,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     @Override
     public RFuture<Long> decrementAndGetAsync() {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.DECR, getName());
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.DECR, getRawName());
     }
 
     @Override
@@ -98,7 +98,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     @Override
     public RFuture<Long> getAsync() {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.GET_LONG, getName());
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.GET_LONG, getRawName());
     }
 
     @Override
@@ -108,12 +108,12 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     @Override
     public RFuture<Long> getAndAddAsync(final long delta) {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, new RedisStrictCommand<Long>("INCRBY", new Convertor<Long>() {
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, new RedisStrictCommand<Long>("INCRBY", new Convertor<Long>() {
             @Override
             public Long convert(Object obj) {
                 return ((Long) obj) - delta;
             }
-        }), getName(), delta);
+        }), getRawName(), delta);
     }
 
 
@@ -124,7 +124,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     @Override
     public RFuture<Long> getAndSetAsync(long newValue) {
-        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.GETSET_LONG, getName(), newValue);
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.GETSET_LONG, getRawName(), newValue);
     }
 
     @Override
@@ -134,7 +134,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     @Override
     public RFuture<Long> incrementAndGetAsync() {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.INCR, getName());
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.INCR, getRawName());
     }
 
     @Override
@@ -164,7 +164,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     @Override
     public RFuture<Void> setAsync(long newValue) {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.SET, getName(), newValue);
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.SET, getRawName(), newValue);
     }
 
     public String toString() {

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import org.redisson.connection.balancer.LoadBalancerManager;
 import org.redisson.connection.pool.MasterConnectionPool;
 import org.redisson.connection.pool.MasterPubSubConnectionPool;
 import org.redisson.misc.*;
-import org.redisson.pubsub.PubSubConnectionEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -124,11 +123,11 @@ public class MasterSlaveEntry {
             }
             
             masterEntry = new ClientConnectionsEntry(
-                    client, 
-                    config.getMasterConnectionMinimumIdleSize(), 
+                    client,
+                    config.getMasterConnectionMinimumIdleSize(),
                     config.getMasterConnectionPoolSize(),
                     config.getSubscriptionConnectionMinimumIdleSize(),
-                    config.getSubscriptionConnectionPoolSize(), 
+                    config.getSubscriptionConnectionPoolSize(),
                     connectionManager,
                     NodeType.MASTER);
     
@@ -204,7 +203,7 @@ public class MasterSlaveEntry {
             reattachBlockingQueue(connection.getCurrentCommand());
         }
         while (true) {
-            RedisConnection connection = entry.pollConnection();
+            RedisConnection connection = entry.pollConnection(null);
             if (connection == null) {
                 break;
             }
@@ -441,7 +440,7 @@ public class MasterSlaveEntry {
                 if (oldMaster != masterEntry) {
                     writeConnectionPool.remove(masterEntry);
                     pubSubConnectionPool.remove(masterEntry);
-                    masterEntry.getClient().shutdownAsync();
+                    masterEntry.shutdownAsync();
                     masterEntry = oldMaster;
                 }
                 log.error("Unable to change master from: " + oldMaster.getClient().getAddr() + " to: " + address, e);
@@ -466,7 +465,7 @@ public class MasterSlaveEntry {
                     && slaveBalancer.getAvailableClients() > 1) {
                 slaveDown(newMasterClient.getAddr(), FreezeReason.SYSTEM);
             }
-            oldMaster.getClient().shutdownAsync();
+            oldMaster.shutdownAsync();
             log.info("master {} has changed to {}", oldMaster.getClient().getAddr(), masterEntry.getClient().getAddr());
         });
     }
@@ -479,7 +478,7 @@ public class MasterSlaveEntry {
         RPromise<Void> result = new RedissonPromise<Void>();
         CountableListener<Void> listener = new CountableListener<Void>(result, null, 2);
         if (masterEntry != null) {
-            masterEntry.getClient().shutdownAsync().onComplete(listener);
+            masterEntry.shutdownAsync().onComplete(listener);
         }
         slaveBalancer.shutdownAsync().onComplete(listener);
         return result;
@@ -519,12 +518,12 @@ public class MasterSlaveEntry {
         return slaveBalancer.nextPubSubConnection();
     }
 
-    public void returnPubSubConnection(PubSubConnectionEntry entry) {
+    public void returnPubSubConnection(RedisPubSubConnection connection) {
         if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
-            pubSubConnectionPool.returnConnection(masterEntry, entry.getConnection());
+            pubSubConnectionPool.returnConnection(masterEntry, connection);
             return;
         }
-        slaveBalancer.returnPubSubConnection(entry.getConnection());
+        slaveBalancer.returnPubSubConnection(connection);
     }
 
     public void releaseWrite(RedisConnection connection) {

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ public class RedissonStorage implements DomainDataStorageAccess {
 
     int ttl;
     int maxIdle;
+    int size;
     boolean fallback;
     volatile boolean fallbackMode;
     
@@ -52,7 +53,8 @@ public class RedissonStorage implements DomainDataStorageAccess {
         
         String maxEntries = getProperty(properties, mapCache.getName(), defaultKey, RedissonRegionFactory.MAX_ENTRIES_SUFFIX);
         if (maxEntries != null) {
-            mapCache.setMaxSize(Integer.valueOf(maxEntries));
+            size = Integer.valueOf(maxEntries);
+            mapCache.setMaxSize(size);
         }
         String timeToLive = getProperty(properties, mapCache.getName(), defaultKey, RedissonRegionFactory.TTL_SUFFIX);
         if (timeToLive != null) {
@@ -99,6 +101,10 @@ public class RedissonStorage implements DomainDataStorageAccess {
             return null;
         }
         try {
+            if (maxIdle == 0 && size == 0) {
+                return mapCache.getWithTTLOnly(key);
+            }
+
             return mapCache.get(key);
         } catch (Exception e) {
             if (fallback) {

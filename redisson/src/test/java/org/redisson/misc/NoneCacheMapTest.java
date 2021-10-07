@@ -1,15 +1,10 @@
 package org.redisson.misc;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-
-import java.util.ArrayList;
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
-
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.redisson.cache.Cache;
 import org.redisson.cache.NoneCacheMap;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class NoneCacheMapTest {
 

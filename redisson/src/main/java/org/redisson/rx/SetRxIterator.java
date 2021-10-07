@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,14 @@
  */
 package org.redisson.rx;
 
-import java.util.concurrent.atomic.AtomicLong;
-
-import org.redisson.api.RFuture;
-import org.redisson.client.RedisClient;
-import org.redisson.client.protocol.decoder.ListScanResult;
-
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.functions.LongConsumer;
 import io.reactivex.rxjava3.processors.ReplayProcessor;
+import org.redisson.ScanResult;
+import org.redisson.api.RFuture;
+import org.redisson.client.RedisClient;
+
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 
@@ -99,6 +98,6 @@ public abstract class SetRxIterator<V> {
         return false;
     }
 
-    protected abstract RFuture<ListScanResult<Object>> scanIterator(RedisClient client, long nextIterPos);
+    protected abstract RFuture<ScanResult<Object>> scanIterator(RedisClient client, long nextIterPos);
 
 }

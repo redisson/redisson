@@ -3,9 +3,9 @@ package org.redisson.rx;
 import java.io.IOException;
 import java.util.Iterator;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.redisson.BaseTest;
 import org.redisson.RedisRunner;
 import org.redisson.Redisson;
@@ -24,19 +24,19 @@ public abstract class BaseRxTest {
     protected RedissonRxClient redisson;
     protected static RedissonRxClient defaultRedisson;
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() throws IOException, InterruptedException {
         RedisRunner.startDefaultRedisServerInstance();
         defaultRedisson = createInstance();
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterClass() throws IOException, InterruptedException {
         defaultRedisson.shutdown();
         RedisRunner.shutDownDefaultRedisServerInstance();
     }
 
-    @Before
+    @BeforeEach
     public void before() throws IOException, InterruptedException {
         if (redisson == null) {
             redisson = defaultRedisson;
@@ -70,7 +70,7 @@ public abstract class BaseRxTest {
 
     public static RedissonRxClient createInstance() {
         Config config = BaseTest.createConfig();
-        return Redisson.createRx(config);
+        return Redisson.create(config).rxJava();
     }
 
 }

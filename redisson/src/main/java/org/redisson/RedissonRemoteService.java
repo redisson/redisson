@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -181,7 +181,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
             return false;
         }
 
-        RMap<String, RemoteServiceRequest> tasks = getMap(requestQueue.getName() + ":tasks");
+        RMap<String, RemoteServiceRequest> tasks = getMap(((RedissonObject) requestQueue).getRawName() + ":tasks");
         RFuture<RemoteServiceRequest> taskFuture = getTask(requestId, tasks);
         commandExecutor.getInterrupted(taskFuture);
 
@@ -224,7 +224,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                 return;
             }
 
-            RMap<String, RemoteServiceRequest> tasks = getMap(requestQueue.getName() + ":tasks");
+            RMap<String, RemoteServiceRequest> tasks = getMap(((RedissonObject) requestQueue).getRawName() + ":tasks");
             RFuture<RemoteServiceRequest> taskFuture = getTask(requestId, tasks);
             taskFuture.onComplete((request, exc) -> {
                 if (exc != null) {
@@ -262,7 +262,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
         if (entry == null) {
             return;
         }
-        RFuture<String> take = requestQueue.takeAsync();
+        RFuture<String> take = requestQueue.pollAsync(60, TimeUnit.SECONDS);
         entry.setFuture(take);
         take.onComplete((requestId, e) -> {
                 Entry entr = remoteMap.get(remoteInterface);
@@ -292,7 +292,12 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                     subscribe(remoteInterface, requestQueue, executor, bean);
                 }
 
-                RMap<String, RemoteServiceRequest> tasks = getMap(requestQueue.getName() + ":tasks");
+                // poll method may return null value
+                if (requestId == null) {
+                    return;
+                }
+
+                RMap<String, RemoteServiceRequest> tasks = getMap(((RedissonObject) requestQueue).getRawName() + ":tasks");
                 RFuture<RemoteServiceRequest> taskFuture = getTask(requestId, tasks);
                 taskFuture.onComplete((request, exc) -> {
                     if (exc != null) {

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,8 +100,10 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
         }
     }
 
-    private void tryReconnect(final RedisConnection connection, final int nextAttempt) {
-        if (connection.isClosed() || bootstrap.config().group().isShuttingDown()) {
+    private void tryReconnect(RedisConnection connection, int nextAttempt) {
+        if (connection.getRedisClient().isShutdown()
+                || connection.isClosed()
+                    || bootstrap.config().group().isShuttingDown()) {
             return;
         }
 
@@ -112,7 +114,9 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
                 @Override
                 public void operationComplete(final ChannelFuture future) throws Exception {
-                    if (connection.isClosed() || bootstrap.config().group().isShuttingDown()) {
+                    if (connection.getRedisClient().isShutdown()
+                            || connection.isClosed()
+                                || bootstrap.config().group().isShuttingDown()) {
                         if (future.isSuccess()) {
                             Channel ch = future.channel();
                             RedisConnection con = RedisConnection.getFrom(ch);
@@ -133,12 +137,14 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
                             RedisConnection c = RedisConnection.getFrom(channel);
                             c.getConnectionPromise().onComplete((res, e) -> {
                                 if (e == null) {
-                                    refresh(connection, channel);
-                                    if (!connection.isClosed()) {
-                                        log.debug("{} connected to {}, command: {}", connection, connection.getRedisClient().getAddr(), connection.getCurrentCommand());
-                                    } else {
+                                    if (connection.getRedisClient().isShutdown()
+                                            || connection.isClosed()) {
                                         channel.close();
+                                        return;
+                                    } else {
+                                        log.debug("{} connected to {}, command: {}", connection, connection.getRedisClient().getAddr(), connection.getCurrentCommand());
                                     }
+                                    refresh(connection, channel);
                                 } else {
                                     channel.close();
                                     reconnect(connection, nextAttempt);

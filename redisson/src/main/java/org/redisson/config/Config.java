@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,11 @@
 package org.redisson.config;
 
 import io.netty.channel.EventLoopGroup;
+import org.redisson.client.DefaultNettyHook;
 import org.redisson.client.NettyHook;
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.MarshallingCodec;
-import org.redisson.connection.AddressResolverGroupFactory;
-import org.redisson.connection.ConnectionManager;
-import org.redisson.connection.DnsAddressResolverGroupFactory;
-import org.redisson.connection.ReplicatedConnectionManager;
+import org.redisson.connection.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,7 +82,9 @@ public class Config {
 
     private int cleanUpKeysAmount = 100;
 
-    private NettyHook nettyHook = new NettyHook() {};
+    private NettyHook nettyHook = new DefaultNettyHook();
+
+    private ConnectionListener connectionListener;
 
     private boolean useThreadClassLoader = true;
 
@@ -102,6 +102,7 @@ public class Config {
             oldConf.setCodec(new MarshallingCodec());
         }
 
+        setConnectionListener(oldConf.getConnectionListener());
         setUseThreadClassLoader(oldConf.isUseThreadClassLoader());
         setMinCleanUpDelay(oldConf.getMinCleanUpDelay());
         setMaxCleanUpDelay(oldConf.getMaxCleanUpDelay());
@@ -215,11 +216,11 @@ public class Config {
         return clusterServersConfig;
     }
 
-    ClusterServersConfig getClusterServersConfig() {
+    protected ClusterServersConfig getClusterServersConfig() {
         return clusterServersConfig;
     }
 
-    void setClusterServersConfig(ClusterServersConfig clusterServersConfig) {
+    protected void setClusterServersConfig(ClusterServersConfig clusterServersConfig) {
         this.clusterServersConfig = clusterServersConfig;
     }
 
@@ -245,11 +246,11 @@ public class Config {
         return replicatedServersConfig;
     }
 
-    ReplicatedServersConfig getReplicatedServersConfig() {
+    protected ReplicatedServersConfig getReplicatedServersConfig() {
         return replicatedServersConfig;
     }
 
-    void setReplicatedServersConfig(ReplicatedServersConfig replicatedServersConfig) {
+    protected void setReplicatedServersConfig(ReplicatedServersConfig replicatedServersConfig) {
         this.replicatedServersConfig = replicatedServersConfig;
     }
 
@@ -295,11 +296,11 @@ public class Config {
         return singleServerConfig;
     }
 
-    SingleServerConfig getSingleServerConfig() {
+    protected SingleServerConfig getSingleServerConfig() {
         return singleServerConfig;
     }
 
-    void setSingleServerConfig(SingleServerConfig singleConnectionConfig) {
+    protected void setSingleServerConfig(SingleServerConfig singleConnectionConfig) {
         this.singleServerConfig = singleConnectionConfig;
     }
 
@@ -324,11 +325,11 @@ public class Config {
         return this.sentinelServersConfig;
     }
 
-    SentinelServersConfig getSentinelServersConfig() {
+    protected SentinelServersConfig getSentinelServersConfig() {
         return sentinelServersConfig;
     }
 
-    void setSentinelServersConfig(SentinelServersConfig sentinelConnectionConfig) {
+    protected void setSentinelServersConfig(SentinelServersConfig sentinelConnectionConfig) {
         this.sentinelServersConfig = sentinelConnectionConfig;
     }
 
@@ -353,11 +354,11 @@ public class Config {
         return masterSlaveServersConfig;
     }
 
-    MasterSlaveServersConfig getMasterSlaveServersConfig() {
+    protected MasterSlaveServersConfig getMasterSlaveServersConfig() {
         return masterSlaveServersConfig;
     }
 
-    void setMasterSlaveServersConfig(MasterSlaveServersConfig masterSlaveConnectionConfig) {
+    protected void setMasterSlaveServersConfig(MasterSlaveServersConfig masterSlaveConnectionConfig) {
         this.masterSlaveServersConfig = masterSlaveConnectionConfig;
     }
 
@@ -795,6 +796,22 @@ public class Config {
      */
     public Config setReliableTopicWatchdogTimeout(long timeout) {
         this.reliableTopicWatchdogTimeout = timeout;
+        return this;
+    }
+
+    public ConnectionListener getConnectionListener() {
+        return connectionListener;
+    }
+
+    /**
+     * Sets connection listener which is triggered
+     * when Redisson connected/disconnected to Redis server
+     *
+     * @param connectionListener - connection listener
+     * @return config
+     */
+    public Config setConnectionListener(ConnectionListener connectionListener) {
+        this.connectionListener = connectionListener;
         return this;
     }
 }

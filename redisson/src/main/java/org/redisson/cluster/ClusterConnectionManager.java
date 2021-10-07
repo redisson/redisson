@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package org.redisson.cluster;
 
 import io.netty.resolver.AddressResolver;
-import io.netty.util.NetUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
@@ -37,6 +36,7 @@ import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.SingleEntry;
+import org.redisson.misc.AsyncCountDownLatch;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedisURI;
 import org.redisson.misc.RedissonPromise;
@@ -45,7 +45,9 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -95,7 +97,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             try {
                 RedisConnection connection = connectionFuture.syncUninterruptibly().getNow();
 
-                if (cfg.getNodeAddresses().size() == 1 && NetUtil.createByteArrayFromIpAddressString(addr.getHost()) == null) {
+                if (cfg.getNodeAddresses().size() == 1 && !addr.isIP()) {
                     configEndpointHostName = addr.getHost();
                 }
                 
@@ -114,7 +116,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
                 lastClusterNode = addr;
                 
-                Collection<ClusterPartition> partitions = parsePartitions(nodes);
+                RFuture<Collection<ClusterPartition>> partitionsFuture = parsePartitions(nodes);
+                Collection<ClusterPartition> partitions = partitionsFuture.syncUninterruptibly().getNow();
                 List<RFuture<Void>> masterFutures = new ArrayList<>();
                 for (ClusterPartition partition : partitions) {
                     if (partition.isMasterFail()) {
@@ -450,6 +453,13 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     return;
                 }
 
+                if (nodes.isEmpty()) {
+                    log.debug("cluster nodes state got from {}: doesn't contain any nodes", connection.getRedisClient().getAddr());
+                    getShutdownLatch().release();
+                    checkClusterState(cfg, iterator, lastException);
+                    return;
+                }
+
                 lastClusterNode = uri;
 
                 StringBuilder nodesValue = new StringBuilder();
@@ -460,14 +470,16 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     log.debug("cluster nodes state got from {}:\n{}", connection.getRedisClient().getAddr(), nodesValue);
                 }
 
-                Collection<ClusterPartition> newPartitions = parsePartitions(nodes);
-                RFuture<Void> masterFuture = checkMasterNodesChange(cfg, newPartitions);
-                checkSlaveNodesChange(newPartitions);
-                masterFuture.onComplete((res, ex) -> {
-                    checkSlotsMigration(newPartitions);
-                    checkSlotsChange(newPartitions);
-                    getShutdownLatch().release();
-                    scheduleClusterChangeCheck(cfg);
+                RFuture<Collection<ClusterPartition>> newPartitionsFuture = parsePartitions(nodes);
+                newPartitionsFuture.onComplete((newPartitions, ex) -> {
+                    RFuture<Void> masterFuture = checkMasterNodesChange(cfg, newPartitions);
+                    checkSlaveNodesChange(newPartitions);
+                    masterFuture.onComplete((res, exc) -> {
+                        checkSlotsMigration(newPartitions);
+                        checkSlotsChange(newPartitions);
+                        getShutdownLatch().release();
+                        scheduleClusterChangeCheck(cfg);
+                    });
                 });
         });
     }
@@ -476,7 +488,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         Set<ClusterPartition> lastPartitions = getLastPartitions();
         for (ClusterPartition newPart : newPartitions) {
             for (ClusterPartition currentPart : lastPartitions) {
-                if (!newPart.getMasterAddress().equals(currentPart.getMasterAddress())) {
+                if (!Objects.equals(newPart.getMasterAddress(), currentPart.getMasterAddress())) {
                     continue;
                 }
 
@@ -492,14 +504,15 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void upDownSlaves(MasterSlaveEntry entry, ClusterPartition currentPart, ClusterPartition newPart, Set<RedisURI> addedSlaves) {
-        currentPart.getFailedSlaveAddresses().stream()
+        List<RedisURI> c = currentPart.getFailedSlaveAddresses().stream()
                 .filter(uri -> !addedSlaves.contains(uri) && !newPart.getFailedSlaveAddresses().contains(uri))
-                .forEach(uri -> {
-                    currentPart.removeFailedSlaveAddress(uri);
-                    if (entry.hasSlave(uri) && entry.slaveUp(uri, FreezeReason.MANAGER)) {
-                        log.info("slave: {} is up for slot ranges: {}", uri, currentPart.getSlotRanges());
-                    }
-                });
+                .collect(Collectors.toList());
+        c.forEach(uri -> {
+            currentPart.removeFailedSlaveAddress(uri);
+            if (entry.hasSlave(uri) && entry.slaveUp(uri, FreezeReason.MANAGER)) {
+                log.info("slave: {} is up for slot ranges: {}", uri, currentPart.getSlotRanges());
+            }
+        });
 
         newPart.getFailedSlaveAddresses().stream()
                 .filter(uri -> !currentPart.getFailedSlaveAddresses().contains(uri))
@@ -555,18 +568,18 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         for (ClusterPartition newPart : newPartitions) {
             boolean masterFound = false;
             for (ClusterPartition currentPart : lastPartitions) {
-                if (!newPart.getMasterAddress().equals(currentPart.getMasterAddress())) {
+                if (!Objects.equals(newPart.getMasterAddress(), currentPart.getMasterAddress())) {
                     continue;
                 }
                 masterFound = true;
-                // current master marked as failed
+                // skip master if it is not marked as failed or has no slots
                 if (!newPart.isMasterFail() || newPart.getSlotsAmount() == 0) {
                     continue;
                 }
                 for (Integer slot : currentPart.getSlots()) {
                     ClusterPartition newMasterPart = find(newPartitions, slot);
                     // does partition has a new master?
-                    if (!newMasterPart.getMasterAddress().equals(currentPart.getMasterAddress())) {
+                    if (!Objects.equals(newMasterPart.getMasterAddress(), currentPart.getMasterAddress())) {
                         RedisURI newUri = newMasterPart.getMasterAddress();
                         RedisURI oldUri = currentPart.getMasterAddress();
 
@@ -586,7 +599,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 break;
             }
 
-            if (!masterFound && newPart.getSlotsAmount() > 0) {
+            if (!masterFound && !newPart.isMasterFail() && newPart.getSlotsAmount() > 0) {
                 addedPartitions.put(newPart.getMasterAddress(), newPart);
             }
         }
@@ -651,14 +664,21 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
     
     private void checkSlotsMigration(Collection<ClusterPartition> newPartitions) {
+        Set<ClusterPartition> clusterLastPartitions = getLastPartitions();
+
+        // https://github.com/redisson/redisson/issues/3635
+        Map<String, MasterSlaveEntry> nodeEntries = clusterLastPartitions.stream().collect(Collectors.toMap(p -> p.getNodeId(),
+                                                                                    p -> getEntry(p.slots().nextSetBit(0))));
+
         Set<Integer> changedSlots = new HashSet<>();
-        for (ClusterPartition currentPartition : getLastPartitions()) {
+        for (ClusterPartition currentPartition : clusterLastPartitions) {
+            String nodeId = currentPartition.getNodeId();
             for (ClusterPartition newPartition : newPartitions) {
-                if (!currentPartition.getNodeId().equals(newPartition.getNodeId())) {
+                if (!Objects.equals(nodeId, newPartition.getNodeId())) {
                     continue;
                 }
 
-                MasterSlaveEntry entry = getEntry(currentPartition.slots().nextSetBit(0));
+                MasterSlaveEntry entry = nodeEntries.get(nodeId);
                 BitSet addedSlots = newPartition.copySlots();
                 addedSlots.andNot(currentPartition.slots());
                 currentPartition.addSlots(addedSlots);
@@ -684,6 +704,13 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 });
                 if (!removedSlots.isEmpty()) {
                     log.info("{} slots removed from {}", removedSlots.cardinality(), currentPartition.getMasterAddress());
+                }
+
+                if (!addedSlots.isEmpty() || !removedSlots.isEmpty()) {
+                    // https://github.com/redisson/redisson/issues/3695, slotRanges not update when slots of node changed.
+                    Set<ClusterSlotRange> slotRanges = currentPartition.getSlotRanges();
+                    slotRanges.clear();
+                    slotRanges.addAll(newPartition.getSlotRanges());
                 }
                 break;
             }
@@ -743,17 +770,24 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return natMapper.map(address);
     }
     
-    private Collection<ClusterPartition> parsePartitions(List<ClusterNodeInfo> nodes) {
-        Map<String, ClusterPartition> partitions = new HashMap<String, ClusterPartition>();
+    private RFuture<Collection<ClusterPartition>> parsePartitions(List<ClusterNodeInfo> nodes) {
+        Map<String, ClusterPartition> partitions = new ConcurrentHashMap<>();
+        AsyncCountDownLatch latch = new AsyncCountDownLatch();
+        int counter = 0;
         for (ClusterNodeInfo clusterNodeInfo : nodes) {
-            if (clusterNodeInfo.containsFlag(Flag.NOADDR) || clusterNodeInfo.containsFlag(Flag.HANDSHAKE)) {
+            if (clusterNodeInfo.containsFlag(Flag.NOADDR)
+                    || clusterNodeInfo.containsFlag(Flag.HANDSHAKE)
+                        || clusterNodeInfo.getAddress() == null
+                            || (clusterNodeInfo.getSlotRanges().isEmpty() && clusterNodeInfo.containsFlag(Flag.MASTER))) {
                 // skip it
                 continue;
             }
 
-            String masterId = clusterNodeInfo.getNodeId();
+            String masterId;
             if (clusterNodeInfo.containsFlag(Flag.SLAVE)) {
                 masterId = clusterNodeInfo.getSlaveOf();
+            } else {
+                masterId = clusterNodeInfo.getNodeId();
             }
 
             if (masterId == null) {
@@ -761,35 +795,55 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 continue;
             }
 
-            RedisURI address = applyNatMap(clusterNodeInfo.getAddress());
-            if (clusterNodeInfo.containsFlag(Flag.SLAVE)) {
-                ClusterPartition masterPartition = getPartition(partitions, masterId);
-                ClusterPartition slavePartition = getPartition(partitions, clusterNodeInfo.getNodeId());
-                slavePartition.setType(Type.SLAVE);
-                slavePartition.setParent(masterPartition);
-                
-                masterPartition.addSlaveAddress(address);
-                if (clusterNodeInfo.containsFlag(Flag.FAIL)) {
-                    masterPartition.addFailedSlaveAddress(address);
+            RFuture<RedisURI> ipFuture = resolveIP(clusterNodeInfo.getAddress());
+            counter++;
+            ipFuture.onComplete((addr, e) -> {
+                if (e != null) {
+                    latch.countDown();
+                    return;
                 }
-            } else if (clusterNodeInfo.containsFlag(Flag.MASTER)) {
-                ClusterPartition masterPartition = getPartition(partitions, masterId);
-                masterPartition.addSlotRanges(clusterNodeInfo.getSlotRanges());
-                masterPartition.setMasterAddress(address);
-                masterPartition.setType(Type.MASTER);
-                if (clusterNodeInfo.containsFlag(Flag.FAIL)) {
-                    masterPartition.setMasterFail(true);
+
+                RedisURI address = applyNatMap(addr);
+                if (clusterNodeInfo.containsFlag(Flag.SLAVE)) {
+                    ClusterPartition masterPartition = partitions.computeIfAbsent(masterId, k -> new ClusterPartition(masterId));
+                    ClusterPartition slavePartition = partitions.computeIfAbsent(clusterNodeInfo.getNodeId(),
+                            k -> new ClusterPartition(clusterNodeInfo.getNodeId()));
+                    slavePartition.setType(Type.SLAVE);
+                    slavePartition.setParent(masterPartition);
+
+                    masterPartition.addSlaveAddress(address);
+                    if (clusterNodeInfo.containsFlag(Flag.FAIL)) {
+                        masterPartition.addFailedSlaveAddress(address);
+                    }
+                } else if (clusterNodeInfo.containsFlag(Flag.MASTER)) {
+                    ClusterPartition masterPartition = partitions.computeIfAbsent(masterId, k -> new ClusterPartition(masterId));
+                    masterPartition.addSlotRanges(clusterNodeInfo.getSlotRanges());
+                    masterPartition.setMasterAddress(address);
+                    masterPartition.setType(Type.MASTER);
+                    if (clusterNodeInfo.containsFlag(Flag.FAIL)) {
+                        masterPartition.setMasterFail(true);
+                    }
                 }
-            }
+                latch.countDown();
+            });
         }
-        
-        addCascadeSlaves(partitions);
-        
-        return partitions.values();
+
+        RPromise<Collection<ClusterPartition>> result = new RedissonPromise<>();
+        latch.latch(() -> {
+            addCascadeSlaves(partitions.values());
+
+            List<ClusterPartition> ps = partitions.values()
+                                            .stream()
+                                            .filter(cp -> cp.getType() == Type.MASTER
+                                                            && cp.getMasterAddress() != null)
+                                            .collect(Collectors.toList());
+            result.trySuccess(ps);
+        }, counter);
+        return result;
     }
 
-    private void addCascadeSlaves(Map<String, ClusterPartition> partitions) {
-        Iterator<ClusterPartition> iter = partitions.values().iterator();
+    private void addCascadeSlaves(Collection<ClusterPartition> partitions) {
+        Iterator<ClusterPartition> iter = partitions.iterator();
         while (iter.hasNext()) {
             ClusterPartition cp = iter.next();
             if (cp.getType() != Type.SLAVE) {
@@ -807,15 +861,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             }
             iter.remove();
         }
-    }
-
-    private ClusterPartition getPartition(Map<String, ClusterPartition> partitions, String id) {
-        ClusterPartition partition = partitions.get(id);
-        if (partition == null) {
-            partition = new ClusterPartition(id);
-            partitions.put(id, partition);
-        }
-        return partition;
     }
 
     @Override

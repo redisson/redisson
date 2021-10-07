@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,8 @@
  */
 package org.redisson.api.redisnode;
 
-import java.net.InetSocketAddress;
+import org.redisson.misc.RedisURI;
+
 import java.util.List;
 import java.util.Map;
 
@@ -33,7 +34,7 @@ public interface RedisSentinel extends RedisNode, RedisSentinelAsync {
      * @param masterName - name of master
      * @return network address
      */
-    InetSocketAddress getMasterAddr(String masterName);
+    RedisURI getMasterAddr(String masterName);
 
     /**
      * Returns list of map containing info regarding Redis Sentinel server

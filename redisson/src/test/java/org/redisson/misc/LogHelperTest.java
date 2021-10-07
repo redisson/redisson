@@ -1,13 +1,12 @@
 package org.redisson.misc;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.junit.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Philipp Marx
@@ -16,25 +15,25 @@ public class LogHelperTest {
 
     @Test
     public void toStringWithNull() {
-        assertThat(LogHelper.toString(null), is("null"));
+        assertThat(LogHelper.toString(null)).isEqualTo("null");
     }
 
     @Test
     public void toStringWithNestedPrimitives() {
         Object[] input = new Object[] { "0", 1, 2L, 3.1D, 4.2F, (byte) 5, '6' };
 
-        assertThat(LogHelper.toString(input), is("[0, 1, 2, 3.1, 4.2, 5, 6]"));
+        assertThat(LogHelper.toString(input)).isEqualTo("[0, 1, 2, 3.1, 4.2, 5, 6]");
     }
 
     @Test
     public void toStringWithPrimitive() {
-        assertThat(LogHelper.toString("0"), is("0"));
-        assertThat(LogHelper.toString(1), is("1"));
-        assertThat(LogHelper.toString(2L), is("2"));
-        assertThat(LogHelper.toString(3.1D), is("3.1"));
-        assertThat(LogHelper.toString(4.2F), is("4.2"));
-        assertThat(LogHelper.toString((byte) 5), is("5"));
-        assertThat(LogHelper.toString('6'), is("6"));
+        assertThat(LogHelper.toString("0")).isEqualTo("0");
+        assertThat(LogHelper.toString(1)).isEqualTo("1");
+        assertThat(LogHelper.toString(2L)).isEqualTo("2");
+        assertThat(LogHelper.toString(3.1D)).isEqualTo("3.1");
+        assertThat(LogHelper.toString(4.2F)).isEqualTo("4.2");
+        assertThat(LogHelper.toString((byte) 5)).isEqualTo("5");
+        assertThat(LogHelper.toString('6')).isEqualTo("6");
     }
 
     @Test
@@ -49,7 +48,7 @@ public class LogHelperTest {
 
         Object[] input = new Object[] { strings, ints, longs, doubles, floats, bytes, chars };
 
-        assertThat(LogHelper.toString(input), is("[[0], [1], [2], [3.1], [4.2], [5], [6]]"));
+        assertThat(LogHelper.toString(input)).isEqualTo("[[0], [1], [2], [3.1], [4.2], [5], [6]]");
     }
     
     @Test
@@ -64,7 +63,7 @@ public class LogHelperTest {
         
         Object[] input = new Object[] { strings, ints, longs, doubles, floats, bytes, chars };
         
-        assertThat(LogHelper.toString(input), is("[[0], [1], [2], [3.1], [4.2], [5], [6]]"));
+        assertThat(LogHelper.toString(input)).isEqualTo("[[0], [1], [2], [3.1], [4.2], [5], [6]]");
     }
     
     @Test
@@ -77,13 +76,13 @@ public class LogHelperTest {
         byte[] bytes = new byte[] { (byte) 5 };
         char[] chars = new char[] { '6' };
 
-        assertThat(LogHelper.toString(strings), is("[0]"));
-        assertThat(LogHelper.toString(ints), is("[1]"));
-        assertThat(LogHelper.toString(longs), is("[2]"));
-        assertThat(LogHelper.toString(doubles), is("[3.1]"));
-        assertThat(LogHelper.toString(floats), is("[4.2]"));
-        assertThat(LogHelper.toString(bytes), is("[5]"));
-        assertThat(LogHelper.toString(chars), is("[6]"));
+        assertThat(LogHelper.toString(strings)).isEqualTo("[0]");
+        assertThat(LogHelper.toString(ints)).isEqualTo("[1]");
+        assertThat(LogHelper.toString(longs)).isEqualTo("[2]");
+        assertThat(LogHelper.toString(doubles)).isEqualTo("[3.1]");
+        assertThat(LogHelper.toString(floats)).isEqualTo("[4.2]");
+        assertThat(LogHelper.toString(bytes)).isEqualTo("[5]");
+        assertThat(LogHelper.toString(chars)).isEqualTo("[6]");
     }
     
     @Test
@@ -96,13 +95,13 @@ public class LogHelperTest {
         List<Byte> bytes =  Collections.nCopies(1, (byte)5);
         List<Character> chars =  Collections.nCopies(1, '6');
         
-        assertThat(LogHelper.toString(strings), is("[0]"));
-        assertThat(LogHelper.toString(ints), is("[1]"));
-        assertThat(LogHelper.toString(longs), is("[2]"));
-        assertThat(LogHelper.toString(doubles), is("[3.1]"));
-        assertThat(LogHelper.toString(floats), is("[4.2]"));
-        assertThat(LogHelper.toString(bytes), is("[5]"));
-        assertThat(LogHelper.toString(chars), is("[6]"));
+        assertThat(LogHelper.toString(strings)).isEqualTo("[0]");
+        assertThat(LogHelper.toString(ints)).isEqualTo("[1]");
+        assertThat(LogHelper.toString(longs)).isEqualTo("[2]");
+        assertThat(LogHelper.toString(doubles)).isEqualTo("[3.1]");
+        assertThat(LogHelper.toString(floats)).isEqualTo("[4.2]");
+        assertThat(LogHelper.toString(bytes)).isEqualTo("[5]");
+        assertThat(LogHelper.toString(chars)).isEqualTo("[6]");
     }
 
     @Test
@@ -132,7 +131,7 @@ public class LogHelperTest {
         sb.append("[5, 5, 5, 5, 5, 5, 5, 5, 5, 5, ...], ");
         sb.append("[6, 6, 6, 6, 6, 6, 6, 6, 6, 6, ...]]");
 
-        assertThat(LogHelper.toString(input), is(sb.toString()));
+        assertThat(LogHelper.toString(input)).isEqualTo(sb.toString());
     }
     
     @Test
@@ -155,7 +154,7 @@ public class LogHelperTest {
         sb.append("[5, 5, 5, 5, 5, 5, 5, 5, 5, 5, ...], ");
         sb.append("[6, 6, 6, 6, 6, 6, 6, 6, 6, 6, ...]]");
         
-        assertThat(LogHelper.toString(input), is(sb.toString()));
+        assertThat(LogHelper.toString(input)).isEqualTo(sb.toString());
     }
 
     @Test
@@ -175,13 +174,13 @@ public class LogHelperTest {
         char[] chars = new char[15];
         Arrays.fill(chars, '6');
 
-        assertThat(LogHelper.toString(strings), is("[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...]"));
-        assertThat(LogHelper.toString(ints), is("[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ...]"));
-        assertThat(LogHelper.toString(longs), is("[2, 2, 2, 2, 2, 2, 2, 2, 2, 2, ...]"));
-        assertThat(LogHelper.toString(doubles), is("[3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, ...]"));
-        assertThat(LogHelper.toString(floats), is("[4.2, 4.2, 4.2, 4.2, 4.2, 4.2, 4.2, 4.2, 4.2, 4.2, ...]"));
-        assertThat(LogHelper.toString(bytes), is("[5, 5, 5, 5, 5, 5, 5, 5, 5, 5, ...]"));
-        assertThat(LogHelper.toString(chars), is("[6, 6, 6, 6, 6, 6, 6, 6, 6, 6, ...]"));
+        assertThat(LogHelper.toString(strings)).isEqualTo("[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...]");
+        assertThat(LogHelper.toString(ints)).isEqualTo("[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ...]");
+        assertThat(LogHelper.toString(longs)).isEqualTo("[2, 2, 2, 2, 2, 2, 2, 2, 2, 2, ...]");
+        assertThat(LogHelper.toString(doubles)).isEqualTo("[3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, ...]");
+        assertThat(LogHelper.toString(floats)).isEqualTo("[4.2, 4.2, 4.2, 4.2, 4.2, 4.2, 4.2, 4.2, 4.2, 4.2, ...]");
+        assertThat(LogHelper.toString(bytes)).isEqualTo("[5, 5, 5, 5, 5, 5, 5, 5, 5, 5, ...]");
+        assertThat(LogHelper.toString(chars)).isEqualTo("[6, 6, 6, 6, 6, 6, 6, 6, 6, 6, ...]");
     }
     
     @Test
@@ -194,13 +193,13 @@ public class LogHelperTest {
         List<Byte> bytes =  Collections.nCopies(15, (byte)5);
         List<Character> chars =  Collections.nCopies(15, '6');
         
-        assertThat(LogHelper.toString(strings), is("[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...]"));
-        assertThat(LogHelper.toString(ints), is("[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ...]"));
-        assertThat(LogHelper.toString(longs), is("[2, 2, 2, 2, 2, 2, 2, 2, 2, 2, ...]"));
-        assertThat(LogHelper.toString(doubles), is("[3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, ...]"));
-        assertThat(LogHelper.toString(floats), is("[4.2, 4.2, 4.2, 4.2, 4.2, 4.2, 4.2, 4.2, 4.2, 4.2, ...]"));
-        assertThat(LogHelper.toString(bytes), is("[5, 5, 5, 5, 5, 5, 5, 5, 5, 5, ...]"));
-        assertThat(LogHelper.toString(chars), is("[6, 6, 6, 6, 6, 6, 6, 6, 6, 6, ...]"));
+        assertThat(LogHelper.toString(strings)).isEqualTo("[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...]");
+        assertThat(LogHelper.toString(ints)).isEqualTo("[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ...]");
+        assertThat(LogHelper.toString(longs)).isEqualTo("[2, 2, 2, 2, 2, 2, 2, 2, 2, 2, ...]");
+        assertThat(LogHelper.toString(doubles)).isEqualTo("[3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, ...]");
+        assertThat(LogHelper.toString(floats)).isEqualTo("[4.2, 4.2, 4.2, 4.2, 4.2, 4.2, 4.2, 4.2, 4.2, 4.2, ...]");
+        assertThat(LogHelper.toString(bytes)).isEqualTo("[5, 5, 5, 5, 5, 5, 5, 5, 5, 5, ...]");
+        assertThat(LogHelper.toString(chars)).isEqualTo("[6, 6, 6, 6, 6, 6, 6, 6, 6, 6, ...]");
     }
 
     @Test
@@ -209,7 +208,7 @@ public class LogHelperTest {
         Arrays.fill(charsForStr, '7');
         String string = new String(charsForStr);
 
-        assertThat(LogHelper.toString(string), is(string));
+        assertThat(LogHelper.toString(string)).isEqualTo(string);
     }
 
     @Test
@@ -218,6 +217,6 @@ public class LogHelperTest {
         Arrays.fill(charsForStr, '7');
         String string = new String(charsForStr);
 
-        assertThat(LogHelper.toString(string), is(string.substring(0, 100) + "..."));
+        assertThat(LogHelper.toString(string)).isEqualTo(string.substring(0, 100) + "...");
     }
 }

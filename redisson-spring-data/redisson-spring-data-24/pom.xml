@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-spring-data</artifactId>
-        <version>3.15.2-SNAPSHOT</version>
+        <version>3.16.4-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
@@ -17,7 +17,7 @@
         <dependency>
             <groupId>org.springframework.data</groupId>
             <artifactId>spring-data-redis</artifactId>
-            <version>2.4.1</version>
+            <version>2.4.8</version>
         </dependency>
     </dependencies>
 
@@ -30,7 +30,7 @@
                     <archive>  
                         <manifestEntries>
                             <Build-Time>${maven.build.timestamp}</Build-Time>
-                            <Automatic-Module-Name>redisson.spring.data23</Automatic-Module-Name>
+                            <Automatic-Module-Name>redisson.spring.data24</Automatic-Module-Name>
                         </manifestEntries>
                     </archive> 
                 </configuration>

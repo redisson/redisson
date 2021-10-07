@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -137,11 +137,12 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
     public RFuture<Boolean> touchAsync() {
         checkState();
         RPromise<Boolean> result = new RedissonPromise<Boolean>();
+        long currentThreadId = Thread.currentThread().getId();
         executeLocked(result, new Runnable() {
             @Override
             public void run() {
                 if (state != null) {
-                    operations.add(new TouchOperation(getName(), getLockName()));
+                    operations.add(new TouchOperation(getRawName(), getLockName(), currentThreadId));
                     result.trySuccess(state != NULL);
                     return;
                 }
@@ -152,7 +153,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
                         return;
                     }
                     
-                    operations.add(new TouchOperation(getName(), getLockName()));
+                    operations.add(new TouchOperation(getRawName(), getLockName(), currentThreadId));
                     result.trySuccess(res);
                 });
             }
@@ -164,11 +165,12 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
     public RFuture<Boolean> unlinkAsync() {
         checkState();
         RPromise<Boolean> result = new RedissonPromise<Boolean>();
+        long currentThreadId = Thread.currentThread().getId();
         executeLocked(result, new Runnable() {
             @Override
             public void run() {
                 if (state != null) {
-                    operations.add(new UnlinkOperation(getName(), getLockName()));
+                    operations.add(new UnlinkOperation(getRawName(), getLockName(), currentThreadId));
                     if (state == NULL) {
                         result.trySuccess(false);
                     } else {
@@ -184,7 +186,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
                         return;
                     }
                     
-                    operations.add(new UnlinkOperation(getName(), getLockName()));
+                    operations.add(new UnlinkOperation(getRawName(), getLockName(), currentThreadId));
                     state = NULL;
                     result.trySuccess(res);
                 });
@@ -202,7 +204,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
             @Override
             public void run() {
                 if (state != null) {
-                    operations.add(new DeleteOperation(getName(), getLockName(), transactionId, threadId));
+                    operations.add(new DeleteOperation(getRawName(), getLockName(), transactionId, threadId));
                     if (state == NULL) {
                         result.trySuccess(false);
                     } else {
@@ -218,7 +220,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
                         return;
                     }
                     
-                    operations.add(new DeleteOperation(getName(), getLockName(), transactionId, threadId));
+                    operations.add(new DeleteOperation(getRawName(), getLockName(), transactionId, threadId));
                     state = NULL;
                     result.trySuccess(res);
                 });
@@ -246,11 +248,12 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
     public RFuture<Boolean> compareAndSetAsync(V expect, V update) {
         checkState();
         RPromise<Boolean> result = new RedissonPromise<>();
+        long currentThreadId = Thread.currentThread().getId();
         executeLocked(result, new Runnable() {
             @Override
             public void run() {
                 if (state != null) {
-                    operations.add(new BucketCompareAndSetOperation<V>(getName(), getLockName(), getCodec(), expect, update, transactionId));
+                    operations.add(new BucketCompareAndSetOperation<V>(getRawName(), getLockName(), getCodec(), expect, update, transactionId, currentThreadId));
                     if ((state == NULL && expect == null)
                             || isEquals(state, expect)) {
                         if (update == null) {
@@ -271,7 +274,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
                         return;
                     }
                     
-                    operations.add(new BucketCompareAndSetOperation<V>(getName(), getLockName(), getCodec(), expect, update, transactionId));
+                    operations.add(new BucketCompareAndSetOperation<V>(getRawName(), getLockName(), getCodec(), expect, update, transactionId, currentThreadId));
                     if ((res == null && expect == null) 
                             || isEquals(res, expect)) {
                         if (update == null) {
@@ -291,12 +294,12 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
     
     @Override
     public RFuture<V> getAndSetAsync(V value, long timeToLive, TimeUnit timeUnit) {
-        return getAndSet(value, new BucketGetAndSetOperation<V>(getName(), getLockName(), getCodec(), value, timeToLive, timeUnit, transactionId));
+        return getAndSet(value, new BucketGetAndSetOperation<V>(getRawName(), getLockName(), getCodec(), value, timeToLive, timeUnit, transactionId));
     }
     
     @Override
     public RFuture<V> getAndSetAsync(V value) {
-        return getAndSet(value, new BucketGetAndSetOperation<V>(getName(), getLockName(), getCodec(), value, transactionId));
+        return getAndSet(value, new BucketGetAndSetOperation<V>(getRawName(), getLockName(), getCodec(), value, transactionId));
     }
     
     @SuppressWarnings("unchecked")
@@ -347,6 +350,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
     public RFuture<V> getAndDeleteAsync() {
         checkState();
         RPromise<V> result = new RedissonPromise<V>();
+        long currentThreadId = Thread.currentThread().getId();
         executeLocked(result, new Runnable() {
             @Override
             public void run() {
@@ -357,7 +361,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
                     } else {
                         prevValue = state;
                     }
-                    operations.add(new BucketGetAndDeleteOperation<V>(getName(), getLockName(), getCodec(), transactionId));
+                    operations.add(new BucketGetAndDeleteOperation<V>(getRawName(), getLockName(), getCodec(), transactionId, currentThreadId));
                     state = NULL;
                     result.trySuccess((V) prevValue);
                     return;
@@ -370,7 +374,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
                     }
                     
                     state = NULL;
-                    operations.add(new BucketGetAndDeleteOperation<V>(getName(), getLockName(), getCodec(), transactionId));
+                    operations.add(new BucketGetAndDeleteOperation<V>(getRawName(), getLockName(), getCodec(), transactionId, currentThreadId));
                     result.trySuccess(res);
                 });
             }
@@ -380,7 +384,8 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
     
     @Override
     public RFuture<Void> setAsync(V newValue) {
-        return setAsync(newValue, new BucketSetOperation<V>(getName(), getLockName(), getCodec(), newValue, transactionId));
+        long currentThreadId = Thread.currentThread().getId();
+        return setAsync(newValue, new BucketSetOperation<V>(getRawName(), getLockName(), getCodec(), newValue, transactionId, currentThreadId));
     }
 
     private RFuture<Void> setAsync(V newValue, TransactionalOperation operation) {
@@ -403,17 +408,20 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
     
     @Override
     public RFuture<Void> setAsync(V value, long timeToLive, TimeUnit timeUnit) {
-        return setAsync(value, new BucketSetOperation<V>(getName(), getLockName(), getCodec(), value, timeToLive, timeUnit, transactionId));
+        long currentThreadId = Thread.currentThread().getId();
+        return setAsync(value, new BucketSetOperation<V>(getRawName(), getLockName(), getCodec(), value, timeToLive, timeUnit, transactionId, currentThreadId));
     }
     
     @Override
     public RFuture<Boolean> trySetAsync(V newValue) {
-        return trySet(newValue, new BucketTrySetOperation<V>(getName(), getLockName(), getCodec(), newValue, transactionId));
+        long currentThreadId = Thread.currentThread().getId();
+        return trySet(newValue, new BucketTrySetOperation<V>(getRawName(), getLockName(), getCodec(), newValue, transactionId, currentThreadId));
     }
     
     @Override
     public RFuture<Boolean> trySetAsync(V value, long timeToLive, TimeUnit timeUnit) {
-        return trySet(value, new BucketTrySetOperation<V>(getName(), getLockName(), getCodec(), value, timeToLive, timeUnit, transactionId));
+        long currentThreadId = Thread.currentThread().getId();
+        return trySet(value, new BucketTrySetOperation<V>(getRawName(), getLockName(), getCodec(), value, timeToLive, timeUnit, transactionId, currentThreadId));
     }
 
     private RFuture<Boolean> trySet(V newValue, TransactionalOperation operation) {
@@ -460,7 +468,6 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
         return result;
     }
 
-    
     private boolean isEquals(Object value, Object oldValue) {
         ByteBuf valueBuf = encode(value);
         ByteBuf oldValueBuf = encode(oldValue);
@@ -489,7 +496,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
     }
 
     private String getLockName() {
-        return getName() + ":transaction_lock";
+        return getRawName() + ":transaction_lock";
     }
 
     protected void checkState() {

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,9 @@
  */
 package org.redisson.connection;
 
-import java.util.UUID;
+import org.redisson.config.*;
 
-import org.redisson.config.Config;
-import org.redisson.config.MasterSlaveServersConfig;
-import org.redisson.config.ReadMode;
-import org.redisson.config.SingleServerConfig;
-import org.redisson.config.SubscriptionMode;
+import java.util.UUID;
 
 /**
  * 
@@ -44,6 +40,7 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
         newconfig.setSslTruststorePassword(cfg.getSslTruststorePassword());
         newconfig.setSslKeystore(cfg.getSslKeystore());
         newconfig.setSslKeystorePassword(cfg.getSslKeystorePassword());
+        newconfig.setSslProtocols(cfg.getSslProtocols());
         
         newconfig.setRetryAttempts(cfg.getRetryAttempts());
         newconfig.setRetryInterval(cfg.getRetryInterval());
@@ -65,6 +62,8 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
         newconfig.setReadMode(ReadMode.MASTER);
         newconfig.setSubscriptionMode(SubscriptionMode.MASTER);
         newconfig.setKeepAlive(cfg.isKeepAlive());
+        newconfig.setTcpNoDelay(cfg.isTcpNoDelay());
+        newconfig.setNameMapper(cfg.getNameMapper());
         
         return newconfig;
     }

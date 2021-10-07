@@ -26,11 +26,13 @@ import javax.cache.configuration.MutableConfiguration;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryExpiredListener;
 import javax.cache.event.CacheEntryListenerException;
+import javax.cache.event.CacheEntryRemovedListener;
+import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.redisson.BaseTest;
 import org.redisson.RedisRunner;
 import org.redisson.RedisRunner.FailedToStartRedisException;
@@ -55,8 +57,8 @@ public class JCacheTest extends BaseTest {
                 .port(6311)
                 .run();
 
-        URL configUrl = getClass().getResource("redisson-jcache.json");
-        Config cfg = Config.fromJSON(configUrl);
+        URL configUrl = getClass().getResource("redisson-jcache.yaml");
+        Config cfg = Config.fromYAML(configUrl);
 
         MutableConfiguration c = new MutableConfiguration();
         c.setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(MILLISECONDS, 500)));
@@ -90,8 +92,8 @@ public class JCacheTest extends BaseTest {
                 .port(6311)
                 .run();
 
-        URL configUrl = getClass().getResource("redisson-jcache.json");
-        Config cfg = Config.fromJSON(configUrl);
+        URL configUrl = getClass().getResource("redisson-jcache.yaml");
+        Config cfg = Config.fromYAML(configUrl);
 
         Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
@@ -113,8 +115,8 @@ public class JCacheTest extends BaseTest {
                 .port(6311)
                 .run();
         
-        URL configUrl = getClass().getResource("redisson-jcache.json");
-        Config cfg = Config.fromJSON(configUrl);
+        URL configUrl = getClass().getResource("redisson-jcache.yaml");
+        Config cfg = Config.fromYAML(configUrl);
         
         Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
@@ -136,8 +138,8 @@ public class JCacheTest extends BaseTest {
                 .port(6311)
                 .run();
         
-        URL configUrl = getClass().getResource("redisson-jcache.json");
-        Config cfg = Config.fromJSON(configUrl);
+        URL configUrl = getClass().getResource("redisson-jcache.yaml");
+        Config cfg = Config.fromYAML(configUrl);
         
         Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
@@ -159,8 +161,8 @@ public class JCacheTest extends BaseTest {
                 .port(6311)
                 .run();
         
-        URL configUrl = getClass().getResource("redisson-jcache.json");
-        Config cfg = Config.fromJSON(configUrl);
+        URL configUrl = getClass().getResource("redisson-jcache.yaml");
+        Config cfg = Config.fromYAML(configUrl);
         
         Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
@@ -182,8 +184,8 @@ public class JCacheTest extends BaseTest {
                 .port(6311)
                 .run();
         
-        URL configUrl = getClass().getResource("redisson-jcache.json");
-        Config cfg = Config.fromJSON(configUrl);
+        URL configUrl = getClass().getResource("redisson-jcache.yaml");
+        Config cfg = Config.fromYAML(configUrl);
         
         Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
@@ -214,8 +216,8 @@ public class JCacheTest extends BaseTest {
                 .port(6311)
                 .run();
         
-        URL configUrl = getClass().getResource("redisson-jcache.json");
-        Config cfg = Config.fromJSON(configUrl);
+        URL configUrl = getClass().getResource("redisson-jcache.yaml");
+        Config cfg = Config.fromYAML(configUrl);
         
         Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
@@ -245,8 +247,8 @@ public class JCacheTest extends BaseTest {
                 .port(6311)
                 .run();
         
-        URL configUrl = getClass().getResource("redisson-jcache.json");
-        Config cfg = Config.fromJSON(configUrl);
+        URL configUrl = getClass().getResource("redisson-jcache.yaml");
+        Config cfg = Config.fromYAML(configUrl);
         
         Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
@@ -273,8 +275,8 @@ public class JCacheTest extends BaseTest {
                 .port(6311)
                 .run();
         
-        URL configUrl = getClass().getResource("redisson-jcache.json");
-        Config cfg = Config.fromJSON(configUrl);
+        URL configUrl = getClass().getResource("redisson-jcache.yaml");
+        Config cfg = Config.fromYAML(configUrl);
         
         Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
@@ -301,8 +303,8 @@ public class JCacheTest extends BaseTest {
                 .port(6311)
                 .run();
         
-        URL configUrl = getClass().getResource("redisson-jcache.json");
-        Config cfg = Config.fromJSON(configUrl);
+        URL configUrl = getClass().getResource("redisson-jcache.yaml");
+        Config cfg = Config.fromYAML(configUrl);
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         cfg.setCodec(new TypedJsonJacksonCodec(String.class, LocalDateTime.class, objectMapper));
@@ -313,52 +315,52 @@ public class JCacheTest extends BaseTest {
         
         LocalDateTime t = LocalDateTime.now();
         cache.put("1", t);
-        Assert.assertEquals(t, cache.get("1"));
+        Assertions.assertEquals(t, cache.get("1"));
         
         cache.close();
         runner.stop();
     }
 
     @Test
-    public void testRedissonConfig() throws InterruptedException, IllegalArgumentException, URISyntaxException, IOException {
+    public void testRedissonConfig() throws InterruptedException, IllegalArgumentException, IOException {
         RedisProcess runner = new RedisRunner()
                 .nosave()
                 .randomDir()
                 .port(6311)
                 .run();
         
-        URL configUrl = getClass().getResource("redisson-jcache.json");
-        Config cfg = Config.fromJSON(configUrl);
+        URL configUrl = getClass().getResource("redisson-jcache.yaml");
+        Config cfg = Config.fromYAML(configUrl);
         
         Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
         
         cache.put("1", "2");
-        Assert.assertEquals("2", cache.get("1"));
+        Assertions.assertEquals("2", cache.get("1"));
         
         cache.put("key", "value");
         String result = cache.getAndRemove("key");
 
-        Assert.assertEquals("value", result);
-        Assert.assertNull(cache.get("key"));
+        Assertions.assertEquals("value", result);
+        Assertions.assertNull(cache.get("key"));
 
         cache.put("key", "value");
         cache.remove("key");
-        Assert.assertNull(cache.get("key"));
+        Assertions.assertNull(cache.get("key"));
         
         cache.close();
         runner.stop();
     }
     
     @Test
-    public void testRedissonInstance() throws InterruptedException, IllegalArgumentException, URISyntaxException {
+    public void testRedissonInstance() throws IllegalArgumentException {
         Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
         
         cache.put("1", "2");
-        Assert.assertEquals("2", cache.get("1"));
+        Assertions.assertEquals("2", cache.get("1"));
         
         cache.close();
     }
@@ -375,7 +377,7 @@ public class JCacheTest extends BaseTest {
         config.setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, 1)));
         config.setStoreByValue(true);
         
-        URI configUri = getClass().getResource("redisson-jcache.json").toURI();
+        URI configUri = getClass().getResource("redisson-jcache.yaml").toURI();
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager(configUri, null)
                 .createCache("test", config);
 
@@ -383,17 +385,170 @@ public class JCacheTest extends BaseTest {
         
         String key = "123";
         ExpiredListener clientListener = new ExpiredListener(latch, key, "90");
-        MutableCacheEntryListenerConfiguration<String, String> listenerConfiguration = 
-                new MutableCacheEntryListenerConfiguration<String, String>(FactoryBuilder.factoryOf(clientListener), null, true, true);
+        MutableCacheEntryListenerConfiguration<String, String> listenerConfiguration =
+                new MutableCacheEntryListenerConfiguration<>(FactoryBuilder.factoryOf(clientListener), null, true, true);
         cache.registerCacheEntryListener(listenerConfiguration);
 
         cache.put(key, "90");
-        Assert.assertNotNull(cache.get(key));
+        Assertions.assertNotNull(cache.get(key));
         
         latch.await();
         
-        Assert.assertNull(cache.get(key));
+        Assertions.assertNull(cache.get(key));
         
+        cache.close();
+        runner.stop();
+    }
+
+    @Test
+    public void testUpdate() throws IOException, InterruptedException, URISyntaxException {
+        RedisProcess runner = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(6311)
+                .run();
+
+        MutableConfiguration<String, String> config = new MutableConfiguration<>();
+        config.setStoreByValue(true);
+
+        URI configUri = getClass().getResource("redisson-jcache.yaml").toURI();
+        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager(configUri, null)
+                .createCache("test", config);
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        String key = "123";
+
+        UpdatedListener clientListener = new UpdatedListener(latch, key, "80", "90");
+        MutableCacheEntryListenerConfiguration<String, String> listenerConfiguration =
+                new MutableCacheEntryListenerConfiguration<>(FactoryBuilder.factoryOf(clientListener), null, true, true);
+        cache.registerCacheEntryListener(listenerConfiguration);
+
+        cache.put(key, "80");
+        assertThat(cache.get(key)).isNotNull();
+
+        cache.put(key, "90");
+
+        latch.await();
+
+        assertThat(cache.get(key)).isNotNull();
+
+        cache.close();
+        runner.stop();
+    }
+
+    @Test
+    public void testUpdateAsync() throws IOException, InterruptedException, URISyntaxException {
+        RedisProcess runner = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(6311)
+                .run();
+
+        MutableConfiguration<String, String> config = new MutableConfiguration<>();
+        config.setStoreByValue(true);
+
+        URI configUri = getClass().getResource("redisson-jcache.yaml").toURI();
+        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager(configUri, null)
+                .createCache("test", config);
+
+        CountDownLatch latch = new CountDownLatch(2);
+
+        String key = "123";
+
+        UpdatedListener clientListener = new UpdatedListener(latch, key, "80", "90");
+        MutableCacheEntryListenerConfiguration<String, String> listenerConfiguration =
+                new MutableCacheEntryListenerConfiguration<>(FactoryBuilder.factoryOf(clientListener), null, true, false);
+        cache.registerCacheEntryListener(listenerConfiguration);
+
+        UpdatedListener secondClientListener = new UpdatedListener(latch, key, "80", "90");
+        MutableCacheEntryListenerConfiguration<String, String> secondListenerConfiguration =
+                new MutableCacheEntryListenerConfiguration<>(FactoryBuilder.factoryOf(secondClientListener), null, false, false);
+        cache.registerCacheEntryListener(secondListenerConfiguration);
+
+        cache.put(key, "80");
+        assertThat(cache.get(key)).isNotNull();
+
+        cache.put(key, "90");
+
+        latch.await();
+
+        assertThat(cache.get(key)).isNotNull();
+
+        cache.close();
+        runner.stop();
+    }
+
+    @Test
+    public void testUpdateWithoutOldValue() throws IOException, InterruptedException, URISyntaxException {
+        RedisProcess runner = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(6311)
+                .run();
+
+        MutableConfiguration<String, String> config = new MutableConfiguration<>();
+        config.setStoreByValue(true);
+
+        URI configUri = getClass().getResource("redisson-jcache.yaml").toURI();
+        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager(configUri, null)
+                .createCache("test", config);
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        String key = "123";
+
+        UpdatedListener secondClientListener = new UpdatedListener(latch, key, null, "90");
+        MutableCacheEntryListenerConfiguration<String, String> secondListenerConfiguration =
+                new MutableCacheEntryListenerConfiguration<>(FactoryBuilder.factoryOf(secondClientListener), null, false, true);
+        cache.registerCacheEntryListener(secondListenerConfiguration);
+
+        cache.put(key, "80");
+        assertThat(cache.get(key)).isNotNull();
+
+        cache.put(key, "90");
+
+        latch.await();
+
+        assertThat(cache.get(key)).isNotNull();
+
+        cache.close();
+        runner.stop();
+    }
+
+    @Test
+    public void testRemoveListener() throws IOException, InterruptedException, URISyntaxException {
+                RedisProcess runner = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(6311)
+                .run();
+
+        MutableConfiguration<String, String> config = new MutableConfiguration<>();
+        config.setStoreByValue(true);
+
+        URI configUri = getClass().getResource("redisson-jcache.yaml").toURI();
+        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager(configUri, null)
+                .createCache("test", config);
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        String key = "123";
+
+        RemovedListener clientListener = new RemovedListener(latch, key, "80");
+        MutableCacheEntryListenerConfiguration<String, String> listenerConfiguration =
+                new MutableCacheEntryListenerConfiguration<>(FactoryBuilder.factoryOf(clientListener), null, true, true);
+        cache.registerCacheEntryListener(listenerConfiguration);
+
+        cache.put(key, "80");
+        assertThat(cache.get(key)).isNotNull();
+
+        cache.remove(key);
+
+        latch.await();
+
+        assertThat(cache.get(key)).isNull();
+
         cache.close();
         runner.stop();
     }
@@ -420,10 +575,63 @@ public class JCacheTest extends BaseTest {
             
             assertThat(entry.getKey()).isEqualTo(key);
             assertThat(entry.getValue()).isEqualTo(value);
+            assertThat(entry.getOldValue()).isEqualTo(value);
+
             latch.countDown();
         }
 
         
     }
     
+    public static class UpdatedListener implements CacheEntryUpdatedListener<String, String>, Serializable {
+        private Object key;
+        private Object oldValue;
+        private Object value;
+        private CountDownLatch latch;
+
+        public UpdatedListener(CountDownLatch latch, Object key, Object oldValue, Object value) {
+            super();
+            this.latch = latch;
+            this.key = key;
+            this.oldValue = oldValue;
+            this.value = value;
+        }
+
+        @Override
+        public void onUpdated(Iterable<CacheEntryEvent<? extends String, ? extends String>> events)
+                throws CacheEntryListenerException {
+            CacheEntryEvent<? extends String, ? extends String> entry = events.iterator().next();
+
+            assertThat(entry.getKey()).isEqualTo(key);
+            assertThat(entry.getOldValue()).isEqualTo(oldValue);
+            assertThat(entry.getValue()).isEqualTo(value);
+
+            latch.countDown();
+        }
+    }
+
+    public static class RemovedListener implements CacheEntryRemovedListener<String, String>, Serializable {
+        private Object key;
+        private Object value;
+        private CountDownLatch latch;
+
+        public RemovedListener(CountDownLatch latch, Object key, Object value) {
+            super();
+            this.latch = latch;
+            this.key = key;
+            this.value = value;
+        }
+
+        @Override
+        public void onRemoved(Iterable<CacheEntryEvent<? extends String, ? extends String>> events)
+                throws CacheEntryListenerException {
+            CacheEntryEvent<? extends String, ? extends String> entry = events.iterator().next();
+
+            assertThat(entry.getKey()).isEqualTo(key);
+            assertThat(entry.getValue()).isEqualTo(value);
+            assertThat(entry.getOldValue()).isEqualTo(value);
+
+            latch.countDown();
+        }
+    }
 }

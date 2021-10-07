@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 package org.redisson.api;
+
+import org.redisson.api.queue.DequeMoveArgs;
 
 import java.util.List;
 
@@ -35,12 +37,28 @@ public interface RDequeAsync<V> extends RQueueAsync<V> {
     RFuture<Integer> addFirstIfExistsAsync(V... elements);
 
     /**
+     * Adds elements at the head of deque.
+     *
+     * @param elements - elements to add
+     * @return length of the deque
+     */
+    RFuture<Integer> addFirstAsync(V... elements);
+
+    /**
      * Adds element at the tail of existing deque.
      *
      * @param elements - elements to add
      * @return length of the list
      */
     RFuture<Integer> addLastIfExistsAsync(V... elements);
+
+    /**
+     * Adds elements at the tail of deque.
+     *
+     * @param elements - elements to add
+     * @return length of the deque
+     */
+    RFuture<Integer> addLastAsync(V... elements);
 
     /**
      * Removes last occurrence of element <code>o</code>
@@ -177,4 +195,26 @@ public interface RDequeAsync<V> extends RQueueAsync<V> {
      * @return list of tail elements
      */
     RFuture<List<V>> pollLastAsync(int limit);
+
+    /**
+     * Move element from this deque to the given destination deque.
+     * Returns moved element.
+     * <p>
+     * Usage examples:
+     * <pre>
+     * V element = deque.move(DequeMoveArgs.pollLast()
+     *                                 .addFirstTo("deque2"));
+     * </pre>
+     * <pre>
+     * V elements = deque.move(DequeMoveArgs.pollFirst()
+     *                                 .addLastTo("deque2"));
+     * </pre>
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param args - arguments object
+     * @return moved element
+     */
+    RFuture<V> moveAsync(DequeMoveArgs args);
+
 }

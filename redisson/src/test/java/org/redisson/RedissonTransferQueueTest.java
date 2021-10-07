@@ -1,7 +1,7 @@
 package org.redisson;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.redisson.api.RTransferQueue;
 
 import java.util.HashSet;
@@ -97,8 +97,8 @@ public class RedissonTransferQueueTest extends BaseTest {
         int l = queue1.take();
         takeExecuted.set(true);
 
-        Assert.assertEquals(3, l);
-        Assert.assertTrue(System.currentTimeMillis() - s > 3900);
+        Assertions.assertEquals(3, l);
+        Assertions.assertTrue(System.currentTimeMillis() - s > 3900);
         f.get();
         assertThat(queue1.size()).isZero();
         assertThat(queue1.peek()).isNull();
@@ -119,19 +119,19 @@ public class RedissonTransferQueueTest extends BaseTest {
         long s = System.currentTimeMillis();
         int l = queue1.take();
 
-        Assert.assertEquals(3, l);
-        Assert.assertTrue(System.currentTimeMillis() - s > 9000);
+        Assertions.assertEquals(3, l);
+        Assertions.assertTrue(System.currentTimeMillis() - s > 9000);
     }
 
     @Test
     public void testPoll() throws InterruptedException {
         RTransferQueue<Integer> queue1 = redisson.getTransferQueue("queue");
         queue1.put(1);
-        Assert.assertEquals((Integer)1, queue1.poll(2, TimeUnit.SECONDS));
+        Assertions.assertEquals((Integer)1, queue1.poll(2, TimeUnit.SECONDS));
 
         long s = System.currentTimeMillis();
-        Assert.assertNull(queue1.poll(5, TimeUnit.SECONDS));
-        Assert.assertTrue(System.currentTimeMillis() - s > 4900);
+        Assertions.assertNull(queue1.poll(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(System.currentTimeMillis() - s > 4900);
     }
 
     @Test
@@ -163,28 +163,28 @@ public class RedissonTransferQueueTest extends BaseTest {
         for (int i = 0 ; i < 100; i++) {
             queue.offer(i);
         }
-        Assert.assertEquals(100, queue.size());
+        Assertions.assertEquals(100, queue.size());
         Set<Integer> batch = new HashSet<>();
         int count = queue.drainTo(batch, 10);
-        Assert.assertEquals(10, count);
-        Assert.assertEquals(10, batch.size());
-        Assert.assertEquals(90, queue.size());
+        Assertions.assertEquals(10, count);
+        Assertions.assertEquals(10, batch.size());
+        Assertions.assertEquals(90, queue.size());
         queue.drainTo(batch, 10);
         queue.drainTo(batch, 20);
         queue.drainTo(batch, 60);
-        Assert.assertEquals(0, queue.size());
+        Assertions.assertEquals(0, queue.size());
     }
 
     @Test
     public void testDrainToSingle() {
         RTransferQueue<Integer> queue = redisson.getTransferQueue("queue");
-        Assert.assertTrue(queue.add(1));
-        Assert.assertEquals(1, queue.size());
+        Assertions.assertTrue(queue.add(1));
+        Assertions.assertEquals(1, queue.size());
         Set<Integer> batch = new HashSet<>();
         int count = queue.drainTo(batch);
-        Assert.assertEquals(1, count);
-        Assert.assertEquals(1, batch.size());
-        Assert.assertTrue(queue.isEmpty());
+        Assertions.assertEquals(1, count);
+        Assertions.assertEquals(1, batch.size());
+        Assertions.assertTrue(queue.isEmpty());
     }
 
     @Test
@@ -219,12 +219,7 @@ public class RedissonTransferQueueTest extends BaseTest {
         queue.add("5");
         queue.add("3");
 
-        for (Iterator<String> iterator = queue.iterator(); iterator.hasNext();) {
-            String value = iterator.next();
-            if (value.equals("2")) {
-                iterator.remove();
-            }
-        }
+        queue.removeIf(value -> value.equals("2"));
 
         assertThat(queue).containsExactly("1", "4", "5", "3");
 
@@ -235,10 +230,10 @@ public class RedissonTransferQueueTest extends BaseTest {
             iteration++;
         }
 
-        Assert.assertEquals(4, iteration);
+        Assertions.assertEquals(4, iteration);
 
-        Assert.assertEquals(0, queue.size());
-        Assert.assertTrue(queue.isEmpty());
+        Assertions.assertEquals(0, queue.size());
+        Assertions.assertTrue(queue.isEmpty());
     }
 
 }

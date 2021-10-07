@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.functions.Action;
 import io.reactivex.rxjava3.functions.LongConsumer;
 import io.reactivex.rxjava3.processors.ReplayProcessor;
+import org.redisson.liveobject.core.RedissonObjectBuilder;
 
 /**
  *
@@ -33,8 +34,8 @@ import io.reactivex.rxjava3.processors.ReplayProcessor;
  */
 public class CommandRxService extends CommandAsyncService implements CommandRxExecutor {
 
-    public CommandRxService(ConnectionManager connectionManager) {
-        super(connectionManager);
+    public CommandRxService(ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder) {
+        super(connectionManager, objectBuilder, RedissonObjectBuilder.ReferenceType.RXJAVA);
     }
 
     @Override

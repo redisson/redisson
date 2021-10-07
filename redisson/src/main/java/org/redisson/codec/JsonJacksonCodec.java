@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,7 +111,24 @@ public class JsonJacksonCodec extends BaseCodec {
     public JsonJacksonCodec(ClassLoader classLoader, JsonJacksonCodec codec) {
         this(createObjectMapper(classLoader, codec.mapObjectMapper.copy()));
     }
-    
+
+    private static boolean warmedup = false;
+
+    private void warmup() {
+        if (getValueEncoder() == null || getValueDecoder() == null || warmedup) {
+            return;
+        }
+        warmedup = true;
+
+        try {
+            ByteBuf d = getValueEncoder().encode("testValue");
+            getValueDecoder().decode(d, null);
+            d.release();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     protected static ObjectMapper createObjectMapper(ClassLoader classLoader, ObjectMapper om) {
         TypeFactory tf = TypeFactory.defaultInstance().withClassLoader(classLoader);
         om.setTypeFactory(tf);
@@ -122,6 +139,7 @@ public class JsonJacksonCodec extends BaseCodec {
         this.mapObjectMapper = mapObjectMapper.copy();
         init(this.mapObjectMapper);
         initTypeInclusion(this.mapObjectMapper);
+        warmup();
     }
 
     protected void initTypeInclusion(ObjectMapper mapObjectMapper) {

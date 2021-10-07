@@ -1,7 +1,8 @@
 package org.redisson;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -10,6 +11,7 @@ import org.redisson.config.Config;
 import org.redisson.connection.balancer.RandomLoadBalancer;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -53,7 +55,7 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
         }
     }
 
-    @Test(expected = WriteRedisConnectionException.class)
+    @Test
     public void testRedisFailed() throws IOException, InterruptedException {
         RedisRunner.RedisProcess master = new RedisRunner()
                 .port(6377)
@@ -65,11 +67,13 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
         config.useSingleServer().setAddress("redis://127.0.0.1:6377");
         RedissonClient redisson = Redisson.create(config);
 
-        RLock lock = redisson.getSpinLock("myLock");
-        // kill RedisServer while main thread is sleeping.
-        master.stop();
-        Thread.sleep(3000);
-        lock.tryLock(5, 10, TimeUnit.SECONDS);
+        Assertions.assertThrows(WriteRedisConnectionException.class, () -> {
+            RLock lock = redisson.getSpinLock("myLock");
+            // kill RedisServer while main thread is sleeping.
+            master.stop();
+            Thread.sleep(3000);
+            lock.tryLock(5, 10, TimeUnit.SECONDS);
+        });
     }
 
     @Test
@@ -81,9 +85,9 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
 
         RLock lock = redisson.getSpinLock("lock");
 
-        long startTime = System.currentTimeMillis();
-        lock.tryLock(3, TimeUnit.SECONDS);
-        assertThat(System.currentTimeMillis() - startTime).isBetween(3000L, 3200L);
+        Awaitility.await().between(Duration.ofMillis(3000), Duration.ofMillis(3200)).untilAsserted(() -> {
+            lock.tryLock(3, TimeUnit.SECONDS);
+        });
     }
 
     @Test
@@ -106,10 +110,10 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
         RLock lock = redisson.getSpinLock("lock");
         lock.lock();
         lock.forceUnlock();
-        Assert.assertFalse(lock.isLocked());
+        Assertions.assertFalse(lock.isLocked());
 
         lock = redisson.getSpinLock("lock");
-        Assert.assertFalse(lock.isLocked());
+        Assertions.assertFalse(lock.isLocked());
     }
 
     @Test
@@ -123,7 +127,7 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
                 RLock lock1 = redisson.getSpinLock("lock");
                 lock1.lock();
                 long spendTime = System.currentTimeMillis() - startTime;
-                Assert.assertTrue(spendTime < 2020);
+                Assertions.assertTrue(spendTime < 2020);
                 lock1.unlock();
             }
 
@@ -195,7 +199,7 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
 
         t.start();
 
-        Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(1, TimeUnit.SECONDS));
         RLock lock = redisson.getSpinLock("lock");
         t.join();
         r.shutdown();
@@ -206,19 +210,19 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
     @Test
     public void testGetHoldCount() {
         RLock lock = redisson.getSpinLock("lock");
-        Assert.assertEquals(0, lock.getHoldCount());
+        Assertions.assertEquals(0, lock.getHoldCount());
         lock.lock();
-        Assert.assertEquals(1, lock.getHoldCount());
+        Assertions.assertEquals(1, lock.getHoldCount());
         lock.unlock();
-        Assert.assertEquals(0, lock.getHoldCount());
+        Assertions.assertEquals(0, lock.getHoldCount());
 
         lock.lock();
         lock.lock();
-        Assert.assertEquals(2, lock.getHoldCount());
+        Assertions.assertEquals(2, lock.getHoldCount());
         lock.unlock();
-        Assert.assertEquals(1, lock.getHoldCount());
+        Assertions.assertEquals(1, lock.getHoldCount());
         lock.unlock();
-        Assert.assertEquals(0, lock.getHoldCount());
+        Assertions.assertEquals(0, lock.getHoldCount());
     }
 
     @Test
@@ -229,7 +233,7 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
         Thread t = new Thread() {
             public void run() {
                 RLock lock = redisson.getSpinLock("lock");
-                Assert.assertFalse(lock.isHeldByCurrentThread());
+                Assertions.assertFalse(lock.isHeldByCurrentThread());
             }
 
             ;
@@ -242,7 +246,7 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
         Thread t2 = new Thread() {
             public void run() {
                 RLock lock = redisson.getSpinLock("lock");
-                Assert.assertFalse(lock.isHeldByCurrentThread());
+                Assertions.assertFalse(lock.isHeldByCurrentThread());
             }
 
             ;
@@ -255,11 +259,11 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
     @Test
     public void testIsHeldByCurrentThread() {
         RLock lock = redisson.getSpinLock("lock");
-        Assert.assertFalse(lock.isHeldByCurrentThread());
+        Assertions.assertFalse(lock.isHeldByCurrentThread());
         lock.lock();
-        Assert.assertTrue(lock.isHeldByCurrentThread());
+        Assertions.assertTrue(lock.isHeldByCurrentThread());
         lock.unlock();
-        Assert.assertFalse(lock.isHeldByCurrentThread());
+        Assertions.assertFalse(lock.isHeldByCurrentThread());
     }
 
     @Test
@@ -270,7 +274,7 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
         Thread t = new Thread() {
             public void run() {
                 RLock lock = redisson.getSpinLock("lock");
-                Assert.assertTrue(lock.isLocked());
+                Assertions.assertTrue(lock.isLocked());
             }
 
             ;
@@ -283,7 +287,7 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
         Thread t2 = new Thread() {
             public void run() {
                 RLock lock = redisson.getSpinLock("lock");
-                Assert.assertFalse(lock.isLocked());
+                Assertions.assertFalse(lock.isLocked());
             }
 
             ;
@@ -296,43 +300,45 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
     @Test
     public void testIsLocked() {
         RLock lock = redisson.getSpinLock("lock");
-        Assert.assertFalse(lock.isLocked());
+        Assertions.assertFalse(lock.isLocked());
         lock.lock();
-        Assert.assertTrue(lock.isLocked());
+        Assertions.assertTrue(lock.isLocked());
         lock.unlock();
-        Assert.assertFalse(lock.isLocked());
+        Assertions.assertFalse(lock.isLocked());
     }
 
-    @Test(expected = IllegalMonitorStateException.class)
-    public void testUnlockFail() throws InterruptedException {
-        RLock lock = redisson.getSpinLock("lock");
-        Thread t = new Thread() {
-            public void run() {
-                RLock lock = redisson.getSpinLock("lock");
-                lock.lock();
+    @Test
+    public void testUnlockFail() {
+        Assertions.assertThrows(IllegalMonitorStateException.class, () -> {
+            RLock lock = redisson.getSpinLock("lock");
+            Thread t = new Thread() {
+                public void run() {
+                    RLock lock = redisson.getSpinLock("lock");
+                    lock.lock();
 
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+
+                    lock.unlock();
                 }
 
+                ;
+            };
+
+            t.start();
+            t.join(400);
+
+            try {
                 lock.unlock();
+            } catch (IllegalMonitorStateException e) {
+                t.join();
+                throw e;
             }
-
-            ;
-        };
-
-        t.start();
-        t.join(400);
-
-        try {
-            lock.unlock();
-        } catch (IllegalMonitorStateException e) {
-            t.join();
-            throw e;
-        }
+        });
     }
 
 
@@ -349,8 +355,8 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
     @Test
     public void testReentrancy() throws InterruptedException {
         Lock lock = redisson.getSpinLock("lock1");
-        Assert.assertTrue(lock.tryLock());
-        Assert.assertTrue(lock.tryLock());
+        Assertions.assertTrue(lock.tryLock());
+        Assertions.assertTrue(lock.tryLock());
         lock.unlock();
         // next row  for test renew expiration tisk.
         //Thread.currentThread().sleep(TimeUnit.SECONDS.toMillis(RedissonLock.LOCK_EXPIRATION_INTERVAL_SECONDS*2));
@@ -358,7 +364,7 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
             @Override
             public void run() {
                 RLock lock1 = redisson.getSpinLock("lock1");
-                Assert.assertFalse(lock1.tryLock());
+                Assertions.assertFalse(lock1.tryLock());
             }
         };
         thread1.start();
@@ -379,7 +385,7 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
             lock.unlock();
         });
 
-        Assert.assertEquals(iterations, lockedCounter.get());
+        Assertions.assertEquals(iterations, lockedCounter.get());
     }
 
     @Test
@@ -400,7 +406,7 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
             }
         });
 
-        Assert.assertEquals(16 * iterations, lockedCounter.get());
+        Assertions.assertEquals(16 * iterations, lockedCounter.get());
     }
 
     @Test
@@ -415,7 +421,7 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
             lock.unlock();
         });
 
-        Assert.assertEquals(iterations, lockedCounter.get());
+        Assertions.assertEquals(iterations, lockedCounter.get());
     }
 
     @Test
@@ -428,7 +434,7 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
             RFuture<Void> booleanRFuture = lock.lockAsync();
             booleanRFuture.onComplete((res, e) -> {
                 if (e != null) {
-                    Assert.fail("Lock aquire failed for some reason");
+                    Assertions.fail("Lock aquire failed for some reason");
                 }
                 lockAsyncSucceed.set(true);
             });
@@ -452,7 +458,7 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
             RFuture<Boolean> booleanRFuture = lock.tryLockAsync(1, 30, TimeUnit.SECONDS);
             booleanRFuture.onComplete((res, e) -> {
                 if (e != null) {
-                    Assert.fail("Lock aquire failed for some reason");
+                    Assertions.fail("Lock aquire failed for some reason");
                 }
                 lockAsyncSucceed.set(res);
             });
@@ -477,7 +483,7 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
             RFuture<Boolean> booleanRFuture = lock.tryLockAsync();
             booleanRFuture.onComplete((res, e) -> {
                 if (e != null) {
-                    Assert.fail("Lock aquire failed for some reason");
+                    Assertions.fail("Lock aquire failed for some reason");
                 }
                 lockAsyncSucceed.set(res);
             });

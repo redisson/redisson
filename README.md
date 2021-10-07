@@ -1,12 +1,12 @@
-# Redisson - Redis Java client<br/>with features of In-Memory Data Grid
+# Redisson - Redis Java client<br/>with features of an in-memory data grid
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.redisson/redisson/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.redisson/redisson)
 [![JavaDoc](http://www.javadoc.io/badge/org.redisson/redisson.svg)](http://www.javadoc.io/doc/org.redisson/redisson)
 [![License](http://img.shields.io/:license-apache-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
 
-[Quick start](https://github.com/redisson/redisson#quick-start) | [Documentation](https://github.com/redisson/redisson/wiki/Table-of-Content) | [Javadocs](https://www.javadoc.io/doc/org.redisson/redisson/latest/index.html) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [FAQs](https://github.com/redisson/redisson/wiki/16.-FAQ) | [Report an issue](https://github.com/redisson/redisson/issues/new)
+[Quick start](https://github.com/redisson/redisson#quick-start) | [Documentation](https://github.com/redisson/redisson/wiki/Table-of-Content) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [FAQs](https://github.com/redisson/redisson/wiki/16.-FAQ) | [Report an issue](https://github.com/redisson/redisson/issues/new)
 
 Based on high-performance async and lock-free Java Redis client and [Netty](http://netty.io) framework.  
-JDK compatibility:  1.8 - 15, Android  
+JDK compatibility:  1.8 - 17, Android  
 
 ## Features
 
@@ -31,7 +31,9 @@ JDK compatibility:  1.8 - 15, Android
     Lock, FairLock, MultiLock, RedLock, ReadWriteLock, Semaphore, PermitExpirableSemaphore, CountDownLatch
 * [Distributed services](https://github.com/redisson/redisson/wiki/9.-distributed-services)  
     Remote service, Live Object service, Executor service, Scheduler service, MapReduce service
-* [Spring Framework](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#141-spring-framework)
+* [Helidon](https://github.com/redisson/redisson/tree/master/redisson-helidon) integration  
+* [Micronaut](https://github.com/redisson/redisson/tree/master/redisson-micronaut) integration  
+* [Quarkus](https://github.com/redisson/redisson/tree/master/redisson-quarkus) integration  
 * [Spring Cache](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#142-spring-cache) implementation
 * [Spring Transaction API](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#148-spring-transaction-manager) implementation
 * [Spring Data Redis](https://github.com/redisson/redisson/tree/master/redisson-spring-data) integration
@@ -48,7 +50,7 @@ JDK compatibility:  1.8 - 15, Android
 * Supports failed to send command auto-retry  
 * Supports OSGi  
 * Supports SSL  
-* Supports many popular codecs ([Jackson JSON](https://github.com/FasterXML/jackson), [Avro](http://avro.apache.org/), [Smile](http://wiki.fasterxml.com/SmileFormatSpec), [CBOR](http://cbor.io/), [MsgPack](http://msgpack.org/), [Kryo](https://github.com/EsotericSoftware/kryo), [Amazon Ion](https://amzn.github.io/ion-docs/), [FST](https://github.com/RuedigerMoeller/fast-serialization), [LZ4](https://github.com/jpountz/lz4-java), [Snappy](https://github.com/xerial/snappy-java) and JDK Serialization)
+* Supports many popular codecs ([JBoss Marshalling](https://github.com/jboss-remoting/jboss-marshalling), [Jackson JSON](https://github.com/FasterXML/jackson), [Avro](http://avro.apache.org/), [Smile](http://wiki.fasterxml.com/SmileFormatSpec), [CBOR](http://cbor.io/), [MsgPack](http://msgpack.org/), [Kryo](https://github.com/EsotericSoftware/kryo), [Amazon Ion](https://amzn.github.io/ion-docs/), [LZ4](https://github.com/jpountz/lz4-java), [Snappy](https://github.com/xerial/snappy-java) and JDK Serialization)
 * With over 2000 unit tests  
 <!--
 Used by
@@ -102,14 +104,14 @@ Used by
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>3.15.1</version>
+       <version>3.16.3</version>
     </dependency>  
 
 #### Gradle
-    compile 'org.redisson:redisson:3.15.1'  
+    compile 'org.redisson:redisson:3.16.3'  
 
 #### SBT
-    libraryDependencies += "org.redisson" % "redisson" % "3.15.1"
+    libraryDependencies += "org.redisson" % "redisson" % "3.16.3"
 
 #### Java
 
@@ -131,10 +133,10 @@ config = Config.fromYAML(new File("config-file.yaml"));
 RedissonClient redisson = Redisson.create(config);
 
 // Reactive API
-RedissonReactiveClient redissonReactive = Redisson.createReactive(config);
+RedissonReactiveClient redissonReactive = redisson.reactive();
 
-// RxJava2 API
-RedissonRxClient redissonRx = Redisson.createRx(config);
+// RxJava3 API
+RedissonRxClient redissonRx = redisson.rxJava();
 ```
 
 ```java
@@ -163,12 +165,12 @@ RExecutorService executor = redisson.getExecutorService("myExecutorService");
 
 ```
 
-Consider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
+Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
 ## Downloads
    
-[Redisson 3.15.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.15.1&e=jar),
-[Redisson node 3.15.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.15.1&e=jar)  
+[Redisson 3.16.3](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.16.3&e=jar),
+[Redisson node 3.16.3](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.16.3&e=jar)  
 
 ## FAQs
 

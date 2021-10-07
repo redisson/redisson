@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,6 +51,10 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
 
     private boolean checkSentinelsList = true;
 
+    private boolean checkSlaveStatusWithSyncing = true;
+
+    private boolean sentinelsDiscovery = true;
+
     public SentinelServersConfig() {
     }
 
@@ -63,6 +67,8 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
         setNatMapper(config.getNatMapper());
         setCheckSentinelsList(config.isCheckSentinelsList());
         setSentinelPassword(config.getSentinelPassword());
+        setCheckSlaveStatusWithSyncing(config.isCheckSlaveStatusWithSyncing());
+        setSentinelsDiscovery(config.isSentinelsDiscovery());
     }
 
     /**
@@ -108,7 +114,7 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
     public List<String> getSentinelAddresses() {
         return sentinelAddresses;
     }
-    void setSentinelAddresses(List<String> sentinelAddresses) {
+    public void setSentinelAddresses(List<String> sentinelAddresses) {
         this.sentinelAddresses = sentinelAddresses;
     }
 
@@ -187,6 +193,40 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
      */
     public SentinelServersConfig setCheckSentinelsList(boolean checkSentinelsList) {
         this.checkSentinelsList = checkSentinelsList;
+        return this;
+    }
+
+    public boolean isCheckSlaveStatusWithSyncing() {
+        return checkSlaveStatusWithSyncing;
+    }
+
+    /**
+     * check node status from sentinel with 'master-link-status' flag
+     * <p>
+     * Default is <code>true</code>
+     *
+     * @param checkSlaveStatusWithSyncing - boolean value
+     * @return config
+     */
+    public SentinelServersConfig setCheckSlaveStatusWithSyncing(boolean checkSlaveStatusWithSyncing) {
+        this.checkSlaveStatusWithSyncing = checkSlaveStatusWithSyncing;
+        return this;
+    }
+
+    public boolean isSentinelsDiscovery() {
+        return sentinelsDiscovery;
+    }
+
+    /**
+     * Enables sentinels discovery.
+     * <p>
+     * Default is <code>true</code>
+     *
+     * @param sentinelsDiscovery - boolean value
+     * @return config
+     */
+    public SentinelServersConfig setSentinelsDiscovery(boolean sentinelsDiscovery) {
+        this.sentinelsDiscovery = sentinelsDiscovery;
         return this;
     }
 }

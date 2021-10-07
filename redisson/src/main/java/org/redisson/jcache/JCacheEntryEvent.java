@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,11 +33,20 @@ public class JCacheEntryEvent<K, V> extends CacheEntryEvent<K, V> {
 
     private final Object key;
     private final Object value;
-    
+    private final Object oldValue;
+
     public JCacheEntryEvent(Cache<K, V> source, EventType eventType, Object key, Object value) {
         super(source, eventType);
         this.key = key;
         this.value = value;
+        this.oldValue = null;
+    }
+
+    public JCacheEntryEvent(Cache<K, V> source, EventType eventType, Object key, Object value, Object oldValue) {
+        super(source, eventType);
+        this.key = key;
+        this.value = value;
+        this.oldValue = oldValue;
     }
 
     @Override
@@ -61,14 +70,12 @@ public class JCacheEntryEvent<K, V> extends CacheEntryEvent<K, V> {
 
     @Override
     public V getOldValue() {
-        // TODO Auto-generated method stub
-        return null;
+        return (V) oldValue;
     }
 
     @Override
     public boolean isOldValueAvailable() {
-        // TODO Auto-generated method stub
-        return false;
+        return oldValue != null;
     }
 
 }

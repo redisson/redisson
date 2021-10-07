@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,13 +74,20 @@ public class RedissonListReactive<V> {
                 emitter.onRequest(new LongConsumer() {
                     
                     int currentIndex = startIndex;
+                    volatile boolean maxAccepted;
                     
                     @Override
                     public void accept(long value) {
+                        if (Long.MAX_VALUE == value) {
+                            maxAccepted = true;
+                        }
+                        if (maxAccepted && value != Long.MAX_VALUE) {
+                            return;
+                        }
                         onRequest(forward, emitter, value);
                     }
                     
-                    protected void onRequest(boolean forward, FluxSink<V> emitter, long n) {
+                    private void onRequest(boolean forward, FluxSink<V> emitter, long n) {
                         instance.getAsync(currentIndex).onComplete((value, e) -> {
                                 if (e != null) {
                                     emitter.error(e);

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package org.redisson.liveobject.core;
 
 import io.netty.buffer.ByteBuf;
 import net.bytebuddy.implementation.bind.annotation.*;
+import org.redisson.RedissonObject;
 import org.redisson.RedissonReference;
 import org.redisson.RedissonScoredSortedSet;
 import org.redisson.RedissonSetMultimap;
@@ -28,7 +29,6 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
-import org.redisson.connection.ConnectionManager;
 import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.liveobject.misc.Introspectior;
 import org.redisson.liveobject.resolver.NamingScheme;
@@ -54,11 +54,9 @@ public class AccessorInterceptor {
     private static final Pattern FIELD_PATTERN = Pattern.compile("^(get|set|is)");
 
     private final CommandAsyncExecutor commandExecutor;
-    private final ConnectionManager connectionManager;
 
-    public AccessorInterceptor(CommandAsyncExecutor commandExecutor, ConnectionManager connectionManager) {
+    public AccessorInterceptor(CommandAsyncExecutor commandExecutor) {
         this.commandExecutor = commandExecutor;
-        this.connectionManager = connectionManager;
     }
 
     @RuntimeType
@@ -97,7 +95,7 @@ public class AccessorInterceptor {
                 return result;
             }
             if (result instanceof RedissonReference) {
-                return commandExecutor.getObjectBuilder().fromReference((RedissonReference) result);
+                return commandExecutor.getObjectBuilder().fromReference((RedissonReference) result, RedissonObjectBuilder.ReferenceType.DEFAULT);
             }
             return result;
         }
@@ -188,7 +186,7 @@ public class AccessorInterceptor {
         if (commandExecutor instanceof CommandBatchService) {
             ce = (CommandBatchService) commandExecutor;
         } else {
-            ce = new CommandBatchService(connectionManager);
+            ce = new CommandBatchService(commandExecutor);
         }
 
         if (Number.class.isAssignableFrom(field.getType()) || PRIMITIVE_CLASSES.contains(field.getType())) {
@@ -196,7 +194,7 @@ public class AccessorInterceptor {
             set.removeAsync(((RLiveObject) me).getLiveObjectId());
         } else {
             if (ClassUtils.isAnnotationPresent(field.getType(), REntity.class)
-                    || connectionManager.isClusterMode()) {
+                    || commandExecutor.getConnectionManager().isClusterMode()) {
                 Object value = liveMap.remove(field.getName());
                 if (value != null) {
                     RMultimapAsync<Object, Object> map = new RedissonSetMultimap<>(namingScheme.getCodec(), ce, indexName);
@@ -207,11 +205,14 @@ public class AccessorInterceptor {
                     map.removeAsync(k, ((RLiveObject) me).getLiveObjectId());
                 }
             } else {
-                removeAsync(ce, indexName, liveMap.getName(), namingScheme.getCodec(), ((RLiveObject) me).getLiveObjectId(), field.getName());
+                removeAsync(ce, indexName, ((RedissonObject) liveMap).getRawName(),
+                        namingScheme.getCodec(), ((RLiveObject) me).getLiveObjectId(), field.getName());
             }
         }
 
-        ce.execute();
+        if (ce != commandExecutor) {
+            ce.execute();
+        }
     }
 
     private void removeAsync(CommandBatchService ce, String name, String mapName, Codec codec, Object value, String fieldName) {
@@ -246,7 +247,7 @@ public class AccessorInterceptor {
             ce = (CommandBatchService) commandExecutor;
             skipExecution = true;
         } else {
-            ce = new CommandBatchService(connectionManager);
+            ce = new CommandBatchService(commandExecutor);
         }
 
         if (arg instanceof Number) {

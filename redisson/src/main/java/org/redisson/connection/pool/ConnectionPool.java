@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,8 @@ import java.net.InetSocketAddress;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
@@ -51,7 +52,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    protected final List<ClientConnectionsEntry> entries = new CopyOnWriteArrayList<ClientConnectionsEntry>();
+    protected final Queue<ClientConnectionsEntry> entries = new ConcurrentLinkedQueue<>();
 
     final ConnectionManager connectionManager;
 
@@ -119,7 +120,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
                 promise.onComplete((conn, e) -> {
                         if (e == null) {
                             if (!initPromise.isDone()) {
-                                releaseConnection(entry, conn);
+                                entry.addConnection(conn);
                             } else {
                                 conn.closeAsync();
                             }
@@ -171,12 +172,11 @@ abstract class ConnectionPool<T extends RedisConnection> {
                         }
                 });
             }
-        });
-
+        }, null);
     }
 
-    protected void acquireConnection(ClientConnectionsEntry entry, Runnable runnable) {
-        entry.acquireConnection(runnable);
+    protected void acquireConnection(ClientConnectionsEntry entry, Runnable runnable, RedisCommand<?> command) {
+        entry.acquireConnection(runnable, command);
     }
 
     protected abstract int getMinimumIdleSize(ClientConnectionsEntry entry);
@@ -228,29 +228,12 @@ abstract class ConnectionPool<T extends RedisConnection> {
     protected final RFuture<T> acquireConnection(RedisCommand<?> command, ClientConnectionsEntry entry) {
         RPromise<T> result = new RedissonPromise<T>();
 
-            AcquireCallback<T> callback = new AcquireCallback<T>() {
-                boolean executed;
-                
-                @Override
-                public void run() {
-                    executed = true;
-                    connectTo(entry, result);
-                }
-                
-                @Override
-                public void accept(T t, Throwable u) {
-                    if (executed) {
-                        return;
-                    }
-                    entry.removeConnection(this);
-                }
-            };
-            
-            result.onComplete(callback);
-            acquireConnection(entry, callback);
-        
-            return result;
-        }
+        Runnable callback = () -> {
+            connectTo(entry, result, command);
+        };
+        acquireConnection(entry, callback, command);
+        return result;
+    }
         
     protected boolean tryAcquireConnection(ClientConnectionsEntry entry) {
         if (entry.getNodeType() == NodeType.SLAVE && entry.isFailed()) {
@@ -260,20 +243,20 @@ abstract class ConnectionPool<T extends RedisConnection> {
         return true;
     }
 
-    protected T poll(ClientConnectionsEntry entry) {
-        return (T) entry.pollConnection();
+    protected T poll(ClientConnectionsEntry entry, RedisCommand<?> command) {
+        return (T) entry.pollConnection(command);
     }
 
     protected RFuture<T> connect(ClientConnectionsEntry entry) {
         return (RFuture<T>) entry.connect();
     }
 
-    private void connectTo(ClientConnectionsEntry entry, RPromise<T> promise) {
+    private void connectTo(ClientConnectionsEntry entry, RPromise<T> promise, RedisCommand<?> command) {
         if (promise.isDone()) {
             releaseConnection(entry);
             return;
         }
-        T conn = poll(entry);
+        T conn = poll(entry, command);
         if (conn != null) {
             if (!conn.isActive() && entry.getNodeType() == NodeType.SLAVE) {
                 entry.trySetupFistFail();

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -139,7 +139,7 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
     public RedissonBaseAdder(CommandAsyncExecutor connectionManager, String name, RedissonClient redisson) {
         super(connectionManager, name);
         
-        topic = redisson.getTopic(suffixName(getName(), "topic"), StringCodec.INSTANCE);
+        topic = redisson.getTopic(suffixName(getRawName(), "topic"), StringCodec.INSTANCE);
         this.redisson = redisson;
         listenerId = topic.addListener(String.class, (channel, msg) -> {
             String[] parts = msg.split(":");
@@ -201,11 +201,11 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
     }
 
     private RSemaphore getSemaphore(String id) {
-        return redisson.getSemaphore(suffixName(getName(), id + ":semaphore"));
+        return redisson.getSemaphore(suffixName(getRawName(), id + ":semaphore"));
     }
 
     protected String getCounterName(String id) {
-        return suffixName(getName(), id + ":counter");
+        return suffixName(getRawName(), id + ":counter");
     }
 
     public RFuture<T> sumAsync(long timeout, TimeUnit timeUnit) {

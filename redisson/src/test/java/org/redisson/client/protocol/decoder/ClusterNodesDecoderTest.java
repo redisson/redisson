@@ -3,8 +3,8 @@ package org.redisson.client.protocol.decoder;
 import java.io.IOException;
 import java.util.List;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.redisson.cluster.ClusterNodeInfo;
 
 import io.netty.buffer.ByteBuf;
@@ -28,8 +28,8 @@ public class ClusterNodesDecoderTest {
         buf.writeBytes(src);
         List<ClusterNodeInfo> nodes = decoder.decode(buf, null);
         ClusterNodeInfo node = nodes.get(0);
-        Assert.assertEquals("192.168.234.129", node.getAddress().getHost());
-        Assert.assertEquals(7001, node.getAddress().getPort());
+        Assertions.assertEquals("192.168.234.129", node.getAddress().getHost());
+        Assertions.assertEquals(7001, node.getAddress().getPort());
     }
     
 }

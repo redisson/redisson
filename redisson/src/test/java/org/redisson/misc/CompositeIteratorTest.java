@@ -1,11 +1,12 @@
 package org.redisson.misc;
 
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertFalse;
 
 import java.util.*;
 
-import org.junit.Test;
 
 /**
  * @author Pepe Lu
@@ -17,15 +18,17 @@ public class CompositeIteratorTest {
 		List<Integer> emptyList = new ArrayList<Integer>();
 		CompositeIterable<Integer> compositeIterable = new CompositeIterable<Integer>(
 				emptyList);
-		assertFalse(compositeIterable.iterator().hasNext());
+		assertThat(compositeIterable.iterator().hasNext()).isFalse();
 	}
 
-	@Test(expected = NoSuchElementException.class)
+	@Test
 	public void testNextWithEmpty() {
-		List<Integer> emptyList = new ArrayList<Integer>();
-		CompositeIterable<Integer> compositeIterable = new CompositeIterable<Integer>(
-				emptyList);
-		compositeIterable.iterator().next();
+		Assertions.assertThrows(NoSuchElementException.class, () -> {
+			List<Integer> emptyList = new ArrayList<Integer>();
+			CompositeIterable<Integer> compositeIterable = new CompositeIterable<Integer>(
+					emptyList);
+			compositeIterable.iterator().next();
+		});
 	}
 
 	@Test
@@ -36,7 +39,7 @@ public class CompositeIteratorTest {
 		Iterator<Integer> iterator = compositeIterable.iterator();
 		assertThat(iterator.next()).isEqualTo(1);
 		assertThat(iterator.next()).isEqualTo(2);
-		assertFalse(iterator.hasNext());
+		assertThat(iterator.hasNext()).isFalse();
 	}
 
 	@Test
@@ -50,15 +53,17 @@ public class CompositeIteratorTest {
 		assertThat(iterator.next()).isEqualTo(2);
 		assertThat(iterator.next()).isEqualTo(3);
 		assertThat(iterator.next()).isEqualTo(4);
-		assertFalse(iterator.hasNext());
+		assertThat(iterator.hasNext()).isFalse();
 	}
 
-	@Test(expected = IllegalStateException.class)
+	@Test
 	public void testRemoveWithEmpty() {
-		List<Integer> emptyList = new ArrayList<Integer>();
-		CompositeIterable<Integer> compositeIterable = new CompositeIterable<Integer>(
-				emptyList);
-		compositeIterable.iterator().remove();
+		Assertions.assertThrows(IllegalStateException.class, () -> {
+			List<Integer> emptyList = new ArrayList<>();
+			CompositeIterable<Integer> compositeIterable = new CompositeIterable<Integer>(
+					emptyList);
+			compositeIterable.iterator().remove();
+		});
 	}
 
 	@Test

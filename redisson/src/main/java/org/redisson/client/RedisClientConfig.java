@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,8 +63,9 @@ public class RedisClientConfig {
     private String sslTruststorePassword;
     private URL sslKeystore;
     private String sslKeystorePassword;
-    private NettyHook nettyHook = new NettyHook() {};
-    
+    private String[] sslProtocols;
+    private NettyHook nettyHook = new DefaultNettyHook();
+
     public RedisClientConfig() {
     }
     
@@ -313,4 +314,11 @@ public class RedisClientConfig {
         return this;
     }
 
+    public String[] getSslProtocols() {
+        return sslProtocols;
+    }
+    public RedisClientConfig setSslProtocols(String[] sslProtocols) {
+        this.sslProtocols = sslProtocols;
+        return this;
+    }
 }

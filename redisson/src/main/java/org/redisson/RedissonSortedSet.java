@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.command.CommandExecutor;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
@@ -69,35 +69,35 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     private Comparator comparator = Comparator.naturalOrder();
 
-    CommandExecutor commandExecutor;
+    CommandAsyncExecutor commandExecutor;
     
     private RLock lock;
     private RedissonList<V> list;
     private RBucket<String> comparatorHolder;
     private RedissonClient redisson;
 
-    protected RedissonSortedSet(CommandExecutor commandExecutor, String name, RedissonClient redisson) {
+    protected RedissonSortedSet(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name);
         this.commandExecutor = commandExecutor;
         this.redisson = redisson;
 
         comparatorHolder = redisson.getBucket(getComparatorKeyName(), StringCodec.INSTANCE);
-        lock = redisson.getLock("redisson_sortedset_lock:{" + getName() + "}");
-        list = (RedissonList<V>) redisson.<V>getList(getName());
+        lock = redisson.getLock("redisson_sortedset_lock:{" + getRawName() + "}");
+        list = (RedissonList<V>) redisson.<V>getList(getRawName());
     }
 
-    public RedissonSortedSet(Codec codec, CommandExecutor commandExecutor, String name, Redisson redisson) {
+    public RedissonSortedSet(Codec codec, CommandAsyncExecutor commandExecutor, String name, Redisson redisson) {
         super(codec, commandExecutor, name);
         this.commandExecutor = commandExecutor;
 
         comparatorHolder = redisson.getBucket(getComparatorKeyName(), StringCodec.INSTANCE);
-        lock = redisson.getLock("redisson_sortedset_lock:{" + getName() + "}");
-        list = (RedissonList<V>) redisson.<V>getList(getName(), codec);
+        lock = redisson.getLock("redisson_sortedset_lock:{" + getRawName() + "}");
+        list = (RedissonList<V>) redisson.<V>getList(getRawName(), codec);
     }
     
     @Override
     public <KOut, VOut> RCollectionMapReduce<V, KOut, VOut> mapReduce() {
-        return new RedissonCollectionMapReduce<V, KOut, VOut>(this, redisson, commandExecutor.getConnectionManager());
+        return new RedissonCollectionMapReduce<V, KOut, VOut>(this, redisson, commandExecutor);
     }
 
     private void loadComparator() {
@@ -150,7 +150,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public RFuture<Collection<V>> readAllAsync() {
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.LRANGE_SET, getName(), 0, -1);
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.LRANGE_SET, getRawName(), 0, -1);
     }
     
     @Override
@@ -196,14 +196,14 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
                 
                 ByteBuf encodedValue = encode(value);
                 
-                commandExecutor.evalWrite(getName(), RedisCommands.EVAL_VOID, 
+                commandExecutor.get(commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
                    "local len = redis.call('llen', KEYS[1]);"
                     + "if tonumber(ARGV[1]) < len then "
                         + "local pivot = redis.call('lindex', KEYS[1], ARGV[1]);"
                         + "redis.call('linsert', KEYS[1], 'before', pivot, ARGV[2]);"
                         + "return;"
                     + "end;"
-                    + "redis.call('rpush', KEYS[1], ARGV[2]);", Arrays.<Object>asList(getName()), index, encodedValue);
+                    + "redis.call('rpush', KEYS[1], ARGV[2]);", Arrays.<Object>asList(getRawName()), index, encodedValue));
                 return true;
             } else {
                 return false;
@@ -366,7 +366,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     }
 
     private String getComparatorKeyName() {
-        return "redisson_sortedset_comparator:{" + getName() + "}";
+        return "redisson_sortedset_comparator:{" + getRawName() + "}";
     }
 
     @Override
@@ -374,14 +374,14 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         String className = comparator.getClass().getName();
         final String comparatorSign = className + ":" + calcClassSign(className);
 
-        Boolean res = commandExecutor.evalWrite(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        Boolean res = commandExecutor.get(commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('llen', KEYS[1]) == 0 then "
                 + "redis.call('set', KEYS[2], ARGV[1]); "
                 + "return 1; "
                 + "else "
                 + "return 0; "
                 + "end",
-                Arrays.<Object>asList(getName(), getComparatorKeyName()), comparatorSign);
+                Arrays.<Object>asList(getRawName(), getComparatorKeyName()), comparatorSign));
         if (res) {
             this.comparator = comparator;
         }

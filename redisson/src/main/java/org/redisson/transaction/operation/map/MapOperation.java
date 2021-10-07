@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,6 @@ public abstract class MapOperation extends TransactionalOperation {
     Object oldValue;
     RMap<?, ?> map;
     String transactionId;
-    long threadId;
 
     public MapOperation() {
     }
@@ -46,13 +45,12 @@ public abstract class MapOperation extends TransactionalOperation {
     }
     
     public MapOperation(RMap<?, ?> map, Object key, Object value, Object oldValue, String transactionId, long threadId) {
-        super(map.getName(), map.getCodec());
+        super(map.getName(), map.getCodec(), threadId);
         this.map = map;
         this.key = key;
         this.value = value;
         this.oldValue = oldValue;
         this.transactionId = transactionId;
-        this.threadId = threadId;
     }
 
     public Object getKey() {

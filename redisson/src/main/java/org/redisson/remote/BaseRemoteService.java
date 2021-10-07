@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ public abstract class BaseRemoteService {
 
     public BaseRemoteService(Codec codec, String name, CommandAsyncExecutor commandExecutor, String executorId, ConcurrentMap<String, ResponseEntry> responses) {
         this.codec = codec;
-        this.name = name;
+        this.name = commandExecutor.getConnectionManager().getConfig().getNameMapper().map(name);
         this.commandExecutor = commandExecutor;
         this.executorId = executorId;
         this.responses = responses;
@@ -92,12 +92,7 @@ public abstract class BaseRemoteService {
 
 
     public String getRequestQueueName(Class<?> remoteInterface) {
-        String str = requestQueueNameCache.get(remoteInterface);
-        if (str == null) {
-            str = "{" + name + ":" + remoteInterface.getName() + "}";
-            requestQueueNameCache.put(remoteInterface, str);
-        }
-        return str;
+        return requestQueueNameCache.computeIfAbsent(remoteInterface, k -> "{" + name + ":" + k.getName() + "}");
     }
 
     protected ByteBuf encode(Object obj) {

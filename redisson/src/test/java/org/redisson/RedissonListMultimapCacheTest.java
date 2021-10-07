@@ -1,11 +1,11 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
+import org.redisson.api.RMultimapCache;
 
 import java.util.Arrays;
 
-import org.junit.Test;
-import org.redisson.api.RMultimapCache;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonListMultimapCacheTest extends RedissonBaseMultimapCacheTest {
 
@@ -15,7 +15,7 @@ public class RedissonListMultimapCacheTest extends RedissonBaseMultimapCacheTest
     }
 
     @Test
-    public void testValues() throws InterruptedException {
+    public void testValues() {
         RMultimapCache<String, String> multimap = getMultimapCache("test");
         multimap.put("1", "1");
         multimap.put("1", "2");

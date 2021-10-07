@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,11 +31,11 @@ public class RedissonBatchReactive implements RBatchReactive {
 
     private final EvictionScheduler evictionScheduler;
     private final CommandReactiveBatchService executorService;
-    private final CommandReactiveService commandExecutor;
+    private final CommandReactiveExecutor commandExecutor;
 
-    public RedissonBatchReactive(EvictionScheduler evictionScheduler, ConnectionManager connectionManager, CommandReactiveService commandExecutor, BatchOptions options) {
+    public RedissonBatchReactive(EvictionScheduler evictionScheduler, ConnectionManager connectionManager, CommandReactiveExecutor commandExecutor, BatchOptions options) {
         this.evictionScheduler = evictionScheduler;
-        this.executorService = new CommandReactiveBatchService(connectionManager, options);
+        this.executorService = new CommandReactiveBatchService(connectionManager, commandExecutor, options);
         this.commandExecutor = commandExecutor;
     }
 
@@ -233,8 +233,9 @@ public class RedissonBatchReactive implements RBatchReactive {
         return commandExecutor.reactive(() -> executorService.executeAsync());
     }
 
-    public void enableRedissonReferenceSupport(RedissonReactiveClient redissonReactive) {
-        this.executorService.enableRedissonReferenceSupport(redissonReactive);
+    @Override
+    public Mono<Void> discard() {
+        return commandExecutor.reactive(() -> executorService.discardAsync());
     }
 
     @Override

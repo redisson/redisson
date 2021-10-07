@@ -1,11 +1,11 @@
 package org.redisson;
 
-import org.junit.Test;
 import static org.assertj.core.api.Assertions.*;
 
 import java.util.Arrays;
 import java.util.List;
 
+import org.junit.jupiter.api.Test;
 import org.redisson.api.RRingBuffer;
 
 public class RedissonRingBufferTest extends BaseTest {

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,9 @@
  */
 package org.redisson.command;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelPromise;
 import org.redisson.api.BatchOptions;
 import org.redisson.api.BatchOptions.ExecutionMode;
 import org.redisson.api.RFuture;
@@ -31,10 +30,15 @@ import org.redisson.command.CommandBatchService.Entry;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.NodeSource;
 import org.redisson.connection.NodeSource.Redirect;
+import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 
@@ -49,9 +53,10 @@ public class RedisCommonBatchExecutor extends RedisExecutor<Object, Void> {
     private final AtomicInteger slots;
     private final BatchOptions options;
     
-    public RedisCommonBatchExecutor(NodeSource source, RPromise<Void> mainPromise, 
-            ConnectionManager connectionManager, BatchOptions options, Entry entry, AtomicInteger slots) {
-        super(entry.isReadOnlyMode(), source, null, null, null, mainPromise, false, connectionManager, null);
+    public RedisCommonBatchExecutor(NodeSource source, RPromise<Void> mainPromise,
+                                    ConnectionManager connectionManager, BatchOptions options, Entry entry, AtomicInteger slots, RedissonObjectBuilder.ReferenceType referenceType) {
+        super(entry.isReadOnlyMode(), source, null, null, null,
+                mainPromise, false, connectionManager, null, referenceType);
         this.options = options;
         this.entry = entry;
         this.slots = slots;
@@ -95,7 +100,7 @@ public class RedisCommonBatchExecutor extends RedisExecutor<Object, Void> {
         List<CommandData<?, ?>> list = new ArrayList<>(entry.getCommands().size());
         if (source.getRedirect() == Redirect.ASK) {
             RPromise<Void> promise = new RedissonPromise<Void>();
-            list.add(new CommandData<Void, Void>(promise, StringCodec.INSTANCE, RedisCommands.ASKING, new Object[] {}));
+            list.add(new CommandData<>(promise, StringCodec.INSTANCE, RedisCommands.ASKING, new Object[] {}));
         } 
         for (CommandData<?, ?> c : entry.getCommands()) {
             if ((c.getPromise().isCancelled() || c.getPromise().isSuccess()) 
@@ -113,7 +118,37 @@ public class RedisCommonBatchExecutor extends RedisExecutor<Object, Void> {
             timeout.cancel();
             return;
         }
-        
+
+        sendCommand(connection, attemptPromise, list);
+    }
+
+    private void sendCommand(RedisConnection connection, RPromise<Void> attemptPromise, List<CommandData<?, ?>> list) {
+        boolean isAtomic = options.getExecutionMode() != ExecutionMode.IN_MEMORY;
+        boolean isQueued = options.getExecutionMode() == ExecutionMode.REDIS_READ_ATOMIC
+                || options.getExecutionMode() == ExecutionMode.REDIS_WRITE_ATOMIC;
+
+        CommandData<?, ?> lastCommand = connection.getLastCommand();
+        if (lastCommand != null && options.isSkipResult()) {
+            writeFuture = connection.getChannel().newPromise();
+            lastCommand.getPromise().onComplete((r, e) -> {
+                CommandData<?, ?> currentLastCommand = connection.getLastCommand();
+                if (lastCommand != currentLastCommand && currentLastCommand != null) {
+                    sendCommand(connection, attemptPromise, list);
+                    return;
+                }
+
+                ChannelFuture wf = connection.send(new CommandsData(attemptPromise, list, options.isSkipResult(), isAtomic, isQueued, options.getSyncSlaves() > 0));
+                wf.addListener((ChannelFutureListener) future -> {
+                    if (future.isSuccess()) {
+                        ((ChannelPromise) writeFuture).trySuccess(future.getNow());
+                    } else {
+                        ((ChannelPromise) writeFuture).tryFailure(future.cause());
+                    }
+                });
+            });
+            return;
+        }
+
         writeFuture = connection.send(new CommandsData(attemptPromise, list, options.isSkipResult(), isAtomic, isQueued, options.getSyncSlaves() > 0));
     }
 

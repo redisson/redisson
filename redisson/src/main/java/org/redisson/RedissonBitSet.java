@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,90 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
     public RedissonBitSet(CommandAsyncExecutor connectionManager, String name) {
         super(null, connectionManager, name);
+    }
+
+    @Override
+    public long getSigned(int size, long offset) {
+        return get(getSignedAsync(size, offset));
+    }
+
+    @Override
+    public long setSigned(int size, long offset, long value) {
+        return get(setSignedAsync(size, offset, value));
+    }
+
+    @Override
+    public long incrementAndGetSigned(int size, long offset, long increment) {
+        return get(incrementAndGetSignedAsync(size, offset, increment));
+    }
+
+    @Override
+    public long getUnsigned(int size, long offset) {
+        return get(getUnsignedAsync(size, offset));
+    }
+
+    @Override
+    public long setUnsigned(int size, long offset, long value) {
+        return get(setUnsignedAsync(size, offset, value));
+    }
+
+    @Override
+    public long incrementAndGetUnsigned(int size, long offset, long increment) {
+        return get(incrementAndGetUnsignedAsync(size, offset, increment));
+    }
+
+    @Override
+    public RFuture<Long> getSignedAsync(int size, long offset) {
+        if (size > 64) {
+            throw new IllegalArgumentException("Size can't be greater than 64 bits");
+        }
+        return commandExecutor.readAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_LONG,
+                                            getRawName(), "GET", "i" + size, offset);
+    }
+
+    @Override
+    public RFuture<Long> setSignedAsync(int size, long offset, long value) {
+        if (size > 64) {
+            throw new IllegalArgumentException("Size can't be greater than 64 bits");
+        }
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_LONG,
+                                            getRawName(), "SET", "i" + size, offset, value);
+    }
+
+    @Override
+    public RFuture<Long> incrementAndGetSignedAsync(int size, long offset, long increment) {
+        if (size > 64) {
+            throw new IllegalArgumentException("Size can't be greater than 64 bits");
+        }
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_LONG,
+                                            getRawName(), "INCRBY", "i" + size, offset, increment);
+    }
+
+    @Override
+    public RFuture<Long> getUnsignedAsync(int size, long offset) {
+        if (size > 63) {
+            throw new IllegalArgumentException("Size can't be greater than 63 bits");
+        }
+        return commandExecutor.readAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_LONG,
+                                            getRawName(), "GET", "u" + size, offset);
+    }
+
+    @Override
+    public RFuture<Long> setUnsignedAsync(int size, long offset, long value) {
+        if (size > 63) {
+            throw new IllegalArgumentException("Size can't be greater than 63 bits");
+        }
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_LONG,
+                                            getRawName(), "SET", "u" + size, offset, value);
+    }
+
+    @Override
+    public RFuture<Long> incrementAndGetUnsignedAsync(int size, long offset, long increment) {
+        if (size > 63) {
+            throw new IllegalArgumentException("Size can't be greater than 63 bits");
+        }
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_LONG,
+                                            getRawName(), "INCRBY", "u" + size, offset, increment);
     }
 
     @Override
@@ -99,74 +183,74 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
     @Override
     public RFuture<Byte> getByteAsync(long offset) {
-        return commandExecutor.readAsync(getName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_BYTE,
-                                            getName(), "GET", "i8", offset);
+        return commandExecutor.readAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_BYTE,
+                                            getRawName(), "GET", "i8", offset);
     }
 
     @Override
     public RFuture<Byte> setByteAsync(long offset, byte value) {
-        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_BYTE,
-                                            getName(), "SET", "i8", offset, value);
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_BYTE,
+                                            getRawName(), "SET", "i8", offset, value);
     }
 
     @Override
     public RFuture<Byte> incrementAndGetByteAsync(long offset, byte increment) {
-        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_BYTE,
-                                            getName(), "INCRBY", "i8", offset, increment);
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_BYTE,
+                                            getRawName(), "INCRBY", "i8", offset, increment);
     }
 
     @Override
     public RFuture<Short> getShortAsync(long offset) {
-        return commandExecutor.readAsync(getName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_SHORT,
-                                            getName(), "GET", "i16", offset);
+        return commandExecutor.readAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_SHORT,
+                                            getRawName(), "GET", "i16", offset);
     }
 
     @Override
     public RFuture<Short> setShortAsync(long offset, short value) {
-        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_SHORT,
-                                            getName(), "SET", "i16", offset, value);
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_SHORT,
+                                            getRawName(), "SET", "i16", offset, value);
     }
 
     @Override
     public RFuture<Short> incrementAndGetShortAsync(long offset, short increment) {
-        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_SHORT,
-                                            getName(), "INCRBY", "i16", offset, increment);
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_SHORT,
+                                            getRawName(), "INCRBY", "i16", offset, increment);
     }
 
     @Override
     public RFuture<Integer> getIntegerAsync(long offset) {
-        return commandExecutor.readAsync(getName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_INT,
-                                            getName(), "GET", "i32", offset);
+        return commandExecutor.readAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_INT,
+                                            getRawName(), "GET", "i32", offset);
     }
 
     @Override
     public RFuture<Integer> setIntegerAsync(long offset, int value) {
-        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_INT,
-                                            getName(), "SET", "i32", offset, value);
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_INT,
+                                            getRawName(), "SET", "i32", offset, value);
     }
 
     @Override
     public RFuture<Integer> incrementAndGetIntegerAsync(long offset, int increment) {
-        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_INT,
-                                            getName(), "INCRBY", "i32", offset, increment);
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_INT,
+                                            getRawName(), "INCRBY", "i32", offset, increment);
     }
 
     @Override
     public RFuture<Long> getLongAsync(long offset) {
-        return commandExecutor.readAsync(getName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_LONG,
-                                            getName(), "GET", "i64", offset);
+        return commandExecutor.readAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_LONG,
+                                            getRawName(), "GET", "i64", offset);
     }
 
     @Override
     public RFuture<Long> setLongAsync(long offset, long value) {
-        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_LONG,
-                                            getName(), "SET", "i64", offset, value);
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_LONG,
+                                            getRawName(), "SET", "i64", offset, value);
     }
 
     @Override
     public RFuture<Long> incrementAndGetLongAsync(long offset, long increment) {
-        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_LONG,
-                                            getName(), "INCRBY", "i64", offset, increment);
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_LONG,
+                                            getRawName(), "INCRBY", "i64", offset, increment);
     }
 
     @Override
@@ -186,7 +270,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
     @Override
     public RFuture<Boolean> getAsync(long bitIndex) {
-        return commandExecutor.readAsync(getName(), LongCodec.INSTANCE, RedisCommands.GETBIT, getName(), bitIndex);
+        return commandExecutor.readAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.GETBIT, getRawName(), bitIndex);
     }
 
     @Override
@@ -212,7 +296,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
     @Override
     public RFuture<Boolean> setAsync(long bitIndex, boolean value) {
         int val = toInt(value);
-        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.SETBIT, getName(), bitIndex, val);
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.SETBIT, getRawName(), bitIndex, val);
     }
 
     protected int toInt(boolean value) {
@@ -230,7 +314,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
     @Override
     public RFuture<byte[]> toByteArrayAsync() {
-        return commandExecutor.readAsync(getName(), ByteArrayCodec.INSTANCE, RedisCommands.GET, getName());
+        return commandExecutor.readAsync(getRawName(), ByteArrayCodec.INSTANCE, RedisCommands.GET, getRawName());
     }
 
     @Override
@@ -281,10 +365,10 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
     private RFuture<Void> opAsync(String op, String... bitSetNames) {
         List<Object> params = new ArrayList<Object>(bitSetNames.length + 3);
         params.add(op);
-        params.add(getName());
-        params.add(getName());
+        params.add(getRawName());
+        params.add(getRawName());
         params.addAll(Arrays.asList(bitSetNames));
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.BITOP, params.toArray());
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.BITOP, params.toArray());
     }
 
     @Override
@@ -326,7 +410,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
     @Override
     public RFuture<Long> lengthAsync() {
-        return commandExecutor.evalReadAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
+        return commandExecutor.evalReadAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
                 "local fromBit = redis.call('bitpos', KEYS[1], 1, -1);"
                 + "local toBit = 8*(fromBit/8 + 1) - fromBit % 8;"
                         + "for i = toBit, fromBit, -1 do "
@@ -335,15 +419,15 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
                             + "end;"
                        + "end;" +
                      "return fromBit+1",
-                Collections.<Object>singletonList(getName()));
+                Collections.<Object>singletonList(getRawName()));
     }
 
     @Override
     public RFuture<Void> setAsync(long fromIndex, long toIndex, boolean value) {
         int val = toInt(value);
-        CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
+        CommandBatchService executorService = new CommandBatchService(commandExecutor);
         for (long i = fromIndex; i < toIndex; i++) {
-            executorService.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.SETBIT_VOID, getName(), i, val);
+            executorService.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.SETBIT_VOID, getRawName(), i, val);
         }
         return executorService.executeAsyncVoid();
     }
@@ -355,7 +439,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
     @Override
     public RFuture<Void> setAsync(BitSet bs) {
-        return commandExecutor.writeAsync(getName(), ByteArrayCodec.INSTANCE, RedisCommands.SET, getName(), toByteArrayReverse(bs));
+        return commandExecutor.writeAsync(getRawName(), ByteArrayCodec.INSTANCE, RedisCommands.SET, getRawName(), toByteArrayReverse(bs));
     }
 
     @Override
@@ -370,7 +454,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
     @Override
     public RFuture<Long> sizeAsync() {
-        return commandExecutor.readAsync(getName(), LongCodec.INSTANCE, RedisCommands.BITS_SIZE, getName());
+        return commandExecutor.readAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITS_SIZE, getRawName());
     }
 
     @Override
@@ -380,7 +464,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
     @Override
     public RFuture<Long> cardinalityAsync() {
-        return commandExecutor.readAsync(getName(), LongCodec.INSTANCE, RedisCommands.BITCOUNT, getName());
+        return commandExecutor.readAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITCOUNT, getRawName());
     }
 
     @Override
@@ -390,7 +474,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
     @Override
     public RFuture<Void> clearAsync() {
-        return commandExecutor.writeAsync(getName(), RedisCommands.DEL_VOID, getName());
+        return commandExecutor.writeAsync(getRawName(), RedisCommands.DEL_VOID, getRawName());
     }
 
     @Override

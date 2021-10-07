@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -582,7 +582,7 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
             throw new NullPointerException();
         }
 
-        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Object>("EVAL", new ListDrainToDecoder(c), CONVERTER),
+        return commandExecutor.evalWriteAsync(getRawName(), codec, new RedisCommand<Object>("EVAL", new ListDrainToDecoder(c), CONVERTER),
         "local ids = redis.call('lrange', KEYS[1], 0, -1); " +
                 "local result = {};"
               + "for i=1, #ids, 5000 do "
@@ -609,7 +609,7 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
         if (c == null) {
             throw new NullPointerException();
         }
-        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Object>("EVAL", new ListDrainToDecoder(c), CONVERTER),
+        return commandExecutor.evalWriteAsync(getRawName(), codec, new RedisCommand<Object>("EVAL", new ListDrainToDecoder(c), CONVERTER),
                 "local elemNum = math.min(ARGV[1], redis.call('llen', KEYS[1])) - 1;" +
                 "local ids = redis.call('lrange', KEYS[1], 0, elemNum); " +
                 "redis.call('ltrim', KEYS[1], elemNum + 1, -1); " +
@@ -631,7 +631,7 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
     }
 
     public RFuture<List<V>> readAllAsync() {
-        return commandExecutor.evalReadAsync(getName(), codec, EVAL_LIST,
+        return commandExecutor.evalReadAsync(getRawName(), codec, EVAL_LIST,
         "local ids = redis.call('lrange', KEYS[1], 0, -1); " +
                 "local result = {};"
               + "for i=1, #ids, 5000 do "

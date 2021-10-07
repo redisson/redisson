@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@ package org.redisson;
 
 import org.redisson.api.*;
 import org.redisson.client.codec.Codec;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
-import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
 
 /**
@@ -31,12 +31,10 @@ public class RedissonBatch implements RBatch {
 
     private final EvictionScheduler evictionScheduler;
     private final CommandBatchService executorService;
-    private final BatchOptions options;
 
-    public RedissonBatch(EvictionScheduler evictionScheduler, ConnectionManager connectionManager, BatchOptions options) {
-        this.executorService = new CommandBatchService(connectionManager, options);
+    public RedissonBatch(EvictionScheduler evictionScheduler, CommandAsyncExecutor executor, BatchOptions options) {
+        this.executorService = new CommandBatchService(executor, options);
         this.evictionScheduler = evictionScheduler;
-        this.options = options;
     }
 
     @Override
@@ -213,7 +211,17 @@ public class RedissonBatch implements RBatch {
     public RFuture<BatchResult<?>> executeAsync() {
         return executorService.executeAsync();
     }
-    
+
+    @Override
+    public void discard() {
+        executorService.discard();
+    }
+
+    @Override
+    public RFuture<Void> discardAsync() {
+        return executorService.discardAsync();
+    }
+
     @Override
     public <K, V> RMultimapAsync<K, V> getSetMultimap(String name) {
         return new RedissonSetMultimap<K, V>(executorService, name);
@@ -262,10 +270,6 @@ public class RedissonBatch implements RBatch {
     @Override
     public <K, V> RMultimapCacheAsync<K, V> getListMultimapCache(String name, Codec codec) {
         return new RedissonListMultimapCache<K, V>(evictionScheduler, codec, executorService, name);
-    }
-
-    protected void enableRedissonReferenceSupport(Redisson redisson) {
-        this.executorService.enableRedissonReferenceSupport(redisson);
     }
 
     @Override

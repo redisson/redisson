@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,11 +30,11 @@ public class UnlinkOperation extends TransactionalOperation {
     private String lockName;
     
     public UnlinkOperation(String name) {
-        this(name, null);
+        this(name, null, 0);
     }
     
-    public UnlinkOperation(String name, String lockName) {
-        super(name, null);
+    public UnlinkOperation(String name, String lockName, long threadId) {
+        super(name, null, threadId);
         this.lockName = lockName;
     }
 
@@ -44,7 +44,7 @@ public class UnlinkOperation extends TransactionalOperation {
         keys.unlinkAsync(getName());
         if (lockName != null) {
             RedissonLock lock = new RedissonLock(commandExecutor, lockName);
-            lock.unlockAsync();
+            lock.unlockAsync(getThreadId());
         }
     }
 
@@ -52,7 +52,7 @@ public class UnlinkOperation extends TransactionalOperation {
     public void rollback(CommandAsyncExecutor commandExecutor) {
         if (lockName != null) {
             RedissonLock lock = new RedissonLock(commandExecutor, lockName);
-            lock.unlockAsync();
+            lock.unlockAsync(getThreadId());
         }
     }
     

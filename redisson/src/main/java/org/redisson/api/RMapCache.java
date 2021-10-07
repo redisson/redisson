@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,11 @@
  */
 package org.redisson.api;
 
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
+import org.redisson.api.map.MapLoader;
 import org.redisson.api.map.MapWriter;
 import org.redisson.api.map.event.MapEntryListener;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * <p>Map-based cache with ability to set TTL for each entry via
@@ -56,7 +56,6 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V>, RDest
      *
      * @param maxSize - max size
      * @param mode - eviction mode
-     * @return void
      */
     void setMaxSize(int maxSize, EvictionMode mode);
 
@@ -266,20 +265,43 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V>, RDest
      * @param ttlUnit - time unit
      */
     void putAll(java.util.Map<? extends K, ? extends V> map, long ttl, TimeUnit ttlUnit);
-    
+
     /**
-     * Associates the specified <code>value</code> with the specified <code>key</code>
-     * in batch.
+     * Updates time to live and max idle time of specified entry by key.
+     * Entry expires when specified time to live or max idle time was reached.
      * <p>
-     * If {@link MapWriter} is defined then new map entries are stored in write-through mode. 
+     * Returns <code>false</code> if entry already expired or doesn't exist,
+     * otherwise returns <code>true</code>.
      *
-     * @param map - mappings to be stored in this map
-     * @param ttl - time to live for all key\value entries.
-     *              If <code>0</code> then stores infinitely.
+     * @param key - map key
+     * @param ttl - time to live for key\value entry.
+     *              If <code>0</code> then time to live doesn't affect entry expiration.
      * @param ttlUnit - time unit
-     * @return void
+     * @param maxIdleTime - max idle time for key\value entry.
+     *              If <code>0</code> then max idle time doesn't affect entry expiration.
+     * @param maxIdleUnit - time unit
+     * <p>
+     * if <code>maxIdleTime</code> and <code>ttl</code> params are equal to <code>0</code>
+     * then entry stores infinitely.
+     *
+     * @return returns <code>false</code> if entry already expired or doesn't exist,
+     *         otherwise returns <code>true</code>.
      */
-    RFuture<Void> putAllAsync(Map<? extends K, ? extends V> map, long ttl, TimeUnit ttlUnit);
+    boolean updateEntryExpiration(K key, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
+
+    /**
+     * Returns the value mapped by defined <code>key</code> or {@code null} if value is absent.
+     * <p>
+     * If map doesn't contain value for specified key and {@link MapLoader} is defined
+     * then value will be loaded in read-through mode.
+     * <p>
+     * Idle time of entry is not taken into account.
+     * Entry last access time isn't modified if map limited by size.
+     *
+     * @param key the key
+     * @return the value mapped by defined <code>key</code> or {@code null} if value is absent
+     */
+    V getWithTTLOnly(K key);
 
     /**
      * Returns the number of entries in cache.
@@ -292,26 +314,26 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V>, RDest
 
     /**
      * Adds map entry listener
-     * 
+     *
      * @see org.redisson.api.map.event.EntryCreatedListener
      * @see org.redisson.api.map.event.EntryUpdatedListener
      * @see org.redisson.api.map.event.EntryRemovedListener
      * @see org.redisson.api.map.event.EntryExpiredListener
-     * 
+     *
      * @param listener - entry listener
      * @return listener id
      */
     int addListener(MapEntryListener listener);
-    
+
     /**
      * Removes map entry listener
-     * 
+     *
      * @param listenerId - listener id
      */
     void removeListener(int listenerId);
 
     /**
-     * Remaining time to live of map entry associated with a <code>key</code>. 
+     * Remaining time to live of map entry associated with a <code>key</code>.
      *
      * @param key - map key
      * @return time in milliseconds
@@ -319,5 +341,5 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V>, RDest
      *          -1 if the key exists but has no associated expire.
      */
     long remainTimeToLive(K key);
-    
+
 }

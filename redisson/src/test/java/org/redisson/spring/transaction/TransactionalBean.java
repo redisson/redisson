@@ -2,7 +2,7 @@ package org.redisson.spring.transaction;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 import org.redisson.api.RTransaction;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.NoTransactionException;
@@ -25,7 +25,7 @@ public class TransactionalBean {
     public void testNoTransaction() {
         try {
             RTransaction transaction = transactionManager.getCurrentTransaction();
-            Assert.fail();
+            Assertions.fail();
         } catch (NoTransactionException e) {
             // skip
         }

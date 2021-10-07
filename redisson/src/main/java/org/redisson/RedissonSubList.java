@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,19 +64,19 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
         if (size != -1) {
             return RedissonPromise.newSucceededFuture(size);
         }
-        return commandExecutor.readAsync(getName(), codec, new RedisStrictCommand<Integer>("LLEN", new IntegerReplayConvertor() {
+        return commandExecutor.readAsync(getRawName(), codec, new RedisStrictCommand<Integer>("LLEN", new IntegerReplayConvertor() {
             @Override
             public Integer convert(Object obj) {
                 int size = ((Long) obj).intValue();
                 int subListLen = Math.min(size, toIndex.get()) - fromIndex;
                 return Math.max(subListLen, 0);
             }
-        }), getName());
+        }), getRawName());
     }
 
     @Override
     public RFuture<List<V>> readAllAsync() {
-        return commandExecutor.readAsync(getName(), codec, LRANGE, getName(), fromIndex, toIndex.get()-1);
+        return commandExecutor.readAsync(getRawName(), codec, LRANGE, getRawName(), fromIndex, toIndex.get()-1);
     }
 
     @Override
@@ -95,7 +95,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
         params.add(fromIndex);
         params.add(toIndex.get() - 1);
         encode(params, c);
-        return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalReadAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "local fromIndex = table.remove(ARGV, 1);" +
                 "local toIndex = table.remove(ARGV, 2);" +
                 "local items = redis.call('lrange', KEYS[1], tonumber(fromIndex), tonumber(toIndex)) " +
@@ -107,7 +107,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
                     "end " +
                 "end " +
                 "return #ARGV == 0 and 1 or 0",
-                Collections.<Object>singletonList(getName()), params.toArray());
+                Collections.<Object>singletonList(getRawName()), params.toArray());
     }
 
     @Override
@@ -131,16 +131,16 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
             List<Object> elements = new ArrayList<Object>();
             encode(elements, coll);
             Collections.reverse(elements);
-            elements.add(0, getName());
+            elements.add(0, getRawName());
 
-            return commandExecutor.writeAsync(getName(), codec, LPUSH_BOOLEAN, elements.toArray());
+            return commandExecutor.writeAsync(getRawName(), codec, LPUSH_BOOLEAN, elements.toArray());
         }
 
         List<Object> args = new ArrayList<Object>(coll.size() + 1);
         args.add(index);
         encode(args, coll);
         
-        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "local ind = table.remove(ARGV, 1); " + // index is the first parameter
                         "local size = redis.call('llen', KEYS[1]); " +
                         "assert(tonumber(ind) <= size, 'index: ' .. ind .. ' but current size: ' .. size); " +
@@ -155,7 +155,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
                           + "end "
                       + "end;" +
                         "return 1;",
-                Collections.<Object>singletonList(getName()), args.toArray());
+                Collections.<Object>singletonList(getRawName()), args.toArray());
     }
 
     @Override
@@ -170,7 +170,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
         params.add(count);
         encode(params, c);
 
-        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "local v = 0; " +
                 "local fromIndex = table.remove(ARGV, 1);" +
                 "local toIndex = table.remove(ARGV, 2);" +
@@ -186,7 +186,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
                     "end; " +
                 "end; " +
                 "return v; ",
-                Collections.<Object>singletonList(getName()), params.toArray());
+                Collections.<Object>singletonList(getRawName()), params.toArray());
     }
 
     @Override
@@ -196,7 +196,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
         params.add(toIndex.get() - 1);
         encode(params, c);
 
-        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "local changed = 0 " +
                 "local fromIndex = table.remove(ARGV, 1);" +
                 "local toIndex = table.remove(ARGV, 2);" +
@@ -218,19 +218,19 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
                         + "i = i + 1 "
                    + "end "
                    + "return changed ",
-                Collections.<Object>singletonList(getName()), params.toArray());
+                Collections.<Object>singletonList(getRawName()), params.toArray());
     }
 
 
     @Override
     public void clear() {
         if (fromIndex == 0) {
-            get(commandExecutor.writeAsync(getName(), codec, RedisCommands.LTRIM, getName(), toIndex, -1));
+            get(commandExecutor.writeAsync(getRawName(), codec, RedisCommands.LTRIM, getRawName(), toIndex, -1));
             size = 0;
             return;
         }
 
-        get(commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_VOID,
+        get(commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
                         "local tail = redis.call('lrange', KEYS[1], ARGV[2], -1); " +
                         "redis.call('ltrim', KEYS[1], 0, ARGV[1] - 1); " +
                         "if #tail > 0 then " +
@@ -238,14 +238,14 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
                                 + "redis.call('rpush', KEYS[1], unpack(tail, i, math.min(i+4999, #tail))); "
                           + "end "
                       + "end;",
-                Collections.<Object>singletonList(getName()), fromIndex, toIndex));
+                Collections.<Object>singletonList(getRawName()), fromIndex, toIndex));
         size = 0;
     }
 
     @Override
     public RFuture<V> getAsync(int index) {
         checkIndex(index);
-        return commandExecutor.readAsync(getName(), codec, LINDEX, getName(), index);
+        return commandExecutor.readAsync(getRawName(), codec, LINDEX, getRawName(), index);
     }
 
     @Override
@@ -271,11 +271,11 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
     @Override
     public RFuture<V> setAsync(int index, V element) {
         checkIndex(index);
-        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_OBJECT,
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_OBJECT,
                 "local v = redis.call('lindex', KEYS[1], ARGV[1]); " +
                         "redis.call('lset', KEYS[1], ARGV[1], ARGV[2]); " +
                         "return v",
-                Collections.<Object>singletonList(getName()), index, encode(element));
+                Collections.<Object>singletonList(getRawName()), index, encode(element));
     }
 
     @Override
@@ -286,7 +286,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
     @Override
     public RFuture<Void> fastSetAsync(int index, V element) {
         checkIndex(index);
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LSET, getName(), index, encode(element));
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.LSET, getRawName(), index, encode(element));
     }
 
     @Override
@@ -305,11 +305,11 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
 
     private V removeInner(int index) {
         if (index == 0) {
-            RFuture<V> f = commandExecutor.writeAsync(getName(), codec, LPOP, getName());
+            RFuture<V> f = commandExecutor.writeAsync(getRawName(), codec, LPOP, getRawName());
             return get(f);
         }
 
-        RFuture<V> f = commandExecutor.evalWriteAsync(getName(), codec, EVAL_OBJECT,
+        RFuture<V> f = commandExecutor.evalWriteAsync(getRawName(), codec, EVAL_OBJECT,
                 "local v = redis.call('lindex', KEYS[1], ARGV[1]); " +
                         "local tail = redis.call('lrange', KEYS[1], ARGV[1] + 1, -1);" +
                         "redis.call('ltrim', KEYS[1], 0, ARGV[1] - 1);" +
@@ -319,12 +319,12 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
                           + "end "
                       + "end;" +
                         "return v",
-                Collections.<Object>singletonList(getName()), fromIndex + index);
+                Collections.<Object>singletonList(getRawName()), fromIndex + index);
         return get(f);
     }
 
     public <R> RFuture<R> indexOfAsync(Object o, Convertor<R> convertor) {
-        return commandExecutor.evalReadAsync(getName(), codec, new RedisCommand<R>("EVAL", convertor),
+        return commandExecutor.evalReadAsync(getRawName(), codec, new RedisCommand<R>("EVAL", convertor),
                 "local items = redis.call('lrange', KEYS[1], tonumber(ARGV[2]), tonumber(ARGV[3])) " +
                 "for i=1,#items do " +
                     "if items[i] == ARGV[1] then " +
@@ -332,12 +332,12 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
                     "end; " +
                 "end; " +
                 "return -1; ",
-                Collections.<Object>singletonList(getName()), encode(o), fromIndex, toIndex.get()-1);
+                Collections.<Object>singletonList(getRawName()), encode(o), fromIndex, toIndex.get()-1);
     }
 
     @Override
     public RFuture<Integer> lastIndexOfAsync(Object o) {
-        return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_INTEGER,
+        return commandExecutor.evalReadAsync(getRawName(), codec, RedisCommands.EVAL_INTEGER,
                 "local key = KEYS[1] " +
                 "local obj = ARGV[1] " +
                 "local fromIndex = table.remove(ARGV, 1);" +
@@ -349,7 +349,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
                     "end; " +
                 "end; " +
                 "return -1; ",
-                Collections.<Object>singletonList(getName()), encode(o), fromIndex, toIndex.get()-1);
+                Collections.<Object>singletonList(getRawName()), encode(o), fromIndex, toIndex.get()-1);
     }
 
     @Override
@@ -466,7 +466,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
             throw new IllegalArgumentException("fromIndex: " + fromIndex + " toIndex: " + toIndex);
         }
 
-        return new RedissonSubList<V>(codec, commandExecutor, getName(), fromIndex, toIndex);
+        return new RedissonSubList<V>(codec, commandExecutor, getRawName(), fromIndex, toIndex);
     }
 
     @Override

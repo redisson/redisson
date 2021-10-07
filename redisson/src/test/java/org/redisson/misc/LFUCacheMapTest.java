@@ -1,13 +1,10 @@
 package org.redisson.misc;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.concurrent.TimeUnit;
-
-import org.junit.Test;
-import org.redisson.cache.AbstractCacheMap;
+import org.junit.jupiter.api.Test;
 import org.redisson.cache.Cache;
 import org.redisson.cache.LFUCacheMap;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class LFUCacheMapTest {
 

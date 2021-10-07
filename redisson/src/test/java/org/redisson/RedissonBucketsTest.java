@@ -8,8 +8,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.redisson.ClusterRunner.ClusterProcesses;
 import org.redisson.RedisRunner.FailedToStartRedisException;
 import org.redisson.api.RBucket;
@@ -44,10 +43,14 @@ public class RedissonBucketsTest extends BaseTest {
         
         int size = 10000;
         Map<String, Integer> map = new HashMap<>();
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < 10; i++) {
             map.put("test" + i, i);
-            redisson.getBucket("test" + i).set(i);
         }
+        for (int i = 10; i < size; i++) {
+            map.put("test" + i + "{" + (i%100)+ "}", i);
+        }
+
+        redisson.getBuckets().set(map);
         
         Set<String> queryKeys = new HashSet<>(map.keySet());
         queryKeys.add("test_invalid");
@@ -71,7 +74,7 @@ public class RedissonBucketsTest extends BaseTest {
         expected.put("test1", "someValue1");
         expected.put("test3", "someValue3");
 
-        Assert.assertEquals(expected, result);
+        assertThat(expected).isEqualTo(result);
     }
 
     @Test
@@ -85,8 +88,8 @@ public class RedissonBucketsTest extends BaseTest {
 
         buckets.set(items);
         items = buckets.get("buckets:A", "buckets:B", "buckets:C");
-        Assert.assertEquals(3, items.size());
-        Assert.assertEquals("XYZ", items.get("buckets:A"));
+        assertThat(3).isEqualTo(items.size());
+        assertThat(items.get("buckets:A")).isEqualTo("XYZ");
     }
 
     @Test

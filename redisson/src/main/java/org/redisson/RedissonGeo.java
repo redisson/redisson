@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,7 +83,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
 
     @Override
     public RFuture<Long> addAsync(double longitude, double latitude, V member) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.GEOADD, getName(), convert(longitude),
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.GEOADD, getRawName(), convert(longitude),
                 convert(latitude), encode(member));
     }
 
@@ -108,7 +108,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
 
     private RFuture<Long> addAsync(String subCommand, GeoEntry... entries) {
         List<Object> params = new ArrayList<Object>(entries.length + 2);
-        params.add(getName());
+        params.add(getRawName());
         if (!subCommand.isEmpty()) {
             params.add(subCommand);
         }
@@ -117,7 +117,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
             params.add(entry.getLatitude());
             params.add(encode(entry.getMember()));
         }
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.GEOADD, params.toArray());
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.GEOADD, params.toArray());
     }
 
     @Override
@@ -132,14 +132,14 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
 
     @Override
     public RFuture<Boolean> addIfExistsAsync(double longitude, double latitude, V member) {
-        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
             "local value = redis.call('geopos', KEYS[1], ARGV[3]); "
                 + "if value[1] ~= false then "
                     + "redis.call('geoadd', KEYS[1], ARGV[1], ARGV[2], ARGV[3]); "
                     + "return 1; "
                 + "end; "
                 + "return 0; ",
-                Collections.singletonList(getName()),
+                Collections.singletonList(getRawName()),
                 convert(longitude), convert(latitude), encode(member));
     }
 
@@ -160,7 +160,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
 
     @Override
     public RFuture<Boolean> tryAddAsync(double longitude, double latitude, V member) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.GEOADD_BOOLEAN, getName(), "NX", convert(longitude),
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.GEOADD_BOOLEAN, getRawName(), "NX", convert(longitude),
                 convert(latitude), encode(member));
     }
 
@@ -176,7 +176,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
 
     @Override
     public RFuture<Double> distAsync(V firstMember, V secondMember, GeoUnit geoUnit) {
-        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.GEODIST, getName(),
+        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.GEODIST, getRawName(),
                 encode(firstMember), encode(secondMember), geoUnit);
     }
 
@@ -188,13 +188,13 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
     @Override
     public RFuture<Map<V, String>> hashAsync(V... members) {
         List<Object> params = new ArrayList<Object>(members.length + 1);
-        params.add(getName());
+        params.add(getRawName());
         for (Object member : members) {
             params.add(encode(member));
         }
         RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("GEOHASH",
                 new MapGetAllDecoder((List<Object>) Arrays.asList(members), 0));
-        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, command, params.toArray());
+        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, command, params.toArray());
     }
 
     @Override
@@ -205,7 +205,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
     @Override
     public RFuture<Map<V, GeoPosition>> posAsync(V... members) {
         List<Object> params = new ArrayList<Object>(members.length + 1);
-        params.add(getName());
+        params.add(getRawName());
         for (Object member : members) {
             params.add(encode(member));
         }
@@ -214,7 +214,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
                 new GeoPositionMapDecoder((List<Object>) Arrays.asList(members)),
                 new GeoPositionDecoder());
         RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("GEOPOS", decoder);
-        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, command, params.toArray());
+        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, command, params.toArray());
     }
 
     @Override
@@ -228,7 +228,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
         Map<GeoSearchNode.Params, Object> params = node.getParams();
 
         List<Object> commandParams = new ArrayList<>();
-        commandParams.add(getName());
+        commandParams.add(getRawName());
         RedisCommand command = null;
         if (params.get(GeoSearchNode.Params.LATITUDE) != null
                 && params.get(GeoSearchNode.Params.LONGITUDE) != null) {
@@ -276,7 +276,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
             commandParams.add(params.get(GeoSearchNode.Params.ORDER));
         }
 
-        return commandExecutor.readAsync(getName(), codec, command, commandParams.toArray());
+        return commandExecutor.readAsync(getRawName(), codec, command, commandParams.toArray());
     }
 
     @Override
@@ -290,7 +290,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
         Map<GeoSearchNode.Params, Object> params = node.getParams();
 
         List<Object> commandParams = new ArrayList<>();
-        commandParams.add(getName());
+        commandParams.add(getRawName());
         RedisCommand command = null;
         if (params.get(GeoSearchNode.Params.LATITUDE) != null
                 && params.get(GeoSearchNode.Params.LONGITUDE) != null) {
@@ -344,7 +344,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
             commandParams.add("WITHDIST");
         }
 
-        return commandExecutor.readAsync(getName(), codec, command, commandParams.toArray());
+        return commandExecutor.readAsync(getRawName(), codec, command, commandParams.toArray());
     }
 
     @Override
@@ -358,7 +358,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
         Map<GeoSearchNode.Params, Object> params = node.getParams();
 
         List<Object> commandParams = new ArrayList<>();
-        commandParams.add(getName());
+        commandParams.add(getRawName());
         RedisCommand command = null;
         if (params.get(GeoSearchNode.Params.LATITUDE) != null
                 && params.get(GeoSearchNode.Params.LONGITUDE) != null) {
@@ -412,7 +412,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
             commandParams.add("WITHCOORD");
         }
 
-        return commandExecutor.readAsync(getName(), codec, command, commandParams.toArray());
+        return commandExecutor.readAsync(getRawName(), codec, command, commandParams.toArray());
     }
 
     @Override
@@ -422,7 +422,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
 
     @Override
     public RFuture<List<V>> radiusAsync(double longitude, double latitude, double radius, GeoUnit geoUnit) {
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.GEORADIUS_RO, getName(), convert(longitude),
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.GEORADIUS_RO, getRawName(), convert(longitude),
                 convert(latitude), radius, geoUnit);
     }
 
@@ -433,7 +433,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
 
     @Override
     public RFuture<List<V>> radiusAsync(double longitude, double latitude, double radius, GeoUnit geoUnit, int count) {
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.GEORADIUS_RO, getName(), convert(longitude),
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.GEORADIUS_RO, getRawName(), convert(longitude),
                 convert(latitude), radius, geoUnit, "COUNT", count);
     }
 
@@ -445,7 +445,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
     @Override
     public RFuture<List<V>> radiusAsync(double longitude, double latitude, double radius, GeoUnit geoUnit,
             GeoOrder geoOrder) {
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.GEORADIUS_RO, getName(), convert(longitude),
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.GEORADIUS_RO, getRawName(), convert(longitude),
                 convert(latitude), radius, geoUnit, geoOrder);
     }
 
@@ -458,7 +458,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
     @Override
     public RFuture<List<V>> radiusAsync(double longitude, double latitude, double radius, GeoUnit geoUnit,
             GeoOrder geoOrder, int count) {
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.GEORADIUS_RO, getName(), convert(longitude),
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.GEORADIUS_RO, getRawName(), convert(longitude),
                 convert(latitude), radius, geoUnit, "COUNT", count, geoOrder);
     }
 
@@ -470,7 +470,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
     @Override
     public RFuture<Map<V, Double>> radiusWithDistanceAsync(double longitude, double latitude, double radius,
             GeoUnit geoUnit) {
-        return commandExecutor.readAsync(getName(), codec, GEORADIUS_RO_DISTANCE, getName(), convert(longitude),
+        return commandExecutor.readAsync(getRawName(), codec, GEORADIUS_RO_DISTANCE, getRawName(), convert(longitude),
                 convert(latitude), radius, geoUnit, "WITHDIST");
     }
 
@@ -483,7 +483,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
     @Override
     public RFuture<Map<V, Double>> radiusWithDistanceAsync(double longitude, double latitude, double radius,
             GeoUnit geoUnit, int count) {
-        return commandExecutor.readAsync(getName(), codec, GEORADIUS_RO_DISTANCE, getName(), convert(longitude),
+        return commandExecutor.readAsync(getRawName(), codec, GEORADIUS_RO_DISTANCE, getRawName(), convert(longitude),
                 convert(latitude), radius, geoUnit, "WITHDIST", "COUNT", count);
     }
 
@@ -496,7 +496,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
     @Override
     public RFuture<Map<V, Double>> radiusWithDistanceAsync(double longitude, double latitude, double radius,
             GeoUnit geoUnit, GeoOrder geoOrder) {
-        return commandExecutor.readAsync(getName(), codec, GEORADIUS_RO_DISTANCE, getName(), convert(longitude),
+        return commandExecutor.readAsync(getRawName(), codec, GEORADIUS_RO_DISTANCE, getRawName(), convert(longitude),
                 convert(latitude), radius, geoUnit, "WITHDIST", geoOrder);
     }
 
@@ -509,7 +509,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
     @Override
     public RFuture<Map<V, Double>> radiusWithDistanceAsync(double longitude, double latitude, double radius,
             GeoUnit geoUnit, GeoOrder geoOrder, int count) {
-        return commandExecutor.readAsync(getName(), codec, GEORADIUS_RO_DISTANCE, getName(), convert(longitude),
+        return commandExecutor.readAsync(getRawName(), codec, GEORADIUS_RO_DISTANCE, getRawName(), convert(longitude),
                 convert(latitude), radius, geoUnit, "WITHDIST", "COUNT", count, geoOrder);
     }
 
@@ -521,7 +521,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
     @Override
     public RFuture<Map<V, GeoPosition>> radiusWithPositionAsync(double longitude, double latitude, double radius,
             GeoUnit geoUnit) {
-        return commandExecutor.readAsync(getName(), codec, GEORADIUS_RO_POS, getName(), convert(longitude),
+        return commandExecutor.readAsync(getRawName(), codec, GEORADIUS_RO_POS, getRawName(), convert(longitude),
                 convert(latitude), radius, geoUnit, "WITHCOORD");
     }
 
@@ -534,7 +534,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
     @Override
     public RFuture<Map<V, GeoPosition>> radiusWithPositionAsync(double longitude, double latitude, double radius,
             GeoUnit geoUnit, int count) {
-        return commandExecutor.readAsync(getName(), codec, GEORADIUS_RO_POS, getName(), convert(longitude),
+        return commandExecutor.readAsync(getRawName(), codec, GEORADIUS_RO_POS, getRawName(), convert(longitude),
                 convert(latitude), radius, geoUnit, "WITHCOORD", "COUNT", count);
     }
 
@@ -547,7 +547,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
     @Override
     public RFuture<Map<V, GeoPosition>> radiusWithPositionAsync(double longitude, double latitude, double radius,
             GeoUnit geoUnit, GeoOrder geoOrder) {
-        return commandExecutor.readAsync(getName(), codec, GEORADIUS_RO_POS, getName(), convert(longitude),
+        return commandExecutor.readAsync(getRawName(), codec, GEORADIUS_RO_POS, getRawName(), convert(longitude),
                 convert(latitude), radius, geoUnit, "WITHCOORD", geoOrder);
     }
 
@@ -560,7 +560,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
     @Override
     public RFuture<Map<V, GeoPosition>> radiusWithPositionAsync(double longitude, double latitude, double radius,
             GeoUnit geoUnit, GeoOrder geoOrder, int count) {
-        return commandExecutor.readAsync(getName(), codec, GEORADIUS_RO_POS, getName(), convert(longitude),
+        return commandExecutor.readAsync(getRawName(), codec, GEORADIUS_RO_POS, getRawName(), convert(longitude),
                 convert(latitude), radius, geoUnit, "WITHCOORD", "COUNT", count, geoOrder);
     }
 
@@ -571,7 +571,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
 
     @Override
     public RFuture<List<V>> radiusAsync(V member, double radius, GeoUnit geoUnit) {
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.GEORADIUSBYMEMBER_RO, getName(),
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.GEORADIUSBYMEMBER_RO, getRawName(),
                 encode(member), radius, geoUnit);
     }
 
@@ -582,7 +582,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
 
     @Override
     public RFuture<List<V>> radiusAsync(V member, double radius, GeoUnit geoUnit, int count) {
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.GEORADIUSBYMEMBER_RO, getName(),
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.GEORADIUSBYMEMBER_RO, getRawName(),
                 encode(member), radius, geoUnit, "COUNT", count);
     }
 
@@ -593,7 +593,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
 
     @Override
     public RFuture<List<V>> radiusAsync(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder) {
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.GEORADIUSBYMEMBER_RO, getName(),
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.GEORADIUSBYMEMBER_RO, getRawName(),
                 encode(member), radius, geoUnit, geoOrder);
     }
 
@@ -604,7 +604,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
 
     @Override
     public RFuture<List<V>> radiusAsync(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count) {
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.GEORADIUSBYMEMBER_RO, getName(),
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.GEORADIUSBYMEMBER_RO, getRawName(),
                 encode(member), radius, geoUnit, "COUNT", count, geoOrder);
     }
 
@@ -615,7 +615,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
 
     @Override
     public RFuture<Map<V, Double>> radiusWithDistanceAsync(V member, double radius, GeoUnit geoUnit) {
-        return commandExecutor.readAsync(getName(), codec, GEORADIUSBYMEMBER_RO_DISTANCE, getName(), encode(member),
+        return commandExecutor.readAsync(getRawName(), codec, GEORADIUSBYMEMBER_RO_DISTANCE, getRawName(), encode(member),
                 radius, geoUnit, "WITHDIST");
     }
 
@@ -626,7 +626,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
 
     @Override
     public RFuture<Map<V, Double>> radiusWithDistanceAsync(V member, double radius, GeoUnit geoUnit, int count) {
-        return commandExecutor.readAsync(getName(), codec, GEORADIUSBYMEMBER_RO_DISTANCE, getName(), encode(member),
+        return commandExecutor.readAsync(getRawName(), codec, GEORADIUSBYMEMBER_RO_DISTANCE, getRawName(), encode(member),
                 radius, geoUnit, "WITHDIST", "COUNT", count);
     }
 
@@ -638,7 +638,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
     @Override
     public RFuture<Map<V, Double>> radiusWithDistanceAsync(V member, double radius, GeoUnit geoUnit,
             GeoOrder geoOrder) {
-        return commandExecutor.readAsync(getName(), codec, GEORADIUSBYMEMBER_RO_DISTANCE, getName(), encode(member),
+        return commandExecutor.readAsync(getRawName(), codec, GEORADIUSBYMEMBER_RO_DISTANCE, getRawName(), encode(member),
                 radius, geoUnit, "WITHDIST", geoOrder);
     }
 
@@ -650,7 +650,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
     @Override
     public RFuture<Map<V, Double>> radiusWithDistanceAsync(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder,
             int count) {
-        return commandExecutor.readAsync(getName(), codec, GEORADIUSBYMEMBER_RO_DISTANCE, getName(), encode(member),
+        return commandExecutor.readAsync(getRawName(), codec, GEORADIUSBYMEMBER_RO_DISTANCE, getRawName(), encode(member),
                 radius, geoUnit, "WITHDIST", "COUNT", count, geoOrder);
     }
 
@@ -661,7 +661,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
 
     @Override
     public RFuture<Map<V, GeoPosition>> radiusWithPositionAsync(V member, double radius, GeoUnit geoUnit) {
-        return commandExecutor.readAsync(getName(), codec, GEORADIUSBYMEMBER_RO_POS, getName(), encode(member), radius,
+        return commandExecutor.readAsync(getRawName(), codec, GEORADIUSBYMEMBER_RO_POS, getRawName(), encode(member), radius,
                 geoUnit, "WITHCOORD");
     }
 
@@ -672,7 +672,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
 
     @Override
     public RFuture<Map<V, GeoPosition>> radiusWithPositionAsync(V member, double radius, GeoUnit geoUnit, int count) {
-        return commandExecutor.readAsync(getName(), codec, GEORADIUSBYMEMBER_RO_POS, getName(), encode(member), radius,
+        return commandExecutor.readAsync(getRawName(), codec, GEORADIUSBYMEMBER_RO_POS, getRawName(), encode(member), radius,
                 geoUnit, "WITHCOORD", "COUNT", count);
     }
 
@@ -684,7 +684,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
     @Override
     public RFuture<Map<V, GeoPosition>> radiusWithPositionAsync(V member, double radius, GeoUnit geoUnit,
             GeoOrder geoOrder) {
-        return commandExecutor.readAsync(getName(), codec, GEORADIUSBYMEMBER_RO_POS, getName(), encode(member), radius,
+        return commandExecutor.readAsync(getRawName(), codec, GEORADIUSBYMEMBER_RO_POS, getRawName(), encode(member), radius,
                 geoUnit, "WITHCOORD", geoOrder);
     }
 
@@ -697,7 +697,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
     @Override
     public RFuture<Map<V, GeoPosition>> radiusWithPositionAsync(V member, double radius, GeoUnit geoUnit,
             GeoOrder geoOrder, int count) {
-        return commandExecutor.readAsync(getName(), codec, GEORADIUSBYMEMBER_RO_POS, getName(), encode(member), radius,
+        return commandExecutor.readAsync(getRawName(), codec, GEORADIUSBYMEMBER_RO_POS, getRawName(), encode(member), radius,
                 geoUnit, "WITHCOORD", "COUNT", count, geoOrder);
     }
 
@@ -709,7 +709,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
     @Override
     public RFuture<Long> radiusStoreToAsync(String destName, double longitude, double latitude, double radius,
             GeoUnit geoUnit) {
-        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.GEORADIUS_STORE, getName(),
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.GEORADIUS_STORE, getRawName(),
                 convert(longitude), convert(latitude), radius, geoUnit, "STORE", destName);
     }
 
@@ -727,7 +727,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
         if (params.get(GeoSearchNode.Params.HEIGHT) != null) {
             commandParams.add(destName);
         }
-        commandParams.add(getName());
+        commandParams.add(getRawName());
         RedisCommand command = null;
         if (params.get(GeoSearchNode.Params.LATITUDE) != null
                 && params.get(GeoSearchNode.Params.LONGITUDE) != null) {
@@ -779,7 +779,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
             commandParams.add(destName);
         }
 
-        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, command, commandParams.toArray());
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, command, commandParams.toArray());
     }
 
     @Override
@@ -791,7 +791,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
     @Override
     public RFuture<Long> radiusStoreToAsync(String destName, double longitude, double latitude, double radius,
             GeoUnit geoUnit, int count) {
-        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.GEORADIUS_STORE, getName(),
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.GEORADIUS_STORE, getRawName(),
                 convert(longitude), convert(latitude), radius, geoUnit, "COUNT", count, "STORE", destName);
     }
 
@@ -804,7 +804,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
     @Override
     public RFuture<Long> radiusStoreToAsync(String destName, double longitude, double latitude, double radius,
             GeoUnit geoUnit, GeoOrder geoOrder, int count) {
-        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.GEORADIUS_STORE, getName(),
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.GEORADIUS_STORE, getRawName(),
                 convert(longitude), convert(latitude), radius, geoUnit, geoOrder, "COUNT", count, "STORE", destName);
     }
 
@@ -815,7 +815,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
 
     @Override
     public RFuture<Long> radiusStoreToAsync(String destName, V member, double radius, GeoUnit geoUnit) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.GEORADIUSBYMEMBER_STORE, getName(),
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.GEORADIUSBYMEMBER_STORE, getRawName(),
                 encode(member), radius, geoUnit, "STORE", destName);
     }
 
@@ -826,7 +826,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
 
     @Override
     public RFuture<Long> radiusStoreToAsync(String destName, V member, double radius, GeoUnit geoUnit, int count) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.GEORADIUSBYMEMBER_STORE, getName(),
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.GEORADIUSBYMEMBER_STORE, getRawName(),
                 encode(member), radius, geoUnit, "COUNT", count, "STORE", destName);
     }
 
@@ -838,7 +838,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
     @Override
     public RFuture<Long> radiusStoreToAsync(String destName, V member, double radius, GeoUnit geoUnit,
             GeoOrder geoOrder, int count) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.GEORADIUSBYMEMBER_STORE, getName(),
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.GEORADIUSBYMEMBER_STORE, getRawName(),
                 encode(member), radius, geoUnit, geoOrder, "COUNT", count, "STORE", destName);
     }
 
@@ -856,7 +856,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
         if (params.get(GeoSearchNode.Params.HEIGHT) != null) {
             commandParams.add(destName);
         }
-        commandParams.add(getName());
+        commandParams.add(getRawName());
         RedisCommand command = null;
         if (params.get(GeoSearchNode.Params.LATITUDE) != null
                 && params.get(GeoSearchNode.Params.LONGITUDE) != null) {
@@ -908,47 +908,47 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
             commandParams.add(destName);
         }
 
-        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, command, commandParams.toArray());
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, command, commandParams.toArray());
     }
 
     @Override
     public RFuture<Long> radiusStoreSortedToAsync(String destName, double longitude, double latitude, double radius,
             GeoUnit geoUnit) {
-        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.GEORADIUS_STORE, getName(),
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.GEORADIUS_STORE, getRawName(),
                 convert(longitude), convert(latitude), radius, geoUnit, "STOREDIST", destName);
     }
 
     @Override
     public RFuture<Long> radiusStoreSortedToAsync(String destName, double longitude, double latitude, double radius,
             GeoUnit geoUnit, int count) {
-        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.GEORADIUS_STORE, getName(),
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.GEORADIUS_STORE, getRawName(),
                 convert(longitude), convert(latitude), radius, geoUnit, "COUNT", count, "STOREDIST", destName);
     }
 
     @Override
     public RFuture<Long> radiusStoreSortedToAsync(String destName, double longitude, double latitude, double radius,
             GeoUnit geoUnit, GeoOrder geoOrder, int count) {
-        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.GEORADIUS_STORE, getName(),
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.GEORADIUS_STORE, getRawName(),
                 convert(longitude), convert(latitude), radius, geoUnit, geoOrder, "COUNT", count, "STOREDIST", destName);
     }
 
     @Override
     public RFuture<Long> radiusStoreSortedToAsync(String destName, V member, double radius, GeoUnit geoUnit) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.GEORADIUSBYMEMBER_STORE, getName(),
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.GEORADIUSBYMEMBER_STORE, getRawName(),
                 encode(member), radius, geoUnit, "STOREDIST", destName);
     }
 
     @Override
     public RFuture<Long> radiusStoreSortedToAsync(String destName, V member, double radius, GeoUnit geoUnit,
             int count) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.GEORADIUSBYMEMBER_STORE, getName(),
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.GEORADIUSBYMEMBER_STORE, getRawName(),
                 encode(member), radius, geoUnit, "COUNT", count, "STOREDIST", destName);
     }
 
     @Override
     public RFuture<Long> radiusStoreSortedToAsync(String destName, V member, double radius, GeoUnit geoUnit,
             GeoOrder geoOrder, int count) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.GEORADIUSBYMEMBER_STORE, getName(),
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.GEORADIUSBYMEMBER_STORE, getRawName(),
                 encode(member), radius, geoUnit, geoOrder, "COUNT", count, "STOREDIST", destName);
     }
 

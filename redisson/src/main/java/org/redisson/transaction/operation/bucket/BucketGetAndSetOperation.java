@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ public class BucketGetAndSetOperation<V> extends TransactionalOperation {
     }
     
     public BucketGetAndSetOperation(String name, String lockName, Codec codec, Object value, String transactionId) {
-        super(name, codec);
+        super(name, codec, Thread.currentThread().getId());
         this.value = value;
         this.lockName = lockName;
         this.transactionId = transactionId;
@@ -61,13 +61,13 @@ public class BucketGetAndSetOperation<V> extends TransactionalOperation {
             bucket.getAndSetAsync((V) value);
         }
         RedissonLock lock = new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
-        lock.unlockAsync();
+        lock.unlockAsync(getThreadId());
     }
 
     @Override
     public void rollback(CommandAsyncExecutor commandExecutor) {
         RedissonLock lock = new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
-        lock.unlockAsync();
+        lock.unlockAsync(getThreadId());
     }
     
     public Object getValue() {

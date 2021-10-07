@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import java.util.List;
 
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
+import org.redisson.api.RedissonReactiveClient;
+import org.redisson.api.RedissonRxClient;
 import org.redisson.config.Config;
 import org.redisson.spring.data.connection.RedissonConnectionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +39,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.Resource;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisOperations;
@@ -92,6 +95,20 @@ public class RedissonAutoConfiguration {
     @ConditionalOnMissingBean(RedisConnectionFactory.class)
     public RedissonConnectionFactory redissonConnectionFactory(RedissonClient redisson) {
         return new RedissonConnectionFactory(redisson);
+    }
+
+    @Bean
+    @Lazy
+    @ConditionalOnMissingBean(RedissonReactiveClient.class)
+    public RedissonReactiveClient redissonReactive(RedissonClient redisson) {
+        return redisson.reactive();
+    }
+
+    @Bean
+    @Lazy
+    @ConditionalOnMissingBean(RedissonRxClient.class)
+    public RedissonRxClient redissonRxJava(RedissonClient redisson) {
+        return redisson.rxJava();
     }
 
     @Bean(destroyMethod = "shutdown")

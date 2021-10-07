@@ -4,14 +4,14 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-parent</artifactId>
-        <version>3.15.2-SNAPSHOT</version>
+        <version>3.16.4-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
     <artifactId>redisson-tomcat</artifactId>
     <packaging>pom</packaging>
 
-    <name>Redisson/Tomcat</name>
+    <name>Redisson/Tomcat Session Manager</name>
 
     <modules>
         <module>redisson-tomcat-7</module>

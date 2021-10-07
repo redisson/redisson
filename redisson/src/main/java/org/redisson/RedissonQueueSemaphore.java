@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,14 @@
  */
 package org.redisson;
 
+import org.redisson.api.RFuture;
+import org.redisson.client.protocol.RedisCommands;
+import org.redisson.command.CommandAsyncExecutor;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-
-import org.redisson.api.RFuture;
-import org.redisson.client.protocol.RedisCommands;
-import org.redisson.command.CommandExecutor;
 
 /**
  * 
@@ -35,7 +35,7 @@ public class RedissonQueueSemaphore extends RedissonSemaphore {
     private Object value;
     private Collection<?> values;
     
-    public RedissonQueueSemaphore(CommandExecutor commandExecutor, String name) {
+    public RedissonQueueSemaphore(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
     }
     
@@ -64,7 +64,7 @@ public class RedissonQueueSemaphore extends RedissonSemaphore {
             params.add(1);
             params.add(encode(value));
         }
-        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "local value = redis.call('get', KEYS[1]); " +
                     "assert(value ~= false, 'Capacity of queue ' .. KEYS[1] .. ' has not been set'); " +
                     "if (tonumber(value) >= tonumber(ARGV[1])) then " +
@@ -73,7 +73,7 @@ public class RedissonQueueSemaphore extends RedissonSemaphore {
                         "return 1; " +
                     "end; " +
                     "return 0;",
-                    Arrays.<Object>asList(getName(), queueName), params.toArray());
+                    Arrays.<Object>asList(getRawName(), queueName), params.toArray());
     }
 
     

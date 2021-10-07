@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,7 @@
  */
 package org.redisson.api;
 
-import org.redisson.api.stream.StreamAddArgs;
-import org.redisson.api.stream.TrimStrategy;
+import org.redisson.api.stream.*;
 
 import java.util.List;
 import java.util.Map;
@@ -106,12 +105,6 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @return result object
      */
     RFuture<PendingResult> getPendingInfoAsync(String groupName);
-
-    /*
-     * Use #getPendingInfoAsync method
-     */
-    @Deprecated
-    RFuture<PendingResult> listPendingAsync(String groupName);
 
     /**
      * Returns list of common info about pending messages by group name.
@@ -320,7 +313,23 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @return list of Stream Message IDs
      */
     RFuture<List<StreamMessageId>> fastClaimAsync(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId... ids);
-    
+
+    /**
+     * Read stream data from consumer group and multiple streams including current.
+     *
+     * @param args - method arguments object
+     * @return stream data mapped by stream name and Stream Message ID
+     */
+    RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName, StreamMultiReadGroupArgs args);
+
+    /**
+     * Read stream data from consumer group and current stream only.
+     *
+     * @param args - method arguments object
+     * @return stream data mapped by Stream Message ID
+     */
+    RFuture<Map<StreamMessageId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, StreamReadGroupArgs args);
+
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs.
      * 
@@ -609,193 +618,133 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      */
     @Deprecated
     RFuture<Void> addAllAsync(StreamMessageId id, Map<K, V> entries, int trimLen, boolean trimStrict);
-    
+
     /**
-     * Read stream data by specified collection of Stream IDs.
-     * 
-     * @param ids - collection of Stream IDs
-     * @return stream data mapped by Stream ID
+     * Read stream data from multiple streams including current.
+     *
+     * @param args - method arguments object
+     * @return stream data mapped by stream name and Stream Message ID
      */
+    RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(StreamMultiReadArgs args);
+
+    /**
+     * Read stream data from current stream only.
+     *
+     * @param args - method arguments object
+     * @return stream data mapped by Stream Message ID
+     */
+    RFuture<Map<StreamMessageId, Map<K, V>>> readAsync(StreamReadArgs args);
+
+    /*
+     * Use readAsync(StreamReadArgs) method instead
+     *
+     */
+    @Deprecated
     RFuture<Map<StreamMessageId, Map<K, V>>> readAsync(StreamMessageId... ids);
     
-    /**
-     * Read stream data by specified collection of Stream IDs.
-     * 
-     * @param count - stream data size limit
-     * @param ids - collection of Stream IDs
-     * @return stream data mapped by Stream ID
+    /*
+     * Use readAsync(StreamReadArgs) method instead
+     *
      */
+    @Deprecated
     RFuture<Map<StreamMessageId, Map<K, V>>> readAsync(int count, StreamMessageId... ids);
 
-    /**
-     * Read stream data by specified collection of Stream IDs. 
-     * Wait for stream data availability for specified <code>timeout</code> interval.
-     * 
-     * @param timeout - time interval to wait for stream data availability
-     * @param unit - time interval unit
-     * @param ids - collection of Stream IDs
-     * @return stream data mapped by Stream ID
+    /*
+     * Use readAsync(StreamReadArgs) method instead
+     *
      */
+    @Deprecated
     RFuture<Map<StreamMessageId, Map<K, V>>> readAsync(long timeout, TimeUnit unit, StreamMessageId... ids);
     
-    /**
-     * Read stream data by specified collection of Stream IDs. 
-     * Wait for stream data availability for specified <code>timeout</code> interval.
-     * 
-     * @param count - stream data size limit
-     * @param timeout - time interval to wait for stream data availability
-     * @param unit - time interval unit
-     * @param ids - collection of Stream IDs
-     * @return stream data mapped by Stream ID
+    /*
+     * Use readAsync(StreamReadArgs) method instead
+     *
      */
+    @Deprecated
     RFuture<Map<StreamMessageId, Map<K, V>>> readAsync(int count, long timeout, TimeUnit unit, StreamMessageId... ids);
 
-    /**
-     * Read stream data by specified stream name including this stream.
-     * 
-     * @param id - id of this stream
-     * @param name2 - name of second stream
-     * @param id2 - id of second stream
-     * @return stream data mapped by key and Stream ID
+    /*
+     * Use readAsync(StreamMultiReadArgs) method instead
+     *
      */
+    @Deprecated
     RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(StreamMessageId id, String name2, StreamMessageId id2);
 
-    /**
-     * Read stream data by specified stream names including this stream.
-     * 
-     * @param id - id of this stream
-     * @param name2 - name of second stream
-     * @param id2 - id of second stream
-     * @param name3 - name of third stream
-     * @param id3 - id of third stream
-     * @return stream data mapped by key and Stream ID
+    /*
+     * Use readAsync(StreamMultiReadArgs) method instead
+     *
      */
+    @Deprecated
     RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(StreamMessageId id, String name2, StreamMessageId id2, String name3, StreamMessageId id3);
     
-    /**
-     * Read stream data by specified stream id mapped by name including this stream.
-     * 
-     * @param id - id of this stream
-     * @param nameToId - stream id mapped by name
-     * @return stream data mapped by key and Stream ID
+    /*
+     * Use readAsync(StreamMultiReadArgs) method instead
+     *
      */
+    @Deprecated
     RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(StreamMessageId id, Map<String, StreamMessageId> nameToId);
 
-    /**
-     * Read stream data by specified stream name including this stream.
-     * 
-     * @param count - stream data size limit
-     * @param id - id of this stream
-     * @param name2 - name of second stream
-     * @param id2 - id of second stream
-     * @return stream data mapped by key and Stream ID
+    /*
+     * Use readAsync(StreamMultiReadArgs) method instead
+     *
      */
+    @Deprecated
     RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(int count, StreamMessageId id, String name2, StreamMessageId id2);
 
-    /**
-     * Read stream data by specified stream names including this stream.
-     * 
-     * @param count - stream data size limit
-     * @param id - id of this stream
-     * @param name2 - name of second stream
-     * @param id2 - id of second stream
-     * @param name3 - name of third stream
-     * @param id3 - id of third stream
-     * @return stream data mapped by key and Stream ID
+    /*
+     * Use readAsync(StreamMultiReadArgs) method instead
+     *
      */
+    @Deprecated
     RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(int count, StreamMessageId id, String name2, StreamMessageId id2, String name3, StreamMessageId id3);
     
-    /**
-     * Read stream data by specified stream id mapped by name including this stream.
-     * 
-     * @param count - stream data size limit
-     * @param id - id of this stream
-     * @param nameToId - stream id mapped by name
-     * @return stream data mapped by key and Stream ID
+    /*
+     * Use readAsync(StreamMultiReadArgs) method instead
+     *
      */
+    @Deprecated
     RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(int count, StreamMessageId id, Map<String, StreamMessageId> nameToId);
 
-    /**
-     * Read stream data by specified stream name including this stream.
-     * Wait for the first stream data availability for specified <code>timeout</code> interval.
-     * 
-     * @param timeout - time interval to wait for stream data availability
-     * @param unit - time interval unit
-     * @param id - id of this stream
-     * @param name2 - name of second stream
-     * @param id2 - id of second stream
-     * @return stream data mapped by key and Stream ID
+    /*
+     * Use readAsync(StreamMultiReadArgs) method instead
+     *
      */
+    @Deprecated
     RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(long timeout, TimeUnit unit, StreamMessageId id, String name2, StreamMessageId id2);
 
-    /**
-     * Read stream data by specified stream names including this stream.
-     * Wait for the first stream data availability for specified <code>timeout</code> interval.
-     * 
-     * @param timeout - time interval to wait for stream data availability
-     * @param unit - time interval unit
-     * @param id - id of this stream
-     * @param name2 - name of second stream
-     * @param id2 - id of second stream
-     * @param name3 - name of third stream
-     * @param id3 - id of third stream
-     * @return stream data mapped by key and Stream ID
+    /*
+     * Use readAsync(StreamMultiReadArgs) method instead
+     *
      */
+    @Deprecated
     RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(long timeout, TimeUnit unit, StreamMessageId id, String name2, StreamMessageId id2, String name3, StreamMessageId id3);
     
-    /**
-     * Read stream data by specified stream id mapped by name including this stream.
-     * Wait for the first stream data availability for specified <code>timeout</code> interval.
-     * 
-     * @param timeout - time interval to wait for stream data availability
-     * @param unit - time interval unit
-     * @param id - id of this stream
-     * @param nameToId - stream id mapped by name
-     * @return stream data mapped by key and Stream ID
+    /*
+     * Use readAsync(StreamMultiReadArgs) method instead
+     *
      */
+    @Deprecated
     RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(long timeout, TimeUnit unit, StreamMessageId id, Map<String, StreamMessageId> nameToId);
 
-    /**
-     * Read stream data by specified stream name including this stream.
-     * Wait for the first stream data availability for specified <code>timeout</code> interval.
-     * 
-     * @param count - stream data size limit
-     * @param timeout - time interval to wait for stream data availability
-     * @param unit - time interval unit
-     * @param id - id of this stream
-     * @param name2 - name of second stream
-     * @param id2 - id of second stream
-     * @return stream data mapped by key and Stream ID
+    /*
+     * Use readAsync(StreamMultiReadArgs) method instead
+     *
      */
+    @Deprecated
     RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(int count, long timeout, TimeUnit unit, StreamMessageId id, String name2, StreamMessageId id2);
 
-    /**
-     * Read stream data by specified stream names including this stream.
-     * Wait for the first stream data availability for specified <code>timeout</code> interval.
-     * 
-     * @param count - stream data size limit
-     * @param timeout - time interval to wait for stream data availability
-     * @param unit - time interval unit
-     * @param id - id of this stream
-     * @param name2 - name of second stream
-     * @param id2 - id of second stream
-     * @param name3 - name of third stream
-     * @param id3 - id of third stream
-     * @return stream data mapped by key and Stream ID
+    /*
+     * Use readAsync(StreamMultiReadArgs) method instead
+     *
      */
+    @Deprecated
     RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(int count, long timeout, TimeUnit unit, StreamMessageId id, String name2, StreamMessageId id2, String name3, StreamMessageId id3);
     
-    /**
-     * Read stream data by specified stream id mapped by name including this stream.
-     * Wait for the first stream data availability for specified <code>timeout</code> interval.
-     * 
-     * @param count - stream data size limit
-     * @param timeout - time interval to wait for stream data availability
-     * @param unit - time interval unit
-     * @param id - id of this stream
-     * @param nameToId - stream id mapped by name
-     * @return stream data mapped by key and Stream ID
+    /*
+     * Use readAsync(StreamMultiReadArgs) method instead
+     *
      */
+    @Deprecated
     RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(int count, long timeout, TimeUnit unit, StreamMessageId id, Map<String, StreamMessageId> nameToId);
     
     /**
@@ -844,12 +793,17 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      */
     RFuture<Long> removeAsync(StreamMessageId... ids);
 
+    RFuture<Long> trimAsync(StreamTrimArgs args);
+
+    RFuture<Long> trimNonStrictAsync(StreamTrimArgs args);
+
     /**
      * Trims stream using MAXLEN strategy to specified size
      * 
      * @param size - new size of stream
      * @return number of deleted messages
      */
+    @Deprecated
     RFuture<Long> trimAsync(int size);
 
     /**
@@ -859,6 +813,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param threshold - new size of stream
      * @return number of deleted messages
      */
+    @Deprecated
     RFuture<Long> trimAsync(TrimStrategy strategy, int threshold);
 
     /**
@@ -867,6 +822,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param size - new size of stream
      * @return number of deleted messages
      */
+    @Deprecated
     RFuture<Long> trimNonStrictAsync(int size);
 
     /**
@@ -876,6 +832,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param threshold - trim threshold
      * @return number of deleted messages
      */
+    @Deprecated
     RFuture<Long> trimNonStrictAsync(TrimStrategy strategy, int threshold);
 
     /**
@@ -886,6 +843,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param limit - trim limit
      * @return number of deleted messages
      */
+    @Deprecated
     RFuture<Long> trimNonStrictAsync(TrimStrategy strategy, int threshold, int limit);
 
     /**

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,10 +38,7 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.pool.PubSubConnectionPool;
 import org.redisson.connection.pool.SlaveConnectionPool;
-import org.redisson.misc.CountableListener;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedisURI;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -142,19 +139,18 @@ public class LoadBalancerManager {
                     || entry.getFreezeReason() == FreezeReason.RECONNECT) {
                 if (!entry.isInitialized()) {
                     entry.setInitialized(true);
-                    CountableListener<Void> listener = new CountableListener<Void>() {
-                        @Override
-                        protected void onSuccess(Void value) {
-                            entry.setFreezeReason(null);
-                        }
-                    };
-                    listener.setCounter(2);
+
+                    AsyncCountDownLatch latch = new AsyncCountDownLatch();
+                    latch.latch(() -> {
+                        entry.setFreezeReason(null);
+                    }, 2);
+
                     BiConsumer<Void, Throwable> initCallBack = new BiConsumer<Void, Throwable>() {
-                        private AtomicBoolean initConnError = new AtomicBoolean(false);
+                        private final AtomicBoolean initConnError = new AtomicBoolean(false);
                         @Override
                         public void accept(Void r, Throwable ex) {
                             if (ex == null) {
-                                listener.decCounter();
+                                latch.countDown();
                             } else {
                                 if (!initConnError.compareAndSet(false, true)) {
                                     return;
@@ -294,7 +290,7 @@ public class LoadBalancerManager {
         RPromise<Void> result = new RedissonPromise<Void>();
         CountableListener<Void> listener = new CountableListener<Void>(result, null, client2Entry.values().size());
         for (ClientConnectionsEntry entry : client2Entry.values()) {
-            entry.getClient().shutdownAsync().onComplete(listener);
+            entry.shutdownAsync().onComplete(listener);
         }
         return result;
     }

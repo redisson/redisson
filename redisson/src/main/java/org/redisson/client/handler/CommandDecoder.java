@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,10 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Redis protocol command decoder
@@ -72,9 +69,18 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         this.scheme = scheme;
     }
 
+    protected QueueCommand getCommand(ChannelHandlerContext ctx) {
+        Queue<QueueCommandHolder> queue = ctx.channel().attr(CommandsQueue.COMMANDS_QUEUE).get();
+        QueueCommandHolder holder = queue.peek();
+        if (holder != null) {
+            return holder.getCommand();
+        }
+        return null;
+    }
+
     @Override
     protected final void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
-        QueueCommand data = ctx.channel().attr(CommandsQueue.CURRENT_COMMAND).get();
+        QueueCommand data = getCommand(ctx);
 
         if (state() == null) {
             state(new State());
@@ -85,7 +91,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 int endIndex = skipCommand(in);
 
                 try {
-                    decode(ctx, in, data);
+                    decode(ctx, in, data, 0);
                 } catch (Exception e) {
                     in.readerIndex(endIndex);
                     throw e;
@@ -95,25 +101,40 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             int endIndex = 0;
             if (!(data instanceof CommandsData)) {
                 endIndex = skipCommand(in);
+            } else {
+                endIndex = skipBatchCommand(in, (CommandsData) data);
             }
-            
-            try {
-                decode(ctx, in, data);
-            } catch (Exception e) {
-                if (!(data instanceof CommandsData)) {
-                    in.readerIndex(endIndex);
-                }
-                throw e;
+            if (data.isExecuted()) {
+                in.readerIndex(endIndex);
+                sendNext(ctx.channel());
+                return;
             }
+
+            decode(ctx, in, data, endIndex);
         }
     }
 
-    private void decode(ChannelHandlerContext ctx, ByteBuf in, QueueCommand data) throws Exception {
+    private int skipBatchCommand(ByteBuf in, CommandsData data) throws IOException {
+        int commandsAmount = 1;
+        if (!data.isSkipResult()) {
+            commandsAmount = data.getCommands().size();
+        }
+
+        in.markReaderIndex();
+        for (int i = 0; i < commandsAmount; i++) {
+            skipDecode(in);
+        }
+        int endIndex = in.readerIndex();
+        in.resetReaderIndex();
+        return endIndex;
+    }
+
+    private void decode(ChannelHandlerContext ctx, ByteBuf in, QueueCommand data, int endIndex) throws Exception {
         if (log.isTraceEnabled()) {
             log.trace("reply: {}, channel: {}, command: {}", in.toString(0, in.writerIndex(), CharsetUtil.UTF_8), ctx.channel(), data);
         }
 
-        decodeCommand(ctx.channel(), in, data);
+        decodeCommand(ctx.channel(), in, data, endIndex);
     }
 
     protected void sendNext(Channel channel, QueueCommand data) {
@@ -151,7 +172,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             }
         }
     }
-    
+
     private void skipBytes(ByteBuf is) throws IOException {
         long l = readLong(is);
         if (l > Integer.MAX_VALUE) {
@@ -170,7 +191,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         in.skipBytes(len + 2);
     }
     
-    protected void decodeCommand(Channel channel, ByteBuf in, QueueCommand data) throws Exception {
+    protected void decodeCommand(Channel channel, ByteBuf in, QueueCommand data, int endIndex) throws Exception {
         if (data instanceof CommandData) {
             CommandData<Object, Object> cmd = (CommandData<Object, Object>) data;
             try {
@@ -178,8 +199,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 sendNext(channel, data);
             } catch (Exception e) {
                 log.error("Unable to decode data. channel: " + channel + ", reply: " + LogHelper.toString(in) + ", command: " + LogHelper.toString(data), e);
-                cmd.tryFailure(e);
+                in.readerIndex(endIndex);
                 sendNext(channel);
+                cmd.tryFailure(e);
                 throw e;
             }
         } else if (data instanceof CommandsData) {
@@ -187,8 +209,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             try {
                 decodeCommandBatch(channel, in, commands);
             } catch (Exception e) {
-                commands.getPromise().tryFailure(e);
+                in.readerIndex(endIndex);
                 sendNext(channel);
+                commands.getPromise().tryFailure(e);
                 throw e;
             }
         } else {
@@ -206,10 +229,8 @@ public class CommandDecoder extends ReplayingDecoder<State> {
     }
 
     protected void sendNext(Channel channel) {
-        CommandsQueue handler = channel.pipeline().get(CommandsQueue.class);
-        if (handler != null) {
-            handler.sendNextCommand(channel);
-        }
+        Queue<QueueCommandHolder> queue = channel.attr(CommandsQueue.COMMANDS_QUEUE).get();
+        queue.poll();
         state(null);
     }
 
@@ -219,6 +240,10 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         Throwable error = null;
         while (in.writerIndex() > in.readerIndex()) {
             CommandData<Object, Object> commandData = null;
+
+            if (commandBatch.getCommands().size() == i) {
+                break;
+            }
 
             checkpoint();
             state().setBatchIndex(i);

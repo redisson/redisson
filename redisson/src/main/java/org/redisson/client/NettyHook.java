@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,15 +32,13 @@ public interface NettyHook {
      *
      * @param bootstrap - Netty Bootstrap object
      */
-    default void afterBoostrapInitialization(Bootstrap bootstrap) {
-    }
+    void afterBoostrapInitialization(Bootstrap bootstrap);
 
     /**
      * Invoked when Netty Channel object was created and initialized.
      *
      * @param channel - Netty Channel object
      */
-    default void afterChannelInitialization(Channel channel) {
-    }
+    void afterChannelInitialization(Channel channel);
 
 }

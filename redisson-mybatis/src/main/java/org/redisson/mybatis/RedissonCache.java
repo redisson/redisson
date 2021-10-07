@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2020 Nikita Koksharov
+ * Copyright (c) 2013-2021 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,10 @@ public class RedissonCache implements Cache {
     @Override
     public Object getObject(Object o) {
         check();
+        if (maxIdleTime == 0 && maxSize == 0) {
+            return mapCache.getWithTTLOnly(o);
+        }
+
         return mapCache.get(o);
     }
 
