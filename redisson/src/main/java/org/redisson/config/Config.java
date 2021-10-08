@@ -562,48 +562,48 @@ public class Config {
 
     @Deprecated
     public static Config fromJSON(String content) throws IOException {
-        log.error("JSON configuration is deprecated and will be removed in future!");
+        log.warn("JSON configuration is deprecated and will be removed in future!");
         ConfigSupport support = new ConfigSupport();
         return support.fromJSON(content, Config.class);
     }
 
     @Deprecated
     public static Config fromJSON(InputStream inputStream) throws IOException {
-        log.error("JSON configuration is deprecated and will be removed in future!");
+        log.warn("JSON configuration is deprecated and will be removed in future!");
         ConfigSupport support = new ConfigSupport();
         return support.fromJSON(inputStream, Config.class);
     }
 
     @Deprecated
     public static Config fromJSON(File file, ClassLoader classLoader) throws IOException {
-        log.error("JSON configuration is deprecated and will be removed in future!");
+        log.warn("JSON configuration is deprecated and will be removed in future!");
         ConfigSupport support = new ConfigSupport();
         return support.fromJSON(file, Config.class, classLoader);
     }
 
     @Deprecated
     public static Config fromJSON(File file) throws IOException {
-        log.error("JSON configuration is deprecated and will be removed in future!");
+        log.warn("JSON configuration is deprecated and will be removed in future!");
         return fromJSON(file, null);
     }
 
     @Deprecated
     public static Config fromJSON(URL url) throws IOException {
-        log.error("JSON configuration is deprecated and will be removed in future!");
+        log.warn("JSON configuration is deprecated and will be removed in future!");
         ConfigSupport support = new ConfigSupport();
         return support.fromJSON(url, Config.class);
     }
 
     @Deprecated
     public static Config fromJSON(Reader reader) throws IOException {
-        log.error("JSON configuration is deprecated and will be removed in future!");
+        log.warn("JSON configuration is deprecated and will be removed in future!");
         ConfigSupport support = new ConfigSupport();
         return support.fromJSON(reader, Config.class);
     }
 
     @Deprecated
     public String toJSON() throws IOException {
-        log.error("JSON configuration is deprecated and will be removed in future!");
+        log.warn("JSON configuration is deprecated and will be removed in future!");
         ConfigSupport support = new ConfigSupport();
         return support.toJSON(this);
     }
