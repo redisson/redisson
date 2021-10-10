@@ -71,8 +71,8 @@ public class CommandRxBatchService extends CommandRxService {
     
     @Override
     public <V, R> void async(boolean readOnlyMode, NodeSource nodeSource,
-            Codec codec, RedisCommand<V> command, Object[] params, RPromise<R> mainPromise, boolean ignoreRedirect) {
-        batchService.async(readOnlyMode, nodeSource, codec, command, params, mainPromise, ignoreRedirect);
+            Codec codec, RedisCommand<V> command, Object[] params, RPromise<R> mainPromise, boolean ignoreRedirect, boolean noRetry) {
+        batchService.async(readOnlyMode, nodeSource, codec, command, params, mainPromise, ignoreRedirect, noRetry);
     }
 
     public RFuture<BatchResult<?>> executeAsync() {

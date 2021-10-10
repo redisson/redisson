@@ -50,25 +50,26 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 
 /**
- * 
+ *
  * @author Nikita Koksharov
  *
  * @param <V> type of value
  * @param <R> type of returned value
  */
-@SuppressWarnings({"NestedIfDepth"})
+@SuppressWarnings({"NestedIfDepth", "ParameterNumber"})
 public class RedisExecutor<V, R> {
-    
+
     static final Logger log = LoggerFactory.getLogger(RedisExecutor.class);
-    
-    final boolean readOnlyMode; 
-    final RedisCommand<V> command; 
-    final Object[] params; 
-    final RPromise<R> mainPromise; 
+
+    final boolean readOnlyMode;
+    final RedisCommand<V> command;
+    final Object[] params;
+    final RPromise<R> mainPromise;
     final boolean ignoreRedirect;
     final RedissonObjectBuilder objectBuilder;
     final ConnectionManager connectionManager;
     final RedissonObjectBuilder.ReferenceType referenceType;
+    final boolean noRetry;
 
     RFuture<RedisConnection> connectionFuture;
     NodeSource source;
@@ -78,15 +79,15 @@ public class RedisExecutor<V, R> {
     volatile BiConsumer<R, Throwable> mainPromiseListener;
     volatile ChannelFuture writeFuture;
     volatile RedisException exception;
-    
+
     int attempts;
     long retryInterval;
     long responseTimeout;
-    
+
     public RedisExecutor(boolean readOnlyMode, NodeSource source, Codec codec, RedisCommand<V> command,
                          Object[] params, RPromise<R> mainPromise, boolean ignoreRedirect,
                          ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder,
-                         RedissonObjectBuilder.ReferenceType referenceType) {
+                         RedissonObjectBuilder.ReferenceType referenceType, boolean noRetry) {
         super();
         this.readOnlyMode = readOnlyMode;
         this.source = source;
@@ -97,7 +98,8 @@ public class RedisExecutor<V, R> {
         this.ignoreRedirect = ignoreRedirect;
         this.connectionManager = connectionManager;
         this.objectBuilder = objectBuilder;
-        
+        this.noRetry = noRetry;
+
         this.attempts = connectionManager.getConfig().getRetryAttempts();
         this.retryInterval = connectionManager.getConfig().getRetryInterval();
         this.responseTimeout = connectionManager.getConfig().getTimeout();
@@ -117,7 +119,7 @@ public class RedisExecutor<V, R> {
         }
 
         codec = getCodec(codec);
-        
+
         RFuture<RedisConnection> connectionFuture = getConnection();
 
         RPromise<R> attemptPromise = new RedissonPromise<>();
@@ -130,7 +132,7 @@ public class RedisExecutor<V, R> {
                 }
             }
         };
-        
+
         if (attempt == 0) {
             mainPromise.onComplete((r, e) -> {
                 if (this.mainPromiseListener != null) {
@@ -245,7 +247,7 @@ public class RedisExecutor<V, R> {
                     log.debug("attempt {} for command {} and params {}",
                             attempt, command, LogHelper.toString(params));
                 }
-                
+
                 mainPromiseListener = null;
 
                 execute();
@@ -301,7 +303,7 @@ public class RedisExecutor<V, R> {
             } else {
                 popTimeout = Long.valueOf(params[params.length - 1].toString());
             }
-            
+
             handleBlockingOperations(attemptPromise, connection, popTimeout);
             if (popTimeout == 0) {
                 return;
@@ -342,7 +344,8 @@ public class RedisExecutor<V, R> {
 
     protected boolean isResendAllowed(int attempt, int attempts) {
         return attempt < attempts
-                && (command == null || (!command.isBlockingCommand() && !RedisCommands.NO_RETRY.contains(command.getName())));
+                && !noRetry
+                    && (command == null || (!command.isBlockingCommand() && !RedisCommands.NO_RETRY.contains(command.getName())));
     }
 
     private void handleBlockingOperations(RPromise<R> attemptPromise, RedisConnection connection, Long popTimeout) {
@@ -393,7 +396,7 @@ public class RedisExecutor<V, R> {
             }
         }
     }
-    
+
     protected void checkAttemptPromise(RPromise<R> attemptFuture, RFuture<RedisConnection> connectionFuture) {
         timeout.cancel();
         if (attemptFuture.isCancelled()) {
@@ -402,7 +405,7 @@ public class RedisExecutor<V, R> {
 
         try {
             mainPromiseListener = null;
-            
+
             if (attemptFuture.cause() instanceof RedisMovedException && !ignoreRedirect) {
                 RedisMovedException ex = (RedisMovedException) attemptFuture.cause();
                 if (source.getRedirect() == Redirect.MOVED) {
@@ -411,22 +414,22 @@ public class RedisExecutor<V, R> {
                 }
 
                 onException();
-                
+
                 source = new NodeSource(ex.getSlot(), connectionManager.applyNatMap(ex.getUrl()), Redirect.MOVED);
                 execute();
                 return;
             }
-            
+
             if (attemptFuture.cause() instanceof RedisAskException && !ignoreRedirect) {
                 RedisAskException ex = (RedisAskException) attemptFuture.cause();
-                
+
                 onException();
-                
+
                 source = new NodeSource(ex.getSlot(), connectionManager.applyNatMap(ex.getUrl()), Redirect.ASK);
                 execute();
                 return;
             }
-            
+
             if (attemptFuture.cause() instanceof RedisLoadingException
                     || attemptFuture.cause() instanceof RedisTryAgainException
                         || attemptFuture.cause() instanceof RedisClusterDownException
@@ -440,11 +443,11 @@ public class RedisExecutor<V, R> {
                     return;
                 }
             }
-            
+
             free();
-            
+
             handleResult(attemptFuture, connectionFuture);
-            
+
         } catch (Exception e) {
             handleError(connectionFuture, e);
         }
@@ -456,13 +459,13 @@ public class RedisExecutor<V, R> {
             if (res instanceof ScanResult) {
                 ((ScanResult) res).setRedisClient(connectionFuture.getNow().getRedisClient());
             }
-            
+
             handleSuccess(mainPromise, connectionFuture, res);
         } else {
             handleError(connectionFuture, attemptPromise.cause());
         }
     }
-    
+
     protected void onException() {
     }
 
@@ -510,7 +513,7 @@ public class RedisExecutor<V, R> {
             }
         }
     }
-    
+
     protected void releaseConnection(RPromise<R> attemptPromise, RFuture<RedisConnection> connectionFuture) {
         if (!connectionFuture.isSuccess()) {
             return;
@@ -557,7 +560,7 @@ public class RedisExecutor<V, R> {
         }
         return connectionFuture;
     }
-    
+
     private static final Map<ClassLoader, Map<Codec, Codec>> CODECS = new LRUCacheMap<>(25, 0, 0);
 
     protected Codec getCodec(Codec codec) {
@@ -595,7 +598,7 @@ public class RedisExecutor<V, R> {
         }
         return codecToUse;
     }
-    
+
     protected <T> RedisException convertException(RFuture<T> future) {
         if (future.cause() instanceof RedisException) {
             return (RedisException) future.cause();
@@ -603,5 +606,5 @@ public class RedisExecutor<V, R> {
         return new RedisException("Unexpected exception while processing command", future.cause());
     }
 
-    
+
 }

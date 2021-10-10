@@ -57,9 +57,10 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
                                     Object[] params, RPromise<R> mainPromise, boolean ignoreRedirect, ConnectionManager connectionManager,
                                     RedissonObjectBuilder objectBuilder, ConcurrentMap<MasterSlaveEntry, Entry> commands,
                                     ConcurrentMap<MasterSlaveEntry, ConnectionEntry> connections, BatchOptions options, AtomicInteger index,
-                                    AtomicBoolean executed, AsyncCountDownLatch latch, RedissonObjectBuilder.ReferenceType referenceType) {
+                                    AtomicBoolean executed, AsyncCountDownLatch latch, RedissonObjectBuilder.ReferenceType referenceType,
+                                    boolean noRetry) {
         super(readOnlyMode, source, codec, command, params, mainPromise, ignoreRedirect, connectionManager, objectBuilder,
-                commands, options, index, executed, referenceType);
+                commands, options, index, executed, referenceType, noRetry);
         
         this.connections = connections;
         this.latch = latch;

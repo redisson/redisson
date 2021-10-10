@@ -130,8 +130,8 @@ public class TasksService extends BaseRemoteService {
         if (params.getTtl() > 0) {
             expireTime = System.currentTimeMillis() + params.getTtl();
         }
-        
-        return getAddCommandExecutor().evalWriteAsync(name, StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+
+        return getAddCommandExecutor().evalWriteNoRetryAsync(name, StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 // check if executor service not in shutdown state
                 "if redis.call('exists', KEYS[2]) == 0 then "
                     + "redis.call('hset', KEYS[5], ARGV[2], ARGV[3]);"
@@ -154,7 +154,7 @@ public class TasksService extends BaseRemoteService {
                     + "end;"
                     + "return 1;"
                 + "end;"
-                + "return 0;", 
+                + "return 0;",
                 Arrays.<Object>asList(tasksCounterName, statusName, schedulerQueueName, schedulerChannelName,
                                     tasksName, requestQueueName, tasksRetryIntervalName, tasksExpirationTimeName),
                 retryStartTime, request.getId(), encode(request), tasksRetryInterval, expireTime);
@@ -162,7 +162,7 @@ public class TasksService extends BaseRemoteService {
     
     @Override
     protected RFuture<Boolean> removeAsync(String requestQueueName, RequestId taskId) {
-        return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteNoRetryAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "redis.call('zrem', KEYS[2], 'ff' .. ARGV[1]); "
               + "redis.call('zrem', KEYS[8], ARGV[1]); "
               + "local task = redis.call('hget', KEYS[6], ARGV[1]); "

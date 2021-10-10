@@ -83,7 +83,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
     @Override
     protected RFuture<Boolean> addAsync(String requestQueueName, RemoteServiceRequest request,
             RemotePromise<Object> result) {
-        RFuture<Boolean> future = commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        RFuture<Boolean> future = commandExecutor.evalWriteNoRetryAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                   "redis.call('hset', KEYS[2], ARGV[1], ARGV[2]);"
                 + "redis.call('rpush', KEYS[1], ARGV[1]); "
                 + "return 1;",
@@ -96,7 +96,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
 
     @Override
     protected RFuture<Boolean> removeAsync(String requestQueueName, RequestId taskId) {
-        return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteNoRetryAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('lrem', KEYS[1], 1, ARGV[1]) > 0 then "
                         + "redis.call('hdel', KEYS[2], ARGV[1]);" +
                            "return 1;" +
