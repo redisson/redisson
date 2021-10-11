@@ -208,7 +208,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         args.add(index);
         encode(args, coll);
         
-        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteNoRetryAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "local ind = table.remove(ARGV, 1); " + // index is the first parameter
                         "local size = redis.call('llen', KEYS[1]); " +
                         "assert(tonumber(ind) <= size, 'index: ' .. ind .. ' but current size: ' .. size); " +

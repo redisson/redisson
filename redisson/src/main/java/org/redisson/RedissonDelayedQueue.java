@@ -102,7 +102,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
         long timeout = System.currentTimeMillis() + delayInMs;
      
         long randomId = ThreadLocalRandom.current().nextLong();
-        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
+        return commandExecutor.evalWriteNoRetryAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
                 "local value = struct.pack('dLc0', tonumber(ARGV[2]), string.len(ARGV[3]), ARGV[3]);" 
               + "redis.call('zadd', KEYS[2], ARGV[1], value);"
               + "redis.call('rpush', KEYS[3], value);"

@@ -196,7 +196,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
                 
                 ByteBuf encodedValue = encode(value);
                 
-                commandExecutor.get(commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
+                commandExecutor.get(commandExecutor.evalWriteNoRetryAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
                    "local len = redis.call('llen', KEYS[1]);"
                     + "if tonumber(ARGV[1]) < len then "
                         + "local pivot = redis.call('lindex', KEYS[1], ARGV[1]);"

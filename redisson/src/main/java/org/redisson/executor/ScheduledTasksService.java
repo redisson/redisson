@@ -58,7 +58,7 @@ public class ScheduledTasksService extends TasksService {
             expireTime = System.currentTimeMillis() + params.getTtl();
         }
 
-        return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteNoRetryAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 // check if executor service not in shutdown state
                 "if redis.call('exists', KEYS[2]) == 0 then "
                     + "local retryInterval = redis.call('get', KEYS[6]); "
@@ -94,7 +94,7 @@ public class ScheduledTasksService extends TasksService {
     
     @Override
     protected RFuture<Boolean> removeAsync(String requestQueueName, RequestId taskId) {
-        return commandExecutor.evalWriteAsync(name, StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteNoRetryAsync(name, StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                    // remove from scheduler queue
                     "if redis.call('exists', KEYS[3]) == 0 then "
                       + "return 1;"

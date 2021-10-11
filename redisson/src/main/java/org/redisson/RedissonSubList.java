@@ -140,7 +140,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
         args.add(index);
         encode(args, coll);
         
-        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteNoRetryAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "local ind = table.remove(ARGV, 1); " + // index is the first parameter
                         "local size = redis.call('llen', KEYS[1]); " +
                         "assert(tonumber(ind) <= size, 'index: ' .. ind .. ' but current size: ' .. size); " +
@@ -230,7 +230,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
             return;
         }
 
-        get(commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
+        get(commandExecutor.evalWriteNoRetryAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
                         "local tail = redis.call('lrange', KEYS[1], ARGV[2], -1); " +
                         "redis.call('ltrim', KEYS[1], 0, ARGV[1] - 1); " +
                         "if #tail > 0 then " +
@@ -309,7 +309,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
             return get(f);
         }
 
-        RFuture<V> f = commandExecutor.evalWriteAsync(getRawName(), codec, EVAL_OBJECT,
+        RFuture<V> f = commandExecutor.evalWriteNoRetryAsync(getRawName(), codec, EVAL_OBJECT,
                 "local v = redis.call('lindex', KEYS[1], ARGV[1]); " +
                         "local tail = redis.call('lrange', KEYS[1], ARGV[1] + 1, -1);" +
                         "redis.call('ltrim', KEYS[1], 0, ARGV[1] - 1);" +

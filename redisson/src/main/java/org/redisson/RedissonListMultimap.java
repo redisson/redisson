@@ -137,7 +137,7 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
         ByteBuf valueState = encodeMapValue(value);
 
         String setName = getValuesName(keyHash);
-        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteNoRetryAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); " +
                 "redis.call('rpush', KEYS[2], ARGV[3]); " +
                 "return 1; ",
@@ -173,7 +173,7 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
         }
 
         String setName = getValuesName(keyHash);
-        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN_AMOUNT,
+        return commandExecutor.evalWriteNoRetryAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN_AMOUNT,
                 "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); " +
                 "return redis.call('rpush', KEYS[2], unpack(ARGV, 3, #ARGV)); ",
             Arrays.<Object>asList(getRawName(), setName), params.toArray());
@@ -319,7 +319,7 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
         }
 
         String setName = getValuesName(keyHash);
-        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_LIST,
+        return commandExecutor.evalWriteNoRetryAsync(getRawName(), codec, RedisCommands.EVAL_LIST,
                 "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); " +
                 "local members = redis.call('lrange', KEYS[2], 0, -1); " +
                 "redis.call('del', KEYS[2]); " +

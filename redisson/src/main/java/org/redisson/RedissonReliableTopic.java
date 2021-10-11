@@ -163,7 +163,7 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
             StreamMessageId startId = new StreamMessageId(System.currentTimeMillis(), 0);
 
             RPromise<String> promise = new RedissonPromise<>();
-            RFuture<Void> addFuture = commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
+            RFuture<Void> addFuture = commandExecutor.evalWriteNoRetryAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
                     "local value = redis.call('incr', KEYS[3]); "
                             + "redis.call('zadd', KEYS[4], ARGV[3], ARGV[2]); "
                             + "redis.call('zadd', KEYS[1], value, ARGV[2]); "
