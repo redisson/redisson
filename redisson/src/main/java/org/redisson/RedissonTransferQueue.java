@@ -522,7 +522,7 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
             @Override
             public V remove(int index) {
                 if (index == 0) {
-                    RFuture<V> future = commandExecutor.evalWriteAsync(queueName, codec, EVAL_REQUEST,
+                    RFuture<V> future = commandExecutor.evalWriteNoRetryAsync(queueName, codec, EVAL_REQUEST,
                             "local id = redis.call('lpop', KEYS[1]); "
                                 + "if id ~= false then "
                                     + "return redis.call('hget', KEYS[2], id); "

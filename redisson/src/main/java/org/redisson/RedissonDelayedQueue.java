@@ -275,7 +275,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
 
     @Override
     public RFuture<List<V>> pollAsync(int limit) {
-        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_LIST,
+        return commandExecutor.evalWriteNoRetryAsync(getRawName(), codec, RedisCommands.EVAL_LIST,
                    "local result = {};"
                  + "for i = 1, ARGV[1], 1 do " +
                        "local v = redis.call('lpop', KEYS[1]);" +
@@ -463,7 +463,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
 
     @Override
     public RFuture<V> pollAsync() {
-        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_OBJECT,
+        return commandExecutor.evalWriteNoRetryAsync(getRawName(), codec, RedisCommands.EVAL_OBJECT,
                   "local v = redis.call('lpop', KEYS[1]); "
                 + "if v ~= false then "
                     + "redis.call('zrem', KEYS[2], v); "
@@ -481,7 +481,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
 
     @Override
     public RFuture<V> pollLastAndOfferFirstToAsync(String queueName) {
-        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_OBJECT,
+        return commandExecutor.evalWriteNoRetryAsync(getRawName(), codec, RedisCommands.EVAL_OBJECT,
                 "local v = redis.call('rpop', KEYS[1]); "
               + "if v ~= false then "
                   + "redis.call('zrem', KEYS[2], v); "

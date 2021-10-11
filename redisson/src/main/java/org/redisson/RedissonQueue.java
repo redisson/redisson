@@ -86,7 +86,7 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
 
     @Override
     public RFuture<List<V>> pollAsync(int limit) {
-        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_LIST,
+        return commandExecutor.evalWriteNoRetryAsync(getRawName(), codec, RedisCommands.EVAL_LIST,
                    "local result = {};"
                  + "for i = 1, ARGV[1], 1 do " +
                        "local value = redis.call('lpop', KEYS[1]);" +

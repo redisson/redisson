@@ -304,7 +304,7 @@ public class RedissonPriorityDeque<V> extends RedissonPriorityQueue<V> implement
     @Override
     public RFuture<List<V>> pollLastAsync(int limit) {
         return wrapLockedAsync(() -> {
-            return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_LIST,
+            return commandExecutor.evalWriteNoRetryAsync(getRawName(), codec, RedisCommands.EVAL_LIST,
                       "local result = {};"
                           + "for i = 1, ARGV[1], 1 do " +
                                 "local value = redis.call('rpop', KEYS[1]);" +
