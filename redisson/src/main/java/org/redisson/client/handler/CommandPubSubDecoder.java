@@ -208,7 +208,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
     
     @Override
     protected MultiDecoder<Object> messageDecoder(CommandData<Object, Object> data, List<Object> parts) {
-        if (parts.isEmpty()) {
+        if (parts.isEmpty() || parts.get(0) == null) {
             return null;
         }
         String command = parts.get(0).toString();
