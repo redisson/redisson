@@ -17,7 +17,7 @@ Maven
     <artifactId>redisson-micronaut-20</artifactId>
     <!-- for Micronaut v3.0.x -->
     <artifactId>redisson-micronaut-30</artifactId>
-    <version>3.16.2</version>
+    <version>3.16.3</version>
 </dependency>
 ```
 
@@ -25,9 +25,9 @@ Gradle
 
 ```groovy
 // for Micronaut v2.0.x - v2.5.x
-compile 'org.redisson:redisson-micronaut-20:3.16.2'
+compile 'org.redisson:redisson-micronaut-20:3.16.3'
 // for Micronaut v3.0.x
-compile 'org.redisson:redisson-micronaut-30:3.16.2'
+compile 'org.redisson:redisson-micronaut-30:3.16.3'
 ```
 
 ### 2. Add settings into `application.yml` file
