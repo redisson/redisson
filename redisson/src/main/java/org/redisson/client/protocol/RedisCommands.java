@@ -507,6 +507,7 @@ public interface RedisCommands {
             Arrays.asList(RPOPLPUSH.getName(), LPOP.getName(), RPOP.getName(), LPUSH.getName(), RPUSH.getName(),
                     LPUSHX.getName(), RPUSHX.getName(), GEOADD.getName(), XADD.getName(), APPEND.getName(),
                     DECR.getName(), "DECRBY", INCR.getName(), INCRBY.getName(), ZINCRBY.getName(),
-                    "HINCRBYFLOAT", "HINCRBY", "INCRBYFLOAT"));
+                    "HINCRBYFLOAT", "HINCRBY", "INCRBYFLOAT", SET_BOOLEAN.getName(), SETNX.getName(),
+                    MSETNX.getName(), HSETNX.getName()));
 
 }
