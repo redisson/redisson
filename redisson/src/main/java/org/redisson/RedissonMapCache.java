@@ -106,7 +106,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             throw new IllegalArgumentException("maxSize should be greater than zero");
         }
 
-        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteNoRetryAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "redis.call('hsetnx', KEYS[1], 'max-size', ARGV[1]);"
               + "return redis.call('hsetnx', KEYS[1], 'mode', ARGV[2]);",
                 Collections.singletonList(getOptionsName()), maxSize, mode);

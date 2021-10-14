@@ -335,7 +335,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                     if (request.getOptions().isAckExpected()) {
                         String responseName = getResponseQueueName(request.getExecutorId());
                         String ackName = getAckName(request.getId());
-                                RFuture<Boolean> ackClientsFuture = commandExecutor.evalWriteAsync(responseName,
+                                RFuture<Boolean> ackClientsFuture = commandExecutor.evalWriteNoRetryAsync(responseName,
                                         LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                                             "if redis.call('setnx', KEYS[1], 1) == 1 then " 
                                                 + "redis.call('pexpire', KEYS[1], ARGV[1]);"
