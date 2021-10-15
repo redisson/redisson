@@ -2,6 +2,7 @@ package org.redisson;
 
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
 import org.redisson.api.stream.*;
@@ -14,6 +15,24 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonStreamTest extends BaseTest {
+
+    @Test
+    public void testEmptyMap() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
+
+        RStream<Object, Object> stream = redisson.getStream("stream");
+        stream.createGroup("group");
+        stream.add(StreamAddArgs.entry("key", "value"));
+
+        Map<StreamMessageId, Map<Object, Object>> result2 = stream.readGroup("group", "consumer",
+                StreamReadGroupArgs.greaterThan(StreamMessageId.NEVER_DELIVERED).timeout(Duration.ofSeconds(1)).count(1));
+        assertThat(result2).hasSize(1);
+
+        stream.trim(StreamTrimArgs.minId(new StreamMessageId(2634125048379L,0)).noLimit());
+        Map<StreamMessageId, Map<Object, Object>> result = stream.readGroup("group", "consumer",
+                StreamReadGroupArgs.greaterThan(StreamMessageId.ALL).timeout(Duration.ofSeconds(1)).count(1));
+        assertThat(result).hasSize(1);
+    }
 
     @Test
     public void testAutoClaim() {
