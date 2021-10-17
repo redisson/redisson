@@ -46,6 +46,8 @@ import java.util.concurrent.TimeUnit;
 public interface ConnectionManager {
     
     RedisURI applyNatMap(RedisURI address);
+
+    RFuture<RedisURI> resolveIP(RedisURI address);
     
     String getId();
     

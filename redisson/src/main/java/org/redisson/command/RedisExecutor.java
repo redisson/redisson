@@ -39,6 +39,7 @@ import org.redisson.connection.NodeSource.Redirect;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.misc.LogHelper;
 import org.redisson.misc.RPromise;
+import org.redisson.misc.RedisURI;
 import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -415,8 +416,15 @@ public class RedisExecutor<V, R> {
 
                 onException();
 
-                source = new NodeSource(ex.getSlot(), connectionManager.applyNatMap(ex.getUrl()), Redirect.MOVED);
-                execute();
+                RFuture<RedisURI> ipAddrFuture = connectionManager.resolveIP(ex.getUrl());
+                ipAddrFuture.onComplete((ip, e) -> {
+                    if (e != null) {
+                        handleError(connectionFuture, e);
+                        return;
+                    }
+                    source = new NodeSource(ex.getSlot(), ip, Redirect.MOVED);
+                    execute();
+                });
                 return;
             }
 
@@ -425,8 +433,15 @@ public class RedisExecutor<V, R> {
 
                 onException();
 
-                source = new NodeSource(ex.getSlot(), connectionManager.applyNatMap(ex.getUrl()), Redirect.ASK);
-                execute();
+                RFuture<RedisURI> ipAddrFuture = connectionManager.resolveIP(ex.getUrl());
+                ipAddrFuture.onComplete((ip, e) -> {
+                    if (e != null) {
+                        handleError(connectionFuture, e);
+                        return;
+                    }
+                    source = new NodeSource(ex.getSlot(), ip, Redirect.ASK);
+                    execute();
+                });
                 return;
             }
 

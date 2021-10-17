@@ -690,13 +690,15 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return address;
     }
 
-    protected RFuture<RedisURI> resolveIP(RedisURI address) {
+    @Override
+    public RFuture<RedisURI> resolveIP(RedisURI address) {
         return resolveIP(address.getScheme(), address);
     }
 
     protected RFuture<RedisURI> resolveIP(String scheme, RedisURI address) {
         if (address.isIP()) {
-            return RedissonPromise.newSucceededFuture(address);
+            RedisURI addr = applyNatMap(address);
+            return RedissonPromise.newSucceededFuture(addr);
         }
 
         RPromise<RedisURI> result = new RedissonPromise<>();

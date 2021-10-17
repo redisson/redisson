@@ -790,13 +790,12 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
             RFuture<RedisURI> ipFuture = resolveIP(clusterNodeInfo.getAddress());
             counter++;
-            ipFuture.onComplete((addr, e) -> {
+            ipFuture.onComplete((address, e) -> {
                 if (e != null) {
                     latch.countDown();
                     return;
                 }
 
-                RedisURI address = applyNatMap(addr);
                 if (clusterNodeInfo.containsFlag(Flag.SLAVE)) {
                     ClusterPartition masterPartition = partitions.computeIfAbsent(masterId, k -> new ClusterPartition(masterId));
                     ClusterPartition slavePartition = partitions.computeIfAbsent(clusterNodeInfo.getNodeId(),
