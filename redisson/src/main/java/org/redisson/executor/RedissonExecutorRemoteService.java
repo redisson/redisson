@@ -65,7 +65,7 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
 
     @Override
     protected RFuture<RemoteServiceRequest> getTask(String requestId, RMap<String, RemoteServiceRequest> tasks) {
-        return commandExecutor.evalWriteAsync(((RedissonObject) tasks).getRawName(), codec, RedisCommands.EVAL_OBJECT,
+        return commandExecutor.evalWriteNoRetryAsync(((RedissonObject) tasks).getRawName(), codec, RedisCommands.EVAL_OBJECT,
                   "local value = redis.call('zscore', KEYS[2], ARGV[1]); " +
                   "if (value ~= false and tonumber(value) < tonumber(ARGV[2])) then "
                     + "redis.call('zrem', KEYS[2], ARGV[1]); "

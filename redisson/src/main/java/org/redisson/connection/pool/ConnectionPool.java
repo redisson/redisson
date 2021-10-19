@@ -253,9 +253,12 @@ abstract class ConnectionPool<T extends RedisConnection> {
 
     private void connectTo(ClientConnectionsEntry entry, RPromise<T> promise, RedisCommand<?> command) {
         if (promise.isDone()) {
-            releaseConnection(entry);
+            connectionManager.getGroup().submit(() -> {
+                releaseConnection(entry);
+            });
             return;
         }
+
         T conn = poll(entry, command);
         if (conn != null) {
             if (!conn.isActive() && entry.getNodeType() == NodeType.SLAVE) {

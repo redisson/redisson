@@ -79,7 +79,7 @@ public class RedissonRingBuffer<V> extends RedissonQueue<V> implements RRingBuff
 
     @Override
     public RFuture<Boolean> addAsync(V e) {
-        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteNoRetryAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local limit = redis.call('get', KEYS[2]); "
               + "assert(limit ~= false, 'RingBuffer capacity is not defined'); "
               + "local size = redis.call('rpush', KEYS[1], ARGV[1]); "
@@ -99,7 +99,7 @@ public class RedissonRingBuffer<V> extends RedissonQueue<V> implements RRingBuff
 
         List<Object> args = new ArrayList<>(c.size());
         encode(args, c);
-        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteNoRetryAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local limit = redis.call('get', KEYS[2]); "
               + "assert(limit ~= false, 'RingBuffer capacity is not defined'); "
 

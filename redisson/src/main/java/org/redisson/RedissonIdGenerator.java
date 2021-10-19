@@ -63,7 +63,7 @@ public class RedissonIdGenerator extends RedissonExpirable implements RIdGenerat
 
     @Override
     public RFuture<Boolean> tryInitAsync(long value, long allocationSize) {
-        return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteNoRetryAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                           "redis.call('setnx', KEYS[1], ARGV[1]); "
                         + "return redis.call('setnx', KEYS[2], ARGV[2]); ",
                 Arrays.asList(getRawName(), getAllocationSizeName()), value, allocationSize);

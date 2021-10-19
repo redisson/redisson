@@ -56,7 +56,7 @@ public class MapCacheEvictionTask extends EvictionTask {
     @Override
     RFuture<Integer> execute() {
         int latchExpireTime = Math.min(delay, 30);
-        return executor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
+        return executor.evalWriteNoRetryAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
                 "if redis.call('setnx', KEYS[6], ARGV[4]) == 0 then "
                  + "return -1;"
               + "end;"

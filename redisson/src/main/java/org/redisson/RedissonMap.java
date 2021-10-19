@@ -961,7 +961,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     protected RFuture<V> putIfAbsentOperationAsync(K key, V value) {
         String name = getRawName(key);
-        return commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_MAP_VALUE,
+        return commandExecutor.evalWriteNoRetryAsync(name, codec, RedisCommands.EVAL_MAP_VALUE,
                  "if redis.call('hsetnx', KEYS[1], ARGV[1], ARGV[2]) == 1 then "
                     + "return nil "
                 + "else "

@@ -161,7 +161,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
                 index = res.getIndex() + 1;
             }
                 
-            get(commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
+            get(commandExecutor.evalWriteNoRetryAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
                "local len = redis.call('llen', KEYS[1]);"
                 + "if tonumber(ARGV[1]) < len then "
                     + "local pivot = redis.call('lindex', KEYS[1], ARGV[1]);"
@@ -456,7 +456,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
     @Override
     public RFuture<List<V>> pollAsync(int limit) {
         return wrapLockedAsync(() -> {
-            return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_LIST,
+            return commandExecutor.evalWriteNoRetryAsync(getRawName(), codec, RedisCommands.EVAL_LIST,
                        "local result = {};"
                      + "for i = 1, ARGV[1], 1 do " +
                            "local value = redis.call('lpop', KEYS[1]);" +

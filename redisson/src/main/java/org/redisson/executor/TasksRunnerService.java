@@ -384,7 +384,7 @@ public class TasksRunnerService implements RemoteExecutorService {
                     + "end;"
                 + "end;";  
 
-        RFuture<Object> f = commandExecutor.evalWriteAsync(name, StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
+        RFuture<Object> f = commandExecutor.evalWriteNoRetryAsync(name, StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 script,
                 Arrays.asList(tasksCounterName, statusName, terminationTopicName, tasksName, schedulerQueueName, tasksRetryIntervalName),
                 RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE, requestId);

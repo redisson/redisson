@@ -43,8 +43,9 @@ public class StreamObjectMapReplayDecoder extends ObjectMapReplayDecoder<Object,
 
     @Override
     public Map<Object, Object> decode(List<Object> parts, State state) {
-        if (parts.get(0) == null
-                || (parts.get(0) instanceof List && ((List) parts.get(0)).isEmpty())) {
+        if (parts.isEmpty()
+                || parts.get(0) == null
+                    || (parts.get(0) instanceof List && ((List) parts.get(0)).isEmpty())) {
             parts.clear();
             return Collections.emptyMap();
         }

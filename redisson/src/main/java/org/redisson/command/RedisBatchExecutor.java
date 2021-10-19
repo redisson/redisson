@@ -43,9 +43,9 @@ public class RedisBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R> {
                               Object[] params, RPromise<R> mainPromise, boolean ignoreRedirect, ConnectionManager connectionManager,
                               RedissonObjectBuilder objectBuilder, ConcurrentMap<MasterSlaveEntry, Entry> commands,
                               BatchOptions options, AtomicInteger index,
-                              AtomicBoolean executed, RedissonObjectBuilder.ReferenceType referenceType) {
+                              AtomicBoolean executed, RedissonObjectBuilder.ReferenceType referenceType, boolean noRetry) {
         super(readOnlyMode, source, codec, command, params, mainPromise, ignoreRedirect, connectionManager, objectBuilder,
-                commands, options, index, executed, referenceType);
+                commands, options, index, executed, referenceType, noRetry);
     }
     
     @Override

@@ -72,8 +72,8 @@ public abstract class BaseRemoteProxy {
     
     protected RFuture<RemoteServiceAck> tryPollAckAgainAsync(RemoteInvocationOptions optionsCopy,
             String ackName, RequestId requestId) {
-        RPromise<RemoteServiceAck> promise = new RedissonPromise<RemoteServiceAck>();
-        RFuture<Boolean> ackClientsFuture = commandExecutor.evalWriteAsync(ackName, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        RPromise<RemoteServiceAck> promise = new RedissonPromise<>();
+        RFuture<Boolean> ackClientsFuture = commandExecutor.evalWriteNoRetryAsync(ackName, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                     "if redis.call('setnx', KEYS[1], 1) == 1 then " 
                         + "redis.call('pexpire', KEYS[1], ARGV[1]);"
                         + "return 0;" 

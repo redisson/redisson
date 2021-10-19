@@ -177,7 +177,7 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
     @Override
     public RFuture<V> pollAsync() {
         String channelName = RedissonSemaphore.getChannelName(getSemaphoreName());
-        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_OBJECT,
+        return commandExecutor.evalWriteNoRetryAsync(getRawName(), codec, RedisCommands.EVAL_OBJECT,
                 "local res = redis.call('lpop', KEYS[1]);"
                 + "if res ~= false then " +
                     "local value = redis.call('incrby', KEYS[2], ARGV[1]); " +

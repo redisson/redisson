@@ -345,7 +345,7 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
         RPromise<Boolean> result = new RedissonPromise<>();
         if (optionsCopy.isAckExpected()) {
             String ackName = remoteService.getAckName(requestId);
-            RFuture<Boolean> future = commandExecutor.evalWriteAsync(responseQueueName, LongCodec.INSTANCE,
+            RFuture<Boolean> future = commandExecutor.evalWriteNoRetryAsync(responseQueueName, LongCodec.INSTANCE,
                     RedisCommands.EVAL_BOOLEAN,
                     "if redis.call('setnx', KEYS[1], 1) == 1 then "
                         + "redis.call('pexpire', KEYS[1], ARGV[1]);"
