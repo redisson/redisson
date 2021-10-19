@@ -4,14 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
+import org.assertj.core.api.ListAssert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.ClusterRunner.ClusterProcesses;
@@ -22,6 +18,7 @@ import org.redisson.api.RSet;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.SortOrder;
 import org.redisson.client.codec.IntegerCodec;
+import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
 import org.redisson.connection.balancer.RandomLoadBalancer;
@@ -40,6 +37,30 @@ public class RedissonSetTest extends BaseTest {
             this.lng = lng;
         }
 
+    }
+
+    @Test
+    public void testContainsEach() {
+        RSet<Long> set = redisson.getSet("list", LongCodec.INSTANCE);
+        set.add(0L);
+        set.add(1L);
+
+        assertThat(set.containsEach(Collections.emptyList())).isEmpty();
+        assertThat(set.containsEach(Arrays.asList(0L, 1L)))
+                .hasSize(2)
+                .isEqualTo(Arrays.asList(1L, 1L));
+
+        assertThat(set.containsEach(Arrays.asList(0L, 1L, 2L)))
+                .hasSize(3)
+                .isEqualTo(Arrays.asList(1L, 1L, 0L));
+
+        assertThat(set.containsEach(Arrays.asList(0L, 1L, 0L)))
+                .hasSize(3)
+                .isEqualTo(Arrays.asList(1L, 1L, 1L));
+
+        assertThat(set.containsEach(Arrays.asList(2L, 3L, 4L)))
+                .hasSize(3)
+                .isEqualTo(Arrays.asList(0L, 0L, 0L));
     }
 
     @Test

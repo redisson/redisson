@@ -19,6 +19,7 @@ import org.redisson.api.mapreduce.RCollectionMapReduce;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -273,5 +274,14 @@ public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V>, RSortable<Set
      *          otherwise <code>false</code>.
      */
     boolean tryAdd(V... values);
+
+    /**
+     * Check if each element is contained in the specified collection.
+     * Returns whether each element is a member of the specified collection.
+     *
+     * @param c - collection of elements to check
+     * @return whether each element is a member of the specified collection
+     */
+    List<Long> containsEach(Collection<? extends V> c);
 
 }
