@@ -227,7 +227,7 @@ public class LoadBalancerManager {
         return getEntry(redisClient) != null;
     }
 
-    private ClientConnectionsEntry getEntry(RedisURI addr) {
+    public ClientConnectionsEntry getEntry(RedisURI addr) {
         for (ClientConnectionsEntry entry : client2Entry.values()) {
             InetSocketAddress entryAddr = entry.getClient().getAddr();
             if (RedisURI.compare(entryAddr, addr)) {

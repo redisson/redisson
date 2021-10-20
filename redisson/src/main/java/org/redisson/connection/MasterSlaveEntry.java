@@ -352,7 +352,11 @@ public class MasterSlaveEntry {
     public ClientConnectionsEntry getEntry(RedisClient redisClient) {
         return slaveBalancer.getEntry(redisClient);
     }
-    
+
+    public ClientConnectionsEntry getEntry(RedisURI addr) {
+        return slaveBalancer.getEntry(addr);
+    }
+
     public RedisClient getClient() {
         return masterEntry.getClient();
     }

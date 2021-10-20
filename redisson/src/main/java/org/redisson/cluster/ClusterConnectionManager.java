@@ -31,11 +31,8 @@ import org.redisson.config.ClusterServersConfig;
 import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.ReadMode;
-import org.redisson.connection.CRC16;
+import org.redisson.connection.*;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
-import org.redisson.connection.MasterSlaveConnectionManager;
-import org.redisson.connection.MasterSlaveEntry;
-import org.redisson.connection.SingleEntry;
 import org.redisson.misc.AsyncCountDownLatch;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedisURI;
@@ -537,6 +534,14 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         Set<RedisURI> addedSlaves = new HashSet<>(newPart.getSlaveAddresses());
         addedSlaves.removeAll(currentPart.getSlaveAddresses());
         for (RedisURI uri : addedSlaves) {
+            ClientConnectionsEntry slaveEntry = entry.getEntry(uri);
+            if (slaveEntry != null) {
+                currentPart.addSlaveAddress(uri);
+                entry.slaveUp(uri, FreezeReason.MANAGER);
+                log.info("slave: {} added for slot ranges: {}", uri, currentPart.getSlotRanges());
+                continue;
+            }
+
             RFuture<Void> future = entry.addSlave(uri);
             future.onComplete((res, ex) -> {
                 if (ex != null) {
