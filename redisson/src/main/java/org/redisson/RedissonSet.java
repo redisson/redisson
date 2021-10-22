@@ -23,6 +23,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.iterator.RedissonBaseIterator;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
+import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
 import java.util.*;
@@ -322,17 +323,31 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
     }
 
     @Override
-    public RFuture<List<Long>> containsEachAsync(Collection<? extends V> c) {
+    public RFuture<List<V>> containsEachAsync(Collection<V> c) {
         if (c.isEmpty()) {
             return RedissonPromise.newSucceededFuture(Collections.emptyList());
         }
-
         List<Object> args = new ArrayList<Object>(c.size() + 1);
         args.add(getRawName());
         encode(args, c);
 
-        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.SMISMEMBER, args.toArray());
-
+        RFuture<List<Long>> future = commandExecutor.readAsync(getRawName(), codec, RedisCommands.SMISMEMBER, args.toArray());
+        List<V> keysToCheck = new ArrayList<>(c);
+        RPromise<List<V>> result = new RedissonPromise<>();
+        future.onComplete((res, e) -> {
+            if (e != null) {
+                result.tryFailure(e);
+                return;
+            }
+            List<V> containedKeys = new ArrayList<>();
+            for (int i = 0; i < res.size(); i++) {
+                if (res.get(i) == 1) {
+                    containedKeys.add(keysToCheck.get(i));
+                }
+            }
+            result.trySuccess(containedKeys);
+        });
+        return result;
     }
 
     @Override
@@ -650,7 +665,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
     }
 
     @Override
-    public List<Long> containsEach(Collection<? extends V> c) {
+    public List<V> containsEach(Collection<V> c) {
         return get(containsEachAsync(c));
     }
 

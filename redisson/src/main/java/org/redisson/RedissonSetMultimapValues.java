@@ -81,7 +81,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     }
 
     @Override
-    public List<Long> containsEach(Collection<? extends V> c) {
+    public List<V> containsEach(Collection<V> c) {
         throw new UnsupportedOperationException("This operation is not supported for SetMultimap values");
     }
 
@@ -445,7 +445,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     }
 
     @Override
-    public RFuture<List<Long>> containsEachAsync(Collection<? extends V> c) {
+    public RFuture<List<V>> containsEachAsync(Collection<V> c) {
         throw new UnsupportedOperationException("This operation is not supported for SetMultimap values");
     }
 

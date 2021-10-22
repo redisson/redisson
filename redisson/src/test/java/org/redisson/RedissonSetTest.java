@@ -41,26 +41,25 @@ public class RedissonSetTest extends BaseTest {
 
     @Test
     public void testContainsEach() {
-        RSet<Long> set = redisson.getSet("list", LongCodec.INSTANCE);
-        set.add(0L);
-        set.add(1L);
+        RSet<Integer> set = redisson.getSet("list", IntegerCodec.INSTANCE);
+        set.add(0);
+        set.add(1);
 
-        assertThat(set.containsEach(Collections.emptyList())).isEmpty();
-        assertThat(set.containsEach(Arrays.asList(0L, 1L)))
+        assertThat(set.containsEach(Collections.emptySet())).isEmpty();
+        assertThat(set.containsEach(Arrays.asList(0, 1)))
                 .hasSize(2)
-                .isEqualTo(Arrays.asList(1L, 1L));
+                .containsOnly(0, 1);
 
-        assertThat(set.containsEach(Arrays.asList(0L, 1L, 2L)))
-                .hasSize(3)
-                .isEqualTo(Arrays.asList(1L, 1L, 0L));
+        assertThat(set.containsEach(Arrays.asList(0, 1, 2)))
+                .hasSize(2)
+                .containsOnly(0, 1);
 
-        assertThat(set.containsEach(Arrays.asList(0L, 1L, 0L)))
+        assertThat(set.containsEach(Arrays.asList(0, 1, 0, 2)))
                 .hasSize(3)
-                .isEqualTo(Arrays.asList(1L, 1L, 1L));
+                .containsOnly(0, 1, 0);
 
-        assertThat(set.containsEach(Arrays.asList(2L, 3L, 4L)))
-                .hasSize(3)
-                .isEqualTo(Arrays.asList(0L, 0L, 0L));
+        assertThat(set.containsEach(Arrays.asList(2, 3, 4)))
+                .hasSize(0);
     }
 
     @Test

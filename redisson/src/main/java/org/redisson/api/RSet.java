@@ -277,11 +277,11 @@ public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V>, RSortable<Set
 
     /**
      * Check if each element is contained in the specified collection.
-     * Returns whether each element is a member of the specified collection.
+     * Returns contained elements.
      *
-     * @param c - collection of elements to check
-     * @return whether each element is a member of the specified collection
+     * @param c - collection to check
+     * @return contained elements
      */
-    List<Long> containsEach(Collection<? extends V> c);
+    List<V> containsEach(Collection<V> c);
 
 }

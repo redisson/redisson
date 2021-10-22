@@ -161,11 +161,11 @@ public interface RSetAsync<V> extends RCollectionAsync<V>, RSortableAsync<Set<V>
 
     /**
      * Check if each element is contained in the specified collection.
-     * Returns whether each element is a member of the specified collection.
+     * Returns contained elements.
      *
-     * @param c - collection of elements to check
-     * @return whether each element is a member of the specified collection
+     * @param c - collection to check
+     * @return contained elements
      */
-    RFuture<List<Long>> containsEachAsync(Collection<? extends V> c);
+    RFuture<List<V>> containsEachAsync(Collection<V> c);
 
 }
