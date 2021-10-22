@@ -52,6 +52,8 @@ public interface RReliableTopic extends RExpirable, RReliableTopicAsync {
      * <code>MessageListener.onMessage</code> method is called when any message
      * is published on this topic.
      * <p>
+     * Though messages broadcasted across all topic instances, listener is attached to this topic instance.
+     * <p>
      * Watchdog is started when listener was registered.
      *
      * @see org.redisson.config.Config#setReliableTopicWatchdogTimeout(long)
@@ -59,25 +61,25 @@ public interface RReliableTopic extends RExpirable, RReliableTopicAsync {
      * @param <M> - type of message
      * @param type - type of message
      * @param listener for messages
-     * @return locally unique listener id
+     * @return id of listener attached to this topic instance
      * @see MessageListener
      */
     <M> String addListener(Class<M> type, MessageListener<M> listener);
 
     /**
-     * Removes the listener by <code>id</code> for listening this topic
+     * Removes the listener by <code>id</code> attached to this topic instance
      *
      * @param listenerIds - listener ids
      */
     void removeListener(String... listenerIds);
 
     /**
-     * Removes all listeners from this topic
+     * Removes all listeners attached to this topic instance
      */
     void removeAllListeners();
 
     /**
-     * Returns amount of registered listeners to this topic
+     * Returns amount of registered listeners to this topic instance
      *
      * @return amount of listeners
      */
