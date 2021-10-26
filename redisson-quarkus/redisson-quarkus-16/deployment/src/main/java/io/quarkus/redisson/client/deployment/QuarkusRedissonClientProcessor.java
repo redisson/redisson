@@ -35,6 +35,7 @@ import org.redisson.config.PropertiesConvertor;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 
 /**
  *
@@ -87,10 +88,16 @@ class QuarkusRedissonClientProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     RedissonClientItemBuild build(RedissonClientRecorder recorder) throws IOException {
-        InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream("redisson.yaml");
-        if (stream != null) {
-            byte[] array = new byte[stream.available()];
-            stream.read(array);
+        InputStream configStream;
+        Optional<String> configFile = ConfigProvider.getConfig().getOptionalValue("quarkus.redisson.file", String.class);
+        if (configFile.isPresent()) {
+            configStream = getClass().getResourceAsStream(configFile.get());
+        } else {
+            configStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("redisson.yaml");
+        }
+        if (configStream != null) {
+            byte[] array = new byte[configStream.available()];
+            configStream.read(array);
             recorder.configureRedisson(new String(array, StandardCharsets.UTF_8));
         } else {
             String yaml = PropertiesConvertor.toYaml("quarkus.redisson.", ConfigProvider.getConfig().getPropertyNames(), prop -> {
