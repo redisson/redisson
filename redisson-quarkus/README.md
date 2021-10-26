@@ -42,7 +42,7 @@ Maven
     <groupId>org.redisson</groupId>
     <!-- for Quarkus v1.6.x - v1.13.x -->
     <artifactId>redisson-quarkus-16</artifactId>
-    <!-- for Quarkus v2.0.x+ -->
+    <!-- for Quarkus v2.0.x - v2.4.x -->
     <artifactId>redisson-quarkus-20</artifactId>
     <version>3.16.3</version>
 </dependency>
@@ -53,12 +53,12 @@ Gradle
 ```groovy
 // for Quarkus v1.6.x - v1.13.x
 compile 'org.redisson:redisson-quarkus-16:3.16.3'
-// for Quarkus v2.0.x+
+// for Quarkus v2.0.x - v2.4.x
 compile 'org.redisson:redisson-quarkus-20:3.16.3'
 ```
 
 ### 2. Add settings into `application.properties` file
-
+  
 Config structure is a flat Redisson YAML configuration - 
 [single mode](https://github.com/redisson/redisson/wiki/2.-Configuration#262-single-instance-yaml-config-format),
 [replicated mode](https://github.com/redisson/redisson/wiki/2.-Configuration#252-replicated-yaml-config-format),
@@ -76,6 +76,8 @@ quarkus.redisson.threads=16
 quarkus.redisson.netty-threads=32
 ```
 
+Use `quarkus.redisson.file` setting to specify path to config file.    
+    
 ### 3. Use Redisson
 
 ```java
