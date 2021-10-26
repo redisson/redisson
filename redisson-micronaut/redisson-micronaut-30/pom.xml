@@ -60,12 +60,12 @@
                   <path>
                     <groupId>io.micronaut</groupId>
                     <artifactId>micronaut-inject-java</artifactId>
-                    <version>3.0.0</version>
+                    <version>3.0.3</version>
                   </path>
                   <path>
                     <groupId>io.micronaut</groupId>
                     <artifactId>micronaut-validation</artifactId>
-                    <version>3.0.0</version>
+                    <version>3.0.3</version>
                   </path>
             </annotationProcessorPaths>
           </configuration>
@@ -83,12 +83,12 @@
                   <path>
                     <groupId>io.micronaut</groupId>
                     <artifactId>micronaut-inject-java</artifactId>
-                    <version>3.0.0</version>
+                    <version>3.0.3</version>
                   </path>
                   <path>
                     <groupId>io.micronaut</groupId>
                     <artifactId>micronaut-validation</artifactId>
-                    <version>3.0.0</version>
+                    <version>3.0.3</version>
                   </path>
                 </annotationProcessorPaths>
               </configuration>
@@ -110,21 +110,21 @@
         <dependency>
             <groupId>io.micronaut</groupId>
             <artifactId>micronaut-session</artifactId>
-            <version>3.0.0</version>
+            <version>3.0.3</version>
             <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>io.micronaut</groupId>
             <artifactId>micronaut-management</artifactId>
-            <version>3.0.0</version>
+            <version>3.0.3</version>
             <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>io.micronaut</groupId>
             <artifactId>micronaut-inject-java</artifactId>
-            <version>3.0.0</version>
+            <version>3.0.3</version>
             <scope>test</scope>
         </dependency>
 
@@ -153,7 +153,7 @@
         <dependency>
           <groupId>io.micronaut.test</groupId>
           <artifactId>micronaut-test-junit5</artifactId>
-          <version>3.0.0</version>
+          <version>3.0.2</version>
           <scope>test</scope>
         </dependency>
         <dependency>
