@@ -59,6 +59,8 @@ compile 'org.redisson:redisson-quarkus-20:3.16.3'
 
 ### 2. Add settings into `application.properties` file
 
+Use `quarkus.redisson.file` setting to specify path to config file.
+    
 Config structure is a flat Redisson YAML configuration - 
 [single mode](https://github.com/redisson/redisson/wiki/2.-Configuration#262-single-instance-yaml-config-format),
 [replicated mode](https://github.com/redisson/redisson/wiki/2.-Configuration#252-replicated-yaml-config-format),
