@@ -295,7 +295,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                 // poll method may return null value
                 if (requestId == null) {
                     // Because the previous code is already -1, it must be +1 before returning, otherwise the counter will become 0 soon
-                    entry.getCounter().incrementAndGet();
+                    resubscribe(remoteInterface, requestQueue, executor, bean);
                     return;
                 }
 
