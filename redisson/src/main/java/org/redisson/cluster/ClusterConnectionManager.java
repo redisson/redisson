@@ -871,7 +871,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private Map<RedisURI, ClusterPartition> getLastPartitonsByURI() {
-        return lastPartitions.values().stream().collect(Collectors.toMap(p -> p.getMasterAddress(), p -> p));
+        return lastPartitions.values().stream().collect(Collectors.toMap(p -> p.getMasterAddress(), p -> p, (e1, e2) -> e1));
     }
 
     private Set<ClusterPartition> getLastPartitions() {
