@@ -29,8 +29,8 @@ import org.redisson.misc.RedissonPromise;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 
@@ -108,17 +108,35 @@ public class RedissonBuckets implements RBuckets {
             return RedissonPromise.newSucceededFuture(false);
         }
 
-        List<Object> params = new ArrayList<Object>(buckets.size());
-        for (Entry<String, ?> entry : buckets.entrySet()) {
-            params.add(entry.getKey());
-            try {
-                params.add(codec.getValueEncoder().encode(entry.getValue()));
-            } catch (IOException e) {
-                throw new IllegalArgumentException(e);
-            }
-        }
+        return commandExecutor.writeBatchedAsync(codec, RedisCommands.MSETNX, new SlotCallback<Boolean, Boolean>() {
+            final AtomicBoolean result = new AtomicBoolean(true);
 
-        return commandExecutor.writeAsync(params.get(0).toString(), RedisCommands.MSETNX, params.toArray());
+            @Override
+            public void onSlotResult(Boolean result) {
+                if(!result && this.result.get()){
+                    this.result.set(result);
+                }
+            }
+
+            @Override
+            public Boolean onFinish() {
+                return this.result.get();
+            }
+
+            @Override
+            public Object[] createParams(List<String> keys) {
+                List<Object> params = new ArrayList<>(keys.size());
+                for (String key : keys) {
+                    params.add(key);
+                    try {
+                        params.add(codec.getValueEncoder().encode(buckets.get(key)));
+                    } catch (IOException e) {
+                        throw new IllegalArgumentException(e);
+                    }
+                }
+                return params.toArray();
+            }
+        }, buckets.keySet().toArray(new String[]{}));
     }
 
     @Override
