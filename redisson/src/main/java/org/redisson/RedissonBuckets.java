@@ -113,7 +113,7 @@ public class RedissonBuckets implements RBuckets {
 
             @Override
             public void onSlotResult(Boolean result) {
-                if(!result && this.result.get()){
+                if (!result && this.result.get()){
                     this.result.set(result);
                 }
             }
