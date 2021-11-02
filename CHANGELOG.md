@@ -3,6 +3,28 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 29-Oct-2021 - 3.16.4 released
+Feature - `sentinelsDiscovery` setting added  
+Feature - `quarkus.redisson.file` setting added to `redisson-quarkus` module to define external Redisson config file  
+
+Improvement - optimization of `ClusterConnectionManager.checkSlaveNodesChange()` and `ClusterConnectionManager.checkMasterNodesChange()` methods  
+
+Fixed - master change monitoring task in Replicated mode stops execution if it's invoked before the dns change  
+Fixed - RemoteService cannot be called if requestId is null (thanks to @jimichan)  
+Fixed - codec is not applied to RBuckets.set() method in non Cluster mode  
+Fixed - recovered slave shouldn't be added again in Redis Cluster mode  
+Fixed - `releaseConnection` method may cause StackOverflowError  
+Fixed - MOVED response with hostname isn't handled properly  
+Fixed - `RStream.readGroup()` method throws `IndexOutOfBoundsException` if group has a message without data  
+Fixed - NPE in CommandPubSubDecoder  
+Fixed - RExecutorService may execute same task twice at the same time  
+Fixed - dependencies for testing should use appropriate scope  
+Fixed - `RPriorityQueue.add()` method uses async method  
+Fixed - don't retry non-idempotent operations which were successfully sent  
+Fixed - RMapCache.fastRemove throws RedisException: too many results to unpack  
+Fixed - RRateLimiter decreases limit over the time in highly concurrent environment  
+Fixed - don't PING connection if it's in use  
+
 ### 21-Sep-2021 - 3.16.3 released
 Improvement - `RBuckets.get()` method should group keys by slot in Redis Cluster mode  
 Improvement - `RBatch` result decoding optimization  
