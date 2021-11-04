@@ -161,11 +161,13 @@ public class DNSMonitor {
                 if (!newSlaveAddr.getAddress().equals(currentSlaveAddr.getAddress())) {
                     log.info("Detected DNS change. Slave {} has changed ip from {} to {}",
                             entry.getKey().getHost(), currentSlaveAddr.getAddress().getHostAddress(), newSlaveAddr.getAddress().getHostAddress());
+                    boolean slaveFound = false;
                     for (MasterSlaveEntry masterSlaveEntry : connectionManager.getEntrySet()) {
                         if (!masterSlaveEntry.hasSlave(currentSlaveAddr)) {
                             continue;
                         }
 
+                        slaveFound = true;
                         if (masterSlaveEntry.hasSlave(newSlaveAddr)) {
                             masterSlaveEntry.slaveUp(newSlaveAddr, FreezeReason.MANAGER);
                             masterSlaveEntry.slaveDown(currentSlaveAddr, FreezeReason.MANAGER);
@@ -186,6 +188,9 @@ public class DNSMonitor {
                             });
                         }
                         break;
+                    }
+                    if (!slaveFound) {
+                        latch.countDown();
                     }
                 } else {
                     latch.countDown();
