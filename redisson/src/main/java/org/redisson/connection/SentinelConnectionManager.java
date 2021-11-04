@@ -457,7 +457,12 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 String masterPort = map.get("master-port");
 
                 RFuture<RedisURI> slaveAddrFuture = resolveIP(host, port);
-                RFuture<RedisURI> masterAddrFuture = resolveIP(masterHost, masterPort);
+                RFuture<RedisURI> masterAddrFuture;
+                if ("?".equals(masterHost)) {
+                    masterAddrFuture = RedissonPromise.newSucceededFuture(null);
+                } else {
+                    masterAddrFuture = resolveIP(masterHost, masterPort);
+                }
                 CompletableFuture<Void> resolvedFuture = CompletableFuture.allOf(masterAddrFuture.toCompletableFuture(),
                                                                                     slaveAddrFuture.toCompletableFuture());
                 resolvedFuture.whenComplete((res, exc) -> {
