@@ -118,7 +118,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             Object msg;
             if (syncStrategy == SyncStrategy.UPDATE) {
                 ByteBuf mapValue = encodeMapValue(value);
-                msg = new LocalCachedMapUpdate(mapKey, mapValue);
+                msg = new LocalCachedMapUpdate(instanceId, mapKey, mapValue);
             } else {
                 msg = new LocalCachedMapInvalidate(instanceId, cacheKey.getKeyHash());
             }
@@ -342,7 +342,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
 
     protected ByteBuf createSyncMessage(ByteBuf mapKey, ByteBuf mapValue, CacheKey cacheKey) {
         if (syncStrategy == SyncStrategy.UPDATE) {
-            return encode(new LocalCachedMapUpdate(mapKey, mapValue));
+            return encode(new LocalCachedMapUpdate(instanceId, mapKey, mapValue));
         }
         return encode(new LocalCachedMapInvalidate(instanceId, cacheKey.getKeyHash()));
     }
@@ -712,7 +712,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 entries.add(new LocalCachedMapUpdate.Entry(key, value));
                 
             }
-            msgEncoded = encode(new LocalCachedMapUpdate(entries));
+            msgEncoded = encode(new LocalCachedMapUpdate(instanceId, entries));
         } else if (syncStrategy == SyncStrategy.INVALIDATE) {
             msgEncoded = encode(new LocalCachedMapInvalidate(instanceId, hashes));
         }

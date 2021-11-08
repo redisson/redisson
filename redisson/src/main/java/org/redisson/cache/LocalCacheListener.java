@@ -208,20 +208,21 @@ public abstract class LocalCacheListener {
                     
                     if (msg instanceof LocalCachedMapUpdate) {
                         LocalCachedMapUpdate updateMsg = (LocalCachedMapUpdate) msg;
-                        
-                        for (LocalCachedMapUpdate.Entry entry : updateMsg.getEntries()) {
-                            ByteBuf keyBuf = Unpooled.wrappedBuffer(entry.getKey());
-                            ByteBuf valueBuf = Unpooled.wrappedBuffer(entry.getValue());
-                            try {
-                                updateCache(keyBuf, valueBuf);
-                            } catch (IOException e) {
-                                log.error("Can't decode map entry", e);
-                            } finally {
-                                keyBuf.release();
-                                valueBuf.release();
+
+                        if (!Arrays.equals(updateMsg.getExcludedId(), instanceId)) {
+                            for (LocalCachedMapUpdate.Entry entry : updateMsg.getEntries()) {
+                                ByteBuf keyBuf = Unpooled.wrappedBuffer(entry.getKey());
+                                ByteBuf valueBuf = Unpooled.wrappedBuffer(entry.getValue());
+                                try {
+                                    updateCache(keyBuf, valueBuf);
+                                } catch (IOException e) {
+                                    log.error("Can't decode map entry", e);
+                                } finally {
+                                    keyBuf.release();
+                                    valueBuf.release();
+                                }
                             }
                         }
-                        
                     }
                     
                     if (options.getReconnectionStrategy() == ReconnectionStrategy.LOAD) {

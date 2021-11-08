@@ -61,6 +61,8 @@ public class LocalCachedMessageCodec extends BaseCodec {
             }
             
             if (type == 0x2) {
+                byte[] excludedId = new byte[16];
+                buf.readBytes(excludedId);
                 List<LocalCachedMapUpdate.Entry> entries = new ArrayList<LocalCachedMapUpdate.Entry>();
                 while (true) {
                     int keyLen = buf.readInt();
@@ -75,7 +77,7 @@ public class LocalCachedMessageCodec extends BaseCodec {
                         break;
                     }
                 }
-                return new LocalCachedMapUpdate(entries);
+                return new LocalCachedMapUpdate(excludedId, entries);
             }
             
             if (type == 0x3) {
@@ -143,6 +145,7 @@ public class LocalCachedMessageCodec extends BaseCodec {
                 ByteBuf result = ByteBufAllocator.DEFAULT.buffer();
                 result.writeByte(0x2);
 
+                result.writeBytes(li.getExcludedId());
                 for (LocalCachedMapUpdate.Entry e : li.getEntries()) {
                     result.writeInt(e.getKey().length);
                     result.writeBytes(e.getKey());

@@ -96,6 +96,19 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
     }
 
     @Test
+    public void testUpdateStrategy() {
+        LocalCachedMapOptions<String, String> options = LocalCachedMapOptions.<String, String>defaults()
+                .syncStrategy(LocalCachedMapOptions.SyncStrategy.UPDATE);
+
+        RLocalCachedMap<String, String> cachedMap = redisson.getLocalCachedMap("myMap11", options);
+        cachedMap.put("a", "b");
+        cachedMap.remove("a");
+        String value = cachedMap.get("a");
+        assertThat(value).isNull();
+        assertThat(cachedMap.containsKey("a")).isFalse();
+    }
+
+    @Test
     public void testMapLoaderGet() {
         Map<String, String> cache = new HashMap<>();
         cache.put("1", "11");
