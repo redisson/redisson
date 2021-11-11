@@ -410,6 +410,31 @@ public interface RedissonReactiveClient {
     <K, V> RListMultimapReactive<K, V> getListMultimap(String name, Codec codec);
 
     /**
+     * Returns List based Multimap cache instance by name.
+     * Supports key eviction by specifying a time to live.
+     * If eviction is not required then it's better to use regular list multimap {@link #getListMultimap(String)}.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @return RListMultimapCacheReactive object
+     */
+    <K, V> RListMultimapCacheReactive<K, V> getListMultimapCache(String name);
+
+    /**
+     * Returns List based Multimap cache instance by name using provided codec for both map keys and values.
+     * Supports key eviction by specifying a time to live.
+     * If eviction is not required then it's better to use regular list multimap {@link #getListMultimap(String, Codec)}.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for keys and values
+     * @return RListMultimapCacheReactive object
+     */
+    <K, V> RListMultimapCacheReactive<K, V> getListMultimapCache(String name, Codec codec);
+
+    /**
      * Returns Set based Multimap instance by name.
      * 
      * @param <K> type of key
@@ -431,7 +456,31 @@ public interface RedissonReactiveClient {
      */
     <K, V> RSetMultimapReactive<K, V> getSetMultimap(String name, Codec codec);
 
-    
+    /**
+     * Returns Set based Multimap cache instance by name.
+     * Supports key eviction by specifying a time to live.
+     * If eviction is not required then it's better to use regular set multimap {@link #getSetMultimap(String)}.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @return RSetMultimapCacheReactive object
+     */
+    <K, V> RSetMultimapCacheReactive<K, V> getSetMultimapCache(String name);
+
+    /**
+     * Returns Set based Multimap cache instance by name using provided codec for both map keys and values.
+     * Supports key eviction by specifying a time to live.
+     * If eviction is not required then it's better to use regular set multimap {@link #getSetMultimap(String, Codec)}.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for keys and values
+     * @return RSetMultimapCacheReactive object
+     */
+    <K, V> RSetMultimapCacheReactive<K, V> getSetMultimapCache(String name, Codec codec);
+
     /**
      * Returns map instance by name.
      *
