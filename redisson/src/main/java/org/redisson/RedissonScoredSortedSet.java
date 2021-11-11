@@ -961,8 +961,8 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     @Override
     public RFuture<Integer> countIntersectionAsync(int limit, String... names) {
         List<Object> args = new ArrayList<>(names.length + 1);
+        args.add(names.length + 1);
         args.add(getRawName());
-        args.add(names.length);
         args.addAll(Arrays.asList(names));
         if (limit > 0) {
             args.add("LIMIT");
