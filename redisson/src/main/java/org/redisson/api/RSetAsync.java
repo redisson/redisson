@@ -133,6 +133,8 @@ public interface RSetAsync<V> extends RCollectionAsync<V>, RSortableAsync<Set<V>
 
     /**
      * Counts elements of set as a result of sets intersection with current set.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
      *
      * @param names - name of sets
      * @return amount of elements
@@ -141,6 +143,8 @@ public interface RSetAsync<V> extends RCollectionAsync<V>, RSortableAsync<Set<V>
 
     /**
      * Counts elements of set as a result of sets intersection with current set.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
      *
      * @param names - name of sets
      * @param limit - sets intersection limit
