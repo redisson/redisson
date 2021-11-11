@@ -212,6 +212,23 @@ public interface RSetRx<V> extends RCollectionRx<V>, RSortableRx<Set<V>> {
     Single<Integer> intersection(String... names);
 
     /**
+     * Counts elements of set as a result of sets intersection with current set.
+     *
+     * @param names - name of sets
+     * @return amount of elements
+     */
+    Single<Integer> countIntersection(String... names);
+
+    /**
+     * Counts elements of set as a result of sets intersection with current set.
+     *
+     * @param names - name of sets
+     * @param limit - sets intersection limit
+     * @return amount of elements
+     */
+    Single<Integer> countIntersection(int limit, String... names);
+
+    /**
      * Intersection sets specified by name with current set.
      * Without current set state change.
      *

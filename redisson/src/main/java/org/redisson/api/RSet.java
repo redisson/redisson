@@ -266,6 +266,23 @@ public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V>, RSortable<Set
     Set<V> readIntersection(String... names);
 
     /**
+     * Counts elements of set as a result of sets intersection with current set.
+     *
+     * @param names - name of sets
+     * @return amount of elements
+     */
+    Integer countIntersection(String... names);
+
+    /**
+     * Counts elements of set as a result of sets intersection with current set.
+     *
+     * @param names - name of sets
+     * @param limit - sets intersection limit
+     * @return amount of elements
+     */
+    Integer countIntersection(int limit, String... names);
+
+    /**
      * Tries to add elements only if none of them in set.
      *
      * @param values - values to add
