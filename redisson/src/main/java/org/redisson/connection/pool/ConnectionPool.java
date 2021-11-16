@@ -86,7 +86,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
     private void initConnections(ClientConnectionsEntry entry, RPromise<Void> initPromise, boolean checkFreezed) {
         int minimumIdleSize = getMinimumIdleSize(entry);
 
-        if (minimumIdleSize == 0 || (checkFreezed && entry.isFreezed())) {
+        if (minimumIdleSize == 0 || checkFreezed && entry.isFreezed()) {
             initPromise.trySuccess(null);
             return;
         }
@@ -102,7 +102,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
     private void createConnection(boolean checkFreezed, AtomicInteger requests, ClientConnectionsEntry entry, RPromise<Void> initPromise,
             int minimumIdleSize, AtomicInteger initializedConnections) {
 
-        if ((checkFreezed && entry.isFreezed()) || !tryAcquireConnection(entry)) {
+        if (checkFreezed && entry.isFreezed() || !tryAcquireConnection(entry)) {
             int totalInitializedConnections = minimumIdleSize - initializedConnections.get();
             Throwable cause = new RedisConnectionException(
                     "Unable to init enough connections amount! Only " + totalInitializedConnections + " of " + minimumIdleSize + " were initialized. Server: "

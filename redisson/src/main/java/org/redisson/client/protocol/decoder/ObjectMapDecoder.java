@@ -51,7 +51,7 @@ public class ObjectMapDecoder implements MultiDecoder<Object> {
     
     @Override
     public Object decode(List<Object> parts, State state) {
-        if (decodeList && (state.getValue() != null && (Boolean) state.getValue())) {
+        if (decodeList && state.getValue() != null && (Boolean) state.getValue()) {
             return parts;
         }
 

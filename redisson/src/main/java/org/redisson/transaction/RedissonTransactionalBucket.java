@@ -254,7 +254,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
             public void run() {
                 if (state != null) {
                     operations.add(new BucketCompareAndSetOperation<V>(getRawName(), getLockName(), getCodec(), expect, update, transactionId, currentThreadId));
-                    if ((state == NULL && expect == null)
+                    if (state == NULL && expect == null
                             || isEquals(state, expect)) {
                         if (update == null) {
                             state = NULL;
@@ -275,7 +275,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
                     }
                     
                     operations.add(new BucketCompareAndSetOperation<V>(getRawName(), getLockName(), getCodec(), expect, update, transactionId, currentThreadId));
-                    if ((res == null && expect == null) 
+                    if (res == null && expect == null
                             || isEquals(res, expect)) {
                         if (update == null) {
                             state = NULL;

@@ -36,6 +36,8 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
     private NatMapper natMapper = NatMapper.direct();
 
     private String masterName;
+    
+    private String sentinelUsername;
 
     private String sentinelPassword;
 
@@ -66,6 +68,7 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
         setScanInterval(config.getScanInterval());
         setNatMapper(config.getNatMapper());
         setCheckSentinelsList(config.isCheckSentinelsList());
+        setSentinelUsername(config.getSentinelUsername());
         setSentinelPassword(config.getSentinelPassword());
         setCheckSlaveStatusWithSyncing(config.isCheckSlaveStatusWithSyncing());
         setSentinelsDiscovery(config.isSentinelsDiscovery());
@@ -98,6 +101,20 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
     }
     public String getSentinelPassword() {
         return sentinelPassword;
+    }
+
+    /**
+     * Username used by the Redis Sentinel servers for authentication.
+     *
+     * @param sentinelUsername of Redis
+     * @return config
+     */
+    public SentinelServersConfig setSentinelUsername(String sentinelUsername) {
+        this.sentinelUsername = sentinelUsername;
+        return this;
+    }
+    public String getSentinelUsername() {
+        return sentinelUsername;
     }
 
 

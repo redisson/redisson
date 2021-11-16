@@ -293,7 +293,7 @@ public class RedisConnection implements RedisCommands {
     private void close() {
         CommandData<?, ?> command = getCurrentCommand();
         if (!isActive()
-                || (command != null && command.isBlockingCommand())
+                || command != null && command.isBlockingCommand()
                     || !connectionPromise.isDone()) {
             channel.close();
         } else {

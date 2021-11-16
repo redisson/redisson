@@ -776,7 +776,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             if (clusterNodeInfo.containsFlag(Flag.NOADDR)
                     || clusterNodeInfo.containsFlag(Flag.HANDSHAKE)
                         || clusterNodeInfo.getAddress() == null
-                            || (clusterNodeInfo.getSlotRanges().isEmpty() && clusterNodeInfo.containsFlag(Flag.MASTER))) {
+                            || clusterNodeInfo.getSlotRanges().isEmpty() && clusterNodeInfo.containsFlag(Flag.MASTER)) {
                 // skip it
                 continue;
             }

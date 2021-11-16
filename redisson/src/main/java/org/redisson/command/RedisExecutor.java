@@ -346,7 +346,7 @@ public class RedisExecutor<V, R> {
     protected boolean isResendAllowed(int attempt, int attempts) {
         return attempt < attempts
                 && !noRetry
-                    && (command == null || (!command.isBlockingCommand() && !RedisCommands.NO_RETRY.contains(command.getName())));
+                    && (command == null || !command.isBlockingCommand() && !RedisCommands.NO_RETRY.contains(command.getName()));
     }
 
     private void handleBlockingOperations(RPromise<R> attemptPromise, RedisConnection connection, Long popTimeout) {

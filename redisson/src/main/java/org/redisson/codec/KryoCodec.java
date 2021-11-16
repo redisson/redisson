@@ -71,7 +71,7 @@ public class KryoCodec extends BaseCodec {
                 throw new RedissonKryoCodecException(e);
             } finally {
                 if (kryo != null) {
-                    yield(kryo);
+                    offer(kryo);
                 }
             }
         }
@@ -98,7 +98,7 @@ public class KryoCodec extends BaseCodec {
                 throw new RedissonKryoCodecException(e);
             } finally {
                 if (kryo != null) {
-                    yield(kryo);
+                    offer(kryo);
                 }
             }
         }
@@ -133,7 +133,7 @@ public class KryoCodec extends BaseCodec {
         return kryo;
     }
 
-    public void yield(Kryo kryo) {
+    public void offer(Kryo kryo) {
         objects.offer(kryo);
     }
 

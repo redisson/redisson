@@ -183,9 +183,9 @@ public class LoadBalancerManager {
 
     @SuppressWarnings("BooleanExpressionComplexity")
     public ClientConnectionsEntry freeze(ClientConnectionsEntry connectionEntry, FreezeReason freezeReason) {
-        if (connectionEntry == null || (connectionEntry.isFailed() 
+        if (connectionEntry == null || connectionEntry.isFailed()
                 && connectionEntry.getFreezeReason() == FreezeReason.RECONNECT
-                    && freezeReason == FreezeReason.RECONNECT)) {
+                    && freezeReason == FreezeReason.RECONNECT) {
             return null;
         }
 
@@ -197,9 +197,9 @@ public class LoadBalancerManager {
             // only RECONNECT freeze reason could be replaced
             if (connectionEntry.getFreezeReason() == null
                     || connectionEntry.getFreezeReason() == FreezeReason.RECONNECT
-                        || (freezeReason == FreezeReason.MANAGER 
-                                && connectionEntry.getFreezeReason() != FreezeReason.MANAGER 
-                                    && connectionEntry.getNodeType() == NodeType.SLAVE)) {
+                        || freezeReason == FreezeReason.MANAGER
+                                && connectionEntry.getFreezeReason() != FreezeReason.MANAGER
+                                    && connectionEntry.getNodeType() == NodeType.SLAVE) {
                 connectionEntry.setFreezeReason(freezeReason);
                 return connectionEntry;
             }

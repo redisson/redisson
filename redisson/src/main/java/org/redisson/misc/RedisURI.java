@@ -94,7 +94,7 @@ public class RedisURI {
     }
     
     public static boolean compare(InetSocketAddress entryAddr, RedisURI addr) {
-        if (((entryAddr.getHostName() != null && entryAddr.getHostName().equals(trimIpv6Brackets(addr.getHost())))
+        if ((entryAddr.getHostName() != null && entryAddr.getHostName().equals(trimIpv6Brackets(addr.getHost()))
                 || entryAddr.getAddress().getHostAddress().equals(trimIpv6Brackets(addr.getHost())))
                 && entryAddr.getPort() == addr.getPort()) {
             return true;

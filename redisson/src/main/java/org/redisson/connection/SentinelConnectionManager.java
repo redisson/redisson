@@ -66,6 +66,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
     private final NatMapper natMapper;
 
+    private final String sentinelUsername;
     private final String sentinelPassword;
     private boolean usePassword = false;
     private String scheme;
@@ -83,6 +84,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         }
 
         this.config = create(cfg);
+        this.sentinelUsername = cfg.getSentinelUsername();
         this.sentinelPassword = cfg.getSentinelPassword();
         this.checkSlaveStatusWithSyncing = cfg.isCheckSlaveStatusWithSyncing();
         this.sentinelsDiscovery = cfg.isSentinelsDiscovery();
@@ -264,7 +266,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             result.setUsername(null);
             result.setPassword(null);
         } else if (type == NodeType.SENTINEL && usePassword) {
-            result.setUsername(null);
+            result.setUsername(sentinelUsername);
             if (sentinelPassword != null) {
                 result.setPassword(sentinelPassword);
             }
