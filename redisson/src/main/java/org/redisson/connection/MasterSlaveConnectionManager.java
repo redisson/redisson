@@ -698,6 +698,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected RFuture<RedisURI> resolveIP(String scheme, RedisURI address) {
         if (address.isIP()) {
             RedisURI addr = applyNatMap(address);
+            if (!scheme.equals(addr.getScheme())) {
+                addr = new RedisURI(scheme, addr.getHost(), addr.getPort());
+            }
             return RedissonPromise.newSucceededFuture(addr);
         }
 
