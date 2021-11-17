@@ -16,7 +16,7 @@ Add `RedissonSessionManager` in global context - `tomcat/conf/context.xml` or pe
 	 readMode="REDIS" updateMode="DEFAULT" broadcastSessionEvents="false"
 	 keyPrefix=""/>
    ```
-   `keyPrefix` - string prefix applied to all Redis keys. Allows to connection different Tomcat envirounments to the same Redis instance.
+   `keyPrefix` - string prefix applied to all Redis keys. Allows to connect different Tomcat environments to the same Redis instance.
    
    `readMode` - read Session attributes mode. Two modes are available:
    * `MEMORY` - stores attributes into local Tomcat Session and Redis. Further Session updates propagated to local Tomcat Session using Redis-based events.
