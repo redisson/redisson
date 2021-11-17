@@ -27,6 +27,7 @@ import org.redisson.api.RFuture;
 import org.redisson.client.*;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.config.*;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.AsyncCountDownLatch;
@@ -65,6 +66,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     private AddressResolver<InetSocketAddress> sentinelResolver;
 
     private final NatMapper natMapper;
+    private final RedisStrictCommand<RedisURI> masterHostCommand;
 
     private final String sentinelPassword;
     private boolean usePassword = false;
@@ -103,6 +105,12 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
         checkAuth(cfg);
 
+        if ("redis".equals(scheme)) {
+            masterHostCommand = RedisCommands.SENTINEL_GET_MASTER_ADDR_BY_NAME;
+        } else {
+            masterHostCommand = RedisCommands.SENTINEL_GET_MASTER_ADDR_BY_NAME_SSL;
+        }
+
         Throwable lastException = null;
         for (String address : cfg.getSentinelAddresses()) {
             RedisURI addr = new RedisURI(address);
@@ -120,7 +128,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     continue;
                 }
                 
-                RedisURI master = connection.sync(RedisCommands.SENTINEL_GET_MASTER_ADDR_BY_NAME, cfg.getMasterName());
+                RedisURI master = connection.sync(masterHostCommand, cfg.getMasterName());
                 if (master == null) {
                     throw new RedisConnectionException("Master node is undefined! SENTINEL GET-MASTER-ADDR-BY-NAME command returns empty result!");
                 }
@@ -507,7 +515,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private RFuture<RedisURI> checkMasterChange(SentinelServersConfig cfg, RedisConnection connection) {
-        RFuture<RedisURI> masterFuture = connection.async(StringCodec.INSTANCE, RedisCommands.SENTINEL_GET_MASTER_ADDR_BY_NAME, cfg.getMasterName());
+        RFuture<RedisURI> masterFuture = connection.async(StringCodec.INSTANCE, masterHostCommand, cfg.getMasterName());
         masterFuture.thenCompose(u -> resolveIP(scheme, u))
                 .whenComplete((newMaster, e) -> {
             if (e != null) {

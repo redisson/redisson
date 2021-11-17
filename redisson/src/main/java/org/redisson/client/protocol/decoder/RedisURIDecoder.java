@@ -30,6 +30,17 @@ import java.util.List;
  */
 public class RedisURIDecoder implements MultiDecoder<RedisURI> {
 
+    private final String scheme;
+
+    public RedisURIDecoder(boolean ssl) {
+        super();
+        if (ssl) {
+            scheme = "rediss";
+        } else {
+            scheme = "redis";
+        }
+    }
+
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
         return StringCodec.INSTANCE.getValueDecoder();
@@ -40,7 +51,7 @@ public class RedisURIDecoder implements MultiDecoder<RedisURI> {
         if (parts.isEmpty()) {
             return null;
         }
-        return new RedisURI("redis", (String) parts.get(0), Integer.valueOf((String) parts.get(1)));
+        return new RedisURI(scheme, (String) parts.get(0), Integer.valueOf((String) parts.get(1)));
     }
 
 }
