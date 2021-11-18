@@ -270,11 +270,6 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
     }
 
     @Override
-    public boolean delete() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     protected RFuture<Boolean> deleteAsync(String... keys) {
         throw new UnsupportedOperationException();
     }
