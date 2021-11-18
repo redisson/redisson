@@ -21,7 +21,6 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
 import io.netty.util.internal.StringUtil;
-import org.redisson.api.NatMapper;
 import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
 import org.redisson.client.*;
@@ -41,7 +40,10 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -65,14 +67,11 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     private ScheduledFuture<?> monitorFuture;
     private AddressResolver<InetSocketAddress> sentinelResolver;
 
-    private final NatMapper natMapper;
     private final RedisStrictCommand<RedisURI> masterHostCommand;
 
-    private final String sentinelPassword;
     private boolean usePassword = false;
     private String scheme;
-    private boolean checkSlaveStatusWithSyncing;
-    private boolean sentinelsDiscovery;
+    private final SentinelServersConfig cfg;
 
     public SentinelConnectionManager(SentinelServersConfig cfg, Config config, UUID id) {
         super(config, id);
@@ -85,12 +84,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         }
 
         this.config = create(cfg);
-        this.sentinelPassword = cfg.getSentinelPassword();
-        this.checkSlaveStatusWithSyncing = cfg.isCheckSlaveStatusWithSyncing();
-        this.sentinelsDiscovery = cfg.isSentinelsDiscovery();
+        this.cfg = cfg;
         initTimer(this.config);
-
-        this.natMapper = cfg.getNatMapper();
 
         this.sentinelResolver = resolverGroup.getResolver(getGroup().next());
 
@@ -272,9 +267,9 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             result.setUsername(null);
             result.setPassword(null);
         } else if (type == NodeType.SENTINEL && usePassword) {
-            result.setUsername(null);
-            if (sentinelPassword != null) {
-                result.setPassword(sentinelPassword);
+            result.setUsername(cfg.getSentinelUsername());
+            if (cfg.getSentinelPassword() != null) {
+                result.setPassword(cfg.getSentinelPassword());
             }
         }
         return result;
@@ -397,7 +392,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private RFuture<List<Map<String, String>>> checkSentinelsChange(SentinelServersConfig cfg, RedisConnection connection) {
-        if (!sentinelsDiscovery) {
+        if (!cfg.isSentinelsDiscovery()) {
             return RedissonPromise.newSucceededFuture(null);
         }
 
@@ -674,7 +669,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
     private boolean isSlaveDown(String flags, String masterLinkStatus) {
         boolean baseStatus = flags.contains("s_down") || flags.contains("disconnected");
-        if (this.checkSlaveStatusWithSyncing && !StringUtil.isNullOrEmpty(masterLinkStatus)) {
+        if (cfg.isCheckSlaveStatusWithSyncing() && !StringUtil.isNullOrEmpty(masterLinkStatus)) {
             return baseStatus || masterLinkStatus.contains("err");
         }
         return baseStatus;
@@ -726,7 +721,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
     @Override
     public RedisURI applyNatMap(RedisURI address) {
-        RedisURI result = natMapper.map(address);
+        RedisURI result = cfg.getNatMapper().map(address);
         if (!result.equals(address)) {
             log.debug("nat mapped uri: {} to {}", address, result);
         }

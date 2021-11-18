@@ -37,6 +37,8 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
 
     private String masterName;
 
+    private String sentinelUsername;
+
     private String sentinelPassword;
 
     /**
@@ -83,6 +85,21 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
     }
     public String getMasterName() {
         return masterName;
+    }
+
+    /**
+     * Username required by the Redis Sentinel servers for authentication.
+     *
+     * @param sentinelUsername of Redis
+     * @return config
+     */
+    public SentinelServersConfig setSentinelUsername(String sentinelUsername) {
+        this.sentinelUsername = sentinelUsername;
+        return this;
+    }
+
+    public String getSentinelUsername() {
+        return sentinelUsername;
     }
 
     /**
