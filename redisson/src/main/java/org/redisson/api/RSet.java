@@ -154,7 +154,36 @@ public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V>, RSortable<Set
      * @return iterator
      */
     Iterator<V> iterator(String pattern);
-    
+
+    /**
+     * Returns element iterator that can be shared across multiple applications.
+     * Creating multiple iterators on the same object with this method will result in a single shared iterator.
+     * See {@linkplain RSet#distributedIterator(String, String, int)} for creating different iterators.
+     * @param count batch size
+     * @return shared elements iterator
+     */
+    Iterator<V> distributedIterator(int count);
+
+    /**
+     * Returns iterator over elements that match specified pattern. Iterator can be shared across multiple applications.
+     * Creating multiple iterators on the same object with this method will result in a single shared iterator.
+     * See {@linkplain RSet#distributedIterator(String, String, int)} for creating different iterators.
+     * @param pattern element pattern
+     * @return shared elements iterator
+     */
+    Iterator<V> distributedIterator(String pattern);
+
+    /**
+     * Returns iterator over elements that match specified pattern. Iterator can be shared across multiple applications.
+     * Creating multiple iterators on the same object with this method will result in a single shared iterator.
+     * Iterator name must be resolved to the same hash slot as set name.
+     * @param pattern element pattern
+     * @param count batch size
+     * @param iteratorName redis object name to which cursor will be saved
+     * @return shared elements iterator
+     */
+    Iterator<V> distributedIterator(String iteratorName, String pattern, int count);
+
     /**
      * Returns <code>RMapReduce</code> object associated with this object
      * 
