@@ -188,11 +188,13 @@ public abstract class LocalCacheListener {
                     
                     if (msg instanceof LocalCachedMapClear) {
                         LocalCachedMapClear clearMsg = (LocalCachedMapClear) msg;
-                        cache.clear();
+                        if (!Arrays.equals(clearMsg.getExcludedId(), instanceId)) {
+                            cache.clear();
 
-                        if (clearMsg.isReleaseSemaphore()) {
-                            RSemaphore semaphore = getClearSemaphore(clearMsg.getRequestId());
-                            semaphore.releaseAsync();
+                            if (clearMsg.isReleaseSemaphore()) {
+                                RSemaphore semaphore = getClearSemaphore(clearMsg.getRequestId());
+                                semaphore.releaseAsync();
+                            }
                         }
                     }
                     
@@ -249,8 +251,9 @@ public abstract class LocalCacheListener {
     
     public RFuture<Void> clearLocalCacheAsync() {
         RPromise<Void> result = new RedissonPromise<Void>();
+        cache.clear();
         byte[] id = generateId();
-        RFuture<Long> future = invalidationTopic.publishAsync(new LocalCachedMapClear(id, true));
+        RFuture<Long> future = invalidationTopic.publishAsync(new LocalCachedMapClear(instanceId, id, true));
         future.onComplete((res, e) -> {
             if (e != null) {
                 result.tryFailure(e);
@@ -258,7 +261,7 @@ public abstract class LocalCacheListener {
             }
 
             RSemaphore semaphore = getClearSemaphore(id);
-            semaphore.tryAcquireAsync(res.intValue(), 50, TimeUnit.SECONDS).onComplete((r, ex) -> {
+            semaphore.tryAcquireAsync(res.intValue() - 1, 50, TimeUnit.SECONDS).onComplete((r, ex) -> {
                 if (ex != null) {
                     result.tryFailure(ex);
                     return;

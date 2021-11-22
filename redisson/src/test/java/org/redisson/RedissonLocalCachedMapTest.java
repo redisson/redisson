@@ -109,6 +109,21 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
     }
 
     @Test
+    public void testPutAfterDelete() {
+        RMap<String, String> map = redisson.getLocalCachedMap("test", LocalCachedMapOptions.defaults());
+
+        for (int i = 0; i < 1_000; i++) {
+            map.delete();
+
+            map.put("key", "val1");
+            map.get("key");
+            map.put("key", "val2");
+            String val = map.get("key");
+            assertThat(val).isEqualTo("val2");
+        }
+    }
+
+    @Test
     public void testMapLoaderGet() {
         Map<String, String> cache = new HashMap<>();
         cache.put("1", "11");

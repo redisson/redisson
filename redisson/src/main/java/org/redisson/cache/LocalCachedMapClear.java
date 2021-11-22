@@ -25,15 +25,21 @@ import java.io.Serializable;
 @SuppressWarnings("serial")
 public class LocalCachedMapClear implements Serializable {
 
+    private byte[] excludedId;
     private byte[] requestId;
     private boolean releaseSemaphore;
 
     public LocalCachedMapClear() {
     }
     
-    public LocalCachedMapClear(byte[] requestId, boolean releaseSemaphore) {
+    public LocalCachedMapClear(byte[] excludedId, byte[] requestId, boolean releaseSemaphore) {
+        this.excludedId = excludedId;
         this.requestId = requestId;
         this.releaseSemaphore = releaseSemaphore;
+    }
+
+    public byte[] getExcludedId() {
+        return excludedId;
     }
 
     public boolean isReleaseSemaphore() {
