@@ -906,6 +906,22 @@ public class RedissonListTest extends BaseTest {
     }
 
     @Test
+    public void testRemoveWithCount() {
+        RList<Integer> list = redisson.getList("list");
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(3);
+        list.add(4);
+
+        assertThat(list.remove(1, 5)).isTrue();
+        assertThat(list).containsExactly(2, 3, 3, 4);
+
+        assertThat(list.remove(3, 5)).isTrue();
+        assertThat(list).containsExactly(2, 4);
+    }
+
+    @Test
     public void testSubListRemove() {
         List<Integer> list = redisson.getList("list");
         list.add(1);

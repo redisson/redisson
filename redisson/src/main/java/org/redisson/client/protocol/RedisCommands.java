@@ -172,7 +172,7 @@ public interface RedisCommands {
     RedisCommand<Void> LSET = new RedisCommand<Void>("LSET", new VoidReplayConvertor());
     RedisCommand<Object> LPOP = new RedisCommand<Object>("LPOP");
     RedisCommand<List<Object>> LPOP_LIST = new RedisCommand<>("LPOP", new ObjectListReplayDecoder<>());
-    RedisCommand<Boolean> LREM_SINGLE = new RedisCommand<Boolean>("LREM", new BooleanReplayConvertor());
+    RedisCommand<Boolean> LREM = new RedisCommand<Boolean>("LREM", new BooleanAmountReplayConvertor());
     RedisCommand<Object> LINDEX = new RedisCommand<Object>("LINDEX");
     RedisCommand<Object> LMOVE = new RedisCommand<Object>("LMOVE");
     RedisCommand<Integer> LINSERT_INT = new RedisCommand<Integer>("LINSERT", new IntegerReplayConvertor());
