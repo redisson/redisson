@@ -330,25 +330,25 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     }
 
     private RFuture<ScanResult<Object>> distributedScanIteratorAsync(String iteratorName, int count) {
-        List<Object> args = new ArrayList<>(1);
-        args.add(count);
-
         return commandExecutor.evalWriteAsync(getRawName(), codec, EVAL_LIST_SCAN,
                 "local start_index = redis.call('get', KEYS[2]); "
-                + "if start_index ~= false "
-                    + "then start_index = tonumber(start_index); "
-                    + "else start_index = 0;"
+                + "if start_index ~= false then "
+                    + "start_index = tonumber(start_index); "
+                + "else "
+                    + "start_index = 0;"
                 + "end;"
-                + "if start_index == -1 then return {0, {}}; end;"
+                + "if start_index == -1 then "
+                    + "return {0, {}};"
+                + "end;"
                 + "local end_index = start_index + ARGV[1];"
                 + "local result; "
                 + "result = redis.call('lrange', KEYS[1], start_index, end_index - 1); "
-                + "if end_index > redis.call('llen', KEYS[1]) "
-                    + "then end_index = -1;"
+                + "if end_index > redis.call('llen', KEYS[1]) then "
+                    + "end_index = -1;"
                 + "end; "
                 + "redis.call('setex', KEYS[2], 3600, end_index);"
                 + "return {end_index, result};",
-                Arrays.<Object>asList(getRawName(), iteratorName), args.toArray());
+                Arrays.<Object>asList(getRawName(), iteratorName), count);
     }
 
     public RFuture<List<V>> getAsync(int...indexes) {

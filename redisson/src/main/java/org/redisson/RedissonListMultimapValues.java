@@ -393,26 +393,23 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
     }
 
     private RFuture<ScanResult<Object>> distributedScanIteratorAsync(String iteratorName, int count) {
-        List<Object> args = new ArrayList<>(2);
-        args.add(System.currentTimeMillis());
-        args.add(count);
-
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_SSCAN,
-            "local start_index = redis.call('get', KEYS[2]); "
-                + "if start_index ~= false "
-                    + "then start_index = tonumber(start_index); "
-                    + "else start_index = 0;"
+                "local cursor = redis.call('get', KEYS[3]); "
+                + "if cursor ~= false then "
+                    + "cursor = tonumber(cursor); "
+                + "else "
+                    + "cursor = 0;"
                 + "end;"
-                + "if start_index == -1 then return {0, {}}; end;"
+                + "if start_index == -1 then "
+                    + "return {0, {}}; "
+                + "end;"
                 + "local end_index = start_index + ARGV[1];"
                 + "local result; "
                 + "result = redis.call('lrange', KEYS[1], start_index, end_index - 1); "
-                + "if end_index > redis.call('llen', KEYS[1]) "
-                    + "then end_index = -1;"
+                + "if end_index > redis.call('llen', KEYS[1]) then "
+                    + "end_index = -1;"
                 + "end; "
                 + "redis.call('setex', KEYS[2], 3600, end_index);"
-                + "return {end_index, result};"
-
                 + "local expireDate = 92233720368547758; "
                 + "local expirations = redis.call('zmscore', KEYS[1], result[2])"
                 + "for i = #expirations, 1, -1 do "
@@ -423,8 +420,8 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
                         + "end; "
                     + "end; "
                 + "end; "
-                + "return result;",
-                Arrays.<Object>asList(timeoutSetName, getRawName(), iteratorName), args.toArray());
+                + "return {end_index, result[2]};",
+                Arrays.<Object>asList(timeoutSetName, getRawName(), iteratorName), System.currentTimeMillis(), count);
     }
 
     @Override
