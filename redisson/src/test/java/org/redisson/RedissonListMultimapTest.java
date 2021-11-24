@@ -3,11 +3,15 @@ package org.redisson;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RList;
 import org.redisson.api.RListMultimap;
+import org.redisson.client.codec.StringCodec;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RedissonListMultimapTest extends BaseTest {
 
@@ -360,5 +364,37 @@ public class RedissonListMultimapTest extends BaseTest {
         assertThat(allValues).containsExactlyElementsOf(values);
     }
 
+    @Test
+    public void testDistributedIterator() {
+        RListMultimap<String, String> map = redisson.getListMultimap("set", StringCodec.INSTANCE);
 
+        // populate set with elements
+        List<String> stringsOne = IntStream.range(0, 64).mapToObj(i -> "" + i).collect(Collectors.toList());
+        map.putAll("someKey", stringsOne);
+
+        Iterator<String> stringIterator = map.get("someKey")
+                .distributedIterator("iterator_{set}", 10);
+
+        // read some elements using iterator
+        List<String> strings = new ArrayList<>();
+        for (int i = 0; i < 20; i++) {
+            if (stringIterator.hasNext()) {
+                strings.add(stringIterator.next());
+            }
+        }
+
+        // create another iterator instance using the same name
+        RListMultimap<String, String> map2 = redisson.getListMultimap("set", StringCodec.INSTANCE);
+        Iterator<String> stringIterator2 = map2.get("someKey")
+                .distributedIterator("iterator_{set}", 10);
+
+        assertTrue(stringIterator2.hasNext());
+
+        // read all remaining elements
+        stringIterator2.forEachRemaining(strings::add);
+        stringIterator.forEachRemaining(strings::add);
+
+        assertThat(strings).containsAll(stringsOne);
+        assertThat(strings).hasSize(stringsOne.size());
+    }
 }

@@ -18,10 +18,12 @@ package org.redisson;
 import io.netty.buffer.ByteBuf;
 import org.redisson.api.*;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
+import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.iterator.RedissonBaseIterator;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
@@ -31,6 +33,8 @@ import java.io.ObjectOutputStream;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.util.*;
+
+import static org.redisson.client.protocol.RedisCommands.EVAL_LIST_SCAN;
 
 /**
  *
@@ -387,7 +391,55 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         }
         return res;
     }
-    
+
+    @Override
+    public Iterator<V> distributedIterator(final int count) {
+        String iteratorName = "__redisson_sorted_set_cursor_{" + getRawName() + "}";
+        return distributedIterator(iteratorName, count);
+    }
+
+    @Override
+    public Iterator<V> distributedIterator(final String iteratorName, final int count) {
+        return new RedissonBaseIterator<V>() {
+
+            @Override
+            protected ScanResult<Object> iterator(RedisClient client, long nextIterPos) {
+                return distributedScanIterator(iteratorName, count);
+            }
+
+            @Override
+            protected void remove(Object value) {
+                RedissonSortedSet.this.remove((V) value);
+            }
+        };
+    }
+
+    private ScanResult<Object> distributedScanIterator(String iteratorName, int count) {
+        return get(distributedScanIteratorAsync(iteratorName, count));
+    }
+
+    private RFuture<ScanResult<Object>> distributedScanIteratorAsync(String iteratorName, int count) {
+        return commandExecutor.evalWriteAsync(getRawName(), codec, EVAL_LIST_SCAN,
+                "local start_index = redis.call('get', KEYS[2]); "
+                + "if start_index ~= false then "
+                    + "start_index = tonumber(start_index); "
+                + "else "
+                    + "start_index = 0;"
+                + "end;"
+                + "if start_index == -1 then "
+                    + "return {0, {}}; "
+                + "end;"
+                + "local end_index = start_index + ARGV[1];"
+                + "local result; "
+                + "result = redis.call('lrange', KEYS[1], start_index, end_index - 1); "
+                + "if end_index > redis.call('llen', KEYS[1]) then "
+                    + "end_index = -1;"
+                + "end; "
+                + "redis.call('setex', KEYS[2], 3600, end_index);"
+                + "return {end_index, result};",
+                Arrays.<Object>asList(getRawName(), iteratorName), count);
+    }
+
     // TODO optimize: get three values each time instead of single
     public BinarySearchResult<V> binarySearch(V value, Codec codec) {
         int size = list.size();

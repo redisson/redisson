@@ -1,21 +1,27 @@
 package org.redisson;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RFuture;
 import org.redisson.api.RSortedSet;
 import org.redisson.client.codec.LongCodec;
+import org.redisson.client.codec.StringCodec;
 
 public class RedissonSortedSetTest extends BaseTest {
 
@@ -398,5 +404,35 @@ public class RedissonSortedSetTest extends BaseTest {
         Assertions.assertEquals(5, set.size());
     }
 
+    @Test
+    public void testDistributedIterator() {
+        RSortedSet<String> set = redisson.getSortedSet("set", StringCodec.INSTANCE);
 
+        // populate set with elements
+        List<String> strings = IntStream.range(0, 128).mapToObj(i -> "one-" + i).collect(Collectors.toList());
+        set.addAll(strings);
+
+        Iterator<String> stringIterator = set.distributedIterator("iterator_{set}", 10);
+
+        // read some elements using iterator
+        List<String> result = new ArrayList<>();
+        for (int i = 0; i < 64; i++) {
+            if (stringIterator.hasNext()) {
+                result.add(stringIterator.next());
+            }
+        }
+
+        // create another iterator instance using the same name
+        RSortedSet<String> set2 = redisson.getSortedSet("set", StringCodec.INSTANCE);
+        Iterator<String> stringIterator2 = set2.distributedIterator("iterator_{set}", 10);
+
+        assertTrue(stringIterator2.hasNext());
+
+        // read all remaining elements
+        stringIterator2.forEachRemaining(result::add);
+        stringIterator.forEachRemaining(result::add);
+
+        assertThat(result).containsAll(strings);
+        assertThat(result).hasSize(strings.size());
+    }
 }
