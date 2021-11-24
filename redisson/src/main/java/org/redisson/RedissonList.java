@@ -138,7 +138,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public RFuture<Boolean> removeAsync(Object o, int count) {
-        return commandExecutor.writeAsync(getRawName(), codec, LREM_SINGLE, getRawName(), count, encode(o));
+        return commandExecutor.writeAsync(getRawName(), codec, LREM, getRawName(), count, encode(o));
     }
 
     @Override
