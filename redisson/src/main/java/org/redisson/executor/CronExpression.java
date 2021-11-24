@@ -137,6 +137,7 @@ import java.util.regex.Pattern;
  * Day-of-week field &quot;FRI-MON&quot; is invalid,but &quot;FRI-SUN,MON&quot; is valid
  *
  */
+@SuppressWarnings({"AvoidInlineConditionals", "MultipleVariableDeclarations", "InnerAssignment", "UnnecessaryParentheses"})
 public class CronExpression {
 
     enum CronFieldType {
