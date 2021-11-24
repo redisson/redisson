@@ -30,6 +30,7 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RList;
 import org.redisson.api.SortOrder;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
+import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
@@ -37,6 +38,7 @@ import org.redisson.client.protocol.convertor.BooleanNumberReplayConvertor;
 import org.redisson.client.protocol.convertor.Convertor;
 import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.iterator.RedissonBaseIterator;
 
 /**
  * List based Multimap Cache values holder
@@ -363,7 +365,65 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
     public List<V> get(int...indexes) {
         return get(getAsync(indexes));
     }
-    
+
+    @Override
+    public Iterator<V> distributedIterator(final int count) {
+        String iteratorName = "__redisson_set_cursor_{" + getRawName() + "}";
+        return distributedIterator(iteratorName, count);
+    }
+
+    @Override
+    public Iterator<V> distributedIterator(final String iteratorName, final int count) {
+        return new RedissonBaseIterator<V>() {
+
+            @Override
+            protected ScanResult<Object> iterator(RedisClient client, long nextIterPos) {
+                return distributedScanIterator(iteratorName, count);
+            }
+
+            @Override
+            protected void remove(Object value) {
+                RedissonListMultimapValues.this.remove((V) value);
+            }
+        };
+    }
+
+    private ScanResult<Object> distributedScanIterator(String iteratorName, int count) {
+        return get(distributedScanIteratorAsync(iteratorName, count));
+    }
+
+    private RFuture<ScanResult<Object>> distributedScanIteratorAsync(String iteratorName, int count) {
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_SSCAN,
+                "local cursor = redis.call('get', KEYS[3]); "
+                + "if cursor ~= false then "
+                    + "cursor = tonumber(cursor); "
+                + "else "
+                    + "cursor = 0;"
+                + "end;"
+                + "if start_index == -1 then "
+                    + "return {0, {}}; "
+                + "end;"
+                + "local end_index = start_index + ARGV[1];"
+                + "local result; "
+                + "result = redis.call('lrange', KEYS[1], start_index, end_index - 1); "
+                + "if end_index > redis.call('llen', KEYS[1]) then "
+                    + "end_index = -1;"
+                + "end; "
+                + "redis.call('setex', KEYS[2], 3600, end_index);"
+                + "local expireDate = 92233720368547758; "
+                + "local expirations = redis.call('zmscore', KEYS[1], result[2])"
+                + "for i = #expirations, 1, -1 do "
+                    + "if expirations[i] ~= false then "
+                        + "local expireDate = tonumber(expireDateScore) "
+                        + "if expireDate <= tonumber(ARGV[1]) then "
+                            + "table.remove(result[2], i);"
+                        + "end; "
+                    + "end; "
+                + "end; "
+                + "return {end_index, result[2]};",
+                Arrays.<Object>asList(timeoutSetName, getRawName(), iteratorName), System.currentTimeMillis(), count);
+    }
+
     @Override
     public RFuture<List<V>> getAsync(int...indexes) {
         List<Object> params = new ArrayList<Object>();

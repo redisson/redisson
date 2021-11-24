@@ -4,13 +4,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -864,5 +868,39 @@ public class RedissonSetTest extends BaseTest {
         Assertions.assertTrue(list.removeAll(Arrays.asList(1, 5, 1, 5)));
 
         Assertions.assertTrue(list.isEmpty());
+    }
+
+    @Test
+    public void testDistributedIterator() {
+        RSet<String> set = redisson.getSet("set", StringCodec.INSTANCE);
+
+        // populate set with elements
+        List<String> stringsOne = IntStream.range(0, 128).mapToObj(i -> "one-" + i).collect(Collectors.toList());
+        List<String> stringsTwo = IntStream.range(0, 128).mapToObj(i -> "two-" + i).collect(Collectors.toList());
+        set.addAll(stringsOne);
+        set.addAll(stringsTwo);
+
+        Iterator<String> stringIterator = set.distributedIterator("iterator_{set}", "one*", 10);
+
+        // read some elements using iterator
+        List<String> strings = new ArrayList<>();
+        for (int i = 0; i < 64; i++) {
+            if (stringIterator.hasNext()) {
+                strings.add(stringIterator.next());
+            }
+        }
+
+        // create another iterator instance using the same name
+        RSet<String> set2 = redisson.getSet("set", StringCodec.INSTANCE);
+        Iterator<String> stringIterator2 = set2.distributedIterator("iterator_{set}", "one*", 10);
+
+        Assertions.assertTrue(stringIterator2.hasNext());
+
+        // read all remaining elements
+        stringIterator2.forEachRemaining(strings::add);
+        stringIterator.forEachRemaining(strings::add);
+
+        assertThat(strings).containsAll(stringsOne);
+        assertThat(strings).hasSize(stringsOne.size());
     }
 }

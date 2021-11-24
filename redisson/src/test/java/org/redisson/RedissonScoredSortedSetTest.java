@@ -2,14 +2,17 @@ package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
@@ -18,6 +21,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
@@ -1540,5 +1545,39 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         assertThat(out.getScore("three")).isEqualTo(9);
     }
 
-    
+    @Test
+    public void testDistributedIterator() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("set", StringCodec.INSTANCE);
+
+        // populate set with elements
+        Map<String, Double> stringsOne = IntStream.range(0, 128).boxed()
+                .collect(Collectors.toMap(i -> "one-" + i, Integer::doubleValue));
+        Map<String, Double> stringsTwo = IntStream.range(0, 128).boxed()
+                .collect(Collectors.toMap(i -> "two-" + i, Integer::doubleValue));;
+        set.addAll(stringsOne);
+        set.addAll(stringsTwo);
+
+        Iterator<String> stringIterator = set.distributedIterator("iterator_{set}", "one*", 10);
+
+        // read some elements using iterator
+        List<String> strings = new ArrayList<>();
+        for (int i = 0; i < 64; i++) {
+            if (stringIterator.hasNext()) {
+                strings.add(stringIterator.next());
+            }
+        }
+
+        // create another iterator instance using the same name
+        RScoredSortedSet<String> set2 = redisson.getScoredSortedSet("set", StringCodec.INSTANCE);
+        Iterator<String> stringIterator2 = set2.distributedIterator("iterator_{set}", "one*", 10);
+
+        assertTrue(stringIterator2.hasNext());
+
+        // read all remaining elements
+        stringIterator2.forEachRemaining(strings::add);
+        stringIterator.forEachRemaining(strings::add);
+
+        assertThat(strings).containsAll(stringsOne.keySet());
+        assertThat(strings).hasSize(stringsOne.size());
+    }
 }

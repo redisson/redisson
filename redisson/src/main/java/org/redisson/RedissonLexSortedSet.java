@@ -18,6 +18,7 @@ package org.redisson;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.SortedSet;
 
@@ -316,6 +317,11 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
     @Override
     public boolean trySetComparator(Comparator<? super String> comparator) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Iterator<String> distributedIterator(String iteratorName, int count) {
+        return distributedIterator(iteratorName, null, count);
     }
 
     @Override
