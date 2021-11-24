@@ -42,6 +42,9 @@ import java.lang.invoke.SerializedLambda;
 import java.lang.ref.ReferenceQueue;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -979,11 +982,12 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         check(task);
         ClassBody classBody = getClassBody(task);
         byte[] state = encode(task);
-        Date startDate = cronSchedule.getExpression().getNextValidTimeAfter(new Date());
+        ZonedDateTime currentDate = ZonedDateTime.of(LocalDateTime.now(), ZoneId.systemDefault());
+        ZonedDateTime startDate = cronSchedule.getExpression().nextTimeAfter(currentDate);
         if (startDate == null) {
             throw new IllegalArgumentException("Wrong cron expression! Unable to calculate start date");
         }
-        long startTime = startDate.getTime();
+        long startTime = startDate.toInstant().toEpochMilli();
         
         ScheduledCronExpressionParameters params = new ScheduledCronExpressionParameters();
         params.setClassName(classBody.getClazzName());
@@ -991,14 +995,14 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         params.setLambdaBody(classBody.getLambda());
         params.setState(state);
         params.setStartTime(startTime);
-        params.setCronExpression(cronSchedule.getExpression().getCronExpression());
-        params.setTimezone(cronSchedule.getExpression().getTimeZone().getID());
+        params.setCronExpression(cronSchedule.getExpression().getExpr());
+        params.setTimezone(ZoneId.systemDefault().toString());
         params.setExecutorId(executorId);
         RemotePromise<Void> result = (RemotePromise<Void>) asyncScheduledServiceAtFixed.schedule(params);
         addListener(result);
         RedissonScheduledFuture<Void> f = new RedissonScheduledFuture<Void>(result, startTime) {
             public long getDelay(TimeUnit unit) {
-                return unit.convert(startDate.getTime() - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+                return unit.convert(startDate.toInstant().toEpochMilli() - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
             };
         };
         storeReference(f, result.getRequestId());
