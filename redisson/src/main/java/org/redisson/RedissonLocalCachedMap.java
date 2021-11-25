@@ -268,8 +268,9 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             }
 
             RPromise<V> result = new RedissonPromise<>();
-            loadValue((K) key, result, false);
-            result.onComplete((value, ex) -> {
+            RPromise<V> valuePromise = new RedissonPromise<>();
+            loadValue((K) key, valuePromise, false);
+            valuePromise.onComplete((value, ex) -> {
                 if (ex != null) {
                     result.tryFailure(ex);
                     return;
@@ -278,21 +279,25 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 if (storeCacheMiss || value != null) {
                     cachePut(cacheKey, key, value);
                 }
+                result.trySuccess(value);
             });
             return result;
         }
 
+        RPromise<V> result = new RedissonPromise<>();
         RFuture<V> future = super.getAsync((K) key);
         future.onComplete((value, e) -> {
             if (e != null) {
+                result.tryFailure(e);
                 return;
             }
-            
+
             if (storeCacheMiss || value != null) {
                 cachePut(cacheKey, key, value);
             }
+            result.trySuccess(value);
         });
-        return future;
+        return result;
     }
     
     protected static byte[] generateLogEntryId(byte[] keyHash) {
@@ -765,6 +770,8 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         CacheKey cacheKey = localCacheView.toCacheKey(keyState);
         ByteBuf msg = encode(new LocalCachedMapInvalidate(instanceId, cacheKey.getKeyHash()));
         byte[] entryId = generateLogEntryId(cacheKey.getKeyHash());
+
+        RPromise<V> result = new RedissonPromise<>();
         RFuture<V> future = commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, new RedisCommand<Object>("EVAL", new NumberConvertor(value.getClass())),
                 "local result = redis.call('HINCRBYFLOAT', KEYS[1], ARGV[1], ARGV[2]); "
               + "if ARGV[3] == '1' then "
@@ -779,12 +786,18 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
               keyState, new BigDecimal(value.toString()).toPlainString(), invalidateEntryOnChange, msg, System.currentTimeMillis(), entryId);
 
         future.onComplete((res, e) -> {
+            if (e != null) {
+                result.tryFailure(e);
+                return;
+            }
+
             if (res != null) {
                 CacheKey cKey = localCacheView.toCacheKey(key);
                 cachePut(cKey, key, res);
             }
+            result.trySuccess(res);
         });
-        return future;
+        return result;
     }
 
     @Override
@@ -802,9 +815,11 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             }
         }
 
+        RPromise<Boolean> result = new RedissonPromise<>();
         RFuture<Boolean> future = super.fastPutIfAbsentAsync(key, value);
         future.onComplete((res, e) -> {
             if (e != null) {
+                result.tryFailure(e);
                 return;
             }
             
@@ -812,8 +827,9 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 CacheKey cacheKey = localCacheView.toCacheKey(key);
                 cachePut(cacheKey, key, value);
             }
+            result.trySuccess(res);
         });
-        return future;
+        return result;
     }
 
     @Override
@@ -831,9 +847,11 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             }
         }
 
+        RPromise<Boolean> result = new RedissonPromise<>();
         RFuture<Boolean> future = super.fastPutIfExistsAsync(key, value);
         future.onComplete((res, e) -> {
             if (e != null) {
+                result.tryFailure(e);
                 return;
             }
 
@@ -841,8 +859,9 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 CacheKey cacheKey = localCacheView.toCacheKey(key);
                 cachePut(cacheKey, key, value);
             }
+            result.trySuccess(res);
         });
-        return future;
+        return result;
     }
 
     @Override
@@ -1033,9 +1052,11 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             }
         }
 
+        RPromise<Boolean> result = new RedissonPromise<>();
         RFuture<Boolean> future = super.fastReplaceAsync(key, value);
         future.onComplete((res, e) -> {
             if (e != null) {
+                result.tryFailure(e);
                 return;
             }
             
@@ -1043,9 +1064,10 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 CacheKey cacheKey = localCacheView.toCacheKey(key);
                 cachePut(cacheKey, key, value);
             }
+            result.trySuccess(res);
         });
         
-        return future;
+        return result;
     }
     
     @Override
@@ -1120,9 +1142,11 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             }
         }
 
+        RPromise<V> result = new RedissonPromise<>();
         RFuture<V> future = super.replaceAsync(key, value);
         future.onComplete((res, e) -> {
             if (e != null) {
+                result.tryFailure(e);
                 return;
             }
             
@@ -1130,9 +1154,10 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 CacheKey cacheKey = localCacheView.toCacheKey(key);
                 cachePut(cacheKey, key, value);
             }
+            result.trySuccess(res);
         });
         
-        return future;
+        return result;
     }
     
     @Override
@@ -1176,9 +1201,11 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             }
         }
 
+        RPromise<Boolean> result = new RedissonPromise<>();
         RFuture<Boolean> future = super.replaceAsync(key, oldValue, newValue);
         future.onComplete((res, e) -> {
             if (e != null) {
+                result.tryFailure(e);
                 return;
             }
 
@@ -1186,9 +1213,10 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 CacheKey cacheKey = localCacheView.toCacheKey(key);
                 cachePut(cacheKey, key, newValue);
             }
+            result.trySuccess(res);
         });
         
-        return future;
+        return result;
     }
 
     @Override
@@ -1261,9 +1289,11 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             }
         }
 
+        RPromise<V> result = new RedissonPromise<>();
         RFuture<V> future = super.putIfExistsAsync(key, value);
         future.onComplete((res, e) -> {
             if (e != null) {
+                result.tryFailure(e);
                 return;
             }
 
@@ -1271,8 +1301,9 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 CacheKey cacheKey = localCacheView.toCacheKey(key);
                 cachePut(cacheKey, key, value);
             }
+            result.trySuccess(res);
         });
-        return future;
+        return result;
     }
 
     @Override
@@ -1290,9 +1321,11 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             }
         }
 
+        RPromise<V> result = new RedissonPromise<>();
         RFuture<V> future = super.putIfAbsentAsync(key, value);
         future.onComplete((res, e) -> {
             if (e != null) {
+                result.tryFailure(e);
                 return;
             }
             
@@ -1300,8 +1333,9 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 CacheKey cacheKey = localCacheView.toCacheKey(key);
                 cachePut(cacheKey, key, value);
             }
+            result.trySuccess(res);
         });
-        return future;
+        return result;
     }
 
     @Override

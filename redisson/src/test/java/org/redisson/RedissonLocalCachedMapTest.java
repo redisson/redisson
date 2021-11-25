@@ -706,7 +706,23 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         assertThat(cache.size()).isEqualTo(3);
         assertThat(cache1.size()).isEqualTo(3);
     }
-    
+
+    @Test
+    public void testGetBeforePut() {
+        RLocalCachedMap<String, String> map1 = redisson.getLocalCachedMap("test", LocalCachedMapOptions.defaults());
+        for (int i = 0; i < 1_000; i++) {
+            map1.put("key" + i, "val");
+        }
+
+        RMap<String, String> map2 = redisson.getLocalCachedMap("test", LocalCachedMapOptions.defaults());
+        for (int i = 0; i < 1_000; i++) {
+            map2.get("key" + i);
+            map2.put("key" + i, "value" + i);
+            String cachedValue = map2.get("key" + i);
+            assertThat(cachedValue).isEqualTo("value" + i);
+        }
+    }
+
     @Test
     public void testAddAndGet() throws InterruptedException {
         RLocalCachedMap<Integer, Integer> map = redisson.getLocalCachedMap("getAll", new CompositeCodec(redisson.getConfig().getCodec(), IntegerCodec.INSTANCE), LocalCachedMapOptions.defaults());
