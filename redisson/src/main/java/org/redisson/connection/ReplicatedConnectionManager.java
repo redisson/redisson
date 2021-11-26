@@ -138,15 +138,15 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
 
     private void checkFailedSlaves(Set<InetSocketAddress> slaveIPs) {
         MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
-        Set<InetSocketAddress> slaveURIs = entry.getAllEntries().stream()
-                .filter(e -> e.getNodeType() == NodeType.SLAVE)
+        Set<InetSocketAddress> failedSlaves = entry.getAllEntries().stream()
+                .filter(e -> e.getNodeType() == NodeType.SLAVE
+                                    && !slaveIPs.contains(e.getClient().getAddr()))
                 .map(e -> e.getClient().getAddr())
                 .collect(Collectors.toSet());
-        slaveURIs.removeAll(slaveIPs);
 
-        for (InetSocketAddress removedURI : slaveURIs) {
-            if (entry.slaveDown(removedURI, FreezeReason.MANAGER)) {
-                log.info("slave: {} is down", removedURI);
+        for (InetSocketAddress slave : failedSlaves) {
+            if (entry.slaveDown(slave, FreezeReason.MANAGER)) {
+                log.info("slave: {} is down", slave);
             }
         }
     }
