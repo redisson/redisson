@@ -365,7 +365,7 @@
 
     <build>
         <plugins>
-
+<!--
             <plugin>
               <groupId>com.github.spotbugs</groupId>
               <artifactId>spotbugs-maven-plugin</artifactId>
@@ -379,7 +379,7 @@
                     </execution>
                 </executions>
             </plugin>
-
+-->
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
             </plugin>
