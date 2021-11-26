@@ -16,6 +16,7 @@
 package org.redisson.connection;
 
 import io.netty.util.concurrent.ScheduledFuture;
+import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
@@ -23,16 +24,19 @@ import org.redisson.client.RedisConnectionException;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.*;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
+import org.redisson.misc.AsyncCountDownLatch;
 import org.redisson.misc.RedisURI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 /**
  * {@link ConnectionManager} for AWS ElastiCache Replication Groups or Azure Redis Cache. By providing all nodes
@@ -113,79 +117,93 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
             return;
         }
         
-        monitorFuture = group.schedule(new Runnable() {
-            @Override
-            public void run() {
-                if (isShuttingDown()) {
-                    return;
-                }
-
-                InetSocketAddress master = currentMaster.get();
-                log.debug("Current master: {}", master);
-                
-                AtomicInteger count = new AtomicInteger(cfg.getNodeAddresses().size());
-                for (String address : cfg.getNodeAddresses()) {
-                    RedisURI uri = new RedisURI(address);
-                    RFuture<RedisConnection> connectionFuture = connectToNode(cfg, uri, uri.getHost());
-                    connectionFuture.onComplete((connection, exc) -> {
-                        if (exc != null) {
-                            log.error(exc.getMessage(), exc);
-                            if (count.decrementAndGet() == 0) {
-                                scheduleMasterChangeCheck(cfg);
-                            }
-                            return;
-                        }
-                        
-                        if (isShuttingDown()) {
-                            return;
-                        }
-                        
-                        RFuture<Map<String, String>> result = connection.async(RedisCommands.INFO_REPLICATION);
-                        result.onComplete((r, ex) -> {
-                            if (ex != null) {
-                                log.error(ex.getMessage(), ex);
-                                closeNodeConnection(connection);
-                                if (count.decrementAndGet() == 0) {
-                                    scheduleMasterChangeCheck(cfg);
-                                }
-                                return;
-                            }
-
-                            InetSocketAddress addr = connection.getRedisClient().getAddr();
-                            Role role = Role.valueOf(r.get(ROLE_KEY));
-                            if (Role.master.equals(role)) {
-                                if (master.equals(addr)) {
-                                    log.debug("Current master {} unchanged", master);
-                                } else if (currentMaster.compareAndSet(master, addr)) {
-                                    RFuture<RedisClient> changeFuture = changeMaster(singleSlotRange.getStartSlot(), uri);
-                                    changeFuture.onComplete((res, e) -> {
-                                        if (e != null) {
-                                            currentMaster.compareAndSet(addr, master);
-                                        }
-                                    });
-                                }
-                            } else if (!config.checkSkipSlavesInit()) {
-                                slaveUp(uri, addr);
-                            }
-                            
-                            if (count.decrementAndGet() == 0) {
-                                scheduleMasterChangeCheck(cfg);
-                            }
-                        });
-                    });
-                }
+        monitorFuture = group.schedule(() -> {
+            if (isShuttingDown()) {
+                return;
             }
 
+            Set<InetSocketAddress> slaveIPs = new HashSet<>();
+            AsyncCountDownLatch latch = new AsyncCountDownLatch();
+            latch.latch(() -> {
+                checkFailedSlaves(slaveIPs);
+                scheduleMasterChangeCheck(cfg);
+            }, cfg.getNodeAddresses().size());
+
+            for (String address : cfg.getNodeAddresses()) {
+                RedisURI uri = new RedisURI(address);
+                checkNode(latch, uri, cfg, slaveIPs);
+            }
         }, cfg.getScanInterval(), TimeUnit.MILLISECONDS);
     }
 
-    private void slaveUp(RedisURI uri, InetSocketAddress address) {
+    private void checkFailedSlaves(Set<InetSocketAddress> slaveIPs) {
         MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
-        if (entry.slaveUp(address, FreezeReason.MANAGER)) {
-            log.info("slave: {} is up", uri);
+        Set<InetSocketAddress> slaveURIs = entry.getAllEntries().stream()
+                .filter(e -> e.getNodeType() == NodeType.SLAVE)
+                .map(e -> e.getClient().getAddr())
+                .collect(Collectors.toSet());
+        slaveURIs.removeAll(slaveIPs);
+
+        for (InetSocketAddress removedURI : slaveURIs) {
+            if (entry.slaveDown(removedURI, FreezeReason.MANAGER)) {
+                log.info("slave: {} is down", removedURI);
+            }
         }
     }
-    
+
+    private void checkNode(AsyncCountDownLatch latch, RedisURI uri, ReplicatedServersConfig cfg, Set<InetSocketAddress> slaveIPs) {
+        RFuture<RedisConnection> connectionFuture = connectToNode(cfg, uri, uri.getHost());
+        connectionFuture.onComplete((connection, exc) -> {
+            if (exc != null) {
+                log.error(exc.getMessage(), exc);
+                latch.countDown();
+                return;
+            }
+
+            if (isShuttingDown()) {
+                return;
+            }
+
+            RFuture<Map<String, String>> result = connection.async(RedisCommands.INFO_REPLICATION);
+            result.onComplete((r, ex) -> {
+                if (ex != null) {
+                    log.error(ex.getMessage(), ex);
+                    closeNodeConnection(connection);
+                    latch.countDown();
+                    return;
+                }
+
+                InetSocketAddress addr = connection.getRedisClient().getAddr();
+                Role role = Role.valueOf(r.get(ROLE_KEY));
+                if (Role.master.equals(role)) {
+                    InetSocketAddress master = currentMaster.get();
+                    if (master.equals(addr)) {
+                        log.debug("Current master {} unchanged", master);
+                    } else if (currentMaster.compareAndSet(master, addr)) {
+                        RFuture<RedisClient> changeFuture = changeMaster(singleSlotRange.getStartSlot(), uri);
+                        changeFuture.onComplete((res, e) -> {
+                            if (e != null) {
+                                currentMaster.compareAndSet(addr, master);
+                            }
+                        });
+                    }
+                } else if (!config.checkSkipSlavesInit()) {
+                    slaveUp(addr);
+                    slaveIPs.add(addr);
+                }
+
+                latch.countDown();
+            });
+        });
+    }
+
+    private void slaveUp(InetSocketAddress address) {
+        MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
+        if (entry.slaveUp(address, FreezeReason.MANAGER)) {
+            log.info("slave: {} is up", address);
+        }
+    }
+
     @Override
     public void shutdown() {
         if (monitorFuture != null) {
