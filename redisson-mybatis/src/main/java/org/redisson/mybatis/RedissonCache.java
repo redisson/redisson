@@ -102,7 +102,7 @@ public class RedissonCache implements Cache {
     public void setRedissonConfig(String config) {
         Config cfg;
         try {
-            InputStream is = getClass().getResourceAsStream(config);
+            InputStream is = getClass().getClassLoader().getResourceAsStream(config);
             cfg = Config.fromYAML(is);
         } catch (IOException e) {
             throw new IllegalArgumentException("Can't parse config", e);
