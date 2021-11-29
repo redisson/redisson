@@ -82,16 +82,20 @@ public class MasterSlaveEntry {
     }
 
     public List<RFuture<Void>> initSlaveBalancer(Collection<RedisURI> disconnectedNodes, RedisClient master) {
+        return initSlaveBalancer(disconnectedNodes, master, sslHostname);
+    }
+
+    public List<RFuture<Void>> initSlaveBalancer(Collection<RedisURI> disconnectedNodes, RedisClient master, String slaveSSLHostname) {
         boolean freezeMasterAsSlave = !config.getSlaveAddresses().isEmpty()
-                    && !config.checkSkipSlavesInit()
-                        && disconnectedNodes.size() < config.getSlaveAddresses().size();
+                && !config.checkSkipSlavesInit()
+                && disconnectedNodes.size() < config.getSlaveAddresses().size();
 
         List<RFuture<Void>> result = new LinkedList<RFuture<Void>>();
         RFuture<Void> f = addSlave(master.getAddr(), master.getConfig().getAddress(), freezeMasterAsSlave, NodeType.MASTER);
         result.add(f);
         for (String address : config.getSlaveAddresses()) {
             RedisURI uri = new RedisURI(address);
-            f = addSlave(uri, disconnectedNodes.contains(uri), NodeType.SLAVE);
+            f = addSlave(uri, disconnectedNodes.contains(uri), NodeType.SLAVE, slaveSSLHostname);
             result.add(f);
         }
         return result;
@@ -104,6 +108,11 @@ public class MasterSlaveEntry {
     
 
     public RFuture<RedisClient> setupMasterEntry(RedisURI address) {
+        RedisClient client = connectionManager.createClient(NodeType.MASTER, address, sslHostname);
+        return setupMasterEntry(client);
+    }
+
+    public RFuture<RedisClient> setupMasterEntry(RedisURI address, String sslHostname) {
         RedisClient client = connectionManager.createClient(NodeType.MASTER, address, sslHostname);
         return setupMasterEntry(client);
     }
@@ -350,6 +359,11 @@ public class MasterSlaveEntry {
     }
     
     private RFuture<Void> addSlave(RedisURI address, boolean freezed, NodeType nodeType) {
+        RedisClient client = connectionManager.createClient(nodeType, address, sslHostname);
+        return addSlave(client, freezed, nodeType);
+    }
+
+    public RFuture<Void> addSlave(RedisURI address, boolean freezed, NodeType nodeType, String sslHostname) {
         RedisClient client = connectionManager.createClient(nodeType, address, sslHostname);
         return addSlave(client, freezed, nodeType);
     }
