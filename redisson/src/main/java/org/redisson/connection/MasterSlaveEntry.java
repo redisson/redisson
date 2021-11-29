@@ -135,8 +135,17 @@ public class MasterSlaveEntry {
             if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
                 counter++;
             }
-            
+            if (!slaveBalancer.contains(client.getAddr())) {
+                counter++;
+            }
+
             CountableListener<RedisClient> listener = new CountableListener<>(result, client, counter);
+
+            if (!slaveBalancer.contains(client.getAddr())) {
+                RFuture<Void> masterAsSlaveFuture = addSlave(client.getAddr(), client.getConfig().getAddress(), false, NodeType.MASTER);
+                masterAsSlaveFuture.onComplete(listener);
+            }
+
             RFuture<Void> writeFuture = writeConnectionPool.add(masterEntry);
             writeFuture.onComplete(listener);
             
