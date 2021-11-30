@@ -151,11 +151,19 @@ public class RedissonConnectionFactory implements RedisConnectionFactory,
 
     @Override
     public ReactiveRedisConnection getReactiveConnection() {
+        if (redisson.getConfig().isClusterConfig()) {
+            return new RedissonReactiveRedisClusterConnection(((RedissonReactive)redisson.reactive()).getCommandExecutor());
+        }
+
         return new RedissonReactiveRedisConnection(((RedissonReactive)redisson.reactive()).getCommandExecutor());
     }
 
     @Override
     public ReactiveRedisClusterConnection getReactiveClusterConnection() {
+        if (!redisson.getConfig().isClusterConfig()) {
+            throw new InvalidDataAccessResourceUsageException("Redisson is not in Cluster mode");
+        }
+
         return new RedissonReactiveRedisClusterConnection(((RedissonReactive)redisson.reactive()).getCommandExecutor());
     }
 
