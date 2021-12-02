@@ -3,6 +3,28 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 30-Nov-2021 - 3.16.5 released
+Feature - `countIntersection()` method added to RSet object  
+Feature - added reactive interface for `RListMultimapCache` and `RSetMultimapCache` objects  
+Feature - `sentinelUsername` setting added  
+Feature - added distributed iterator (thanks @Danila Varatyntsev)  
+Feature - added Spring Data Redis 2.6.0 support  
+
+Fixed - RedissonConnectionFactory.getReactiveConnection() method of Spring Data Redis isn't compatible with Redis cluster mode  
+Fixed - Mybatis RedissonCache should search redisson.yaml config at root package  
+Fixed - `Can't find host in slaves!` error after failover with a new IP of master host  
+Fixed - failed slaves aren't detected in Replicated mode  
+Fixed - `get` operation before `put` may cause inconsistent state of local cache  
+Fixed - `RList.remove(object, count)` throws exception if multiple objects were removed (thanks @cartermc24)  
+Fixed - `RLocalCachedMap.delete()` method clears local cache asynchronously  
+Fixed - `IdleConnectionWatcher` shouldn't close `RedisPubSubConnection` if it's in subscribed state  
+Fixed - SSL is not used for Sentinel master host  
+Fixed - update sync strategy of LocalCachedMap objects shouldn't apply updated value twice to instance of update source  
+Fixed - JCache dependency updated to 1.1.1  
+Fixed - Sentinel master-host = ? setting isn't handled properly during slave check  
+Fixed - `RBuckets.trySet()` method throws CROSSSLOT error (thanks to @deerRule)  
+Fixed - DNS monitor makes a new attempt to change master while current attempt wasn't finished  
+
 ### 29-Oct-2021 - 3.16.4 released
 Feature - `sentinelsDiscovery` setting added  
 Feature - `quarkus.redisson.file` setting added to `redisson-quarkus` module to define external Redisson config file  
