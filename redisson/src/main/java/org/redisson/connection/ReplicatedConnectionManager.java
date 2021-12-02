@@ -30,10 +30,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -122,7 +120,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                 return;
             }
 
-            Set<InetSocketAddress> slaveIPs = new HashSet<>();
+            Set<InetSocketAddress> slaveIPs = Collections.newSetFromMap(new ConcurrentHashMap<>());
             AsyncCountDownLatch latch = new AsyncCountDownLatch();
             latch.latch(() -> {
                 checkFailedSlaves(slaveIPs);
