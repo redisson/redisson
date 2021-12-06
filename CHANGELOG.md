@@ -3,6 +3,10 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 06-Dec-2021 - 3.16.6 released
+
+Fixed - race condition causes wrong detection of failed slaves in Replicated mode. (regression since 3.16.5)
+
 ### 30-Nov-2021 - 3.16.5 released
 Feature - `countIntersection()` method added to RSet object  
 Feature - added reactive interface for `RListMultimapCache` and `RSetMultimapCache` objects  
