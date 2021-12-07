@@ -324,9 +324,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected void initSingleEntry() {
         try {
             if (config.checkSkipSlavesInit()) {
-                masterSlaveEntry = new SingleEntry(this, config, null);
+                masterSlaveEntry = new SingleEntry(this, config);
             } else {
-                masterSlaveEntry = new MasterSlaveEntry(this, config, null);
+                masterSlaveEntry = new MasterSlaveEntry(this, config);
             }
             RFuture<RedisClient> masterFuture = masterSlaveEntry.setupMasterEntry(new RedisURI(config.getMasterAddress()));
             masterFuture.syncUninterruptibly();

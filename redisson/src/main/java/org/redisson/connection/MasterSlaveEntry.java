@@ -64,17 +64,13 @@ public class MasterSlaveEntry {
 
     final AtomicBoolean active = new AtomicBoolean(true);
     
-    final String sslHostname;
-    
-    public MasterSlaveEntry(ConnectionManager connectionManager, MasterSlaveServersConfig config, String sslHostname) {
+    public MasterSlaveEntry(ConnectionManager connectionManager, MasterSlaveServersConfig config) {
         this.connectionManager = connectionManager;
         this.config = config;
 
         slaveBalancer = new LoadBalancerManager(config, connectionManager, this);
         writeConnectionPool = new MasterConnectionPool(config, connectionManager, this);
         pubSubConnectionPool = new MasterPubSubConnectionPool(config, connectionManager, this);
-
-        this.sslHostname = sslHostname;
     }
 
     public MasterSlaveServersConfig getConfig() {
@@ -82,7 +78,7 @@ public class MasterSlaveEntry {
     }
 
     public List<RFuture<Void>> initSlaveBalancer(Collection<RedisURI> disconnectedNodes, RedisClient master) {
-        return initSlaveBalancer(disconnectedNodes, master, sslHostname);
+        return initSlaveBalancer(disconnectedNodes, master, null);
     }
 
     public List<RFuture<Void>> initSlaveBalancer(Collection<RedisURI> disconnectedNodes, RedisClient master, String slaveSSLHostname) {
@@ -91,7 +87,7 @@ public class MasterSlaveEntry {
                 && disconnectedNodes.size() < config.getSlaveAddresses().size();
 
         List<RFuture<Void>> result = new LinkedList<RFuture<Void>>();
-        RFuture<Void> f = addSlave(master.getAddr(), master.getConfig().getAddress(), freezeMasterAsSlave, NodeType.MASTER);
+        RFuture<Void> f = addSlave(master.getAddr(), master.getConfig().getAddress(), freezeMasterAsSlave, NodeType.MASTER, master.getConfig().getSslHostname());
         result.add(f);
         for (String address : config.getSlaveAddresses()) {
             RedisURI uri = new RedisURI(address);
@@ -102,14 +98,12 @@ public class MasterSlaveEntry {
     }
 
     public RFuture<RedisClient> setupMasterEntry(InetSocketAddress address, RedisURI uri) {
-        RedisClient client = connectionManager.createClient(NodeType.MASTER, address, uri, sslHostname);
+        RedisClient client = connectionManager.createClient(NodeType.MASTER, address, uri, null);
         return setupMasterEntry(client);
     }
-    
 
     public RFuture<RedisClient> setupMasterEntry(RedisURI address) {
-        RedisClient client = connectionManager.createClient(NodeType.MASTER, address, sslHostname);
-        return setupMasterEntry(client);
+        return setupMasterEntry(address, null);
     }
 
     public RFuture<RedisClient> setupMasterEntry(RedisURI address, String sslHostname) {
@@ -151,7 +145,7 @@ public class MasterSlaveEntry {
             CountableListener<RedisClient> listener = new CountableListener<>(result, client, counter);
 
             if (!slaveBalancer.contains(client.getAddr())) {
-                RFuture<Void> masterAsSlaveFuture = addSlave(client.getAddr(), client.getConfig().getAddress(), false, NodeType.MASTER);
+                RFuture<Void> masterAsSlaveFuture = addSlave(client.getAddr(), client.getConfig().getAddress(), false, NodeType.MASTER, client.getConfig().getSslHostname());
                 masterAsSlaveFuture.onComplete(listener);
             }
 
@@ -316,11 +310,11 @@ public class MasterSlaveEntry {
     }
 
     public RFuture<Void> addSlave(RedisURI address) {
-        return addSlave(address, false, NodeType.SLAVE);
+        return addSlave(address, false, NodeType.SLAVE, null);
     }
     
     public RFuture<Void> addSlave(InetSocketAddress address, RedisURI uri) {
-        return addSlave(address, uri, false, NodeType.SLAVE);
+        return addSlave(address, uri, false, NodeType.SLAVE, null);
     }
         
     private RFuture<Void> addSlave(RedisClient client, boolean freezed, NodeType nodeType) {
@@ -353,16 +347,11 @@ public class MasterSlaveEntry {
         return result;
     }
 
-    private RFuture<Void> addSlave(InetSocketAddress address, RedisURI uri, boolean freezed, NodeType nodeType) {
+    private RFuture<Void> addSlave(InetSocketAddress address, RedisURI uri, boolean freezed, NodeType nodeType, String sslHostname) {
         RedisClient client = connectionManager.createClient(NodeType.SLAVE, address, uri, sslHostname);
         return addSlave(client, freezed, nodeType);
     }
     
-    private RFuture<Void> addSlave(RedisURI address, boolean freezed, NodeType nodeType) {
-        RedisClient client = connectionManager.createClient(nodeType, address, sslHostname);
-        return addSlave(client, freezed, nodeType);
-    }
-
     public RFuture<Void> addSlave(RedisURI address, boolean freezed, NodeType nodeType, String sslHostname) {
         RedisClient client = connectionManager.createClient(nodeType, address, sslHostname);
         return addSlave(client, freezed, nodeType);

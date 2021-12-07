@@ -289,15 +289,15 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
             MasterSlaveEntry entry;
             if (config.checkSkipSlavesInit()) {
-                entry = new SingleEntry(ClusterConnectionManager.this, config, configEndpointHostName);
+                entry = new SingleEntry(ClusterConnectionManager.this, config);
             } else {
                 Set<String> slaveAddresses = partition.getSlaveAddresses().stream().map(r -> r.toString()).collect(Collectors.toSet());
                 config.setSlaveAddresses(slaveAddresses);
 
-                entry = new MasterSlaveEntry(ClusterConnectionManager.this, config, configEndpointHostName);
+                entry = new MasterSlaveEntry(ClusterConnectionManager.this, config);
             }
 
-            RFuture<RedisClient> f = entry.setupMasterEntry(new RedisURI(config.getMasterAddress()));
+            RFuture<RedisClient> f = entry.setupMasterEntry(new RedisURI(config.getMasterAddress()), configEndpointHostName);
             f.onComplete((masterClient, ex3) -> {
                 if (ex3 != null) {
                     log.error("Can't add master: " + partition.getMasterAddress() + " for slot ranges: " + partition.getSlotRanges(), ex3);
@@ -311,7 +311,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 }
 
                 if (!config.checkSkipSlavesInit()) {
-                    List<RFuture<Void>> fs = entry.initSlaveBalancer(partition.getFailedSlaveAddresses(), masterClient);
+                    List<RFuture<Void>> fs = entry.initSlaveBalancer(partition.getFailedSlaveAddresses(), masterClient, configEndpointHostName);
                     AtomicInteger counter = new AtomicInteger(fs.size());
                     AtomicInteger errorCounter = new AtomicInteger(fs.size());
                     for (RFuture<Void> future : fs) {
@@ -542,7 +542,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 continue;
             }
 
-            RFuture<Void> future = entry.addSlave(uri);
+            RFuture<Void> future = entry.addSlave(uri, false, NodeType.SLAVE, configEndpointHostName);
             future.onComplete((res, ex) -> {
                 if (ex != null) {
                     log.error("Can't add slave: " + uri, ex);
