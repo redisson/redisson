@@ -26,6 +26,7 @@ import org.redisson.config.*;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.AsyncCountDownLatch;
 import org.redisson.misc.RedisURI;
+import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -189,21 +190,35 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                             }
                         });
                     }
+                    latch.countDown();
                 } else if (!config.checkSkipSlavesInit()) {
-                    slaveUp(addr);
+                    RFuture<Void> f = slaveUp(addr, uri);
                     slaveIPs.add(addr);
+                    f.onComplete((res, e) -> {
+                        latch.countDown();
+                    });
                 }
-
-                latch.countDown();
             });
         });
     }
 
-    private void slaveUp(InetSocketAddress address) {
+    private RFuture<Void> slaveUp(InetSocketAddress address, RedisURI uri) {
         MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
-        if (entry.slaveUp(address, FreezeReason.MANAGER)) {
+        if (!entry.hasSlave(address)) {
+            RFuture<Void> f = entry.addSlave(address, uri, uri.getHost());
+            f.onComplete((r, e) -> {
+                if (e != null) {
+                    log.error("Unable to add slave", e);
+                    return;
+                }
+
+                log.info("slave: {} added", address);
+            });
+            return f;
+        } else if (entry.slaveUp(address, FreezeReason.MANAGER)) {
             log.info("slave: {} is up", address);
         }
+        return RedissonPromise.newSucceededFuture(null);
     }
 
     @Override

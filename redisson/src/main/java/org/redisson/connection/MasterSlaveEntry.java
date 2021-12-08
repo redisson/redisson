@@ -316,7 +316,11 @@ public class MasterSlaveEntry {
     public RFuture<Void> addSlave(InetSocketAddress address, RedisURI uri) {
         return addSlave(address, uri, false, NodeType.SLAVE, null);
     }
-        
+
+    public RFuture<Void> addSlave(InetSocketAddress address, RedisURI uri, String sslHostname) {
+        return addSlave(address, uri, false, NodeType.SLAVE, sslHostname);
+    }
+
     private RFuture<Void> addSlave(RedisClient client, boolean freezed, NodeType nodeType) {
         RPromise<Void> result = new RedissonPromise<Void>();
         RFuture<InetSocketAddress> addrFuture = client.resolveAddr();
