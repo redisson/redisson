@@ -144,8 +144,9 @@ public class MasterSlaveEntry {
 
             CountableListener<RedisClient> listener = new CountableListener<>(result, client, counter);
 
-            if (!slaveBalancer.contains(client.getAddr())) {
-                RFuture<Void> masterAsSlaveFuture = addSlave(client.getAddr(), client.getConfig().getAddress(), false, NodeType.MASTER, client.getConfig().getSslHostname());
+            if (!config.checkSkipSlavesInit() && !slaveBalancer.contains(client.getAddr())) {
+                RFuture<Void> masterAsSlaveFuture = addSlave(client.getAddr(), client.getConfig().getAddress(),
+                                                    false, NodeType.MASTER, client.getConfig().getSslHostname());
                 masterAsSlaveFuture.onComplete(listener);
             }
 
