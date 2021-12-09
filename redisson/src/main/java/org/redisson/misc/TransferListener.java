@@ -15,6 +15,7 @@
  */
 package org.redisson.misc;
 
+import java.util.concurrent.CompletionException;
 import java.util.function.BiConsumer;
 
 /**
@@ -23,23 +24,36 @@ import java.util.function.BiConsumer;
  *
  * @param <T> type
  */
-public class TransferListener<T> implements BiConsumer<T, Throwable> {
+public class TransferListener<T> implements BiConsumer<Object, Throwable> {
 
     private final RPromise<T> promise;
-    
+    private final T value;
+
     public TransferListener(RPromise<T> promise) {
+        this(promise, null);
+    }
+
+    public TransferListener(RPromise<T> promise, T value) {
         super();
         this.promise = promise;
+        this.value = value;
     }
 
     @Override
-    public void accept(T t, Throwable u) {
+    public void accept(Object t, Throwable u) {
         if (u != null) {
+            if (u instanceof CompletionException) {
+                u = u.getCause();
+            }
             promise.tryFailure(u);
             return;
         }
-   
-        promise.trySuccess(t);
+
+        if (value != null) {
+            promise.trySuccess(value);
+        } else {
+            promise.trySuccess((T)t);
+        }
     }
     
 }

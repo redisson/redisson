@@ -35,9 +35,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -134,29 +136,23 @@ public class MasterSlaveEntry {
                     connectionManager,
                     NodeType.MASTER);
     
-            int counter = 1;
-            if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
-                counter++;
-            }
-            if (!slaveBalancer.contains(client.getAddr())) {
-                counter++;
-            }
-
-            CountableListener<RedisClient> listener = new CountableListener<>(result, client, counter);
-
+            List<CompletableFuture<Void>> futures = new ArrayList<>();
             if (!config.checkSkipSlavesInit() && !slaveBalancer.contains(client.getAddr())) {
                 RFuture<Void> masterAsSlaveFuture = addSlave(client.getAddr(), client.getConfig().getAddress(),
                                                     false, NodeType.MASTER, client.getConfig().getSslHostname());
-                masterAsSlaveFuture.onComplete(listener);
+                futures.add(masterAsSlaveFuture.toCompletableFuture());
             }
 
             RFuture<Void> writeFuture = writeConnectionPool.add(masterEntry);
-            writeFuture.onComplete(listener);
-            
+            futures.add(writeFuture.toCompletableFuture());
+
             if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
                 RFuture<Void> pubSubFuture = pubSubConnectionPool.add(masterEntry);
-                pubSubFuture.onComplete(listener);
+                futures.add(pubSubFuture.toCompletableFuture());
             }
+
+            CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+            future.whenComplete(new TransferListener<>(result, client));
         });
         
         return result;
