@@ -136,7 +136,12 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     public MasterSlaveConnectionManager(MasterSlaveServersConfig cfg, Config config, UUID id) {
         this(config, id);
         this.config = cfg;
-        
+
+        if (cfg.getSlaveAddresses().isEmpty()
+                && (cfg.getReadMode() == ReadMode.SLAVE || cfg.getReadMode() == ReadMode.MASTER_SLAVE)) {
+            throw new IllegalArgumentException("Slaves aren't defined. readMode can't be SLAVE or MASTER_SLAVE");
+        }
+
         initTimer(cfg);
         initSingleEntry();
     }
