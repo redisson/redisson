@@ -52,7 +52,7 @@ public class TransferListener<T> implements BiConsumer<Object, Throwable> {
         if (value != null) {
             promise.trySuccess(value);
         } else {
-            promise.trySuccess((T)t);
+            promise.trySuccess((T) t);
         }
     }
     
