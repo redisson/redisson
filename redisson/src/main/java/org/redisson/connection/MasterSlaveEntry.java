@@ -30,7 +30,10 @@ import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.connection.balancer.LoadBalancerManager;
 import org.redisson.connection.pool.MasterConnectionPool;
 import org.redisson.connection.pool.MasterPubSubConnectionPool;
-import org.redisson.misc.*;
+import org.redisson.misc.RPromise;
+import org.redisson.misc.RedisURI;
+import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.TransferListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -487,9 +490,9 @@ public class MasterSlaveEntry {
 
         List<CompletableFuture<Void>> futures = new ArrayList<>();
         if (masterEntry != null) {
-            futures.add(masterEntry.shutdownAsync().toCompletableFuture());
+            futures.add(masterEntry.shutdownAsync());
         }
-        futures.add(slaveBalancer.shutdownAsync().toCompletableFuture());
+        futures.add(slaveBalancer.shutdownAsync());
 
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
     }

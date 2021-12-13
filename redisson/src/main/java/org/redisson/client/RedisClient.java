@@ -15,27 +15,8 @@
  */
 package org.redisson.client;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.redisson.api.RFuture;
-import org.redisson.client.handler.RedisChannelInitializer;
-import org.redisson.client.handler.RedisChannelInitializer.Type;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedisURI;
-import org.redisson.misc.RedissonPromise;
-
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.epoll.EpollDatagramChannel;
 import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.group.ChannelGroup;
@@ -51,6 +32,18 @@ import io.netty.util.NetUtil;
 import io.netty.util.Timer;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import org.redisson.api.RFuture;
+import org.redisson.client.handler.RedisChannelInitializer;
+import org.redisson.client.handler.RedisChannelInitializer.Type;
+import org.redisson.misc.RPromise;
+import org.redisson.misc.RedisURI;
+import org.redisson.misc.RedissonPromise;
+
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Low-level Redis client
@@ -321,12 +314,19 @@ public final class RedisClient {
     }
 
     public void shutdown() {
-        shutdownAsync().syncUninterruptibly();
+        shutdownAsync().join();
+        try {
+            shutdownAsync().get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (ExecutionException e) {
+            throw (RuntimeException)(e.getCause());
+        }
     }
 
-    public RFuture<Void> shutdownAsync() {
+    public CompletableFuture<Void> shutdownAsync() {
         shutdown = true;
-        RPromise<Void> result = new RedissonPromise<Void>();
+        CompletableFuture<Void> result = new CompletableFuture<>();
         if (channels.isEmpty() || config.getGroup().isShuttingDown()) {
             shutdown(result);
             return result;
@@ -337,7 +337,7 @@ public final class RedisClient {
             @Override
             public void operationComplete(Future<Void> future) throws Exception {
                 if (!future.isSuccess()) {
-                    result.tryFailure(future.cause());
+                    result.completeExceptionally(future.cause());
                     return;
                 }
                 
@@ -359,9 +359,9 @@ public final class RedisClient {
         return shutdown;
     }
 
-    private void shutdown(RPromise<Void> result) {
+    private void shutdown(CompletableFuture<Void> result) {
         if (!hasOwnTimer && !hasOwnExecutor && !hasOwnResolver && !hasOwnGroup) {
-            result.trySuccess(null);
+            result.complete(null);
         } else {
             Thread t = new Thread() {
                 @Override
@@ -383,11 +383,11 @@ public final class RedisClient {
                             bootstrap.config().group().shutdownGracefully();
                         }
                     } catch (Exception e) {
-                        result.tryFailure(e);
+                        result.completeExceptionally(e);
                         return;
                     }
-                    
-                    result.trySuccess(null);
+
+                    result.complete(null);
                 }
             };
             t.start();

@@ -714,7 +714,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
         sentinels.values().stream()
                 .map(s -> s.shutdownAsync())
-                .forEach(f -> f.syncUninterruptibly());
+                .forEach(f -> f.join());
 
         super.shutdown();
     }

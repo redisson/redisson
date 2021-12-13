@@ -30,11 +30,12 @@ import io.netty.resolver.AddressResolver;
 import io.netty.resolver.AddressResolverGroup;
 import io.netty.resolver.DefaultAddressResolverGroup;
 import io.netty.resolver.dns.DnsServerAddressStreamProviders;
+import io.netty.util.HashedWheelTimer;
+import io.netty.util.Timeout;
 import io.netty.util.Timer;
 import io.netty.util.TimerTask;
-import io.netty.util.*;
-import io.netty.util.concurrent.*;
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.*;
 import io.netty.util.internal.PlatformDependent;
 import org.redisson.ElementsSubscribeService;
 import org.redisson.Version;
@@ -45,7 +46,10 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.config.*;
-import org.redisson.misc.*;
+import org.redisson.misc.InfinitySemaphoreLatch;
+import org.redisson.misc.RPromise;
+import org.redisson.misc.RedisURI;
+import org.redisson.misc.RedissonPromise;
 import org.redisson.pubsub.PublishSubscribeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -210,7 +214,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected void closeNodeConnections() {
         nodeConnections.values().stream()
                 .map(c -> c.getRedisClient().shutdownAsync())
-                .forEach(f -> f.syncUninterruptibly());
+                .forEach(f -> f.join());
     }
     
     protected void closeNodeConnection(RedisConnection conn) {

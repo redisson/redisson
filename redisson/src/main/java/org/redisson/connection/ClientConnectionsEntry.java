@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Deque;
 import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
@@ -118,7 +119,7 @@ public class ClientConnectionsEntry {
         firstFailTime.compareAndSet(0, System.currentTimeMillis());
     }
 
-    public RFuture<Void> shutdownAsync() {
+    public CompletableFuture<Void> shutdownAsync() {
         connectionManager.getConnectionWatcher().remove(this);
         return client.shutdownAsync();
     }

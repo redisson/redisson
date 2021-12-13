@@ -15,14 +15,6 @@
  */
 package org.redisson.connection.balancer;
 
-import java.net.InetSocketAddress;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiConsumer;
-
 import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
@@ -41,6 +33,13 @@ import org.redisson.connection.pool.SlaveConnectionPool;
 import org.redisson.misc.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.net.InetSocketAddress;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
 
 /**
  * 
@@ -285,16 +284,16 @@ public class LoadBalancerManager {
         slaveConnectionPool.returnConnection(entry, connection);
     }
 
-    public RFuture<Void> shutdownAsync() {
+    public CompletableFuture<Void> shutdownAsync() {
         if (client2Entry.values().isEmpty()) {
-            return RedissonPromise.<Void>newSucceededFuture(null);
+            return CompletableFuture.completedFuture(null);
         }
-        RPromise<Void> result = new RedissonPromise<Void>();
-        CountableListener<Void> listener = new CountableListener<Void>(result, null, client2Entry.values().size());
+
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (ClientConnectionsEntry entry : client2Entry.values()) {
-            entry.shutdownAsync().onComplete(listener);
+            futures.add(entry.shutdownAsync());
         }
-        return result;
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
     }
 
 }
