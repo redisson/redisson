@@ -34,6 +34,7 @@ import io.netty.util.Timer;
 import io.netty.util.TimerTask;
 import io.netty.util.*;
 import io.netty.util.concurrent.*;
+import io.netty.util.concurrent.Future;
 import io.netty.util.internal.PlatformDependent;
 import org.redisson.ElementsSubscribeService;
 import org.redisson.Version;
@@ -51,10 +52,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 /**
@@ -598,13 +596,17 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         
         connectionWatcher.stop();
 
-        RPromise<Void> result = new RedissonPromise<Void>();
-        CountableListener<Void> listener = new CountableListener<Void>(result, null, getEntrySet().size());
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (MasterSlaveEntry entry : getEntrySet()) {
-            entry.shutdownAsync().onComplete(listener);
+            futures.add(entry.shutdownAsync());
         }
-        
-        result.awaitUninterruptibly(timeout, unit);
+        CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+
+        try {
+            future.get(timeout, unit);
+        } catch (Exception e) {
+            // skip
+        }
         resolverGroup.close();
 
         shutdownLatch.close();

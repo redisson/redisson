@@ -480,18 +480,18 @@ public class MasterSlaveEntry {
         });
     }
 
-    public RFuture<Void> shutdownAsync() {
+    public CompletableFuture<Void> shutdownAsync() {
         if (!active.compareAndSet(true, false)) {
-            return RedissonPromise.<Void>newSucceededFuture(null);
+            return CompletableFuture.completedFuture(null);
         }
 
-        RPromise<Void> result = new RedissonPromise<Void>();
-        CountableListener<Void> listener = new CountableListener<Void>(result, null, 2);
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
         if (masterEntry != null) {
-            masterEntry.shutdownAsync().onComplete(listener);
+            futures.add(masterEntry.shutdownAsync().toCompletableFuture());
         }
-        slaveBalancer.shutdownAsync().onComplete(listener);
-        return result;
+        futures.add(slaveBalancer.shutdownAsync().toCompletableFuture());
+
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
     }
 
     public RFuture<RedisConnection> connectionWriteOp(RedisCommand<?> command) {
