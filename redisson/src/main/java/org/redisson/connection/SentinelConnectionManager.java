@@ -444,7 +444,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 return;
             }
 
-            Set<RedisURI> currentSlaves = new HashSet<>(slavesMap.size());
+            Set<RedisURI> currentSlaves = Collections.newSetFromMap(new ConcurrentHashMap<>(slavesMap.size()));
             AsyncCountDownLatch latch = new AsyncCountDownLatch();
             for (Map<String, String> map : slavesMap) {
                 if (map.isEmpty()) {
