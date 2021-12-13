@@ -311,7 +311,12 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 }
 
                 if (!config.checkSkipSlavesInit()) {
-                    List<RFuture<Void>> fs = entry.initSlaveBalancer(partition.getFailedSlaveAddresses(), masterClient, configEndpointHostName);
+                    List<RFuture<Void>> fs = entry.initSlaveBalancer(partition.getFailedSlaveAddresses(), configEndpointHostName);
+                    if (fs.isEmpty()) {
+                        result.trySuccess(null);
+                        return;
+                    }
+
                     AtomicInteger counter = new AtomicInteger(fs.size());
                     AtomicInteger errorCounter = new AtomicInteger(fs.size());
                     for (RFuture<Void> future : fs) {

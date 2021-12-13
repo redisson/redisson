@@ -337,7 +337,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             masterFuture.syncUninterruptibly();
 
             if (!config.checkSkipSlavesInit()) {
-                List<RFuture<Void>> fs = masterSlaveEntry.initSlaveBalancer(getDisconnectedNodes(), masterFuture.getNow());
+                List<RFuture<Void>> fs = masterSlaveEntry.initSlaveBalancer(getDisconnectedNodes());
                 for (RFuture<Void> future : fs) {
                     future.syncUninterruptibly();
                 }

@@ -79,21 +79,15 @@ public class MasterSlaveEntry {
         return config;
     }
 
-    public List<RFuture<Void>> initSlaveBalancer(Collection<RedisURI> disconnectedNodes, RedisClient master) {
-        return initSlaveBalancer(disconnectedNodes, master, null);
+    public List<RFuture<Void>> initSlaveBalancer(Collection<RedisURI> disconnectedNodes) {
+        return initSlaveBalancer(disconnectedNodes, null);
     }
 
-    public List<RFuture<Void>> initSlaveBalancer(Collection<RedisURI> disconnectedNodes, RedisClient master, String slaveSSLHostname) {
-        boolean freezeMasterAsSlave = !config.getSlaveAddresses().isEmpty()
-                && !config.checkSkipSlavesInit()
-                && disconnectedNodes.size() < config.getSlaveAddresses().size();
-
-        List<RFuture<Void>> result = new LinkedList<RFuture<Void>>();
-        RFuture<Void> f = addSlave(master.getAddr(), master.getConfig().getAddress(), freezeMasterAsSlave, NodeType.MASTER, master.getConfig().getSslHostname());
-        result.add(f);
+    public List<RFuture<Void>> initSlaveBalancer(Collection<RedisURI> disconnectedNodes, String slaveSSLHostname) {
+        List<RFuture<Void>> result = new ArrayList<>(config.getSlaveAddresses().size());
         for (String address : config.getSlaveAddresses()) {
             RedisURI uri = new RedisURI(address);
-            f = addSlave(uri, disconnectedNodes.contains(uri), NodeType.SLAVE, slaveSSLHostname);
+            RFuture<Void> f = addSlave(uri, disconnectedNodes.contains(uri), NodeType.SLAVE, slaveSSLHostname);
             result.add(f);
         }
         return result;
@@ -139,7 +133,7 @@ public class MasterSlaveEntry {
             List<CompletableFuture<Void>> futures = new ArrayList<>();
             if (!config.checkSkipSlavesInit() && !slaveBalancer.contains(client.getAddr())) {
                 RFuture<Void> masterAsSlaveFuture = addSlave(client.getAddr(), client.getConfig().getAddress(),
-                                                    false, NodeType.MASTER, client.getConfig().getSslHostname());
+                                                    true, NodeType.MASTER, client.getConfig().getSslHostname());
                 futures.add(masterAsSlaveFuture.toCompletableFuture());
             }
 
@@ -477,10 +471,10 @@ public class MasterSlaveEntry {
             // freeze in slaveBalancer
             slaveDown(oldMaster.getClient().getAddr(), FreezeReason.MANAGER);
 
-            // more than one slave available, so master can be removed from slaves
+            // check if at least one slave is available, use master as slave if false
             if (!config.checkSkipSlavesInit()
-                    && slaveBalancer.getAvailableClients() > 1) {
-                slaveDown(newMasterClient.getAddr(), FreezeReason.SYSTEM);
+                    && slaveBalancer.getAvailableClients() == 0) {
+                slaveUp(newMasterClient.getAddr(), FreezeReason.SYSTEM);
             }
             oldMaster.shutdownAsync();
             log.info("master {} has changed to {}", oldMaster.getClient().getAddr(), masterEntry.getClient().getAddr());
