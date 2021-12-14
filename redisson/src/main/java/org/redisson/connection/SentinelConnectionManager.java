@@ -587,8 +587,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 }
             }
 
-            RFuture<RedisConnection> f = client.connectAsync();
-            return f.toCompletableFuture().thenApply(resp -> {
+            CompletableFuture<RedisConnection> f = client.connectAsync();
+            return f.thenApply(resp -> {
                 if (sentinels.putIfAbsent(ipAddr, client) == null) {
                     log.info("sentinel: {} added", ipAddr);
                 }

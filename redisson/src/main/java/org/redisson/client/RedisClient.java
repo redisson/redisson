@@ -152,11 +152,13 @@ public final class RedisClient {
     
     public RedisConnection connect() {
         try {
-            return connectAsync().syncUninterruptibly().getNow();
-        } catch (RedisException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RedisConnectionException("Unable to connect to: " + uri, e);
+            return connectAsync().join();
+        } catch (CompletionException e) {
+            if (e.getCause() instanceof RedisException) {
+                throw e;
+            } else {
+                throw new RedisConnectionException("Unable to connect to: " + uri, e);
+            }
         }
     }
     
@@ -197,9 +199,9 @@ public final class RedisClient {
         return promise;
     }
 
-    public RFuture<RedisConnection> connectAsync() {
+    public CompletableFuture<RedisConnection> connectAsync() {
         CompletableFuture<InetSocketAddress> addrFuture = resolveAddr();
-        CompletableFuture<RedisConnection> ff = addrFuture.thenCompose(res -> {
+        return addrFuture.thenCompose(res -> {
             CompletableFuture<RedisConnection> r = new CompletableFuture<>();
             ChannelFuture channelFuture = bootstrap.connect(res);
             channelFuture.addListener(new ChannelFutureListener() {
@@ -239,33 +241,23 @@ public final class RedisClient {
             });
             return r;
         });
-
-        RPromise<RedisConnection> res = new RedissonPromise<>();
-        // TODO refactor
-        ff.whenComplete((r, e) -> {
-            if (e != null) {
-                res.tryFailure(e.getCause());
-                return;
-            }
-
-            res.trySuccess(r);
-        });
-        return res;
     }
 
     public RedisPubSubConnection connectPubSub() {
         try {
-            return connectPubSubAsync().syncUninterruptibly().getNow();
-        } catch (RedisException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RedisConnectionException("Unable to connect to: " + uri, e);
+            return connectPubSubAsync().join();
+        } catch (CompletionException e) {
+            if (e.getCause() instanceof RedisException) {
+                throw e;
+            } else {
+                throw new RedisConnectionException("Unable to connect to: " + uri, e);
+            }
         }
     }
 
-    public RFuture<RedisPubSubConnection> connectPubSubAsync() {
+    public CompletableFuture<RedisPubSubConnection> connectPubSubAsync() {
         CompletableFuture<InetSocketAddress> nameFuture = resolveAddr();
-        CompletableFuture<RedisPubSubConnection> ff = nameFuture.thenCompose(res -> {
+        return nameFuture.thenCompose(res -> {
             CompletableFuture<RedisPubSubConnection> r = new CompletableFuture<>();
             ChannelFuture channelFuture = pubSubBootstrap.connect(res);
             channelFuture.addListener(new ChannelFutureListener() {
@@ -305,18 +297,6 @@ public final class RedisClient {
             });
             return r;
         });
-
-        RPromise<RedisPubSubConnection> res = new RedissonPromise<>();
-        // TODO refactor
-        ff.whenComplete((r, e) -> {
-            if (e != null) {
-                res.tryFailure(e);
-                return;
-            }
-
-            res.trySuccess(r);
-        });
-        return res;
     }
 
     public void shutdown() {

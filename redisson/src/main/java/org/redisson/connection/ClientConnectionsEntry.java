@@ -16,7 +16,6 @@
 package org.redisson.connection;
 
 import org.redisson.api.NodeType;
-import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
@@ -188,19 +187,18 @@ public class ClientConnectionsEntry {
         freeConnections.add(connection);
     }
 
-    public RFuture<RedisConnection> connect() {
-        RFuture<RedisConnection> future = client.connectAsync();
-        future.onComplete((conn, e) -> {
+    public CompletableFuture<RedisConnection> connect() {
+        CompletableFuture<RedisConnection> future = client.connectAsync();
+        return future.whenComplete((conn, e) -> {
             if (e != null) {
                 return;
             }
-            
+
             onConnect(conn);
             log.debug("new connection created: {}", conn);
             
             allConnections.add(conn);
         });
-        return future;
     }
     
     private void onConnect(final RedisConnection conn) {
@@ -224,20 +222,18 @@ public class ClientConnectionsEntry {
         connectionManager.getConnectionEventsHub().fireConnect(conn.getRedisClient().getAddr());
     }
 
-    public RFuture<RedisPubSubConnection> connectPubSub() {
-        RFuture<RedisPubSubConnection> future = client.connectPubSubAsync();
-        future.onComplete((res, e) -> {
+    public CompletableFuture<RedisPubSubConnection> connectPubSub() {
+        CompletableFuture<RedisPubSubConnection> future = client.connectPubSubAsync();
+        return future.whenComplete((conn, e) -> {
             if (e != null) {
                 return;
             }
             
-            RedisPubSubConnection conn = future.getNow();
             onConnect(conn);
             log.debug("new pubsub connection created: {}", conn);
 
             allSubscribeConnections.add(conn);
         });
-        return future;
     }
     
     public Queue<RedisConnection> getAllConnections() {

@@ -24,6 +24,8 @@ import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 
+import java.util.concurrent.CompletableFuture;
+
 /**
  * Connection pool for Publish / Subscribe
  * 
@@ -51,7 +53,7 @@ public class PubSubConnectionPool extends ConnectionPool<RedisPubSubConnection> 
     }
 
     @Override
-    protected RFuture<RedisPubSubConnection> connect(ClientConnectionsEntry entry) {
+    protected CompletableFuture<RedisPubSubConnection> connect(ClientConnectionsEntry entry) {
         return entry.connectPubSub();
     }
 

@@ -34,6 +34,7 @@ import org.redisson.misc.RedissonPromise;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -119,8 +120,8 @@ public class SentinelRedisNode implements RedisSentinel, RedisSentinelAsync {
 
     private <T> RFuture<T> executeAsync(T defaultValue, Codec codec, long timeout, RedisCommand<T> command, Object... params) {
         RPromise<T> result = new RedissonPromise<>();
-        RFuture<RedisConnection> connectionFuture = client.connectAsync();
-        connectionFuture.onComplete((connection, ex) -> {
+        CompletableFuture<RedisConnection> connectionFuture = client.connectAsync();
+        connectionFuture.whenComplete((connection, ex) -> {
             if (ex != null) {
                 if (defaultValue != null) {
                     result.trySuccess(defaultValue);

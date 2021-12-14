@@ -247,8 +247,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
         RedisClient client = createClient(type, addr, cfg.getConnectTimeout(), cfg.getTimeout(), sslHostname);
         RPromise<RedisConnection> result = new RedissonPromise<>();
-        RFuture<RedisConnection> future = client.connectAsync();
-        future.onComplete((connection, e) -> {
+        CompletableFuture<RedisConnection> future = client.connectAsync();
+        future.whenComplete((connection, e) -> {
             if (e != null) {
                 result.tryFailure(e);
                 return;
