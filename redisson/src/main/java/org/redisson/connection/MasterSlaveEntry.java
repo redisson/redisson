@@ -448,9 +448,12 @@ public class MasterSlaveEntry {
             slaveDown(oldMaster.getClient().getAddr(), FreezeReason.MANAGER);
 
             // check if at least one slave is available, use master as slave if false
-            if (!config.checkSkipSlavesInit()
-                    && slaveBalancer.getAvailableClients() == 0) {
-                slaveUp(newMasterClient.getAddr(), FreezeReason.SYSTEM);
+            if (!config.checkSkipSlavesInit()) {
+                if (slaveBalancer.getAvailableClients() == 0) {
+                    slaveUp(newMasterClient.getAddr(), FreezeReason.SYSTEM);
+                } else {
+                    slaveDown(newMasterClient.getAddr(), FreezeReason.SYSTEM);
+                }
             }
             oldMaster.shutdownAsync();
             log.info("master {} has changed to {}", oldMaster.getClient().getAddr(), masterEntry.getClient().getAddr());
