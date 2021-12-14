@@ -26,12 +26,15 @@ import org.redisson.config.*;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.AsyncCountDownLatch;
 import org.redisson.misc.RedisURI;
-import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.*;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -182,19 +185,18 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                     if (master.equals(addr)) {
                         log.debug("Current master {} unchanged", master);
                     } else if (currentMaster.compareAndSet(master, addr)) {
-                        RFuture<RedisClient> changeFuture = changeMaster(singleSlotRange.getStartSlot(), uri);
-                        changeFuture.onComplete((res, e) -> {
-                            if (e != null) {
-                                log.error("Unable to change master to " + addr, e);
-                                currentMaster.compareAndSet(addr, master);
-                            }
+                        CompletableFuture<RedisClient> changeFuture = changeMaster(singleSlotRange.getStartSlot(), uri);
+                        changeFuture.exceptionally(e -> {
+                            log.error("Unable to change master to " + addr, e);
+                            currentMaster.compareAndSet(addr, master);
+                            return null;
                         });
                     }
                     latch.countDown();
                 } else if (!config.checkSkipSlavesInit()) {
-                    RFuture<Void> f = slaveUp(addr, uri);
+                    CompletableFuture<Void> f = slaveUp(addr, uri);
                     slaveIPs.add(addr);
-                    f.onComplete((res, e) -> {
+                    f.whenComplete((res, e) -> {
                         latch.countDown();
                     });
                 }
@@ -202,11 +204,11 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
         });
     }
 
-    private RFuture<Void> slaveUp(InetSocketAddress address, RedisURI uri) {
+    private CompletableFuture<Void> slaveUp(InetSocketAddress address, RedisURI uri) {
         MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
         if (!entry.hasSlave(address)) {
-            RFuture<Void> f = entry.addSlave(address, uri, uri.getHost());
-            f.onComplete((r, e) -> {
+            CompletableFuture<Void> f = entry.addSlave(address, uri, uri.getHost());
+            return f.whenComplete((r, e) -> {
                 if (e != null) {
                     log.error("Unable to add slave", e);
                     return;
@@ -214,11 +216,10 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
 
                 log.info("slave: {} added", address);
             });
-            return f;
         } else if (entry.slaveUp(address, FreezeReason.MANAGER)) {
             log.info("slave: {} is up", address);
         }
-        return RedissonPromise.newSucceededFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override

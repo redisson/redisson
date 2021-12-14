@@ -30,10 +30,7 @@ import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.connection.balancer.LoadBalancerManager;
 import org.redisson.connection.pool.MasterConnectionPool;
 import org.redisson.connection.pool.MasterPubSubConnectionPool;
-import org.redisson.misc.RPromise;
 import org.redisson.misc.RedisURI;
-import org.redisson.misc.RedissonPromise;
-import org.redisson.misc.TransferListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,48 +78,37 @@ public class MasterSlaveEntry {
         return config;
     }
 
-    public List<RFuture<Void>> initSlaveBalancer(Collection<RedisURI> disconnectedNodes) {
+    public CompletableFuture<Void> initSlaveBalancer(Collection<RedisURI> disconnectedNodes) {
         return initSlaveBalancer(disconnectedNodes, null);
     }
 
-    public List<RFuture<Void>> initSlaveBalancer(Collection<RedisURI> disconnectedNodes, String slaveSSLHostname) {
-        List<RFuture<Void>> result = new ArrayList<>(config.getSlaveAddresses().size());
+    public CompletableFuture<Void> initSlaveBalancer(Collection<RedisURI> disconnectedNodes, String slaveSSLHostname) {
+        List<CompletableFuture<Void>> result = new ArrayList<>(config.getSlaveAddresses().size());
         for (String address : config.getSlaveAddresses()) {
             RedisURI uri = new RedisURI(address);
-            RFuture<Void> f = addSlave(uri, disconnectedNodes.contains(uri), NodeType.SLAVE, slaveSSLHostname);
+            CompletableFuture<Void> f = addSlave(uri, disconnectedNodes.contains(uri), NodeType.SLAVE, slaveSSLHostname);
             result.add(f);
         }
-        return result;
+        return CompletableFuture.allOf(result.toArray(new CompletableFuture[0]));
     }
 
-    public RFuture<RedisClient> setupMasterEntry(InetSocketAddress address, RedisURI uri) {
+    public CompletableFuture<RedisClient> setupMasterEntry(InetSocketAddress address, RedisURI uri) {
         RedisClient client = connectionManager.createClient(NodeType.MASTER, address, uri, null);
         return setupMasterEntry(client);
     }
 
-    public RFuture<RedisClient> setupMasterEntry(RedisURI address) {
+    public CompletableFuture<RedisClient> setupMasterEntry(RedisURI address) {
         return setupMasterEntry(address, null);
     }
 
-    public RFuture<RedisClient> setupMasterEntry(RedisURI address, String sslHostname) {
+    public CompletableFuture<RedisClient> setupMasterEntry(RedisURI address, String sslHostname) {
         RedisClient client = connectionManager.createClient(NodeType.MASTER, address, sslHostname);
         return setupMasterEntry(client);
     }
 
-    private RFuture<RedisClient> setupMasterEntry(RedisClient client) {
-        RPromise<RedisClient> result = new RedissonPromise<RedisClient>();
-        result.onComplete((res, e) -> {
-            if (e != null) {
-                client.shutdownAsync();
-            }
-        });
-        RFuture<InetSocketAddress> addrFuture = client.resolveAddr();
-        addrFuture.onComplete((res, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
-            }
-            
+    private CompletableFuture<RedisClient> setupMasterEntry(RedisClient client) {
+        CompletableFuture<InetSocketAddress> addrFuture = client.resolveAddr();
+        return addrFuture.thenCompose(res -> {
             masterEntry = new ClientConnectionsEntry(
                     client,
                     config.getMasterConnectionMinimumIdleSize(),
@@ -131,12 +117,12 @@ public class MasterSlaveEntry {
                     config.getSubscriptionConnectionPoolSize(),
                     connectionManager,
                     NodeType.MASTER);
-    
+
             List<CompletableFuture<Void>> futures = new ArrayList<>();
             if (!config.checkSkipSlavesInit() && !slaveBalancer.contains(client.getAddr())) {
-                RFuture<Void> masterAsSlaveFuture = addSlave(client.getAddr(), client.getConfig().getAddress(),
-                                                    true, NodeType.MASTER, client.getConfig().getSslHostname());
-                futures.add(masterAsSlaveFuture.toCompletableFuture());
+                CompletableFuture<Void> masterAsSlaveFuture = addSlave(client.getAddr(), client.getConfig().getAddress(),
+                        true, NodeType.MASTER, client.getConfig().getSslHostname());
+                futures.add(masterAsSlaveFuture);
             }
 
             RFuture<Void> writeFuture = writeConnectionPool.add(masterEntry);
@@ -146,12 +132,12 @@ public class MasterSlaveEntry {
                 RFuture<Void> pubSubFuture = pubSubConnectionPool.add(masterEntry);
                 futures.add(pubSubFuture.toCompletableFuture());
             }
-
-            CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-            future.whenComplete(new TransferListener<>(result, client));
-        });
-        
-        return result;
+            return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        }).whenComplete((r, e) -> {
+            if (e != null) {
+                client.shutdownAsync();
+            }
+        }).thenApply(r -> client);
     }
 
     public boolean slaveDown(ClientConnectionsEntry entry, FreezeReason freezeReason) {
@@ -302,27 +288,21 @@ public class MasterSlaveEntry {
         return slaveBalancer.getAvailableClients();
     }
 
-    public RFuture<Void> addSlave(RedisURI address) {
+    public CompletableFuture<Void> addSlave(RedisURI address) {
         return addSlave(address, false, NodeType.SLAVE, null);
     }
     
-    public RFuture<Void> addSlave(InetSocketAddress address, RedisURI uri) {
+    public CompletableFuture<Void> addSlave(InetSocketAddress address, RedisURI uri) {
         return addSlave(address, uri, false, NodeType.SLAVE, null);
     }
 
-    public RFuture<Void> addSlave(InetSocketAddress address, RedisURI uri, String sslHostname) {
+    public CompletableFuture<Void> addSlave(InetSocketAddress address, RedisURI uri, String sslHostname) {
         return addSlave(address, uri, false, NodeType.SLAVE, sslHostname);
     }
 
-    private RFuture<Void> addSlave(RedisClient client, boolean freezed, NodeType nodeType) {
-        RPromise<Void> result = new RedissonPromise<Void>();
-        RFuture<InetSocketAddress> addrFuture = client.resolveAddr();
-        addrFuture.onComplete((res, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
-            }
-
+    private CompletableFuture<Void> addSlave(RedisClient client, boolean freezed, NodeType nodeType) {
+        CompletableFuture<InetSocketAddress> addrFuture = client.resolveAddr();
+        return addrFuture.thenCompose(res -> {
             ClientConnectionsEntry entry = new ClientConnectionsEntry(client,
                     config.getSlaveConnectionMinimumIdleSize(),
                     config.getSlaveConnectionPoolSize(),
@@ -333,23 +313,19 @@ public class MasterSlaveEntry {
                     entry.setFreezeReason(FreezeReason.SYSTEM);
                 }
             }
-            RFuture<Void> addFuture = slaveBalancer.add(entry);
-            addFuture.onComplete((r, ex) -> {
-                if (ex != null) {
-                    client.shutdownAsync();
-                }
-            });
-            addFuture.onComplete(new TransferListener<Void>(result));
+            return slaveBalancer.add(entry);
+        }).exceptionally(ex -> {
+            client.shutdownAsync();
+            return null;
         });
-        return result;
     }
 
-    private RFuture<Void> addSlave(InetSocketAddress address, RedisURI uri, boolean freezed, NodeType nodeType, String sslHostname) {
+    private CompletableFuture<Void> addSlave(InetSocketAddress address, RedisURI uri, boolean freezed, NodeType nodeType, String sslHostname) {
         RedisClient client = connectionManager.createClient(NodeType.SLAVE, address, uri, sslHostname);
         return addSlave(client, freezed, nodeType);
     }
     
-    public RFuture<Void> addSlave(RedisURI address, boolean freezed, NodeType nodeType, String sslHostname) {
+    public CompletableFuture<Void> addSlave(RedisURI address, boolean freezed, NodeType nodeType, String sslHostname) {
         RedisClient client = connectionManager.createClient(nodeType, address, sslHostname);
         return addSlave(client, freezed, nodeType);
     }
@@ -431,24 +407,22 @@ public class MasterSlaveEntry {
      * @param address of Redis
      * @return client 
      */
-    public RFuture<RedisClient> changeMaster(RedisURI address) {
+    public CompletableFuture<RedisClient> changeMaster(RedisURI address) {
         ClientConnectionsEntry oldMaster = masterEntry;
-        RFuture<RedisClient> future = setupMasterEntry(address);
-        changeMaster(address, oldMaster, future);
-        return future;
+        CompletableFuture<RedisClient> future = setupMasterEntry(address);
+        return changeMaster(address, oldMaster, future);
     }
     
-    public RFuture<RedisClient> changeMaster(InetSocketAddress address, RedisURI uri) {
+    public CompletableFuture<RedisClient> changeMaster(InetSocketAddress address, RedisURI uri) {
         ClientConnectionsEntry oldMaster = masterEntry;
-        RFuture<RedisClient> future = setupMasterEntry(address, uri);
-        changeMaster(uri, oldMaster, future);
-        return future;
+        CompletableFuture<RedisClient> future = setupMasterEntry(address, uri);
+        return changeMaster(uri, oldMaster, future);
     }
 
 
-    private void changeMaster(RedisURI address, ClientConnectionsEntry oldMaster,
-            RFuture<RedisClient> future) {
-        future.onComplete((newMasterClient, e) -> {
+    private CompletableFuture<RedisClient> changeMaster(RedisURI address, ClientConnectionsEntry oldMaster,
+                              CompletableFuture<RedisClient> future) {
+        return future.whenComplete((newMasterClient, e) -> {
             if (e != null) {
                 if (oldMaster != masterEntry) {
                     writeConnectionPool.remove(masterEntry);

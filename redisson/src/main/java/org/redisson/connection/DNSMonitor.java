@@ -20,7 +20,6 @@ import io.netty.resolver.AddressResolverGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.AsyncCountDownLatch;
@@ -33,6 +32,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -56,7 +56,7 @@ public class DNSMonitor {
     public DNSMonitor(ConnectionManager connectionManager, RedisClient masterHost, Collection<RedisURI> slaveHosts, long dnsMonitoringInterval, AddressResolverGroup<InetSocketAddress> resolverGroup) {
         this.resolver = resolverGroup.getResolver(connectionManager.getGroup().next());
         
-        masterHost.resolveAddr().syncUninterruptibly();
+        masterHost.resolveAddr().join();
         masters.put(masterHost.getConfig().getAddress(), masterHost.getAddr());
         
         for (RedisURI host : slaveHosts) {
@@ -126,8 +126,8 @@ public class DNSMonitor {
                         return;
                     }
 
-                    RFuture<RedisClient> changeFuture = masterSlaveEntry.changeMaster(newMasterAddr, entry.getKey());
-                    changeFuture.onComplete((r, e) -> {
+                    CompletableFuture<RedisClient> changeFuture = masterSlaveEntry.changeMaster(newMasterAddr, entry.getKey());
+                    changeFuture.whenComplete((r, e) -> {
                         latch.countDown();
 
                         if (e == null) {
@@ -173,8 +173,8 @@ public class DNSMonitor {
                             slaves.put(entry.getKey(), newSlaveAddr);
                             latch.countDown();
                         } else {
-                            RFuture<Void> addFuture = masterSlaveEntry.addSlave(newSlaveAddr, entry.getKey());
-                            addFuture.onComplete((res, e) -> {
+                            CompletableFuture<Void> addFuture = masterSlaveEntry.addSlave(newSlaveAddr, entry.getKey());
+                            addFuture.whenComplete((res, e) -> {
                                 latch.countDown();
 
                                 if (e != null) {

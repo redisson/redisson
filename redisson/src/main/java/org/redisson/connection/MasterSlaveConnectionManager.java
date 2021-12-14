@@ -335,19 +335,20 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             } else {
                 masterSlaveEntry = new MasterSlaveEntry(this, config);
             }
-            RFuture<RedisClient> masterFuture = masterSlaveEntry.setupMasterEntry(new RedisURI(config.getMasterAddress()));
-            masterFuture.syncUninterruptibly();
+            CompletableFuture<RedisClient> masterFuture = masterSlaveEntry.setupMasterEntry(new RedisURI(config.getMasterAddress()));
+            masterFuture.join();
 
             if (!config.checkSkipSlavesInit()) {
-                List<RFuture<Void>> fs = masterSlaveEntry.initSlaveBalancer(getDisconnectedNodes());
-                for (RFuture<Void> future : fs) {
-                    future.syncUninterruptibly();
-                }
+                CompletableFuture<Void> fs = masterSlaveEntry.initSlaveBalancer(getDisconnectedNodes());
+                fs.join();
             }
 
-            startDNSMonitoring(masterFuture.getNow());
+            startDNSMonitoring(masterFuture.getNow(null));
         } catch (Exception e) {
             stopThreads();
+            if (e instanceof CompletionException) {
+                throw (RuntimeException) e.getCause();
+            }
             throw e;
         }
     }
@@ -504,7 +505,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return masterSlaveEntry;
     }
 
-    protected RFuture<RedisClient> changeMaster(int slot, RedisURI address) {
+    protected CompletableFuture<RedisClient> changeMaster(int slot, RedisURI address) {
         MasterSlaveEntry entry = getEntry(slot);
         return entry.changeMaster(address);
     }
