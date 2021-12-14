@@ -573,13 +573,13 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         args.add(count);
 
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_ZSCAN,
-                "local cursor = redis.call('get', KEYS[3]); "
+                "local cursor = redis.call('get', KEYS[2]); "
                 + "if cursor ~= false then "
                     + "cursor = tonumber(cursor); "
                 + "else "
                     + "cursor = 0;"
                 + "end;"
-                + "if start_index == -1 then "
+                + "if cursor == -1 then "
                     + "return {0, {}}; "
                 + "end;"
                 + "local result; "
