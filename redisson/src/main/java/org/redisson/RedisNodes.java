@@ -127,10 +127,8 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
                 if (c != null) {
                     RFuture<String> r = c.async(timeUnit.toMillis(timeout), RedisCommands.PING);
                     result.put(c, r);
-                    latch.countDown();
-                } else {
-                    latch.countDown();
                 }
+                latch.countDown();
             });
         }
 
