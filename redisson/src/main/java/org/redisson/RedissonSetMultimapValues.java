@@ -278,7 +278,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
                 + "else"
                     + " cursor = 0;"
                 + "end;"
-                + "if start_index == -1 then "
+                + "if cursor == -1 then "
                     + "return {0, {}}; "
                 + "end;"
                 + "local result; "
