@@ -372,8 +372,6 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         List<TestIndexed> s = liveObjectService.persist(item1, item2);
         assertThat(s.get(0).getId()).isEqualTo(item1.getId());
         assertThat(s.get(1).getId()).isEqualTo(item2.getId());
-
-        redisson.shutdown();
     }
 
     @Test
