@@ -30,7 +30,8 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.pool.PubSubConnectionPool;
 import org.redisson.connection.pool.SlaveConnectionPool;
-import org.redisson.misc.*;
+import org.redisson.misc.RedisURI;
+import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,8 +39,6 @@ import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiConsumer;
 
 /**
  * 
@@ -72,22 +71,17 @@ public class LoadBalancerManager {
         }
     }
 
-    public RFuture<Void> add(final ClientConnectionsEntry entry) {
-        RPromise<Void> result = new RedissonPromise<Void>();
-        
-        CountableListener<Void> listener = new CountableListener<Void>(result, null, 2) {
-            @Override
-            protected void onSuccess(Void value) {
-                client2Entry.put(entry.getClient(), entry);
-            }
-        };
+    public CompletableFuture<Void> add(ClientConnectionsEntry entry) {
+        List<CompletableFuture<Void>> futures = new ArrayList<>(2);
+        CompletableFuture<Void> slaveFuture = slaveConnectionPool.add(entry);
+        futures.add(slaveFuture);
+        CompletableFuture<Void> pubSubFuture = pubSubConnectionPool.add(entry);
+        futures.add(pubSubFuture);
 
-        RFuture<Void> slaveFuture = slaveConnectionPool.add(entry);
-        slaveFuture.onComplete(listener);
-        
-        RFuture<Void> pubSubFuture = pubSubConnectionPool.add(entry);
-        pubSubFuture.onComplete(listener);
-        return result;
+        CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        return future.thenAccept(r -> {
+            client2Entry.put(entry.getClient(), entry);
+        });
     }
 
     public Collection<ClientConnectionsEntry> getEntries() {
@@ -141,28 +135,21 @@ public class LoadBalancerManager {
                 if (!entry.isInitialized()) {
                     entry.setInitialized(true);
 
-                    AsyncCountDownLatch latch = new AsyncCountDownLatch();
-                    latch.latch(() -> {
-                        entry.setFreezeReason(null);
-                    }, 2);
-
-                    BiConsumer<Void, Throwable> initCallBack = new BiConsumer<Void, Throwable>() {
-                        private final AtomicBoolean initConnError = new AtomicBoolean(false);
-                        @Override
-                        public void accept(Void r, Throwable ex) {
-                            if (ex == null) {
-                                latch.countDown();
-                            } else {
-                                if (!initConnError.compareAndSet(false, true)) {
-                                    return;
-                                }
-                                entry.setInitialized(false);
-                            }
-                        }
-                    };
                     entry.resetFirstFail();
-                    slaveConnectionPool.initConnections(entry).onComplete(initCallBack);
-                    pubSubConnectionPool.initConnections(entry).onComplete(initCallBack);
+
+                    List<CompletableFuture<Void>> futures = new ArrayList<>(2);
+                    futures.add(slaveConnectionPool.initConnections(entry));
+                    futures.add(pubSubConnectionPool.initConnections(entry));
+
+                    CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+                    future.whenComplete((r, e) -> {
+                        if (e != null) {
+                            entry.setInitialized(false);
+                            return;
+                        }
+
+                        entry.setFreezeReason(null);
+                    });
                     return true;
                 }
             }

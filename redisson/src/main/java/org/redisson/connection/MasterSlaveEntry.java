@@ -137,12 +137,12 @@ public class MasterSlaveEntry {
                 futures.add(masterAsSlaveFuture);
             }
 
-            RFuture<Void> writeFuture = writeConnectionPool.add(masterEntry);
-            futures.add(writeFuture.toCompletableFuture());
+            CompletableFuture<Void> writeFuture = writeConnectionPool.add(masterEntry);
+            futures.add(writeFuture);
 
             if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
-                RFuture<Void> pubSubFuture = pubSubConnectionPool.add(masterEntry);
-                futures.add(pubSubFuture.toCompletableFuture());
+                CompletableFuture<Void> pubSubFuture = pubSubConnectionPool.add(masterEntry);
+                futures.add(pubSubFuture);
             }
             return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
         }).whenComplete((r, e) -> {
@@ -326,9 +326,10 @@ public class MasterSlaveEntry {
                 }
             }
             return slaveBalancer.add(entry);
-        }).exceptionally(ex -> {
-            client.shutdownAsync();
-            return null;
+        }).whenComplete((r, ex) -> {
+            if (ex != null) {
+                client.shutdownAsync();
+            }
         });
     }
 

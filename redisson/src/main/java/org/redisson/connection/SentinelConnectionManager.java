@@ -458,9 +458,10 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 CompletableFuture<Void> resolvedFuture = CompletableFuture.allOf(masterAddrFuture.toCompletableFuture(),
                                                                                     slaveAddrFuture.toCompletableFuture());
                 futures.add(resolvedFuture
-                        .exceptionally(exc -> {
-                            log.error("Unable to resolve addresses " + host + " and/or " + masterHost, exc);
-                            return null;
+                        .whenComplete((r, exc) -> {
+                            if (exc != null) {
+                                log.error("Unable to resolve addresses " + host + " and/or " + masterHost, exc);
+                            }
                         })
                         .thenCompose(res -> {
                             RedisURI slaveAddr = slaveAddrFuture.getNow();
@@ -474,9 +475,10 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                             }
 
                             currentSlaves.add(slaveAddr);
-                            return addSlave(slaveAddr).exceptionally(e2 -> {
-                                log.error("Unable to add slave " + slaveAddr, e2);
-                                return null;
+                            return addSlave(slaveAddr).whenComplete((r, e) -> {
+                                if (e != null) {
+                                    log.error("Unable to add slave " + slaveAddr, e);
+                                }
                             });
                 }));
             }

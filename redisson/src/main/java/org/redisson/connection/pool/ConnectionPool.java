@@ -67,48 +67,43 @@ abstract class ConnectionPool<T extends RedisConnection> {
         this.connectionManager = connectionManager;
     }
 
-    public RFuture<Void> add(ClientConnectionsEntry entry) {
-        RPromise<Void> promise = new RedissonPromise<Void>();
-        promise.onComplete((r, e) -> {
-            if (e == null) {
-                entries.add(entry);
-            }
+    public CompletableFuture<Void> add(ClientConnectionsEntry entry) {
+        CompletableFuture<Void> promise = initConnections(entry, true);
+        return promise.thenAccept(r -> {
+            entries.add(entry);
         });
-        initConnections(entry, promise, true);
-        return promise;
     }
 
-    public RPromise<Void> initConnections(ClientConnectionsEntry entry) {
-        RPromise<Void> promise = new RedissonPromise<Void>();
-        initConnections(entry, promise, false);
-        return promise;
+    public CompletableFuture<Void> initConnections(ClientConnectionsEntry entry) {
+        return initConnections(entry, false);
     }
     
-    private void initConnections(ClientConnectionsEntry entry, RPromise<Void> initPromise, boolean checkFreezed) {
+    private CompletableFuture<Void> initConnections(ClientConnectionsEntry entry, boolean checkFreezed) {
         int minimumIdleSize = getMinimumIdleSize(entry);
 
         if (minimumIdleSize == 0 || (checkFreezed && entry.isFreezed())) {
-            initPromise.trySuccess(null);
-            return;
+            return CompletableFuture.completedFuture(null);
         }
 
+        CompletableFuture<Void> initPromise = new CompletableFuture<>();
         AtomicInteger initializedConnections = new AtomicInteger(minimumIdleSize);
         int startAmount = Math.min(10, minimumIdleSize);
         AtomicInteger requests = new AtomicInteger(startAmount);
         for (int i = 0; i < startAmount; i++) {
             createConnection(checkFreezed, requests, entry, initPromise, minimumIdleSize, initializedConnections);
         }
+        return initPromise;
     }
 
-    private void createConnection(boolean checkFreezed, AtomicInteger requests, ClientConnectionsEntry entry, RPromise<Void> initPromise,
-            int minimumIdleSize, AtomicInteger initializedConnections) {
+    private void createConnection(boolean checkFreezed, AtomicInteger requests, ClientConnectionsEntry entry,
+                                  CompletableFuture<Void> initPromise, int minimumIdleSize, AtomicInteger initializedConnections) {
 
         if ((checkFreezed && entry.isFreezed()) || !tryAcquireConnection(entry)) {
             int totalInitializedConnections = minimumIdleSize - initializedConnections.get();
             Throwable cause = new RedisConnectionException(
                     "Unable to init enough connections amount! Only " + totalInitializedConnections + " of " + minimumIdleSize + " were initialized. Server: "
                                         + entry.getClient().getAddr());
-            initPromise.tryFailure(cause);
+            initPromise.completeExceptionally(cause);
             return;
         }
         
@@ -157,13 +152,13 @@ abstract class ConnectionPool<T extends RedisConnection> {
                                         + " of " + minimumIdleSize + " were initialized. Redis server: " + entry.getClient().getAddr();
                             }
                             Throwable cause = new RedisConnectionException(errorMsg, e);
-                            initPromise.tryFailure(cause);
+                            initPromise.completeExceptionally(cause);
                             return;
                         }
 
                         int value = initializedConnections.decrementAndGet();
                         if (value == 0) {
-                            if (initPromise.trySuccess(null)) {
+                            if (initPromise.complete(null)) {
                                 log.info("{} connections initialized for {}", minimumIdleSize, entry.getClient().getAddr());
                             }
                         } else if (value > 0 && !initPromise.isDone()) {
