@@ -89,7 +89,19 @@ public class MasterSlaveEntry {
             CompletableFuture<Void> f = addSlave(uri, disconnectedNodes.contains(uri), NodeType.SLAVE, slaveSSLHostname);
             result.add(f);
         }
-        return CompletableFuture.allOf(result.toArray(new CompletableFuture[0]));
+
+        CompletableFuture<Void> future = CompletableFuture.allOf(result.toArray(new CompletableFuture[0]));
+        return future.thenAccept(v -> {
+            useMasterAsSlave();
+        });
+    }
+
+    private void useMasterAsSlave() {
+        if (slaveBalancer.getAvailableClients() == 0) {
+            slaveUp(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM);
+        } else {
+            slaveDown(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM);
+        }
     }
 
     public CompletableFuture<RedisClient> setupMasterEntry(InetSocketAddress address, RedisURI uri) {
@@ -449,11 +461,7 @@ public class MasterSlaveEntry {
 
             // check if at least one slave is available, use master as slave if false
             if (!config.checkSkipSlavesInit()) {
-                if (slaveBalancer.getAvailableClients() == 0) {
-                    slaveUp(newMasterClient.getAddr(), FreezeReason.SYSTEM);
-                } else {
-                    slaveDown(newMasterClient.getAddr(), FreezeReason.SYSTEM);
-                }
+                useMasterAsSlave();
             }
             oldMaster.shutdownAsync();
             log.info("master {} has changed to {}", oldMaster.getClient().getAddr(), masterEntry.getClient().getAddr());
