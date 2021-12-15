@@ -231,29 +231,23 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     }
 
-    protected final RFuture<RedisConnection> connectToNode(BaseConfig<?> cfg, RedisURI addr, String sslHostname) {
+    protected final CompletableFuture<RedisConnection> connectToNode(BaseConfig<?> cfg, RedisURI addr, String sslHostname) {
         return connectToNode(NodeType.MASTER, cfg, addr, sslHostname);
     }
 
-    protected final RFuture<RedisConnection> connectToNode(NodeType type, BaseConfig<?> cfg, RedisURI addr, String sslHostname) {
+    protected final CompletableFuture<RedisConnection> connectToNode(NodeType type, BaseConfig<?> cfg, RedisURI addr, String sslHostname) {
         RedisConnection conn = nodeConnections.get(addr);
         if (conn != null) {
             if (!conn.isActive()) {
                 closeNodeConnection(conn);
             } else {
-                return RedissonPromise.newSucceededFuture(conn);
+                return CompletableFuture.completedFuture(conn);
             }
         }
 
         RedisClient client = createClient(type, addr, cfg.getConnectTimeout(), cfg.getTimeout(), sslHostname);
-        RPromise<RedisConnection> result = new RedissonPromise<>();
         CompletableFuture<RedisConnection> future = client.connectAsync();
-        future.whenComplete((connection, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
-            }
-
+        return future.thenCompose(connection -> {
             if (connection.isActive()) {
                 if (!addr.isIP()) {
                     RedisURI address = new RedisURI(addr.getScheme()
@@ -262,14 +256,14 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                     nodeConnections.put(address, connection);
                 }
                 nodeConnections.put(addr, connection);
-                result.trySuccess(connection);
+                return CompletableFuture.completedFuture(connection);
             } else {
                 connection.closeAsync();
-                result.tryFailure(new RedisException("Connection to " + connection.getRedisClient().getAddr() + " is not active!"));
+                CompletableFuture<RedisConnection> f = new CompletableFuture<>();
+                f.completeExceptionally(new RedisException("Connection to " + connection.getRedisClient().getAddr() + " is not active!"));
+                return f;
             }
         });
-
-        return result;
     }
     
     @Override

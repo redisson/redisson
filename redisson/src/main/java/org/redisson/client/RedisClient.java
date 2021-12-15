@@ -152,7 +152,7 @@ public final class RedisClient {
             return connectAsync().join();
         } catch (CompletionException e) {
             if (e.getCause() instanceof RedisException) {
-                throw e;
+                throw (RedisException) e.getCause();
             } else {
                 throw new RedisConnectionException("Unable to connect to: " + uri, e);
             }
@@ -245,7 +245,7 @@ public final class RedisClient {
             return connectPubSubAsync().join();
         } catch (CompletionException e) {
             if (e.getCause() instanceof RedisException) {
-                throw e;
+                throw (RedisException) e.getCause();
             } else {
                 throw new RedisConnectionException("Unable to connect to: " + uri, e);
             }

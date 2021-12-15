@@ -71,9 +71,13 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
 
         for (String address : cfg.getNodeAddresses()) {
             RedisURI addr = new RedisURI(address);
-            RFuture<RedisConnection> connectionFuture = connectToNode(cfg, addr, addr.getHost());
-            connectionFuture.awaitUninterruptibly();
-            RedisConnection connection = connectionFuture.getNow();
+            CompletableFuture<RedisConnection> connectionFuture = connectToNode(cfg, addr, addr.getHost());
+            RedisConnection connection = null;
+            try {
+                connection = connectionFuture.join();
+            } catch (Exception e) {
+                // skip
+            }
             if (connection == null) {
                 continue;
             }
@@ -157,8 +161,8 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void checkNode(AsyncCountDownLatch latch, RedisURI uri, ReplicatedServersConfig cfg, Set<InetSocketAddress> slaveIPs) {
-        RFuture<RedisConnection> connectionFuture = connectToNode(cfg, uri, uri.getHost());
-        connectionFuture.onComplete((connection, exc) -> {
+        CompletableFuture<RedisConnection> connectionFuture = connectToNode(cfg, uri, uri.getHost());
+        connectionFuture.whenComplete((connection, exc) -> {
             if (exc != null) {
                 log.error(exc.getMessage(), exc);
                 latch.countDown();
