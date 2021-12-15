@@ -422,7 +422,6 @@ public class RedissonTest extends BaseTest {
         for (RFuture<?> rFuture : futures) {
             rFuture.awaitUninterruptibly();
             if (!rFuture.isSuccess()) {
-                System.out.println("cause " + rFuture.cause());
                 if (rFuture.cause().getMessage().contains("READONLY You can't write against")) {
                     readonlyErrors++;
                 }
@@ -433,8 +432,9 @@ public class RedissonTest extends BaseTest {
         }
         
         System.out.println("errors " + errors + " success " + success + " readonly " + readonlyErrors);
-        
-        assertThat(errors).isLessThan(1300);
+
+        assertThat(futures.get(futures.size() - 1).isSuccess()).isTrue();
+        assertThat(errors).isLessThan(820);
         assertThat(readonlyErrors).isZero();
         
         redisson.shutdown();
@@ -736,8 +736,9 @@ public class RedissonTest extends BaseTest {
         process.shutdown();
 
         assertThat(readonlyErrors).isZero();
-        assertThat(errors).isLessThan(130);
-        assertThat(success).isGreaterThan(600 - 130);
+        assertThat(errors).isLessThan(200);
+        assertThat(success).isGreaterThan(600 - 200);
+        assertThat(futures.get(futures.size() - 1).isSuccess()).isTrue();
     }
 
 
@@ -1114,7 +1115,9 @@ public class RedissonTest extends BaseTest {
     public void testMasterSlaveConnectionFail() {
         Assertions.assertThrows(RedisConnectionException.class, () -> {
             Config config = new Config();
-            config.useMasterSlaveServers().setMasterAddress("redis://127.99.0.1:1111");
+            config.useMasterSlaveServers()
+                    .setMasterAddress("redis://127.99.0.1:1111")
+                    .addSlaveAddress("redis://127.99.0.2:1111");
             Redisson.create(config);
 
             Thread.sleep(1500);
