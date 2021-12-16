@@ -15,40 +15,14 @@
  */
 package org.redisson.transaction;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
+import io.netty.buffer.ByteBufUtil;
+import io.netty.util.Timeout;
+import io.netty.util.TimerTask;
 import org.redisson.RedissonBatch;
 import org.redisson.RedissonLocalCachedMap;
 import org.redisson.RedissonObject;
 import org.redisson.RedissonTopic;
-import org.redisson.api.BatchOptions;
-import org.redisson.api.BatchResult;
-import org.redisson.api.RBucket;
-import org.redisson.api.RBuckets;
-import org.redisson.api.RFuture;
-import org.redisson.api.RLocalCachedMap;
-import org.redisson.api.RMap;
-import org.redisson.api.RMapCache;
-import org.redisson.api.RMultimapCacheAsync;
-import org.redisson.api.RSet;
-import org.redisson.api.RSetCache;
-import org.redisson.api.RTopic;
-import org.redisson.api.RTopicAsync;
-import org.redisson.api.RTransaction;
-import org.redisson.api.TransactionOptions;
+import org.redisson.api.*;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.cache.LocalCachedMapDisable;
 import org.redisson.cache.LocalCachedMapDisabledKey;
@@ -58,15 +32,17 @@ import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.MasterSlaveEntry;
-import org.redisson.misc.CountableListener;
+import org.redisson.misc.AsyncCountDownLatch;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 import org.redisson.transaction.operation.TransactionalOperation;
 import org.redisson.transaction.operation.map.MapOperation;
 
-import io.netty.buffer.ByteBufUtil;
-import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 
@@ -464,33 +440,31 @@ public class RedissonTransaction implements RTransaction {
                     result.tryFailure(e);
                     return;
                 }
-                
-                CountableListener<Map<HashKey, HashValue>> listener = 
-                                new CountableListener<>(result, hashes, hashes.size());
-                RPromise<Void> subscriptionFuture = new RedissonPromise<>();
-                CountableListener<Void> subscribedFutures = new CountableListener<>(subscriptionFuture, null, hashes.size());
-                
+
+                AsyncCountDownLatch latch = new AsyncCountDownLatch();
+                latch.latch(() -> {
+                    result.trySuccess(hashes);
+                }, hashes.size());
+
+                List<CompletableFuture<?>> subscriptionFutures = new ArrayList<>();
+
                 List<RTopic> topics = new ArrayList<>();
                 for (Entry<HashKey, HashValue> entry : hashes.entrySet()) {
                     String disabledAckName = RedissonObject.suffixName(entry.getKey().getName(), requestId + RedissonLocalCachedMap.DISABLED_ACK_SUFFIX);
                     RTopic topic = RedissonTopic.createRaw(LocalCachedMessageCodec.INSTANCE,
                                                                 commandExecutor, disabledAckName);
                     topics.add(topic);
-                    RFuture<Integer> topicFuture = topic.addListenerAsync(Object.class, new MessageListener<Object>() {
-                        @Override
-                        public void onMessage(CharSequence channel, Object msg) {
-                            AtomicInteger counter = entry.getValue().getCounter();
-                            if (counter.decrementAndGet() == 0) {
-                                listener.decCounter();
-                            }
+                    RFuture<Integer> topicFuture = topic.addListenerAsync(Object.class, (channel, msg) -> {
+                        AtomicInteger counter = entry.getValue().getCounter();
+                        if (counter.decrementAndGet() == 0) {
+                            latch.countDown();
                         }
                     });
-                    topicFuture.onComplete((r, ex) -> {
-                        subscribedFutures.decCounter();
-                    });
+                    subscriptionFutures.add(topicFuture.toCompletableFuture());
                 }
-                
-                subscriptionFuture.onComplete((r, ex) -> {
+
+                CompletableFuture<Void> subscriptionFuture = CompletableFuture.allOf(subscriptionFutures.toArray(new CompletableFuture[0]));
+                subscriptionFuture.whenComplete((r, ex) -> {
                         RedissonBatch publishBatch = createBatch();
                         for (Entry<HashKey, HashValue> entry : hashes.entrySet()) {
                             String disabledKeysName = RedissonObject.suffixName(entry.getKey().getName(), RedissonLocalCachedMap.DISABLED_KEYS_SUFFIX);
@@ -508,7 +482,7 @@ public class RedissonTransaction implements RTransaction {
                                 
                                 AtomicInteger counter = entry.getValue().getCounter();
                                 if (counter.addAndGet(receivers.intValue()) == 0) {
-                                    listener.decCounter();
+                                    latch.countDown();
                                 }
                             });
                         }

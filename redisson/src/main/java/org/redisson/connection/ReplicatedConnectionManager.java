@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -71,10 +72,10 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
 
         for (String address : cfg.getNodeAddresses()) {
             RedisURI addr = new RedisURI(address);
-            CompletableFuture<RedisConnection> connectionFuture = connectToNode(cfg, addr, addr.getHost());
+            CompletionStage<RedisConnection> connectionFuture = connectToNode(cfg, addr, addr.getHost());
             RedisConnection connection = null;
             try {
-                connection = connectionFuture.join();
+                connection = connectionFuture.toCompletableFuture().join();
             } catch (Exception e) {
                 // skip
             }
@@ -161,7 +162,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void checkNode(AsyncCountDownLatch latch, RedisURI uri, ReplicatedServersConfig cfg, Set<InetSocketAddress> slaveIPs) {
-        CompletableFuture<RedisConnection> connectionFuture = connectToNode(cfg, uri, uri.getHost());
+        CompletionStage<RedisConnection> connectionFuture = connectToNode(cfg, uri, uri.getHost());
         connectionFuture.whenComplete((connection, exc) -> {
             if (exc != null) {
                 log.error(exc.getMessage(), exc);

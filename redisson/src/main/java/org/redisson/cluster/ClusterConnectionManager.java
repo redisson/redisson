@@ -33,7 +33,6 @@ import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.ReadMode;
 import org.redisson.connection.*;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
-import org.redisson.misc.AsyncCountDownLatch;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedisURI;
 import org.redisson.misc.RedissonPromise;
@@ -88,9 +87,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         List<String> failedMasters = new ArrayList<String>();
         for (String address : cfg.getNodeAddresses()) {
             RedisURI addr = new RedisURI(address);
-            CompletableFuture<RedisConnection> connectionFuture = connectToNode(cfg, addr, addr.getHost());
+            CompletionStage<RedisConnection> connectionFuture = connectToNode(cfg, addr, addr.getHost());
             try {
-                RedisConnection connection = connectionFuture.join();
+                RedisConnection connection = connectionFuture.toCompletableFuture().join();
 
                 if (cfg.getNodeAddresses().size() == 1 && !addr.isIP()) {
                     configEndpointHostName = addr.getHost();
@@ -111,8 +110,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
                 lastClusterNode = addr;
                 
-                RFuture<Collection<ClusterPartition>> partitionsFuture = parsePartitions(nodes);
-                Collection<ClusterPartition> partitions = partitionsFuture.syncUninterruptibly().getNow();
+                CompletableFuture<Collection<ClusterPartition>> partitionsFuture = parsePartitions(nodes);
+                Collection<ClusterPartition> partitions = partitionsFuture.join();
                 List<CompletableFuture<Void>> masterFutures = new ArrayList<>();
                 for (ClusterPartition partition : partitions) {
                     if (partition.isMasterFail()) {
@@ -278,7 +277,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             return result;
         }
 
-        CompletableFuture<RedisConnection> connectionFuture = connectToNode(cfg, partition.getMasterAddress(), configEndpointHostName);
+        CompletionStage<RedisConnection> connectionFuture = connectToNode(cfg, partition.getMasterAddress(), configEndpointHostName);
         connectionFuture.whenComplete((connection, ex1) -> {
             if (ex1 != null) {
                 log.error("Can't connect to master: {} with slot ranges: {}", partition.getMasterAddress(), partition.getSlotRanges());
@@ -419,7 +418,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             return;
         }
         RedisURI uri = iterator.next();
-        CompletableFuture<RedisConnection> connectionFuture = connectToNode(cfg, uri, configEndpointHostName);
+        CompletionStage<RedisConnection> connectionFuture = connectToNode(cfg, uri, configEndpointHostName);
         connectionFuture.whenComplete((connection, e) -> {
             if (e != null) {
                 lastException.set(e);
@@ -461,8 +460,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     log.debug("cluster nodes state got from {}:\n{}", connection.getRedisClient().getAddr(), nodesValue);
                 }
 
-                RFuture<Collection<ClusterPartition>> newPartitionsFuture = parsePartitions(nodes);
-                newPartitionsFuture.onComplete((newPartitions, ex) -> {
+                CompletableFuture<Collection<ClusterPartition>> newPartitionsFuture = parsePartitions(nodes);
+                newPartitionsFuture.whenComplete((newPartitions, ex) -> {
                     RFuture<Void> masterFuture = checkMasterNodesChange(cfg, newPartitions);
                     checkSlaveNodesChange(newPartitions);
                     masterFuture.onComplete((res, exc) -> {
@@ -762,10 +761,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return natMapper.map(address);
     }
     
-    private RFuture<Collection<ClusterPartition>> parsePartitions(List<ClusterNodeInfo> nodes) {
+    private CompletableFuture<Collection<ClusterPartition>> parsePartitions(List<ClusterNodeInfo> nodes) {
         Map<String, ClusterPartition> partitions = new ConcurrentHashMap<>();
-        AsyncCountDownLatch latch = new AsyncCountDownLatch();
-        int counter = 0;
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (ClusterNodeInfo clusterNodeInfo : nodes) {
             if (clusterNodeInfo.containsFlag(Flag.NOADDR)
                     || clusterNodeInfo.containsFlag(Flag.HANDSHAKE)
@@ -787,13 +785,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 continue;
             }
 
-            RFuture<RedisURI> ipFuture = resolveIP(clusterNodeInfo.getAddress());
-            counter++;
-            ipFuture.onComplete((address, e) -> {
-                if (e != null) {
-                    latch.countDown();
-                    return;
-                }
+            CompletableFuture<RedisURI> ipFuture = resolveIP(clusterNodeInfo.getAddress());
+            CompletableFuture<Void> f = ipFuture.thenAccept(address -> {
 
                 if (clusterNodeInfo.containsFlag(Flag.SLAVE)) {
                     ClusterPartition masterPartition = partitions.computeIfAbsent(masterId, k -> new ClusterPartition(masterId));
@@ -815,22 +808,21 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                         masterPartition.setMasterFail(true);
                     }
                 }
-                latch.countDown();
             });
+            futures.add(f);
         }
 
-        RPromise<Collection<ClusterPartition>> result = new RedissonPromise<>();
-        latch.latch(() -> {
+        CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        return future.handle((r, e) -> {
             addCascadeSlaves(partitions.values());
 
             List<ClusterPartition> ps = partitions.values()
-                                            .stream()
-                                            .filter(cp -> cp.getType() == Type.MASTER
-                                                            && cp.getMasterAddress() != null)
-                                            .collect(Collectors.toList());
-            result.trySuccess(ps);
-        }, counter);
-        return result;
+                    .stream()
+                    .filter(cp -> cp.getType() == Type.MASTER
+                            && cp.getMasterAddress() != null)
+                    .collect(Collectors.toList());
+            return ps;
+        });
     }
 
     private void addCascadeSlaves(Collection<ClusterPartition> partitions) {

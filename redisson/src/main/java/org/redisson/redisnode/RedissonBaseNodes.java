@@ -30,10 +30,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  *
@@ -116,7 +113,7 @@ public class RedissonBaseNodes implements BaseRedisNodes {
         Map<RedisConnection, RFuture<String>> result = new ConcurrentHashMap<>(clients.size());
         CountDownLatch latch = new CountDownLatch(clients.size());
         for (RedisNode entry : clients) {
-            CompletableFuture<RedisConnection> f = entry.getClient().connectAsync();
+            CompletionStage<RedisConnection> f = entry.getClient().connectAsync();
             f.whenComplete((c, e) -> {
                 if (c != null) {
                     RFuture<String> r = c.async(timeUnit.toMillis(timeout), RedisCommands.PING);

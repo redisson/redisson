@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Deque;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
@@ -120,7 +121,7 @@ public class ClientConnectionsEntry {
 
     public CompletableFuture<Void> shutdownAsync() {
         connectionManager.getConnectionWatcher().remove(this);
-        return client.shutdownAsync();
+        return client.shutdownAsync().toCompletableFuture();
     }
 
     public RedisClient getClient() {
@@ -187,8 +188,8 @@ public class ClientConnectionsEntry {
         freeConnections.add(connection);
     }
 
-    public CompletableFuture<RedisConnection> connect() {
-        CompletableFuture<RedisConnection> future = client.connectAsync();
+    public CompletionStage<RedisConnection> connect() {
+        CompletionStage<RedisConnection> future = client.connectAsync();
         return future.whenComplete((conn, e) -> {
             if (e != null) {
                 return;
@@ -222,8 +223,8 @@ public class ClientConnectionsEntry {
         connectionManager.getConnectionEventsHub().fireConnect(conn.getRedisClient().getAddr());
     }
 
-    public CompletableFuture<RedisPubSubConnection> connectPubSub() {
-        CompletableFuture<RedisPubSubConnection> future = client.connectPubSubAsync();
+    public CompletionStage<RedisPubSubConnection> connectPubSub() {
+        CompletionStage<RedisPubSubConnection> future = client.connectPubSubAsync();
         return future.whenComplete((conn, e) -> {
             if (e != null) {
                 return;

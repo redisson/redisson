@@ -32,8 +32,10 @@ import io.netty.util.NetUtil;
 import io.netty.util.Timer;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import org.redisson.api.RFuture;
 import org.redisson.client.handler.RedisChannelInitializer;
 import org.redisson.client.handler.RedisChannelInitializer.Type;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.RedisURI;
 
 import java.net.InetAddress;
@@ -149,7 +151,7 @@ public final class RedisClient {
     
     public RedisConnection connect() {
         try {
-            return connectAsync().join();
+            return connectAsync().toCompletableFuture().join();
         } catch (CompletionException e) {
             if (e.getCause() instanceof RedisException) {
                 throw (RedisException) e.getCause();
@@ -196,9 +198,9 @@ public final class RedisClient {
         return promise;
     }
 
-    public CompletableFuture<RedisConnection> connectAsync() {
+    public RFuture<RedisConnection> connectAsync() {
         CompletableFuture<InetSocketAddress> addrFuture = resolveAddr();
-        return addrFuture.thenCompose(res -> {
+        CompletableFuture<RedisConnection> f = addrFuture.thenCompose(res -> {
             CompletableFuture<RedisConnection> r = new CompletableFuture<>();
             ChannelFuture channelFuture = bootstrap.connect(res);
             channelFuture.addListener(new ChannelFutureListener() {
@@ -238,11 +240,12 @@ public final class RedisClient {
             });
             return r;
         });
+        return new CompletableFutureWrapper<>(f);
     }
 
     public RedisPubSubConnection connectPubSub() {
         try {
-            return connectPubSubAsync().join();
+            return connectPubSubAsync().toCompletableFuture().join();
         } catch (CompletionException e) {
             if (e.getCause() instanceof RedisException) {
                 throw (RedisException) e.getCause();
@@ -252,9 +255,9 @@ public final class RedisClient {
         }
     }
 
-    public CompletableFuture<RedisPubSubConnection> connectPubSubAsync() {
+    public RFuture<RedisPubSubConnection> connectPubSubAsync() {
         CompletableFuture<InetSocketAddress> nameFuture = resolveAddr();
-        return nameFuture.thenCompose(res -> {
+        CompletableFuture<RedisPubSubConnection> f = nameFuture.thenCompose(res -> {
             CompletableFuture<RedisPubSubConnection> r = new CompletableFuture<>();
             ChannelFuture channelFuture = pubSubBootstrap.connect(res);
             channelFuture.addListener(new ChannelFutureListener() {
@@ -294,18 +297,19 @@ public final class RedisClient {
             });
             return r;
         });
+        return new CompletableFutureWrapper<>(f);
     }
 
     public void shutdown() {
-        shutdownAsync().join();
+        shutdownAsync().toCompletableFuture().join();
     }
 
-    public CompletableFuture<Void> shutdownAsync() {
+    public RFuture<Void> shutdownAsync() {
         shutdown = true;
         CompletableFuture<Void> result = new CompletableFuture<>();
         if (channels.isEmpty() || config.getGroup().isShuttingDown()) {
             shutdown(result);
-            return result;
+            return new CompletableFutureWrapper<>(result);
         }
         
         ChannelGroupFuture channelsFuture = channels.newCloseFuture();
@@ -327,8 +331,8 @@ public final class RedisClient {
                 connection.closeAsync();
             }
         }
-        
-        return result;
+
+        return new CompletableFutureWrapper<>(result);
     }
 
     public boolean isShutdown() {

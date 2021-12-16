@@ -47,7 +47,6 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.config.*;
 import org.redisson.misc.InfinitySemaphoreLatch;
-import org.redisson.misc.RPromise;
 import org.redisson.misc.RedisURI;
 import org.redisson.misc.RedissonPromise;
 import org.redisson.pubsub.PublishSubscribeService;
@@ -231,11 +230,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     }
 
-    protected final CompletableFuture<RedisConnection> connectToNode(BaseConfig<?> cfg, RedisURI addr, String sslHostname) {
+    protected final CompletionStage<RedisConnection> connectToNode(BaseConfig<?> cfg, RedisURI addr, String sslHostname) {
         return connectToNode(NodeType.MASTER, cfg, addr, sslHostname);
     }
 
-    protected final CompletableFuture<RedisConnection> connectToNode(NodeType type, BaseConfig<?> cfg, RedisURI addr, String sslHostname) {
+    protected final CompletionStage<RedisConnection> connectToNode(NodeType type, BaseConfig<?> cfg, RedisURI addr, String sslHostname) {
         RedisConnection conn = nodeConnections.get(addr);
         if (conn != null) {
             if (!conn.isActive()) {
@@ -246,7 +245,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
 
         RedisClient client = createClient(type, addr, cfg.getConnectTimeout(), cfg.getTimeout(), sslHostname);
-        CompletableFuture<RedisConnection> future = client.connectAsync();
+        CompletionStage<RedisConnection> future = client.connectAsync();
         return future.thenCompose(connection -> {
             if (connection.isActive()) {
                 if (!addr.isIP()) {
@@ -697,31 +696,31 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public RFuture<RedisURI> resolveIP(RedisURI address) {
+    public CompletableFuture<RedisURI> resolveIP(RedisURI address) {
         return resolveIP(address.getScheme(), address);
     }
 
-    protected RFuture<RedisURI> resolveIP(String scheme, RedisURI address) {
+    protected CompletableFuture<RedisURI> resolveIP(String scheme, RedisURI address) {
         if (address.isIP()) {
             RedisURI addr = applyNatMap(address);
-            return RedissonPromise.newSucceededFuture(addr);
+            return CompletableFuture.completedFuture(addr);
         }
 
-        RPromise<RedisURI> result = new RedissonPromise<>();
+        CompletableFuture<RedisURI> result = new CompletableFuture<>();
         AddressResolver<InetSocketAddress> resolver = resolverGroup.getResolver(getGroup().next());
         InetSocketAddress addr = InetSocketAddress.createUnresolved(address.getHost(), address.getPort());
         Future<InetSocketAddress> future = resolver.resolve(addr);
         future.addListener((FutureListener<InetSocketAddress>) f -> {
             if (!f.isSuccess()) {
                 log.error("Unable to resolve " + address, f.cause());
-                result.tryFailure(f.cause());
+                result.completeExceptionally(f.cause());
                 return;
             }
 
             InetSocketAddress s = f.getNow();
             RedisURI uri = new RedisURI(scheme + "://" + s.getAddress().getHostAddress() + ":" + address.getPort());
             uri = applyNatMap(uri);
-            result.trySuccess(uri);
+            result.complete(uri);
         });
         return result;
     }

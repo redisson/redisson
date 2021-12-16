@@ -37,6 +37,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -243,8 +244,8 @@ abstract class ConnectionPool<T extends RedisConnection> {
         return (T) entry.pollConnection(command);
     }
 
-    protected CompletableFuture<T> connect(ClientConnectionsEntry entry) {
-        return (CompletableFuture<T>) entry.connect();
+    protected CompletionStage<T> connect(ClientConnectionsEntry entry) {
+        return (CompletionStage<T>) entry.connect();
     }
 
     private void connectTo(ClientConnectionsEntry entry, RPromise<T> promise, RedisCommand<?> command) {
@@ -269,7 +270,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
     }
 
     private void createConnection(ClientConnectionsEntry entry, RPromise<T> promise) {
-        CompletableFuture<T> connFuture = connect(entry);
+        CompletionStage<T> connFuture = connect(entry);
         connFuture.whenComplete((conn, e) -> {
             if (e != null) {
                 promiseFailure(entry, promise, e);
@@ -349,7 +350,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
                 }
             }
 
-            CompletableFuture<RedisConnection> connectionFuture = entry.getClient().connectAsync();
+            CompletionStage<RedisConnection> connectionFuture = entry.getClient().connectAsync();
             connectionFuture.whenComplete((c, e) -> {
                     synchronized (entry) {
                         if (entry.getFreezeReason() != FreezeReason.RECONNECT) {

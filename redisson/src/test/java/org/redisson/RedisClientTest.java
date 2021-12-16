@@ -59,7 +59,7 @@ public class RedisClientTest {
 
     @Test
     public void testConnectAsync() throws InterruptedException {
-        CompletableFuture<RedisConnection> f = redisClient.connectAsync();
+        CompletionStage<RedisConnection> f = redisClient.connectAsync();
         CountDownLatch l = new CountDownLatch(2);
         f.whenComplete((conn, e) -> {
             assertThat(conn.sync(RedisCommands.PING)).isEqualTo("PONG");

@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 
@@ -416,8 +417,8 @@ public class RedisExecutor<V, R> {
 
                 onException();
 
-                RFuture<RedisURI> ipAddrFuture = connectionManager.resolveIP(ex.getUrl());
-                ipAddrFuture.onComplete((ip, e) -> {
+                CompletableFuture<RedisURI> ipAddrFuture = connectionManager.resolveIP(ex.getUrl());
+                ipAddrFuture.whenComplete((ip, e) -> {
                     if (e != null) {
                         handleError(connectionFuture, e);
                         return;
@@ -433,8 +434,8 @@ public class RedisExecutor<V, R> {
 
                 onException();
 
-                RFuture<RedisURI> ipAddrFuture = connectionManager.resolveIP(ex.getUrl());
-                ipAddrFuture.onComplete((ip, e) -> {
+                CompletableFuture<RedisURI> ipAddrFuture = connectionManager.resolveIP(ex.getUrl());
+                ipAddrFuture.whenComplete((ip, e) -> {
                     if (e != null) {
                         handleError(connectionFuture, e);
                         return;

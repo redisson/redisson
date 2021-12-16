@@ -34,15 +34,11 @@ import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.misc.AsyncCountDownLatch;
-import org.redisson.misc.CountableListener;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -408,38 +404,28 @@ public class CommandBatchService extends CommandAsyncService {
                     return;
                 }
                 
-                RPromise<Map<MasterSlaveEntry, List<Object>>> mainPromise = new RedissonPromise<>();
                 Map<MasterSlaveEntry, List<Object>> result = new ConcurrentHashMap<>();
-                CountableListener<Map<MasterSlaveEntry, List<Object>>> listener = new CountableListener<>(mainPromise, result);
-                listener.setCounter(connections.size());
+                List<CompletableFuture<Void>> futures = new ArrayList<>(commands.size());
                 for (Map.Entry<MasterSlaveEntry, Entry> entry : commands.entrySet()) {
                     RPromise<List<Object>> execPromise = new RedissonPromise<>();
+
                     async(entry.getValue().isReadOnlyMode(), new NodeSource(entry.getKey()), connectionManager.getCodec(), RedisCommands.EXEC, 
                             new Object[] {}, execPromise, false, false);
-                    execPromise.onComplete((r, ex) -> {
-                        if (ex != null) {
-                            mainPromise.tryFailure(ex);
-                            return;
-                        }
 
+                    CompletionStage<Void> f = execPromise.thenCompose(r -> {
                         BatchCommandData<?, Integer> lastCommand = (BatchCommandData<?, Integer>) entry.getValue().getCommands().peekLast();
                         result.put(entry.getKey(), r);
+
                         if (RedisCommands.WAIT.getName().equals(lastCommand.getCommand().getName())) {
-                            lastCommand.getPromise().onComplete((res, e) -> {
-                                if (e != null) {
-                                    mainPromise.tryFailure(e);
-                                    return;
-                                }
-                                
-                                execPromise.onComplete(listener);
-                            });
-                        } else {
-                            execPromise.onComplete(listener);
+                            return lastCommand.getPromise().thenApply(i -> null);
                         }
+                        return CompletableFuture.completedFuture(null);
                     });
+                    futures.add(f.toCompletableFuture());
                 }
-                
-                mainPromise.onComplete((res, ex) -> {
+
+                CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+                future.whenComplete((res, ex) -> {
                     executed.set(true);
                     if (ex != null) {
                         resultPromise.tryFailure(ex);
@@ -447,7 +433,7 @@ public class CommandBatchService extends CommandAsyncService {
                     }
                     
                     try {
-                        for (java.util.Map.Entry<MasterSlaveEntry, List<Object>> entry : res.entrySet()) {
+                        for (java.util.Map.Entry<MasterSlaveEntry, List<Object>> entry : result.entrySet()) {
                             Entry commandEntry = commands.get(entry.getKey());
                             Iterator<Object> resultIter = entry.getValue().iterator();
                             for (BatchCommandData<?, ?> data : commandEntry.getCommands()) {
