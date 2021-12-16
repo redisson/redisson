@@ -135,6 +135,8 @@ public abstract class BaseMapTest extends BaseTest {
 
     @Test
     public void testRandomKeys() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
+
         RMap<Integer, Integer> map = getMap("map");
         Set<Integer> e1 = map.randomKeys(1);
         assertThat(e1).isEmpty();
@@ -148,6 +150,8 @@ public abstract class BaseMapTest extends BaseTest {
 
     @Test
     public void testRandomEntries() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
+
         RMap<Integer, Integer> map = getMap("map");
         Map<Integer, Integer> e1 = map.randomEntries(1);
         assertThat(e1).isEmpty();
