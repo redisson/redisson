@@ -346,7 +346,7 @@ public class RedissonConnection extends AbstractRedisConnection {
             return null;
         }
         if (isQueueing()) {
-            f.syncUninterruptibly();
+            f.toCompletableFuture().join();
             return null;
         }
 

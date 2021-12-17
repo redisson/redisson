@@ -225,7 +225,7 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
             } else {
                 connectionFuture = connectionManager.connectionReadOp(source, null);
             }
-            connectionFuture.syncUninterruptibly();
+            connectionFuture.toCompletableFuture().join();
             entry.setConnectionFuture(connectionFuture);
 
             entry.setCancelCallback(() -> {

@@ -339,7 +339,7 @@ public class CompletableFutureWrapper<V> implements RFuture<V> {
     @Override
     public RFuture<V> awaitUninterruptibly() {
         try {
-            join();
+            future.join();
         } catch (Exception e) {
             // skip
         }

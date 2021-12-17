@@ -429,7 +429,7 @@ public class RedissonRemoteServiceTest extends BaseTest {
     }
     
     @Test
-    public void testAsync() throws InterruptedException {
+    public void testAsync() {
         RedissonClient r1 = createInstance();
         r1.getRemoteService().register(RemoteInterface.class, new RemoteImpl());
         
@@ -437,9 +437,9 @@ public class RedissonRemoteServiceTest extends BaseTest {
         RemoteInterfaceAsync ri = r2.getRemoteService().get(RemoteInterfaceAsync.class);
         
         RFuture<Void> f = ri.voidMethod("someName", 100L);
-        f.sync();
+        f.toCompletableFuture().join();
         RFuture<Long> resFuture = ri.resultMethod(100L);
-        resFuture.sync();
+        resFuture.toCompletableFuture().join();
         assertThat(resFuture.getNow()).isEqualTo(200);
 
         r1.shutdown();
@@ -490,9 +490,9 @@ public class RedissonRemoteServiceTest extends BaseTest {
         RemoteInterfaceAsync ri = r2.getRemoteService().get(RemoteInterfaceAsync.class);
         
         RFuture<Void> f = ri.voidMethod("someName", 100L);
-        f.sync();
+        f.toCompletableFuture().join();
         RFuture<Long> resFuture = ri.resultMethod(100L);
-        resFuture.sync();
+        resFuture.toCompletableFuture().join();
         assertThat(resFuture.getNow()).isEqualTo(200);
 
         r1.shutdown();

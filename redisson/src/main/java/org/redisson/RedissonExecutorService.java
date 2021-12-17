@@ -705,8 +705,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
 
     private <T> void syncExecute(RemotePromise<T> promise) {
         RFuture<Boolean> addFuture = promise.getAddFuture();
-        addFuture.syncUninterruptibly();
-        Boolean res = addFuture.getNow();
+        Boolean res = addFuture.toCompletableFuture().join();
         if (!res) {
             throw new RejectedExecutionException("Task rejected. ExecutorService is in shutdown state");
         }

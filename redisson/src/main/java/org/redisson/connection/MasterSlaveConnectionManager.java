@@ -213,7 +213,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected void closeNodeConnections() {
         nodeConnections.values().stream()
                 .map(c -> c.getRedisClient().shutdownAsync())
-                .forEach(f -> f.join());
+                .forEach(f -> f.toCompletableFuture().join());
     }
     
     protected void closeNodeConnection(RedisConnection conn) {

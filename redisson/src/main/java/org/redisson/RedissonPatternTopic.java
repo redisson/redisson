@@ -135,7 +135,7 @@ public class RedissonPatternTopic implements RPatternTopic {
         }
 
         if (entry.hasListeners(channelName)) {
-            subscribeService.unsubscribe(PubSubType.PUNSUBSCRIBE, channelName).syncUninterruptibly();
+            subscribeService.unsubscribe(PubSubType.PUNSUBSCRIBE, channelName).toCompletableFuture().join();
         }
         semaphore.release();
     }

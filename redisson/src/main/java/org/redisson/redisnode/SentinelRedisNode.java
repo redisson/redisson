@@ -64,7 +64,7 @@ public class SentinelRedisNode implements RedisSentinel, RedisSentinelAsync {
 
     @Override
     public Map<String, String> getMemoryStatistics() {
-        return getMemoryStatisticsAsync().syncUninterruptibly().getNow();
+        return getMemoryStatisticsAsync().toCompletableFuture().join();
     }
 
     @Override
@@ -84,12 +84,12 @@ public class SentinelRedisNode implements RedisSentinel, RedisSentinelAsync {
 
     @Override
     public boolean ping() {
-        return pingAsync().syncUninterruptibly().getNow();
+        return pingAsync().toCompletableFuture().join();
     }
 
     @Override
     public boolean ping(long timeout, TimeUnit timeUnit) {
-        return pingAsync(timeout, timeUnit).syncUninterruptibly().getNow();
+        return pingAsync(timeout, timeUnit).toCompletableFuture().join();
     }
 
     @Override
@@ -157,7 +157,7 @@ public class SentinelRedisNode implements RedisSentinel, RedisSentinelAsync {
 
     @Override
     public Time time() {
-        return timeAsync().syncUninterruptibly().getNow();
+        return timeAsync().toCompletableFuture().join();
     }
 
     @Override
@@ -167,7 +167,7 @@ public class SentinelRedisNode implements RedisSentinel, RedisSentinelAsync {
 
     @Override
     public Map<String, String> info(InfoSection section) {
-        return infoAsync(section).syncUninterruptibly().getNow();
+        return infoAsync(section).toCompletableFuture().join();
     }
 
     @Override
@@ -262,12 +262,12 @@ public class SentinelRedisNode implements RedisSentinel, RedisSentinelAsync {
 
     @Override
     public Map<String, String> getConfig(String parameter) {
-        return getConfigAsync(parameter).syncUninterruptibly().getNow();
+        return getConfigAsync(parameter).toCompletableFuture().join();
     }
 
     @Override
     public void setConfig(String parameter, String value) {
-        setConfigAsync(parameter, value).syncUninterruptibly().getNow();
+        setConfigAsync(parameter, value).toCompletableFuture().join();
     }
 
     @Override

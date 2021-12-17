@@ -424,7 +424,7 @@ public class RedissonMultiLock implements RLock {
             acquiredLocks.stream()
                     .map(l -> (RedissonLock) l)
                     .map(l -> l.expireAsync(unit.toMillis(leaseTime), TimeUnit.MILLISECONDS))
-                    .forEach(f -> f.syncUninterruptibly());
+                    .forEach(f -> f.toCompletableFuture().join());
         }
         
         return true;
@@ -462,7 +462,7 @@ public class RedissonMultiLock implements RLock {
         }
 
         for (RFuture<Void> future : futures) {
-            future.syncUninterruptibly();
+            future.toCompletableFuture().join();
         }
     }
 

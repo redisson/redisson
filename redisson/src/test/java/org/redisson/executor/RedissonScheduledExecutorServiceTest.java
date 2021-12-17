@@ -219,7 +219,7 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         RScheduledExecutorService executor = redisson.getExecutorService("test2", ExecutorOptions.defaults().taskRetryInterval(10, TimeUnit.SECONDS));
         long start = System.currentTimeMillis();
         RExecutorFuture<?> f = executor.schedule(new IncrementRunnableTask("counter"), 1, TimeUnit.SECONDS);
-        f.syncUninterruptibly();
+        f.toCompletableFuture().join();
         assertThat(System.currentTimeMillis() - start).isBetween(900L, 1300L);
         assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(1);
         Thread.sleep(2000);

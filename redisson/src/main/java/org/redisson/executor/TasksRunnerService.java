@@ -48,6 +48,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -207,7 +208,7 @@ public class TasksRunnerService implements RemoteExecutorService {
         Object res;
         try {
             RFuture<Long> future = renewRetryTime(params.getRequestId());
-            future.sync();
+            future.toCompletableFuture().get();
 
             Callable<?> callable = decode(params);
             res = callable.call();
@@ -216,6 +217,13 @@ public class TasksRunnerService implements RemoteExecutorService {
         } catch (RedisException e) {
             finish(params.getRequestId(), true);
             throw e;
+        } catch (ExecutionException e) {
+            finish(params.getRequestId(), true);
+            if (e.getCause() instanceof RuntimeException) {
+                throw (RuntimeException) e.getCause();
+            } else {
+                throw new IllegalArgumentException(e.getCause());
+            }
         } catch (Exception e) {
             finish(params.getRequestId(), true);
             throw new IllegalArgumentException(e);
@@ -331,7 +339,7 @@ public class TasksRunnerService implements RemoteExecutorService {
             if (params.getRequestId() != null && params.getRequestId().startsWith("00")) {
                 RFuture<Long> future = renewRetryTime(params.getRequestId());
                 try {
-                    future.sync();
+                    future.get();
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
                 }
@@ -344,7 +352,14 @@ public class TasksRunnerService implements RemoteExecutorService {
         } catch (RedisException e) {
             finish(params.getRequestId(), removeTask);
             throw e;
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof RuntimeException) {
+                throw (RuntimeException) e.getCause();
+            } else {
+                throw new IllegalArgumentException(e.getCause());
+            }
         }
+
         finish(params.getRequestId(), removeTask);
     }
     

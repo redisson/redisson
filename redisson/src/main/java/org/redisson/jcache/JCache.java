@@ -213,8 +213,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         RLock lock = getLockedLock(key);
         try {
             RFuture<V> result = getAsync(key);
-            result.syncUninterruptibly();
-            return result.getNow();
+            return result.toCompletableFuture().join();
         } finally {
             lock.unlock();
         }
@@ -573,7 +572,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 }
             });
         } else {
-            res.syncUninterruptibly();
+            res.toCompletableFuture().join();
 
             List<Object> r = res.getNow();
             Long added = (Long) r.get(0);
@@ -804,7 +803,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 }
             });
         } else {
-            res.syncUninterruptibly();
+            res.toCompletableFuture().join();
 
             List<Object> r = res.getNow();
             r.add(syncId);
@@ -943,9 +942,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
 
         RFuture<Map<K, V>> result = getAllAsync(keys);
-
-        result.syncUninterruptibly();
-        return result.getNow();
+        return result.toCompletableFuture().join();
     }
 
     @Override
@@ -1089,8 +1086,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
     @Override
     public boolean containsKey(K key) {
         RFuture<Boolean> future = containsKeyAsync(key);
-        future.syncUninterruptibly();
-        return future.getNow();
+        return future.toCompletableFuture().join();
     }
 
     @Override
@@ -1318,7 +1314,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
     @Override
     public void put(K key, V value) {
         RFuture<Void> future = putAsync(key, value);
-        future.syncUninterruptibly();
+        future.toCompletableFuture().join();
     }
 
     RFuture<Long> removeValues(Object... keys) {
@@ -1532,8 +1528,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
     @Override
     public V getAndPut(K key, V value) {
         RFuture<V> future = getAndPutAsync(key, value);
-        future.syncUninterruptibly();
-        return future.getNow();
+        return future.toCompletableFuture().join();
     }
 
     @Override
@@ -1639,7 +1634,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
     @Override
     public void putAll(Map<? extends K, ? extends V> map) {
         RFuture<Void> result = putAllAsync(map);
-        result.syncUninterruptibly();
+        result.toCompletableFuture().join();
     }
 
     @Override
@@ -1734,8 +1729,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
     @Override
     public boolean putIfAbsent(K key, V value) {
         RFuture<Boolean> result = putIfAbsentAsync(key, value);
-        result.syncUninterruptibly();
-        return result.getNow();
+        return result.toCompletableFuture().join();
     }
 
     @Override
@@ -1829,8 +1823,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
     @Override
     public boolean remove(K key) {
         RFuture<Boolean> future = removeAsync(key);
-        future.syncUninterruptibly();
-        return future.getNow();
+        return future.toCompletableFuture().join();
     }
 
     @Override
@@ -1868,7 +1861,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                         });
                     });
                 } else {
-                    future.syncUninterruptibly();
+                    future.toCompletableFuture().join();
                     V oldValue = future.getNow();
                     try {
                         cacheWriter.delete(key);
@@ -1990,8 +1983,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
     @Override
     public boolean remove(K key, V value) {
         RFuture<Boolean> future = removeAsync(key, value);
-        future.syncUninterruptibly();
-        return future.getNow();
+        return future.toCompletableFuture().join();
     }
 
     @Override
@@ -2043,7 +2035,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                         try {
                             cacheWriter.delete(key);
                         } catch (Exception e) {
-                            putValue(key, value).syncUninterruptibly();
+                            putValue(key, value).toCompletableFuture().join();
                             if (e instanceof CacheWriterException) {
                                 throw e;
                             }
@@ -2134,7 +2126,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 }
             });
         } else {
-            future.syncUninterruptibly();
+            future.toCompletableFuture().join();
 
             List<Object> r = future.getNow();
 
@@ -2296,7 +2288,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 }
             });
         } else {
-            future.syncUninterruptibly();
+            future.toCompletableFuture().join();
 
             List<Object> r = future.getNow();
 
@@ -2325,8 +2317,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
     @Override
     public V getAndRemove(K key) {
         RFuture<V> future = getAndRemoveAsync(key);
-        future.syncUninterruptibly();
-        return future.getNow();
+        return future.toCompletableFuture().join();
     }
 
     @Override
@@ -2542,8 +2533,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
     @Override
     public boolean replace(K key, V oldValue, V newValue) {
         RFuture<Boolean> future = replaceAsync(key, oldValue, newValue);
-        future.syncUninterruptibly();
-        return future.getNow();
+        return future.toCompletableFuture().join();
     }
 
     @Override
@@ -2864,8 +2854,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
     @Override
     public boolean replace(K key, V value) {
         RFuture<Boolean> future = replaceAsync(key, value);
-        future.syncUninterruptibly();
-        return future.getNow();
+        return future.toCompletableFuture().join();
     }
 
     @Override
@@ -2931,8 +2920,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
     @Override
     public V getAndReplace(K key, V value) {
         RFuture<V> future = getAndReplaceAsync(key, value);
-        future.syncUninterruptibly();
-        return future.getNow();
+        return future.toCompletableFuture().join();
     }
 
     @Override
@@ -2998,7 +2986,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
     @Override
     public void removeAll(Set<? extends K> keys) {
         RFuture<Void> future = removeAllAsync(keys);
-        future.syncUninterruptibly();
+        future.toCompletableFuture().join();
     }
 
     @Override
@@ -3102,7 +3090,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
     @Override
     public void clear() {
         RFuture<Void> future = clearAsync();
-        future.syncUninterruptibly();
+        future.toCompletableFuture().join();
     }
 
     @Override
@@ -3251,7 +3239,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
     private void registerCacheEntryListener(CacheEntryListenerConfiguration<K, V> cacheEntryListenerConfiguration, boolean addToConfig) {
         if (osType == null) {
             RFuture<Map<String, String>> serverFuture = commandExecutor.readAsync((String) null, StringCodec.INSTANCE, RedisCommands.INFO_SERVER);
-            serverFuture.syncUninterruptibly();
+            serverFuture.toCompletableFuture().join();
             String os = serverFuture.getNow().get("os");
             if (os.contains("Windows")) {
                 osType = BaseEventCodec.OSType.WINDOWS;

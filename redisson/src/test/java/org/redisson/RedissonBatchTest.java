@@ -179,7 +179,7 @@ public class RedissonBatchTest extends BaseTest {
 		Awaitility.await().atMost(10, TimeUnit.SECONDS).until(() -> counter.get() == 0);
 		Assertions.assertThat(hasErrors).isTrue();
 
-		executeBatch(redisson, batchOptions).syncUninterruptibly();
+		executeBatch(redisson, batchOptions).toCompletableFuture().join();
 
         redisson.shutdown();
         process.shutdown();
@@ -272,7 +272,7 @@ public class RedissonBatchTest extends BaseTest {
         assertThat(e.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
 
         for (RFuture<?> future : futures) {
-            future.syncUninterruptibly();
+            future.toCompletableFuture().join();
         }
     }
 
@@ -411,7 +411,7 @@ public class RedissonBatchTest extends BaseTest {
         for (int i = 0; i < total; i++) {
             RFuture<String> f = map.putAsync("" + i, "" + i, 5, TimeUnit.MINUTES);
             if (batchOptions.getExecutionMode() == ExecutionMode.REDIS_WRITE_ATOMIC) {
-                f.syncUninterruptibly();
+                f.toCompletableFuture().join();
             }
         }
         

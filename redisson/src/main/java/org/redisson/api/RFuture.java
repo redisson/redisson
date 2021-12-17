@@ -57,14 +57,11 @@ public interface RFuture<V> extends java.util.concurrent.Future<V>, CompletionSt
     V getNow();
     
     /**
-     * Returns the result value when complete, or throws an
-     * (unchecked) exception if completed exceptionally. To better
-     * conform with the use of common functional forms, if a
-     * computation involved in the completion of this
-     * CompletableFuture threw an exception.
+     * Use toCompletableFuture().join() method instead
      *
      * @return the result value
      */
+    @Deprecated
     V join();
     
     /**
@@ -95,21 +92,21 @@ public interface RFuture<V> extends java.util.concurrent.Future<V>, CompletionSt
     boolean await(long timeoutMillis) throws InterruptedException;
     
     /**
-     * Waits for this future until it is done, and rethrows the cause of the failure if this future
-     * failed.
+     * Use toCompletableFuture().get() method instead
      *
      * @throws InterruptedException
      *         if the current thread was interrupted
      * @return Future object
      */
+    @Deprecated
     RFuture<V> sync() throws InterruptedException;
 
     /**
-     * Waits for this future until it is done, and rethrows the cause of the failure if this future
-     * failed.
-     * 
+     * Use toCompletableFuture().join() method instead
+     *
      * @return Future object
      */
+    @Deprecated
     RFuture<V> syncUninterruptibly();
 
     /**

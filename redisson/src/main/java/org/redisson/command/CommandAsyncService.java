@@ -45,6 +45,8 @@ import java.io.IOException;
 import java.security.MessageDigest;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -90,7 +92,11 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        future.syncUninterruptibly();
+        try {
+            future.toCompletableFuture().join();
+        } catch (CompletionException e) {
+            throw (RuntimeException) e.getCause();
+        }
     }
 
     @Override
@@ -100,7 +106,11 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         if (!future.await(timeout)) {
             ((RPromise<?>) future).tryFailure(new RedisTimeoutException("Subscribe timeout: (" + timeout + "ms). Increase 'subscriptionsPerConnection' and/or 'subscriptionConnectionPoolSize' parameters."));
         }
-        future.sync();
+        try {
+            future.toCompletableFuture().get();
+        } catch (ExecutionException e) {
+            throw (RuntimeException) e.getCause();
+        }
     }
 
     @Override
