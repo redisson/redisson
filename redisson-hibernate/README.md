@@ -99,6 +99,8 @@ By default each Region Factory creates own Redisson instance. For multiple appli
 
 #### Redisson allows to define follow cache settings per entity, collection, naturalid, query and timestamp regions:
 
+`REGION_NAME` - is a name of region which is defined in @Cache annotation otherwise it's the fully qualified class name.
+
 | | |
 |-|-|
 |Parameter| `hibernate.cache.redisson.[REGION_NAME].eviction.max_entries` |
