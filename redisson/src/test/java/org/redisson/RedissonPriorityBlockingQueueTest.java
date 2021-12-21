@@ -47,7 +47,11 @@ public class RedissonPriorityBlockingQueueTest extends RedissonBlockingQueueTest
         
         RBlockingQueue<Integer> queue1 = getQueue(redisson);
         RFuture<Integer> f = queue1.pollAsync(10, TimeUnit.SECONDS);
-        f.await(1, TimeUnit.SECONDS);
+        try {
+            f.toCompletableFuture().get(1, TimeUnit.SECONDS);
+        } catch (ExecutionException | TimeoutException e) {
+            // skip
+        }
         runner.stop();
 
         runner = new RedisRunner()
@@ -83,7 +87,11 @@ public class RedissonPriorityBlockingQueueTest extends RedissonBlockingQueueTest
         RedissonClient redisson = Redisson.create(config);
         RBlockingQueue<Integer> queue1 = getQueue(redisson);
         RFuture<Integer> f = queue1.takeAsync();
-        f.await(1, TimeUnit.SECONDS);
+        try {
+            f.toCompletableFuture().get(1, TimeUnit.SECONDS);
+        } catch (ExecutionException | TimeoutException e) {
+            // skip
+        }
         runner.stop();
 
         runner = new RedisRunner()

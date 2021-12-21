@@ -17,11 +17,7 @@ package org.redisson.mapreduce;
 
 import java.io.Serializable;
 import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
 import org.redisson.Redisson;
 import org.redisson.api.RExecutorService;
@@ -105,12 +101,20 @@ public class CoordinatorTask<KOut, VOut> implements Callable<Object>, Serializab
         mapperTask.addObjectName(objectName);
         RFuture<?> mapperFuture = executor.submitAsync(mapperTask);
         try {
-            if (timeout > 0 && !mapperFuture.await(timeout - timeSpent)) {
-                mapperFuture.cancel(true);
-                throw new MapReduceTimeoutException();
+            if (timeout > 0) {
+                try {
+                    mapperFuture.toCompletableFuture().get(timeout - timeSpent, TimeUnit.MILLISECONDS);
+                } catch (ExecutionException | CancellationException | TimeoutException e) {
+                    mapperFuture.cancel(true);
+                    throw new MapReduceTimeoutException();
+                }
             }
             if (timeout == 0) {
-                mapperFuture.await();
+                try {
+                    mapperFuture.toCompletableFuture().join();
+                } catch (CompletionException | CancellationException e) {
+                    // skip
+                }
             }
         } catch (InterruptedException e) {
             mapperFuture.cancel(true);

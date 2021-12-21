@@ -440,7 +440,7 @@ public class RedissonRemoteServiceTest extends BaseTest {
         f.toCompletableFuture().join();
         RFuture<Long> resFuture = ri.resultMethod(100L);
         resFuture.toCompletableFuture().join();
-        assertThat(resFuture.getNow()).isEqualTo(200);
+        assertThat(resFuture.toCompletableFuture().join()).isEqualTo(200);
 
         r1.shutdown();
         r2.shutdown();
@@ -492,8 +492,7 @@ public class RedissonRemoteServiceTest extends BaseTest {
         RFuture<Void> f = ri.voidMethod("someName", 100L);
         f.toCompletableFuture().join();
         RFuture<Long> resFuture = ri.resultMethod(100L);
-        resFuture.toCompletableFuture().join();
-        assertThat(resFuture.getNow()).isEqualTo(200);
+        assertThat(resFuture.toCompletableFuture().join()).isEqualTo(200);
 
         r1.shutdown();
         r2.shutdown();

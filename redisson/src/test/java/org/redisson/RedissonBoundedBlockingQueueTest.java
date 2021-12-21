@@ -227,8 +227,13 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         final RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("bounded-queue:pollTimeout");
         assertThat(queue1.trySetCapacity(5)).isTrue();
         RFuture<Integer> f = queue1.pollAsync(5, TimeUnit.SECONDS);
-        
-        Assertions.assertFalse(f.await(1, TimeUnit.SECONDS));
+
+        try {
+            f.toCompletableFuture().get(1, TimeUnit.SECONDS);
+            Assertions.fail();
+        } catch (TimeoutException e) {
+            // skip
+        }
         runner.stop();
 
         long start = System.currentTimeMillis();
@@ -308,7 +313,11 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         
         RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("queue:pollany");
         RFuture<Integer> f = queue1.pollAsync(10, TimeUnit.SECONDS);
-        f.await(1, TimeUnit.SECONDS);
+        try {
+            f.toCompletableFuture().get(1, TimeUnit.SECONDS);
+        } catch (ExecutionException | TimeoutException e) {
+            // skip
+        }
         runner.stop();
 
         runner = new RedisRunner()
@@ -349,7 +358,11 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("testTakeReattach");
         assertThat(queue1.trySetCapacity(15)).isTrue();
         RFuture<Integer> f = queue1.takeAsync();
-        f.await(1, TimeUnit.SECONDS);
+        try {
+            f.toCompletableFuture().get(1, TimeUnit.SECONDS);
+        } catch (ExecutionException | TimeoutException e) {
+            // skip
+        }
         runner.stop();
 
         runner = new RedisRunner()

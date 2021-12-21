@@ -183,9 +183,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
 
         RMap<String, RemoteServiceRequest> tasks = getMap(((RedissonObject) requestQueue).getRawName() + ":tasks");
         RFuture<RemoteServiceRequest> taskFuture = getTask(requestId, tasks);
-        commandExecutor.getInterrupted(taskFuture);
-
-        RemoteServiceRequest request = taskFuture.getNow();
+        RemoteServiceRequest request = commandExecutor.getInterrupted(taskFuture);
         if (request == null) {
             throw new IllegalStateException("Task can't be found for request: " + requestId);
         }

@@ -54,8 +54,13 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
         RedissonClient redisson = Redisson.create(config);
         final RBlockingQueue<Integer> queue1 = getQueue(redisson);
         RFuture<Integer> f = queue1.pollAsync(5, TimeUnit.SECONDS);
-        
-        Assertions.assertFalse(f.await(1, TimeUnit.SECONDS));
+
+        try {
+            f.toCompletableFuture().get(1, TimeUnit.SECONDS);
+            Assertions.fail();
+        } catch (TimeoutException e) {
+            // skip
+        }
         runner.stop();
 
         long start = System.currentTimeMillis();
@@ -144,7 +149,11 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
         
         RBlockingQueue<Integer> queue1 = getQueue(redisson);
         RFuture<Integer> f = queue1.pollAsync(10, TimeUnit.SECONDS);
-        f.await(1, TimeUnit.SECONDS);
+        try {
+            f.toCompletableFuture().get(1, TimeUnit.SECONDS);
+        } catch (ExecutionException | TimeoutException e) {
+            // skip
+        }
         runner.stop();
 
         runner = new RedisRunner()
@@ -196,7 +205,11 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
         for (int i = 0; i < 10; i++) {
             RBlockingQueue<Integer> queue = redisson.getBlockingQueue("queue" + i);
             RFuture<Integer> f = queue.takeAsync();
-            f.await(1, TimeUnit.SECONDS);
+            try {
+                f.toCompletableFuture().get(1, TimeUnit.SECONDS);
+            } catch (ExecutionException | TimeoutException e) {
+                // skip
+            }
             futures.add(f);
         }
 
@@ -211,11 +224,15 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
 
         for (int i = 0; i < 10; i++) {
             RFuture<Integer> f = futures.get(i);
-            f.await(20, TimeUnit.SECONDS);
+            try {
+                f.toCompletableFuture().get(20, TimeUnit.SECONDS);
+            } catch (ExecutionException | TimeoutException e) {
+                // skip
+            }
             if (f.cause() != null) {
                 f.cause().printStackTrace();
             }
-            Integer result = f.getNow();
+            Integer result = f.toCompletableFuture().getNow(null);
             assertThat(result).isEqualTo(i*100);
         }
 
@@ -273,7 +290,11 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
 
         RBlockingQueue<Integer> queue1 = getQueue(redisson);
         RFuture<Integer> f = queue1.takeAsync();
-        f.await(1, TimeUnit.SECONDS);
+        try {
+            f.toCompletableFuture().get(1, TimeUnit.SECONDS);
+        } catch (ExecutionException | TimeoutException e) {
+            // skip
+        }
 
         master.stop();
 
@@ -314,7 +335,11 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
 
         RBlockingQueue<Integer> queue1 = getQueue(redisson);
         RFuture<Integer> f = queue1.takeAsync();
-        f.await(1, TimeUnit.SECONDS);
+        try {
+            f.toCompletableFuture().get(1, TimeUnit.SECONDS);
+        } catch (ExecutionException | TimeoutException e) {
+            e.printStackTrace();
+        }
         runner.stop();
 
         runner = new RedisRunner()

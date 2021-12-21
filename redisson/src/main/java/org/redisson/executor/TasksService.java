@@ -227,12 +227,12 @@ public class TasksService extends BaseRemoteService {
                     result.tryFailure(ex);
                     return;
                 }
-                
-                if (response.getNow() == null) {
+
+                if (r == null) {
                     result.trySuccess(false);
                     return;
                 }
-                result.trySuccess(response.getNow().isCanceled());
+                result.trySuccess(r.isCanceled());
             });
         });
 

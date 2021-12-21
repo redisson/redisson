@@ -38,7 +38,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
@@ -317,8 +316,8 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
                 cancelExecution(optionsCopy, mayInterruptIfRunning, this, cancelRequestMapName);
 
                 try {
-                    awaitUninterruptibly(60, TimeUnit.SECONDS);
-                } catch (CancellationException e) {
+                    toCompletableFuture().get(60, TimeUnit.SECONDS);
+                } catch (Exception e) {
                     // skip
                 }
                 return isCancelled();

@@ -141,8 +141,13 @@ public class RedissonBaseNodes implements BaseRedisNodes {
         boolean res = true;
         for (Map.Entry<RedisConnection, RFuture<String>> entry : result.entrySet()) {
             RFuture<String> f = entry.getValue();
-            f.awaitUninterruptibly();
-            if (!"PONG".equals(f.getNow())) {
+            String pong = null;
+            try {
+                pong = f.toCompletableFuture().join();
+            } catch (Exception e) {
+                // skip
+            }
+            if (!"PONG".equals(pong)) {
                 res = false;
             }
             entry.getKey().closeAsync();

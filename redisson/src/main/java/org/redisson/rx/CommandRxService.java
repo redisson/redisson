@@ -16,6 +16,7 @@
 package org.redisson.rx;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletionException;
 
 import org.redisson.api.RFuture;
 import org.redisson.command.CommandAsyncService;
@@ -60,6 +61,9 @@ public class CommandRxService extends CommandAsyncService implements CommandRxEx
                 
                 future.onComplete((res, e) -> {
                    if (e != null) {
+                       if (e instanceof CompletionException) {
+                           e = e.getCause();
+                       }
                        p.onError(e);
                        return;
                    }

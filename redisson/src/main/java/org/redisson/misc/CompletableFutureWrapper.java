@@ -294,11 +294,13 @@ public class CompletableFutureWrapper<V> implements RFuture<V> {
     @Override
     public boolean await(long timeout, TimeUnit unit) throws InterruptedException {
         try {
-            future.get();
+            future.get(timeout, unit);
         } catch (ExecutionException e) {
             // skip
+        } catch (TimeoutException e) {
+            return false;
         }
-        return future.isDone();
+        return true;
     }
 
     @Override

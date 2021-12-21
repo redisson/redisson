@@ -16,7 +16,10 @@
 package org.redisson;
 
 import java.util.Arrays;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -129,7 +132,11 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
             return true;
         }
         RFuture<RedissonCountDownLatchEntry> promise = subscribe();
-        if (!promise.await(time, unit)) {
+        try {
+            promise.toCompletableFuture().get(time, unit);
+        } catch (ExecutionException | CancellationException e) {
+            // skip
+        } catch (TimeoutException e) {
             return false;
         }
 

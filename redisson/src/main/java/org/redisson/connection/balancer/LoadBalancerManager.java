@@ -72,13 +72,10 @@ public class LoadBalancerManager {
     }
 
     public CompletableFuture<Void> add(ClientConnectionsEntry entry) {
-        List<CompletableFuture<Void>> futures = new ArrayList<>(2);
         CompletableFuture<Void> slaveFuture = slaveConnectionPool.add(entry);
-        futures.add(slaveFuture);
         CompletableFuture<Void> pubSubFuture = pubSubConnectionPool.add(entry);
-        futures.add(pubSubFuture);
 
-        CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        CompletableFuture<Void> future = CompletableFuture.allOf(slaveFuture, pubSubFuture);
         return future.thenAccept(r -> {
             client2Entry.put(entry.getClient(), entry);
         });

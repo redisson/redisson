@@ -15,13 +15,7 @@
  */
 package org.redisson;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.Map.Entry;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-
+import io.netty.buffer.ByteBufUtil;
 import org.redisson.api.RExecutorService;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
@@ -34,7 +28,12 @@ import org.redisson.connection.MasterSlaveEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.buffer.ByteBufUtil;
+import java.io.File;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.Map.Entry;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 
@@ -169,21 +168,34 @@ public final class RedissonNode {
         ConnectionManager connectionManager = ((Redisson) redisson).getConnectionManager();
         for (MasterSlaveEntry entry : connectionManager.getEntrySet()) {
             RFuture<RedisConnection> readFuture = entry.connectionReadOp(null);
-            if (readFuture.awaitUninterruptibly((long) connectionManager.getConfig().getConnectTimeout()) 
-                    && readFuture.isSuccess()) {
-                RedisConnection connection = readFuture.getNow();
-                entry.releaseRead(connection);
-                remoteAddress = (InetSocketAddress) connection.getChannel().remoteAddress();
-                localAddress = (InetSocketAddress) connection.getChannel().localAddress();
+            RedisConnection readConnection = null;
+            try {
+                readConnection = readFuture.toCompletableFuture().get(connectionManager.getConfig().getConnectTimeout(), TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } catch (Exception e) {
+                // skip
+            }
+            if (readConnection != null) {
+                entry.releaseRead(readConnection);
+                remoteAddress = (InetSocketAddress) readConnection.getChannel().remoteAddress();
+                localAddress = (InetSocketAddress) readConnection.getChannel().localAddress();
                 return;
             }
+
             RFuture<RedisConnection> writeFuture = entry.connectionWriteOp(null);
-            if (writeFuture.awaitUninterruptibly((long) connectionManager.getConfig().getConnectTimeout())
-                    && writeFuture.isSuccess()) {
-                RedisConnection connection = writeFuture.getNow();
-                entry.releaseWrite(connection);
-                remoteAddress = (InetSocketAddress) connection.getChannel().remoteAddress();
-                localAddress = (InetSocketAddress) connection.getChannel().localAddress();
+            RedisConnection writeConnection = null;
+            try {
+                writeConnection = writeFuture.toCompletableFuture().get(connectionManager.getConfig().getConnectTimeout(), TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } catch (Exception e) {
+                // skip
+            }
+            if (writeConnection != null) {
+                entry.releaseWrite(writeConnection);
+                remoteAddress = (InetSocketAddress) writeConnection.getChannel().remoteAddress();
+                localAddress = (InetSocketAddress) writeConnection.getChannel().localAddress();
                 return;
             }
         }

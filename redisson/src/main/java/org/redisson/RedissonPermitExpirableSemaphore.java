@@ -17,8 +17,10 @@ package org.redisson;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -433,7 +435,9 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         
         current = System.currentTimeMillis();
         RFuture<RedissonLockEntry> future = subscribe();
-        if (!future.await(time, TimeUnit.MILLISECONDS)) {
+        try {
+            future.toCompletableFuture().get(time, TimeUnit.MILLISECONDS);
+        } catch (ExecutionException | TimeoutException e) {
             return null;
         }
 

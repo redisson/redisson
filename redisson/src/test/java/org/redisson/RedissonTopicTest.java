@@ -1205,7 +1205,11 @@ public class RedissonTopicTest {
                 }
                 
                 for (RFuture<?> rFuture : futures) {
-                    rFuture.awaitUninterruptibly();
+                    try {
+                        rFuture.toCompletableFuture().join();
+                    } catch (Exception e) {
+                        // skip
+                    }
                 }
             };
         };

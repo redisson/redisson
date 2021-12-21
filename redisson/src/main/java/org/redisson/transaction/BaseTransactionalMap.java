@@ -663,9 +663,8 @@ public class BaseTransactionalMap<K, V> {
                 return;
             }
             
-            Set<K> set = future.getNow();
             Map<HashValue, MapEntry> newstate = new HashMap<HashValue, MapEntry>(state);
-            for (Iterator<K> iterator = set.iterator(); iterator.hasNext();) {
+            for (Iterator<K> iterator = res.iterator(); iterator.hasNext();) {
                 K key = iterator.next();
                 MapEntry value = newstate.remove(toKeyHash(key));
                 if (value == MapEntry.NULL) {
@@ -677,10 +676,10 @@ public class BaseTransactionalMap<K, V> {
                 if (entry == MapEntry.NULL) {
                     continue;
                 }
-                set.add((K) entry.getKey());
+                res.add((K) entry.getKey());
             }
             
-            result.trySuccess(set);
+            result.trySuccess(res);
         });
         
         return result;
@@ -777,7 +776,7 @@ public class BaseTransactionalMap<K, V> {
                 return;
             }
             
-            map.putAll(future.getNow());
+            map.putAll(res);
             result.trySuccess(map);
         });
         

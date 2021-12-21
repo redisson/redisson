@@ -572,9 +572,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 }
             });
         } else {
-            res.toCompletableFuture().join();
+            List<Object> r = res.toCompletableFuture().join();
 
-            List<Object> r = res.getNow();
             Long added = (Long) r.get(0);
             Long syncs = (Long) r.get(1);
             if (syncs > 0) {
@@ -803,9 +802,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 }
             });
         } else {
-            res.toCompletableFuture().join();
+            List<Object> r = res.toCompletableFuture().join();
 
-            List<Object> r = res.getNow();
             r.add(syncId);
             waitSync(r);
             result.trySuccess((Long) r.get(0) >= 1);
@@ -1861,8 +1859,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                         });
                     });
                 } else {
-                    future.toCompletableFuture().join();
-                    V oldValue = future.getNow();
+                    V oldValue = future.toCompletableFuture().join();
                     try {
                         cacheWriter.delete(key);
                         if (oldValue != null) {
@@ -2126,9 +2123,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 }
             });
         } else {
-            future.toCompletableFuture().join();
-
-            List<Object> r = future.getNow();
+            List<Object> r = future.toCompletableFuture().join();
 
             long nullsAmount = (long) r.get(1);
             if (nullsAmount == keys.size()) {
@@ -2288,9 +2283,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 }
             });
         } else {
-            future.toCompletableFuture().join();
-
-            List<Object> r = future.getNow();
+            List<Object> r = future.toCompletableFuture().join();
 
             if (r.size() < 2) {
                 result.trySuccess(null);
@@ -3239,8 +3232,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
     private void registerCacheEntryListener(CacheEntryListenerConfiguration<K, V> cacheEntryListenerConfiguration, boolean addToConfig) {
         if (osType == null) {
             RFuture<Map<String, String>> serverFuture = commandExecutor.readAsync((String) null, StringCodec.INSTANCE, RedisCommands.INFO_SERVER);
-            serverFuture.toCompletableFuture().join();
-            String os = serverFuture.getNow().get("os");
+            String os = serverFuture.toCompletableFuture().join().get("os");
             if (os.contains("Windows")) {
                 osType = BaseEventCodec.OSType.WINDOWS;
             } else if (os.contains("NONSTOP")) {

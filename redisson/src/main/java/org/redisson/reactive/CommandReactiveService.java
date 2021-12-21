@@ -16,6 +16,7 @@
 package org.redisson.reactive;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletionException;
 
 import org.redisson.api.RFuture;
 import org.redisson.command.CommandAsyncService;
@@ -54,6 +55,9 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
 
                 future.onComplete((v, e) -> {
                     if (e != null) {
+                        if (e instanceof CompletionException) {
+                            e = e.getCause();
+                        }
                         emitter.error(e);
                         return;
                     }

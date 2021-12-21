@@ -28,6 +28,7 @@ import org.redisson.liveobject.core.RedissonObjectBuilder;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 /**
  *
@@ -40,7 +41,7 @@ public interface CommandAsyncExecutor {
     
     ConnectionManager getConnectionManager();
 
-    <V> RedisException convertException(RFuture<V> future);
+    RedisException convertException(ExecutionException e);
 
     void syncSubscription(RFuture<?> future);
 

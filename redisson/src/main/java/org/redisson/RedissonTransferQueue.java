@@ -37,8 +37,14 @@ import org.redisson.misc.RedissonPromise;
 import org.redisson.remote.RemoteServiceRequest;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+
+
+
 
 /**
  *
@@ -176,8 +182,11 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
         RemotePromise<Void> future = (RemotePromise<Void>) service.invoke(v);
         long remainTime = unit.toMillis(timeout);
         long startTime = System.currentTimeMillis();
-        if (!future.getAddFuture().await(remainTime, TimeUnit.MILLISECONDS)) {
-            if (!future.getAddFuture().cancel(false)) {
+        CompletableFuture<Boolean> addFuture = future.getAddFuture().toCompletableFuture();
+        try {
+            addFuture.get(remainTime, TimeUnit.MILLISECONDS);
+        } catch (ExecutionException | TimeoutException e) {
+            if (!addFuture.cancel(false)) {
                 if (!future.cancel(false)) {
                     commandExecutor.getInterrupted(future);
                     return true;
@@ -187,7 +196,9 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
         }
         remainTime -= System.currentTimeMillis() - startTime;
 
-        if (!future.await(remainTime)) {
+        try {
+            future.toCompletableFuture().get(remainTime, TimeUnit.MILLISECONDS);
+        } catch (ExecutionException | TimeoutException e) {
             if (!future.cancel(false)) {
                 commandExecutor.getInterrupted(future);
                 return true;

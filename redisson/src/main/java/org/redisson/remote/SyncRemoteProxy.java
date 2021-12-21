@@ -20,6 +20,9 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.redisson.RedissonBucket;
 import org.redisson.api.RFuture;
@@ -85,18 +88,20 @@ public class SyncRemoteProxy extends BaseRemoteProxy {
                 
                 RemotePromise<Object> addPromise = new RemotePromise<Object>(requestId);
                 RFuture<Boolean> futureAdd = remoteService.addAsync(requestQueueName, request, addPromise);
-                futureAdd.await();
-                if (!futureAdd.isSuccess()) {
+                Boolean res;
+                try {
+                    res = futureAdd.toCompletableFuture().join();
+                } catch (Exception e) {
                     if (responseFuture != null) {
                         responseFuture.cancel(false);
                     }
                     if (ackFuture != null) {
                         ackFuture.cancel(false);
                     }
-                    throw futureAdd.cause();
+                    throw e.getCause();
                 }
-                
-                if (!futureAdd.get()) {
+
+                if (!res) {
                     if (responseFuture != null) {
                         responseFuture.cancel(false);
                     }
@@ -109,13 +114,20 @@ public class SyncRemoteProxy extends BaseRemoteProxy {
                 // poll for the ack only if expected
                 if (ackFuture != null) {
                     String ackName = remoteService.getAckName(requestId);
-                    ackFuture.await(optionsCopy.getAckTimeoutInMillis());
-                    RemoteServiceAck ack = ackFuture.getNow();
+                    RemoteServiceAck ack = null;
+                    try {
+                        ack = ackFuture.toCompletableFuture().get(optionsCopy.getAckTimeoutInMillis(), TimeUnit.MILLISECONDS);
+                    } catch (ExecutionException | TimeoutException e) {
+                        // skip
+                    }
                     if (ack == null) {
                         RFuture<RemoteServiceAck> ackFutureAttempt = 
                                 tryPollAckAgainAsync(optionsCopy, ackName, requestId);
-                        ackFutureAttempt.await(optionsCopy.getAckTimeoutInMillis());
-                        ack = ackFutureAttempt.getNow();
+                        try {
+                            ack = ackFutureAttempt.toCompletableFuture().get(optionsCopy.getAckTimeoutInMillis(), TimeUnit.MILLISECONDS);
+                        } catch (ExecutionException | TimeoutException e) {
+                            // skip
+                        }
                         if (ack == null) {
                             throw new RemoteServiceAckTimeoutException("No ACK response after "
                                     + optionsCopy.getAckTimeoutInMillis() + "ms for request: " + request);
@@ -126,8 +138,12 @@ public class SyncRemoteProxy extends BaseRemoteProxy {
 
                 // poll for the response only if expected
                 if (responseFuture != null) {
-                    responseFuture.awaitUninterruptibly();
-                    RemoteServiceResponse response = (RemoteServiceResponse) responseFuture.getNow();
+                    RemoteServiceResponse response = null;
+                    try {
+                        response = (RemoteServiceResponse) responseFuture.toCompletableFuture().join();
+                    } catch (Exception e) {
+                        // skip
+                    }
                     if (response == null) {
                         throw new RemoteServiceTimeoutException("No response after "
                                 + optionsCopy.getExecutionTimeoutInMillis() + "ms for request: " + request);

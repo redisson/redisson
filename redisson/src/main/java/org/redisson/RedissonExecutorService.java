@@ -1107,8 +1107,12 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             throw new NullPointerException();
         }
         
-        RExecutorBatchFuture future = submit(tasks.toArray(new Callable[tasks.size()]));
-        future.await();
+        RExecutorBatchFuture future = submit(tasks.toArray(new Callable[0]));
+        try {
+            future.toCompletableFuture().join();
+        } catch (Exception e) {
+            // skip
+        }
         List<?> futures = future.getTaskFutures();
         return (List<Future<T>>) futures;
     }
@@ -1120,8 +1124,12 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             throw new NullPointerException();
         }
         
-        RExecutorBatchFuture future = submit(tasks.toArray(new Callable[tasks.size()]));
-        future.await(timeout, unit);
+        RExecutorBatchFuture future = submit(tasks.toArray(new Callable[0]));
+        try {
+            future.toCompletableFuture().get(timeout, unit);
+        } catch (ExecutionException | TimeoutException | CancellationException e) {
+            // skip
+        }
         List<?> futures = future.getTaskFutures();
         return (List<Future<T>>) futures;
     }

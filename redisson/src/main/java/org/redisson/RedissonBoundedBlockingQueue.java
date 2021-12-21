@@ -136,11 +136,11 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
             }
             
             if (res == null) {
-                result.trySuccess(takeFuture.getNow());
+                result.trySuccess(res);
                 return;
             }
             createSemaphore(null).releaseAsync().onComplete((r, ex) -> {
-                result.trySuccess(takeFuture.getNow());
+                result.trySuccess(res);
             });
         });
         return result;

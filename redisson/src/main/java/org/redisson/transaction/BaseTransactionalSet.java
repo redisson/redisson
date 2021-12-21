@@ -190,9 +190,8 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
                 return;
             }
             
-            Set<V> set = future.getNow();
             Map<HashValue, Object> newstate = new HashMap<>(state);
-            for (Iterator<V> iterator = set.iterator(); iterator.hasNext();) {
+            for (Iterator<V> iterator = res.iterator(); iterator.hasNext();) {
                 V key = iterator.next();
                 Object value = newstate.remove(toHash(key));
                 if (value == NULL) {
@@ -204,10 +203,10 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
                 if (value == NULL) {
                     continue;
                 }
-                set.add((V) value);
+                res.add((V) value);
             }
             
-            result.trySuccess(set);
+            result.trySuccess(res);
         });
 
         return result;

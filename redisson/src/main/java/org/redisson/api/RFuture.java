@@ -65,8 +65,15 @@ public interface RFuture<V> extends java.util.concurrent.Future<V>, CompletionSt
     V join();
     
     /**
-     * Waits for this future to be completed within the
-     * specified time limit.
+     * Use snippet below instead.
+     *
+     * <pre>
+     *                 try {
+     *                     toCompletableFuture().get();
+     *                 } catch (Exception e) {
+     *                     // skip
+     *                 }
+     * </pre>
      *
      * @param timeout - wait timeout
      * @param unit - time unit
@@ -76,11 +83,19 @@ public interface RFuture<V> extends java.util.concurrent.Future<V>, CompletionSt
      * @throws InterruptedException
      *         if the current thread was interrupted
      */
+    @Deprecated
     boolean await(long timeout, TimeUnit unit) throws InterruptedException;
 
     /**
-     * Waits for this future to be completed within the
-     * specified time limit.
+     * Use snippet below instead.
+     *
+     * <pre>
+     *                 try {
+     *                     toCompletableFuture().get();
+     *                 } catch (Exception e) {
+     *                     // skip
+     *                 }
+     * </pre>
      *
      * @param timeoutMillis - timeout value
      * @return {@code true} if and only if the future was completed within
@@ -89,6 +104,7 @@ public interface RFuture<V> extends java.util.concurrent.Future<V>, CompletionSt
      * @throws InterruptedException
      *         if the current thread was interrupted
      */
+    @Deprecated
     boolean await(long timeoutMillis) throws InterruptedException;
     
     /**
@@ -110,44 +126,74 @@ public interface RFuture<V> extends java.util.concurrent.Future<V>, CompletionSt
     RFuture<V> syncUninterruptibly();
 
     /**
-     * Waits for this future to be completed.
+     * Use snippet below instead.
+     *
+     * <pre>
+     *                 try {
+     *                     toCompletableFuture().get();
+     *                 } catch (Exception e) {
+     *                     // skip
+     *                 }
+     * </pre>
      *
      * @throws InterruptedException
      *         if the current thread was interrupted
      * @return Future object
      */
+    @Deprecated
     RFuture<V> await() throws InterruptedException;
 
     /**
-     * Waits for this future to be completed without
-     * interruption.  This method catches an {@link InterruptedException} and
-     * discards it silently.
-     * 
+     * Use snippet below instead.
+     *
+     * <pre>
+     *             try {
+     *                 rFuture.toCompletableFuture().join();
+     *             } catch (Exception e) {
+     *                 // skip
+     *             }
+     * </pre>
+     *
      * @return Future object
      */
+    @Deprecated
     RFuture<V> awaitUninterruptibly();
 
     /**
-     * Waits for this future to be completed within the
-     * specified time limit without interruption.  This method catches an
-     * {@link InterruptedException} and discards it silently.
+     * Use snippet below instead.
+     *
+     * <pre>
+     *                 try {
+     *                     toCompletableFuture().get();
+     *                 } catch (Exception e) {
+     *                     // skip
+     *                 }
+     * </pre>
      *
      * @param timeout - timeout value
      * @param unit - timeout unit value
      * @return {@code true} if and only if the future was completed within
      *         the specified time limit
      */
+    @Deprecated
     boolean awaitUninterruptibly(long timeout, TimeUnit unit);
 
     /**
-     * Waits for this future to be completed within the
-     * specified time limit without interruption.  This method catches an
-     * {@link InterruptedException} and discards it silently.
-     * 
+     * Use snippet below instead.
+     *
+     * <pre>
+     *                 try {
+     *                     toCompletableFuture().get();
+     *                 } catch (Exception e) {
+     *                     // skip
+     *                 }
+     * </pre>
+     *
      * @param timeoutMillis - timeout value
      * @return {@code true} if and only if the future was completed within
      *         the specified time limit
      */
+    @Deprecated
     boolean awaitUninterruptibly(long timeoutMillis);
 
     void onComplete(BiConsumer<? super V, ? super Throwable> action);

@@ -45,8 +45,7 @@ import java.io.IOException;
 import java.security.MessageDigest;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -84,18 +83,17 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     @Override
     public void syncSubscription(RFuture<?> future) {
         MasterSlaveServersConfig config = connectionManager.getConfig();
+        int timeout = config.getTimeout() + config.getRetryInterval() * config.getRetryAttempts();
         try {
-            int timeout = config.getTimeout() + config.getRetryInterval() * config.getRetryAttempts();
-            if (!future.await(timeout)) {
-                ((RPromise<?>) future).tryFailure(new RedisTimeoutException("Subscribe timeout: (" + timeout + "ms). Increase 'subscriptionsPerConnection' and/or 'subscriptionConnectionPoolSize' parameters."));
-            }
+            future.toCompletableFuture().get(timeout, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-        }
-        try {
-            future.toCompletableFuture().join();
-        } catch (CompletionException e) {
+        } catch (CancellationException e) {
+            // skip
+        } catch (ExecutionException e) {
             throw (RuntimeException) e.getCause();
+        } catch (TimeoutException e) {
+            ((RPromise<?>) future).tryFailure(new RedisTimeoutException("Subscribe timeout: (" + timeout + "ms). Increase 'subscriptionsPerConnection' and/or 'subscriptionConnectionPoolSize' parameters."));
         }
     }
 
@@ -103,13 +101,14 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     public void syncSubscriptionInterrupted(RFuture<?> future) throws InterruptedException {
         MasterSlaveServersConfig config = connectionManager.getConfig();
         int timeout = config.getTimeout() + config.getRetryInterval() * config.getRetryAttempts();
-        if (!future.await(timeout)) {
-            ((RPromise<?>) future).tryFailure(new RedisTimeoutException("Subscribe timeout: (" + timeout + "ms). Increase 'subscriptionsPerConnection' and/or 'subscriptionConnectionPoolSize' parameters."));
-        }
         try {
-            future.toCompletableFuture().get();
+            future.toCompletableFuture().get(timeout, TimeUnit.MILLISECONDS);
+        } catch (CancellationException e) {
+            // skip
         } catch (ExecutionException e) {
             throw (RuntimeException) e.getCause();
+        } catch (TimeoutException e) {
+            ((RPromise<?>) future).tryFailure(new RedisTimeoutException("Subscribe timeout: (" + timeout + "ms). Increase 'subscriptionsPerConnection' and/or 'subscriptionConnectionPoolSize' parameters."));
         }
     }
 
@@ -120,33 +119,26 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }
 
         try {
-            future.await();
+            return future.toCompletableFuture().get();
         } catch (InterruptedException e) {
             future.cancel(true);
             Thread.currentThread().interrupt();
             throw new RedisException(e);
+        } catch (ExecutionException e) {
+            throw convertException(e);
         }
-        if (future.isSuccess()) {
-            return future.getNow();
-        }
-
-        throw convertException(future);
     }
     
     @Override
     public <V> V getInterrupted(RFuture<V> future) throws InterruptedException {
         try {
-            future.await();
+            return future.toCompletableFuture().get();
         } catch (InterruptedException e) {
             ((RPromise) future).tryFailure(e);
             throw e;
+        } catch (ExecutionException e) {
+            throw convertException(e);
         }
-
-        if (future.isSuccess()) {
-            return future.getNow();
-        }
-
-        throw convertException(future);
     }
 
     protected <R> RPromise<R> createPromise() {
@@ -329,11 +321,11 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return mainPromise;
     }
 
-    public <V> RedisException convertException(RFuture<V> future) {
-        if (future.cause() instanceof RedisException) {
-            return (RedisException) future.cause();
+    public RedisException convertException(ExecutionException e) {
+        if (e.getCause() instanceof RedisException) {
+            return (RedisException) e.getCause();
         }
-        return new RedisException("Unexpected exception while processing command", future.cause());
+        return new RedisException("Unexpected exception while processing command", e.getCause());
     }
 
     private NodeSource getNodeSource(String key) {

@@ -29,7 +29,9 @@ import org.redisson.pubsub.LockPubSub;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -234,10 +236,12 @@ public class RedissonLock extends RedissonBaseLock {
         
         current = System.currentTimeMillis();
         RFuture<RedissonLockEntry> subscribeFuture = subscribe(threadId);
-        if (!subscribeFuture.await(time, TimeUnit.MILLISECONDS)) {
+        try {
+            subscribeFuture.toCompletableFuture().get(time, TimeUnit.MILLISECONDS);
+        } catch (ExecutionException | TimeoutException e) {
             if (!subscribeFuture.cancel(false)) {
-                subscribeFuture.onComplete((res, e) -> {
-                    if (e == null) {
+                subscribeFuture.onComplete((res, ex) -> {
+                    if (ex == null) {
                         unsubscribe(subscribeFuture, threadId);
                     }
                 });

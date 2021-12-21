@@ -311,7 +311,13 @@ public class RedissonMultiLock implements RLock {
     protected void unlockInner(Collection<RLock> locks) {
         locks.stream()
                 .map(RLockAsync::unlockAsync)
-                .forEach(RFuture::awaitUninterruptibly);
+                .forEach(f -> {
+                    try {
+                        f.toCompletableFuture().join();
+                    } catch (Exception e) {
+                        // skip
+                    }
+                });
     }
     
     protected RFuture<Void> unlockInnerAsync(Collection<RLock> locks, long threadId) {

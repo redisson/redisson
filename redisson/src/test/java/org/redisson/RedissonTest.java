@@ -420,7 +420,11 @@ public class RedissonTest extends BaseTest {
         int readonlyErrors = 0;
         
         for (RFuture<?> rFuture : futures) {
-            rFuture.awaitUninterruptibly();
+            try {
+                rFuture.toCompletableFuture().join();
+            } catch (Exception e) {
+                // skip
+            }
             if (!rFuture.isSuccess()) {
                 if (rFuture.cause().getMessage().contains("READONLY You can't write against")) {
                     readonlyErrors++;
@@ -549,7 +553,11 @@ public class RedissonTest extends BaseTest {
         assertThat(newMaster).isNotNull();
 
         for (RFuture<?> rFuture : futures) {
-            rFuture.awaitUninterruptibly();
+            try {
+                rFuture.toCompletableFuture().join();
+            } catch (Exception e) {
+                // skip
+            }
             if (!rFuture.isSuccess()) {
                 Assertions.fail();
             }
@@ -649,7 +657,11 @@ public class RedissonTest extends BaseTest {
         int readonlyErrors = 0;
         
         for (RFuture<?> rFuture : futures) {
-            rFuture.awaitUninterruptibly();
+            try {
+                rFuture.toCompletableFuture().join();
+            } catch (Exception e) {
+                // skip
+            }
             if (!rFuture.isSuccess()) {
                 errors++;
             } else {
@@ -723,7 +735,11 @@ public class RedissonTest extends BaseTest {
         int readonlyErrors = 0;
 
         for (RFuture<?> rFuture : futures) {
-            rFuture.awaitUninterruptibly();
+            try {
+                rFuture.toCompletableFuture().join();
+            } catch (Exception e) {
+                // skip
+            }
             if (!rFuture.isSuccess()) {
                 rFuture.cause().printStackTrace();
                 errors++;

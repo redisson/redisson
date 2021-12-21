@@ -267,62 +267,62 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         long threadFourthWaiter = 105;
 
         // take the lock successfully
-        Long ttl = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadInit, RedisCommands.EVAL_LONG).await().get();
+        Long ttl = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadInit, RedisCommands.EVAL_LONG).toCompletableFuture().join();;
         Assertions.assertNull(ttl);
 
         // fail to get the lock, but end up in the thread queue w/ ttl + 5s timeout
-        Long firstTTL = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadFirstWaiter, RedisCommands.EVAL_LONG).await().get();
+        Long firstTTL = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadFirstWaiter, RedisCommands.EVAL_LONG).toCompletableFuture().join();;
         Assertions.assertNotNull(firstTTL);
         Assertions.assertTrue(firstTTL >= 29900 && firstTTL <= 30100, "Expected 30000 +/- 100 but was " + firstTTL);
 
         // fail to get the lock again, but end up in the thread queue w/ ttl + 10s timeout
-        Long secondTTL = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadSecondWaiter, RedisCommands.EVAL_LONG).await().get();
+        Long secondTTL = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadSecondWaiter, RedisCommands.EVAL_LONG).toCompletableFuture().join();;
         Assertions.assertNotNull(secondTTL);
         Assertions.assertTrue(secondTTL >= 34900 && secondTTL <= 35100, "Expected 35000 +/- 100 but was " + secondTTL);
 
         // try the third, and check the TTL
-        Long thirdTTL = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadThirdWaiter, RedisCommands.EVAL_LONG).await().get();
+        Long thirdTTL = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadThirdWaiter, RedisCommands.EVAL_LONG).toCompletableFuture().join();;
         Assertions.assertNotNull(thirdTTL);
         Assertions.assertTrue(thirdTTL >= 39900 && thirdTTL <= 40100, "Expected 40000 +/- 100 but was " + thirdTTL);
 
         // try the fourth, and check the TTL
-        Long fourthTTL = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadFourthWaiter, RedisCommands.EVAL_LONG).await().get();
+        Long fourthTTL = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadFourthWaiter, RedisCommands.EVAL_LONG).toCompletableFuture().join();;
         Assertions.assertNotNull(fourthTTL);
         Assertions.assertTrue(fourthTTL >= 44900 && fourthTTL <= 45100, "Expected 45000 +/- 100 but was " + fourthTTL);
 
         // wait timeout the second waiter
-        lock.acquireFailedAsync(5000, TimeUnit.MILLISECONDS, threadSecondWaiter).await().get();
+        lock.acquireFailedAsync(5000, TimeUnit.MILLISECONDS, threadSecondWaiter).toCompletableFuture().join();;
 
         // try the first, and check the TTL
-        firstTTL = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadFirstWaiter, RedisCommands.EVAL_LONG).await().get();
+        firstTTL = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadFirstWaiter, RedisCommands.EVAL_LONG).toCompletableFuture().join();;
         Assertions.assertNotNull(firstTTL);
         Assertions.assertTrue(firstTTL >= 29900 && firstTTL <= 30100, "Expected 30000 +/- 100 but was " + firstTTL);
 
         // try the third, and check the TTL
-        thirdTTL = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadThirdWaiter, RedisCommands.EVAL_LONG).await().get();
+        thirdTTL = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadThirdWaiter, RedisCommands.EVAL_LONG).toCompletableFuture().join();;
         Assertions.assertNotNull(thirdTTL);
         Assertions.assertTrue(thirdTTL >= 34700 && thirdTTL <= 35300, "Expected 35000 +/- 300 but was " + thirdTTL);
 
         // try the fourth, and check the TTL
-        fourthTTL = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadFourthWaiter, RedisCommands.EVAL_LONG).await().get();
+        fourthTTL = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadFourthWaiter, RedisCommands.EVAL_LONG).toCompletableFuture().join();;
         Assertions.assertNotNull(fourthTTL);
         Assertions.assertTrue(fourthTTL >= 39900 && fourthTTL <= 40100, "Expected 40000 +/- 100 but was " + fourthTTL);
 
         // unlock the original lock holder
-        Boolean unlocked = lock.unlockInnerAsync(threadInit).await().getNow();
+        Boolean unlocked = lock.unlockInnerAsync(threadInit).toCompletableFuture().join();;
         Assertions.assertNotNull(unlocked);
         Assertions.assertTrue(unlocked);
 
         // acquire the lock immediately with the 1nd
-        ttl = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadFirstWaiter, RedisCommands.EVAL_LONG).await().get();
+        ttl = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadFirstWaiter, RedisCommands.EVAL_LONG).toCompletableFuture().join();;
         Assertions.assertNull(ttl);
 
         // try the third, and check the TTL
-        thirdTTL = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadThirdWaiter, RedisCommands.EVAL_LONG).await().get();
+        thirdTTL = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadThirdWaiter, RedisCommands.EVAL_LONG).toCompletableFuture().join();;
         Assertions.assertNotNull(thirdTTL);
         Assertions.assertTrue(thirdTTL >= 29700 && thirdTTL <= 30300, "Expected 30000 +/- 300 but was " + thirdTTL);
 
-        fourthTTL = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadFourthWaiter, RedisCommands.EVAL_LONG).await().get();
+        fourthTTL = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadFourthWaiter, RedisCommands.EVAL_LONG).toCompletableFuture().join();;
         Assertions.assertNotNull(fourthTTL);
         Assertions.assertTrue(fourthTTL >= 34900 && fourthTTL <= 35100, "Expected 35000 +/- 100 but was " + fourthTTL);
     }
@@ -348,40 +348,40 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         long threadThirdWaiter = 104;
 
         // take the lock successfully
-        Boolean locked = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadInit, RedisCommands.EVAL_NULL_BOOLEAN).await().get();
+        Boolean locked = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadInit, RedisCommands.EVAL_NULL_BOOLEAN).toCompletableFuture().join();;
         Assertions.assertTrue(locked);
 
         // fail to get the lock, but end up in the thread queue w/ ttl + 100ms timeout
-        locked = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadFirstWaiter, RedisCommands.EVAL_NULL_BOOLEAN).await().get();
+        locked = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadFirstWaiter, RedisCommands.EVAL_NULL_BOOLEAN).toCompletableFuture().join();;
         Assertions.assertFalse(locked);
 
         // fail to get the lock again, but end up in the thread queue w/ ttl + 200ms timeout
-        locked = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadSecondWaiter, RedisCommands.EVAL_NULL_BOOLEAN).await().get();
+        locked = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadSecondWaiter, RedisCommands.EVAL_NULL_BOOLEAN).toCompletableFuture().join();;
         Assertions.assertFalse(locked);
 
         // unlock the original lock holder
-        Boolean unlocked = lock.unlockInnerAsync(threadInit).await().getNow();
+        Boolean unlocked = lock.unlockInnerAsync(threadInit).toCompletableFuture().join();;
         Assertions.assertTrue(unlocked);
 
         // get the lock
-        locked = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadFirstWaiter, RedisCommands.EVAL_NULL_BOOLEAN).await().get();
+        locked = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadFirstWaiter, RedisCommands.EVAL_NULL_BOOLEAN).toCompletableFuture().join();;
         Assertions.assertTrue(locked);
 
         // fail to get the lock, keeping ttl of lock ttl + 200ms
-        locked = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadThirdWaiter, RedisCommands.EVAL_NULL_BOOLEAN).await().get();
+        locked = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadThirdWaiter, RedisCommands.EVAL_NULL_BOOLEAN).toCompletableFuture().join();;
         Assertions.assertFalse(locked);
 
         // fail to get the lock, keeping ttl of lock ttl + 100ms
-        locked = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadSecondWaiter, RedisCommands.EVAL_NULL_BOOLEAN).await().get();
+        locked = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadSecondWaiter, RedisCommands.EVAL_NULL_BOOLEAN).toCompletableFuture().join();;
         Assertions.assertFalse(locked);
 
         // fail to get the lock, keeping ttl of lock ttl + 200ms
-        locked = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadThirdWaiter, RedisCommands.EVAL_NULL_BOOLEAN).await().get();
+        locked = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadThirdWaiter, RedisCommands.EVAL_NULL_BOOLEAN).toCompletableFuture().join();;
         Assertions.assertFalse(locked);
         
         Thread.sleep(500);
 
-        locked = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadThirdWaiter, RedisCommands.EVAL_NULL_BOOLEAN).await().get();
+        locked = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadThirdWaiter, RedisCommands.EVAL_NULL_BOOLEAN).toCompletableFuture().join();;
         Assertions.assertTrue(locked);
     }
 
@@ -405,36 +405,36 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         long threadThirdWaiter = 104;
 
         // take the lock successfully
-        Long ttl = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadInit, RedisCommands.EVAL_LONG).await().get();
+        Long ttl = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadInit, RedisCommands.EVAL_LONG).toCompletableFuture().join();;
         Assertions.assertNull(ttl);
 
         // fail to get the lock, but end up in the thread queue w/ ttl + 5s timeout
-        Long firstTTL = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadFirstWaiter, RedisCommands.EVAL_LONG).await().get();
+        Long firstTTL = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadFirstWaiter, RedisCommands.EVAL_LONG).toCompletableFuture().join();;
         Assertions.assertNotNull(firstTTL);
 
         // fail to get the lock again, but end up in the thread queue w/ ttl + 10s timeout
-        Long secondTTL = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadSecondWaiter, RedisCommands.EVAL_LONG).await().get();
+        Long secondTTL = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadSecondWaiter, RedisCommands.EVAL_LONG).toCompletableFuture().join();;
         Assertions.assertNotNull(secondTTL);
 
         // unlock the original lock holder
-        Boolean unlocked = lock.unlockInnerAsync(threadInit).await().getNow();
+        Boolean unlocked = lock.unlockInnerAsync(threadInit).toCompletableFuture().join();;
         Assertions.assertNotNull(unlocked);
         Assertions.assertTrue(unlocked);
 
-        ttl = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadFirstWaiter, RedisCommands.EVAL_LONG).await().get();
+        ttl = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadFirstWaiter, RedisCommands.EVAL_LONG).toCompletableFuture().join();;
         Assertions.assertNull(ttl);
 
-        Long thirdTTL = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadThirdWaiter, RedisCommands.EVAL_LONG).await().get();
+        Long thirdTTL = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadThirdWaiter, RedisCommands.EVAL_LONG).toCompletableFuture().join();;
         Assertions.assertNotNull(thirdTTL);
 
-        Long secondTTLAgain = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadSecondWaiter, RedisCommands.EVAL_LONG).await().get();
+        Long secondTTLAgain = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadSecondWaiter, RedisCommands.EVAL_LONG).toCompletableFuture().join();;
         Assertions.assertNotNull(secondTTLAgain);
         long diff = secondTTL - secondTTLAgain;
         Assertions.assertTrue(diff > 4900 && diff < 5100, "Expected 5000 +/- 100 but was " + diff);
         diff = thirdTTL - secondTTLAgain;
         Assertions.assertTrue(diff > 4900 && diff < 5100, "Expected 5000 +/- 100 but was " + diff);
 
-        thirdTTL = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadThirdWaiter, RedisCommands.EVAL_LONG).await().get();
+        thirdTTL = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadThirdWaiter, RedisCommands.EVAL_LONG).toCompletableFuture().join();;
         Assertions.assertNotNull(thirdTTL);
         diff = thirdTTL - secondTTLAgain;
         Assertions.assertTrue(diff > 4900 && diff < 5100, "Expected 5000 +/- 100 but was " + diff);
@@ -462,18 +462,18 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         long threadThirdWaiter = 104;
 
         // take the lock successfully
-        Long ttl = lock.tryLockInnerAsync(-1, leaseTime, TimeUnit.MILLISECONDS, threadInit, RedisCommands.EVAL_LONG).await().get();
+        Long ttl = lock.tryLockInnerAsync(-1, leaseTime, TimeUnit.MILLISECONDS, threadInit, RedisCommands.EVAL_LONG).toCompletableFuture().join();;
         Assertions.assertNull(ttl);
 
         // fail to get the lock, but end up in the thread queue w/ ttl + 5s timeout
-        Long firstTTL = lock.tryLockInnerAsync(-1, leaseTime, TimeUnit.MILLISECONDS, threadFirstWaiter, RedisCommands.EVAL_LONG).await().get();
+        Long firstTTL = lock.tryLockInnerAsync(-1, leaseTime, TimeUnit.MILLISECONDS, threadFirstWaiter, RedisCommands.EVAL_LONG).toCompletableFuture().join();;
         Assertions.assertNotNull(firstTTL);
 
         // fail to get the lock again, but end up in the thread queue w/ ttl + 10s timeout
-        Long secondTTL = lock.tryLockInnerAsync(-1, leaseTime, TimeUnit.MILLISECONDS, threadSecondWaiter, RedisCommands.EVAL_LONG).await().get();
+        Long secondTTL = lock.tryLockInnerAsync(-1, leaseTime, TimeUnit.MILLISECONDS, threadSecondWaiter, RedisCommands.EVAL_LONG).toCompletableFuture().join();;
         Assertions.assertNotNull(secondTTL);
 
-        Long thirdTTL = lock.tryLockInnerAsync(-1, leaseTime, TimeUnit.MILLISECONDS, threadThirdWaiter, RedisCommands.EVAL_LONG).await().get();
+        Long thirdTTL = lock.tryLockInnerAsync(-1, leaseTime, TimeUnit.MILLISECONDS, threadThirdWaiter, RedisCommands.EVAL_LONG).toCompletableFuture().join();;
         Assertions.assertNotNull(thirdTTL);
 
         long diff = thirdTTL - firstTTL;
@@ -481,7 +481,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
 
         Thread.sleep(thirdTTL + threadWaitTime);
 
-        ttl = lock.tryLockInnerAsync(-1, leaseTime, TimeUnit.MILLISECONDS, threadThirdWaiter, RedisCommands.EVAL_LONG).await().get();
+        ttl = lock.tryLockInnerAsync(-1, leaseTime, TimeUnit.MILLISECONDS, threadThirdWaiter, RedisCommands.EVAL_LONG).toCompletableFuture().join();;
         Assertions.assertNull(ttl);
     }
 

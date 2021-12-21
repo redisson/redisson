@@ -183,15 +183,14 @@ public class RedissonTransaction implements RTransaction {
         }
 
         String id = generateId();
-        RPromise<Void> result = new RedissonPromise<Void>();
-        RFuture<Map<HashKey, HashValue>> future = disableLocalCacheAsync(id, localCaches, operations);
-        future.onComplete((res, ex) -> {
+        RPromise<Void> result = new RedissonPromise<>();
+        CompletableFuture<Map<HashKey, HashValue>> future = disableLocalCacheAsync(id, localCaches, operations);
+        future.whenComplete((hashes, ex) -> {
             if (ex != null) {
                 result.tryFailure(new TransactionException("Unable to execute transaction", ex));
                 return;
             }
             
-            Map<HashKey, HashValue> hashes = future.getNow();
             try {
                 checkTimeout();
             } catch (TransactionTimeoutException e) {
@@ -404,12 +403,12 @@ public class RedissonTransaction implements RTransaction {
         return hashes;
     }
     
-    private RFuture<Map<HashKey, HashValue>> disableLocalCacheAsync(String requestId, Set<String> localCaches, List<TransactionalOperation> operations) {
+    private CompletableFuture<Map<HashKey, HashValue>> disableLocalCacheAsync(String requestId, Set<String> localCaches, List<TransactionalOperation> operations) {
         if (localCaches.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(Collections.emptyMap());
+            return CompletableFuture.completedFuture(Collections.emptyMap());
         }
         
-        RPromise<Map<HashKey, HashValue>> result = new RedissonPromise<>();
+        CompletableFuture<Map<HashKey, HashValue>> result = new CompletableFuture<>();
         Map<HashKey, HashValue> hashes = new HashMap<>(localCaches.size());
         RedissonBatch batch = createBatch();
         for (TransactionalOperation transactionalOperation : operations) {
@@ -437,13 +436,13 @@ public class RedissonTransaction implements RTransaction {
         RFuture<BatchResult<?>> batchListener = batch.executeAsync();
         batchListener.onComplete((res, e) -> {
                 if (e != null) {
-                    result.tryFailure(e);
+                    result.completeExceptionally(e);
                     return;
                 }
 
                 AsyncCountDownLatch latch = new AsyncCountDownLatch();
                 latch.latch(() -> {
-                    result.trySuccess(hashes);
+                    result.complete(hashes);
                 }, hashes.size());
 
                 List<CompletableFuture<?>> subscriptionFutures = new ArrayList<>();
@@ -489,21 +488,21 @@ public class RedissonTransaction implements RTransaction {
                         
                         RFuture<BatchResult<?>> publishFuture = publishBatch.executeAsync();
                         publishFuture.onComplete((res2, ex2) -> {
-                            result.onComplete((res3, ex3) -> {
+                            result.whenComplete((res3, ex3) -> {
                                 for (RTopic topic : topics) {
                                     topic.removeAllListeners();
                                 }
                             });
                             
                             if (ex2 != null) {
-                                result.tryFailure(ex2);
+                                result.completeExceptionally(ex2);
                                 return;
                             }
                             
                             commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
                                 @Override
                                 public void run(Timeout timeout) throws Exception {
-                                    result.tryFailure(new TransactionTimeoutException("Unable to execute transaction within " + options.getResponseTimeout() + "ms"));
+                                    result.completeExceptionally(new TransactionTimeoutException("Unable to execute transaction within " + options.getResponseTimeout() + "ms"));
                                 }
                             }, options.getResponseTimeout(), TimeUnit.MILLISECONDS);
                         });
