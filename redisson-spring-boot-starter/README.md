@@ -32,7 +32,7 @@ Downgrade `redisson-spring-data` module if necessary to support required Spring 
 |redisson-spring-data-16     |1.3.x              |
 |redisson-spring-data-17     |1.4.x              |
 |redisson-spring-data-18     |1.5.x              |
-|redisson-spring-data-2x     |2.x.x              |
+|redisson-spring-data-2x     |2.x.z              |
 
 ### 2. Add settings into `application.settings` file
 
