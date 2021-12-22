@@ -148,10 +148,10 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
     @Override
     public ClusterInfo clusterGetClusterInfo() {
         RFuture<Map<String, String>> f = executorService.readAsync((String)null, StringCodec.INSTANCE, RedisCommands.CLUSTER_INFO);
-        syncFuture(f);
+        Map<String, String> entries = syncFuture(f);
 
         Properties props = new Properties();
-        for (Entry<String, String> entry : f.getNow().entrySet()) {
+        for (Entry<String, String> entry : entries.entrySet()) {
             props.setProperty(entry.getKey(), entry.getValue());
         }
         return new ClusterInfo(props);
