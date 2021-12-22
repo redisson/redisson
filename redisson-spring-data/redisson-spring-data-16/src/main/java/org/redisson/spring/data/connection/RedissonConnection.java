@@ -1786,7 +1786,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         params.add(script);
         params.add(numKeys);
         params.addAll(Arrays.asList(keysAndArgs));
-        return write(null, StringCodec.INSTANCE, c, params.toArray());
+        return write(null, ByteArrayCodec.INSTANCE, c, params.toArray());
     }
 
     protected RedisCommand<?> toCommand(ReturnType returnType, String name) {
