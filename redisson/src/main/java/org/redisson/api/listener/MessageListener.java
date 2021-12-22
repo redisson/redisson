@@ -26,6 +26,7 @@ import java.util.EventListener;
  *
  * @see org.redisson.api.RTopic
  */
+@FunctionalInterface
 public interface MessageListener<M> extends EventListener {
 
     /**
