@@ -171,5 +171,11 @@ public interface RLockAsync {
      *          -1 if the lock exists but has no associated expire.
      */
     RFuture<Long> remainTimeToLiveAsync();
-    
+
+    /**
+     * Current lock information
+     *
+     * @return information about current lock (owner, ttl)
+     */
+    RFuture<LockInfo> getLockInfoAsync();
 }
