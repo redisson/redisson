@@ -41,13 +41,13 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.*;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.misc.LogHelper;
-import org.redisson.misc.RPromise;
 import org.redisson.misc.RedisURI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Redis protocol command decoder
@@ -211,7 +211,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             } catch (Exception e) {
                 in.readerIndex(endIndex);
                 sendNext(channel);
-                commands.getPromise().tryFailure(e);
+                commands.getPromise().completeExceptionally(e);
                 throw e;
             }
         } else {
@@ -267,13 +267,13 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                         }
                     }
                 }
-                
+
                 decode(in, commandData, null, channel, skipConvertor, commandsData);
                 
                 if (commandData != null
                         && RedisCommands.EXEC.getName().equals(commandData.getCommand().getName())
-                            && commandData.getPromise().isSuccess()) {
-                    List<Object> objects = (List<Object>) commandData.getPromise().getNow();
+                            && (commandData.getPromise().isDone() && !commandData.getPromise().isCompletedExceptionally())) {
+                    List<Object> objects = (List<Object>) commandData.getPromise().getNow(null);
                     Iterator<Object> iter = objects.iterator();
                     boolean multiFound = false; 
                     for (CommandData<?, ?> command : commandBatch.getCommands()) {
@@ -311,11 +311,11 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         }
 
         if (commandBatch.isSkipResult() || i == commandBatch.getCommands().size()) {
-            RPromise<Void> promise = commandBatch.getPromise();
+            CompletableFuture<Void> promise = commandBatch.getPromise();
             if (error != null) {
-                promise.tryFailure(error);
+                promise.completeExceptionally(error);
             } else {
-                promise.trySuccess(null);
+                promise.complete(null);
             }
             
             sendNext(channel);
@@ -418,7 +418,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 }
                 CommandData<Object, Object> commandData = (CommandData<Object, Object>) commandsData.get(i+suffix);
                 decode(in, commandData, respParts, channel, skipConvertor, commandsData);
-                if (commandData.getPromise().isDone() && !commandData.getPromise().isSuccess()) {
+                if (commandData.getPromise().isDone() && commandData.getPromise().isCompletedExceptionally()) {
                     data.tryFailure(commandData.cause());
                 }
             }
@@ -457,7 +457,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
     protected void completeResponse(CommandData<Object, Object> data, Object result) {
         if (data != null) {
-            data.getPromise().trySuccess(result);
+            data.getPromise().complete(result);
         }
     }
 

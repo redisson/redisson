@@ -16,16 +16,13 @@
 package org.redisson.pubsub;
 
 import org.redisson.PubSubEntry;
-import org.redisson.api.RFuture;
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.ChannelName;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.pubsub.PubSubType;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
-import org.redisson.misc.TransferListener;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -64,21 +61,21 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
 
     }
 
-    public RFuture<E> subscribe(String entryName, String channelName) {
+    public CompletableFuture<E> subscribe(String entryName, String channelName) {
         AsyncSemaphore semaphore = service.getSemaphore(new ChannelName(channelName));
-        RPromise<E> newPromise = new RedissonPromise<>();
+        CompletableFuture<E> newPromise = new CompletableFuture<>();
         semaphore.acquire(() -> {
-            if (!newPromise.setUncancellable()) {
-                semaphore.release();
-                return;
-            }
-
             E entry = entries.get(entryName);
             if (entry != null) {
                 entry.acquire();
                 semaphore.release();
-                entry.getPromise().onComplete(new TransferListener<E>(newPromise));
-                return;
+                entry.getPromise().whenComplete((r, e) -> {
+                    if (e != null) {
+                        newPromise.completeExceptionally(e);
+                        return;
+                    }
+                    newPromise.complete(r);
+                });
             }
 
             E value = createEntry(newPromise);
@@ -88,7 +85,13 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
             if (oldValue != null) {
                 oldValue.acquire();
                 semaphore.release();
-                oldValue.getPromise().onComplete(new TransferListener<E>(newPromise));
+                oldValue.getPromise().whenComplete((r, e) -> {
+                    if (e != null) {
+                        newPromise.completeExceptionally(e);
+                        return;
+                    }
+                    newPromise.complete(r);
+                });
                 return;
             }
 
@@ -99,7 +102,7 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
         return newPromise;
     }
 
-    protected abstract E createEntry(RPromise<E> newPromise);
+    protected abstract E createEntry(CompletableFuture<E> newPromise);
 
     protected abstract void onMessage(E value, Long message);
 
@@ -122,7 +125,7 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
                 }
 
                 if (type == PubSubType.SUBSCRIBE) {
-                    value.getPromise().trySuccess(value);
+                    value.getPromise().complete(value);
                     return true;
                 }
                 return false;

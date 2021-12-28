@@ -16,7 +16,6 @@
 package org.redisson.connection.balancer;
 
 import org.redisson.api.NodeType;
-import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
@@ -31,7 +30,6 @@ import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.pool.PubSubConnectionPool;
 import org.redisson.connection.pool.SlaveConnectionPool;
 import org.redisson.misc.RedisURI;
-import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -191,7 +189,7 @@ public class LoadBalancerManager {
         return connectionEntry;
     }
 
-    public RFuture<RedisPubSubConnection> nextPubSubConnection() {
+    public CompletableFuture<RedisPubSubConnection> nextPubSubConnection() {
         return pubSubConnectionPool.get();
     }
 
@@ -236,25 +234,29 @@ public class LoadBalancerManager {
         return client2Entry.get(redisClient);
     }
 
-    public RFuture<RedisConnection> getConnection(RedisCommand<?> command, RedisURI addr) {
+    public CompletableFuture<RedisConnection> getConnection(RedisCommand<?> command, RedisURI addr) {
         ClientConnectionsEntry entry = getEntry(addr);
         if (entry != null) {
             return slaveConnectionPool.get(command, entry);
         }
         RedisConnectionException exception = new RedisConnectionException("Can't find entry for " + addr);
-        return RedissonPromise.newFailedFuture(exception);
+        CompletableFuture<RedisConnection> f = new CompletableFuture<>();
+        f.completeExceptionally(exception);
+        return f;
     }
     
-    public RFuture<RedisConnection> getConnection(RedisCommand<?> command, RedisClient client) {
+    public CompletableFuture<RedisConnection> getConnection(RedisCommand<?> command, RedisClient client) {
         ClientConnectionsEntry entry = getEntry(client);
         if (entry != null) {
             return slaveConnectionPool.get(command, entry);
         }
         RedisConnectionException exception = new RedisConnectionException("Can't find entry for " + client);
-        return RedissonPromise.newFailedFuture(exception);
+        CompletableFuture<RedisConnection> f = new CompletableFuture<>();
+        f.completeExceptionally(exception);
+        return f;
     }
 
-    public RFuture<RedisConnection> nextConnection(RedisCommand<?> command) {
+    public CompletableFuture<RedisConnection> nextConnection(RedisCommand<?> command) {
         return slaveConnectionPool.get(command);
     }
 

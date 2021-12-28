@@ -137,7 +137,7 @@ public class RedisClientTest {
         CommandData<String, String> cmd4 = conn.create(null, RedisCommands.PING);
         commands.add(cmd4);
 
-        RPromise<Void> p = new RedissonPromise<Void>();
+        CompletableFuture<Void> p = new CompletableFuture<Void>();
         conn.send(new CommandsData(p, commands, false, false));
 
         assertThat(cmd1.getPromise().get()).isEqualTo("PONG");
@@ -172,7 +172,7 @@ public class RedisClientTest {
             commands.add(cmd1);
         }
 
-        RPromise<Void> p = new RedissonPromise<Void>();
+        CompletableFuture<Void> p = new CompletableFuture<Void>();
         conn.send(new CommandsData(p, commands, false, false));
 
         for (CommandData<?, ?> commandData : commands) {

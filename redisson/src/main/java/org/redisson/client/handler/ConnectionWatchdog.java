@@ -135,7 +135,7 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
                                     connection.getRedisClient().getAddr(), channel.localAddress(), channel.remoteAddress());
                         } else {
                             RedisConnection c = RedisConnection.getFrom(channel);
-                            c.getConnectionPromise().onComplete((res, e) -> {
+                            c.getConnectionPromise().whenComplete((res, e) -> {
                                 if (e == null) {
                                     if (connection.getRedisClient().isShutdown()
                                             || connection.isClosed()) {

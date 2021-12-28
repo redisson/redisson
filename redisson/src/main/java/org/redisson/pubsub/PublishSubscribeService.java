@@ -32,12 +32,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -140,7 +138,7 @@ public class PublishSubscribeService {
         return name2PubSubConnection.get(createKey(channelName));
     }
 
-    public RFuture<Collection<PubSubConnectionEntry>> psubscribe(ChannelName channelName, Codec codec, RedisPubSubListener<?>... listeners) {
+    public CompletableFuture<Collection<PubSubConnectionEntry>> psubscribe(ChannelName channelName, Codec codec, RedisPubSubListener<?>... listeners) {
         if (isMultiEntity(channelName)) {
             Collection<MasterSlaveEntry> entrySet = connectionManager.getEntrySet();
 
@@ -160,36 +158,19 @@ public class PublishSubscribeService {
                 return l;
             }).toArray(RedisPubSubListener[]::new);
 
-            RPromise<Collection<PubSubConnectionEntry>> result = new RedissonPromise<>();
-            Collection<PubSubConnectionEntry> entries = new ConcurrentLinkedQueue<>();
-            AtomicInteger counter = new AtomicInteger(entrySet.size());
+            List<CompletableFuture<PubSubConnectionEntry>> futures = new ArrayList<>();
             for (MasterSlaveEntry entry : entrySet) {
-                RFuture<PubSubConnectionEntry> future = subscribe(PubSubType.PSUBSCRIBE, codec, channelName, entry, ls);
-                future.onComplete((res, e) -> {
-                    if (e != null) {
-                        result.tryFailure(e);
-                        return;
-                    }
-                    entries.add(res);
-                    if (counter.decrementAndGet() == 0) {
-                        result.trySuccess(entries);
-                    }
-                });
+                CompletableFuture<PubSubConnectionEntry> future = subscribe(PubSubType.PSUBSCRIBE, codec, channelName, entry, ls);
+                futures.add(future);
             }
-            return result;
+            CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+            return future.thenApply(r -> {
+                return futures.stream().map(v -> v.getNow(null)).collect(Collectors.toList());
+            });
         }
 
-        RPromise<Collection<PubSubConnectionEntry>> result = new RedissonPromise<>();
-        RFuture<PubSubConnectionEntry> f = subscribe(PubSubType.PSUBSCRIBE, codec, channelName, getEntry(channelName), listeners);
-        f.onComplete((res, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
-            }
-
-            result.trySuccess(Collections.singletonList(res));
-        });
-        return result;
+        CompletableFuture<PubSubConnectionEntry> f = subscribe(PubSubType.PSUBSCRIBE, codec, channelName, getEntry(channelName), listeners);
+        return f.thenApply(res -> Collections.singletonList(res));
     }
 
     private boolean isMultiEntity(ChannelName channelName) {
@@ -198,12 +179,12 @@ public class PublishSubscribeService {
                 || channelName.toString().startsWith("__keyevent@"));
     }
 
-    public RFuture<PubSubConnectionEntry> subscribe(Codec codec, ChannelName channelName, RedisPubSubListener<?>... listeners) {
+    public CompletableFuture<PubSubConnectionEntry> subscribe(Codec codec, ChannelName channelName, RedisPubSubListener<?>... listeners) {
         return subscribe(PubSubType.SUBSCRIBE, codec, channelName, getEntry(channelName), listeners);
     }
 
-    private RFuture<PubSubConnectionEntry> subscribe(PubSubType type, Codec codec, ChannelName channelName, MasterSlaveEntry entry, RedisPubSubListener<?>... listeners) {
-        RPromise<PubSubConnectionEntry> promise = new RedissonPromise<>();
+    private CompletableFuture<PubSubConnectionEntry> subscribe(PubSubType type, Codec codec, ChannelName channelName, MasterSlaveEntry entry, RedisPubSubListener<?>... listeners) {
+        CompletableFuture<PubSubConnectionEntry> promise = new CompletableFuture<>();
         AsyncSemaphore lock = getSemaphore(channelName);
         lock.acquire(() -> {
             if (promise.isDone()) {
@@ -216,8 +197,8 @@ public class PublishSubscribeService {
         return promise;
     }
 
-    public RFuture<PubSubConnectionEntry> subscribe(Codec codec, String channelName, AsyncSemaphore semaphore, RedisPubSubListener<?>... listeners) {
-        RPromise<PubSubConnectionEntry> promise = new RedissonPromise<>();
+    public CompletableFuture<PubSubConnectionEntry> subscribe(Codec codec, String channelName, AsyncSemaphore semaphore, RedisPubSubListener<?>... listeners) {
+        CompletableFuture<PubSubConnectionEntry> promise = new CompletableFuture<>();
         subscribe(codec, new ChannelName(channelName), getEntry(new ChannelName(channelName)), promise, PubSubType.SUBSCRIBE, semaphore, listeners);
         return promise;
     }
@@ -232,7 +213,7 @@ public class PublishSubscribeService {
     }
 
     private void subscribe(Codec codec, ChannelName channelName, MasterSlaveEntry entry,
-                            RPromise<PubSubConnectionEntry> promise, PubSubType type,
+                            CompletableFuture<PubSubConnectionEntry> promise, PubSubType type,
                             AsyncSemaphore lock, RedisPubSubListener<?>... listeners) {
         PubSubConnectionEntry connEntry = name2PubSubConnection.get(new PubSubKey(channelName, entry));
         if (connEntry != null) {
@@ -277,7 +258,7 @@ public class PublishSubscribeService {
             }
             freePubSubLock.release();
 
-            RFuture<Void> subscribeFuture = addListeners(channelName, promise, type, lock, freeEntry, listeners);
+            CompletableFuture<Void> subscribeFuture = addListeners(channelName, promise, type, lock, freeEntry, listeners);
 
             ChannelFuture future;
             if (PubSubType.PSUBSCRIBE == type) {
@@ -306,17 +287,17 @@ public class PublishSubscribeService {
         return connectionManager.getEntry(slot);
     }
 
-    private RFuture<Void> addListeners(ChannelName channelName, RPromise<PubSubConnectionEntry> promise,
+    private CompletableFuture<Void> addListeners(ChannelName channelName, CompletableFuture<PubSubConnectionEntry> promise,
             PubSubType type, AsyncSemaphore lock, PubSubConnectionEntry connEntry,
             RedisPubSubListener<?>... listeners) {
         for (RedisPubSubListener<?> listener : listeners) {
             connEntry.addListener(channelName, listener);
         }
         SubscribeListener list = connEntry.getSubscribeFuture(channelName, type);
-        RFuture<Void> subscribeFuture = list.getSuccessFuture();
+        CompletableFuture<Void> subscribeFuture = list.getSuccessFuture();
 
-        subscribeFuture.onComplete((res, e) -> {
-            if (!promise.trySuccess(connEntry)) {
+        return subscribeFuture.whenComplete((res, e) -> {
+            if (!promise.complete(connEntry)) {
                 for (RedisPubSubListener<?> listener : listeners) {
                     connEntry.removeListener(channelName, listener);
                 }
@@ -332,31 +313,31 @@ public class PublishSubscribeService {
                 lock.release();
             }
         });
-
-        return subscribeFuture;
     }
 
-    private RFuture<RedisPubSubConnection> nextPubSubConnection(MasterSlaveEntry entry, ChannelName channelName) {
+    private CompletionStage<RedisPubSubConnection> nextPubSubConnection(MasterSlaveEntry entry, ChannelName channelName) {
         if (entry == null) {
             int slot = connectionManager.calcSlot(channelName.getName());
             RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node for slot: " + slot + " hasn't been discovered yet. Check cluster slots coverage using CLUSTER NODES command. Increase value of retryAttempts and/or retryInterval settings.");
-            return RedissonPromise.newFailedFuture(ex);
+            CompletableFuture<RedisPubSubConnection> result = new CompletableFuture<>();
+            result.completeExceptionally(ex);
+            return result;
         }
         return entry.nextPubSubConnection();
     }
 
     private void connect(Codec codec, ChannelName channelName,
-                         MasterSlaveEntry msEntry, RPromise<PubSubConnectionEntry> promise, PubSubType type, AsyncSemaphore lock, RedisPubSubListener<?>... listeners) {
-        RFuture<RedisPubSubConnection> connFuture = nextPubSubConnection(msEntry, channelName);
-        promise.onComplete((res, e) -> {
+                         MasterSlaveEntry msEntry, CompletableFuture<PubSubConnectionEntry> promise, PubSubType type, AsyncSemaphore lock, RedisPubSubListener<?>... listeners) {
+        CompletionStage<RedisPubSubConnection> connFuture = nextPubSubConnection(msEntry, channelName);
+        promise.whenComplete((res, e) -> {
             if (e != null) {
                 ((RPromise<RedisPubSubConnection>) connFuture).tryFailure(e);
             }
         });
-        connFuture.onComplete((conn, ex) -> {
+        connFuture.whenComplete((conn, ex) -> {
             if (ex != null) {
                 lock.release();
-                promise.tryFailure(ex);
+                promise.completeExceptionally(ex);
                 return;
             }
 
@@ -380,7 +361,7 @@ public class PublishSubscribeService {
                 }
                 freePubSubLock.release();
 
-                RFuture<Void> subscribeFuture = addListeners(channelName, promise, type, lock, entry, listeners);
+                addListeners(channelName, promise, type, lock, entry, listeners);
 
                 ChannelFuture future;
                 if (PubSubType.PSUBSCRIBE == type) {
@@ -392,13 +373,13 @@ public class PublishSubscribeService {
                 future.addListener((ChannelFutureListener) future1 -> {
                     if (!future1.isSuccess()) {
                         if (!promise.isDone()) {
-                            subscribeFuture.cancel(false);
+                            promise.cancel(false);
                         }
                         return;
                     }
 
                     connectionManager.newTimeout(timeout ->
-                            subscribeFuture.cancel(false),
+                                    promise.cancel(false),
                             config.getTimeout(), TimeUnit.MILLISECONDS);
                 });
             });
@@ -611,8 +592,8 @@ public class PublishSubscribeService {
 
     private void subscribe(ChannelName channelName, Collection<RedisPubSubListener<?>> listeners,
             Codec subscribeCodec) {
-        RFuture<PubSubConnectionEntry> subscribeFuture = subscribe(subscribeCodec, channelName, listeners.toArray(new RedisPubSubListener[0]));
-        subscribeFuture.onComplete((res, e) -> {
+        CompletableFuture<PubSubConnectionEntry> subscribeFuture = subscribe(subscribeCodec, channelName, listeners.toArray(new RedisPubSubListener[0]));
+        subscribeFuture.whenComplete((res, e) -> {
             if (e != null) {
                 connectionManager.newTimeout(task -> {
                     subscribe(channelName, listeners, subscribeCodec);
@@ -626,9 +607,9 @@ public class PublishSubscribeService {
 
     private void psubscribe(ChannelName channelName, Collection<RedisPubSubListener<?>> listeners,
             Codec subscribeCodec) {
-        RFuture<Collection<PubSubConnectionEntry>> subscribeFuture =
+        CompletableFuture<Collection<PubSubConnectionEntry>> subscribeFuture =
                             psubscribe(channelName, subscribeCodec, listeners.toArray(new RedisPubSubListener[0]));
-        subscribeFuture.onComplete((res, e) -> {
+        subscribeFuture.whenComplete((res, e) -> {
             if (e != null) {
                 connectionManager.newTimeout(task -> {
                     psubscribe(channelName, listeners, subscribeCodec);
@@ -640,8 +621,8 @@ public class PublishSubscribeService {
         });
     }
 
-    public RFuture<Void> removeListenerAsync(PubSubType type, ChannelName channelName, EventListener listener) {
-        RPromise<Void> promise = new RedissonPromise<>();
+    public CompletableFuture<Void> removeListenerAsync(PubSubType type, ChannelName channelName, EventListener listener) {
+        CompletableFuture<Void> promise = new CompletableFuture<>();
         AsyncSemaphore semaphore = getSemaphore(channelName);
         semaphore.acquire(() -> {
             Collection<MasterSlaveEntry> entries = Collections.singletonList(getEntry(channelName));
@@ -655,7 +636,7 @@ public class PublishSubscribeService {
                 if (entry == null) {
                     if (counter.decrementAndGet() == 0) {
                         semaphore.release();
-                        promise.trySuccess(null);
+                        promise.complete(null);
                     }
                     continue;
                 }
@@ -666,13 +647,13 @@ public class PublishSubscribeService {
                         .onComplete((r, ex) -> {
                             if (counter.decrementAndGet() == 0) {
                                 semaphore.release();
-                                promise.trySuccess(null);
+                                promise.complete(null);
                             }
                         });
                 } else {
                     if (counter.decrementAndGet() == 0) {
                         semaphore.release();
-                        promise.trySuccess(null);
+                        promise.complete(null);
                     }
                 }
             }
@@ -680,8 +661,8 @@ public class PublishSubscribeService {
         return promise;
     }
 
-    public RFuture<Void> removeListenerAsync(PubSubType type, ChannelName channelName, Integer... listenerIds) {
-        RPromise<Void> promise = new RedissonPromise<>();
+    public CompletableFuture<Void> removeListenerAsync(PubSubType type, ChannelName channelName, Integer... listenerIds) {
+        CompletableFuture<Void> promise = new CompletableFuture<>();
         AsyncSemaphore semaphore = getSemaphore(channelName);
         semaphore.acquire(() -> {
             Collection<MasterSlaveEntry> entries = Collections.singletonList(getEntry(channelName));
@@ -695,7 +676,7 @@ public class PublishSubscribeService {
                 if (entry == null) {
                     if (counter.decrementAndGet() == 0) {
                         semaphore.release();
-                        promise.trySuccess(null);
+                        promise.complete(null);
                     }
                     continue;
                 }
@@ -708,13 +689,13 @@ public class PublishSubscribeService {
                         .onComplete((r, ex) -> {
                             if (counter.decrementAndGet() == 0) {
                                 semaphore.release();
-                                promise.trySuccess(null);
+                                promise.complete(null);
                             }
                         });
                 } else {
                     if (counter.decrementAndGet() == 0) {
                         semaphore.release();
-                        promise.trySuccess(null);
+                        promise.complete(null);
                     }
                 }
             }

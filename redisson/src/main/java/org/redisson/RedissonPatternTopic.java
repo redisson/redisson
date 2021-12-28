@@ -26,8 +26,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.config.MasterSlaveServersConfig;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.pubsub.AsyncSemaphore;
 import org.redisson.pubsub.PubSubConnectionEntry;
 import org.redisson.pubsub.PublishSubscribeService;
@@ -35,6 +34,7 @@ import org.redisson.pubsub.PublishSubscribeService;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Distributed topic implementation. Messages are delivered to all message listeners across Redis cluster.
@@ -74,7 +74,7 @@ public class RedissonPatternTopic implements RPatternTopic {
     }
 
     private int addListener(RedisPubSubListener<?> pubSubListener) {
-        RFuture<Collection<PubSubConnectionEntry>> future = subscribeService.psubscribe(channelName, codec, pubSubListener);
+        CompletableFuture<Collection<PubSubConnectionEntry>> future = subscribeService.psubscribe(channelName, codec, pubSubListener);
         commandExecutor.syncSubscription(future);
         return System.identityHashCode(pubSubListener);
     }
@@ -92,17 +92,11 @@ public class RedissonPatternTopic implements RPatternTopic {
     }
     
     private RFuture<Integer> addListenerAsync(RedisPubSubListener<?> pubSubListener) {
-        RFuture<Collection<PubSubConnectionEntry>> future = subscribeService.psubscribe(channelName, codec, pubSubListener);
-        RPromise<Integer> result = new RedissonPromise<Integer>();
-        future.onComplete((res, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
-            }
-            
-            result.trySuccess(System.identityHashCode(pubSubListener));
+        CompletableFuture<Collection<PubSubConnectionEntry>> future = subscribeService.psubscribe(channelName, codec, pubSubListener);
+        CompletableFuture<Integer> f = future.thenApply(res -> {
+            return System.identityHashCode(pubSubListener);
         });
-        return result;
+        return new CompletableFutureWrapper<>(f);
     }
     
     protected void acquire(AsyncSemaphore semaphore) {
@@ -115,12 +109,13 @@ public class RedissonPatternTopic implements RPatternTopic {
     
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
-        return subscribeService.removeListenerAsync(PubSubType.PUNSUBSCRIBE, channelName, listenerId);
+        CompletableFuture<Void> f = subscribeService.removeListenerAsync(PubSubType.PUNSUBSCRIBE, channelName, listenerId);
+        return new CompletableFutureWrapper<>(f);
     }
     
     @Override
     public void removeListener(int listenerId) {
-        commandExecutor.syncSubscription(removeListenerAsync(listenerId));
+        commandExecutor.syncSubscription(removeListenerAsync(listenerId).toCompletableFuture());
     }
     
     @Override
@@ -142,7 +137,7 @@ public class RedissonPatternTopic implements RPatternTopic {
 
     @Override
     public void removeListener(PatternMessageListener<?> listener) {
-        RFuture<Void> future = subscribeService.removeListenerAsync(PubSubType.PUNSUBSCRIBE, channelName, listener);
+        CompletableFuture<Void> future = subscribeService.removeListenerAsync(PubSubType.PUNSUBSCRIBE, channelName, listener);
         commandExecutor.syncSubscription(future);
     }
     

@@ -26,8 +26,6 @@ import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,9 +110,9 @@ abstract class ConnectionPool<T extends RedisConnection> {
             
             @Override
             public void run() {
-                RPromise<T> promise = new RedissonPromise<T>();
+                CompletableFuture<T> promise = new CompletableFuture<T>();
                 createConnection(entry, promise);
-                promise.onComplete((conn, e) -> {
+                promise.whenComplete((conn, e) -> {
                         if (e == null) {
                             if (!initPromise.isDone()) {
                                 entry.addConnection(conn);
@@ -178,7 +176,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
 
     protected abstract int getMinimumIdleSize(ClientConnectionsEntry entry);
 
-    public RFuture<T> get(RedisCommand<?> command) {
+    public CompletableFuture<T> get(RedisCommand<?> command) {
         List<ClientConnectionsEntry> entriesCopy = new LinkedList<ClientConnectionsEntry>(entries);
         for (Iterator<ClientConnectionsEntry> iterator = entriesCopy.iterator(); iterator.hasNext();) {
             ClientConnectionsEntry entry = iterator.next();
@@ -211,10 +209,12 @@ abstract class ConnectionPool<T extends RedisConnection> {
         }
 
         RedisConnectionException exception = new RedisConnectionException(errorMsg.toString());
-        return RedissonPromise.newFailedFuture(exception);
+        CompletableFuture<T> result = new CompletableFuture<>();
+        result.completeExceptionally(exception);
+        return result;
     }
 
-    public RFuture<T> get(RedisCommand<?> command, ClientConnectionsEntry entry) {
+    public CompletableFuture<T> get(RedisCommand<?> command, ClientConnectionsEntry entry) {
             return acquireConnection(command, entry);
         }
 
@@ -222,8 +222,8 @@ abstract class ConnectionPool<T extends RedisConnection> {
         
     }
     
-    protected final RFuture<T> acquireConnection(RedisCommand<?> command, ClientConnectionsEntry entry) {
-        RPromise<T> result = new RedissonPromise<T>();
+    protected final CompletableFuture<T> acquireConnection(RedisCommand<?> command, ClientConnectionsEntry entry) {
+        CompletableFuture<T> result = new CompletableFuture<T>();
 
         Runnable callback = () -> {
             connectTo(entry, result, command);
@@ -248,7 +248,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
         return (CompletionStage<T>) entry.connect();
     }
 
-    private void connectTo(ClientConnectionsEntry entry, RPromise<T> promise, RedisCommand<?> command) {
+    private void connectTo(ClientConnectionsEntry entry, CompletableFuture<T> promise, RedisCommand<?> command) {
         if (promise.isDone()) {
             connectionManager.getGroup().submit(() -> {
                 releaseConnection(entry);
@@ -269,7 +269,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
         createConnection(entry, promise);
     }
 
-    private void createConnection(ClientConnectionsEntry entry, RPromise<T> promise) {
+    private void createConnection(ClientConnectionsEntry entry, CompletableFuture<T> promise) {
         CompletionStage<T> connFuture = connect(entry);
         connFuture.whenComplete((conn, e) -> {
             if (e != null) {
@@ -286,18 +286,18 @@ abstract class ConnectionPool<T extends RedisConnection> {
         });
     }
 
-    private void connectedSuccessful(ClientConnectionsEntry entry, RPromise<T> promise, T conn) {
+    private void connectedSuccessful(ClientConnectionsEntry entry, CompletableFuture<T> promise, T conn) {
         if (conn.isActive() && entry.getNodeType() == NodeType.SLAVE) {
             entry.resetFirstFail();
         }
 
-        if (!promise.trySuccess(conn)) {
+        if (!promise.complete(conn)) {
             releaseConnection(entry, conn);
             releaseConnection(entry);
         }
     }
 
-    private void promiseFailure(ClientConnectionsEntry entry, RPromise<T> promise, Throwable cause) {
+    private void promiseFailure(ClientConnectionsEntry entry, CompletableFuture<T> promise, Throwable cause) {
         if (entry.getNodeType() == NodeType.SLAVE) {
             entry.trySetupFistFail();
             if (entry.isFailed()) {
@@ -307,10 +307,10 @@ abstract class ConnectionPool<T extends RedisConnection> {
 
         releaseConnection(entry);
 
-        promise.tryFailure(cause);
+        promise.completeExceptionally(cause);
     }
 
-    private void promiseFailure(ClientConnectionsEntry entry, RPromise<T> promise, T conn) {
+    private void promiseFailure(ClientConnectionsEntry entry, CompletableFuture<T> promise, T conn) {
         if (entry.getNodeType() == NodeType.SLAVE) {
             entry.trySetupFistFail();
             if (entry.isFailed()) {
@@ -327,7 +327,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
         releaseConnection(entry);
 
         RedisConnectionException cause = new RedisConnectionException(conn + " is not active!");
-        promise.tryFailure(cause);
+        promise.completeExceptionally(cause);
     }
 
     private void checkForReconnect(ClientConnectionsEntry entry, Throwable cause) {

@@ -15,13 +15,14 @@
  */
 package org.redisson.connection.pool;
 
-import org.redisson.api.RFuture;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
+
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Connection pool for Publish/Subscribe used with single node
@@ -37,7 +38,7 @@ public class MasterPubSubConnectionPool extends PubSubConnectionPool {
     }
 
     @Override
-    public RFuture<RedisPubSubConnection> get(RedisCommand<?> command) {
+    public CompletableFuture<RedisPubSubConnection> get(RedisCommand<?> command) {
         return acquireConnection(command, entries.peek());
     }
 

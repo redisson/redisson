@@ -214,7 +214,7 @@ public final class RedisClient {
 
                     if (future.isSuccess()) {
                         RedisConnection c = RedisConnection.getFrom(future.channel());
-                        c.getConnectionPromise().onComplete((res, e) -> {
+                        c.getConnectionPromise().whenComplete((res, e) -> {
                             bootstrap.config().group().execute(new Runnable() {
                                 @Override
                                 public void run() {
@@ -271,7 +271,7 @@ public final class RedisClient {
 
                     if (future.isSuccess()) {
                         RedisPubSubConnection c = RedisPubSubConnection.getFrom(future.channel());
-                        c.getConnectionPromise().onComplete((res, e) -> {
+                        c.getConnectionPromise().whenComplete((res, e) -> {
                             pubSubBootstrap.config().group().execute(new Runnable() {
                                 @Override
                                 public void run() {

@@ -24,10 +24,10 @@ import org.redisson.command.CommandBatchService;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.NodeSource;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
-import org.redisson.misc.RPromise;
 import reactor.core.publisher.Mono;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 
@@ -64,14 +64,14 @@ public class CommandReactiveBatchService extends CommandReactiveService {
     }
     
     @Override
-    protected <R> RPromise<R> createPromise() {
+    protected <R> CompletableFuture<R> createPromise() {
         return batchService.createPromise();
     }
     
     @Override
-    public <V, R> void async(boolean readOnlyMode, NodeSource nodeSource,
-            Codec codec, RedisCommand<V> command, Object[] params, RPromise<R> mainPromise, boolean ignoreRedirect, boolean noRetry) {
-        batchService.async(readOnlyMode, nodeSource, codec, command, params, mainPromise, ignoreRedirect, noRetry);
+    public <V, R> RFuture<R> async(boolean readOnlyMode, NodeSource nodeSource,
+                                        Codec codec, RedisCommand<V> command, Object[] params, boolean ignoreRedirect, boolean noRetry) {
+        return batchService.async(readOnlyMode, nodeSource, codec, command, params, ignoreRedirect, noRetry);
     }
 
     public RFuture<BatchResult<?>> executeAsync() {

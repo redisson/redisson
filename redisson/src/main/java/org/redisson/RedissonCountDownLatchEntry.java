@@ -15,9 +15,9 @@
  */
 package org.redisson;
 
-import org.redisson.misc.RPromise;
 import org.redisson.misc.ReclosableLatch;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class RedissonCountDownLatchEntry implements PubSubEntry<RedissonCountDownLatchEntry> {
@@ -25,10 +25,10 @@ public class RedissonCountDownLatchEntry implements PubSubEntry<RedissonCountDow
     private int counter;
 
     private final ReclosableLatch latch;
-    private final RPromise<RedissonCountDownLatchEntry> promise;
+    private final CompletableFuture<RedissonCountDownLatchEntry> promise;
     private final ConcurrentLinkedQueue<Runnable> listeners = new ConcurrentLinkedQueue<>();
 
-    public RedissonCountDownLatchEntry(RPromise<RedissonCountDownLatchEntry> promise) {
+    public RedissonCountDownLatchEntry(CompletableFuture<RedissonCountDownLatchEntry> promise) {
         super();
         this.latch = new ReclosableLatch();
         this.promise = promise;
@@ -42,7 +42,7 @@ public class RedissonCountDownLatchEntry implements PubSubEntry<RedissonCountDow
         return --counter;
     }
 
-    public RPromise<RedissonCountDownLatchEntry> getPromise() {
+    public CompletableFuture<RedissonCountDownLatchEntry> getPromise() {
         return promise;
     }
 

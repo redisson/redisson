@@ -15,10 +15,6 @@
  */
 package org.redisson.command;
 
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.redisson.api.BatchOptions;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
@@ -27,7 +23,11 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
-import org.redisson.misc.RPromise;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 
@@ -40,7 +40,7 @@ public class RedisBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R> {
 
     @SuppressWarnings("ParameterNumber")
     public RedisBatchExecutor(boolean readOnlyMode, NodeSource source, Codec codec, RedisCommand<V> command,
-                              Object[] params, RPromise<R> mainPromise, boolean ignoreRedirect, ConnectionManager connectionManager,
+                              Object[] params, CompletableFuture<R> mainPromise, boolean ignoreRedirect, ConnectionManager connectionManager,
                               RedissonObjectBuilder objectBuilder, ConcurrentMap<MasterSlaveEntry, Entry> commands,
                               BatchOptions options, AtomicInteger index,
                               AtomicBoolean executed, RedissonObjectBuilder.ReferenceType referenceType, boolean noRetry) {

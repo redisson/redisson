@@ -32,10 +32,9 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.nio.ByteBuffer;
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -98,20 +97,21 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
     public Mono<Void> subscribe(ByteBuffer... channels) {
         monosListener.acquire();
         return Mono.defer(() -> {
-            RedissonPromise<Void> result = new RedissonPromise<>();
-            result.onComplete((r, ex) -> {
-                monosListener.release();
-            });
-            CountableListener<Void> listener = new CountableListener<>(result, null, channels.length);
+            List<CompletableFuture<?>> futures = new ArrayList<>();
             for (ByteBuffer channel : channels) {
                 ChannelName cn = toChannelName(channel);
-                RFuture<PubSubConnectionEntry> f = subscribeService.subscribe(ByteArrayCodec.INSTANCE, cn);
-                f.onComplete((res, e) -> RedissonReactiveSubscription.this.channels.put(cn, res));
-                f.onComplete(listener);
+                CompletableFuture<PubSubConnectionEntry> f = subscribeService.subscribe(ByteArrayCodec.INSTANCE, cn);
+                f = f.whenComplete((res, e) -> RedissonReactiveSubscription.this.channels.put(cn, res));
+                futures.add(f);
             }
 
-            return Mono.fromFuture(result);
+            CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+            future = future.whenComplete((r, e) -> {
+                monosListener.release();
+            });
+            return Mono.fromFuture(future);
         });
+
     }
 
     protected ChannelName toChannelName(ByteBuffer channel) {
@@ -122,18 +122,19 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
     public Mono<Void> pSubscribe(ByteBuffer... patterns) {
         monosListener.acquire();
         return Mono.defer(() -> {
-            RedissonPromise<Void> result = new RedissonPromise<>();
-            result.onComplete((r, ex) -> {
-                monosListener.release();
-            });
-            CountableListener<Void> listener = new CountableListener<>(result, null, patterns.length);
+            List<CompletableFuture<?>> futures = new ArrayList<>();
             for (ByteBuffer channel : patterns) {
                 ChannelName cn = toChannelName(channel);
-                RFuture<Collection<PubSubConnectionEntry>> f = subscribeService.psubscribe(cn, ByteArrayCodec.INSTANCE);
-                f.onComplete((res, e) -> RedissonReactiveSubscription.this.patterns.put(cn, res));
-                f.onComplete(listener);
+                CompletableFuture<Collection<PubSubConnectionEntry>> f = subscribeService.psubscribe(cn, ByteArrayCodec.INSTANCE);
+                f = f.whenComplete((res, e) -> RedissonReactiveSubscription.this.patterns.put(cn, res));
+                futures.add(f);
             }
-            return Mono.fromFuture(result);
+
+            CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+            future = future.whenComplete((r, e) -> {
+                monosListener.release();
+            });
+            return Mono.fromFuture(future);
         });
     }
 

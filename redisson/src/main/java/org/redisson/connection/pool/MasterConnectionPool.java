@@ -15,13 +15,14 @@
  */
 package org.redisson.connection.pool;
 
-import org.redisson.api.RFuture;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
+
+import java.util.concurrent.CompletableFuture;
 
 
 /**
@@ -37,7 +38,7 @@ public class MasterConnectionPool extends ConnectionPool<RedisConnection> {
     }
 
     @Override
-    public RFuture<RedisConnection> get(RedisCommand<?> command) {
+    public CompletableFuture<RedisConnection> get(RedisCommand<?> command) {
         return acquireConnection(command, entries.peek());
     }
     

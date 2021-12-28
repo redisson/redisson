@@ -17,8 +17,7 @@ package org.redisson.client.protocol;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import org.redisson.misc.RPromise;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 
@@ -29,21 +28,21 @@ public class CommandsData implements QueueCommand {
 
     private final List<CommandData<?, ?>> commands;
     private final List<CommandData<?, ?>> attachedCommands;
-    private final RPromise<Void> promise;
+    private final CompletableFuture<Void> promise;
     private final boolean skipResult;
     private final boolean atomic;
     private final boolean queued;
     private final boolean syncSlaves;
 
-    public CommandsData(RPromise<Void> promise, List<CommandData<?, ?>> commands, boolean queued, boolean syncSlaves) {
+    public CommandsData(CompletableFuture<Void> promise, List<CommandData<?, ?>> commands, boolean queued, boolean syncSlaves) {
         this(promise, commands, null, false, false, queued, syncSlaves);
     }
     
-    public CommandsData(RPromise<Void> promise, List<CommandData<?, ?>> commands, boolean skipResult, boolean atomic, boolean queued, boolean syncSlaves) {
+    public CommandsData(CompletableFuture<Void> promise, List<CommandData<?, ?>> commands, boolean skipResult, boolean atomic, boolean queued, boolean syncSlaves) {
         this(promise, commands, null, skipResult, atomic, queued, syncSlaves);
     }
     
-    public CommandsData(RPromise<Void> promise, List<CommandData<?, ?>> commands, List<CommandData<?, ?>> attachedCommands, 
+    public CommandsData(CompletableFuture<Void> promise, List<CommandData<?, ?>> commands, List<CommandData<?, ?>> attachedCommands,
             boolean skipResult, boolean atomic, boolean queued, boolean syncSlaves) {
         super();
         this.promise = promise;
@@ -59,7 +58,7 @@ public class CommandsData implements QueueCommand {
         return syncSlaves;
     }
 
-    public RPromise<Void> getPromise() {
+    public CompletableFuture<Void> getPromise() {
         return promise;
     }
 
@@ -96,7 +95,7 @@ public class CommandsData implements QueueCommand {
 
     @Override
     public boolean tryFailure(Throwable cause) {
-        return promise.tryFailure(cause);
+        return promise.completeExceptionally(cause);
     }
 
     @Override

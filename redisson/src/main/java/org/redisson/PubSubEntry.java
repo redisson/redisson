@@ -15,7 +15,7 @@
  */
 package org.redisson;
 
-import org.redisson.misc.RPromise;
+import java.util.concurrent.CompletableFuture;
 
 /**
  *
@@ -28,6 +28,6 @@ public interface PubSubEntry<E> {
 
     int release();
 
-    RPromise<E> getPromise();
+    CompletableFuture<E> getPromise();
 
 }

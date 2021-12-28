@@ -17,7 +17,6 @@ package org.redisson.connection;
 
 import io.netty.channel.ChannelFuture;
 import org.redisson.api.NodeType;
-import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
@@ -254,8 +253,8 @@ public class MasterSlaveEntry {
             return;
         }
 
-        RFuture<RedisConnection> newConnectionFuture = entry.connectionWriteOp(commandData.getCommand());
-        newConnectionFuture.onComplete((newConnection, e) -> {
+        CompletableFuture<RedisConnection> newConnectionFuture = entry.connectionWriteOp(commandData.getCommand());
+        newConnectionFuture.whenComplete((newConnection, e) -> {
             if (e != null) {
                 connectionManager.newTimeout(timeout ->
                         reattachBlockingQueue(commandData), 1, TimeUnit.SECONDS);
@@ -274,7 +273,7 @@ public class MasterSlaveEntry {
                             reattachBlockingQueue(commandData), 1, TimeUnit.SECONDS);
                 }
             });
-            commandData.getPromise().onComplete((r, ex) -> {
+            commandData.getPromise().whenComplete((r, ex) -> {
                 entry.releaseWrite(newConnection);
             });
         });
@@ -483,33 +482,33 @@ public class MasterSlaveEntry {
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
     }
 
-    public RFuture<RedisConnection> connectionWriteOp(RedisCommand<?> command) {
+    public CompletableFuture<RedisConnection> connectionWriteOp(RedisCommand<?> command) {
         return writeConnectionPool.get(command);
     }
 
-    public RFuture<RedisConnection> redirectedConnectionWriteOp(RedisCommand<?> command, RedisURI addr) {
+    public CompletableFuture<RedisConnection> redirectedConnectionWriteOp(RedisCommand<?> command, RedisURI addr) {
         return slaveBalancer.getConnection(command, addr);
     }
 
-    public RFuture<RedisConnection> connectionReadOp(RedisCommand<?> command) {
+    public CompletableFuture<RedisConnection> connectionReadOp(RedisCommand<?> command) {
         if (config.getReadMode() == ReadMode.MASTER) {
             return connectionWriteOp(command);
         }
         return slaveBalancer.nextConnection(command);
     }
 
-    public RFuture<RedisConnection> connectionReadOp(RedisCommand<?> command, RedisURI addr) {
+    public CompletableFuture<RedisConnection> connectionReadOp(RedisCommand<?> command, RedisURI addr) {
         return slaveBalancer.getConnection(command, addr);
     }
     
-    public RFuture<RedisConnection> connectionReadOp(RedisCommand<?> command, RedisClient client) {
+    public CompletableFuture<RedisConnection> connectionReadOp(RedisCommand<?> command, RedisClient client) {
         if (config.getReadMode() == ReadMode.MASTER) {
             return connectionWriteOp(command);
         }
         return slaveBalancer.getConnection(command, client);
     }
 
-    public RFuture<RedisPubSubConnection> nextPubSubConnection() {
+    public CompletableFuture<RedisPubSubConnection> nextPubSubConnection() {
         if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
             return pubSubConnectionPool.get();
         }

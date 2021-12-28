@@ -26,8 +26,6 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
 import org.redisson.misc.CompletableFutureWrapper;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -66,15 +64,13 @@ public class RedissonScript implements RScript {
         Collection<MasterSlaveEntry> nodes = commandExecutor.getConnectionManager().getEntrySet();
         List<CompletableFuture<String>> futures = new ArrayList<>();
         nodes.forEach(e -> {
-            RPromise<String> promise = new RedissonPromise<>();
-            commandExecutor.async(false, new NodeSource(e), codec, RedisCommands.SCRIPT_LOAD,
-                    new Object[]{luaScript}, promise, true, false);
+            RFuture<String> promise = commandExecutor.async(false, new NodeSource(e),
+                        codec, RedisCommands.SCRIPT_LOAD, new Object[]{luaScript}, true, false);
             futures.add(promise.toCompletableFuture());
 
             e.getAllEntries().stream().filter(c -> c.getNodeType() == NodeType.SLAVE).forEach(c -> {
-                RPromise<String> slavePromise = new RedissonPromise<>();
-                commandExecutor.async(true, new NodeSource(e, c.getClient()), codec, RedisCommands.SCRIPT_LOAD,
-                                        new Object[]{luaScript}, slavePromise, true, false);
+                RFuture<String> slavePromise = commandExecutor.async(true, new NodeSource(e, c.getClient()),
+                            codec, RedisCommands.SCRIPT_LOAD, new Object[]{luaScript}, true, false);
                 futures.add(slavePromise.toCompletableFuture());
             });
         });
@@ -157,7 +153,7 @@ public class RedissonScript implements RScript {
     @Override
     public RFuture<List<Boolean>> scriptExistsAsync(final String... shaDigests) {
          return commandExecutor.writeAllAsync(RedisCommands.SCRIPT_EXISTS, new SlotCallback<List<Boolean>, List<Boolean>>() {
-            volatile List<Boolean> result = new ArrayList<Boolean>(shaDigests.length);
+            volatile List<Boolean> result = new ArrayList<>(shaDigests.length);
             @Override
             public synchronized void onSlotResult(List<Boolean> result) {
                 for (int i = 0; i < result.size(); i++) {
@@ -170,7 +166,7 @@ public class RedissonScript implements RScript {
 
             @Override
             public List<Boolean> onFinish() {
-                return new ArrayList<Boolean>(result);
+                return new ArrayList<>(result);
             }
         }, (Object[]) shaDigests);
     }

@@ -34,6 +34,7 @@ import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.misc.AsyncCountDownLatch;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
@@ -53,14 +54,14 @@ public class CommandBatchService extends CommandAsyncService {
     public static class ConnectionEntry {
 
         boolean firstCommand = true;
-        RFuture<RedisConnection> connectionFuture;
+        CompletableFuture<RedisConnection> connectionFuture;
         Runnable cancelCallback;
         
-        public RFuture<RedisConnection> getConnectionFuture() {
+        public CompletableFuture<RedisConnection> getConnectionFuture() {
             return connectionFuture;
         }
         
-        public void setConnectionFuture(RFuture<RedisConnection> connectionFuture) {
+        public void setConnectionFuture(CompletableFuture<RedisConnection> connectionFuture) {
             this.connectionFuture = connectionFuture;
         }
 
@@ -151,8 +152,9 @@ public class CommandBatchService extends CommandAsyncService {
     }
     
     @Override
-    public <V, R> void async(boolean readOnlyMode, NodeSource nodeSource,
-            Codec codec, RedisCommand<V> command, Object[] params, RPromise<R> mainPromise, boolean ignoreRedirect, boolean noRetry) {
+    public <V, R> RFuture<R> async(boolean readOnlyMode, NodeSource nodeSource,
+            Codec codec, RedisCommand<V> command, Object[] params, boolean ignoreRedirect, boolean noRetry) {
+        CompletableFuture<R> mainPromise = createPromise();
         if (isRedisBasedQueue()) {
             boolean isReadOnly = options.getExecutionMode() == ExecutionMode.REDIS_READ_ATOMIC;
             RedisExecutor<V, R> executor = new RedisQueuedBatchExecutor<>(isReadOnly, nodeSource, codec, command, params, mainPromise,
@@ -163,16 +165,16 @@ public class CommandBatchService extends CommandAsyncService {
                     false, connectionManager, objectBuilder, commands, options, index, executed, referenceType, noRetry);
             executor.execute();
         }
-        
+        return new CompletableFutureWrapper<>(mainPromise);
     }
         
     @Override
-    public <R> RPromise<R> createPromise() {
+    public <R> CompletableFuture<R> createPromise() {
         if (isRedisBasedQueue()) {
-            return new BatchPromise<>(executed);
+            return new BatchPromise<>();
         }
         
-        return new RedissonPromise<>();
+        return new CompletableFuture<>();
     }
 
     public void discard() {
@@ -260,10 +262,10 @@ public class CommandBatchService extends CommandAsyncService {
         }
         
         RPromise<BatchResult<?>> promise = new RedissonPromise<>();
-        RPromise<Void> voidPromise = new RedissonPromise<Void>();
+        CompletableFuture<Void> voidPromise = new CompletableFuture<>();
         if (this.options.isSkipResult()
                 && this.options.getSyncSlaves() == 0) {
-            voidPromise.onComplete((res, ex) -> {
+            voidPromise.whenComplete((res, ex) -> {
                 executed.set(true);
 
                 if (ex != null) {
@@ -283,7 +285,7 @@ public class CommandBatchService extends CommandAsyncService {
                 promise.trySuccess(new BatchResult<>(Collections.emptyList(), 0));
             });
         } else {
-            voidPromise.onComplete((res, ex) -> {
+            voidPromise.whenComplete((res, ex) -> {
                 executed.set(true);
                 if (ex != null) {
                     for (Entry e : commands.values()) {
@@ -306,7 +308,7 @@ public class CommandBatchService extends CommandAsyncService {
                 int syncedSlaves = 0;
                 for (BatchCommandData<?, ?> commandEntry : entries) {
                     if (isWaitCommand(commandEntry)) {
-                        syncedSlaves = (Integer) commandEntry.getPromise().getNow();
+                        syncedSlaves = (Integer) commandEntry.getPromise().getNow(null);
                     } else if (!commandEntry.getCommand().getName().equals(RedisCommands.MULTI.getName())
                             && !commandEntry.getCommand().getName().equals(RedisCommands.EXEC.getName())
                             && !this.options.isSkipResult()) {
@@ -315,7 +317,7 @@ public class CommandBatchService extends CommandAsyncService {
                             continue;
                         }
 
-                        Object entryResult = commandEntry.getPromise().getNow();
+                        Object entryResult = commandEntry.getPromise().getNow(null);
                         try {
                             if (objectBuilder != null) {
                                 entryResult = objectBuilder.tryHandleReference(entryResult, referenceType);
@@ -356,6 +358,17 @@ public class CommandBatchService extends CommandAsyncService {
         return promise;
     }
 
+    protected Throwable cause(CompletableFuture<?> future) {
+        try {
+            future.getNow(null);
+            return null;
+        } catch (CompletionException ex2) {
+            return ex2.getCause();
+        } catch (CancellationException ex1) {
+            return ex1;
+        }
+    }
+
     private <R> RFuture<R> executeRedisBasedQueue() {
         int permits = 0;
         for (Entry entry : commands.values()) {
@@ -393,8 +406,9 @@ public class CommandBatchService extends CommandAsyncService {
 
                 for (Entry entry : commands.values()) {
                     for (BatchCommandData<?, ?> command : entry.getCommands()) {
-                        if (command.getPromise().isDone() && !command.getPromise().isSuccess()) {
-                            resultPromise.tryFailure(command.getPromise().cause());
+                        if (command.getPromise().isDone() && command.getPromise().isCompletedExceptionally()) {
+
+                            resultPromise.tryFailure(cause(command.getPromise()));
                             break;
                         }
                     }
@@ -407,10 +421,8 @@ public class CommandBatchService extends CommandAsyncService {
                 Map<MasterSlaveEntry, List<Object>> result = new ConcurrentHashMap<>();
                 List<CompletableFuture<Void>> futures = new ArrayList<>(commands.size());
                 for (Map.Entry<MasterSlaveEntry, Entry> entry : commands.entrySet()) {
-                    RPromise<List<Object>> execPromise = new RedissonPromise<>();
-
-                    async(entry.getValue().isReadOnlyMode(), new NodeSource(entry.getKey()), connectionManager.getCodec(), RedisCommands.EXEC, 
-                            new Object[] {}, execPromise, false, false);
+                    RFuture<List<Object>> execPromise = async(entry.getValue().isReadOnlyMode(), new NodeSource(entry.getKey()),
+                            connectionManager.getCodec(), RedisCommands.EXEC, new Object[] {}, false, false);
 
                     CompletionStage<Void> f = execPromise.thenCompose(r -> {
                         BatchCommandData<?, Integer> lastCommand = (BatchCommandData<?, Integer>) entry.getValue().getCommands().peekLast();
@@ -441,12 +453,12 @@ public class CommandBatchService extends CommandAsyncService {
                                     break;
                                 }
 
-                                RPromise<Object> promise = (RPromise<Object>) data.getPromise();
+                                CompletableFuture<Object> promise = (CompletableFuture<Object>) data.getPromise();
                                 if (resultIter.hasNext()) {
-                                    promise.trySuccess(resultIter.next());
+                                    promise.complete(resultIter.next());
                                 } else {
                                     // fix for https://github.com/redisson/redisson/issues/2212
-                                    promise.trySuccess(null);
+                                    promise.complete(null);
                                 }
                             }
                         }
@@ -460,17 +472,17 @@ public class CommandBatchService extends CommandAsyncService {
                         int syncedSlaves = 0;
                         for (BatchCommandData<?, ?> commandEntry : entries) {
                             if (isWaitCommand(commandEntry)) {
-                                syncedSlaves += (Integer) commandEntry.getPromise().getNow();
+                                syncedSlaves += (Integer) commandEntry.getPromise().getNow(null);
                             } else if (!commandEntry.getCommand().getName().equals(RedisCommands.MULTI.getName())
                                     && !commandEntry.getCommand().getName().equals(RedisCommands.EXEC.getName())) {
-                                Object entryResult = commandEntry.getPromise().getNow();
+                                Object entryResult = commandEntry.getPromise().getNow(null);
                                 if (objectBuilder != null) {
                                     entryResult = objectBuilder.tryHandleReference(entryResult, referenceType);
                                 }
                                 responses.add(entryResult);
                             }
                         }
-                        BatchResult<Object> r = new BatchResult<Object>(responses, syncedSlaves);
+                        BatchResult<Object> r = new BatchResult<>(responses, syncedSlaves);
                         resultPromise.trySuccess((R) r);
                     } catch (Exception e) {
                         resultPromise.tryFailure(e);
@@ -490,13 +502,13 @@ public class CommandBatchService extends CommandAsyncService {
         return c.getCommand().getName().equals(RedisCommands.WAIT.getName());
     }
 
-    protected void handle(RPromise<Void> mainPromise, AtomicInteger slots, RFuture<?> future) {
+    protected void handle(CompletableFuture<Void> mainPromise, AtomicInteger slots, RFuture<?> future) {
         if (future.isSuccess()) {
             if (slots.decrementAndGet() == 0) {
-                mainPromise.trySuccess(null);
+                mainPromise.complete(null);
             }
         } else {
-            mainPromise.tryFailure(future.cause());
+            mainPromise.completeExceptionally(future.cause());
         }
     }
     

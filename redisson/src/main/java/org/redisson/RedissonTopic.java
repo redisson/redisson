@@ -30,14 +30,14 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.config.MasterSlaveServersConfig;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.pubsub.AsyncSemaphore;
 import org.redisson.pubsub.PubSubConnectionEntry;
 import org.redisson.pubsub.PublishSubscribeService;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Distributed topic implementation. Messages are delivered to all message listeners across Redis cluster.
@@ -104,15 +104,15 @@ public class RedissonTopic implements RTopic {
     @Override
     public int addListener(StatusListener listener) {
         RFuture<Integer> future = addListenerAsync(listener);
-        commandExecutor.syncSubscription(future);
-        return future.getNow();
+        commandExecutor.syncSubscription(future.toCompletableFuture());
+        return commandExecutor.getNow(future.toCompletableFuture());
     };
 
     @Override
     public <M> int addListener(Class<M> type, MessageListener<? extends M> listener) {
         RFuture<Integer> future = addListenerAsync(type, (MessageListener<M>) listener);
-        commandExecutor.syncSubscription(future);
-        return future.getNow();
+        commandExecutor.syncSubscription(future.toCompletableFuture());
+        return commandExecutor.getNow(future.toCompletableFuture());
     }
 
     @Override
@@ -128,22 +128,11 @@ public class RedissonTopic implements RTopic {
     }
 
     protected RFuture<Integer> addListenerAsync(RedisPubSubListener<?> pubSubListener) {
-        RFuture<PubSubConnectionEntry> future = subscribeService.subscribe(codec, channelName, pubSubListener);
-        RPromise<Integer> result = new RedissonPromise<>();
-        result.onComplete((res, e) -> {
-            if (e != null) {
-                ((RPromise<PubSubConnectionEntry>) future).tryFailure(e);
-            }
+        CompletableFuture<PubSubConnectionEntry> future = subscribeService.subscribe(codec, channelName, pubSubListener);
+        CompletableFuture<Integer> f = future.thenApply(res -> {
+            return System.identityHashCode(pubSubListener);
         });
-        future.onComplete((res, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
-            }
-
-            result.trySuccess(System.identityHashCode(pubSubListener));
-        });
-        return result;
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
@@ -174,22 +163,24 @@ public class RedissonTopic implements RTopic {
     @Override
     public void removeListener(MessageListener<?> listener) {
         RFuture<Void> future = removeListenerAsync(listener);
-        commandExecutor.syncSubscription(future);
+        commandExecutor.syncSubscription(future.toCompletableFuture());
     }
 
     @Override
     public RFuture<Void> removeListenerAsync(MessageListener<?> listener) {
-        return subscribeService.removeListenerAsync(PubSubType.UNSUBSCRIBE, channelName, listener);
+        CompletableFuture<Void> f = subscribeService.removeListenerAsync(PubSubType.UNSUBSCRIBE, channelName, listener);
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
     public RFuture<Void> removeListenerAsync(Integer... listenerIds) {
-        return subscribeService.removeListenerAsync(PubSubType.UNSUBSCRIBE, channelName, listenerIds);
+        CompletableFuture<Void> f = subscribeService.removeListenerAsync(PubSubType.UNSUBSCRIBE, channelName, listenerIds);
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
     public void removeListener(Integer... listenerIds) {
-        commandExecutor.syncSubscription(removeListenerAsync(listenerIds));
+        commandExecutor.syncSubscription(removeListenerAsync(listenerIds).toCompletableFuture());
     }
 
     @Override

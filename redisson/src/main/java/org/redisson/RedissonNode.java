@@ -17,7 +17,6 @@ package org.redisson;
 
 import io.netty.buffer.ByteBufUtil;
 import org.redisson.api.RExecutorService;
-import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.WorkerOptions;
 import org.redisson.client.RedisConnection;
@@ -32,6 +31,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Map.Entry;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -167,7 +167,7 @@ public final class RedissonNode {
     private void retrieveAddresses() {
         ConnectionManager connectionManager = ((Redisson) redisson).getConnectionManager();
         for (MasterSlaveEntry entry : connectionManager.getEntrySet()) {
-            RFuture<RedisConnection> readFuture = entry.connectionReadOp(null);
+            CompletionStage<RedisConnection> readFuture = entry.connectionReadOp(null);
             RedisConnection readConnection = null;
             try {
                 readConnection = readFuture.toCompletableFuture().get(connectionManager.getConfig().getConnectTimeout(), TimeUnit.MILLISECONDS);
@@ -183,7 +183,7 @@ public final class RedissonNode {
                 return;
             }
 
-            RFuture<RedisConnection> writeFuture = entry.connectionWriteOp(null);
+            CompletionStage<RedisConnection> writeFuture = entry.connectionWriteOp(null);
             RedisConnection writeConnection = null;
             try {
                 writeConnection = writeFuture.toCompletableFuture().get(connectionManager.getConfig().getConnectTimeout(), TimeUnit.MILLISECONDS);

@@ -17,6 +17,7 @@ package org.redisson;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
@@ -58,14 +59,14 @@ public class RedissonFairLock extends RedissonLock implements RLock {
     }
 
     @Override
-    protected RFuture<RedissonLockEntry> subscribe(long threadId) {
+    protected CompletableFuture<RedissonLockEntry> subscribe(long threadId) {
         return pubSub.subscribe(getEntryName() + ":" + threadId,
                 getChannelName() + ":" + getLockName(threadId));
     }
 
     @Override
-    protected void unsubscribe(RFuture<RedissonLockEntry> future, long threadId) {
-        pubSub.unsubscribe(future.getNow(), getEntryName() + ":" + threadId,
+    protected void unsubscribe(RedissonLockEntry entry, long threadId) {
+        pubSub.unsubscribe(entry, getEntryName() + ":" + threadId,
                 getChannelName() + ":" + getLockName(threadId));
     }
 
@@ -94,7 +95,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                 // remove the thread from the queue and timeouts set
                 "redis.call('zrem', KEYS[2], ARGV[1]);" +
                 "redis.call('lrem', KEYS[1], 0, ARGV[1]);",
-                Arrays.<Object>asList(threadsQueueName, timeoutSetName),
+                Arrays.asList(threadsQueueName, timeoutSetName),
                 getLockName(threadId), wait);
     }
 
@@ -335,7 +336,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                     "return 1; " + 
                 "end; " + 
                 "return 0;",
-                Arrays.<Object>asList(getRawName(), threadsQueueName, timeoutSetName, getChannelName()),
+                Arrays.asList(getRawName(), threadsQueueName, timeoutSetName, getChannelName()),
                 LockPubSub.UNLOCK_MESSAGE, System.currentTimeMillis());
     }
 

@@ -26,10 +26,10 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
-import org.redisson.misc.RPromise;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -45,9 +45,13 @@ public interface CommandAsyncExecutor {
 
     RedisException convertException(ExecutionException e);
 
-    void syncSubscription(RFuture<?> future);
+    void syncSubscription(CompletableFuture<?> future);
 
-    void syncSubscriptionInterrupted(RFuture<?> future) throws InterruptedException;
+    void syncSubscriptionInterrupted(CompletableFuture<?> future) throws InterruptedException;
+
+    <V> void transfer(CompletableFuture<V> future1, CompletableFuture<V> future2);
+
+    <V> V getNow(CompletableFuture<V> future);
 
     <V> V get(RFuture<V> future);
     
@@ -111,9 +115,8 @@ public interface CommandAsyncExecutor {
     
     <T, R> RFuture<R> readRandomAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object... params);
 
-    <V, R> void async(boolean readOnlyMode, NodeSource source, Codec codec,
-                      RedisCommand<V> command, Object[] params, RPromise<R> mainPromise,
-                      boolean ignoreRedirect, boolean noRetry);
+    <V, R> RFuture<R> async(boolean readOnlyMode, NodeSource source, Codec codec,
+                      RedisCommand<V> command, Object[] params, boolean ignoreRedirect, boolean noRetry);
 
     <V> RFuture<V> pollFromAnyAsync(String name, Codec codec, RedisCommand<Object> command, long secondsTimeout, String... queueNames);
 

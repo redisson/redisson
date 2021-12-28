@@ -15,11 +15,12 @@
  */
 package org.redisson.connection;
 
-import org.redisson.api.RFuture;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.misc.RedisURI;
+
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 
@@ -33,12 +34,12 @@ public class SingleEntry extends MasterSlaveEntry {
     }
 
     @Override
-    public RFuture<RedisConnection> connectionReadOp(RedisCommand<?> command, RedisURI addr) {
+    public CompletableFuture<RedisConnection> connectionReadOp(RedisCommand<?> command, RedisURI addr) {
         return super.connectionWriteOp(command);
     }
 
     @Override
-    public RFuture<RedisConnection> connectionReadOp(RedisCommand<?> command) {
+    public CompletableFuture<RedisConnection> connectionReadOp(RedisCommand<?> command) {
         return super.connectionWriteOp(command);
     }
 

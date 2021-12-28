@@ -16,7 +16,8 @@
 package org.redisson.pubsub;
 
 import org.redisson.RedissonLockEntry;
-import org.redisson.misc.RPromise;
+
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 
@@ -33,7 +34,7 @@ public class LockPubSub extends PublishSubscribe<RedissonLockEntry> {
     }
     
     @Override
-    protected RedissonLockEntry createEntry(RPromise<RedissonLockEntry> newPromise) {
+    protected RedissonLockEntry createEntry(CompletableFuture<RedissonLockEntry> newPromise) {
         return new RedissonLockEntry(newPromise);
     }
 

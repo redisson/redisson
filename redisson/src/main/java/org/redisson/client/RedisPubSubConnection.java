@@ -15,32 +15,21 @@
  */
 package org.redisson.client;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.MultiDecoder;
-import org.redisson.client.protocol.pubsub.PubSubMessage;
-import org.redisson.client.protocol.pubsub.PubSubMessageDecoder;
-import org.redisson.client.protocol.pubsub.PubSubPatternMessage;
-import org.redisson.client.protocol.pubsub.PubSubPatternMessageDecoder;
-import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
-import org.redisson.client.protocol.pubsub.PubSubType;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.client.protocol.pubsub.*;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * 
@@ -55,7 +44,7 @@ public class RedisPubSubConnection extends RedisConnection {
     final Set<ChannelName> unsubscibedChannels = new HashSet<ChannelName>();
     final Set<ChannelName> punsubscibedChannels = new HashSet<ChannelName>();
 
-    public RedisPubSubConnection(RedisClient redisClient, Channel channel, RPromise<RedisPubSubConnection> connectionPromise) {
+    public RedisPubSubConnection(RedisClient redisClient, Channel channel, CompletableFuture<RedisPubSubConnection> connectionPromise) {
         super(redisClient, channel, connectionPromise);
     }
 
@@ -169,8 +158,8 @@ public class RedisPubSubConnection extends RedisConnection {
     }
 
     private <T, R> ChannelFuture async(MultiDecoder<Object> messageDecoder, RedisCommand<T> command, Object... params) {
-        RPromise<R> promise = new RedissonPromise<R>();
-        return channel.writeAndFlush(new CommandData<T, R>(promise, messageDecoder, null, command, params));
+        CompletableFuture<R> promise = new CompletableFuture<>();
+        return channel.writeAndFlush(new CommandData<>(promise, messageDecoder, null, command, params));
     }
 
     public Map<ChannelName, Codec> getChannels() {

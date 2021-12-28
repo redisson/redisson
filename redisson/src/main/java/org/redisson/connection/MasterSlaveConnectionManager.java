@@ -40,7 +40,6 @@ import io.netty.util.internal.PlatformDependent;
 import org.redisson.ElementsSubscribeService;
 import org.redisson.Version;
 import org.redisson.api.NodeType;
-import org.redisson.api.RFuture;
 import org.redisson.client.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
@@ -48,7 +47,6 @@ import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.config.*;
 import org.redisson.misc.InfinitySemaphoreLatch;
 import org.redisson.misc.RedisURI;
-import org.redisson.misc.RedissonPromise;
 import org.redisson.pubsub.PublishSubscribeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -504,10 +502,12 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
     
     @Override
-    public RFuture<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command) {
+    public CompletableFuture<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command) {
         MasterSlaveEntry entry = getEntry(source);
         if (entry == null) {
-            return RedissonPromise.newFailedFuture(createNodeNotFoundException(source));
+            CompletableFuture<RedisConnection> f = new CompletableFuture<>();
+            f.completeExceptionally(createNodeNotFoundException(source));
+            return f;
         }
         // fix for https://github.com/redisson/redisson/issues/1548
         if (source.getRedirect() != null 
@@ -534,10 +534,12 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
     
     @Override
-    public RFuture<RedisConnection> connectionReadOp(NodeSource source, RedisCommand<?> command) {
+    public CompletableFuture<RedisConnection> connectionReadOp(NodeSource source, RedisCommand<?> command) {
         MasterSlaveEntry entry = getEntry(source);
         if (entry == null) {
-            return RedissonPromise.newFailedFuture(createNodeNotFoundException(source));
+            CompletableFuture<RedisConnection> f = new CompletableFuture<>();
+            f.completeExceptionally(createNodeNotFoundException(source));
+            return f;
         }
 
         if (source.getRedirect() != null) {

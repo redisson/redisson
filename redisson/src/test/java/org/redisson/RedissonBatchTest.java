@@ -422,7 +422,7 @@ public class RedissonBatchTest extends BaseTest {
         for (int i = 0; i < total; i++) {
             RFuture<String> f = map.putAsync("" + i, "" + i, 5, TimeUnit.MINUTES);
             if (batchOptions.getExecutionMode() == ExecutionMode.REDIS_WRITE_ATOMIC) {
-                ((BatchPromise)f).getSentPromise().toCompletableFuture().join();
+                ((BatchPromise)f.toCompletableFuture()).getSentPromise().join();
             }
         }
         

@@ -16,7 +16,8 @@
 package org.redisson.pubsub;
 
 import org.redisson.RedissonCountDownLatchEntry;
-import org.redisson.misc.RPromise;
+
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 
@@ -33,7 +34,7 @@ public class CountDownLatchPubSub extends PublishSubscribe<RedissonCountDownLatc
     }
 
     @Override
-    protected RedissonCountDownLatchEntry createEntry(RPromise<RedissonCountDownLatchEntry> newPromise) {
+    protected RedissonCountDownLatchEntry createEntry(CompletableFuture<RedissonCountDownLatchEntry> newPromise) {
         return new RedissonCountDownLatchEntry(newPromise);
     }
 

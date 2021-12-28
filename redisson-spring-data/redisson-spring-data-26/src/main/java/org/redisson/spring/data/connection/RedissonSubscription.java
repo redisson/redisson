@@ -15,13 +15,11 @@
  */
 package org.redisson.spring.data.connection;
 
-import org.redisson.api.RFuture;
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.ChannelName;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.connection.ConnectionManager;
 import org.redisson.pubsub.PubSubConnectionEntry;
 import org.redisson.pubsub.PublishSubscribeService;
 import org.springframework.data.redis.connection.DefaultMessage;
@@ -32,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 
@@ -51,9 +50,9 @@ public class RedissonSubscription extends AbstractSubscription {
 
     @Override
     protected void doSubscribe(byte[]... channels) {
-        List<RFuture<?>> list = new ArrayList<>();
+        List<CompletableFuture<?>> list = new ArrayList<>();
         for (byte[] channel : channels) {
-            RFuture<PubSubConnectionEntry> f = subscribeService.subscribe(ByteArrayCodec.INSTANCE, new ChannelName(channel), new BaseRedisPubSubListener() {
+            CompletableFuture<PubSubConnectionEntry> f = subscribeService.subscribe(ByteArrayCodec.INSTANCE, new ChannelName(channel), new BaseRedisPubSubListener() {
                 @Override
                 public void onMessage(CharSequence ch, Object message) {
                     if (!Arrays.equals(((ChannelName) ch).getName(), channel)) {
@@ -67,7 +66,7 @@ public class RedissonSubscription extends AbstractSubscription {
             });
             list.add(f);
         }
-        for (RFuture<?> future : list) {
+        for (CompletableFuture<?> future : list) {
             commandExecutor.syncSubscription(future);
         }
     }
@@ -81,9 +80,9 @@ public class RedissonSubscription extends AbstractSubscription {
 
     @Override
     protected void doPsubscribe(byte[]... patterns) {
-        List<RFuture<?>> list = new ArrayList<>();
+        List<CompletableFuture<?>> list = new ArrayList<>();
         for (byte[] channel : patterns) {
-            RFuture<Collection<PubSubConnectionEntry>> f = subscribeService.psubscribe(new ChannelName(channel), ByteArrayCodec.INSTANCE, new BaseRedisPubSubListener() {
+            CompletableFuture<Collection<PubSubConnectionEntry>> f = subscribeService.psubscribe(new ChannelName(channel), ByteArrayCodec.INSTANCE, new BaseRedisPubSubListener() {
                 @Override
                 public void onPatternMessage(CharSequence pattern, CharSequence ch, Object message) {
                     if (!Arrays.equals(((ChannelName) pattern).getName(), channel)) {
@@ -97,7 +96,7 @@ public class RedissonSubscription extends AbstractSubscription {
             });
             list.add(f);
         }
-        for (RFuture<?> future : list) {
+        for (CompletableFuture<?> future : list) {
             commandExecutor.syncSubscription(future);
         }
     }

@@ -21,7 +21,6 @@ import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import org.redisson.ElementsSubscribeService;
 import org.redisson.api.NodeType;
-import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisNodeNotFoundException;
@@ -92,9 +91,9 @@ public interface ConnectionManager {
 
     void releaseWrite(NodeSource source, RedisConnection connection);
 
-    RFuture<RedisConnection> connectionReadOp(NodeSource source, RedisCommand<?> command);
+    CompletableFuture<RedisConnection> connectionReadOp(NodeSource source, RedisCommand<?> command);
 
-    RFuture<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command);
+    CompletableFuture<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command);
 
     RedisClient createClient(NodeType type, RedisURI address, int timeout, int commandTimeout, String sslHostname);
 

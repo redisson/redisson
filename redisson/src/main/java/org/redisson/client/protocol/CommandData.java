@@ -15,13 +15,14 @@
  */
 package org.redisson.client.protocol;
 
-import java.util.Collections;
-import java.util.List;
-
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.misc.LogHelper;
-import org.redisson.misc.RPromise;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 /**
  * 
@@ -32,17 +33,17 @@ import org.redisson.misc.RPromise;
  */
 public class CommandData<T, R> implements QueueCommand {
 
-    final RPromise<R> promise;
+    final CompletableFuture<R> promise;
     final RedisCommand<T> command;
     final Object[] params;
     final Codec codec;
     final MultiDecoder<Object> messageDecoder;
 
-    public CommandData(RPromise<R> promise, Codec codec, RedisCommand<T> command, Object[] params) {
+    public CommandData(CompletableFuture<R> promise, Codec codec, RedisCommand<T> command, Object[] params) {
         this(promise, null, codec, command, params);
     }
 
-    public CommandData(RPromise<R> promise, MultiDecoder<Object> messageDecoder, Codec codec, RedisCommand<T> command, Object[] params) {
+    public CommandData(CompletableFuture<R> promise, MultiDecoder<Object> messageDecoder, Codec codec, RedisCommand<T> command, Object[] params) {
         this.promise = promise;
         this.command = command;
         this.params = params;
@@ -62,20 +63,25 @@ public class CommandData<T, R> implements QueueCommand {
         return messageDecoder;
     }
 
-    public RPromise<R> getPromise() {
+    public CompletableFuture<R> getPromise() {
         return promise;
     }
     
     public Throwable cause() {
-        return promise.cause();
+        try {
+            promise.getNow(null);
+            return null;
+        } catch (CompletionException e) {
+            return e.getCause();
+        }
     }
 
     public boolean isSuccess() {
-        return promise.isSuccess();
+        return promise.isDone() && !promise.isCompletedExceptionally();
     }
 
     public boolean tryFailure(Throwable cause) {
-        return promise.tryFailure(cause);
+        return promise.completeExceptionally(cause);
     }
 
     public Codec getCodec() {
