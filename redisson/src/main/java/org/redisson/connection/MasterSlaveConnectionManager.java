@@ -30,8 +30,7 @@ import io.netty.resolver.AddressResolver;
 import io.netty.resolver.AddressResolverGroup;
 import io.netty.resolver.DefaultAddressResolverGroup;
 import io.netty.resolver.dns.DnsServerAddressStreamProviders;
-import io.netty.util.HashedWheelTimer;
-import io.netty.util.Timeout;
+import io.netty.util.*;
 import io.netty.util.Timer;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
@@ -51,7 +50,9 @@ import org.redisson.pubsub.PublishSubscribeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
@@ -720,11 +721,25 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
 
             InetSocketAddress s = f.getNow();
-            RedisURI uri = new RedisURI(scheme + "://" + s.getAddress().getHostAddress() + ":" + address.getPort());
-            uri = applyNatMap(uri);
+            RedisURI uri = toURI(scheme, s.getAddress().getHostAddress(), "" + address.getPort());
             result.complete(uri);
         });
         return result;
+    }
+
+    protected RedisURI toURI(String scheme, String host, String port) {
+        // convert IPv6 address to unified compressed format
+        if (NetUtil.isValidIpV6Address(host)) {
+            byte[] addr = NetUtil.createByteArrayFromIpAddressString(host);
+            try {
+                InetAddress ia = InetAddress.getByAddress(host, addr);
+                host = ia.getHostAddress();
+            } catch (UnknownHostException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        RedisURI uri = new RedisURI(scheme + "://" + host + ":" + port);
+        return applyNatMap(uri);
     }
 
 }

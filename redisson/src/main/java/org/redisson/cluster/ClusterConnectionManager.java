@@ -368,8 +368,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                             
                             List<RedisURI> nodes = new ArrayList<>();
                             for (InetSocketAddress addr : future.getNow()) {
-                                RedisURI node = new RedisURI(uri.getScheme() + "://" + addr.getAddress().getHostAddress() + ":" + addr.getPort());
-                                RedisURI address = applyNatMap(node);
+                                RedisURI address = toURI(uri.getScheme(), addr.getAddress().getHostAddress(), "" + addr.getPort());
                                 nodes.add(address);
                             }
                             

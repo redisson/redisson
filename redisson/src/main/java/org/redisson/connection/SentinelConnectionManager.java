@@ -35,9 +35,7 @@ import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -405,7 +403,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             }).map(m -> {
                 String ip = m.get("ip");
                 String port = m.get("port");
-                return toURI(ip, port);
+                return toURI(scheme, ip, port);
             }).map(addr -> {
                 CompletionStage<RedisURI> f = resolveIP(addr);
                 return f.exceptionally(ex -> {
@@ -491,7 +489,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
                 entry.getAllEntries().stream()
                         .map(e -> e.getClient().getAddr())
-                        .map(a -> toURI(a.getAddress().getHostAddress(), String.valueOf(a.getPort())))
+                        .map(a -> toURI(scheme, a.getAddress().getHostAddress(), String.valueOf(a.getPort())))
                         .filter(a -> !currentSlaves.contains(a) && !a.equals(currentMaster.get()))
                         .forEach(a -> slaveDown(a));
             });
@@ -535,21 +533,6 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 });
     }
 
-    private RedisURI toURI(String host, String port) {
-        // convert IPv6 address to unified compressed format
-        if (NetUtil.isValidIpV6Address(host)) {
-            byte[] addr = NetUtil.createByteArrayFromIpAddressString(host);
-            try {
-                InetAddress ia = InetAddress.getByAddress(host, addr);
-                host = ia.getHostAddress();
-            } catch (UnknownHostException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        RedisURI uri = new RedisURI(scheme + "://" + host + ":" + port);
-        return applyNatMap(uri);
-    }
-
     @Override
     protected Collection<RedisURI> getDisconnectedNodes() {
         return disconnectedSlaves;
@@ -586,12 +569,12 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private CompletableFuture<RedisURI> resolveIP(String host, String port) {
-        RedisURI uri = toURI(host, port);
+        RedisURI uri = toURI(scheme, host, port);
         return resolveIP(uri);
     }
 
     private RedisURI toURI(InetSocketAddress addr) {
-        return toURI(addr.getAddress().getHostAddress(), "" + addr.getPort());
+        return toURI(scheme, addr.getAddress().getHostAddress(), "" + addr.getPort());
     }
 
     private RFuture<Void> addSlave(RedisURI uri) {
