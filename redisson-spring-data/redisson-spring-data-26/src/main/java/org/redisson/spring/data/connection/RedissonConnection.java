@@ -2272,6 +2272,7 @@ public class RedissonConnection extends AbstractRedisConnection {
     public void restore(byte[] key, long ttlInMillis, byte[] serializedValue, boolean replace) {
         if (replace) {
             write(key, StringCodec.INSTANCE, RedisCommands.RESTORE, key, ttlInMillis, serializedValue, "REPLACE");
+            return;
         }
         restore(key, ttlInMillis, serializedValue);
     }
