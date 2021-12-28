@@ -30,14 +30,14 @@ Maven
      <dependency>
          <groupId>org.redisson</groupId>
          <artifactId>redisson-mybatis</artifactId>
-         <version>3.16.4</version>
+         <version>3.16.7</version>
      </dependency>
 ```
 
 Gradle
 
 ```groovy
-     compile 'org.redisson:redisson-mybatis:3.16.4'
+     compile 'org.redisson:redisson-mybatis:3.16.7'
 ```
 
 ### 2. Specify MyBatis cache settings
