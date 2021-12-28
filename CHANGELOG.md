@@ -3,6 +3,19 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 23-Dec-2021 - 3.16.7 released
+
+Improvement - MessageListener should be annotated by @FunctionalInterface  
+
+Fixed - RScript.scriptLoad() doesn't load script into Slave nodes  
+Fixed - Spring Data RedissonConnection eval should use ByteArrayCodec (thanks @woodyDM)  
+Fixed - `RSet.distributedIterator()` and `RScoredSortedSet.distributedIterator()` methods throw script error  
+Fixed - synced slaves amount is not checked in RLock object  
+Fixed - race condition during hostname resolution in sentinel mode which may cause slave shutdown  
+Fixed - error should be thrown if slaves aren't defined in MasterSlave mode and readMode != MASTER  
+Fixed - master node shouldn't be initialized as slave in single mode  
+Fixed - `can't find node` error arise in replicated mode  
+
 ### 06-Dec-2021 - 3.16.6 released
 
 Fixed - race condition causes wrong detection of failed slaves in Replicated mode. (regression since 3.16.5)
