@@ -27,7 +27,6 @@ import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
 import org.redisson.connection.NodeSource.Redirect;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
-import org.redisson.misc.AsyncCountDownLatch;
 import org.redisson.misc.LogHelper;
 import org.redisson.misc.RedissonPromise;
 
@@ -49,20 +48,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R> {
 
     private final ConcurrentMap<MasterSlaveEntry, ConnectionEntry> connections;
-    private final AsyncCountDownLatch latch;
-    
+
     @SuppressWarnings("ParameterNumber")
     public RedisQueuedBatchExecutor(boolean readOnlyMode, NodeSource source, Codec codec, RedisCommand<V> command,
                                     Object[] params, CompletableFuture<R> mainPromise, boolean ignoreRedirect, ConnectionManager connectionManager,
                                     RedissonObjectBuilder objectBuilder, ConcurrentMap<MasterSlaveEntry, Entry> commands,
                                     ConcurrentMap<MasterSlaveEntry, ConnectionEntry> connections, BatchOptions options, AtomicInteger index,
-                                    AtomicBoolean executed, AsyncCountDownLatch latch, RedissonObjectBuilder.ReferenceType referenceType,
+                                    AtomicBoolean executed, RedissonObjectBuilder.ReferenceType referenceType,
                                     boolean noRetry) {
         super(readOnlyMode, source, codec, command, params, mainPromise, ignoreRedirect, connectionManager, objectBuilder,
                 commands, options, index, executed, referenceType, noRetry);
         
         this.connections = connections;
-        this.latch = latch;
     }
     
     @Override
@@ -99,35 +96,27 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
             return;
         }
 
-        try {
-            BatchPromise<R> batchPromise = (BatchPromise<R>) promise;
-            CompletableFuture sentPromise = batchPromise.getSentPromise();
-            super.handleSuccess(sentPromise, connectionFuture, null);
-        } finally {
-            latch.countDown();
-        }
+        BatchPromise<R> batchPromise = (BatchPromise<R>) promise;
+        CompletableFuture sentPromise = batchPromise.getSentPromise();
+        super.handleSuccess(sentPromise, connectionFuture, null);
     }
     
     @Override
     protected void handleError(CompletableFuture<RedisConnection> connectionFuture, Throwable cause) {
-        try {
-            if (mainPromise instanceof BatchPromise) {
-                BatchPromise<R> batchPromise = (BatchPromise<R>) mainPromise;
-                CompletableFuture sentPromise = batchPromise.getSentPromise();
-                sentPromise.completeExceptionally(cause);
-                mainPromise.completeExceptionally(cause);
-                if (executed.compareAndSet(false, true)) {
-                    getNow(connectionFuture).forceFastReconnectAsync().whenComplete((res, e) -> {
-                        RedisQueuedBatchExecutor.super.releaseConnection(mainPromise, connectionFuture);
-                    });
-                }
-                return;
+        if (mainPromise instanceof BatchPromise) {
+            BatchPromise<R> batchPromise = (BatchPromise<R>) mainPromise;
+            CompletableFuture sentPromise = batchPromise.getSentPromise();
+            sentPromise.completeExceptionally(cause);
+            mainPromise.completeExceptionally(cause);
+            if (executed.compareAndSet(false, true)) {
+                getNow(connectionFuture).forceFastReconnectAsync().whenComplete((res, e) -> {
+                    RedisQueuedBatchExecutor.super.releaseConnection(mainPromise, connectionFuture);
+                });
             }
-
-            super.handleError(connectionFuture, cause);
-        } finally {
-            latch.countDown();
+            return;
         }
+
+        super.handleError(connectionFuture, cause);
     }
     
     @Override
@@ -138,14 +127,14 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
         boolean syncSlaves = options.getSyncSlaves() > 0;
 
         if (source.getRedirect() == Redirect.ASK) {
-            List<CommandData<?, ?>> list = new ArrayList<CommandData<?, ?>>(2);
+            List<CommandData<?, ?>> list = new ArrayList<>(2);
             CompletableFuture<Void> promise = new CompletableFuture<>();
             list.add(new CommandData<>(promise, codec, RedisCommands.ASKING, new Object[]{}));
             if (connectionEntry.isFirstCommand()) {
                 list.add(new CommandData<>(promise, codec, RedisCommands.MULTI, new Object[]{}));
                 connectionEntry.setFirstCommand(false);
             }
-            list.add(new CommandData<V, R>(attemptPromise, codec, command, params));
+            list.add(new CommandData<>(attemptPromise, codec, command, params));
             CompletableFuture<Void> main = new CompletableFuture<>();
             writeFuture = connection.send(new CommandsData(main, list, true, syncSlaves));
         } else {
@@ -155,7 +144,7 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
             }
             
             if (connectionEntry.isFirstCommand()) {
-                List<CommandData<?, ?>> list = new ArrayList<CommandData<?, ?>>(2);
+                List<CommandData<?, ?>> list = new ArrayList<>(2);
                 list.add(new CommandData<>(new RedissonPromise<Void>(), codec, RedisCommands.MULTI, new Object[]{}));
                 list.add(new CommandData<>(attemptPromise, codec, command, params));
                 CompletableFuture<Void> main = new CompletableFuture<>();
@@ -168,13 +157,13 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
                     List<CommandData<?, ?>> list = new ArrayList<>();
 
                     if (options.isSkipResult()) {
-                        list.add(new CommandData<Void, Void>(new RedissonPromise<Void>(), codec, RedisCommands.CLIENT_REPLY, new Object[]{ "OFF" }));
+                        list.add(new CommandData<>(new RedissonPromise<Void>(), codec, RedisCommands.CLIENT_REPLY, new Object[]{"OFF"}));
                     }
                     
-                    list.add(new CommandData<V, R>(attemptPromise, codec, command, params));
+                    list.add(new CommandData<>(attemptPromise, codec, command, params));
                     
                     if (options.isSkipResult()) {
-                        list.add(new CommandData<Void, Void>(new RedissonPromise<Void>(), codec, RedisCommands.CLIENT_REPLY, new Object[]{ "ON" }));
+                        list.add(new CommandData<>(new RedissonPromise<Void>(), codec, RedisCommands.CLIENT_REPLY, new Object[]{"ON"}));
                     }
                     if (options.getSyncSlaves() > 0) {
                         BatchCommandData<?, ?> waitCommand = new BatchCommandData(RedisCommands.WAIT, 

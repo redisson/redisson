@@ -33,7 +33,6 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
-import org.redisson.misc.AsyncCountDownLatch;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
@@ -109,7 +108,6 @@ public class CommandBatchService extends CommandAsyncService {
 
     }
 
-    private final AsyncCountDownLatch latch = new AsyncCountDownLatch();
     private final AtomicInteger index = new AtomicInteger();
 
     private final ConcurrentMap<MasterSlaveEntry, Entry> commands = new ConcurrentHashMap<>();
@@ -158,7 +156,7 @@ public class CommandBatchService extends CommandAsyncService {
         if (isRedisBasedQueue()) {
             boolean isReadOnly = options.getExecutionMode() == ExecutionMode.REDIS_READ_ATOMIC;
             RedisExecutor<V, R> executor = new RedisQueuedBatchExecutor<>(isReadOnly, nodeSource, codec, command, params, mainPromise,
-                    false, connectionManager, objectBuilder, commands, connections, options, index, executed, latch, referenceType, noRetry);
+                    false, connectionManager, objectBuilder, commands, connections, options, index, executed, referenceType, noRetry);
             executor.execute();
         } else {
             RedisExecutor<V, R> executor = new RedisBatchExecutor<>(readOnlyMode, nodeSource, codec, command, params, mainPromise, 
@@ -370,11 +368,6 @@ public class CommandBatchService extends CommandAsyncService {
     }
 
     private <R> RFuture<R> executeRedisBasedQueue() {
-        int permits = 0;
-        for (Entry entry : commands.values()) {
-            permits += entry.getCommands().size();
-        }
-        
         RPromise<R> resultPromise = new RedissonPromise<R>();
         long responseTimeout;
         if (options.getResponseTimeout() > 0) {
@@ -397,9 +390,12 @@ public class CommandBatchService extends CommandAsyncService {
             }
         }, responseTimeout, TimeUnit.MILLISECONDS);
 
-        latch.latch(new Runnable() {
-            @Override
-            public void run() {
+        CompletableFuture<Void> allFutures = CompletableFuture.allOf(commands.values().stream()
+                                                                            .flatMap(m -> m.getCommands()
+                                                                                                .stream().map(c -> ((BatchPromise) c.getPromise()).getSentPromise()))
+                                                                            .toArray(CompletableFuture[]::new));
+
+        allFutures.whenComplete((fr, exc) -> {
                 if (!timeout.cancel()) {
                     return;
                 }
@@ -463,12 +459,12 @@ public class CommandBatchService extends CommandAsyncService {
                             }
                         }
 
-                        List<BatchCommandData> entries = new ArrayList<BatchCommandData>();
+                        List<BatchCommandData> entries = new ArrayList<>();
                         for (Entry e : commands.values()) {
                             entries.addAll(e.getCommands());
                         }
                         Collections.sort(entries);
-                        List<Object> responses = new ArrayList<Object>(entries.size());
+                        List<Object> responses = new ArrayList<>(entries.size());
                         int syncedSlaves = 0;
                         for (BatchCommandData<?, ?> commandEntry : entries) {
                             if (isWaitCommand(commandEntry)) {
@@ -488,8 +484,7 @@ public class CommandBatchService extends CommandAsyncService {
                         resultPromise.tryFailure(e);
                     }
                 });
-            }
-        }, permits);
+        });
         return resultPromise;
     }
 
