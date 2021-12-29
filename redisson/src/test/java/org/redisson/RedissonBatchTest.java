@@ -365,6 +365,8 @@ public class RedissonBatchTest extends BaseTest {
             String[] t = redisson.getKeys().getKeysStreamByPattern("*").toArray(String[]::new);
         } catch (Exception ex) {
             ex.printStackTrace();
+        } finally {
+            redisson.shutdown();
         }
     }
 

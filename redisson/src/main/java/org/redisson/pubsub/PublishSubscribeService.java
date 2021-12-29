@@ -18,7 +18,6 @@ package org.redisson.pubsub;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import org.redisson.PubSubPatternStatusListener;
-import org.redisson.api.RFuture;
 import org.redisson.client.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
@@ -27,7 +26,6 @@ import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -441,22 +439,22 @@ public class PublishSubscribeService {
         entry2PubSubConnection.remove(entry);
     }
 
-    public RFuture<Codec> unsubscribe(ChannelName channelName, PubSubType topicType) {
+    public CompletableFuture<Codec> unsubscribe(ChannelName channelName, PubSubType topicType) {
         return unsubscribe(channelName, getEntry(channelName), topicType);
     }
 
-    private RFuture<Codec> unsubscribe(ChannelName channelName, MasterSlaveEntry e, PubSubType topicType) {
+    private CompletableFuture<Codec> unsubscribe(ChannelName channelName, MasterSlaveEntry e, PubSubType topicType) {
         if (connectionManager.isShuttingDown()) {
-            return RedissonPromise.newSucceededFuture(null);
+            return CompletableFuture.completedFuture(null);
         }
 
-        RPromise<Codec> result = new RedissonPromise<>();
+        CompletableFuture<Codec> result = new CompletableFuture<>();
         AsyncSemaphore lock = getSemaphore(channelName);
         lock.acquire(() -> {
             PubSubConnectionEntry entry = name2PubSubConnection.remove(new PubSubKey(channelName, e));
             if (entry == null) {
                 lock.release();
-                result.trySuccess(null);
+                result.complete(null);
                 return;
             }
 
@@ -482,7 +480,7 @@ public class PublishSubscribeService {
                             executed.set(true);
 
                             lock.release();
-                            result.trySuccess(entryCodec);
+                            result.complete(entryCodec);
                             return true;
                         }
                         return false;
@@ -572,12 +570,12 @@ public class PublishSubscribeService {
     }
 
     private void reattachPubSubListeners(ChannelName channelName, MasterSlaveEntry en, Collection<RedisPubSubListener<?>> listeners, PubSubType topicType) {
-        RFuture<Codec> subscribeCodecFuture = unsubscribe(channelName, en, topicType);
+        CompletableFuture<Codec> subscribeCodecFuture = unsubscribe(channelName, en, topicType);
         if (listeners.isEmpty()) {
             return;
         }
 
-        subscribeCodecFuture.onComplete((subscribeCodec, e) -> {
+        subscribeCodecFuture.whenComplete((subscribeCodec, e) -> {
             if (subscribeCodec == null) {
                 return;
             }

@@ -521,7 +521,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 if (e != null) {
                     if (e.getMessage().startsWith("NOSCRIPT")) {
                         RFuture<String> loadFuture = loadScript(executor.getRedisClient(), script);
-                        loadFuture.onComplete((r, ex) -> {
+                        loadFuture.whenComplete((r, ex) -> {
                             if (ex != null) {
                                 free(pps);
                                 mainPromise.completeExceptionally(ex);
@@ -627,29 +627,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                     return connectionManager.calcSlot(k);
                         }, Collectors.toList())));
 
-        long total = entry2keys.values().stream().mapToInt(m -> m.size()).sum();
-
-        RPromise<R> result = new RedissonPromise<>();
-        AtomicLong executed = new AtomicLong(total);
-        AtomicReference<Throwable> failed = new AtomicReference<>();
-        BiConsumer<T, Throwable> listener = (res, ex) -> {
-            if (ex != null) {
-                failed.set(ex);
-            } else {
-                if (res != null) {
-                    callback.onSlotResult(res);
-                }
-            }
-
-            if (executed.decrementAndGet() == 0) {
-                if (failed.get() != null) {
-                    result.tryFailure(failed.get());
-                } else {
-                    result.trySuccess(callback.onFinish());
-                }
-            }
-        };
-
+        List<CompletableFuture<?>> futures = new ArrayList<>();
         for (Entry<MasterSlaveEntry, Map<Integer, List<String>>> entry : entry2keys.entrySet()) {
             // executes in batch due to CROSSLOT error
             CommandBatchService executorService;
@@ -667,10 +645,10 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 }
                 if (readOnly) {
                     RFuture<T> f = executorService.readAsync(entry.getKey(), codec, c, callback.createParams(groupedKeys));
-                    f.onComplete(listener);
+                    futures.add(f.toCompletableFuture());
                 } else {
                     RFuture<T> f = executorService.writeAsync(entry.getKey(), codec, c, callback.createParams(groupedKeys));
-                    f.onComplete(listener);
+                    futures.add(f.toCompletableFuture());
                 }
             }
 
@@ -679,7 +657,16 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             }
         }
 
-        return result;
+        CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        CompletableFuture<R> result = future.whenComplete((res, e) -> {
+            futures.forEach(f -> {
+                if (!f.isCompletedExceptionally() && f.getNow(null) != null) {
+                    callback.onSlotResult((T) f.getNow(null));
+                }
+            });
+        }).thenApply(r -> callback.onFinish());
+
+        return new CompletableFutureWrapper<>(result);
     }
 
     
@@ -760,9 +747,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     private <V> void poll(String name, Codec codec, RPromise<V> result, AtomicReference<Iterator<String>> ref, 
             List<String> names, AtomicLong counter, RedisCommand<Object> command) {
         if (ref.get().hasNext()) {
-            String currentName = ref.get().next().toString();
+            String currentName = ref.get().next();
             RFuture<V> future = writeAsync(currentName, codec, command, currentName, 1);
-            future.onComplete((res, e) -> {
+            future.whenComplete((res, e) -> {
                 if (e != null) {
                     result.tryFailure(e);
                     return;

@@ -202,16 +202,9 @@ public class CommandBatchService extends CommandAsyncService {
     }
 
     public RFuture<Void> executeAsyncVoid() {
-        RedissonPromise<Void> promise = new RedissonPromise<Void>();
-        RFuture<BatchResult<?>> resFuture = executeAsync();
-        resFuture.onComplete((res, e) -> {
-            if (e == null) {
-                promise.trySuccess(null);
-            } else {
-                promise.tryFailure(e);
-            }
-        });
-        return promise;
+        CompletableFuture<BatchResult<?>> resFuture = executeAsync().toCompletableFuture();
+        CompletableFuture<Void> s = resFuture.thenApply(res -> null);
+        return new CompletableFutureWrapper<>(s);
     }
 
     public boolean isExecuted() {
@@ -343,7 +336,7 @@ public class CommandBatchService extends CommandAsyncService {
                 service.executeAsync();
             }
             
-            entry.getKey().onComplete((res, e) -> {
+            entry.getKey().whenComplete((res, e) -> {
                 handle(voidPromise, slots, entry.getKey());
             });
         }

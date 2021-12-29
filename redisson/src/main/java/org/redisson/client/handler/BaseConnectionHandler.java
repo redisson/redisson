@@ -97,7 +97,7 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
         final AtomicBoolean retry = new AtomicBoolean();
         final AtomicInteger commandsCounter = new AtomicInteger(futures.size());
         for (RFuture<Object> future : futures) {
-            future.onComplete((res, e) -> {
+            future.whenComplete((res, e) -> {
                 if (e != null) {
                     if (e instanceof RedisLoadingException) {
                         if (retry.compareAndSet(false, true)) {

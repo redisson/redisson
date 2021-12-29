@@ -369,7 +369,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
                     }
 
                     RFuture<String> f = c.async(RedisCommands.PING);
-                    f.onComplete((t, ex) -> {
+                    f.whenComplete((t, ex) -> {
                         try {
                             synchronized (entry) {
                                 if (entry.getFreezeReason() != FreezeReason.RECONNECT) {

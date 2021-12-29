@@ -75,7 +75,7 @@ public class ElementsSubscribeService {
             subscribeListeners.put(listenerId, f);
         }
 
-        f.onComplete((r, e) -> {
+        f.whenComplete((r, e) -> {
             if (e != null) {
                 connectionManager.newTimeout(t -> {
                     resubscribe(func, consumer);

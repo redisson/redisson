@@ -73,7 +73,7 @@ public class RedisClientEntry implements ClusterNode {
     public RFuture<Boolean> pingAsync(long timeout, TimeUnit timeUnit) {
         RPromise<Boolean> result = new RedissonPromise<>();
         RFuture<Boolean> f = commandExecutor.readAsync(client, null, RedisCommands.PING_BOOL);
-        f.onComplete((res, e) -> {
+        f.whenComplete((res, e) -> {
             if (e != null) {
                 result.trySuccess(false);
                 return;

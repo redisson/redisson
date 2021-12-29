@@ -289,7 +289,7 @@ public class RedisConnection implements RedisCommands {
             channel.close();
         } else {
             RFuture<Void> f = async(RedisCommands.QUIT);
-            f.onComplete((res, e) -> {
+            f.whenComplete((res, e) -> {
                 channel.close();
             });
         }

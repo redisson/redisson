@@ -140,7 +140,7 @@ public abstract class QueueTransferTask {
     
     private void pushTask() {
         RFuture<Long> startTimeFuture = pushTaskAsync();
-        startTimeFuture.onComplete((res, e) -> {
+        startTimeFuture.whenComplete((res, e) -> {
             if (e != null) {
                 if (e instanceof RedissonShutdownException) {
                     return;

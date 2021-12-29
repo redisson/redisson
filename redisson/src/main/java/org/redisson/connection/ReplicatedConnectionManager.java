@@ -175,7 +175,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
             }
 
             RFuture<Map<String, String>> result = connection.async(RedisCommands.INFO_REPLICATION);
-            result.onComplete((r, ex) -> {
+            result.whenComplete((r, ex) -> {
                 if (ex != null) {
                     log.error(ex.getMessage(), ex);
                     closeNodeConnection(connection);

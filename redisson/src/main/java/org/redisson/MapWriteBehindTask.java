@@ -62,7 +62,7 @@ public class MapWriteBehindTask {
 
     private void pollTask(Map<Object, Object> addedMap, List<Object> deletedKeys) {
         RFuture<MapWriterTask> future = writeBehindTasks.pollAsync();
-        future.onComplete((task, e) -> {
+        future.whenComplete((task, e) -> {
             if (e != null) {
                 log.error(e.getMessage(), e);
 
