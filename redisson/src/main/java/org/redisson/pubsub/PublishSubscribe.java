@@ -51,7 +51,7 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
                     throw new IllegalStateException();
                 }
                 service.unsubscribe(PubSubType.UNSUBSCRIBE, new ChannelName(channelName))
-                        .onComplete((r, e) -> {
+                        .whenComplete((r, e) -> {
                             semaphore.release();
                         });
             } else {

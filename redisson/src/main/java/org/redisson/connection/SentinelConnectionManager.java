@@ -29,9 +29,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.config.*;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
-import org.redisson.misc.RPromise;
 import org.redisson.misc.RedisURI;
-import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -577,31 +575,26 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         return toURI(scheme, addr.getAddress().getHostAddress(), "" + addr.getPort());
     }
 
-    private RFuture<Void> addSlave(RedisURI uri) {
-        RPromise<Void> result = new RedissonPromise<Void>();
+    private CompletableFuture<Void> addSlave(RedisURI uri) {
         // to avoid addition twice
         MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
         if (!entry.hasSlave(uri) && !config.checkSkipSlavesInit()) {
             CompletableFuture<Void> future = entry.addSlave(uri);
-            future.whenComplete((res, e) -> {
+            return future.whenComplete((res, e) -> {
                 if (e != null) {
-                    result.tryFailure(e);
                     log.error("Can't add slave: " + uri, e);
                     return;
                 }
 
                 if (entry.isSlaveUnfreezed(uri) || entry.slaveUp(uri, FreezeReason.MANAGER)) {
                     log.info("slave: {} added", uri);
-                    result.trySuccess(null);
                 }
             });
-        } else {
-            if (entry.hasSlave(uri)) {
-                slaveUp(uri);
-            }
-            result.trySuccess(null);
         }
-        return result;
+        if (entry.hasSlave(uri)) {
+            slaveUp(uri);
+        }
+        return CompletableFuture.completedFuture(null);
     }
 
     private void slaveDown(RedisURI uri) {

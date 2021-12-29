@@ -303,7 +303,7 @@ public class PublishSubscribeService {
                 }
                 if (!connEntry.hasListeners(channelName)) {
                     unsubscribe(type, channelName)
-                        .onComplete((r, ex) -> {
+                        .whenComplete((r, ex) -> {
                             lock.release();
                         });
                 } else {
@@ -386,14 +386,14 @@ public class PublishSubscribeService {
         });
     }
 
-    public RFuture<Void> unsubscribe(PubSubType topicType, ChannelName channelName) {
+    public CompletableFuture<Void> unsubscribe(PubSubType topicType, ChannelName channelName) {
         PubSubConnectionEntry entry = name2PubSubConnection.remove(createKey(channelName));
         if (entry == null || connectionManager.isShuttingDown()) {
-            return RedissonPromise.newSucceededFuture(null);
+            return CompletableFuture.completedFuture(null);
         }
 
         AtomicBoolean executed = new AtomicBoolean();
-        RedissonPromise<Void> result = new RedissonPromise<>();
+        CompletableFuture<Void> result = new CompletableFuture<>();
         BaseRedisPubSubListener listener = new BaseRedisPubSubListener() {
 
             @Override
@@ -406,7 +406,7 @@ public class PublishSubscribeService {
                         msEntry.returnPubSubConnection(entry.getConnection());
                     }
 
-                    result.trySuccess(null);
+                    result.complete(null);
                     return true;
                 }
                 return false;
@@ -644,7 +644,7 @@ public class PublishSubscribeService {
                 entry.removeListener(channelName, listener);
                 if (!entry.hasListeners(channelName)) {
                     unsubscribe(type, channelName)
-                        .onComplete((r, ex) -> {
+                        .whenComplete((r, ex) -> {
                             if (counter.decrementAndGet() == 0) {
                                 semaphore.release();
                                 promise.complete(null);
@@ -686,7 +686,7 @@ public class PublishSubscribeService {
                 }
                 if (!entry.hasListeners(channelName)) {
                     unsubscribe(type, channelName)
-                        .onComplete((r, ex) -> {
+                        .whenComplete((r, ex) -> {
                             if (counter.decrementAndGet() == 0) {
                                 semaphore.release();
                                 promise.complete(null);

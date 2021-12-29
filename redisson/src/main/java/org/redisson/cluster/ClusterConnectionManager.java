@@ -33,16 +33,13 @@ import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.ReadMode;
 import org.redisson.connection.*;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
-import org.redisson.misc.RPromise;
 import org.redisson.misc.RedisURI;
-import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.stream.Collectors;
@@ -433,7 +430,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     private void updateClusterState(ClusterServersConfig cfg, RedisConnection connection, 
             Iterator<RedisURI> iterator, RedisURI uri, AtomicReference<Throwable> lastException) {
         RFuture<List<ClusterNodeInfo>> future = connection.async(clusterNodesCommand);
-        future.onComplete((nodes, e) -> {
+        future.whenComplete((nodes, e) -> {
                 if (e != null) {
                     closeNodeConnection(connection);
                     lastException.set(e);
@@ -461,9 +458,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
                 CompletableFuture<Collection<ClusterPartition>> newPartitionsFuture = parsePartitions(nodes);
                 newPartitionsFuture.whenComplete((newPartitions, ex) -> {
-                    RFuture<Void> masterFuture = checkMasterNodesChange(cfg, newPartitions);
+                    CompletableFuture<Void> masterFuture = checkMasterNodesChange(cfg, newPartitions);
                     checkSlaveNodesChange(newPartitions);
-                    masterFuture.onComplete((res, exc) -> {
+                    masterFuture.whenComplete((res, exc) -> {
                         checkSlotsMigration(newPartitions);
                         checkSlotsChange(newPartitions);
                         getShutdownLatch().release();
@@ -555,7 +552,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         });
     }
 
-    private RFuture<Void> checkMasterNodesChange(ClusterServersConfig cfg, Collection<ClusterPartition> newPartitions) {
+    private CompletableFuture<Void> checkMasterNodesChange(ClusterServersConfig cfg, Collection<ClusterPartition> newPartitions) {
         Map<RedisURI, ClusterPartition> lastPartitions = getLastPartitonsByURI();
         Map<RedisURI, ClusterPartition> addedPartitions = new HashMap<>();
         Set<RedisURI> mastersElected = new HashSet<>();
@@ -596,20 +593,16 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
         addedPartitions.keySet().removeAll(mastersElected);
         if (addedPartitions.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(null);
+            return CompletableFuture.completedFuture(null);
         }
 
-        RPromise<Void> result = new RedissonPromise<>();
-        AtomicInteger masters = new AtomicInteger(addedPartitions.size());
+        List<CompletableFuture<?>> futures = new ArrayList<>();
         for (ClusterPartition newPart : addedPartitions.values()) {
-            CompletionStage<Void> future = addMasterEntry(newPart, cfg);
-            future.whenComplete((res, e) -> {
-                if (masters.decrementAndGet() == 0) {
-                    result.trySuccess(null);
-                }
-            });
+            CompletableFuture<Void> future = addMasterEntry(newPart, cfg);
+            futures.add(future);
         }
-        return result;
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                                    .exceptionally(e -> null);
     }
 
     private void checkSlotsChange(Collection<ClusterPartition> newPartitions) {

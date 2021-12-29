@@ -28,7 +28,6 @@ import org.redisson.connection.NodeSource;
 import org.redisson.connection.NodeSource.Redirect;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.misc.LogHelper;
-import org.redisson.misc.RedissonPromise;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -145,7 +144,7 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
             
             if (connectionEntry.isFirstCommand()) {
                 List<CommandData<?, ?>> list = new ArrayList<>(2);
-                list.add(new CommandData<>(new RedissonPromise<Void>(), codec, RedisCommands.MULTI, new Object[]{}));
+                list.add(new CommandData<>(new CompletableFuture<>(), codec, RedisCommands.MULTI, new Object[]{}));
                 list.add(new CommandData<>(attemptPromise, codec, command, params));
                 CompletableFuture<Void> main = new CompletableFuture<>();
                 writeFuture = connection.send(new CommandsData(main, list, true, syncSlaves));
@@ -157,13 +156,13 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
                     List<CommandData<?, ?>> list = new ArrayList<>();
 
                     if (options.isSkipResult()) {
-                        list.add(new CommandData<>(new RedissonPromise<Void>(), codec, RedisCommands.CLIENT_REPLY, new Object[]{"OFF"}));
+                        list.add(new CommandData<>(new CompletableFuture<>(), codec, RedisCommands.CLIENT_REPLY, new Object[]{"OFF"}));
                     }
                     
                     list.add(new CommandData<>(attemptPromise, codec, command, params));
                     
                     if (options.isSkipResult()) {
-                        list.add(new CommandData<>(new RedissonPromise<Void>(), codec, RedisCommands.CLIENT_REPLY, new Object[]{"ON"}));
+                        list.add(new CommandData<>(new CompletableFuture<>(), codec, RedisCommands.CLIENT_REPLY, new Object[]{"ON"}));
                     }
                     if (options.getSyncSlaves() > 0) {
                         BatchCommandData<?, ?> waitCommand = new BatchCommandData(RedisCommands.WAIT, 
