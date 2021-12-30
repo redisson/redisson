@@ -34,6 +34,11 @@ public class CompletableFutureWrapper<V> implements RFuture<V> {
     private final CompletableFuture<V> future;
     private CompletableFuture<V> lastFuture;
 
+    public CompletableFutureWrapper(CompletionStage<V> stage) {
+        this.future = stage.toCompletableFuture();
+        this.lastFuture = future;
+    }
+
     public CompletableFutureWrapper(CompletableFuture<V> future) {
         this.future = future;
         this.lastFuture = future;

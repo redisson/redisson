@@ -38,6 +38,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
@@ -130,8 +131,8 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
 
                 RemotePromise<Object> result = createResultPromise(optionsCopy, requestId, requestQueueName,
                         ackTimeout);
-                RFuture<Boolean> addFuture = remoteService.addAsync(requestQueueName, request, result);
-                addFuture.onComplete((res, e) -> {
+                CompletableFuture<Boolean> addFuture = remoteService.addAsync(requestQueueName, request, result);
+                addFuture.whenComplete((res, e) -> {
                         if (e != null) {
                             if (responseFuture != null) {
                                 responseFuture.cancel(false);
@@ -324,27 +325,27 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
             }
 
             @Override
-            public RFuture<Boolean> cancelAsync(boolean mayInterruptIfRunning) {
+            public CompletableFuture<Boolean> cancelAsync(boolean mayInterruptIfRunning) {
                 return AsyncRemoteProxy.this.cancelAsync(optionsCopy, this, requestId, requestQueueName, ackTimeout, mayInterruptIfRunning);
             }
         };
         return result;
     }
 
-    private RFuture<Boolean> cancelAsync(RemoteInvocationOptions optionsCopy, RemotePromise<Object> promise,
+    private CompletableFuture<Boolean> cancelAsync(RemoteInvocationOptions optionsCopy, RemotePromise<Object> promise,
                                         RequestId requestId, String requestQueueName, Long ackTimeout, boolean mayInterruptIfRunning) {
         if (promise.isCancelled()) {
-            return RedissonPromise.newSucceededFuture(true);
+            return CompletableFuture.completedFuture(true);
         }
 
         if (promise.isDone()) {
-            return RedissonPromise.newSucceededFuture(false);
+            return CompletableFuture.completedFuture(false);
         }
 
         RPromise<Boolean> result = new RedissonPromise<>();
         if (optionsCopy.isAckExpected()) {
             String ackName = remoteService.getAckName(requestId);
-            RFuture<Boolean> future = commandExecutor.evalWriteNoRetryAsync(responseQueueName, LongCodec.INSTANCE,
+            RFuture<Boolean> f = commandExecutor.evalWriteNoRetryAsync(responseQueueName, LongCodec.INSTANCE,
                     RedisCommands.EVAL_BOOLEAN,
                     "if redis.call('setnx', KEYS[1], 1) == 1 then "
                         + "redis.call('pexpire', KEYS[1], ARGV[1]);"
@@ -356,69 +357,44 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
                     Arrays.<Object> asList(ackName),
 //                                    Arrays.<Object> asList(ackName, responseQueueName, requestQueueName),
                     ackTimeout);
+            CompletableFuture<Boolean> future = f.toCompletableFuture();
 
-            future.onComplete((ackNotSent, e) -> {
-                if (e != null) {
-                    result.tryFailure(e);
-                    return;
-                }
-
+            return future.thenCompose(ackNotSent -> {
                 if (ackNotSent) {
                     RList<Object> list = new RedissonList<>(LongCodec.INSTANCE, commandExecutor, requestQueueName, null);
-                    RFuture<Boolean> f = list.removeAsync(requestId.toString());
-                    f.onComplete((res, ex) -> {
-                        if (ex != null) {
-                            result.tryFailure(ex);
-                            return;
-                        }
-
+                    CompletableFuture<Boolean> removeFuture = list.removeAsync(requestId.toString()).toCompletableFuture();
+                    return removeFuture.thenApply(res -> {
                         promise.doCancel(mayInterruptIfRunning);
-                        result.trySuccess(true);
+                        return true;
                     });
                 }
 
-                doCancelAsync(mayInterruptIfRunning, result, promise, optionsCopy);
+                return doCancelAsync(mayInterruptIfRunning, promise, optionsCopy);
             });
-            return result;
         }
 
-        RFuture<Boolean> removeFuture = remoteService.removeAsync(requestQueueName, requestId);
-        removeFuture.onComplete((removed, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
-            }
-
+        CompletableFuture<Boolean> removeFuture = remoteService.removeAsync(requestQueueName, requestId);
+        return removeFuture.thenCompose(removed -> {
             if (removed) {
                 promise.doCancel(mayInterruptIfRunning);
             }
 
-            doCancelAsync(mayInterruptIfRunning, result, promise, optionsCopy);
+            return doCancelAsync(mayInterruptIfRunning, promise, optionsCopy);
         });
-        return result;
     }
 
-    private void doCancelAsync(boolean mayInterruptIfRunning, RPromise<Boolean> result, RemotePromise<Object> promise, RemoteInvocationOptions optionsCopy) {
+    private CompletableFuture<Boolean> doCancelAsync(boolean mayInterruptIfRunning, RemotePromise<Object> promise, RemoteInvocationOptions optionsCopy) {
         if (promise.isCancelled()) {
-            result.trySuccess(true);
-            return;
+            return CompletableFuture.completedFuture(true);
         }
 
         if (promise.isDone()) {
-            result.trySuccess(false);
-            return;
+            return CompletableFuture.completedFuture(false);
         }
 
         cancelExecution(optionsCopy, mayInterruptIfRunning, promise, cancelRequestMapName);
 
-        promise.onComplete((r, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
-            }
-
-            result.trySuccess(promise.isCancelled());
-        });
+        return promise.thenApply(r -> promise.isCancelled());
     }
 
     private void cancelExecution(RemoteInvocationOptions optionsCopy,

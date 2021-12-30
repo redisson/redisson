@@ -31,10 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -81,29 +78,30 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
     }
 
     @Override
-    protected RFuture<Boolean> addAsync(String requestQueueName, RemoteServiceRequest request,
-            RemotePromise<Object> result) {
+    protected CompletableFuture<Boolean> addAsync(String requestQueueName, RemoteServiceRequest request,
+                                                  RemotePromise<Object> result) {
         RFuture<Boolean> future = commandExecutor.evalWriteNoRetryAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                   "redis.call('hset', KEYS[2], ARGV[1], ARGV[2]);"
                 + "redis.call('rpush', KEYS[1], ARGV[1]); "
                 + "return 1;",
-                Arrays.<Object>asList(requestQueueName, requestQueueName + ":tasks"),
+                Arrays.asList(requestQueueName, requestQueueName + ":tasks"),
                 request.getId(), encode(request));
 
-        result.setAddFuture(future);
-        return future;
+        result.setAddFuture(future.toCompletableFuture());
+        return future.toCompletableFuture();
     }
 
     @Override
-    protected RFuture<Boolean> removeAsync(String requestQueueName, RequestId taskId) {
-        return commandExecutor.evalWriteNoRetryAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+    protected CompletableFuture<Boolean> removeAsync(String requestQueueName, RequestId taskId) {
+        RFuture<Boolean> f = commandExecutor.evalWriteNoRetryAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('lrem', KEYS[1], 1, ARGV[1]) > 0 then "
                         + "redis.call('hdel', KEYS[2], ARGV[1]);" +
                            "return 1;" +
                        "end;"
                       + "return 0;",
-              Arrays.<Object>asList(requestQueueName, requestQueueName + ":tasks"),
+              Arrays.asList(requestQueueName, requestQueueName + ":tasks"),
               taskId.toString());
+        return f.toCompletableFuture();
     }
         
     @Override

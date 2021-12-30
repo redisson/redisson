@@ -150,7 +150,24 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             throw convertException(e);
         }
     }
-    
+
+    @Override
+    public <V> V get(CompletableFuture<V> future) {
+        if (Thread.currentThread().getName().startsWith("redisson-netty")) {
+            throw new IllegalStateException("Sync methods can't be invoked from async/rx/reactive listeners");
+        }
+
+        try {
+            return future.get();
+        } catch (InterruptedException e) {
+            future.cancel(true);
+            Thread.currentThread().interrupt();
+            throw new RedisException(e);
+        } catch (ExecutionException e) {
+            throw convertException(e);
+        }
+    }
+
     @Override
     public <V> V getInterrupted(RFuture<V> future) throws InterruptedException {
         try {

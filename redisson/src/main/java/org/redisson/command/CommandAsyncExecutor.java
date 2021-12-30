@@ -54,6 +54,8 @@ public interface CommandAsyncExecutor {
     <V> V getNow(CompletableFuture<V> future);
 
     <V> V get(RFuture<V> future);
+
+    <V> V get(CompletableFuture<V> future);
     
     <V> V getInterrupted(RFuture<V> future) throws InterruptedException;
 

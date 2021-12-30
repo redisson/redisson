@@ -15,9 +15,10 @@
  */
 package org.redisson.executor;
 
-import org.redisson.api.RFuture;
 import org.redisson.misc.RedissonPromise;
 import org.redisson.remote.RequestId;
+
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 
@@ -27,7 +28,7 @@ import org.redisson.remote.RequestId;
 public class RemotePromise<T> extends RedissonPromise<T> {
 
     private final RequestId requestId;
-    private RFuture<Boolean> addFuture;
+    private CompletableFuture<Boolean> addFuture;
     
     public RemotePromise(RequestId requestId) {
         super();
@@ -38,10 +39,10 @@ public class RemotePromise<T> extends RedissonPromise<T> {
         return requestId;
     }
     
-    public void setAddFuture(RFuture<Boolean> addFuture) {
+    public void setAddFuture(CompletableFuture<Boolean> addFuture) {
         this.addFuture = addFuture;
     }
-    public RFuture<Boolean> getAddFuture() {
+    public CompletableFuture<Boolean> getAddFuture() {
         return addFuture;
     }
     
@@ -49,8 +50,8 @@ public class RemotePromise<T> extends RedissonPromise<T> {
         super.cancel(mayInterruptIfRunning);
     }
 
-    public RFuture<Boolean> cancelAsync(boolean mayInterruptIfRunning) {
-        return RemotePromise.newSucceededFuture(false);
+    public CompletableFuture<Boolean> cancelAsync(boolean mayInterruptIfRunning) {
+        return CompletableFuture.completedFuture(false);
     }
 
 }

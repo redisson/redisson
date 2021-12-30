@@ -28,6 +28,7 @@ import org.redisson.remote.RequestId;
 import org.redisson.remote.ResponseEntry;
 
 import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -49,7 +50,7 @@ public class ScheduledTasksService extends TasksService {
     }
     
     @Override
-    protected RFuture<Boolean> addAsync(String requestQueueName, RemoteServiceRequest request) {
+    protected CompletableFuture<Boolean> addAsync(String requestQueueName, RemoteServiceRequest request) {
         ScheduledParameters params = (ScheduledParameters) request.getArgs()[0];
         params.setRequestId(request.getId());
 
@@ -58,7 +59,7 @@ public class ScheduledTasksService extends TasksService {
             expireTime = System.currentTimeMillis() + params.getTtl();
         }
 
-        return commandExecutor.evalWriteNoRetryAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        RFuture<Boolean> f = commandExecutor.evalWriteNoRetryAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 // check if executor service not in shutdown state
                 "if redis.call('exists', KEYS[2]) == 0 then "
                     + "local retryInterval = redis.call('get', KEYS[6]); "
@@ -79,22 +80,23 @@ public class ScheduledTasksService extends TasksService {
                     + "redis.call('hset', KEYS[5], ARGV[2], ARGV[3]);"
                     + "redis.call('incr', KEYS[1]);"
                     + "local v = redis.call('zrange', KEYS[3], 0, 0); "
-                    // if new task added to queue head then publish its startTime 
-                    // to all scheduler workers 
+                    // if new task added to queue head then publish its startTime
+                    // to all scheduler workers
                     + "if v[1] == ARGV[2] then "
                        + "redis.call('publish', KEYS[4], ARGV[1]); "
                     + "end "
                     + "return 1;"
                 + "end;"
-                + "return 0;", 
+                + "return 0;",
                 Arrays.asList(tasksCounterName, statusName, schedulerQueueName,
                         schedulerChannelName, tasksName, tasksRetryIntervalName, tasksExpirationTimeName),
                 params.getStartTime(), request.getId(), encode(request), tasksRetryInterval, expireTime);
+        return f.toCompletableFuture();
     }
     
     @Override
-    protected RFuture<Boolean> removeAsync(String requestQueueName, RequestId taskId) {
-        return commandExecutor.evalWriteNoRetryAsync(name, StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+    protected CompletableFuture<Boolean> removeAsync(String requestQueueName, RequestId taskId) {
+        RFuture<Boolean> f = commandExecutor.evalWriteNoRetryAsync(name, StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                    // remove from scheduler queue
                     "if redis.call('exists', KEYS[3]) == 0 then "
                       + "return 1;"
@@ -123,8 +125,10 @@ public class ScheduledTasksService extends TasksService {
                       + "return 1; "
                   + "end;"
                   + "return 0;",
-              Arrays.<Object>asList(requestQueueName, schedulerQueueName, tasksCounterName, statusName, terminationTopicName, tasksName, tasksRetryIntervalName), 
+              Arrays.asList(requestQueueName, schedulerQueueName, tasksCounterName, statusName,
+                                terminationTopicName, tasksName, tasksRetryIntervalName),
               taskId.toString(), RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE);
+        return f.toCompletableFuture();
     }
     
     @Override

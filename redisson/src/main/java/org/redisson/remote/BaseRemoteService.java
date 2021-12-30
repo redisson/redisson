@@ -15,17 +15,11 @@
  */
 package org.redisson.remote;
 
-import java.io.IOException;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.util.CharsetUtil;
+import io.netty.util.Timeout;
+import io.netty.util.TimerTask;
 import org.redisson.RedissonMap;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
@@ -41,11 +35,13 @@ import org.redisson.executor.RemotePromise;
 import org.redisson.misc.Hash;
 import org.redisson.misc.RPromise;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.util.CharsetUtil;
-import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
+import java.io.IOException;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 /**
  * 
@@ -186,10 +182,10 @@ public abstract class BaseRemoteService {
         return new RequestId(id);
     }
 
-    protected abstract RFuture<Boolean> addAsync(String requestQueueName, RemoteServiceRequest request,
-            RemotePromise<Object> result);
+    protected abstract CompletableFuture<Boolean> addAsync(String requestQueueName, RemoteServiceRequest request,
+                                                           RemotePromise<Object> result);
 
-    protected abstract RFuture<Boolean> removeAsync(String requestQueueName, RequestId taskId);
+    protected abstract CompletableFuture<Boolean> removeAsync(String requestQueueName, RequestId taskId);
 
     protected long[] getMethodSignature(Method method) {
         long[] result = methodSignaturesCache.get(method);

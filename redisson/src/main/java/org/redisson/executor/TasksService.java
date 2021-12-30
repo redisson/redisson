@@ -29,9 +29,7 @@ import org.redisson.misc.RedissonPromise;
 import org.redisson.remote.*;
 
 import java.util.Arrays;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * 
@@ -91,34 +89,25 @@ public class TasksService extends BaseRemoteService {
     }
 
     @Override
-    protected final RFuture<Boolean> addAsync(String requestQueueName,
-            RemoteServiceRequest request, RemotePromise<Object> result) {
-        final RPromise<Boolean> promise = new RedissonPromise<Boolean>();
-        RFuture<Boolean> future = addAsync(requestQueueName, request);
+    protected final CompletableFuture<Boolean> addAsync(String requestQueueName,
+                                                        RemoteServiceRequest request, RemotePromise<Object> result) {
+        CompletableFuture<Boolean> future = addAsync(requestQueueName, request);
         result.setAddFuture(future);
         
-        future.onComplete((res, e) -> {
-            if (e != null) {
-                promise.tryFailure(e);
-                return;
-            }
-            
+        return future.thenApply(res -> {
             if (!res) {
-                promise.cancel(true);
-                return;
+                throw new CancellationException();
             }
-            
-            promise.trySuccess(true);
+
+            return true;
         });
-        
-        return promise;
     }
 
     protected CommandAsyncExecutor getAddCommandExecutor() {
         return commandExecutor;
     }
     
-    protected RFuture<Boolean> addAsync(String requestQueueName, RemoteServiceRequest request) {
+    protected CompletableFuture<Boolean> addAsync(String requestQueueName, RemoteServiceRequest request) {
         TaskParameters params = (TaskParameters) request.getArgs()[0];
         params.setRequestId(request.getId());
 
@@ -131,38 +120,39 @@ public class TasksService extends BaseRemoteService {
             expireTime = System.currentTimeMillis() + params.getTtl();
         }
 
-        return getAddCommandExecutor().evalWriteNoRetryAsync(name, StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                // check if executor service not in shutdown state
-                "if redis.call('exists', KEYS[2]) == 0 then "
-                    + "redis.call('hset', KEYS[5], ARGV[2], ARGV[3]);"
-                    + "redis.call('rpush', KEYS[6], ARGV[2]); "
-                    + "redis.call('incr', KEYS[1]);"
+        RFuture<Boolean> f = getAddCommandExecutor().evalWriteNoRetryAsync(name, StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                        // check if executor service not in shutdown state
+                        "if redis.call('exists', KEYS[2]) == 0 then "
+                            + "redis.call('hset', KEYS[5], ARGV[2], ARGV[3]);"
+                            + "redis.call('rpush', KEYS[6], ARGV[2]); "
+                            + "redis.call('incr', KEYS[1]);"
 
-                    + "if tonumber(ARGV[5]) > 0 then "
-                        + "redis.call('zadd', KEYS[8], ARGV[5], ARGV[2]);"
-                    + "end; "
+                            + "if tonumber(ARGV[5]) > 0 then "
+                                + "redis.call('zadd', KEYS[8], ARGV[5], ARGV[2]);"
+                            + "end; "
 
-                    + "if tonumber(ARGV[1]) > 0 then "
-                        + "redis.call('set', KEYS[7], ARGV[4]);"
-                        + "redis.call('zadd', KEYS[3], ARGV[1], 'ff' .. ARGV[2]);"
-                        + "local v = redis.call('zrange', KEYS[3], 0, 0); "
-                        // if new task added to queue head then publish its startTime 
-                        // to all scheduler workers 
-                        + "if v[1] == ARGV[2] then "
-                            + "redis.call('publish', KEYS[4], ARGV[1]); "
-                        + "end; "
-                    + "end;"
-                    + "return 1;"
-                + "end;"
-                + "return 0;",
-                Arrays.<Object>asList(tasksCounterName, statusName, schedulerQueueName, schedulerChannelName,
-                                    tasksName, requestQueueName, tasksRetryIntervalName, tasksExpirationTimeName),
-                retryStartTime, request.getId(), encode(request), tasksRetryInterval, expireTime);
+                            + "if tonumber(ARGV[1]) > 0 then "
+                                + "redis.call('set', KEYS[7], ARGV[4]);"
+                                + "redis.call('zadd', KEYS[3], ARGV[1], 'ff' .. ARGV[2]);"
+                                + "local v = redis.call('zrange', KEYS[3], 0, 0); "
+                                // if new task added to queue head then publish its startTime
+                                // to all scheduler workers
+                                + "if v[1] == ARGV[2] then "
+                                    + "redis.call('publish', KEYS[4], ARGV[1]); "
+                                + "end; "
+                            + "end;"
+                            + "return 1;"
+                        + "end;"
+                        + "return 0;",
+                        Arrays.<Object>asList(tasksCounterName, statusName, schedulerQueueName, schedulerChannelName,
+                                            tasksName, requestQueueName, tasksRetryIntervalName, tasksExpirationTimeName),
+                        retryStartTime, request.getId(), encode(request), tasksRetryInterval, expireTime);
+        return f.toCompletableFuture();
     }
     
     @Override
-    protected RFuture<Boolean> removeAsync(String requestQueueName, RequestId taskId) {
-        return commandExecutor.evalWriteNoRetryAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+    protected CompletableFuture<Boolean> removeAsync(String requestQueueName, RequestId taskId) {
+        RFuture<Boolean> f = commandExecutor.evalWriteNoRetryAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "redis.call('zrem', KEYS[2], 'ff' .. ARGV[1]); "
               + "redis.call('zrem', KEYS[8], ARGV[1]); "
               + "local task = redis.call('hget', KEYS[6], ARGV[1]); "
@@ -186,6 +176,7 @@ public class TasksService extends BaseRemoteService {
           Arrays.<Object>asList(requestQueueName, schedulerQueueName, tasksCounterName, statusName, terminationTopicName,
                                 tasksName, tasksRetryIntervalName, tasksExpirationTimeName),
           taskId.toString(), RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE);
+        return f.toCompletableFuture();
     }
 
     @Override
@@ -200,8 +191,8 @@ public class TasksService extends BaseRemoteService {
         RPromise<Boolean> result = new RedissonPromise<>();
         
         String requestQueueName = getRequestQueueName(RemoteExecutorService.class);
-        RFuture<Boolean> removeFuture = removeAsync(requestQueueName, requestId);
-        removeFuture.onComplete((res, e) -> {
+        CompletableFuture<Boolean> removeFuture = removeAsync(requestQueueName, requestId);
+        removeFuture.whenComplete((res, e) -> {
             if (e != null) {
                 result.tryFailure(e);
                 return;

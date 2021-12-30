@@ -15,15 +15,6 @@
  */
 package org.redisson.remote;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 import org.redisson.RedissonBucket;
 import org.redisson.api.RFuture;
 import org.redisson.api.RemoteInvocationOptions;
@@ -32,6 +23,12 @@ import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.executor.RemotePromise;
 import org.redisson.misc.RPromise;
+
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.util.Optional;
+import java.util.concurrent.*;
 
 /**
  * 
@@ -87,10 +84,10 @@ public class SyncRemoteProxy extends BaseRemoteProxy {
                 }
                 
                 RemotePromise<Object> addPromise = new RemotePromise<Object>(requestId);
-                RFuture<Boolean> futureAdd = remoteService.addAsync(requestQueueName, request, addPromise);
+                CompletableFuture<Boolean> futureAdd = remoteService.addAsync(requestQueueName, request, addPromise);
                 Boolean res;
                 try {
-                    res = futureAdd.toCompletableFuture().join();
+                    res = futureAdd.join();
                 } catch (Exception e) {
                     if (responseFuture != null) {
                         responseFuture.cancel(false);
