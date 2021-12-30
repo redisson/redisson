@@ -36,6 +36,7 @@ import org.redisson.client.protocol.decoder.*;
 import org.redisson.command.CommandAsyncService;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.MasterSlaveEntry;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 import org.springframework.dao.DataAccessException;
@@ -55,6 +56,7 @@ import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -231,9 +233,11 @@ public class RedissonConnection extends AbstractRedisConnection {
             return read(null, ByteArrayCodec.INSTANCE, KEYS, pattern);
         }
 
-        Set<byte[]> results = new HashSet<byte[]>();
-        RFuture<Set<byte[]>> f = (RFuture<Set<byte[]>>)(Object)(executorService.readAllAsync(results, ByteArrayCodec.INSTANCE, KEYS, pattern));
-        return sync(f);
+        RFuture<Collection<byte[]>> f = executorService.readAllAsync(ByteArrayCodec.INSTANCE, KEYS, pattern);
+        CompletableFuture<Set<byte[]>> future = f.thenApply(r -> {
+            return (Set<byte[]>)new HashSet<>(r);
+        }).toCompletableFuture();
+        return sync(new CompletableFutureWrapper<>(future));
     }
 
     @Override
