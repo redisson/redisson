@@ -15,14 +15,15 @@
  */
 package org.redisson.mapreduce;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
-
 import org.redisson.api.RExecutorService;
 import org.redisson.api.RFuture;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * 
@@ -31,46 +32,24 @@ import org.redisson.api.RFuture;
  */
 public class SubTasksExecutor {
 
-    public static class LatchListener implements BiConsumer<Object, Throwable> {
-
-        private CountDownLatch latch;
-        
-        public LatchListener() {
-        }
-        
-        public LatchListener(CountDownLatch latch) {
-            super();
-            this.latch = latch;
-        }
-
-        @Override
-        public void accept(Object t, Throwable u) {
-            latch.countDown();
-        }
-        
-    }
-    
-    private final List<RFuture<?>> futures = new ArrayList<RFuture<?>>();
-    private final CountDownLatch latch;
+    private final List<CompletableFuture<?>> futures = new ArrayList<>();
     private final RExecutorService executor;
     private final long startTime;
     private final long timeout;
 
-    public SubTasksExecutor(RExecutorService executor, int workersAmount, long startTime, long timeout) {
+    public SubTasksExecutor(RExecutorService executor, long startTime, long timeout) {
         this.executor = executor;
-        this.latch = new CountDownLatch(workersAmount);
         this.startTime = startTime;
         this.timeout = timeout;
     }
     
     public void submit(Runnable runnable) {
         RFuture<?> future = executor.submitAsync(runnable);
-        future.onComplete(new LatchListener(latch));
-        futures.add(future);
+        futures.add(future.toCompletableFuture());
     }
     
-    private void cancel(List<RFuture<?>> futures) {
-        for (RFuture<?> future : futures) {
+    private void cancel(List<CompletableFuture<?>> futures) {
+        for (CompletableFuture<?> future : futures) {
             future.cancel(true);
         }
     }
@@ -90,22 +69,28 @@ public class SubTasksExecutor {
             cancel(futures);
             throw new MapReduceTimeoutException();
         }
+
+        CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
         try {
-            if (timeout > 0 && !latch.await(timeout - timeSpent, TimeUnit.MILLISECONDS)) {
-                cancel(futures);
-                throw new MapReduceTimeoutException();
-            }
-            if (timeout == 0) {
-                latch.await();
+            if (timeout > 0) {
+                try {
+                    future.get(timeout - timeSpent, TimeUnit.MILLISECONDS);
+                } catch (ExecutionException e) {
+                    // skip
+                } catch (TimeoutException e) {
+                    cancel(futures);
+                    throw new MapReduceTimeoutException();
+                }
+            } else if (timeout == 0) {
+                try {
+                    future.get();
+                } catch (ExecutionException e) {
+                    throw (Exception) e.getCause();
+                }
             }
         } catch (InterruptedException e) {
             cancel(futures);
             return false;
-        }
-        for (RFuture<?> rFuture : futures) {
-            if (!rFuture.isSuccess()) {
-                throw (Exception) rFuture.cause();
-            }
         }
         return true;
     }

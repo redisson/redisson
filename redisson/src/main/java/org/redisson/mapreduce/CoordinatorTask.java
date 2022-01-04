@@ -15,10 +15,6 @@
  */
 package org.redisson.mapreduce;
 
-import java.io.Serializable;
-import java.util.UUID;
-import java.util.concurrent.*;
-
 import org.redisson.Redisson;
 import org.redisson.api.RExecutorService;
 import org.redisson.api.RFuture;
@@ -28,6 +24,10 @@ import org.redisson.api.annotation.RInject;
 import org.redisson.api.mapreduce.RCollator;
 import org.redisson.api.mapreduce.RReducer;
 import org.redisson.client.codec.Codec;
+
+import java.io.Serializable;
+import java.util.UUID;
+import java.util.concurrent.*;
 
 /**
  * 
@@ -121,10 +121,10 @@ public class CoordinatorTask<KOut, VOut> implements Callable<Object>, Serializab
             return null;
         }
 
-        SubTasksExecutor reduceExecutor = new SubTasksExecutor(executor, workersAmount, startTime, timeout);
+        SubTasksExecutor reduceExecutor = new SubTasksExecutor(executor, startTime, timeout);
         for (int i = 0; i < workersAmount; i++) {
             String name = collectorMapName + ":" + i;
-            Runnable runnable = new ReducerTask<KOut, VOut>(name, reducer, objectCodecClass, resultMapName, timeout - timeSpent);
+            Runnable runnable = new ReducerTask<>(name, reducer, objectCodecClass, resultMapName, timeout - timeSpent);
             reduceExecutor.submit(runnable);
         }
 

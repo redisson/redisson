@@ -15,23 +15,18 @@
  */
 package org.redisson;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Condition;
-
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.api.RLockAsync;
 import org.redisson.client.RedisResponseTimeoutException;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
-import org.redisson.misc.TransferListener;
+
+import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Condition;
 
 /**
  * Groups multiple independent locks and manages them as one lock.
@@ -88,17 +83,15 @@ public class RedissonMultiLock implements RLock {
             }
 
             RLock lock = iterator.next();
-            RPromise<Boolean> lockAcquiredFuture = new RedissonPromise<Boolean>();
+            RFuture<Boolean> lockAcquiredFuture;
             if (waitTime == -1 && leaseTime == -1) {
-                lock.tryLockAsync(threadId)
-                    .onComplete(new TransferListener<Boolean>(lockAcquiredFuture));
+                lockAcquiredFuture = lock.tryLockAsync(threadId);
             } else {
                 long awaitTime = Math.min(lockWaitTime, remainTime);
-                lock.tryLockAsync(awaitTime, newLeaseTime, TimeUnit.MILLISECONDS, threadId)
-                    .onComplete(new TransferListener<Boolean>(lockAcquiredFuture));
+                lockAcquiredFuture = lock.tryLockAsync(awaitTime, newLeaseTime, TimeUnit.MILLISECONDS, threadId);
             }
             
-            lockAcquiredFuture.onComplete((res, e) -> {
+            lockAcquiredFuture.whenComplete((res, e) -> {
                 boolean lockAcquired = false;
                 if (res != null) {
                     lockAcquired = res;

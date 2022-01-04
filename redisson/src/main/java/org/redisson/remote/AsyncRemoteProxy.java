@@ -31,8 +31,6 @@ import org.redisson.codec.CompositeCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.executor.RemotePromise;
 import org.redisson.misc.CompletableFutureWrapper;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -344,7 +342,6 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
             return CompletableFuture.completedFuture(false);
         }
 
-        RPromise<Boolean> result = new RedissonPromise<>();
         if (optionsCopy.isAckExpected()) {
             String ackName = remoteService.getAckName(requestId);
             RFuture<Boolean> f = commandExecutor.evalWriteNoRetryAsync(responseQueueName, LongCodec.INSTANCE,

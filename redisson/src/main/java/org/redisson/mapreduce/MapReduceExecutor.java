@@ -21,15 +21,15 @@ import org.redisson.api.mapreduce.RMapReduceExecutor;
 import org.redisson.api.mapreduce.RReducer;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
-import org.redisson.misc.TransferListener;
+import org.redisson.misc.CompletableFutureWrapper;
 
 import java.lang.reflect.Modifier;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 
@@ -88,39 +88,37 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
     
     @Override
     public RFuture<Map<KOut, VOut>> executeAsync() {
-        RPromise<Map<KOut, VOut>> promise = new RedissonPromise<Map<KOut, VOut>>();
-        RFuture<Void> future = executeMapperAsync(resultMapName, null);
+        AtomicReference<RFuture<BatchResult<?>>> batchRef = new AtomicReference<>();
+
+        RFuture<Void> mapperFuture = executeMapperAsync(resultMapName, null);
+        CompletableFuture<Map<KOut, VOut>> f = mapperFuture.thenCompose(res -> {
+            RBatch batch = redisson.createBatch();
+            RMapAsync<KOut, VOut> resultMap = batch.getMap(resultMapName, objectCodec);
+            RFuture<Map<KOut, VOut>> future = resultMap.readAllMapAsync();
+            resultMap.deleteAsync();
+            RFuture<BatchResult<?>> batchFuture = batch.executeAsync();
+            batchRef.set(batchFuture);
+            return future;
+        }).toCompletableFuture();
+
+        f.whenComplete((r, e) -> {
+            if (f.isCancelled()) {
+                if (batchRef.get() != null) {
+                    batchRef.get().cancel(true);
+                }
+                mapperFuture.cancel(true);
+            }
+        });
+
         if (timeout > 0) {
             commandExecutor.getConnectionManager().newTimeout(task -> {
-                promise.tryFailure(new MapReduceTimeoutException());
+                f.completeExceptionally(new MapReduceTimeoutException());
             }, timeout, TimeUnit.MILLISECONDS);
         }
 
-        addCancelHandling(promise, future);
-        future.onComplete((res, e) -> {
-            if (e != null) {
-                promise.tryFailure(e);
-                return;
-            }
-            
-            RBatch batch = redisson.createBatch();
-            RMapAsync<KOut, VOut> resultMap = batch.getMap(resultMapName, objectCodec);
-            resultMap.readAllMapAsync().onComplete(new TransferListener<>(promise));
-            resultMap.deleteAsync();
-            RFuture<BatchResult<?>> batchFuture = batch.executeAsync();
-            addCancelHandling(promise, batchFuture);
-        });
-        return promise;
+        return new CompletableFutureWrapper<>(f);
     }
 
-    private <T> void addCancelHandling(RPromise<T> promise, RFuture<?> future) {
-        promise.onComplete((res, e) -> {
-            if (promise.isCancelled()) {
-                future.cancel(true);
-            }
-        });
-    }
-    
     @Override
     public void execute(String resultMapName) {
         commandExecutor.get(executeAsync(resultMapName));
