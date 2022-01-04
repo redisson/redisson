@@ -785,6 +785,31 @@ public class RedissonConnection extends AbstractRedisConnection {
         return write(srcKey, ByteArrayCodec.INSTANCE, RedisCommands.BRPOPLPUSH, srcKey, dstKey, timeout);
     }
 
+    private static final RedisCommand<List<Long>> LPOS = new RedisCommand<>("LPOS", new ObjectListReplayDecoder<>());
+
+    @Override
+    public List<Long> lPos(byte[] key, byte[] element, Integer rank, Integer count) {
+        List<Object> args = new ArrayList<>();
+        args.add(key);
+        args.add(element);
+        if (rank != null) {
+            args.add("RANK");
+            args.add(rank);
+        }
+        if (count != null) {
+            args.add("COUNT");
+            args.add(count);
+        }
+        Object read = read(key, ByteArrayCodec.INSTANCE, LPOS, args.toArray());
+        if (read == null) {
+            return Collections.emptyList();
+        } else if (read instanceof Long) {
+            return Collections.singletonList((Long) read);
+        } else {
+            return (List<Long>) read;
+        }
+    }
+
     private static final RedisCommand<Long> SADD = new RedisCommand<Long>("SADD");
     
     @Override
