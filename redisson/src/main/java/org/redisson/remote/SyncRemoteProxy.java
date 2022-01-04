@@ -16,13 +16,11 @@
 package org.redisson.remote;
 
 import org.redisson.RedissonBucket;
-import org.redisson.api.RFuture;
 import org.redisson.api.RemoteInvocationOptions;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.executor.RemotePromise;
-import org.redisson.misc.RPromise;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -68,14 +66,14 @@ public class SyncRemoteProxy extends BaseRemoteProxy {
                 RemoteServiceRequest request = new RemoteServiceRequest(executorId, requestId.toString(), method.getName(), 
                                                         remoteService.getMethodSignature(method), args, optionsCopy, System.currentTimeMillis());
                 
-                final RFuture<RemoteServiceAck> ackFuture;
+                CompletableFuture<RemoteServiceAck> ackFuture;
                 if (optionsCopy.isAckExpected()) {
                     ackFuture = pollResponse(optionsCopy.getAckTimeoutInMillis(), requestId, false);
                 } else {
                     ackFuture = null;
                 }
-                
-                final RPromise<RRemoteServiceResponse> responseFuture;
+
+                CompletableFuture<RRemoteServiceResponse> responseFuture;
                 if (optionsCopy.isResultExpected()) {
                     long timeout = remoteService.getTimeout(optionsCopy.getExecutionTimeoutInMillis(), request);
                     responseFuture = pollResponse(timeout, requestId, false);
@@ -118,7 +116,7 @@ public class SyncRemoteProxy extends BaseRemoteProxy {
                         // skip
                     }
                     if (ack == null) {
-                        RFuture<RemoteServiceAck> ackFutureAttempt = 
+                        CompletionStage<RemoteServiceAck> ackFutureAttempt =
                                 tryPollAckAgainAsync(optionsCopy, ackName, requestId);
                         try {
                             ack = ackFutureAttempt.toCompletableFuture().get(optionsCopy.getAckTimeoutInMillis(), TimeUnit.MILLISECONDS);

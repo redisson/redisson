@@ -18,10 +18,9 @@ package org.redisson.remote;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.redisson.misc.RPromise;
 
 /**
  * 
@@ -31,18 +30,18 @@ import org.redisson.misc.RPromise;
 public class ResponseEntry {
 
     public static class Result {
-        
-        private final RPromise<? extends RRemoteServiceResponse> promise;
+
+        private final CompletableFuture<? extends RRemoteServiceResponse> promise;
         private final ScheduledFuture<?> responseTimeoutFuture;
         
-        public Result(RPromise<? extends RRemoteServiceResponse> promise, ScheduledFuture<?> responseTimeoutFuture) {
+        public Result(CompletableFuture<? extends RRemoteServiceResponse> promise, ScheduledFuture<?> responseTimeoutFuture) {
             super();
             this.promise = promise;
             this.responseTimeoutFuture = responseTimeoutFuture;
         }
         
-        public <T extends RRemoteServiceResponse> RPromise<T> getPromise() {
-            return (RPromise<T>) promise;
+        public <T extends RRemoteServiceResponse> CompletableFuture<T> getPromise() {
+            return (CompletableFuture<T>) promise;
         }
         
         public ScheduledFuture<?> getResponseTimeoutFuture() {

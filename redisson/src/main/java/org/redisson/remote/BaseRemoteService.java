@@ -157,7 +157,7 @@ public abstract class BaseRemoteService {
 
                 RMap<String, T> canceledRequests = getMap(mapName);
                 RFuture<T> future = canceledRequests.removeAsync(requestId.toString());
-                future.onComplete((request, ex) -> {
+                future.whenComplete((request, ex) -> {
                     if (cancelRequest.isDone()) {
                         return;
                     }

@@ -40,6 +40,7 @@ import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
@@ -115,14 +116,14 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
                 RemoteServiceRequest request = new RemoteServiceRequest(executorId, requestId.toString(), method.getName(), 
                                                     remoteService.getMethodSignature(method), args, optionsCopy, System.currentTimeMillis());
 
-                final RFuture<RemoteServiceAck> ackFuture;
+                CompletableFuture<RemoteServiceAck> ackFuture;
                 if (optionsCopy.isAckExpected()) {
                     ackFuture = pollResponse(optionsCopy.getAckTimeoutInMillis(), requestId, false);
                 } else {
                     ackFuture = null;
                 }
                 
-                final RPromise<RRemoteServiceResponse> responseFuture;
+                CompletableFuture<RRemoteServiceResponse> responseFuture;
                 if (optionsCopy.isResultExpected()) {
                     long timeout = remoteService.getTimeout(optionsCopy.getExecutionTimeoutInMillis(), request);
                     responseFuture = pollResponse(timeout, requestId, false);
@@ -157,7 +158,7 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
                         }
 
                                 if (optionsCopy.isAckExpected()) {
-                                    ackFuture.onComplete((ack, ex) -> {
+                                    ackFuture.whenComplete((ack, ex) -> {
                                         if (ex != null) {
                                             if (responseFuture != null) {
                                                 responseFuture.cancel(false);
@@ -169,9 +170,9 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
 
                                         if (ack == null) {
                                             String ackName = remoteService.getAckName(requestId);
-                                            RFuture<RemoteServiceAck> ackFutureAttempt = 
+                                            CompletionStage<RemoteServiceAck> ackFutureAttempt =
                                                                         tryPollAckAgainAsync(optionsCopy, ackName, requestId);
-                                            ackFutureAttempt.onComplete((re, ex2) -> {
+                                            ackFutureAttempt.whenComplete((re, ex2) -> {
                                                 if (ex2 != null) {
                                                     result.completeExceptionally(ex2);
                                                     return;
@@ -209,9 +210,9 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
     }
     
     private void awaitResultAsync(RemoteInvocationOptions optionsCopy, RemotePromise<Object> result,
-            String ackName, RFuture<RRemoteServiceResponse> responseFuture) {
+            String ackName, CompletableFuture<RRemoteServiceResponse> responseFuture) {
         RFuture<Boolean> deleteFuture = new RedissonBucket<>(commandExecutor, ackName).deleteAsync();
-        deleteFuture.onComplete((res, e) -> {
+        deleteFuture.whenComplete((res, e) -> {
             if (e != null) {
                 result.completeExceptionally(e);
                 return;
@@ -222,13 +223,13 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
     }
     
     protected void awaitResultAsync(RemoteInvocationOptions optionsCopy, RemotePromise<Object> result,
-            RFuture<RRemoteServiceResponse> responseFuture) {
+            CompletionStage<RRemoteServiceResponse> responseFuture) {
         // poll for the response only if expected
         if (!optionsCopy.isResultExpected()) {
             return;
         }
 
-        responseFuture.onComplete((res, e) -> {
+        responseFuture.whenComplete((res, e) -> {
             if (e != null) {
                 result.completeExceptionally(e);
                 return;
@@ -408,7 +409,7 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
         if (!optionsCopy.isResultExpected()) {
             RemoteInvocationOptions options = new RemoteInvocationOptions(optionsCopy);
             options.expectResultWithin(60, TimeUnit.SECONDS);
-            RFuture<RRemoteServiceResponse> responseFuture = pollResponse(options.getExecutionTimeoutInMillis(), remotePromise.getRequestId(), false);
+            CompletionStage<RRemoteServiceResponse> responseFuture = pollResponse(options.getExecutionTimeoutInMillis(), remotePromise.getRequestId(), false);
             awaitResultAsync(options, remotePromise, responseFuture);
         }
     }

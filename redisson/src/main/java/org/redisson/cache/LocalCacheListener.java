@@ -29,17 +29,13 @@ import org.redisson.api.listener.MessageListener;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * 
@@ -250,35 +246,17 @@ public abstract class LocalCacheListener {
     }
     
     public RFuture<Void> clearLocalCacheAsync() {
-        RPromise<Void> result = new RedissonPromise<Void>();
         cache.clear();
         byte[] id = generateId();
         RFuture<Long> future = invalidationTopic.publishAsync(new LocalCachedMapClear(instanceId, id, true));
-        future.onComplete((res, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
-            }
-
+        CompletionStage<Void> f = future.thenCompose(res -> {
             RSemaphore semaphore = getClearSemaphore(id);
-            semaphore.tryAcquireAsync(res.intValue() - 1, 50, TimeUnit.SECONDS).onComplete((r, ex) -> {
-                if (ex != null) {
-                    result.tryFailure(ex);
-                    return;
-                }
-                
-                semaphore.deleteAsync().onComplete((re, exc) -> {
-                    if (exc != null) {
-                        result.tryFailure(exc);
-                        return;
-                    }
-
-                    result.trySuccess(null);
-                });
-            });
+            return semaphore.tryAcquireAsync(res.intValue() - 1, 50, TimeUnit.SECONDS)
+                    .thenCompose(r -> {
+                        return semaphore.deleteAsync().thenApply(re -> null);
+                    });
         });
-        
-        return result;
+        return new CompletableFutureWrapper<>(f);
     }
 
     public RTopic getInvalidationTopic() {
@@ -328,7 +306,7 @@ public abstract class LocalCacheListener {
             return;
         }
         
-        object.isExistsAsync().onComplete((res, e) -> {
+        object.isExistsAsync().whenComplete((res, e) -> {
             if (e != null) {
                 log.error("Can't check existance", e);
                 return;
@@ -339,9 +317,9 @@ public abstract class LocalCacheListener {
                 return;
             }
             
-            RScoredSortedSet<byte[]> logs = new RedissonScoredSortedSet<byte[]>(ByteArrayCodec.INSTANCE, commandExecutor, getUpdatesLogName(), null);
+            RScoredSortedSet<byte[]> logs = new RedissonScoredSortedSet<>(ByteArrayCodec.INSTANCE, commandExecutor, getUpdatesLogName(), null);
             logs.valueRangeAsync(lastInvalidate, true, Double.POSITIVE_INFINITY, true)
-            .onComplete((r, ex) -> {
+            .whenComplete((r, ex) -> {
                 if (ex != null) {
                     log.error("Can't load update log", ex);
                     return;
