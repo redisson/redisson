@@ -254,7 +254,7 @@ public interface RedisCommands {
     RedisCommand<Set<Object>> EVAL_MAP_VALUE_SET = new RedisCommand<Set<Object>>("EVAL",
             new MapValueDecoder(new ObjectSetReplayDecoder<>()));
     RedisCommand<Set<Object>> EVAL_MAP_KEY_SET = new RedisCommand<Set<Object>>("EVAL",
-            new MapValueDecoder(new ObjectSetReplayDecoder<>()));
+            new MapKeyDecoder(new ObjectSetReplayDecoder<>()));
 
     RedisStrictCommand<Long> INCR = new RedisStrictCommand<Long>("INCR");
     RedisStrictCommand<Long> INCRBY = new RedisStrictCommand<Long>("INCRBY");
