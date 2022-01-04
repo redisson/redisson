@@ -59,6 +59,8 @@ public interface CommandAsyncExecutor {
     
     <V> V getInterrupted(RFuture<V> future) throws InterruptedException;
 
+    <V> V getInterrupted(CompletableFuture<V> future) throws InterruptedException;
+
     <T, R> RFuture<R> writeAsync(RedisClient client, Codec codec, RedisCommand<T> command, Object... params);
 
     <T, R> RFuture<R> writeAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object... params);

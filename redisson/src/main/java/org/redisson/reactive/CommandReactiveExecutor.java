@@ -15,12 +15,11 @@
  */
 package org.redisson.reactive;
 
-import java.util.concurrent.Callable;
-
 import org.redisson.api.RFuture;
 import org.redisson.command.CommandAsyncExecutor;
-
 import reactor.core.publisher.Mono;
+
+import java.util.concurrent.Callable;
 
 /**
  *

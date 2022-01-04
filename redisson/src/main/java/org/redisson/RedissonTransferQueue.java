@@ -115,17 +115,17 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
 
     @Override
     public boolean tryTransfer(V v) {
-        RemotePromise<Void> future = (RemotePromise<Void>) service.invoke(v);
+        RemotePromise<Void> future = (RemotePromise<Void>) service.invoke(v).toCompletableFuture();
         boolean added = commandExecutor.get(future.getAddFuture());
         if (added && !future.cancel(false)) {
-            get(future);
+            commandExecutor.get(future);
             return true;
         }
         return false;
     }
 
     public RFuture<Boolean> tryTransferAsync(V v) {
-        RemotePromise<Void> future = (RemotePromise<Void>) service.invoke(v);
+        RemotePromise<Void> future = (RemotePromise<Void>) service.invoke(v).toCompletableFuture();
         CompletableFuture<Boolean> result = future.getAddFuture().thenCompose(added -> {
             if (!added) {
                 return CompletableFuture.completedFuture(false);
@@ -156,7 +156,7 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
 
     @Override
     public boolean tryTransfer(V v, long timeout, TimeUnit unit) throws InterruptedException {
-        RemotePromise<Void> future = (RemotePromise<Void>) service.invoke(v);
+        RemotePromise<Void> future = (RemotePromise<Void>) service.invoke(v).toCompletableFuture();
         long remainTime = unit.toMillis(timeout);
         long startTime = System.currentTimeMillis();
         CompletableFuture<Boolean> addFuture = future.getAddFuture().toCompletableFuture();
@@ -190,7 +190,7 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
         RPromise<Boolean> result = new RedissonPromise<>();
         result.setUncancellable();
 
-        RemotePromise<Void> future = (RemotePromise<Void>) service.invoke(v);
+        RemotePromise<Void> future = (RemotePromise<Void>) service.invoke(v).toCompletableFuture();
 
         long remainTime = unit.toMillis(timeout);
         long startTime = System.currentTimeMillis();
@@ -202,7 +202,7 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
         }, remainTime, TimeUnit.MILLISECONDS);
 
 
-        future.onComplete((res, exc) -> {
+        future.whenComplete((res, exc) -> {
             if (future.isCancelled()) {
                 result.trySuccess(false);
                 return;
@@ -274,12 +274,12 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
 
     @Override
     public boolean add(V v) {
-        RemotePromise<Void> future = (RemotePromise<Void>) service.invoke(v);
+        RemotePromise<Void> future = (RemotePromise<Void>) service.invoke(v).toCompletableFuture();
         return commandExecutor.get(future.getAddFuture());
     }
 
     public RFuture<Boolean> addAsync(V v) {
-        RemotePromise<Void> future = (RemotePromise<Void>) service.invoke(v);
+        RemotePromise<Void> future = (RemotePromise<Void>) service.invoke(v).toCompletableFuture();
         return new CompletableFutureWrapper<>(future.getAddFuture());
     }
 
@@ -654,7 +654,7 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
 
     @Override
     public RFuture<Void> putAsync(V value) {
-        RemotePromise<Void> future = (RemotePromise<Void>) service.invoke(value);
+        RemotePromise<Void> future = (RemotePromise<Void>) service.invoke(value).toCompletableFuture();
         CompletableFuture<Void> f = future.getAddFuture().thenApply(r -> null);
         return new CompletableFutureWrapper<>(f);
     }

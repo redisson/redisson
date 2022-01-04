@@ -116,12 +116,12 @@ public class RedissonTransactionRx implements RTransactionRx {
 
     @Override
     public Completable commit() {
-        return executorService.flowable(() -> transaction.commitAsync()).ignoreElements();
+        return executorService.flowable(() -> transaction.commitAsync().toCompletableFuture()).ignoreElements();
     }
 
     @Override
     public Completable rollback() {
-        return executorService.flowable(() -> transaction.rollbackAsync()).ignoreElements();
+        return executorService.flowable(() -> transaction.rollbackAsync().toCompletableFuture()).ignoreElements();
     }
     
 }

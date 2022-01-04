@@ -15,16 +15,14 @@
  */
 package org.redisson.rx;
 
-import java.lang.reflect.Method;
-import java.util.concurrent.Callable;
-
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Single;
 import org.redisson.api.RFuture;
 import org.redisson.misc.ProxyBuilder;
 import org.redisson.misc.ProxyBuilder.Callback;
 
-import io.reactivex.rxjava3.core.Completable;
-import io.reactivex.rxjava3.core.Flowable;
-import io.reactivex.rxjava3.core.Single;
+import java.lang.reflect.Method;
 
 /**
  * 
@@ -41,12 +39,7 @@ public class RxProxyBuilder {
         return ProxyBuilder.create(new Callback() {
             @Override
             public Object execute(Method mm, Object instance, Method instanceMethod, Object[] args) {
-                Flowable<Object> flowable = commandExecutor.flowable(new Callable<RFuture<Object>>() {
-                    @Override
-                    public RFuture<Object> call() throws Exception {
-                        return (RFuture<Object>) mm.invoke(instance, args);
-                    }
-                });
+                Flowable<Object> flowable = commandExecutor.flowable(() -> ((RFuture<Object>) mm.invoke(instance, args)).toCompletableFuture());
                 
                 if (instanceMethod.getReturnType() == Completable.class) {
                     return flowable.ignoreElements();

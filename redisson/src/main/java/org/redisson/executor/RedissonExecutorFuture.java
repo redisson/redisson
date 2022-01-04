@@ -16,9 +16,10 @@
 package org.redisson.executor;
 
 import org.redisson.api.RExecutorFuture;
-import org.redisson.misc.PromiseDelegator;
-import org.redisson.misc.RPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.remote.RequestId;
+
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 
@@ -26,7 +27,7 @@ import org.redisson.remote.RequestId;
  *
  * @param <V> value type
  */
-public class RedissonExecutorFuture<V> extends PromiseDelegator<V> implements RExecutorFuture<V> {
+public class RedissonExecutorFuture<V> extends CompletableFutureWrapper<V> implements RExecutorFuture<V> {
 
     private final RequestId taskId;
     
@@ -34,7 +35,7 @@ public class RedissonExecutorFuture<V> extends PromiseDelegator<V> implements RE
         this(promise, promise.getRequestId());
     }
     
-    public RedissonExecutorFuture(RPromise<V> promise, RequestId taskId) {
+    public RedissonExecutorFuture(CompletableFuture<V> promise, RequestId taskId) {
         super(promise);
         this.taskId = taskId;
     }

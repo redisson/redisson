@@ -15,12 +15,12 @@
  */
 package org.redisson.executor;
 
+import org.redisson.api.RScheduledFuture;
+import org.redisson.misc.CompletableFutureWrapper;
+import org.redisson.remote.RequestId;
+
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
-
-import org.redisson.api.RScheduledFuture;
-import org.redisson.misc.PromiseDelegator;
-import org.redisson.remote.RequestId;
 
 /**
  * 
@@ -28,15 +28,21 @@ import org.redisson.remote.RequestId;
  *
  * @param <V> value type
  */
-public class RedissonScheduledFuture<V> extends PromiseDelegator<V> implements RScheduledFuture<V> {
+public class RedissonScheduledFuture<V> extends CompletableFutureWrapper<V> implements RScheduledFuture<V> {
 
     private final long scheduledExecutionTime;
     private final RequestId taskId;
+    private final RemotePromise<V> promise;
 
     public RedissonScheduledFuture(RemotePromise<V> promise, long scheduledExecutionTime) {
         super(promise);
         this.scheduledExecutionTime = scheduledExecutionTime;
         this.taskId = promise.getRequestId();
+        this.promise = promise;
+    }
+
+    public RemotePromise<V> getInnerPromise() {
+        return promise;
     }
     
     @Override

@@ -180,6 +180,18 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }
     }
 
+    @Override
+    public <V> V getInterrupted(CompletableFuture<V> future) throws InterruptedException {
+        try {
+            return future.get();
+        } catch (InterruptedException e) {
+            future.completeExceptionally(e);
+            throw e;
+        } catch (ExecutionException e) {
+            throw convertException(e);
+        }
+    }
+
     protected <R> CompletableFuture<R> createPromise() {
         return new CompletableFuture<R>();
     }

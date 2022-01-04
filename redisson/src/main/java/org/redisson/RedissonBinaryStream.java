@@ -23,6 +23,7 @@ import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
@@ -34,6 +35,7 @@ import java.nio.channels.AsynchronousByteChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.channels.SeekableByteChannel;
 import java.util.Arrays;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
 
 /**
@@ -261,21 +263,14 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
 
         @Override
         public Future<Integer> write(ByteBuffer src) {
-            RPromise<Integer> result = new RedissonPromise<>();
-
             ByteBuf b = Unpooled.wrappedBuffer(src);
             RFuture<Long> res = commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SETRANGE, getRawName(), position, b);
-            res.onComplete((r, e) -> {
-                if (e != null) {
-                    result.tryFailure(e);
-                    return;
-                }
-
+            CompletionStage<Integer> f = res.thenApply(r -> {
                 position += b.readableBytes();
-                result.trySuccess(b.readableBytes());
+                return b.readableBytes();
             });
 
-            return result;
+            return new CompletableFutureWrapper<>(f);
         }
 
         @Override

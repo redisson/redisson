@@ -15,18 +15,17 @@
  */
 package org.redisson.rx;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.CompletionException;
-
-import org.redisson.api.RFuture;
-import org.redisson.command.CommandAsyncService;
-import org.redisson.connection.ConnectionManager;
-
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.functions.Action;
 import io.reactivex.rxjava3.functions.LongConsumer;
 import io.reactivex.rxjava3.processors.ReplayProcessor;
+import org.redisson.command.CommandAsyncService;
+import org.redisson.connection.ConnectionManager;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
+
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 /**
  *
@@ -40,12 +39,12 @@ public class CommandRxService extends CommandAsyncService implements CommandRxEx
     }
 
     @Override
-    public <R> Flowable<R> flowable(Callable<RFuture<R>> supplier) {
+    public <R> Flowable<R> flowable(Callable<CompletableFuture<R>> supplier) {
         ReplayProcessor<R> p = ReplayProcessor.create();
         return p.doOnRequest(new LongConsumer() {
             @Override
             public void accept(long t) throws Exception {
-                RFuture<R> future;
+                CompletableFuture<R> future;
                 try {
                     future = supplier.call();
                 } catch (Exception e) {
@@ -59,7 +58,7 @@ public class CommandRxService extends CommandAsyncService implements CommandRxEx
                     }
                 });
                 
-                future.onComplete((res, e) -> {
+                future.whenComplete((res, e) -> {
                    if (e != null) {
                        if (e instanceof CompletionException) {
                            e = e.getCause();

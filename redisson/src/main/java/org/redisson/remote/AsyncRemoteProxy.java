@@ -30,6 +30,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.executor.RemotePromise;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
@@ -140,12 +141,12 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
                             if (ackFuture != null) {
                                 ackFuture.cancel(false);
                             }
-                            result.tryFailure(e);
+                            result.completeExceptionally(e);
                             return;
                         }
                         
                         if (!res) {
-                            result.tryFailure(new RedisException("Task hasn't been added"));
+                            result.completeExceptionally(new RedisException("Task hasn't been added"));
                             if (responseFuture != null) {
                                 responseFuture.cancel(false);
                             }
@@ -162,7 +163,7 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
                                                 responseFuture.cancel(false);
                                             }
 
-                                            result.tryFailure(ex);
+                                            result.completeExceptionally(ex);
                                             return;
                                         }
 
@@ -172,7 +173,7 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
                                                                         tryPollAckAgainAsync(optionsCopy, ackName, requestId);
                                             ackFutureAttempt.onComplete((re, ex2) -> {
                                                 if (ex2 != null) {
-                                                    result.tryFailure(ex2);
+                                                    result.completeExceptionally(ex2);
                                                     return;
                                                 }
 
@@ -181,7 +182,7 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
                                                             "No ACK response after "
                                                                     + optionsCopy.getAckTimeoutInMillis()
                                                                     + "ms for request: " + requestId);
-                                                    result.tryFailure(exc);
+                                                    result.completeExceptionally(exc);
                                                     return;
                                                 }
 
@@ -204,7 +205,7 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
     }
 
     protected Object convertResult(RemotePromise<Object> result, Class<?> returnType) {
-        return result;
+        return new CompletableFutureWrapper<>(result);
     }
     
     private void awaitResultAsync(RemoteInvocationOptions optionsCopy, RemotePromise<Object> result,
@@ -212,7 +213,7 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
         RFuture<Boolean> deleteFuture = new RedissonBucket<>(commandExecutor, ackName).deleteAsync();
         deleteFuture.onComplete((res, e) -> {
             if (e != null) {
-                result.tryFailure(e);
+                result.completeExceptionally(e);
                 return;
             }
 
@@ -229,14 +230,14 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
 
         responseFuture.onComplete((res, e) -> {
             if (e != null) {
-                result.tryFailure(e);
+                result.completeExceptionally(e);
                 return;
             }
 
             if (res == null) {
                 RemoteServiceTimeoutException ex = new RemoteServiceTimeoutException("No response after "
                         + optionsCopy.getExecutionTimeoutInMillis() + "ms for request: " + result.getRequestId());
-                result.tryFailure(ex);
+                result.completeExceptionally(ex);
                 return;
             }
 
@@ -247,11 +248,11 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
 
             RemoteServiceResponse response = (RemoteServiceResponse) res;
             if (response.getError() != null) {
-                result.tryFailure(response.getError());
+                result.completeExceptionally(response.getError());
                 return;
             }
 
-            result.trySuccess(response.getResult());
+            result.complete(response.getResult());
         });
     }
 
@@ -394,7 +395,7 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
 
         cancelExecution(optionsCopy, mayInterruptIfRunning, promise, cancelRequestMapName);
 
-        return promise.thenApply(r -> promise.isCancelled());
+        return promise.toCompletableFuture().thenApply(r -> promise.isCancelled());
     }
 
     private void cancelExecution(RemoteInvocationOptions optionsCopy,

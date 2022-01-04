@@ -45,11 +45,11 @@ public class CommandRxBatchService extends CommandRxService {
     }
     
     @Override
-    public <R> Flowable<R> flowable(Callable<RFuture<R>> supplier) {
-        Flowable<R> flowable = super.flowable(new Callable<RFuture<R>>() {
-            volatile RFuture<R> future;
+    public <R> Flowable<R> flowable(Callable<CompletableFuture<R>> supplier) {
+        Flowable<R> flowable = super.flowable(new Callable<CompletableFuture<R>>() {
+            volatile CompletableFuture<R> future;
             @Override
-            public  RFuture<R> call() throws Exception {
+            public CompletableFuture<R> call() throws Exception {
                 if (future == null) {
                     synchronized (this) {
                         if (future == null) {
@@ -75,11 +75,11 @@ public class CommandRxBatchService extends CommandRxService {
         return batchService.async(readOnlyMode, nodeSource, codec, command, params, ignoreRedirect, noRetry);
     }
 
-    public RFuture<BatchResult<?>> executeAsync() {
-        return batchService.executeAsync();
+    public CompletableFuture<BatchResult<?>> executeAsync() {
+        return batchService.executeAsync().toCompletableFuture();
     }
 
-    public RFuture<Void> discardAsync() {
-        return batchService.discardAsync();
+    public CompletableFuture<Void> discardAsync() {
+        return batchService.discardAsync().toCompletableFuture();
     }
 }
