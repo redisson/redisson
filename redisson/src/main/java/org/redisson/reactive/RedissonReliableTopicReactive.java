@@ -36,7 +36,7 @@ public class RedissonReliableTopicReactive {
     }
 
     public <M> Flux<M> getMessages(Class<M> type) {
-        return Flux.<M>create(emitter -> {
+        return Flux.create(emitter -> {
             emitter.onRequest(n -> {
                 AtomicLong counter = new AtomicLong(n);
                 AtomicReference<String> idRef = new AtomicReference<>();
@@ -47,7 +47,7 @@ public class RedissonReliableTopicReactive {
                         emitter.complete();
                     }
                 });
-                t.onComplete((id, e) -> {
+                t.whenComplete((id, e) -> {
                     if (e != null) {
                         emitter.error(e);
                         return;

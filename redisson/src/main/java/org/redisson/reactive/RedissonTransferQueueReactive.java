@@ -57,7 +57,7 @@ public class RedissonTransferQueueReactive<V> {
                     }
 
                     protected void onRequest(boolean forward, FluxSink<V> emitter, long n) {
-                        queue.getValueAsync(currentIndex).onComplete((value, e) -> {
+                        queue.getValueAsync(currentIndex).whenComplete((value, e) -> {
                                 if (e != null) {
                                     emitter.error(e);
                                     return;

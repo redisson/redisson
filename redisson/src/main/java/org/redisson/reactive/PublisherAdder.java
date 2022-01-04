@@ -53,7 +53,7 @@ public abstract class PublisherAdder<V> {
             @Override
             protected void hookOnNext(V o) {
                 values.getAndIncrement();
-                add(o).onComplete((res, e) -> {
+                add(o).whenComplete((res, e) -> {
                     if (e != null) {
                         promise.completeExceptionally(e);
                         return;

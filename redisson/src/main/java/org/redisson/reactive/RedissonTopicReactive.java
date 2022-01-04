@@ -37,7 +37,7 @@ public class RedissonTopicReactive {
     }
 
     public <M> Flux<M> getMessages(Class<M> type) {
-        return Flux.<M>create(emitter -> {
+        return Flux.create(emitter -> {
             emitter.onRequest(n -> {
                 AtomicLong counter = new AtomicLong(n);
                 RFuture<Integer> t = topic.addListenerAsync(type, new MessageListener<M>() {
@@ -50,7 +50,7 @@ public class RedissonTopicReactive {
                         }
                     }
                 });
-                t.onComplete((id, e) -> {
+                t.whenComplete((id, e) -> {
                     if (e != null) {
                         emitter.error(e);
                         return;

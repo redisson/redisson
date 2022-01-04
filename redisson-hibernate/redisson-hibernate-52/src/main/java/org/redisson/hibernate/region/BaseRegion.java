@@ -94,7 +94,7 @@ public class BaseRegion implements TransactionalDataRegion, GeneralDataRegion {
         fallbackMode = true;
         connectionManager.newTimeout(t -> {
             RFuture<Boolean> future = mapCache.isExistsAsync();
-            future.onComplete((r, ex) -> {
+            future.whenComplete((r, ex) -> {
                 if (ex == null) {
                     fallbackMode = false;
                 } else {

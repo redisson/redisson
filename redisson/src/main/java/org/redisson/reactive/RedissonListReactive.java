@@ -88,7 +88,7 @@ public class RedissonListReactive<V> {
                     }
                     
                     private void onRequest(boolean forward, FluxSink<V> emitter, long n) {
-                        instance.getAsync(currentIndex).onComplete((value, e) -> {
+                        instance.getAsync(currentIndex).whenComplete((value, e) -> {
                                 if (e != null) {
                                     emitter.error(e);
                                     return;

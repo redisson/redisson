@@ -39,7 +39,7 @@ public class ElementsStream {
             return;
         }
         futureRef.set(future);
-        future.onComplete((res, e) -> {
+        future.whenComplete((res, e) -> {
             if (e != null) {
                 emitter.error(e);
                 return;

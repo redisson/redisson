@@ -54,7 +54,7 @@ public abstract class IteratorConsumer<V> implements LongConsumer {
     }
 
     protected void nextValues(FluxSink<V> emitter) {
-        scanIterator(client, nextIterPos).onComplete((res, e) -> {
+        scanIterator(client, nextIterPos).whenComplete((res, e) -> {
             if (e != null) {
                 emitter.error(e);
                 return;
