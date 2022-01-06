@@ -26,13 +26,13 @@ import org.redisson.client.protocol.ScoredEntry;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.iterator.RedissonBaseIterator;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
-import org.redisson.misc.CountableListener;
-import org.redisson.misc.RPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.RedissonPromise;
 
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -1570,13 +1570,11 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
-        RPromise<Void> result = new RedissonPromise<>();
-        CountableListener<Void> listener = new CountableListener<>(result, null, 3);
-
         RPatternTopic setTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:zadd");
-        setTopic.removeListenerAsync(listenerId).onComplete(listener);
-        removeListenersAsync(listenerId, listener);
-        return result;
+        RFuture<Void> f1 = setTopic.removeListenerAsync(listenerId);
+        RFuture<Void> f2 = super.removeListenerAsync(listenerId);
+        CompletableFuture<Void> f = CompletableFuture.allOf(f1.toCompletableFuture(), f2.toCompletableFuture());
+        return new CompletableFutureWrapper<>(f);
     }
 
 }

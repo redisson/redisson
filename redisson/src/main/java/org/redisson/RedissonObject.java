@@ -22,12 +22,11 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.CountableListener;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.Hash;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
@@ -430,18 +429,13 @@ public abstract class RedissonObject implements RObject {
     
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
-        RPromise<Void> result = new RedissonPromise<>();
-        CountableListener<Void> listener = new CountableListener<>(result, null, 2);
-        removeListenersAsync(listenerId, listener);
-        return result;
-    }
-
-    protected final void removeListenersAsync(int listenerId, CountableListener<Void> listener) {
         RPatternTopic expiredTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:expired");
-        expiredTopic.removeListenerAsync(listenerId).onComplete(listener);
+        RFuture<Void> f1 = expiredTopic.removeListenerAsync(listenerId);
 
         RPatternTopic deletedTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:del");
-        deletedTopic.removeListenerAsync(listenerId).onComplete(listener);
+        RFuture<Void> f2 = deletedTopic.removeListenerAsync(listenerId);
+        CompletableFuture<Void> f = CompletableFuture.allOf(f1.toCompletableFuture(), f2.toCompletableFuture());
+        return new CompletableFutureWrapper<>(f);
     }
 
 }

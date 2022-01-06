@@ -24,11 +24,10 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.CountableListener;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 
 import java.util.Collections;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -278,13 +277,11 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
 
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
-        RPromise<Void> result = new RedissonPromise<>();
-        CountableListener<Void> listener = new CountableListener<>(result, null, 3);
-
         RPatternTopic setTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:set");
-        setTopic.removeListenerAsync(listenerId).onComplete(listener);
-        removeListenersAsync(listenerId, listener);
-        return result;
+        RFuture<Void> f1 = setTopic.removeListenerAsync(listenerId);
+        RFuture<Void> f2 = super.removeListenerAsync(listenerId);
+        CompletableFuture<Void> f = CompletableFuture.allOf(f1.toCompletableFuture(), f2.toCompletableFuture());
+        return new CompletableFutureWrapper<>(f);
     }
 
 }

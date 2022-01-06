@@ -31,11 +31,12 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.iterator.RedissonBaseIterator;
 import org.redisson.iterator.RedissonListIterator;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
-import org.redisson.misc.CountableListener;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 
 import static org.redisson.client.protocol.RedisCommands.*;
@@ -965,27 +966,26 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
-        RPromise<Void> result = new RedissonPromise<>();
-        CountableListener<Void> listener = new CountableListener<>(result, null, 5);
-
         RPatternTopic addTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:rpush");
-        addTopic.removeListenerAsync(listenerId).onComplete(listener);
+        RFuture<Void> f1 = addTopic.removeListenerAsync(listenerId);
 
         RPatternTopic remTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:lrem");
-        remTopic.removeListenerAsync(listenerId).onComplete(listener);
+        RFuture<Void> f2 = remTopic.removeListenerAsync(listenerId);
 
         RPatternTopic trimTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:ltrim");
-        trimTopic.removeListenerAsync(listenerId).onComplete(listener);
+        RFuture<Void> f3 = trimTopic.removeListenerAsync(listenerId);
 
         RPatternTopic setTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:lset");
-        setTopic.removeListenerAsync(listenerId).onComplete(listener);
+        RFuture<Void> f4 = setTopic.removeListenerAsync(listenerId);
 
         RPatternTopic insertTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:linsert");
-        insertTopic.removeListenerAsync(listenerId).onComplete(listener);
+        RFuture<Void> f5 = insertTopic.removeListenerAsync(listenerId);
 
-        removeListenersAsync(listenerId, listener);
+        RFuture<Void> f6 = super.removeListenerAsync(listenerId);
 
-        return result;
+        CompletableFuture<Void> f = CompletableFuture.allOf(f1.toCompletableFuture(), f2.toCompletableFuture(), f3.toCompletableFuture(),
+                f4.toCompletableFuture(), f5.toCompletableFuture(), f5.toCompletableFuture(), f6.toCompletableFuture());
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
