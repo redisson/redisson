@@ -17,8 +17,6 @@ package org.redisson.executor;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
 import org.redisson.RedissonExecutorService;
 import org.redisson.RedissonShutdownException;
 import org.redisson.api.RFuture;
@@ -237,12 +235,8 @@ public class TasksRunnerService implements RemoteExecutorService {
             return;
         }
 
-        commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
-            @Override
-            public void run(Timeout timeout) throws Exception {
-                renewRetryTime(requestId);
-            }
-        }, Math.max(1000, retryInterval / 2), TimeUnit.MILLISECONDS);
+        commandExecutor.getConnectionManager().newTimeout(timeout -> renewRetryTime(requestId),
+                                                    Math.max(1000, retryInterval / 2), TimeUnit.MILLISECONDS);
     }
 
     protected RFuture<Long> renewRetryTime(String requestId) {
@@ -269,9 +263,9 @@ public class TasksRunnerService implements RemoteExecutorService {
                     + "return retryInterval; "
                 + "end;"
                 + "return nil;", 
-                Arrays.<Object>asList(statusName, schedulerQueueName, schedulerChannelName, tasksRetryIntervalName, tasksName),
+                Arrays.asList(statusName, schedulerQueueName, schedulerChannelName, tasksRetryIntervalName, tasksName),
                 System.currentTimeMillis(), requestId);
-        future.onComplete((res, e) -> {
+        future.whenComplete((res, e) -> {
             if (e != null) {
                 scheduleRetryTimeRenewal(requestId, 10000L);
                 return;
@@ -339,7 +333,7 @@ public class TasksRunnerService implements RemoteExecutorService {
             if (params.getRequestId() != null && params.getRequestId().startsWith("00")) {
                 RFuture<Long> future = renewRetryTime(params.getRequestId());
                 try {
-                    future.get();
+                    future.toCompletableFuture().get();
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
                 }

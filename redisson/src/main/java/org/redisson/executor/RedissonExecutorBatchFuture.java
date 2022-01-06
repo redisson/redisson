@@ -15,38 +15,25 @@
  */
 package org.redisson.executor;
 
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.redisson.api.RExecutorBatchFuture;
 import org.redisson.api.RExecutorFuture;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
+
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class RedissonExecutorBatchFuture extends RedissonPromise<Void> implements RExecutorBatchFuture {
+public class RedissonExecutorBatchFuture extends CompletableFutureWrapper<Void> implements RExecutorBatchFuture {
 
-    private List<RExecutorFuture<?>> futures;
+    private final List<RExecutorFuture<?>> futures;
 
-    public RedissonExecutorBatchFuture(List<RExecutorFuture<?>> futures) {
+    public RedissonExecutorBatchFuture(CompletableFuture<Void> future, List<RExecutorFuture<?>> futures) {
+        super(future);
         this.futures = futures;
-        
-        final AtomicInteger counter = new AtomicInteger(futures.size());
-        for (RExecutorFuture<?> future : futures) {
-            future.onComplete((res, e) -> {
-                if (e != null) {
-                    RedissonExecutorBatchFuture.this.tryFailure(e);
-                    return;
-                }
-                
-                if (counter.decrementAndGet() == 0) {
-                    RedissonExecutorBatchFuture.this.trySuccess(null);
-                }
-            });
-        }
     }
     
     @Override

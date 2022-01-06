@@ -24,8 +24,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.executor.params.TaskParameters;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.remote.*;
 
 import java.util.Arrays;
@@ -144,7 +143,7 @@ public class TasksService extends BaseRemoteService {
                             + "return 1;"
                         + "end;"
                         + "return 0;",
-                        Arrays.<Object>asList(tasksCounterName, statusName, schedulerQueueName, schedulerChannelName,
+                        Arrays.asList(tasksCounterName, statusName, schedulerQueueName, schedulerChannelName,
                                             tasksName, requestQueueName, tasksRetryIntervalName, tasksExpirationTimeName),
                         retryStartTime, request.getId(), encode(request), tasksRetryInterval, expireTime);
         return f.toCompletableFuture();
@@ -173,7 +172,7 @@ public class TasksService extends BaseRemoteService {
                   + "return 1; "
               + "end;"
               + "return 0;",
-          Arrays.<Object>asList(requestQueueName, schedulerQueueName, tasksCounterName, statusName, terminationTopicName,
+          Arrays.asList(requestQueueName, schedulerQueueName, tasksCounterName, statusName, terminationTopicName,
                                 tasksName, tasksRetryIntervalName, tasksExpirationTimeName),
           taskId.toString(), RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE);
         return f.toCompletableFuture();
@@ -188,78 +187,67 @@ public class TasksService extends BaseRemoteService {
     }
 
     public RFuture<Boolean> cancelExecutionAsync(RequestId requestId) {
-        RPromise<Boolean> result = new RedissonPromise<>();
-        
         String requestQueueName = getRequestQueueName(RemoteExecutorService.class);
         CompletableFuture<Boolean> removeFuture = removeAsync(requestQueueName, requestId);
-        removeFuture.whenComplete((res, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
-            }
-            
+        CompletableFuture<Boolean> f = removeFuture.thenCompose(res -> {
             if (res) {
-                result.trySuccess(true);
-                return;
+                return CompletableFuture.completedFuture(true);
             }
-            
+
             RMap<String, RemoteServiceCancelRequest> canceledRequests = getMap(cancelRequestMapName);
             canceledRequests.putAsync(requestId.toString(), new RemoteServiceCancelRequest(true, true));
             canceledRequests.expireAsync(60, TimeUnit.SECONDS);
 
-            commandExecutor.getConnectionManager().newTimeout(timeout -> {
-                result.trySuccess(false);
-            }, 60, TimeUnit.SECONDS);
-
-            RPromise<RemoteServiceCancelResponse> response = new RedissonPromise<>();
-            scheduleCancelResponseCheck(cancelResponseMapName, requestId, response);
-            response.onComplete((r, ex) -> {
-                if (ex != null) {
-                    result.tryFailure(ex);
-                    return;
-                }
-
+            CompletableFuture<RemoteServiceCancelResponse> response = scheduleCancelResponseCheck(cancelResponseMapName, requestId);
+            return response.thenApply(r -> {
                 if (r == null) {
-                    result.trySuccess(false);
-                    return;
+                    return false;
                 }
-                result.trySuccess(r.isCanceled());
+                return r.isCanceled();
             });
         });
 
-        return result;
+        removeFuture.thenAccept(r -> {
+            commandExecutor.getConnectionManager().newTimeout(timeout -> {
+                f.complete(false);
+            }, 60, TimeUnit.SECONDS);
+        });
+
+        return new CompletableFutureWrapper<>(f);
     }
 
-    private void scheduleCancelResponseCheck(String mapName, RequestId requestId, RPromise<RemoteServiceCancelResponse> cancelResponse) {
+    private CompletableFuture<RemoteServiceCancelResponse> scheduleCancelResponseCheck(String mapName, RequestId requestId) {
+        CompletableFuture<RemoteServiceCancelResponse> cancelResponse = new CompletableFuture<>();
+
         commandExecutor.getConnectionManager().newTimeout(timeout -> {
             if (cancelResponse.isDone()) {
                 return;
             }
 
             RMap<String, RemoteServiceCancelResponse> canceledResponses = getMap(mapName);
-            RFuture<RemoteServiceCancelResponse> future = canceledResponses.removeAsync(requestId.toString());
-            future.onComplete((response, ex) -> {
-                if (ex != null) {
-                    scheduleCancelResponseCheck(mapName, requestId, cancelResponse);
-                    return;
-                }
-
+            RFuture<RemoteServiceCancelResponse> removeFuture = canceledResponses.removeAsync(requestId.toString());
+            CompletableFuture<RemoteServiceCancelResponse> future = removeFuture.thenCompose(response -> {
                 if (response == null) {
                     RFuture<Boolean> f = hasTaskAsync(requestId.toString());
-                    f.onComplete((r, e) -> {
-                        if (e != null || r) {
-                            scheduleCancelResponseCheck(mapName, requestId, cancelResponse);
-                            return;
+                    return f.thenCompose(r -> {
+                        if (r) {
+                            return scheduleCancelResponseCheck(mapName, requestId);
                         }
 
                         RemoteServiceCancelResponse resp = new RemoteServiceCancelResponse(requestId.toString(), false);
-                        cancelResponse.trySuccess(resp);
+                        return CompletableFuture.completedFuture(resp);
                     });
-                } else {
-                    cancelResponse.trySuccess(response);
                 }
-            });
+                return CompletableFuture.completedFuture(response);
+            }).whenComplete((r, ex) -> {
+                if (ex != null) {
+                    scheduleCancelResponseCheck(mapName, requestId);
+                }
+            }).toCompletableFuture();
+
+            commandExecutor.transfer(future, cancelResponse);
         }, 3000, TimeUnit.MILLISECONDS);
+        return cancelResponse;
     }
 
     public RFuture<Boolean> hasTaskAsync(String taskId) {

@@ -27,7 +27,10 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.executor.*;
 import org.redisson.executor.params.*;
-import org.redisson.misc.*;
+import org.redisson.misc.CompletableFutureWrapper;
+import org.redisson.misc.Injector;
+import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
 import org.redisson.remote.RequestId;
 import org.redisson.remote.ResponseEntry;
 import org.redisson.remote.ResponseEntry.Result;
@@ -619,8 +622,11 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         if (!addResult.get(0)) {
             throw new RejectedExecutionException("Tasks have been rejected. ExecutorService is in shutdown state");
         }
-        
-        return new RedissonExecutorBatchFuture(result);
+
+        CompletableFuture<Void> future = CompletableFuture.allOf(result.stream()
+                                                                    .map(CompletionStage::toCompletableFuture)
+                                                                    .toArray(CompletableFuture[]::new));
+        return new RedissonExecutorBatchFuture(future, result);
     }
 
     protected TaskParameters createTaskParameters(Callable<?> task) {
@@ -670,7 +676,10 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             }
         });
 
-        return new RedissonExecutorBatchFuture(result);
+        CompletableFuture<Void> future = CompletableFuture.allOf(result.stream()
+                                                                    .map(CompletionStage::toCompletableFuture)
+                                                                    .toArray(CompletableFuture[]::new));
+        return new RedissonExecutorBatchFuture(future, result);
     }
 
 
@@ -735,8 +744,11 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         if (!addResult.get(0)) {
             throw new RejectedExecutionException("Tasks have been rejected. ExecutorService is in shutdown state");
         }
-        
-        return new RedissonExecutorBatchFuture(result);
+
+        CompletableFuture<Void> future = CompletableFuture.allOf(result.stream()
+                                                                    .map(CompletionStage::toCompletableFuture)
+                                                                    .toArray(CompletableFuture[]::new));
+        return new RedissonExecutorBatchFuture(future, result);
     }
     
     @Override
@@ -774,7 +786,10 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             }
         });
 
-        return new RedissonExecutorBatchFuture(result);
+        CompletableFuture<Void> future = CompletableFuture.allOf(result.stream()
+                                                                    .map(CompletionStage::toCompletableFuture)
+                                                                    .toArray(CompletableFuture[]::new));
+        return new RedissonExecutorBatchFuture(future, result);
     }
 
     

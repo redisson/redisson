@@ -24,8 +24,6 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -228,25 +226,19 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
 
         @Override
         public Future<Integer> read(ByteBuffer dst) {
-            RPromise<Integer> result = new RedissonPromise<>();
             RFuture<byte[]> res = commandExecutor.readAsync(getRawName(), codec, RedisCommands.GETRANGE,
                         getRawName(), position, position + dst.remaining() - 1);
-            res.onComplete((data, e) -> {
-                if (e != null) {
-                    result.tryFailure(e);
-                    return;
-                }
+            CompletionStage<Integer> f = res.thenApply(data -> {
                 if (data.length == 0) {
-                    result.trySuccess(-1);
-                    return;
+                    return -1;
                 }
 
                 position += data.length;
                 dst.put(data);
-                result.trySuccess(data.length);
+                return data.length;
             });
 
-            return result;
+            return new CompletableFutureWrapper<>(f);
         }
 
         @Override
