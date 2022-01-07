@@ -15,19 +15,10 @@
  */
 package org.redisson;
 
-import java.math.BigDecimal;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-
+import io.netty.buffer.ByteBuf;
 import org.redisson.api.*;
 import org.redisson.api.listener.MessageListener;
-import org.redisson.api.map.event.EntryCreatedListener;
-import org.redisson.api.map.event.EntryEvent;
-import org.redisson.api.map.event.EntryExpiredListener;
-import org.redisson.api.map.event.EntryRemovedListener;
-import org.redisson.api.map.event.EntryUpdatedListener;
-import org.redisson.api.map.event.MapEntryListener;
+import org.redisson.api.map.event.*;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
@@ -41,10 +32,15 @@ import org.redisson.codec.MapCacheEventCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.eviction.EvictionScheduler;
-import org.redisson.misc.RPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.RedissonPromise;
 
-import io.netty.buffer.ByteBuf;
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 /**
  * <p>Map-based cache with ability to set TTL for each entry via
@@ -142,10 +138,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-    public RFuture<Boolean> containsKeyAsync(Object key) {
-        checkKey(key);
-
-        String name = getRawName(key);
+    protected RFuture<Boolean> containsKeyOperationAsync(String name, Object key) {
         return commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_BOOLEAN,
         "local value = redis.call('hget', KEYS[1], ARGV[2]); " +
                 "local expireDate = 92233720368547758; " +
@@ -1293,20 +1286,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             return future;
         }
 
-        RPromise<V> result = new RedissonPromise<>();
-        future.onComplete((res, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
-            }
-
+        CompletionStage<V> f = future.thenCompose(res -> {
             if (res == null) {
-                loadValue(key, result, false);
-            } else {
-                result.trySuccess(res);
+                return loadValue(key, false);
             }
+            return CompletableFuture.completedFuture(res);
         });
-        return result;
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override

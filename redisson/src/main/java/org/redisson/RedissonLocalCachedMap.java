@@ -29,15 +29,20 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.NumberConvertor;
-import org.redisson.client.protocol.decoder.*;
+import org.redisson.client.protocol.decoder.MapValueDecoder;
+import org.redisson.client.protocol.decoder.ObjectMapEntryReplayDecoder;
+import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder;
+import org.redisson.client.protocol.decoder.ObjectSetReplayDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.eviction.EvictionScheduler;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -204,29 +209,18 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                     return RedissonPromise.newSucceededFuture(false);
                 }
 
-                RPromise<Boolean> result = new RedissonPromise<>();
-                RPromise<V> valuePromise = new RedissonPromise<>();
-                loadValue((K) key, valuePromise, false);
-                valuePromise.onComplete((value, ex) -> {
-                    if (ex != null) {
-                        result.tryFailure(ex);
-                        return;
-                    }
-
+                CompletableFuture<V> future = loadValue((K) key, false);
+                CompletableFuture<Boolean> f = future.thenApply(value -> {
                     if (storeCacheMiss || value != null) {
                         cachePut(cacheKey, key, value);
                     }
-                    result.trySuccess(value != null);
+                    return value != null;
                 });
-                return result;
+                return new CompletableFutureWrapper<>(f);
             }
 
-            RPromise<V> promise = new RedissonPromise<>();
-            promise.onComplete((value, e) -> {
-                if (e != null) {
-                    return;
-                }
-
+            CompletableFuture<V> promise = new CompletableFuture<>();
+            promise.thenAccept(value -> {
                 if (storeCacheMiss || value != null) {
                     cachePut(cacheKey, key, value);
                 }
@@ -267,21 +261,14 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 return RedissonPromise.newSucceededFuture(null);
             }
 
-            RPromise<V> result = new RedissonPromise<>();
-            RPromise<V> valuePromise = new RedissonPromise<>();
-            loadValue((K) key, valuePromise, false);
-            valuePromise.onComplete((value, ex) -> {
-                if (ex != null) {
-                    result.tryFailure(ex);
-                    return;
-                }
-
+            CompletableFuture<V> future = loadValue((K) key, false);
+            CompletableFuture<V> f = future.thenApply(value -> {
                 if (storeCacheMiss || value != null) {
                     cachePut(cacheKey, key, value);
                 }
-                result.trySuccess(value);
+                return value;
             });
-            return result;
+            return new CompletableFutureWrapper<>(f);
         }
 
         RPromise<V> result = new RedissonPromise<>();
