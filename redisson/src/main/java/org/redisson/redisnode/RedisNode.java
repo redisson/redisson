@@ -15,6 +15,9 @@
  */
 package org.redisson.redisnode;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.concurrent.CompletableFuture;
 import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
 import org.redisson.api.redisnode.*;
@@ -286,7 +289,25 @@ public class RedisNode implements RedisClusterMaster, RedisClusterSlave, RedisMa
 
     @Override
     public RFuture<Map<ClusterSlotRange, Set<String>>> clusterSlotsAsync() {
-        return commandExecutor.readAsync(client, StringCodec.INSTANCE, RedisCommands.CLUSTER_SLOTS);
+        CompletableFuture<Map<ClusterSlotRange, Set<String>>> promise =
+            commandExecutor.readAsync(client, StringCodec.INSTANCE, RedisCommands.CLUSTER_SLOTS).thenApply(
+                output -> {
+                    List<Object> objs = (List<Object>) output;
+                    Map<ClusterSlotRange, Set<String>> map = new HashMap<>();
+                    for (Object obj : objs) {
+                        List<Object> nodePayload = (List<Object>) obj;
+                        Long startSlot = (Long) nodePayload.get(0);
+                        Long endSlot = (Long) nodePayload.get(1);
+                        ClusterSlotRange range = new ClusterSlotRange(startSlot.intValue(), endSlot.intValue());
+                        map.put(range, new HashSet<>());
+                        for (int i = 2; i < nodePayload.size(); i++) {
+                            map.get(range).add(String.valueOf(nodePayload.get(i)));
+                        }
+                    }
+                    return map;
+                }
+            ).toCompletableFuture();
+        return new CompletableFutureWrapper<>(promise);
     }
 
     @Override
