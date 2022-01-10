@@ -30,7 +30,6 @@ import org.redisson.executor.params.*;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.Injector;
 import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
 import org.redisson.remote.RequestId;
 import org.redisson.remote.ResponseEntry;
 import org.redisson.remote.ResponseEntry.Result;
@@ -504,18 +503,10 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     
     @Override
     public RFuture<Boolean> deleteAsync() {
-        RPromise<Boolean> result = new RedissonPromise<Boolean>();
         RFuture<Long> deleteFuture = redisson.getKeys().deleteAsync(
                 requestQueueName, statusName, tasksCounterName, schedulerQueueName, tasksName, tasksRetryIntervalName);
-        deleteFuture.onComplete((res, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
-            }
-            
-            result.trySuccess(res > 0);
-        });
-        return result;
+        CompletionStage<Boolean> f = deleteFuture.thenApply(res -> res > 0);
+        return new CompletableFutureWrapper<>(f);
     }
     
     @Override

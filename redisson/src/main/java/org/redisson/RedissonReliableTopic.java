@@ -26,13 +26,14 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.RPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -162,7 +163,6 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
 
             StreamMessageId startId = new StreamMessageId(System.currentTimeMillis(), 0);
 
-            RPromise<String> promise = new RedissonPromise<>();
             RFuture<Void> addFuture = commandExecutor.evalWriteNoRetryAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
                     "local value = redis.call('incr', KEYS[3]); "
                             + "redis.call('zadd', KEYS[4], ARGV[3], ARGV[2]); "
@@ -170,17 +170,12 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
                             + "redis.call('hset', KEYS[2], ARGV[2], ARGV[1]); ",
                     Arrays.asList(getSubscribersName(), getMapName(), getCounter(), getTimeout()),
                     startId, id, System.currentTimeMillis() + commandExecutor.getConnectionManager().getCfg().getReliableTopicWatchdogTimeout());
-            addFuture.onComplete((r, e) -> {
-                if (e != null) {
-                    promise.tryFailure(e);
-                    return;
-                }
-
+            CompletionStage<String> f = addFuture.thenApply(r -> {
                 poll(id, startId);
-                promise.trySuccess(id);
+                return id;
             });
 
-            return promise;
+            return new CompletableFutureWrapper<>(f);
         }
 
         return RedissonPromise.newSucceededFuture(id);

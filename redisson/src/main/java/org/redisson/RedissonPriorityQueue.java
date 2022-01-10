@@ -21,14 +21,14 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.util.*;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -276,31 +276,13 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
 
     protected final <T, R> RFuture<R> wrapLockedAsync(Supplier<RFuture<R>> callable) {
         long threadId = Thread.currentThread().getId();
-        RPromise<R> result = new RedissonPromise<R>();
-        lock.lockAsync(threadId).onComplete((r, exc) -> {
-            if (exc != null) {
-                result.tryFailure(exc);
-                return;
-            }
-
-            RFuture<R> f = callable.get();
-            f.onComplete((value, e) -> {
-                if (e != null) {
-                    result.tryFailure(e);
-                    return;
-                }
-                
-                lock.unlockAsync(threadId).onComplete((res, ex) -> {
-                    if (ex != null) {
-                        result.tryFailure(ex);
-                        return;
-                    }
-                    
-                    result.trySuccess(value);
-                });
+        CompletionStage<R> f = lock.lockAsync(threadId).thenCompose(r -> {
+            RFuture<R> callback = callable.get();
+            return callback.thenCompose(value -> {
+                return lock.unlockAsync(threadId).thenApply(res -> value);
             });
         });
-        return result;
+        return new CompletableFutureWrapper<>(f);
     }
 
     public V getFirst() {
