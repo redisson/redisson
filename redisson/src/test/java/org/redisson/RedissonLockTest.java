@@ -79,6 +79,46 @@ public class RedissonLockTest extends BaseConcurrentTest {
     }
 
     @Test
+    public void testSubscriptionsPerConnection() throws InterruptedException, IOException {
+        RedisRunner.RedisProcess runner = new RedisRunner()
+                .port(RedisRunner.findFreePort())
+                .nosave()
+                .randomDir()
+                .run();
+
+        Config config = new Config();
+        config.useSingleServer()
+                .setSubscriptionConnectionPoolSize(1)
+                .setSubscriptionConnectionMinimumIdleSize(1)
+                .setSubscriptionsPerConnection(5)
+                .setAddress(runner.getRedisServerAddressAndPort());
+
+        RedissonClient redisson  = Redisson.create(config);
+        ExecutorService e = Executors.newFixedThreadPool(32);
+        AtomicInteger errors = new AtomicInteger();
+        for (int i = 0; i < 100; i++) {
+            e.submit(() -> {
+                try {
+                    String lockKey = "lock-" + ThreadLocalRandom.current().nextInt(5);
+                    RLock lock = redisson.getLock(lockKey);
+                    lock.lock();
+                    Thread.sleep(ThreadLocalRandom.current().nextInt(20));
+                    lock.unlock();
+                } catch (Exception exception){
+                    exception.printStackTrace();
+                    errors.incrementAndGet();
+                }
+            });
+        }
+
+        e.shutdown();
+        assertThat(e.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
+        assertThat(errors.get()).isZero();
+        redisson.shutdown();
+        runner.stop();
+    }
+
+    @Test
     public void testSinglePubSub() throws IOException, InterruptedException, ExecutionException {
         RedisRunner.RedisProcess runner = new RedisRunner()
                 .port(RedisRunner.findFreePort())
