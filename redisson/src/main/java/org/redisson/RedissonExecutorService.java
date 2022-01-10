@@ -29,7 +29,6 @@ import org.redisson.executor.*;
 import org.redisson.executor.params.*;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.Injector;
-import org.redisson.misc.RPromise;
 import org.redisson.remote.RequestId;
 import org.redisson.remote.ResponseEntry;
 import org.redisson.remote.ResponseEntry.Result;
@@ -651,7 +650,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         executorRemoteService.executeAddAsync().onComplete((res, e) -> {
             if (e != null) {
                 for (RExecutorFuture<?> executorFuture : result) {
-                    ((RPromise<Void>) executorFuture).tryFailure(e);
+                    executorFuture.toCompletableFuture().completeExceptionally(e);
                 }
                 return;
             }
@@ -660,7 +659,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
                 if (!bool) {
                     RejectedExecutionException ex = new RejectedExecutionException("Task rejected. ExecutorService is in shutdown state");
                     for (RExecutorFuture<?> executorFuture : result) {
-                        ((RPromise<Void>) executorFuture).tryFailure(ex);
+                        executorFuture.toCompletableFuture().completeExceptionally(ex);
                     }
                     break;
                 }
@@ -761,7 +760,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         executorRemoteService.executeAddAsync().onComplete((res, e) -> {
             if (e != null) {
                 for (RExecutorFuture<?> executorFuture : result) {
-                    ((RPromise<Void>) executorFuture).tryFailure(e);
+                    executorFuture.toCompletableFuture().completeExceptionally(e);
                 }
                 return;
             }
@@ -770,7 +769,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
                 if (!bool) {
                     RejectedExecutionException ex = new RejectedExecutionException("Task rejected. ExecutorService is in shutdown state");
                     for (RExecutorFuture<?> executorFuture : result) {
-                        ((RPromise<Void>) executorFuture).tryFailure(ex);
+                        executorFuture.toCompletableFuture().completeExceptionally(ex);
                     }
                     break;
                 }
