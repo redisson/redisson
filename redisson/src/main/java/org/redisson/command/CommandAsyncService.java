@@ -96,6 +96,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         } catch (TimeoutException e) {
             future.completeExceptionally(new RedisTimeoutException("Subscribe timeout: (" + timeout + "ms). Increase 'subscriptionsPerConnection' and/or 'subscriptionConnectionPoolSize' parameters."));
         }
+
+        try {
+            future.join();
+        } catch (CompletionException e) {
+            throw (RuntimeException) e.getCause();
+        }
     }
 
     @Override
@@ -110,6 +116,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             throw (RuntimeException) e.getCause();
         } catch (TimeoutException e) {
             future.completeExceptionally(new RedisTimeoutException("Subscribe timeout: (" + timeout + "ms). Increase 'subscriptionsPerConnection' and/or 'subscriptionConnectionPoolSize' parameters."));
+        }
+
+        try {
+            future.join();
+        } catch (CompletionException e) {
+            throw (RuntimeException) e.getCause();
         }
     }
 
