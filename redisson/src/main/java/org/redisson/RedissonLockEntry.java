@@ -70,4 +70,10 @@ public class RedissonLockEntry implements PubSubEntry<RedissonLockEntry> {
         return latch;
     }
 
+    @Override
+    public String toString() {
+        return "RedissonLockEntry{" +
+                "counter=" + counter +
+                '}';
+    }
 }

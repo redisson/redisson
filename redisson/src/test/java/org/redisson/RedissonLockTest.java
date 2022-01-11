@@ -4,11 +4,16 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.redisson.client.RedisClient;
+import org.redisson.client.RedisClientConfig;
+import org.redisson.client.RedisConnection;
 import org.redisson.client.WriteRedisConnectionException;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.Config;
 import org.redisson.connection.balancer.RandomLoadBalancer;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -114,6 +119,15 @@ public class RedissonLockTest extends BaseConcurrentTest {
         e.shutdown();
         assertThat(e.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
         assertThat(errors.get()).isZero();
+
+        RedisClientConfig cc = new RedisClientConfig();
+        cc.setAddress(runner.getRedisServerAddressAndPort());
+        RedisClient c = RedisClient.create(cc);
+        RedisConnection ccc = c.connect();
+        List<String> channels = ccc.sync(RedisCommands.PUBSUB_CHANNELS);
+        assertThat(channels).isEmpty();
+        c.shutdown();
+
         redisson.shutdown();
         runner.stop();
     }

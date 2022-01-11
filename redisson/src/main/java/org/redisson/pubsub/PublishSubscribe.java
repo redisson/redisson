@@ -76,6 +76,7 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
                     }
                     newPromise.complete(r);
                 });
+                return;
             }
 
             E value = createEntry(newPromise);
