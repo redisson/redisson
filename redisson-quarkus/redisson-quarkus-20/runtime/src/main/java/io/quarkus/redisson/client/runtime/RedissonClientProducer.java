@@ -16,15 +16,20 @@
 package io.quarkus.redisson.client.runtime;
 
 import io.quarkus.arc.DefaultBean;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
+import org.redisson.config.PropertiesConvertor;
 
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 
 /**
  *
@@ -34,24 +39,34 @@ import java.io.IOException;
 @ApplicationScoped
 public class RedissonClientProducer {
 
-    private String config;
     private RedissonClient redisson;
 
     @Produces
     @Singleton
     @DefaultBean
     public RedissonClient create() throws IOException {
-        if (config != null){
-            Config c = Config.fromYAML(config);
-            redisson = Redisson.create(c);
+        InputStream configStream;
+        Optional<String> configFile = ConfigProvider.getConfig().getOptionalValue("quarkus.redisson.file", String.class);
+        if (configFile.isPresent()) {
+            configStream = getClass().getResourceAsStream(configFile.get());
         } else {
-            redisson = Redisson.create();
+            configStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("redisson.yaml");
         }
-        return redisson;
-    }
+        String config;
+        if (configStream != null) {
+            byte[] array = new byte[configStream.available()];
+            configStream.read(array);
+            config = new String(array, StandardCharsets.UTF_8);
+        } else {
+            String yaml = PropertiesConvertor.toYaml("quarkus.redisson.", ConfigProvider.getConfig().getPropertyNames(), prop -> {
+                return ConfigProvider.getConfig().getValue(prop, String.class);
+            });
+            config = yaml;
+        }
 
-    public void setConfig(String config) {
-        this.config = config;
+        Config c = Config.fromYAML(config);
+        redisson = Redisson.create(c);
+        return redisson;
     }
 
     @PreDestroy
