@@ -32,11 +32,12 @@ import org.redisson.iterator.RedissonBaseIterator;
 import org.redisson.iterator.RedissonListIterator;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
 import org.redisson.misc.CompletableFutureWrapper;
-import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Predicate;
 
 import static org.redisson.client.protocol.RedisCommands.*;
@@ -391,25 +392,21 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public RFuture<V> setAsync(int index, V element) {
-        RPromise<V> result = new RedissonPromise<V>();
         RFuture<V> future = commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_OBJECT,
                 "local v = redis.call('lindex', KEYS[1], ARGV[1]); " +
                         "redis.call('lset', KEYS[1], ARGV[1], ARGV[2]); " +
                         "return v",
-                Collections.<Object>singletonList(getRawName()), index, encode(element));
-        future.onComplete((res, e) -> {
+                Collections.singletonList(getRawName()), index, encode(element));
+        CompletionStage<V> f = future.handle((res, e) -> {
             if (e != null) {
                 if (e.getMessage().contains("ERR index out of range")) {
-                    result.tryFailure(new IndexOutOfBoundsException("index out of range"));
-                    return;
+                    throw new CompletionException(new IndexOutOfBoundsException("index out of range"));
                 }
-                result.tryFailure(e);
-                return;
+                throw new CompletionException(e);
             }
-            
-            result.trySuccess(res);
+            return res;
         });
-        return result;
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
