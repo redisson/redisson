@@ -4,10 +4,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
-import org.redisson.client.RedisClient;
-import org.redisson.client.RedisClientConfig;
-import org.redisson.client.RedisConnection;
-import org.redisson.client.WriteRedisConnectionException;
+import org.redisson.client.*;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.Config;
 import org.redisson.connection.balancer.RandomLoadBalancer;
@@ -95,13 +92,15 @@ public class RedissonLockTest extends BaseConcurrentTest {
         config.useSingleServer()
                 .setSubscriptionConnectionPoolSize(1)
                 .setSubscriptionConnectionMinimumIdleSize(1)
-                .setSubscriptionsPerConnection(5)
+                .setSubscriptionsPerConnection(1)
                 .setAddress(runner.getRedisServerAddressAndPort());
 
         RedissonClient redisson  = Redisson.create(config);
         ExecutorService e = Executors.newFixedThreadPool(32);
         AtomicInteger errors = new AtomicInteger();
-        for (int i = 0; i < 100; i++) {
+        AtomicInteger ops = new AtomicInteger();
+        for (int i = 0; i < 5000; i++) {
+            int j = i;
             e.submit(() -> {
                 try {
                     String lockKey = "lock-" + ThreadLocalRandom.current().nextInt(5);
@@ -109,15 +108,19 @@ public class RedissonLockTest extends BaseConcurrentTest {
                     lock.lock();
                     Thread.sleep(ThreadLocalRandom.current().nextInt(20));
                     lock.unlock();
-                } catch (Exception exception){
+                    ops.incrementAndGet();
+                } catch (Exception exception) {
                     exception.printStackTrace();
+                    if(exception instanceof RedisTimeoutException){
+                        return;
+                    }
                     errors.incrementAndGet();
                 }
             });
         }
 
         e.shutdown();
-        assertThat(e.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
+        assertThat(e.awaitTermination(150, TimeUnit.SECONDS)).isTrue();
         assertThat(errors.get()).isZero();
 
         RedisClientConfig cc = new RedisClientConfig();
