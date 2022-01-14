@@ -30,6 +30,7 @@ import org.redisson.client.protocol.decoder.MapValueDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.MasterSlaveEntry;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
@@ -39,9 +40,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.locks.Condition;
 
 /**
@@ -224,20 +223,16 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
             return result;
         }
 
-        RPromise<T> r = new RedissonPromise<>();
         RFuture<BatchResult<?>> future = executorService.executeAsync();
-        future.onComplete((res, ex) -> {
-            if (ex != null) {
-                r.tryFailure(ex);
-                return;
-            }
-            if (res.getSyncedSlaves() != availableSlaves) {
-                r.tryFailure(new IllegalStateException("Only " + res.getSyncedSlaves() + " of " + availableSlaves + " slaves were synced"));
+        CompletionStage<T> f = future.handle((res, ex) -> {
+            if (ex == null && res.getSyncedSlaves() != availableSlaves) {
+                throw new CompletionException(new IllegalStateException("Only "
+                                                        + res.getSyncedSlaves() + " of " + availableSlaves + " slaves were synced"));
             }
 
-            r.trySuccess(result.getNow());
+            return result.getNow();
         });
-        return r;
+        return new CompletableFutureWrapper<>(f);
     }
 
     private CommandBatchService createCommandBatchService(int availableSlaves) {

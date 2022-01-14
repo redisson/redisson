@@ -23,16 +23,14 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 import org.redisson.pubsub.LockPubSub;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -147,29 +145,26 @@ public class RedissonLock extends RedissonBaseLock {
     }
     
     private RFuture<Boolean> tryAcquireOnceAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId) {
-        RFuture<Boolean> ttlRemainingFuture;
+        RFuture<Boolean> acquiredFuture;
         if (leaseTime != -1) {
-            ttlRemainingFuture = tryLockInnerAsync(waitTime, leaseTime, unit, threadId, RedisCommands.EVAL_NULL_BOOLEAN);
+            acquiredFuture = tryLockInnerAsync(waitTime, leaseTime, unit, threadId, RedisCommands.EVAL_NULL_BOOLEAN);
         } else {
-            ttlRemainingFuture = tryLockInnerAsync(waitTime, internalLockLeaseTime,
+            acquiredFuture = tryLockInnerAsync(waitTime, internalLockLeaseTime,
                     TimeUnit.MILLISECONDS, threadId, RedisCommands.EVAL_NULL_BOOLEAN);
         }
 
-        ttlRemainingFuture.onComplete((ttlRemaining, e) -> {
-            if (e != null) {
-                return;
-            }
-
+        CompletionStage<Boolean> f = acquiredFuture.thenApply(acquired -> {
             // lock acquired
-            if (ttlRemaining) {
+            if (acquired) {
                 if (leaseTime != -1) {
                     internalLockLeaseTime = unit.toMillis(leaseTime);
                 } else {
                     scheduleExpirationRenewal(threadId);
                 }
             }
+            return acquired;
         });
-        return ttlRemainingFuture;
+        return new CompletableFutureWrapper<>(f);
     }
 
     private <T> RFuture<Long> tryAcquireAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId) {
@@ -180,11 +175,7 @@ public class RedissonLock extends RedissonBaseLock {
             ttlRemainingFuture = tryLockInnerAsync(waitTime, internalLockLeaseTime,
                     TimeUnit.MILLISECONDS, threadId, RedisCommands.EVAL_LONG);
         }
-        ttlRemainingFuture.onComplete((ttlRemaining, e) -> {
-            if (e != null) {
-                return;
-            }
-
+        CompletionStage<Long> f = ttlRemainingFuture.thenApply(ttlRemaining -> {
             // lock acquired
             if (ttlRemaining == null) {
                 if (leaseTime != -1) {
@@ -193,8 +184,9 @@ public class RedissonLock extends RedissonBaseLock {
                     scheduleExpirationRenewal(threadId);
                 }
             }
+            return ttlRemaining;
         });
-        return ttlRemainingFuture;
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
