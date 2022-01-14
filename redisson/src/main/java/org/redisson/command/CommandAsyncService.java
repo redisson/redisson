@@ -26,12 +26,10 @@ import org.redisson.cache.LRUCacheMap;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisException;
 import org.redisson.client.RedisRedirectException;
-import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
@@ -46,7 +44,8 @@ import java.io.IOException;
 import java.security.MessageDigest;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -83,46 +82,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     @Override
     public void syncSubscription(CompletableFuture<?> future) {
-        MasterSlaveServersConfig config = connectionManager.getConfig();
-        int timeout = config.getTimeout() + config.getRetryInterval() * config.getRetryAttempts();
-        try {
-            future.get(timeout, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        } catch (CancellationException e) {
-            // skip
-        } catch (ExecutionException e) {
-            throw (RuntimeException) e.getCause();
-        } catch (TimeoutException e) {
-            future.completeExceptionally(new RedisTimeoutException("Subscribe timeout: (" + timeout + "ms). Increase 'subscriptionsPerConnection' and/or 'subscriptionConnectionPoolSize' parameters."));
-        }
-
-        try {
-            future.join();
-        } catch (CompletionException e) {
-            throw (RuntimeException) e.getCause();
-        }
+        get(future);
     }
 
     @Override
     public void syncSubscriptionInterrupted(CompletableFuture<?> future) throws InterruptedException {
-        MasterSlaveServersConfig config = connectionManager.getConfig();
-        int timeout = config.getTimeout() + config.getRetryInterval() * config.getRetryAttempts();
-        try {
-            future.get(timeout, TimeUnit.MILLISECONDS);
-        } catch (CancellationException e) {
-            // skip
-        } catch (ExecutionException e) {
-            throw (RuntimeException) e.getCause();
-        } catch (TimeoutException e) {
-            future.completeExceptionally(new RedisTimeoutException("Subscribe timeout: (" + timeout + "ms). Increase 'subscriptionsPerConnection' and/or 'subscriptionConnectionPoolSize' parameters."));
-        }
-
-        try {
-            future.join();
-        } catch (CompletionException e) {
-            throw (RuntimeException) e.getCause();
-        }
+        getInterrupted(future);
     }
 
     @Override

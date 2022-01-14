@@ -236,11 +236,14 @@ public class PublishSubscribeService {
                 freePubSubLock.release();
 
                 CompletableFuture<RedisPubSubConnection> connectFuture = connect(codec, channelName, msEntry, promise, type, lock, listeners);
-                if (attempts.get() == config.getRetryAttempts()) {
-                    return;
-                }
-
                 connectionManager.newTimeout(t -> {
+                    if (attempts.get() == config.getRetryAttempts()) {
+                        connectFuture.completeExceptionally(new RedisTimeoutException(
+                                "Unable to acquire connection for subscription after " + attempts.get() + " attempts. " +
+                                        "Increase 'subscriptionsPerConnection' and/or 'subscriptionConnectionPoolSize' parameters."));
+                        return;
+                    }
+
                     if (connectFuture.cancel(true)) {
                         subscribe(codec, channelName, entry, promise, type, lock, attempts, listeners);
                         attempts.incrementAndGet();
@@ -269,27 +272,12 @@ public class PublishSubscribeService {
             }
             freePubSubLock.release();
 
-            CompletableFuture<Void> subscribeFuture = addListeners(channelName, promise, type, lock, freeEntry, listeners);
-
-            ChannelFuture future;
+            addListeners(channelName, promise, type, lock, freeEntry, listeners);
             if (PubSubType.PSUBSCRIBE == type) {
-                future = freeEntry.psubscribe(codec, channelName);
+                freeEntry.psubscribe(codec, channelName);
             } else {
-                future = freeEntry.subscribe(codec, channelName);
+                freeEntry.subscribe(codec, channelName);
             }
-
-            future.addListener((ChannelFutureListener) f -> {
-                if (!f.isSuccess()) {
-                    if (!promise.isDone()) {
-                        subscribeFuture.cancel(false);
-                    }
-                    return;
-                }
-
-                connectionManager.newTimeout(timeout ->
-                        subscribeFuture.cancel(false),
-                        config.getTimeout(), TimeUnit.MILLISECONDS);
-            });
         });
     }
 
@@ -298,7 +286,7 @@ public class PublishSubscribeService {
         return connectionManager.getEntry(slot);
     }
 
-    private CompletableFuture<Void> addListeners(ChannelName channelName, CompletableFuture<PubSubConnectionEntry> promise,
+    private void addListeners(ChannelName channelName, CompletableFuture<PubSubConnectionEntry> promise,
             PubSubType type, AsyncSemaphore lock, PubSubConnectionEntry connEntry,
             RedisPubSubListener<?>... listeners) {
         for (RedisPubSubListener<?> listener : listeners) {
@@ -307,7 +295,13 @@ public class PublishSubscribeService {
         SubscribeListener list = connEntry.getSubscribeFuture(channelName, type);
         CompletableFuture<Void> subscribeFuture = list.getSuccessFuture();
 
-        return subscribeFuture.whenComplete((res, e) -> {
+        subscribeFuture.whenComplete((res, e) -> {
+            if (e != null) {
+                promise.completeExceptionally(e);
+                lock.release();
+                return;
+            }
+
             if (!promise.complete(connEntry)) {
                 for (RedisPubSubListener<?> listener : listeners) {
                     connEntry.removeListener(channelName, listener);
@@ -324,6 +318,14 @@ public class PublishSubscribeService {
                 lock.release();
             }
         });
+
+        connectionManager.newTimeout(timeout -> {
+            if (subscribeFuture.completeExceptionally(new RedisTimeoutException(
+                    "Subscription timeout after " + config.getTimeout() + "ms. " +
+                            "Check network and/or increase 'timeout' parameter."))) {
+                unsubscribe(channelName, type);
+            }
+        }, config.getTimeout(), TimeUnit.MILLISECONDS);
     }
 
     private CompletableFuture<RedisPubSubConnection> nextPubSubConnection(MasterSlaveEntry entry, ChannelName channelName) {

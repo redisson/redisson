@@ -45,11 +45,7 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
         AsyncSemaphore semaphore = service.getSemaphore(new ChannelName(channelName));
         semaphore.acquire(() -> {
             if (entry.release() == 0) {
-                // just an assertion
-                boolean removed = entries.remove(entryName) == entry;
-                if (!removed) {
-                    throw new IllegalStateException();
-                }
+                entries.remove(entryName);
                 service.unsubscribe(PubSubType.UNSUBSCRIBE, new ChannelName(channelName))
                         .whenComplete((r, e) -> {
                             semaphore.release();
@@ -97,7 +93,15 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
             }
 
             RedisPubSubListener<Object> listener = createListener(channelName, value);
-            service.subscribe(LongCodec.INSTANCE, channelName, semaphore, listener);
+            CompletableFuture<PubSubConnectionEntry> s = service.subscribe(LongCodec.INSTANCE, channelName, semaphore, listener);
+            s.whenComplete((r, e) -> {
+                if (e != null) {
+                    value.getPromise().completeExceptionally(e);
+                    return;
+                }
+                value.getPromise().complete(value);
+            });
+
         });
 
         return newPromise;
@@ -118,20 +122,6 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
 
                 PublishSubscribe.this.onMessage(value, (Long) message);
             }
-
-            @Override
-            public boolean onStatus(PubSubType type, CharSequence channel) {
-                if (!channelName.equals(channel.toString())) {
-                    return false;
-                }
-
-                if (type == PubSubType.SUBSCRIBE) {
-                    value.getPromise().complete(value);
-                    return true;
-                }
-                return false;
-            }
-
         };
         return listener;
     }
