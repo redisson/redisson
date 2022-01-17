@@ -168,14 +168,14 @@
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
-                <version>1.2.5</version>
+                <version>1.2.10</version>
                 <scope>test</scope>
             </dependency>
 
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-bom</artifactId>
-                <version>4.1.72.Final</version>
+                <version>4.1.73.Final</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
