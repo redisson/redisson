@@ -161,7 +161,7 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
         if (subscriberId.compareAndSet(null, id)) {
             renewExpiration();
 
-            StreamMessageId startId = new StreamMessageId(System.currentTimeMillis(), 0);
+            StreamMessageId startId = StreamMessageId.ALL;
 
             RFuture<Void> addFuture = commandExecutor.evalWriteNoRetryAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
                     "local value = redis.call('incr', KEYS[3]); "
@@ -193,7 +193,11 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
                     return;
                 }
 
-                poll(id, startId);
+                log.error(ex.getMessage(), ex);
+
+                commandExecutor.getConnectionManager().newTimeout(task -> {
+                    poll(id, startId);
+                }, 1, TimeUnit.SECONDS);
                 return;
             }
 
