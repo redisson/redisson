@@ -836,19 +836,20 @@ public class RedissonTopicTest {
 
         AtomicBoolean exceptionDetected = new AtomicBoolean(false);
 
+        Deque<String> status = new ConcurrentLinkedDeque<>();
         Runnable rLockPayload =
                 () -> {
                     try {
                         Integer randomLock = ThreadLocalRandom.current().nextInt(100);
                         RLock lock = redisson.getLock(randomLock.toString());
-                        try {
-                            lock.lock(10, TimeUnit.SECONDS);
-                        } finally {
-                            if (lock != null && lock.isHeldByCurrentThread()) {
-                                lock.unlock();
-                            }
-                        }
+                        lock.lock(10, TimeUnit.SECONDS);
+                        lock.unlock();
+                        status.add("ok");
                     } catch (Exception e) {
+                        status.add("failed");
+                        if (e.getCause().getMessage().contains("slaves were synced")) {
+                            return;
+                        }
                         e.printStackTrace();
                         exceptionDetected.set(true);
                     }
@@ -883,8 +884,9 @@ public class RedissonTopicTest {
         Thread.sleep(java.time.Duration.ofSeconds(10).toMillis());
 
         assertThat(exceptionDetected.get()).isFalse();
+        assertThat(status.peekLast()).isEqualTo("ok");
 
-        executor1.shutdownNow();
+        executor1.shutdown();
 
         redisson.shutdown();
         sentinel1.stop();

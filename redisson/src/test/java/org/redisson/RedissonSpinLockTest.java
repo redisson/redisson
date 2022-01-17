@@ -85,7 +85,7 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
 
         RLock lock = redisson.getSpinLock("lock");
 
-        Awaitility.await().between(Duration.ofMillis(3000), Duration.ofMillis(3200)).untilAsserted(() -> {
+        Awaitility.await().between(Duration.ofMillis(3000), Duration.ofMillis(3500)).untilAsserted(() -> {
             lock.tryLock(3, TimeUnit.SECONDS);
         });
     }
