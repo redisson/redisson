@@ -77,9 +77,11 @@ public class PropertiesConvertor {
         return builder.toString();
     }
 
+    private static final Set<String> LIST_NODES = new HashSet<>(Arrays.asList("node-addresses", "slave-addresses", "addresses"));
+
     private static void addValue(StringBuilder yaml, Map.Entry<String, Object> subEntry) {
         String value = (String) subEntry.getValue();
-        if (value.contains(",")) {
+        if (value.contains(",") || LIST_NODES.contains(subEntry.getKey())) {
             for (String part : value.split(",")) {
                 yaml.append("\n  ").append("- \"").append(part.trim()).append("\"");
             }
@@ -87,7 +89,7 @@ public class PropertiesConvertor {
         }
 
         if ("codec".equals(subEntry.getKey())
-                || "loadBalancer".equals(subEntry.getKey())) {
+                || "load-balancer".equals(subEntry.getKey())) {
             value = "!<" + value + "> {}";
         } else {
             try {
