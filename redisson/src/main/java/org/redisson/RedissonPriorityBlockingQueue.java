@@ -73,7 +73,7 @@ public class RedissonPriorityBlockingQueue<V> extends RedissonPriorityQueue<V> i
         long start = System.currentTimeMillis();
         commandExecutor.getConnectionManager().getGroup().schedule(() -> {
             RFuture<V> future = wrapLockedAsync(command, params);
-            future.onComplete((res, e) -> {
+            future.whenComplete((res, e) -> {
                     if (e != null && !(e instanceof RedisConnectionException)) {
                         result.tryFailure(e);
                         return;

@@ -215,7 +215,7 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
         @Override
         public <A> void read(ByteBuffer dst, A attachment, CompletionHandler<Integer, ? super A> handler) {
             RFuture<Integer> res = (RFuture<Integer>) read(dst);
-            res.onComplete((r, e) -> {
+            res.whenComplete((r, e) -> {
                 if (e != null) {
                     handler.failed(e, attachment);
                 } else {
@@ -244,7 +244,7 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
         @Override
         public <A> void write(ByteBuffer src, A attachment, CompletionHandler<Integer, ? super A> handler) {
             RFuture<Integer> res = (RFuture<Integer>) write(src);
-            res.onComplete((r, e) -> {
+            res.whenComplete((r, e) -> {
                 if (e != null) {
                     handler.failed(e, attachment);
                 } else {

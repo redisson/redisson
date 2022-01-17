@@ -40,12 +40,14 @@ import org.redisson.client.protocol.convertor.VoidReplayConvertor;
 import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.Hash;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -330,39 +332,39 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
     @Override
     public RFuture<Void> renameAsync(String newName) {
         String newConfigName = suffixName(newName, "config");
-        RFuture<Void> f = commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
+        RFuture<Void> future = commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
                      "if redis.call('exists', KEYS[1]) == 1 then " +
                               "redis.call('rename', KEYS[1], ARGV[1]); " +
                           "end; " +
                           "return redis.call('rename', KEYS[2], ARGV[2]); ",
                 Arrays.<Object>asList(getRawName(), configName), newName, newConfigName);
-        f.onComplete((value, e) -> {
-            if (e == null) {
-                setName(newName);
-                this.configName = newConfigName;
-            }
+        CompletionStage<Void> f = future.thenApply(value -> {
+            setName(newName);
+            this.configName = newConfigName;
+            return value;
         });
-        return f;
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
     public RFuture<Boolean> renamenxAsync(String newName) {
         String newConfigName = suffixName(newName, "config");
-        RFuture<Boolean> f = commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        RFuture<Boolean> future = commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local r = redis.call('renamenx', KEYS[1], ARGV[1]); "
                         + "if r == 0 then "
                         + "  return 0; "
                         + "else  "
                         + "  return redis.call('renamenx', KEYS[2], ARGV[2]); "
                         + "end; ",
-                Arrays.<Object>asList(getRawName(), configName), newName, newConfigName);
-        f.onComplete((value, e) -> {
-            if (e == null && value) {
+                Arrays.asList(getRawName(), configName), newName, newConfigName);
+        CompletionStage<Boolean> f = future.thenApply(value -> {
+            if (value) {
                 setName(newName);
                 this.configName = newConfigName;
             }
+            return value;
         });
-        return f;
+        return new CompletableFutureWrapper<>(f);
     }
 
     private <V> V check(V result) {

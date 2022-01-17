@@ -184,7 +184,7 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
     private void poll(String id, StreamMessageId startId) {
         readFuture = commandExecutor.readAsync(getRawName(), new CompositeCodec(StringCodec.INSTANCE, codec),
                 RedisCommands.XREAD_BLOCKING_SINGLE, "BLOCK", 0, "STREAMS", getRawName(), startId);
-        readFuture.onComplete((res, ex) -> {
+        readFuture.whenComplete((res, ex) -> {
             if (readFuture.isCancelled()) {
                 return;
             }
@@ -246,7 +246,7 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
                             + "return r ~= false; ",
                     Arrays.asList(getRawName(), getSubscribersName(), getMapName(), getCounter(), getTimeout()),
                     lastId, id, time);
-            updateFuture.onComplete((re, exc) -> {
+            updateFuture.whenComplete((re, exc) -> {
                 if (exc != null) {
                     if (exc instanceof RedissonShutdownException) {
                         return;
@@ -333,7 +333,7 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
                       + "return 1; ",
                 Arrays.asList(getTimeout()),
                 System.currentTimeMillis() + commandExecutor.getConnectionManager().getCfg().getReliableTopicWatchdogTimeout(), subscriberId.get());
-            future.onComplete((res, e) -> {
+            future.whenComplete((res, e) -> {
                 if (e != null) {
                     log.error("Can't update reliable topic " + getRawName() + " expiration time", e);
                     return;
