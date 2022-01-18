@@ -48,7 +48,7 @@ public class RedissonReliableTopicRx {
                     p.onComplete();
                 }
             });
-            t.onComplete((id, e) -> {
+            t.whenComplete((id, e) -> {
                 if (e != null) {
                     p.onError(e);
                     return;

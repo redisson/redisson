@@ -55,7 +55,7 @@ public class RedissonTopicRx {
                         }
                     }
                 });
-                t.onComplete((id, e) -> {
+                t.whenComplete((id, e) -> {
                     if (e != null) {
                         p.onError(e);
                         return;

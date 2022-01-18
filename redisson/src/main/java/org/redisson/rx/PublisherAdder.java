@@ -51,7 +51,7 @@ public abstract class PublisherAdder<V> {
                     @Override
                     public void accept(V t) throws Exception {
                         values.getAndIncrement();
-                        add(t).onComplete((res, e) -> {
+                        add(t).whenComplete((res, e) -> {
                             if (e != null) {
                                 p.onError(e);
                                 return;

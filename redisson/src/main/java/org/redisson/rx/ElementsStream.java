@@ -56,7 +56,7 @@ public class ElementsStream {
     private static <V> void take(Supplier<RFuture<V>> factory, ReplayProcessor<V> p, AtomicLong counter, AtomicReference<RFuture<V>> futureRef) {
         RFuture<V> future = factory.get();
         futureRef.set(future);
-        future.onComplete((res, e) -> {
+        future.whenComplete((res, e) -> {
             if (e != null) {
                 p.onError(e);
                 return;

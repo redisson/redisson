@@ -54,7 +54,7 @@ public abstract class SetRxIterator<V> {
             }
             
             protected void nextValues() {
-                scanIterator(client, nextIterPos).onComplete((res, e) -> {
+                scanIterator(client, nextIterPos).whenComplete((res, e) -> {
                     if (e != null) {
                         p.onError(e);
                         return;

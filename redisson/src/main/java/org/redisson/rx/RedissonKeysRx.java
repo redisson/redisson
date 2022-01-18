@@ -79,7 +79,7 @@ public class RedissonKeysRx {
             }
             
             protected void nextValues() {
-                instance.scanIteratorAsync(client, entry, nextIterPos, pattern, count).onComplete((res, e) -> {
+                instance.scanIteratorAsync(client, entry, nextIterPos, pattern, count).whenComplete((res, e) -> {
                     if (e != null) {
                         p.onError(e);
                         return;

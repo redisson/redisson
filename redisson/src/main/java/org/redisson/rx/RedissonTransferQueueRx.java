@@ -49,7 +49,7 @@ public class RedissonTransferQueueRx<V> {
 
             @Override
             public void accept(long n) throws Exception {
-                queue.getValueAsync(currentIndex).onComplete((value, e) -> {
+                queue.getValueAsync(currentIndex).whenComplete((value, e) -> {
                     if (e != null) {
                         p.onError(e);
                         return;

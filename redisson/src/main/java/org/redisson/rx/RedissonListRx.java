@@ -62,7 +62,7 @@ public class RedissonListRx<V> {
             
             @Override
             public void accept(long n) throws Exception {
-                instance.getAsync(currentIndex).onComplete((value, e) -> {
+                instance.getAsync(currentIndex).whenComplete((value, e) -> {
                     if (e != null) {
                         p.onError(e);
                         return;
