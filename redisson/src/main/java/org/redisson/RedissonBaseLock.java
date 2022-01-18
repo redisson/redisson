@@ -31,7 +31,6 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.misc.CompletableFutureWrapper;
-import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -146,7 +145,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
                 }
                 
                 RFuture<Boolean> future = renewExpirationAsync(threadId);
-                future.onComplete((res, e) -> {
+                future.whenComplete((res, e) -> {
                     if (e != null) {
                         log.error("Can't update lock " + getRawName() + " expiration", e);
                         EXPIRATION_RENEWAL_MAP.remove(getEntryName());
@@ -305,28 +304,24 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
 
     @Override
     public RFuture<Void> unlockAsync(long threadId) {
-        RPromise<Void> result = new RedissonPromise<>();
         RFuture<Boolean> future = unlockInnerAsync(threadId);
 
-        future.onComplete((opStatus, e) -> {
+        CompletionStage<Void> f = future.handle((opStatus, e) -> {
             cancelExpirationRenewal(threadId);
 
             if (e != null) {
-                result.tryFailure(e);
-                return;
+                throw new CompletionException(e);
             }
-
             if (opStatus == null) {
                 IllegalMonitorStateException cause = new IllegalMonitorStateException("attempt to unlock lock, not locked by current thread by node id: "
                         + id + " thread-id: " + threadId);
-                result.tryFailure(cause);
-                return;
+                throw new CompletionException(cause);
             }
 
-            result.trySuccess(null);
+            return null;
         });
 
-        return result;
+        return new CompletableFutureWrapper<>(f);
     }
 
     protected abstract RFuture<Boolean> unlockInnerAsync(long threadId);

@@ -45,7 +45,6 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 
@@ -647,7 +646,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             result.add(executorFuture);
         }
         
-        executorRemoteService.executeAddAsync().onComplete((res, e) -> {
+        executorRemoteService.executeAddAsync().whenComplete((res, e) -> {
             if (e != null) {
                 for (RExecutorFuture<?> executorFuture : result) {
                     executorFuture.toCompletableFuture().completeExceptionally(e);
@@ -757,7 +756,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             result.add(executorFuture);
         }
         
-        executorRemoteService.executeAddAsync().onComplete((res, e) -> {
+        executorRemoteService.executeAddAsync().whenComplete((res, e) -> {
             if (e != null) {
                 for (RExecutorFuture<?> executorFuture : result) {
                     executorFuture.toCompletableFuture().completeExceptionally(e);
@@ -1044,24 +1043,17 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return executorRemoteService.cancelExecutionAsync(new RequestId(taskId));
     }
 
-    private <T> RFuture<T> poll(List<RExecutorFuture<?>> futures, long timeout, TimeUnit timeUnit) throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
-        AtomicReference<RFuture<T>> result = new AtomicReference<>();
-        for (Future<?> future : futures) {
-            RFuture<T> f = (RFuture<T>) future;
-            f.onComplete((r, e) -> {
-                latch.countDown();
-                result.compareAndSet(null, f);
-            });
+    private <T> T poll(List<CompletableFuture<?>> futures, long timeout, TimeUnit timeUnit) throws InterruptedException, TimeoutException {
+        CompletableFuture<Object> future = CompletableFuture.anyOf(futures.toArray(new CompletableFuture[0]));
+        try {
+            if (timeout == -1) {
+                return (T) future.get();
+            } else {
+                return (T) future.get(timeout, timeUnit);
+            }
+        } catch (ExecutionException e) {
+            throw commandExecutor.convertException(e);
         }
-        
-        if (timeout == -1) {
-            latch.await();
-        } else {
-            latch.await(timeout, timeUnit);
-        }
-
-        return result.get();
     }
     
     @Override
@@ -1080,20 +1072,17 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             throw new NullPointerException();
         }
 
-        List<RExecutorFuture<?>> futures = new ArrayList<>();
+        List<CompletableFuture<?>> futures = new ArrayList<>();
         for (Callable<T> callable : tasks) {
             RExecutorFuture<T> future = submit(callable);
-            futures.add(future);
+            futures.add(future.toCompletableFuture());
         }
 
-        RFuture<T> result = poll(futures, timeout, unit);
-        if (result == null) {
-            throw new TimeoutException();
-        }
-        for (RExecutorFuture<?> f : futures) {
+        T result = poll(futures, timeout, unit);
+        for (CompletableFuture<?> f : futures) {
             f.cancel(true);
         }
-        return result.getNow();
+        return result;
     }
 
     @Override

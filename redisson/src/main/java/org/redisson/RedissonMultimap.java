@@ -27,11 +27,13 @@ import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.iterator.RedissonBaseMapIterator;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.Hash;
 import org.redisson.misc.RedissonPromise;
 
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -269,7 +271,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     @Override
     public RFuture<Void> renameAsync(String newName) {
         String newPrefix = suffixName(newName, "");
-        RFuture<Void> f = commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
+        RFuture<Void> future = commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 "local entries = redis.call('hgetall', KEYS[1]); " +
                 "local keys = {}; " +
                 "for i, v in ipairs(entries) do " +
@@ -283,18 +285,14 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
                   + "redis.call('rename', ARGV[1] .. keys[i], ARGV[2] .. keys[i]); "
               + "end; ",
                 Arrays.asList(getRawName()), prefix, newPrefix, newName);
-        f.onComplete((r, e) -> {
-            if (e == null) {
-                setName(newName);
-            }
-        });
-        return f;
+        CompletionStage<Void> f = future.thenAccept(r -> setName(newName));
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
     public RFuture<Boolean> renamenxAsync(String newName) {
         String newPrefix = suffixName(newName, "");
-        RFuture<Boolean> f = commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        RFuture<Boolean> future = commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local entries = redis.call('hgetall', KEYS[1]); " +
                 "local keys = {}; " +
                 "for i, v in ipairs(entries) do " +
@@ -320,12 +318,13 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
               + "end; " +
                 "return 1; ",
                 Arrays.asList(getRawName()), prefix, newPrefix, newName);
-        f.onComplete((value, e) -> {
-            if (e == null && value) {
+        CompletionStage<Boolean> f = future.thenApply(value -> {
+            if (value) {
                 setName(newName);
             }
+            return value;
         });
-        return f;
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override

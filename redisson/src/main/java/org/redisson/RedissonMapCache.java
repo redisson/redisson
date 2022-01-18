@@ -1532,7 +1532,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         }
         params.add(count);
 
-        RFuture<MapCacheScanResult<Object, Object>> f = commandExecutor.evalReadAsync(client, name, codec, SCAN,
+        RFuture<MapCacheScanResult<Object, Object>> future = commandExecutor.evalReadAsync(client, name, codec, SCAN,
                 "local result = {}; "
                 + "local idleKeys = {}; "
                 + "local res; "
@@ -1572,41 +1572,40 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 Arrays.asList(name, getTimeoutSetName(name), getIdleSetName(name)),
                 params.toArray());
 
-        f.onComplete((res, e) -> {
-            if (res != null) {
-                if (res.getIdleKeys().isEmpty()) {
-                    return;
-                }
-
-                List<Object> args = new ArrayList<Object>(res.getIdleKeys().size() + 1);
-                args.add(System.currentTimeMillis());
-                encodeMapKeys(args, res.getIdleKeys());
-
-                commandExecutor.evalWriteAsync(name, codec, new RedisCommand<Map<Object, Object>>("EVAL",
-                                new MapValueDecoder(new MapGetAllDecoder(args, 1))),
-                                "local currentTime = tonumber(table.remove(ARGV, 1)); " // index is the first parameter
-                              + "local map = redis.call('hmget', KEYS[1], unpack(ARGV)); "
-                              + "for i = #map, 1, -1 do "
-                                  + "local value = map[i]; "
-                                  + "if value ~= false then "
-                                      + "local key = ARGV[i]; "
-                                      + "local t, val = struct.unpack('dLc0', value); "
-
-                                      + "if t ~= 0 then "
-                                          + "local expireIdle = redis.call('zscore', KEYS[2], key); "
-                                          + "if expireIdle ~= false then "
-                                              + "if tonumber(expireIdle) > currentTime then "
-                                                  + "redis.call('zadd', KEYS[2], t + currentTime, key); "
-                                              + "end; "
-                                          + "end; "
-                                      + "end; "
-                                  + "end; "
-                              + "end; ",
-                        Arrays.asList(name, getIdleSetName(name)), args.toArray());
+        CompletionStage<MapCacheScanResult<Object, Object>> f = future.thenApply(res -> {
+            if (res.getIdleKeys().isEmpty()) {
+                return res;
             }
+
+            List<Object> args = new ArrayList<Object>(res.getIdleKeys().size() + 1);
+            args.add(System.currentTimeMillis());
+            encodeMapKeys(args, res.getIdleKeys());
+
+            commandExecutor.evalWriteAsync(name, codec, new RedisCommand<Map<Object, Object>>("EVAL",
+                            new MapValueDecoder(new MapGetAllDecoder(args, 1))),
+                    "local currentTime = tonumber(table.remove(ARGV, 1)); " // index is the first parameter
+                            + "local map = redis.call('hmget', KEYS[1], unpack(ARGV)); "
+                            + "for i = #map, 1, -1 do "
+                            + "local value = map[i]; "
+                            + "if value ~= false then "
+                            + "local key = ARGV[i]; "
+                            + "local t, val = struct.unpack('dLc0', value); "
+
+                            + "if t ~= 0 then "
+                            + "local expireIdle = redis.call('zscore', KEYS[2], key); "
+                            + "if expireIdle ~= false then "
+                            + "if tonumber(expireIdle) > currentTime then "
+                            + "redis.call('zadd', KEYS[2], t + currentTime, key); "
+                            + "end; "
+                            + "end; "
+                            + "end; "
+                            + "end; "
+                            + "end; ",
+                    Arrays.asList(name, getIdleSetName(name)), args.toArray());
+            return res;
         });
 
-        return (RFuture<ScanResult<Map.Entry<Object, Object>>>) (Object) f;
+        return new CompletableFutureWrapper<>((CompletionStage<ScanResult<Map.Entry<Object, Object>>>) (Object) f);
     }
 
     @Override

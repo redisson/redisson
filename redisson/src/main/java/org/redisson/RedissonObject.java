@@ -27,6 +27,7 @@ import org.redisson.misc.Hash;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
@@ -140,13 +141,9 @@ public abstract class RedissonObject implements RObject {
 
     @Override
     public RFuture<Void> renameAsync(String newName) {
-        RFuture<Void> f = commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.RENAME, getRawName(), newName);
-        f.onComplete((r, e) -> {
-            if (e == null) {
-                setName(newName);
-            }
-        });
-        return f;
+        RFuture<Void> future = commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.RENAME, getRawName(), newName);
+        CompletionStage<Void> f = future.thenAccept(r -> setName(newName));
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
@@ -186,13 +183,14 @@ public abstract class RedissonObject implements RObject {
 
     @Override
     public RFuture<Boolean> renamenxAsync(String newName) {
-        RFuture<Boolean> f = commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.RENAMENX, getRawName(), newName);
-        f.onComplete((value, e) -> {
-            if (e == null && value) {
+        RFuture<Boolean> future = commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.RENAMENX, getRawName(), newName);
+        CompletionStage<Boolean> f = future.thenApply(value -> {
+            if (value) {
                 setName(newName);
             }
+            return value;
         });
-        return f;
+        return new CompletableFutureWrapper<>(f);
 
     }
 

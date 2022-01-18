@@ -24,13 +24,16 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.ListDrainToDecoder;
-import org.redisson.misc.RPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.RedissonPromise;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -59,22 +62,18 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
     
     @Override
     public RFuture<Boolean> addAsync(V e) {
-        RPromise<Boolean> result = new RedissonPromise<Boolean>();
         RFuture<Boolean> future = offerAsync(e);
-        future.onComplete((res, ex) -> {
+        CompletionStage<Boolean> f = future.handle((res, ex) -> {
             if (ex != null) {
-                result.tryFailure(ex);
-                return;
+                throw new CompletionException(ex);
             }
-            
+
             if (!res) {
-                result.tryFailure(new IllegalStateException("Queue is full"));
-                return;
+                throw new CompletionException(new IllegalStateException("Queue is full"));
             }
-            
-            result.trySuccess(res);
+            return true;
         });
-        return result;
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
@@ -120,30 +119,19 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
         return wrapTakeFuture(takeFuture);
     }
 
-    private RPromise<V> wrapTakeFuture(RFuture<V> takeFuture) {
-        RPromise<V> result = new RedissonPromise<V>() {
-            @Override
-            public boolean cancel(boolean mayInterruptIfRunning) {
-                super.cancel(mayInterruptIfRunning);
-                return takeFuture.cancel(mayInterruptIfRunning);
-            };
-        };
-        
-        takeFuture.onComplete((res, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
-            }
-            
+    private RFuture<V> wrapTakeFuture(RFuture<V> takeFuture) {
+        CompletableFuture<V> f = takeFuture.toCompletableFuture().thenCompose(res -> {
             if (res == null) {
-                result.trySuccess(res);
-                return;
+                return CompletableFuture.completedFuture(null);
             }
-            createSemaphore(null).releaseAsync().onComplete((r, ex) -> {
-                result.trySuccess(res);
-            });
+            return createSemaphore(null).releaseAsync().handle((r, ex) -> res);
         });
-        return result;
+        f.whenComplete((r, e) -> {
+            if (f.isCancelled()) {
+                takeFuture.cancel(false);
+            }
+        });
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override

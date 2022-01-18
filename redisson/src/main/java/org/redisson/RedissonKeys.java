@@ -29,17 +29,17 @@ import org.redisson.command.CommandBatchService;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.iterator.RedissonBaseIterator;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.CompositeIterable;
-import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 import org.redisson.reactive.CommandReactiveBatchService;
 import org.redisson.rx.CommandRxBatchService;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -239,55 +239,57 @@ public class RedissonKeys implements RKeys {
         }
         
         int batchSize = 500;
-        RPromise<Long> result = new RedissonPromise<Long>();
-        AtomicReference<Throwable> failed = new AtomicReference<Throwable>();
-        AtomicLong count = new AtomicLong();
-        Collection<MasterSlaveEntry> entries = commandExecutor.getConnectionManager().getEntrySet();
-        AtomicLong executed = new AtomicLong(entries.size());
-        BiConsumer<Long, Throwable> listener = (res, e) -> {
-            if (e == null) {
-                count.addAndGet(res);
-            } else {
-                failed.set(e);
-            }
+        List<CompletableFuture<Long>> futures = new ArrayList<>();
+        for (MasterSlaveEntry entry : commandExecutor.getConnectionManager().getEntrySet()) {
+            commandExecutor.getConnectionManager().getExecutor().execute(() -> {
+                long count = 0;
+                try {
+                    Iterator<String> keysIterator = createKeysIterator(entry, RedisCommands.SCAN, pattern, batchSize);
+                    List<String> keys = new ArrayList<>();
+                    while (keysIterator.hasNext()) {
+                        String key = keysIterator.next();
+                        keys.add(key);
 
-            checkExecution(result, failed, count, executed);
-        };
-
-        for (MasterSlaveEntry entry : entries) {
-            commandExecutor.getConnectionManager().getExecutor().execute(new Runnable() {
-                @Override
-                public void run() {
-                    long count = 0;
-                    try {
-                        Iterator<String> keysIterator = createKeysIterator(entry, RedisCommands.SCAN, pattern, batchSize);
-                        List<String> keys = new ArrayList<String>();
-                        while (keysIterator.hasNext()) {
-                            String key = keysIterator.next();
-                            keys.add(key);
-
-                            if (keys.size() % batchSize == 0) {
-                                count += delete(keys.toArray(new String[keys.size()]));
-                                keys.clear();
-                            }
-                        }
-
-                        if (!keys.isEmpty()) {
-                            count += delete(keys.toArray(new String[keys.size()]));
+                        if (keys.size() % batchSize == 0) {
+                            count += delete(keys.toArray(new String[0]));
                             keys.clear();
                         }
-
-                        RFuture<Long> future = RedissonPromise.newSucceededFuture(count);
-                        future.onComplete(listener);
-                    } catch (Exception e) {
-                        RFuture<Long> future = RedissonPromise.newFailedFuture(e);
-                        future.onComplete(listener);
                     }
+
+                    if (!keys.isEmpty()) {
+                        count += delete(keys.toArray(new String[0]));
+                        keys.clear();
+                    }
+
+                    RFuture<Long> future = RedissonPromise.newSucceededFuture(count);
+                    futures.add(future.toCompletableFuture());
+                } catch (Exception e) {
+                    CompletableFuture<Long> future = new CompletableFuture<>();
+                    future.completeExceptionally(e);
+                    futures.add(future);
                 }
             });
         }
 
-        return result;
+        CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        CompletableFuture<Long> res = future.handle((r, e) -> {
+            long cc = futures.stream()
+                    .filter(f -> f.isDone())
+                    .mapToLong(f -> f.getNow(0L))
+                    .sum();
+            if (e != null) {
+                if (cc > 0) {
+                    RedisException ex = new RedisException(
+                            cc + " keys have been deleted. But one or more nodes has an error", e);
+                    throw new CompletionException(ex);
+                } else {
+                    throw new CompletionException(e);
+                }
+            }
+
+            return cc;
+        });
+        return new CompletableFutureWrapper<>(res);
     }
 
     @Override
@@ -417,24 +419,6 @@ public class RedissonKeys implements RKeys {
     @Override
     public RFuture<Void> flushallAsync() {
         return commandExecutor.writeAllAsync(RedisCommands.FLUSHALL);
-    }
-
-    private void checkExecution(RPromise<Long> result, AtomicReference<Throwable> failed, AtomicLong count,
-            AtomicLong executed) {
-        if (executed.decrementAndGet() == 0) {
-            if (failed.get() != null) {
-                if (count.get() > 0) {
-                    RedisException ex = new RedisException(
-                            "" + count.get() + " keys has been deleted. But one or more nodes has an error",
-                            failed.get());
-                    result.tryFailure(ex);
-                } else {
-                    result.tryFailure(failed.get());
-                }
-            } else {
-                result.trySuccess(count.get());
-            }
-        }
     }
 
     @Override
