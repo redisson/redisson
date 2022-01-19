@@ -229,8 +229,7 @@ public class PublishSubscribeService {
                     }, config.getTimeout(), TimeUnit.MILLISECONDS);
 
         freePubSubLock.acquire(() -> {
-            lockTimeout.cancel();
-            if (promise.isDone()) {
+            if (!lockTimeout.cancel() || promise.isDone()) {
                 lock.release();
                 freePubSubLock.release();
                 return;
