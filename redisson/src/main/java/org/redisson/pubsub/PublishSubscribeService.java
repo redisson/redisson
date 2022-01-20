@@ -288,12 +288,31 @@ public class PublishSubscribeService {
             }
             freePubSubLock.release();
 
-            addListeners(channelName, promise, type, lock, freeEntry, listeners);
+            CompletableFuture<Void> subscribeFuture = addListeners(channelName, promise, type, lock, freeEntry, listeners);
+
+            ChannelFuture future;
             if (PubSubType.PSUBSCRIBE == type) {
-                freeEntry.psubscribe(codec, channelName);
+                future = freeEntry.psubscribe(codec, channelName);
             } else {
-                freeEntry.subscribe(codec, channelName);
+                future = freeEntry.subscribe(codec, channelName);
             }
+
+            future.addListener((ChannelFutureListener) future1 -> {
+                if (!future1.isSuccess()) {
+                    if (!promise.isDone()) {
+                        subscribeFuture.cancel(false);
+                    }
+                    return;
+                }
+
+                connectionManager.newTimeout(timeout -> {
+                    if (subscribeFuture.completeExceptionally(new RedisTimeoutException(
+                            "Subscription timeout after " + config.getTimeout() + "ms. " +
+                                    "Check network and/or increase 'timeout' parameter."))) {
+                        unsubscribe(channelName, type);
+                    }
+                }, config.getTimeout(), TimeUnit.MILLISECONDS);
+            });
         });
     }
 
@@ -302,7 +321,7 @@ public class PublishSubscribeService {
         return connectionManager.getEntry(slot);
     }
 
-    private void addListeners(ChannelName channelName, CompletableFuture<PubSubConnectionEntry> promise,
+    private CompletableFuture<Void> addListeners(ChannelName channelName, CompletableFuture<PubSubConnectionEntry> promise,
             PubSubType type, AsyncSemaphore lock, PubSubConnectionEntry connEntry,
             RedisPubSubListener<?>... listeners) {
         for (RedisPubSubListener<?> listener : listeners) {
@@ -334,14 +353,7 @@ public class PublishSubscribeService {
                 lock.release();
             }
         });
-
-        connectionManager.newTimeout(timeout -> {
-            if (subscribeFuture.completeExceptionally(new RedisTimeoutException(
-                    "Subscription timeout after " + config.getTimeout() + "ms. " +
-                            "Check network and/or increase 'timeout' parameter."))) {
-                unsubscribe(channelName, type);
-            }
-        }, config.getTimeout(), TimeUnit.MILLISECONDS);
+        return subscribeFuture;
     }
 
     private CompletableFuture<RedisPubSubConnection> nextPubSubConnection(MasterSlaveEntry entry, ChannelName channelName) {
