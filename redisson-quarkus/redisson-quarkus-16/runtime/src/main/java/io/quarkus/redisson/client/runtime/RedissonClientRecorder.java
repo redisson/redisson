@@ -26,9 +26,8 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class RedissonClientRecorder {
 
-    public void configureRedisson(String config) {
-        RedissonClientProducer producer = Arc.container().instance(RedissonClientProducer.class).get();
-        producer.setConfig(config);
+    public void createProducer() {
+        Arc.container().instance(RedissonClientProducer.class).get();
     }
 
 }

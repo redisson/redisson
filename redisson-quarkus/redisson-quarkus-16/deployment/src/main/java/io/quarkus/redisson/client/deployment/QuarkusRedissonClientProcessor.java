@@ -28,14 +28,8 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.redisson.client.runtime.RedissonClientProducer;
 import io.quarkus.redisson.client.runtime.RedissonClientRecorder;
-import io.quarkus.runtime.Quarkus;
-import org.eclipse.microprofile.config.ConfigProvider;
-import org.redisson.config.PropertiesConvertor;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.Optional;
 
 /**
  *
@@ -88,24 +82,7 @@ class QuarkusRedissonClientProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     RedissonClientItemBuild build(RedissonClientRecorder recorder) throws IOException {
-        InputStream configStream;
-        Optional<String> configFile = ConfigProvider.getConfig().getOptionalValue("quarkus.redisson.file", String.class);
-        if (configFile.isPresent()) {
-            configStream = getClass().getResourceAsStream(configFile.get());
-        } else {
-            configStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("redisson.yaml");
-        }
-        if (configStream != null) {
-            byte[] array = new byte[configStream.available()];
-            configStream.read(array);
-            recorder.configureRedisson(new String(array, StandardCharsets.UTF_8));
-        } else {
-            String yaml = PropertiesConvertor.toYaml("quarkus.redisson.", ConfigProvider.getConfig().getPropertyNames(), prop -> {
-                return ConfigProvider.getConfig().getValue(prop, String.class);
-            });
-            recorder.configureRedisson(yaml);
-        }
-
+        recorder.createProducer();
         return new RedissonClientItemBuild();
     }
 
