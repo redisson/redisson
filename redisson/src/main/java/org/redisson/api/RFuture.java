@@ -196,6 +196,12 @@ public interface RFuture<V> extends java.util.concurrent.Future<V>, CompletionSt
     @Deprecated
     boolean awaitUninterruptibly(long timeoutMillis);
 
+    /**
+     * Use whenComplete() method instead
+     *
+     * @param action - callback
+     */
+    @Deprecated
     void onComplete(BiConsumer<? super V, ? super Throwable> action);
     
 }

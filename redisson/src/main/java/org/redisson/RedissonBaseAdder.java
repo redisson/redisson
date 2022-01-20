@@ -22,15 +22,11 @@ import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.function.BiConsumer;
+import java.util.concurrent.*;
 
 /**
  * 
@@ -38,94 +34,6 @@ import java.util.function.BiConsumer;
  *
  */
 public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpirable {
-
-    private class ResetListener implements BiConsumer<Long, Throwable> {
-        
-        private final RPromise<Void> result;
-        private final RSemaphore semaphore;
-
-        ResetListener(RSemaphore semaphore, RPromise<Void> result) {
-            this.result = result;
-            this.semaphore = semaphore;
-        }
-
-        @Override
-        public void accept(Long t, Throwable u) {
-            if (u != null) {
-                result.tryFailure(u);
-                return;
-            }
-            
-            acquireAsync(t.intValue()).onComplete((res, e) -> {
-                if (e != null) {
-                    result.tryFailure(e);
-                    return;
-                }
-
-                semaphore.deleteAsync().onComplete((re, exc) -> {
-                    if (exc != null) {
-                        result.tryFailure(exc);
-                        return;
-                    }
-
-                    result.trySuccess(res);
-                });
-            });
-        }
-
-        protected RFuture<Void> acquireAsync(int value) {
-            return semaphore.acquireAsync(value);
-        }
-    }
-
-    private class SumListener implements BiConsumer<Long, Throwable> {
-        
-        private final RPromise<T> result;
-        private final RSemaphore semaphore;
-        private final String id;
-
-        SumListener(String id, RSemaphore semaphore, RPromise<T> result) {
-            this.result = result;
-            this.semaphore = semaphore;
-            this.id = id;
-        }
-
-        @Override
-        public void accept(Long t, Throwable u) {
-            if (u != null) {
-                result.tryFailure(u);
-                return;
-            }
-
-            acquireAsync(t.intValue()).onComplete((r, e) -> {
-                if (e != null) {
-                    result.tryFailure(e);
-                    return;
-                }
-
-                RFuture<T> valueFuture = getAndDeleteAsync(id);
-                valueFuture.onComplete((res, ex) -> {
-                    if (ex != null) {
-                        result.tryFailure(ex);
-                        return;
-                    }
-
-                    semaphore.deleteAsync().onComplete((re, exc) -> {
-                        if (exc != null) {
-                            result.tryFailure(exc);
-                            return;
-                        }
-
-                        result.trySuccess(res);
-                    });
-                });
-            });
-        }
-
-        protected RFuture<Void> acquireAsync(int value) {
-            return semaphore.acquireAsync(value);
-        }
-    }
 
     private static final Logger log = LoggerFactory.getLogger(RedissonBaseAdder.class);
     
@@ -148,13 +56,13 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
             RSemaphore semaphore = getSemaphore(id);
             if (parts[0].equals(SUM_MSG)) {
                 RFuture<T> addAndGetFuture = addAndGetAsync(id);
-                addAndGetFuture.onComplete((res, e) -> {
+                addAndGetFuture.whenComplete((res, e) -> {
                     if (e != null) {
                         log.error("Can't increase sum", e);
                         return;
                     }
 
-                    semaphore.releaseAsync().onComplete((r, ex) -> {
+                    semaphore.releaseAsync().whenComplete((r, ex) -> {
                         if (ex != null) {
                             log.error("Can't release semaphore", ex);
                         }
@@ -164,7 +72,7 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
 
             if (parts[0].equals(CLEAR_MSG)) {
                 doReset();
-                semaphore.releaseAsync().onComplete((res, e) -> {
+                semaphore.releaseAsync().whenComplete((res, e) -> {
                     if (e != null) {
                         log.error("Can't release semaphore", e);
                     }
@@ -190,14 +98,14 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
     }
     
     public RFuture<T> sumAsync() {
-        RPromise<T> result = new RedissonPromise<T>();
-
         String id = generateId();
         RFuture<Long> future = topic.publishAsync(SUM_MSG + ":" + id);
         RSemaphore semaphore = getSemaphore(id);
-        future.onComplete(new SumListener(id, semaphore, result));
-        
-        return result;
+
+        CompletionStage<T> f = future.thenCompose(r -> semaphore.acquireAsync(r.intValue()))
+                                        .thenCompose(r -> getAndDeleteAsync(id))
+                                        .thenCompose(r -> semaphore.deleteAsync().thenApply(res -> r));
+        return new CompletableFutureWrapper<>(f);
     }
 
     private RSemaphore getSemaphore(String id) {
@@ -209,64 +117,44 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
     }
 
     public RFuture<T> sumAsync(long timeout, TimeUnit timeUnit) {
-        RPromise<T> result = new RedissonPromise<T>();
-
         String id = generateId();
         RFuture<Long> future = topic.publishAsync(SUM_MSG + ":" + id);
         RSemaphore semaphore = getSemaphore(id);
-        future.onComplete(new SumListener(id, semaphore, result) {
-            @Override
-            protected RFuture<Void> acquireAsync(int value) {
-                return tryAcquire(semaphore, timeout, timeUnit, value);
-            }
-
-        });
-        
-        return result;
+        CompletionStage<T> f = future.thenCompose(r -> tryAcquire(semaphore, timeout, timeUnit, r.intValue()))
+                                    .thenCompose(r -> getAndDeleteAsync(id))
+                                    .thenCompose(r -> semaphore.deleteAsync().thenApply(res -> r));
+        return new CompletableFutureWrapper<>(f);
     }
 
-    protected RFuture<Void> tryAcquire(RSemaphore semaphore, long timeout, TimeUnit timeUnit, int value) {
-        RPromise<Void> acquireResult = new RedissonPromise<>();
-        semaphore.tryAcquireAsync(value, timeout, timeUnit).onComplete((res, e) -> {
+    protected CompletionStage<Void> tryAcquire(RSemaphore semaphore, long timeout, TimeUnit timeUnit, int value) {
+        return semaphore.tryAcquireAsync(value, timeout, timeUnit).handle((res, e) -> {
             if (e != null) {
-                acquireResult.tryFailure(e);
-                return;
+                throw new CompletionException(e);
             }
             
             if (res) {
-                acquireResult.trySuccess(null);
-            } else {
-                acquireResult.tryFailure(new TimeoutException());
+                return null;
             }
+            throw new CompletionException(new TimeoutException());
         });
-        return acquireResult;
     }
 
     public RFuture<Void> resetAsync() {
-        RPromise<Void> result = new RedissonPromise<>();
-
         String id = generateId();
         RFuture<Long> future = topic.publishAsync(CLEAR_MSG + ":" + id);
         RSemaphore semaphore = getSemaphore(id);
-        future.onComplete(new ResetListener(semaphore, result));
-        
-        return result;
+        CompletionStage<Void> f = future.thenCompose(r -> semaphore.acquireAsync(r.intValue()))
+                                        .thenCompose(r -> semaphore.deleteAsync().thenApply(res -> null));
+        return new CompletableFutureWrapper<>(f);
     }
     
     public RFuture<Void> resetAsync(long timeout, TimeUnit timeUnit) {
-        RPromise<Void> result = new RedissonPromise<>();
-
         String id = generateId();
         RFuture<Long> future = topic.publishAsync(CLEAR_MSG + ":" + id);
         RSemaphore semaphore = getSemaphore(id);
-        future.onComplete(new ResetListener(semaphore, result) {
-            @Override
-            protected RFuture<Void> acquireAsync(int value) {
-                return tryAcquire(semaphore, timeout, timeUnit, value);
-            }
-        });
-        
-        return result;
+        CompletionStage<Void> f = future.thenCompose(r -> tryAcquire(semaphore, timeout, timeUnit, r.intValue()))
+                                        .thenCompose(r -> semaphore.deleteAsync().thenApply(res -> null));
+        return new CompletableFutureWrapper<>(f);
     }
 
     public void destroy() {

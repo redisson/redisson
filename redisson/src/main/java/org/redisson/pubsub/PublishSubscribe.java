@@ -15,16 +15,19 @@
  */
 package org.redisson.pubsub;
 
+import io.netty.util.Timeout;
 import org.redisson.PubSubEntry;
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.ChannelName;
 import org.redisson.client.RedisPubSubListener;
+import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.pubsub.PubSubType;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 
@@ -60,7 +63,20 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
     public CompletableFuture<E> subscribe(String entryName, String channelName) {
         AsyncSemaphore semaphore = service.getSemaphore(new ChannelName(channelName));
         CompletableFuture<E> newPromise = new CompletableFuture<>();
+
+        int timeout = service.getConnectionManager().getConfig().getTimeout();
+        Timeout lockTimeout = service.getConnectionManager().newTimeout(t -> {
+            newPromise.completeExceptionally(new RedisTimeoutException(
+                    "Unable to acquire subscription lock after " + timeout + "ms. " +
+                            "Increase 'subscriptionsPerConnection' and/or 'subscriptionConnectionPoolSize' parameters."));
+        }, timeout, TimeUnit.MILLISECONDS);
+
         semaphore.acquire(() -> {
+            if (!lockTimeout.cancel()) {
+                semaphore.release();
+                return;
+            }
+
             E entry = entries.get(entryName);
             if (entry != null) {
                 entry.acquire();

@@ -120,6 +120,10 @@ public class PublishSubscribeService {
         }
     }
 
+    public ConnectionManager getConnectionManager() {
+        return connectionManager;
+    }
+
     public LockPubSub getLockPubSub() {
         return lockPubSub;
     }
@@ -185,8 +189,13 @@ public class PublishSubscribeService {
                                                                MasterSlaveEntry entry, RedisPubSubListener<?>... listeners) {
         CompletableFuture<PubSubConnectionEntry> promise = new CompletableFuture<>();
         AsyncSemaphore lock = getSemaphore(channelName);
+        Timeout lockTimeout = connectionManager.newTimeout(timeout -> {
+            promise.completeExceptionally(new RedisTimeoutException(
+                    "Unable to acquire subscription lock after " + config.getTimeout() + "ms. " +
+                            "Increase 'subscriptionsPerConnection' and/or 'subscriptionConnectionPoolSize' parameters."));
+        }, config.getTimeout(), TimeUnit.MILLISECONDS);
         lock.acquire(() -> {
-            if (promise.isDone()) {
+            if (!lockTimeout.cancel() || promise.isDone()) {
                 lock.release();
                 return;
             }
@@ -224,7 +233,7 @@ public class PublishSubscribeService {
 
         Timeout lockTimeout = connectionManager.newTimeout(timeout -> {
                         promise.completeExceptionally(new RedisTimeoutException(
-                                "Unable to acquire subscribe lock after " + config.getTimeout() + "ms. " +
+                                "Unable to acquire subscription lock after " + config.getTimeout() + "ms. " +
                                         "Increase 'subscriptionsPerConnection' and/or 'subscriptionConnectionPoolSize' parameters."));
                     }, config.getTimeout(), TimeUnit.MILLISECONDS);
 
