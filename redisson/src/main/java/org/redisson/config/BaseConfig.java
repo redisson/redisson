@@ -341,7 +341,8 @@ public class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * Defines password for SSL truststore
+     * Defines password for SSL truststore.
+     * SSL truststore is read on each new connection creation and can be dynamically reloaded.
      * <p>
      * Default is <code>null</code>
      *
@@ -358,7 +359,8 @@ public class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * Defines path to SSL keystore
+     * Defines path to SSL keystore.
+     * SSL keystore is read on each new connection creation and can be dynamically reloaded.
      * <p>
      * Default is <code>null</code>
      *
