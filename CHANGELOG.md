@@ -6,15 +6,15 @@ Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and
 ### 21-Jan-2022 - 3.16.8 released
 
 Fixed - Quarkus redisson config fails to load in cluster mode with one node address  
-Fixed - registered ReliableTopic listener doesn't get old messages  
+Fixed - registered `RReliableTopic` listener doesn't get old messages  
 Fixed - pubsub channel isn't released if subscription timeout occurred  
 Fixed - Quarkus Redisson config should be read at runtime  
-Fixed - RTopic channels aren't unsubscribed  
+Fixed - `RTopic` channels aren't unsubscribed  
 Fixed - race condition causes Subscription timeout  
-Fixed - RMapCache.readAllKeySet() doesn't use MapKey codec  
-Fixed - Spring Data Redis RedissonConnection doesn't implement lpos command (thanks @woodyDM)  
+Fixed - `RMapCache.readAllKeySet()` doesn't use MapKey codec  
+Fixed - Spring Data Redis RedissonConnection doesn't implement `lpos` command (thanks @woodyDM)  
 Fixed - master host isn't formatted into compressed format for IPV6 addresses in Sentinel mode  
-Fixed - Spring Data Redis restore() method throws Busy exception  
+Fixed - Spring Data Redis `restore()` method throws Busy exception  
 
 ### 23-Dec-2021 - 3.16.7 released
 
