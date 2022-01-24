@@ -14,14 +14,14 @@ Maven
 <dependency>
     <groupId>org.redisson</groupId>
     <artifactId>redisson-helidon</artifactId>
-    <version>3.16.7</version>
+    <version>3.16.8</version>
 </dependency>
 ```
 
 Gradle
 
 ```groovy
-compile 'org.redisson:redisson-helidon:3.16.7'
+compile 'org.redisson:redisson-helidon:3.16.8'
 ```
 
 ### 2. Add settings into `META-INF/microprofile-config.properties` file
