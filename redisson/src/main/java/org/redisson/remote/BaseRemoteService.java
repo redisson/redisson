@@ -33,7 +33,6 @@ import org.redisson.codec.CompositeCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.executor.RemotePromise;
 import org.redisson.misc.Hash;
-import org.redisson.misc.RPromise;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
@@ -147,7 +146,7 @@ public abstract class BaseRemoteService {
         return new RedissonMap<>(new CompositeCodec(StringCodec.INSTANCE, codec, codec), commandExecutor, name, null, null, null);
     }
     
-    protected <T> void scheduleCheck(String mapName, RequestId requestId, RPromise<T> cancelRequest) {
+    protected <T> void scheduleCheck(String mapName, RequestId requestId, CompletableFuture<T> cancelRequest) {
         commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
@@ -169,7 +168,7 @@ public abstract class BaseRemoteService {
                     if (request == null) {
                         scheduleCheck(mapName, requestId, cancelRequest);
                     } else {
-                        cancelRequest.trySuccess(request);
+                        cancelRequest.complete(request);
                     }
                 });
             }
