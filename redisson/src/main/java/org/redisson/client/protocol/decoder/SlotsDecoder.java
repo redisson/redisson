@@ -42,7 +42,7 @@ public class SlotsDecoder implements MultiDecoder<Object> {
     
     @Override
     public Object decode(List<Object> parts, State state) {
-        if (parts.size() > 2 && parts.get(0) instanceof List) {
+        if (parts.get(0) instanceof List) {
             Map<ClusterSlotRange, Set<String>> result = new HashMap<>();
             List<List<Object>> rows = (List<List<Object>>) (Object) parts;
             for (List<Object> row : rows) {
