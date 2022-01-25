@@ -17,6 +17,7 @@ package org.redisson.remote;
 
 import io.netty.util.concurrent.ScheduledFuture;
 import org.redisson.RedissonBlockingQueue;
+import org.redisson.RedissonShutdownException;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RFuture;
 import org.redisson.api.RemoteInvocationOptions;
@@ -192,6 +193,10 @@ public abstract class BaseRemoteProxy {
     private BiConsumer<RRemoteServiceResponse, Throwable> createResponseListener() {
         return (response, e) -> {
             if (e != null) {
+                if (e instanceof RedissonShutdownException) {
+                    return;
+                }
+
                 log.error("Can't get response from " + responseQueueName, e);
                 return;
             }
