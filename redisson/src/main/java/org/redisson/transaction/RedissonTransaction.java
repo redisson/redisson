@@ -218,6 +218,11 @@ public class RedissonTransaction implements RTransaction {
     private BatchOptions createOptions() {
         MasterSlaveEntry entry = commandExecutor.getConnectionManager().getEntrySet().iterator().next();
         int syncSlaves = entry.getAvailableSlaves();
+        if (options.getSyncSlaves() == -1) {
+            syncSlaves = 0;
+        } else if (options.getSyncSlaves() > 0) {
+            syncSlaves = options.getSyncSlaves();
+        }
 
         BatchOptions batchOptions = BatchOptions.defaults()
                 .syncSlaves(syncSlaves, options.getSyncTimeout(), TimeUnit.MILLISECONDS)
