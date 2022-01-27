@@ -269,22 +269,19 @@ public class RedissonMultiLock implements RLock {
     @Override
     public void lockInterruptibly(long leaseTime, TimeUnit unit) throws InterruptedException {
         long baseWaitTime = locks.size() * 1500;
-        long waitTime = -1;
-        if (leaseTime == -1) {
-            waitTime = baseWaitTime;
-        } else {
-            leaseTime = unit.toMillis(leaseTime);
-            waitTime = leaseTime;
-            if (waitTime <= 2000) {
-                waitTime = 2000;
-            } else if (waitTime <= baseWaitTime) {
-                waitTime = ThreadLocalRandom.current().nextLong(waitTime/2, waitTime);
-            } else {
-                waitTime = ThreadLocalRandom.current().nextLong(baseWaitTime, waitTime);
-            }
-        }
-        
         while (true) {
+            long waitTime;
+            if (leaseTime == -1) {
+                waitTime = baseWaitTime;
+            } else {
+                waitTime = unit.toMillis(leaseTime);
+                if (waitTime <= baseWaitTime) {
+                    waitTime = ThreadLocalRandom.current().nextLong(waitTime/2, waitTime);
+                } else {
+                    waitTime = ThreadLocalRandom.current().nextLong(baseWaitTime, waitTime);
+                }
+            }
+
             if (tryLock(waitTime, leaseTime, TimeUnit.MILLISECONDS)) {
                 return;
             }
