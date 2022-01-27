@@ -85,8 +85,10 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         storeMode = options.getStoreMode();
         storeCacheMiss = options.isStoreCacheMiss();
 
+        localCacheView = new LocalCacheView<>(options, this);
+        cache = localCacheView.getCache();
         listener = new LocalCacheListener(getRawName(), commandExecutor, this, codec, options, cacheUpdateLogTime) {
-            
+
             @Override
             protected void updateCache(ByteBuf keyBuf, ByteBuf valueBuf) throws IOException {
                 CacheKey cacheKey = localCacheView.toCacheKey(keyBuf);
@@ -94,12 +96,10 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 Object value = codec.getMapValueDecoder().decode(valueBuf, null);
                 cachePut(cacheKey, key, value);
             }
-            
+
         };
-        cache = listener.createCache(options);
-        instanceId = listener.getInstanceId();
         listener.add(cache);
-        localCacheView = new LocalCacheView(cache, this);
+        instanceId = listener.getInstanceId();
 
         if (options.getSyncStrategy() != SyncStrategy.NONE) {
             invalidateEntryOnChange = 1;

@@ -23,8 +23,12 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
+import com.github.benmanes.caffeine.cache.Caffeine;
 import org.redisson.RedissonObject;
+import org.redisson.api.LocalCachedMapOptions;
 import org.redisson.misc.Hash;
 
 import io.netty.buffer.ByteBuf;
@@ -39,10 +43,10 @@ import io.netty.buffer.ByteBuf;
 public class LocalCacheView<K, V> {
 
     private final RedissonObject object;
-    private final Map<CacheKey, CacheValue> cache;
+    private final ConcurrentMap<CacheKey, CacheValue> cache;
     
-    public LocalCacheView(Map<CacheKey, CacheValue> cache, RedissonObject object) {
-        this.cache = cache;
+    public LocalCacheView(LocalCachedMapOptions<?, ?> options, RedissonObject object) {
+        this.cache = createCache(options);
         this.object = object;
     }
 
@@ -255,5 +259,49 @@ public class LocalCacheView<K, V> {
     public CacheKey toCacheKey(ByteBuf encodedKey) {
         return new CacheKey(Hash.hash128toArray(encodedKey));
     }
-    
+
+    public ConcurrentMap<CacheKey, CacheValue> getCache() {
+        return cache;
+    }
+
+    public ConcurrentMap<CacheKey, CacheValue> createCache(LocalCachedMapOptions<?, ?> options) {
+        if (options.getCacheProvider() == LocalCachedMapOptions.CacheProvider.CAFFEINE) {
+            Caffeine<Object, Object> caffeineBuilder = Caffeine.newBuilder();
+            if (options.getTimeToLiveInMillis() > 0) {
+                caffeineBuilder.expireAfterWrite(options.getTimeToLiveInMillis(), TimeUnit.MILLISECONDS);
+            }
+            if (options.getMaxIdleInMillis() > 0) {
+                caffeineBuilder.expireAfterAccess(options.getMaxIdleInMillis(), TimeUnit.MILLISECONDS);
+            }
+            if (options.getCacheSize() > 0) {
+                caffeineBuilder.maximumSize(options.getCacheSize());
+            }
+            if (options.getEvictionPolicy() == LocalCachedMapOptions.EvictionPolicy.SOFT) {
+                caffeineBuilder.softValues();
+            }
+            if (options.getEvictionPolicy() == LocalCachedMapOptions.EvictionPolicy.WEAK) {
+                caffeineBuilder.weakValues();
+            }
+            return caffeineBuilder.<CacheKey, CacheValue>build().asMap();
+        }
+
+        if (options.getEvictionPolicy() == LocalCachedMapOptions.EvictionPolicy.NONE) {
+            return new NoneCacheMap<>(options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
+        }
+        if (options.getEvictionPolicy() == LocalCachedMapOptions.EvictionPolicy.LRU) {
+            return new LRUCacheMap<>(options.getCacheSize(), options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
+        }
+        if (options.getEvictionPolicy() == LocalCachedMapOptions.EvictionPolicy.LFU) {
+            return new LFUCacheMap<>(options.getCacheSize(), options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
+        }
+        if (options.getEvictionPolicy() == LocalCachedMapOptions.EvictionPolicy.SOFT) {
+            return ReferenceCacheMap.soft(options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
+        }
+        if (options.getEvictionPolicy() == LocalCachedMapOptions.EvictionPolicy.WEAK) {
+            return ReferenceCacheMap.weak(options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
+        }
+        throw new IllegalArgumentException("Invalid eviction policy: " + options.getEvictionPolicy());
+    }
+
+
 }
