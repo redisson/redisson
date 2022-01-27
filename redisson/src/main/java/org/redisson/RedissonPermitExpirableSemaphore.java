@@ -559,7 +559,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         }
 
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                "local expire = redis.call('zscore', KEYS[3], ARGV[1]);" +
+                  "local expire = redis.call('zscore', KEYS[3], ARGV[1]);" +
                         "local removed = redis.call('zrem', KEYS[3], ARGV[1]);" +
                         "if tonumber(removed) ~= 1 then " +
                         "return 0;" +
@@ -567,7 +567,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                         "local value = redis.call('incrby', KEYS[1], ARGV[2]); " +
                         "redis.call('publish', KEYS[2], value); " +
                         "if tonumber(expire) <= tonumber(ARGV[3]) then " +
-                        "return 0;" +
+                            "return 0;" +
                         "end;" +
                         "return 1;",
                 Arrays.<Object>asList(getRawName(), getChannelName(), timeoutName), permitId, 1, System.currentTimeMillis());
