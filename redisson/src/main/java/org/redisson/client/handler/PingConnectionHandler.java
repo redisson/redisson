@@ -22,6 +22,7 @@ import org.redisson.api.RFuture;
 import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.RedisCommands;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,7 +59,8 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
     private void sendPing(ChannelHandlerContext ctx) {
         RedisConnection connection = RedisConnection.getFrom(ctx.channel());
         RFuture<String> future;
-        if (connection.getUsage() == 0) {
+        CommandData<?, ?> currentCommand = connection.getCurrentCommand();
+        if (connection.getUsage() == 0 && (currentCommand == null || !currentCommand.isBlockingCommand())) {
             future = connection.async(StringCodec.INSTANCE, RedisCommands.PING);
         } else {
             future = null;
@@ -66,6 +68,12 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
 
         config.getTimer().newTimeout(timeout -> {
             if (connection.isClosed() || ctx.isRemoved()) {
+                return;
+            }
+
+            CommandData<?, ?> cd = connection.getCurrentCommand();
+            if (cd != null && cd.isBlockingCommand()) {
+                sendPing(ctx);
                 return;
             }
 
