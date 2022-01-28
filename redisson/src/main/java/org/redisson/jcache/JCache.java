@@ -520,22 +520,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
 
 
     RFuture<Long> putAllValues(Map<? extends K, ? extends V> map) {
-        Long creationTimeout = getCreationTimeout();
-        Long updateTimeout = getUpdateTimeout();
-
-        List<Object> params = new ArrayList<>();
-        params.add(creationTimeout);
-        params.add(updateTimeout);
-        params.add(System.currentTimeMillis());
         double syncId = ThreadLocalRandom.current().nextDouble();
-        params.add(syncId);
-
-        for (Map.Entry<? extends K, ? extends V> entry : map.entrySet()) {
-            params.add(encodeMapKey(entry.getKey()));
-            params.add(encodeMapValue(entry.getValue()));
-        }
-
-        RFuture<List<Object>> res = putAllOperation(commandExecutor, null, getRawName(), params);
+        RFuture<List<Object>> res = putAllOperation(syncId, null, getRawName(), map);
 
         RFuture<Long> result = handlePutAllResult(syncId, res);
         return result;
@@ -591,7 +577,21 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return result;
     }
 
-    RFuture<List<Object>> putAllOperation(CommandAsyncExecutor commandExecutor, MasterSlaveEntry entry, String name, List<Object> params) {
+    RFuture<List<Object>> putAllOperation(double syncId, MasterSlaveEntry msEntry, String name, Map<? extends K, ? extends V> map) {
+        Long creationTimeout = getCreationTimeout();
+        Long updateTimeout = getUpdateTimeout();
+
+        List<Object> params = new ArrayList<>();
+        params.add(creationTimeout);
+        params.add(updateTimeout);
+        params.add(System.currentTimeMillis());
+        params.add(syncId);
+
+        for (Map.Entry<? extends K, ? extends V> entry : map.entrySet()) {
+            params.add(encodeMapKey(entry.getKey()));
+            params.add(encodeMapValue(entry.getValue()));
+        }
+
         String script = "local added = 0; "
             + "local syncs = 0; "
             + "for i = 5, #ARGV, 2 do " +
@@ -666,14 +666,14 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
           + "end; "
           + "return {added, syncs};";
 
-        if (entry == null) {
+        if (msEntry == null) {
             return commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_LIST, script,
                     Arrays.asList(name, getTimeoutSetName(name), getCreatedChannelName(name), getRemovedChannelName(name), getUpdatedChannelName(name),
                             getCreatedSyncChannelName(name), getRemovedSyncChannelName(name), getUpdatedSyncChannelName(name), getOldValueListenerCounter(name)),
                     params.toArray());
         }
 
-        return commandExecutor.evalWriteAsync(entry, codec, RedisCommands.EVAL_LIST, script,
+        return commandExecutor.evalWriteAsync(msEntry, codec, RedisCommands.EVAL_LIST, script,
                     Arrays.asList(name, getTimeoutSetName(name), getCreatedChannelName(name), getRemovedChannelName(name), getUpdatedChannelName(name),
                             getCreatedSyncChannelName(name), getRemovedSyncChannelName(name), getUpdatedSyncChannelName(name), getOldValueListenerCounter(name)),
                     params.toArray());
