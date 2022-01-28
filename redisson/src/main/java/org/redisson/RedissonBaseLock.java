@@ -31,7 +31,6 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.misc.CompletableFutureWrapper;
-import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -246,11 +245,21 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
     }
 
     protected void acquireFailed(long waitTime, TimeUnit unit, long threadId) {
-        get(acquireFailedAsync(waitTime, unit, threadId));
+        commandExecutor.get(acquireFailedAsync(waitTime, unit, threadId));
     }
-    
-    protected RFuture<Void> acquireFailedAsync(long waitTime, TimeUnit unit, long threadId) {
-        return RedissonPromise.newSucceededFuture(null);
+
+    protected void trySuccessFalse(long currentThreadId, CompletableFuture<Boolean> result) {
+        acquireFailedAsync(-1, null, currentThreadId).whenComplete((res, e) -> {
+            if (e == null) {
+                result.complete(false);
+            } else {
+                result.completeExceptionally(e);
+            }
+        });
+    }
+
+    protected CompletableFuture<Void> acquireFailedAsync(long waitTime, TimeUnit unit, long threadId) {
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override

@@ -71,32 +71,33 @@ public class RedissonFairLock extends RedissonLock implements RLock {
     }
 
     @Override
-    protected RFuture<Void> acquireFailedAsync(long waitTime, TimeUnit unit, long threadId) {
+    protected CompletableFuture<Void> acquireFailedAsync(long waitTime, TimeUnit unit, long threadId) {
         long wait = threadWaitTime;
         if (waitTime != -1) {
             wait = unit.toMillis(waitTime);
         }
 
-        return evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
+        RFuture<Void> f = evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 // get the existing timeout for the thread to remove
                 "local queue = redis.call('lrange', KEYS[1], 0, -1);" +
-                // find the location in the queue where the thread is
-                "local i = 1;" +
-                "while i <= #queue and queue[i] ~= ARGV[1] do " +
-                    "i = i + 1;" +
-                "end;" +
-                // go to the next index which will exist after the current thread is removed
-                "i = i + 1;" +
-                // decrement the timeout for the rest of the queue after the thread being removed
-                "while i <= #queue do " +
-                    "redis.call('zincrby', KEYS[2], -tonumber(ARGV[2]), queue[i]);" +
-                    "i = i + 1;" +
-                "end;" +
-                // remove the thread from the queue and timeouts set
-                "redis.call('zrem', KEYS[2], ARGV[1]);" +
-                "redis.call('lrem', KEYS[1], 0, ARGV[1]);",
+                        // find the location in the queue where the thread is
+                        "local i = 1;" +
+                        "while i <= #queue and queue[i] ~= ARGV[1] do " +
+                        "i = i + 1;" +
+                        "end;" +
+                        // go to the next index which will exist after the current thread is removed
+                        "i = i + 1;" +
+                        // decrement the timeout for the rest of the queue after the thread being removed
+                        "while i <= #queue do " +
+                        "redis.call('zincrby', KEYS[2], -tonumber(ARGV[2]), queue[i]);" +
+                        "i = i + 1;" +
+                        "end;" +
+                        // remove the thread from the queue and timeouts set
+                        "redis.call('zrem', KEYS[2], ARGV[1]);" +
+                        "redis.call('lrem', KEYS[1], 0, ARGV[1]);",
                 Arrays.asList(threadsQueueName, timeoutSetName),
                 getLockName(threadId), wait);
+        return f.toCompletableFuture();
     }
 
     @Override
