@@ -221,6 +221,16 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
     }
 
     @Test
+    public void testReleaseExpired() throws InterruptedException {
+        RPermitExpirableSemaphore s = redisson.getPermitExpirableSemaphore("test");
+        s.trySetPermits(1);
+        String permitId = s.tryAcquire(100, 100, TimeUnit.MILLISECONDS);
+        Thread.sleep(200);
+        boolean released = s.tryRelease(permitId);
+        assertThat(released).isFalse();
+    }
+
+    @Test
     public void testConcurrency_SingleInstance() throws InterruptedException {
         final AtomicInteger lockedCounter = new AtomicInteger();
 
