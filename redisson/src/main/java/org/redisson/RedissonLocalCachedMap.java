@@ -254,7 +254,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
 
         if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
             if (hasNoLoader()) {
-                return new CompletableFutureWrapper<>(null);
+                return new CompletableFutureWrapper((Void)null);
             }
 
             CompletableFuture<V> future = loadValue((K) key, false);
@@ -651,7 +651,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
 
                 broadcastLocalCacheStore(entry.getValue(), keyEncoded, cacheKey);
             }
-            return new CompletableFutureWrapper<>(null);
+            return new CompletableFutureWrapper((Void)null);
         }
 
         List<Object> params = new ArrayList<Object>(map.size()*3);
@@ -1047,7 +1047,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 return new CompletableFutureWrapper<>((V) prevValue.getValue());
             } else {
                 mapKey.release();
-                return new CompletableFutureWrapper<>(null);
+                return new CompletableFutureWrapper((Void)null);
             }
         }
 
@@ -1176,7 +1176,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 return new CompletableFutureWrapper<>((V) prevValue.getValue());
             } else {
                 mapKey.release();
-                return new CompletableFutureWrapper<>(null);
+                return new CompletableFutureWrapper((Void)null);
             }
         }
 
@@ -1199,7 +1199,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             CacheValue prevValue = cachePutIfAbsent(cacheKey, key, value);
             if (prevValue == null) {
                 broadcastLocalCacheStore((V) value, mapKey, cacheKey);
-                return new CompletableFutureWrapper<>(null);
+                return new CompletableFutureWrapper((Void)null);
             } else {
                 mapKey.release();
                 return new CompletableFutureWrapper<>((V) prevValue.getValue());
