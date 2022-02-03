@@ -521,7 +521,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
 
     RFuture<Long> putAllValues(Map<? extends K, ? extends V> map) {
         double syncId = ThreadLocalRandom.current().nextDouble();
-        RFuture<List<Object>> res = putAllOperation(syncId, null, getRawName(), map);
+        RFuture<List<Object>> res = putAllOperation(commandExecutor, syncId, null, getRawName(), map);
 
         RFuture<Long> result = handlePutAllResult(syncId, res);
         return result;
@@ -577,7 +577,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return result;
     }
 
-    RFuture<List<Object>> putAllOperation(double syncId, MasterSlaveEntry msEntry, String name, Map<? extends K, ? extends V> map) {
+    RFuture<List<Object>> putAllOperation(CommandAsyncExecutor commandExecutor, double syncId,
+                                          MasterSlaveEntry msEntry, String name, Map<? extends K, ? extends V> map) {
         Long creationTimeout = getCreationTimeout();
         Long updateTimeout = getUpdateTimeout();
 
