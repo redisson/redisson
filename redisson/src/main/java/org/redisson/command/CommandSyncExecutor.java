@@ -15,8 +15,6 @@
  */
 package org.redisson.command;
 
-import java.util.List;
-
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
@@ -34,14 +32,6 @@ public interface CommandSyncExecutor {
     <T, R> R read(String key, RedisCommand<T> command, Object... params);
 
     <T, R> R read(String key, Codec codec, RedisCommand<T> command, Object... params);
-
-    <T, R> R evalRead(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params);
-
-    <T, R> R evalRead(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params);
-
-    <T, R> R evalWrite(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params);
-
-    <T, R> R evalWrite(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params);
 
     ConnectionManager getConnectionManager();
 
