@@ -21,6 +21,7 @@ import io.netty.buffer.ByteBufUtil;
 import io.netty.util.ReferenceCountUtil;
 import org.redisson.RedissonReference;
 import org.redisson.SlotCallback;
+import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
 import org.redisson.cache.LRUCacheMap;
 import org.redisson.client.RedisClient;
@@ -269,6 +270,24 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
+    public <R> List<CompletableFuture<R>> executeAll(RedisCommand<?> command, Object... params) {
+        Collection<MasterSlaveEntry> nodes = connectionManager.getEntrySet();
+        List<CompletableFuture<R>> futures = new ArrayList<>();
+        nodes.forEach(e -> {
+            RFuture<R> promise = async(false, new NodeSource(e),
+                    connectionManager.getCodec(), command, params, true, false);
+            futures.add(promise.toCompletableFuture());
+
+            e.getAllEntries().stream().filter(c -> c.getNodeType() == NodeType.SLAVE).forEach(c -> {
+                RFuture<R> slavePromise = async(true, new NodeSource(e, c.getClient()),
+                        connectionManager.getCodec(), RedisCommands.SCRIPT_LOAD, params, true, false);
+                futures.add(slavePromise.toCompletableFuture());
+            });
+        });
+        return futures;
+    }
+
+    @Override
     public <R, T> RFuture<R> writeAllAsync(RedisCommand<T> command, SlotCallback<T, R> callback, Object... params) {
         return allAsync(false, connectionManager.getCodec(), command, callback, params);
     }
@@ -399,11 +418,6 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     public <T, R> RFuture<R> evalWriteAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
         return evalAsync(new NodeSource(entry), false, codec, evalCommandType, script, keys, false, params);
-    }
-
-    @Override
-    public <T, R> RFuture<R> evalWriteAllAsync(RedisCommand<T> command, SlotCallback<T, R> callback, String script, List<Object> keys, Object... params) {
-        return evalAllAsync(false, command, callback, script, keys, params);
     }
 
     public <T, R> RFuture<R> evalAllAsync(boolean readOnlyMode, RedisCommand<T> command, SlotCallback<T, R> callback, String script, List<Object> keys, Object... params) {
