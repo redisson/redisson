@@ -28,17 +28,9 @@ import org.redisson.client.protocol.Encoder;
 import java.io.IOException;
 
 /**
- * Snappy compression codec.
- * Uses inner <code>Codec</code> to convert object to binary stream.
- * <code>MarshallingCodec</code> used by default.
- *
- * Fully thread-safe.
- *
- * @see org.redisson.codec.MarshallingCodec
- *
- * @author Nikita Koksharov
- *
+ * Use SnappyCodecV2 instead
  */
+@Deprecated
 public class SnappyCodec extends BaseCodec {
 
     private static final FastThreadLocal<Snappy> SNAPPY_DECODER = new FastThreadLocal<Snappy>() {
