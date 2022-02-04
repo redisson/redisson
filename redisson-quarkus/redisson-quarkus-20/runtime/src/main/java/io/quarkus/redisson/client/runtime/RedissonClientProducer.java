@@ -15,11 +15,13 @@
  */
 package io.quarkus.redisson.client.runtime;
 
+import com.fasterxml.jackson.databind.MapperFeature;
 import io.quarkus.arc.DefaultBean;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
+import org.redisson.config.ConfigSupport;
 import org.redisson.config.PropertiesConvertor;
 
 import javax.annotation.PreDestroy;
@@ -64,7 +66,12 @@ public class RedissonClientProducer {
             config = yaml;
         }
 
-        Config c = Config.fromYAML(config);
+        ConfigSupport support = new ConfigSupport() {
+            {
+                yamlMapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+            }
+        };
+        Config c = support.fromYAML(config, Config.class);
         redisson = Redisson.create(c);
         return redisson;
     }

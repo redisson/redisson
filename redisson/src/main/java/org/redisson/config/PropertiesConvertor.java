@@ -77,7 +77,8 @@ public class PropertiesConvertor {
         return builder.toString();
     }
 
-    private static final Set<String> LIST_NODES = new HashSet<>(Arrays.asList("node-addresses", "slave-addresses", "addresses"));
+    private static final Set<String> LIST_NODES = new HashSet<>(
+                            Arrays.asList("node-addresses", "nodeaddresses", "slave-addresses", "slaveaddresses", "addresses"));
 
     private static void addValue(StringBuilder yaml, Map.Entry<String, Object> subEntry) {
         String value = (String) subEntry.getValue();
