@@ -80,17 +80,17 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
         }
 
         CompletableFuture<RedissonLockEntry> future = subscribe();
-        commandExecutor.syncSubscriptionInterrupted(future);
+        RedissonLockEntry entry = commandExecutor.getInterrupted(future);
         try {
             while (true) {
                 if (tryAcquire(permits)) {
                     return;
                 }
 
-                commandExecutor.getNow(future).getLatch().acquire();
+                entry.getLatch().acquire();
             }
         } finally {
-            unsubscribe(commandExecutor.getNow(future));
+            unsubscribe(entry);
         }
 //        get(acquireAsync(permits));
     }

@@ -87,7 +87,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         }
 
         CompletableFuture<RedissonLockEntry> future = subscribe();
-        commandExecutor.syncSubscriptionInterrupted(future);
+        RedissonLockEntry entry = commandExecutor.getInterrupted(future);
         try {
             while (true) {
                 Long nearestTimeout;
@@ -103,13 +103,13 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 }
                 
                 if (nearestTimeout != null) {
-                    commandExecutor.getNow(future).getLatch().tryAcquire(permits, nearestTimeout, TimeUnit.MILLISECONDS);
+                    entry.getLatch().tryAcquire(permits, nearestTimeout, TimeUnit.MILLISECONDS);
                 } else {
-                    commandExecutor.getNow(future).getLatch().acquire(permits);
+                    entry.getLatch().acquire(permits);
                 }
             }
         } finally {
-            unsubscribe(commandExecutor.getNow(future));
+            unsubscribe(entry);
         }
 //        return get(acquireAsync(permits, ttl, timeUnit));
     }

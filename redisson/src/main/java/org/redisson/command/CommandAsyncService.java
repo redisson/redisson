@@ -83,16 +83,6 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
-    public void syncSubscription(CompletableFuture<?> future) {
-        get(future);
-    }
-
-    @Override
-    public void syncSubscriptionInterrupted(CompletableFuture<?> future) throws InterruptedException {
-        getInterrupted(future);
-    }
-
-    @Override
     public <V> V getNow(CompletableFuture<V> future) {
         try {
             return future.getNow(null);

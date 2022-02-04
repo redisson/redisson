@@ -59,15 +59,14 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
         }
 
         CompletableFuture<RedissonCountDownLatchEntry> future = subscribe();
+        RedissonCountDownLatchEntry entry = commandExecutor.getInterrupted(future);
         try {
-            commandExecutor.syncSubscriptionInterrupted(future);
-
             while (getCount() > 0) {
                 // waiting for open state
-                commandExecutor.getNow(future).getLatch().await();
+                entry.getLatch().await();
             }
         } finally {
-            unsubscribe(commandExecutor.getNow(future));
+            unsubscribe(entry);
         }
     }
 

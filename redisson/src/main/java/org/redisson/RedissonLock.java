@@ -100,10 +100,11 @@ public class RedissonLock extends RedissonBaseLock {
         }
 
         CompletableFuture<RedissonLockEntry> future = subscribe(threadId);
+        RedissonLockEntry entry;
         if (interruptibly) {
-            commandExecutor.syncSubscriptionInterrupted(future);
+            entry = commandExecutor.getInterrupted(future);
         } else {
-            commandExecutor.syncSubscription(future);
+            entry = commandExecutor.get(future);
         }
 
         try {
@@ -117,23 +118,23 @@ public class RedissonLock extends RedissonBaseLock {
                 // waiting for message
                 if (ttl >= 0) {
                     try {
-                        commandExecutor.getNow(future).getLatch().tryAcquire(ttl, TimeUnit.MILLISECONDS);
+                        entry.getLatch().tryAcquire(ttl, TimeUnit.MILLISECONDS);
                     } catch (InterruptedException e) {
                         if (interruptibly) {
                             throw e;
                         }
-                        commandExecutor.getNow(future).getLatch().tryAcquire(ttl, TimeUnit.MILLISECONDS);
+                        entry.getLatch().tryAcquire(ttl, TimeUnit.MILLISECONDS);
                     }
                 } else {
                     if (interruptibly) {
-                        commandExecutor.getNow(future).getLatch().acquire();
+                        entry.getLatch().acquire();
                     } else {
-                        commandExecutor.getNow(future).getLatch().acquireUninterruptibly();
+                        entry.getLatch().acquireUninterruptibly();
                     }
                 }
             }
         } finally {
-            unsubscribe(commandExecutor.getNow(future), threadId);
+            unsubscribe(entry, threadId);
         }
 //        get(lockAsync(leaseTime, unit));
     }

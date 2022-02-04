@@ -75,7 +75,7 @@ public class RedissonPatternTopic implements RPatternTopic {
 
     private int addListener(RedisPubSubListener<?> pubSubListener) {
         CompletableFuture<Collection<PubSubConnectionEntry>> future = subscribeService.psubscribe(channelName, codec, pubSubListener);
-        commandExecutor.syncSubscription(future);
+        commandExecutor.get(future);
         return System.identityHashCode(pubSubListener);
     }
     
@@ -115,7 +115,7 @@ public class RedissonPatternTopic implements RPatternTopic {
     
     @Override
     public void removeListener(int listenerId) {
-        commandExecutor.syncSubscription(removeListenerAsync(listenerId).toCompletableFuture());
+        commandExecutor.get(removeListenerAsync(listenerId).toCompletableFuture());
     }
     
     @Override
@@ -138,7 +138,7 @@ public class RedissonPatternTopic implements RPatternTopic {
     @Override
     public void removeListener(PatternMessageListener<?> listener) {
         CompletableFuture<Void> future = subscribeService.removeListenerAsync(PubSubType.PUNSUBSCRIBE, channelName, listener);
-        commandExecutor.syncSubscription(future);
+        commandExecutor.get(future);
     }
     
     @Override

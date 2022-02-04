@@ -67,7 +67,7 @@ public class RedissonSubscription extends AbstractSubscription {
             list.add(f);
         }
         for (CompletableFuture<?> future : list) {
-            commandExecutor.syncSubscription(future);
+            commandExecutor.get(future);
         }
     }
 
@@ -97,7 +97,7 @@ public class RedissonSubscription extends AbstractSubscription {
             list.add(f);
         }
         for (CompletableFuture<?> future : list) {
-            commandExecutor.syncSubscription(future);
+            commandExecutor.get(future);
         }
     }
 

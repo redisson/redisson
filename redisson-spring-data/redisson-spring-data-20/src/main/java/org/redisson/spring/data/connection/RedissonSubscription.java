@@ -15,13 +15,11 @@
  */
 package org.redisson.spring.data.connection;
 
-import org.redisson.api.RFuture;
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.ChannelName;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.connection.ConnectionManager;
 import org.redisson.pubsub.PubSubConnectionEntry;
 import org.redisson.pubsub.PublishSubscribeService;
 import org.springframework.data.redis.connection.DefaultMessage;
@@ -69,7 +67,7 @@ public class RedissonSubscription extends AbstractSubscription {
             list.add(f);
         }
         for (CompletableFuture<?> future : list) {
-            commandExecutor.syncSubscription(future);
+            commandExecutor.get(future);
         }
     }
 
@@ -99,7 +97,7 @@ public class RedissonSubscription extends AbstractSubscription {
             list.add(f);
         }
         for (CompletableFuture<?> future : list) {
-            commandExecutor.syncSubscription(future);
+            commandExecutor.get(future);
         }
     }
 

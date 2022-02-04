@@ -104,15 +104,13 @@ public class RedissonTopic implements RTopic {
     @Override
     public int addListener(StatusListener listener) {
         RFuture<Integer> future = addListenerAsync(listener);
-        commandExecutor.syncSubscription(future.toCompletableFuture());
-        return commandExecutor.getNow(future.toCompletableFuture());
+        return commandExecutor.get(future.toCompletableFuture());
     };
 
     @Override
     public <M> int addListener(Class<M> type, MessageListener<? extends M> listener) {
         RFuture<Integer> future = addListenerAsync(type, (MessageListener<M>) listener);
-        commandExecutor.syncSubscription(future.toCompletableFuture());
-        return commandExecutor.getNow(future.toCompletableFuture());
+        return commandExecutor.get(future.toCompletableFuture());
     }
 
     @Override
@@ -163,7 +161,7 @@ public class RedissonTopic implements RTopic {
     @Override
     public void removeListener(MessageListener<?> listener) {
         RFuture<Void> future = removeListenerAsync(listener);
-        commandExecutor.syncSubscription(future.toCompletableFuture());
+        commandExecutor.get(future.toCompletableFuture());
     }
 
     @Override
@@ -180,7 +178,7 @@ public class RedissonTopic implements RTopic {
 
     @Override
     public void removeListener(Integer... listenerIds) {
-        commandExecutor.syncSubscription(removeListenerAsync(listenerIds).toCompletableFuture());
+        commandExecutor.get(removeListenerAsync(listenerIds).toCompletableFuture());
     }
 
     @Override

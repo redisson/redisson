@@ -45,10 +45,6 @@ public interface CommandAsyncExecutor {
 
     RedisException convertException(ExecutionException e);
 
-    void syncSubscription(CompletableFuture<?> future);
-
-    void syncSubscriptionInterrupted(CompletableFuture<?> future) throws InterruptedException;
-
     <V> void transfer(CompletableFuture<V> future1, CompletableFuture<V> future2);
 
     <V> V getNow(CompletableFuture<V> future);
