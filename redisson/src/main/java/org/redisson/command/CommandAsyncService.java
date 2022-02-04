@@ -498,8 +498,16 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return result.toArray();
     }
 
-    private AtomicBoolean evalShaROSupported = new AtomicBoolean(true);
-    
+    private final AtomicBoolean evalShaROSupported = new AtomicBoolean(true);
+
+    public boolean isEvalShaROSupported() {
+        return evalShaROSupported.get();
+    }
+
+    public void setEvalShaROSupported(boolean value) {
+        this.evalShaROSupported.set(value);
+    }
+
     private <T, R> RFuture<R> evalAsync(NodeSource nodeSource, boolean readOnlyMode, Codec codec, RedisCommand<T> evalCommandType,
                                         String script, List<Object> keys, boolean noRetry, Object... params) {
         if (isEvalCacheActive() && evalCommandType.getName().equals("EVAL")) {

@@ -132,4 +132,8 @@ public interface CommandAsyncExecutor {
 
     <T, R> RFuture<R> writeBatchedAsync(Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, String... keys);
 
+    boolean isEvalShaROSupported();
+
+    void setEvalShaROSupported(boolean value);
+
 }

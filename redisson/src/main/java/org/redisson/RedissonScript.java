@@ -200,8 +200,20 @@ public class RedissonScript implements RScript {
     public <R> RFuture<R> evalShaAsync(String key, Mode mode, String shaDigest, ReturnType returnType,
             List<Object> keys, Object... values) {
         RedisCommand command = new RedisCommand(returnType.getCommand(), "EVALSHA");
-        if (mode == Mode.READ_ONLY) {
-            return commandExecutor.evalReadAsync(key, codec, command, shaDigest, keys, encode(Arrays.asList(values), codec).toArray());
+        if (mode == Mode.READ_ONLY && commandExecutor.isEvalShaROSupported()) {
+            RedisCommand cmd = new RedisCommand(returnType.getCommand(), "EVALSHA_RO");
+            RFuture<R> f = commandExecutor.evalReadAsync(key, codec, cmd, shaDigest, keys, encode(Arrays.asList(values), codec).toArray());
+            CompletableFuture<R> result = new CompletableFuture<>();
+            f.whenComplete((r, e) -> {
+                if (e != null) {
+                    if (e.getMessage().startsWith("ERR unknown command")) {
+                        commandExecutor.setEvalShaROSupported(false);
+                        RFuture<R> s = evalShaAsync(key, mode, shaDigest, returnType, keys, values);
+                        commandExecutor.transfer(s.toCompletableFuture(), result);
+                    }
+                }
+            });
+            return new CompletableFutureWrapper<>(result);
         }
         return commandExecutor.evalWriteAsync(key, codec, command, shaDigest, keys, encode(Arrays.asList(values), codec).toArray());
     }
