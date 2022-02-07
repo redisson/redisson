@@ -18,6 +18,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class RedissonTimeSeriesTest extends BaseTest {
 
     @Test
+    public void testMultipleValues() {
+        RTimeSeries<String> ts = redisson.getTimeSeries("test");
+        for (int i=0;i < 10000;i++){
+            ts.add(System.currentTimeMillis(), "my-value",60,TimeUnit.DAYS);
+        }
+        assertThat(ts.size()).isEqualTo(10000);
+    }
+
+    @Test
     public void testOrder() {
         RTimeSeries<String> t = redisson.getTimeSeries("test");
         t.add(4, "40");
@@ -170,7 +179,7 @@ public class RedissonTimeSeriesTest extends BaseTest {
     }
 
     @Test
-    public void testPoll() {
+    public void testPoll() throws InterruptedException {
         RTimeSeries<String> t = redisson.getTimeSeries("test");
         t.add(1, "10");
         t.add(2, "20");
