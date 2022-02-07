@@ -111,8 +111,8 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
         }
 
         List<Object> params = new ArrayList<>();
+        params.add(expirationTime);
         for (Map.Entry<Long, V> entry : objects.entrySet()) {
-            params.add(expirationTime);
             params.add(entry.getKey());
             byte[] random = new byte[16];
             ThreadLocalRandom.current().nextBytes(random);
@@ -122,25 +122,24 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
 
         if (timeToLive > 0) {
             return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
-           "for i = 1, #ARGV, 4 do " +
-                    "local val = struct.pack('Bc0Lc0', string.len(ARGV[i+2]), ARGV[i+2], string.len(ARGV[i+3]), ARGV[i+3]); " +
-                    "redis.call('zadd', KEYS[1], ARGV[i+1], val); " +
-                    "redis.call('zadd', KEYS[2], ARGV[i], val); " +
+           "for i = 2, #ARGV, 4 do " +
+                    "local val = struct.pack('Bc0Lc0', string.len(ARGV[i+1]), ARGV[i+1], string.len(ARGV[i+2]), ARGV[i+2]); " +
+                    "redis.call('zadd', KEYS[1], ARGV[i], val); " +
+                    "redis.call('zadd', KEYS[2], ARGV[1], val); " +
                  "end; ",
                 Arrays.asList(getRawName(), getTimeoutSetName()),
                 params.toArray());
         }
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
-           "for i = 1, #ARGV, 4 do " +
-                    "local expirationTime = ARGV[i]; " +
-                    "local values = redis.call('zrangebyscore', KEYS[2], ARGV[i], ARGV[i]); " +
-                    "if #values > 0 then " +
-                       "local lastValue = redis.call('zrange', KEYS[2], -1, -1, 'withscores'); " +
-                       "expirationTime = tonumber(lastValue[2]) + 1; " +
-                    "end; " +
-                    "local val = struct.pack('Bc0Lc0', string.len(ARGV[i+2]), ARGV[i+2], string.len(ARGV[i+3]), ARGV[i+3]); " +
-                    "redis.call('zadd', KEYS[1], ARGV[i+1], val); " +
-                    "redis.call('zadd', KEYS[2], expirationTime, val); " +
+            "local expirationTime = ARGV[1]; " +
+                 "local lastValues = redis.call('zrange', KEYS[2], -1, -1, 'withscores'); " +
+                 "if (#lastValues > 0 and tonumber(lastValues[2]) > tonumber(ARGV[1])) then " +
+                      "expirationTime = tonumber(lastValues[2]); " +
+                 "end; " +
+                 "for i = 2, #ARGV, 4 do " +
+                    "local val = struct.pack('Bc0Lc0', string.len(ARGV[i+1]), ARGV[i+1], string.len(ARGV[i+2]), ARGV[i+2]); " +
+                    "redis.call('zadd', KEYS[1], ARGV[i], val); " +
+                    "redis.call('zadd', KEYS[2], expirationTime + 1, val); " +
                  "end; ",
                 Arrays.asList(getRawName(), getTimeoutSetName()),
                 params.toArray());
