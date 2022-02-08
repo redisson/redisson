@@ -46,6 +46,7 @@ import java.security.MessageDigest;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -722,15 +723,14 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     @Override
     public <V> RFuture<V> pollFromAnyAsync(String name, Codec codec, RedisCommand<Object> command, long secondsTimeout, String... queueNames) {
         if (connectionManager.isClusterMode() && queueNames.length > 0) {
-            RPromise<V> result = new RedissonPromise<V>();
-            AtomicReference<Iterator<String>> ref = new AtomicReference<Iterator<String>>();
-            List<String> names = new ArrayList<String>();
+            AtomicReference<Iterator<String>> ref = new AtomicReference<>();
+            List<String> names = new ArrayList<>();
             names.add(name);
             names.addAll(Arrays.asList(queueNames));
             ref.set(names.iterator());
             AtomicLong counter = new AtomicLong(secondsTimeout);
-            poll(name, codec, result, ref, names, counter, command);
-            return result;
+            CompletionStage<V> result = poll(codec, ref, names, counter, command);
+            return new CompletableFutureWrapper<>(result);
         } else {
             List<Object> params = new ArrayList<Object>(queueNames.length + 1);
             params.add(name);
@@ -740,31 +740,24 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }
     }
 
-    private <V> void poll(String name, Codec codec, RPromise<V> result, AtomicReference<Iterator<String>> ref, 
-            List<String> names, AtomicLong counter, RedisCommand<Object> command) {
+    private <V> CompletionStage<V> poll(Codec codec, AtomicReference<Iterator<String>> ref,
+                                        List<String> names, AtomicLong counter, RedisCommand<Object> command) {
         if (ref.get().hasNext()) {
             String currentName = ref.get().next();
             RFuture<V> future = writeAsync(currentName, codec, command, currentName, 1);
-            future.whenComplete((res, e) -> {
-                if (e != null) {
-                    result.tryFailure(e);
-                    return;
-                }
-                
+            return future.thenCompose(res -> {
                 if (res != null) {
-                    result.trySuccess(res);
-                } else {
-                    if (counter.decrementAndGet() == 0) {
-                        result.trySuccess(null);
-                        return;
-                    }
-                    poll(name, codec, result, ref, names, counter, command);
+                    return CompletableFuture.completedFuture(res);
                 }
+
+                if (counter.decrementAndGet() == 0) {
+                    return CompletableFuture.completedFuture(null);
+                }
+                return poll(codec, ref, names, counter, command);
             });
-        } else {
-            ref.set(names.iterator());
-            poll(name, codec, result, ref, names, counter, command);
         }
+        ref.set(names.iterator());
+        return poll(codec, ref, names, counter, command);
     }
     
 }
