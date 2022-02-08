@@ -20,6 +20,7 @@ import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import org.redisson.api.RFuture;
 import org.redisson.api.RPermitExpirableSemaphore;
+import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
@@ -338,10 +339,10 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         return new CompletableFutureWrapper<>(f);
     }
 
-    protected String generateId() {
+    protected byte[] generateId() {
         byte[] id = new byte[16];
         ThreadLocalRandom.current().nextBytes(id);
-        return ByteBufUtil.hexDump(id);
+        return id;
     }
     
     private RFuture<String> tryAcquireAsync(int permits, long timeoutDate) {
@@ -349,8 +350,8 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             throw new IllegalArgumentException("Permits amount can't be negative");
         }
 
-        String id = generateId();
-        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_STRING_DATA,
+        byte[] id = generateId();
+        return commandExecutor.evalWriteAsync(getRawName(), ByteArrayCodec.INSTANCE, RedisCommands.EVAL_PERMIT_DATA,
                   "local expiredIds = redis.call('zrangebyscore', KEYS[2], 0, ARGV[4], 'limit', 0, ARGV[1]); " +
                   "if #expiredIds > 0 then " +
                       "redis.call('zrem', KEYS[2], unpack(expiredIds)); " +
@@ -376,7 +377,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                       "return ':' .. tostring(v[2]); " +
                   "end " +
                   "return nil;",
-                  Arrays.<Object>asList(getRawName(), timeoutName, getChannelName()),
+                  Arrays.asList(getRawName(), timeoutName, getChannelName()),
                 permits, timeoutDate, id, System.currentTimeMillis(), nonExpirableTimeout);
     }
 
@@ -558,11 +559,12 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             throw new IllegalArgumentException("permitId can't be null");
         }
 
+        byte[] id = ByteBufUtil.decodeHexDump(permitId);
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                   "local expire = redis.call('zscore', KEYS[3], ARGV[1]);" +
                         "local removed = redis.call('zrem', KEYS[3], ARGV[1]);" +
                         "if tonumber(removed) ~= 1 then " +
-                        "return 0;" +
+                            "return 0;" +
                         "end;" +
                         "local value = redis.call('incrby', KEYS[1], ARGV[2]); " +
                         "redis.call('publish', KEYS[2], value); " +
@@ -570,7 +572,8 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                             "return 0;" +
                         "end;" +
                         "return 1;",
-                Arrays.<Object>asList(getRawName(), getChannelName(), timeoutName), permitId, 1, System.currentTimeMillis());
+                Arrays.asList(getRawName(), getChannelName(), timeoutName),
+                id, 1, System.currentTimeMillis());
     }
     
     @Override
@@ -676,6 +679,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     @Override
     public RFuture<Boolean> updateLeaseTimeAsync(String permitId, long leaseTime, TimeUnit unit) {
         long timeoutDate = calcTimeout(leaseTime, unit);
+        byte[] id = ByteBufUtil.decodeHexDump(permitId);
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local expiredIds = redis.call('zrangebyscore', KEYS[2], 0, ARGV[3], 'limit', 0, -1); " +
                 "if #expiredIds > 0 then " +
@@ -692,8 +696,8 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                     + "return 1;"
                 + "end;"
                 + "return 0;",
-                Arrays.<Object>asList(getRawName(), timeoutName, getChannelName()),
-                permitId, timeoutDate, System.currentTimeMillis());
+                Arrays.asList(getRawName(), timeoutName, getChannelName()),
+                id, timeoutDate, System.currentTimeMillis());
     }
 
     @Override

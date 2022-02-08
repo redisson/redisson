@@ -230,8 +230,8 @@ public interface RedisCommands {
     RedisStrictCommand<Boolean> EVAL_NULL_BOOLEAN = new RedisStrictCommand<Boolean>("EVAL", new BooleanNullReplayConvertor());
     RedisStrictCommand<String> EVAL_STRING = new RedisStrictCommand("EVAL",
             new ObjectDecoder(new StringReplayDecoder()));
-    RedisStrictCommand<String> EVAL_STRING_DATA = new RedisStrictCommand("EVAL",
-            new ObjectDecoder(new StringDataDecoder()));
+    RedisStrictCommand<String> EVAL_PERMIT_DATA = new RedisStrictCommand("EVAL",
+            new ObjectDecoder(new PermitDecoder()));
     RedisStrictCommand<Integer> EVAL_INTEGER = new RedisStrictCommand<Integer>("EVAL", new IntegerReplayConvertor());
     RedisStrictCommand<Double> EVAL_DOUBLE = new RedisStrictCommand<Double>("EVAL", new DoubleNullSafeReplayConvertor());
     RedisStrictCommand<Long> EVAL_LONG = new RedisStrictCommand<Long>("EVAL");

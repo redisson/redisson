@@ -17,7 +17,7 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
     public void testUpdateLeaseTime() throws InterruptedException {
         RPermitExpirableSemaphore semaphore = redisson.getPermitExpirableSemaphore("test");
         semaphore.trySetPermits(1);
-        assertThat(semaphore.updateLeaseTime("123", 1, TimeUnit.SECONDS)).isFalse();
+        assertThat(semaphore.updateLeaseTime("1234", 1, TimeUnit.SECONDS)).isFalse();
         String id = semaphore.acquire();
         assertThat(semaphore.updateLeaseTime(id, 1, TimeUnit.SECONDS)).isTrue();
         Thread.sleep(1200);
