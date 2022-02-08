@@ -35,7 +35,7 @@ public class PermitDecoder implements Decoder<String> {
         }
         if (buf.isReadable(14)
                 && !buf.isReadable(16)
-                && buf.getByte(buf.readerIndex()) == (byte)':') {
+                && buf.getByte(buf.readerIndex()) == (byte) ':') {
             return buf.toString(CharsetUtil.UTF_8);
         }
         return ByteBufUtil.hexDump(buf);
