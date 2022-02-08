@@ -68,6 +68,7 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
         setScanInterval(config.getScanInterval());
         setNatMapper(config.getNatMapper());
         setCheckSentinelsList(config.isCheckSentinelsList());
+        setSentinelUsername(config.getSentinelUsername());
         setSentinelPassword(config.getSentinelPassword());
         setCheckSlaveStatusWithSyncing(config.isCheckSlaveStatusWithSyncing());
         setSentinelsDiscovery(config.isSentinelsDiscovery());
