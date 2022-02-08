@@ -5,7 +5,9 @@ import org.redisson.api.RTimeSeries;
 import org.redisson.api.TimeSeriesEntry;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,6 +26,18 @@ public class RedissonTimeSeriesTest extends BaseTest {
             ts.add(System.currentTimeMillis(), "my-value",60,TimeUnit.DAYS);
         }
         assertThat(ts.size()).isEqualTo(10000);
+    }
+
+    @Test
+    public void testPutAll() {
+        RTimeSeries<String> t = redisson.getTimeSeries("test");
+        Map<Long, String> map = new HashMap<>();
+        map.put(1L, "1");
+        map.put(2L, "2");
+        map.put(3L, "3");
+        map.put(4L, "4");
+        t.addAll(map);
+        assertThat(t.size()).isEqualTo(4);
     }
 
     @Test

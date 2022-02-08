@@ -122,7 +122,7 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
 
         if (timeToLive > 0) {
             return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
-           "for i = 2, #ARGV, 4 do " +
+           "for i = 2, #ARGV, 3 do " +
                     "local val = struct.pack('Bc0Lc0', string.len(ARGV[i+1]), ARGV[i+1], string.len(ARGV[i+2]), ARGV[i+2]); " +
                     "redis.call('zadd', KEYS[1], ARGV[i], val); " +
                     "redis.call('zadd', KEYS[2], ARGV[1], val); " +
@@ -136,7 +136,7 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
                  "if (#lastValues > 0 and tonumber(lastValues[2]) > tonumber(ARGV[1])) then " +
                       "expirationTime = tonumber(lastValues[2]); " +
                  "end; " +
-                 "for i = 2, #ARGV, 4 do " +
+                 "for i = 2, #ARGV, 3 do " +
                     "local val = struct.pack('Bc0Lc0', string.len(ARGV[i+1]), ARGV[i+1], string.len(ARGV[i+2]), ARGV[i+2]); " +
                     "redis.call('zadd', KEYS[1], ARGV[i], val); " +
                     "redis.call('zadd', KEYS[2], expirationTime + 1, val); " +
