@@ -29,6 +29,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.*;
 import org.redisson.client.protocol.decoder.*;
+import org.redisson.command.BatchPromise;
 import org.redisson.command.CommandAsyncService;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.MasterSlaveEntry;
@@ -353,7 +354,7 @@ public class RedissonConnection extends AbstractRedisConnection {
             return null;
         }
         if (isQueueing()) {
-            f.toCompletableFuture().join();
+            ((BatchPromise)f.toCompletableFuture()).getSentPromise().join();
             return null;
         }
 
