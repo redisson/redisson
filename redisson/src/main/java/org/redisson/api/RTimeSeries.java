@@ -185,6 +185,16 @@ public interface RTimeSeries<V> extends RExpirable, Iterable<V>, RTimeSeriesAsyn
     Collection<V> range(long startTimestamp, long endTimestamp);
 
     /**
+     * Returns ordered elements of this time-series collection within timestamp range. Including boundary values.
+     *
+     * @param startTimestamp start timestamp
+     * @param endTimestamp end timestamp
+     * @param limit result size limit
+     * @return elements collection
+     */
+    Collection<V> range(long startTimestamp, long endTimestamp, int limit);
+
+    /**
      * Returns elements of this time-series collection in reverse order within timestamp range. Including boundary values.
      *
      * @param startTimestamp - start timestamp
@@ -192,6 +202,16 @@ public interface RTimeSeries<V> extends RExpirable, Iterable<V>, RTimeSeriesAsyn
      * @return elements collection
      */
     Collection<V> rangeReversed(long startTimestamp, long endTimestamp);
+
+    /**
+     * Returns elements of this time-series collection in reverse order within timestamp range. Including boundary values.
+     *
+     * @param startTimestamp start timestamp
+     * @param endTimestamp end timestamp
+     * @param limit result size limit
+     * @return elements collection
+     */
+    Collection<V> rangeReversed(long startTimestamp, long endTimestamp, int limit);
 
     /**
      * Returns ordered entries of this time-series collection within timestamp range. Including boundary values.
@@ -203,6 +223,16 @@ public interface RTimeSeries<V> extends RExpirable, Iterable<V>, RTimeSeriesAsyn
     Collection<TimeSeriesEntry<V>> entryRange(long startTimestamp, long endTimestamp);
 
     /**
+     * Returns ordered entries of this time-series collection within timestamp range. Including boundary values.
+     *
+     * @param startTimestamp start timestamp
+     * @param endTimestamp end timestamp
+     * @param limit result size limit
+     * @return elements collection
+     */
+    Collection<TimeSeriesEntry<V>> entryRange(long startTimestamp, long endTimestamp, int limit);
+
+    /**
      * Returns entries of this time-series collection in reverse order within timestamp range. Including boundary values.
      *
      * @param startTimestamp - start timestamp
@@ -210,6 +240,16 @@ public interface RTimeSeries<V> extends RExpirable, Iterable<V>, RTimeSeriesAsyn
      * @return elements collection
      */
     Collection<TimeSeriesEntry<V>> entryRangeReversed(long startTimestamp, long endTimestamp);
+
+    /**
+     * Returns entries of this time-series collection in reverse order within timestamp range. Including boundary values.
+     *
+     * @param startTimestamp start timestamp
+     * @param endTimestamp end timestamp
+     * @param limit result size limit
+     * @return elements collection
+     */
+    Collection<TimeSeriesEntry<V>> entryRangeReversed(long startTimestamp, long endTimestamp, int limit);
 
     /**
      * Returns stream of elements in this time-series collection.

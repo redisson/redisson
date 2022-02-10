@@ -79,6 +79,50 @@ public class RedissonTimeSeriesTest extends BaseTest {
     }
 
     @Test
+    public void testRangeReversed() throws InterruptedException {
+        RTimeSeries<String> t = redisson.getTimeSeries("test");
+        t.add(1, "10");
+        t.add(2, "20");
+        t.add(3, "30");
+        t.add(4, "40");
+
+        assertThat(t.rangeReversed(1, 4, 2)).containsExactly("40", "30");
+        assertThat(t.rangeReversed(1, 4, 0)).containsExactly("40", "30", "20", "10");
+
+        RTimeSeries<String> t2 = redisson.getTimeSeries("test2");
+        t2.add(1, "10");
+        t2.add(2, "20");
+        t2.add(3, "30", 1, TimeUnit.SECONDS);
+        t2.add(4, "40");
+
+        Thread.sleep(1200);
+
+        assertThat(t2.rangeReversed(1, 4, 2)).containsExactly("40", "20");
+    }
+
+    @Test
+    public void testRange() throws InterruptedException {
+        RTimeSeries<String> t = redisson.getTimeSeries("test");
+        t.add(1, "10");
+        t.add(2, "10");
+        t.add(3, "30");
+        t.add(4, "40");
+
+        assertThat(t.range(1, 4, 2)).containsExactly("10", "10");
+        assertThat(t.range(1, 4, 0)).containsExactly("10", "10", "30", "40");
+
+        RTimeSeries<String> t2 = redisson.getTimeSeries("test2");
+        t2.add(1, "10");
+        t2.add(2, "10", 1, TimeUnit.SECONDS);
+        t2.add(3, "30");
+        t2.add(4, "40");
+
+        Thread.sleep(1200);
+
+        assertThat(t2.range(1, 4, 2)).containsExactly("10", "30");
+    }
+
+    @Test
     public void testRemove() {
         RTimeSeries<String> t = redisson.getTimeSeries("test");
         t.add(1, "10");
