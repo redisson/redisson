@@ -385,6 +385,16 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     List<Integer> addAndGetRevRank(Map<? extends V, Double> map);
 
     /**
+     * Use {@link #addIfAbsent(double, Object)} instead
+     *
+     * @param score - object score
+     * @param object - object itself
+     * @return <code>true</code> if element added and <code>false</code> if not.
+     */
+    @Deprecated
+    boolean tryAdd(double score, V object);
+
+    /**
      * Adds element to this set only if has not been added before.
      * <p>
      * Requires <b>Redis 3.0.2 and higher.</b>
@@ -393,7 +403,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * @param object - object itself
      * @return <code>true</code> if element added and <code>false</code> if not.
      */
-    boolean tryAdd(double score, V object);
+    boolean addIfAbsent(double score, V object);
 
     /**
      * Adds element to this set only if it's already exists.

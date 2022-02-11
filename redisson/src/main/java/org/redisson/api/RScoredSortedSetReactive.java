@@ -368,15 +368,25 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
     Mono<List<Integer>> addAndGetRevRank(Map<? extends V, Double> map);
 
     /**
+     * Use {@link #addIfAbsent(double, Object)} instead
+     *
+     * @param score - object score
+     * @param object - object itself
+     * @return <code>true</code> if element has added and <code>false</code> if not.
+     */
+    @Deprecated
+    Mono<Boolean> tryAdd(double score, V object);
+
+    /**
      * Adds element to this set only if has not been added before.
      * <p>
      * Requires <b>Redis 3.0.2 and higher.</b>
      *
      * @param score - object score
      * @param object - object itself
-     * @return <code>true</code> if element has added and <code>false</code> if not.
+     * @return <code>true</code> if element added and <code>false</code> if not.
      */
-    Mono<Boolean> tryAdd(double score, V object);
+    Mono<Boolean> addIfAbsent(double score, V object);
 
     /**
      * Adds element to this set only if it's already exists.

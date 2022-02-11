@@ -462,6 +462,16 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public boolean addIfAbsent(double score, V object) {
+        return get(addIfAbsentAsync(score, object));
+    }
+
+    @Override
+    public RFuture<Boolean> addIfAbsentAsync(double score, V object) {
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZADD_BOOL, getRawName(), "NX", BigDecimal.valueOf(score).toPlainString(), encode(object));
+    }
+
+    @Override
     public boolean remove(Object object) {
         return get(removeAsync(object));
     }
