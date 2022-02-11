@@ -103,6 +103,16 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.PTTL, getRawName());
     }
 
+    @Override
+    public long getExpireTime() {
+        return get(getExpireTimeAsync());
+    }
+
+    @Override
+    public RFuture<Long> getExpireTimeAsync() {
+        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.PEXPIRETIME, getRawName());
+    }
+
     protected RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String... keys) {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                   "local result = 0;"

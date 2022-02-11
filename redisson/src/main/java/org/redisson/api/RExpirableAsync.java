@@ -82,4 +82,13 @@ public interface RExpirableAsync extends RObjectAsync {
      */
     RFuture<Long> remainTimeToLiveAsync();
 
+    /**
+     * Expiration time of Redisson object that has a timeout
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @return expiration time
+     */
+    RFuture<Long> getExpireTimeAsync();
+
 }

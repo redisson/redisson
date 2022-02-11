@@ -183,6 +183,7 @@ public interface RedisCommands {
     RedisStrictCommand<Boolean> PEXPIREAT = new RedisStrictCommand<Boolean>("PEXPIREAT", new BooleanReplayConvertor());
     RedisStrictCommand<Boolean> PERSIST = new RedisStrictCommand<Boolean>("PERSIST", new BooleanReplayConvertor());
     RedisStrictCommand<Long> PTTL = new RedisStrictCommand<Long>("PTTL");
+    RedisStrictCommand<Long> PEXPIRETIME = new RedisStrictCommand<>("PEXPIRETIME");
 
     RedisCommand<Object> RPOPLPUSH = new RedisCommand<Object>("RPOPLPUSH");
     RedisCommand<Object> BRPOPLPUSH = new RedisCommand<Object>("BRPOPLPUSH");

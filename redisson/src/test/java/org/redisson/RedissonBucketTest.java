@@ -3,6 +3,7 @@ package org.redisson;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -14,11 +15,24 @@ import org.junit.jupiter.api.Test;
 import org.redisson.RedisRunner.FailedToStartRedisException;
 import org.redisson.RedisRunner.KEYSPACE_EVENTS_OPTIONS;
 import org.redisson.RedisRunner.RedisProcess;
-import org.redisson.api.*;
+import org.redisson.api.DeletedObjectListener;
+import org.redisson.api.ExpiredObjectListener;
+import org.redisson.api.RBucket;
+import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.SetObjectListener;
 import org.redisson.config.Config;
 
 public class RedissonBucketTest extends BaseTest {
+
+    @Test
+    public void testExpireTime() {
+        RBucket<Integer> al = redisson.getBucket("test");
+        al.set(1);
+        assertThat(al.getExpireTime()).isEqualTo(-1);
+        Instant s = Instant.now().plusSeconds(10);
+        al.expire(s);
+        assertThat(al.getExpireTime()).isEqualTo(s.toEpochMilli());
+    }
 
     @Test
     public void testKeepTTL() {

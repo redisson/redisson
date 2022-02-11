@@ -84,4 +84,13 @@ public interface RExpirableRx extends RObjectRx {
      */
     Single<Long> remainTimeToLive();
 
+    /**
+     * Expiration time of Redisson object that has a timeout
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @return expiration time
+     */
+    Single<Long> getExpireTime();
+
 }
