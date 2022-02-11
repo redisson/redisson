@@ -423,6 +423,26 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     }
 
     @Test
+    public void testAddIfGreater() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        set.add(123, "1980");
+        assertThat(set.addIfGreater(120, "1980")).isFalse();
+        assertThat(set.getScore("1980")).isEqualTo(123);
+        assertThat(set.addIfGreater(125, "1980")).isTrue();
+        assertThat(set.getScore("1980")).isEqualTo(125);
+    }
+
+    @Test
+    public void testAddIfLess() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        set.add(123, "1980");
+        assertThat(set.addIfLess(120, "1980")).isTrue();
+        assertThat(set.getScore("1980")).isEqualTo(120);
+        assertThat(set.addIfLess(125, "1980")).isFalse();
+        assertThat(set.getScore("1980")).isEqualTo(120);
+    }
+
+    @Test
     public void testAddIfExists() {
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
 
