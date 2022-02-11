@@ -244,6 +244,46 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     int addAll(Map<V, Double> objects);
 
     /**
+     * Adds elements to this set only if they haven't been added before.
+     * <p>
+     * Requires <b>Redis 3.0.2 and higher.</b>
+     *
+     * @param objects map of elements to add
+     * @return amount of added elements
+     */
+    int addAllIfAbsent(Map<V, Double> objects);
+
+    /**
+     * Adds elements to this set only if they already exist.
+     * <p>
+     * Requires <b>Redis 3.0.2 and higher.</b>
+     *
+     * @param objects map of elements to add
+     * @return amount of added elements
+     */
+    int addAllIfExist(Map<V, Double> objects);
+
+    /**
+     * Adds elements to this set only if new scores greater than current score of existed elements.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param objects map of elements to add
+     * @return amount of added elements
+     */
+    int addAllIfGreater(Map<V, Double> objects);
+
+    /**
+     * Adds elements to this set only if new scores less than current score of existed elements.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param objects map of elements to add
+     * @return amount of added elements
+     */
+    int addAllIfLess(Map<V, Double> objects);
+
+    /**
      * Removes values by score range.
      * 
      * @param startScore - start score. 

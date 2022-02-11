@@ -278,7 +278,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public RFuture<Boolean> addIfExistsAsync(double score, V object) {
-        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZADD_BOOL, getRawName(), "XX", BigDecimal.valueOf(score).toPlainString(), encode(object));
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZADD_BOOL, getRawName(), "XX", "CH", BigDecimal.valueOf(score).toPlainString(), encode(object));
     }
 
     @Override
@@ -361,6 +361,93 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         }
         List<Object> params = new ArrayList<Object>(objects.size()*2+1);
         params.add(getRawName());
+        for (Entry<V, Double> entry : objects.entrySet()) {
+            params.add(BigDecimal.valueOf(entry.getValue()).toPlainString());
+            params.add(encode(entry.getKey()));
+        }
+
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZADD_INT, params.toArray());
+    }
+
+    @Override
+    public int addAllIfAbsent(Map<V, Double> objects) {
+        return get(addAllIfAbsentAsync(objects));
+    }
+
+    @Override
+    public RFuture<Integer> addAllIfAbsentAsync(Map<V, Double> objects) {
+        if (objects.isEmpty()) {
+            return RedissonPromise.newSucceededFuture(0);
+        }
+        List<Object> params = new ArrayList<>(objects.size()*2+1);
+        params.add(getRawName());
+        params.add("NX");
+        for (Entry<V, Double> entry : objects.entrySet()) {
+            params.add(BigDecimal.valueOf(entry.getValue()).toPlainString());
+            params.add(encode(entry.getKey()));
+        }
+
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZADD_INT, params.toArray());
+    }
+
+    @Override
+    public int addAllIfExist(Map<V, Double> objects) {
+        return get(addAllIfExistAsync(objects));
+    }
+
+    @Override
+    public RFuture<Integer> addAllIfExistAsync(Map<V, Double> objects) {
+        if (objects.isEmpty()) {
+            return RedissonPromise.newSucceededFuture(0);
+        }
+        List<Object> params = new ArrayList<>(objects.size()*2+1);
+        params.add(getRawName());
+        params.add("XX");
+        params.add("CH");
+        for (Entry<V, Double> entry : objects.entrySet()) {
+            params.add(BigDecimal.valueOf(entry.getValue()).toPlainString());
+            params.add(encode(entry.getKey()));
+        }
+
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZADD_INT, params.toArray());
+    }
+
+    @Override
+    public int addAllIfGreater(Map<V, Double> objects) {
+        return get(addAllIfGreaterAsync(objects));
+    }
+
+    @Override
+    public RFuture<Integer> addAllIfGreaterAsync(Map<V, Double> objects) {
+        if (objects.isEmpty()) {
+            return RedissonPromise.newSucceededFuture(0);
+        }
+        List<Object> params = new ArrayList<>(objects.size()*2+1);
+        params.add(getRawName());
+        params.add("GT");
+        params.add("CH");
+        for (Entry<V, Double> entry : objects.entrySet()) {
+            params.add(BigDecimal.valueOf(entry.getValue()).toPlainString());
+            params.add(encode(entry.getKey()));
+        }
+
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZADD_INT, params.toArray());
+    }
+
+    @Override
+    public int addAllIfLess(Map<V, Double> objects) {
+        return get(addAllIfLessAsync(objects));
+    }
+
+    @Override
+    public RFuture<Integer> addAllIfLessAsync(Map<V, Double> objects) {
+        if (objects.isEmpty()) {
+            return RedissonPromise.newSucceededFuture(0);
+        }
+        List<Object> params = new ArrayList<>(objects.size()*2+1);
+        params.add(getRawName());
+        params.add("LT");
+        params.add("CH");
         for (Entry<V, Double> entry : objects.entrySet()) {
             params.add(BigDecimal.valueOf(entry.getValue()).toPlainString());
             params.add(encode(entry.getKey()));

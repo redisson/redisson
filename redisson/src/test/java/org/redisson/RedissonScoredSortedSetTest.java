@@ -1,29 +1,5 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -33,6 +9,19 @@ import org.redisson.client.codec.IntegerCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.ScoredEntry;
 import org.redisson.config.Config;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RedissonScoredSortedSetTest extends BaseTest {
 
@@ -423,6 +412,87 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     }
 
     @Test
+    public void testAddAllIfAbsent() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        set.add(10, "1981");
+        set.add(11, "1984");
+
+        Map<String, Double> map = new HashMap<>();
+        map.put("1981", 111D);
+        map.put("1982", 112D);
+        map.put("1983", 113D);
+        map.put("1984", 114D);
+
+        assertThat(set.addAllIfAbsent(map)).isEqualTo(2);
+        assertThat(set.getScore("1981")).isEqualTo(10);
+        assertThat(set.getScore("1984")).isEqualTo(11);
+        assertThat(set).contains("1981", "1982", "1983", "1984");
+    }
+
+    @Test
+    public void testAddAllIfExist() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        set.add(10, "1981");
+        set.add(11, "1984");
+
+        Map<String, Double> map = new HashMap<>();
+        map.put("1981", 111D);
+        map.put("1982", 112D);
+        map.put("1983", 113D);
+        map.put("1984", 114D);
+
+        assertThat(set.addAllIfExist(map)).isEqualTo(2);
+        assertThat(set.getScore("1981")).isEqualTo(111D);
+        assertThat(set.getScore("1984")).isEqualTo(114D);
+    }
+
+    @Test
+    public void testAddAllIfGreater() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        set.add(10, "1981");
+        set.add(11, "1984");
+        set.add(13, "1985");
+
+        Map<String, Double> map = new HashMap<>();
+        map.put("1981", 111D);
+        map.put("1982", 112D);
+        map.put("1983", 113D);
+        map.put("1984", 8D);
+        map.put("1985", 3D);
+
+        assertThat(set.addAllIfGreater(map)).isEqualTo(3);
+        assertThat(set.size()).isEqualTo(5);
+        assertThat(set.getScore("1981")).isEqualTo(111D);
+        assertThat(set.getScore("1982")).isEqualTo(112D);
+        assertThat(set.getScore("1983")).isEqualTo(113D);
+        assertThat(set.getScore("1984")).isEqualTo(11D);
+        assertThat(set.getScore("1985")).isEqualTo(13D);
+    }
+
+    @Test
+    public void testAddAllIfLess() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        set.add(10D, "1981");
+        set.add(11D, "1984");
+        set.add(13D, "1985");
+
+        Map<String, Double> map = new HashMap<>();
+        map.put("1981", 111D);
+        map.put("1982", 112D);
+        map.put("1983", 113D);
+        map.put("1984", 8D);
+        map.put("1985", 3D);
+
+        assertThat(set.addAllIfLess(map)).isEqualTo(4);
+        assertThat(set.size()).isEqualTo(5);
+        assertThat(set.getScore("1981")).isEqualTo(10D);
+        assertThat(set.getScore("1982")).isEqualTo(112D);
+        assertThat(set.getScore("1983")).isEqualTo(113D);
+        assertThat(set.getScore("1984")).isEqualTo(8D);
+        assertThat(set.getScore("1985")).isEqualTo(3D);
+    }
+
+    @Test
     public void testAddIfGreater() {
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
         set.add(123, "1980");
@@ -449,7 +519,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         assertThat(set.addIfExists(123.81, "1980")).isFalse();
         assertThat(set.getScore("1980")).isNull();
         set.add(111, "1980");
-        assertThat(set.addIfExists(32, "1980")).isFalse();
+        assertThat(set.addIfExists(32, "1980")).isTrue();
         assertThat(set.getScore("1980")).isEqualTo(32);
     }
 

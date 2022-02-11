@@ -205,6 +205,46 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Integer> addAllAsync(Map<V, Double> objects);
 
     /**
+     * Adds elements to this set only if they haven't been added before.
+     * <p>
+     * Requires <b>Redis 3.0.2 and higher.</b>
+     *
+     * @param objects map of elements to add
+     * @return amount of added elements
+     */
+    RFuture<Integer> addAllIfAbsentAsync(Map<V, Double> objects);
+
+    /**
+     * Adds elements to this set only if they already exist.
+     * <p>
+     * Requires <b>Redis 3.0.2 and higher.</b>
+     *
+     * @param objects map of elements to add
+     * @return amount of added elements
+     */
+    RFuture<Integer> addAllIfExistAsync(Map<V, Double> objects);
+
+    /**
+     * Adds elements to this set only if new scores greater than current score of existed elements.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param objects map of elements to add
+     * @return amount of added elements
+     */
+    RFuture<Integer> addAllIfGreaterAsync(Map<V, Double> objects);
+
+    /**
+     * Adds elements to this set only if new scores less than current score of existed elements.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param objects map of elements to add
+     * @return amount of added elements
+     */
+    RFuture<Integer> addAllIfLessAsync(Map<V, Double> objects);
+
+    /**
      * Removes values by score range.
      * 
      * @param startScore - start score. 

@@ -15,17 +15,16 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.RScoredSortedSet.Aggregate;
+import org.redisson.client.protocol.ScoredEntry;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
-import org.redisson.api.RScoredSortedSet.Aggregate;
-import org.redisson.client.protocol.ScoredEntry;
-
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 /**
  * Reactive interface for SortedSet object
@@ -299,7 +298,47 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      * @return amount of added elements, not including already existing in this sorted set
      */
     Mono<Integer> addAll(Map<V, Double> objects);
-    
+
+    /**
+     * Adds elements to this set only if they haven't been added before.
+     * <p>
+     * Requires <b>Redis 3.0.2 and higher.</b>
+     *
+     * @param objects map of elements to add
+     * @return amount of added elements
+     */
+    Mono<Integer> addAllIfAbsent(Map<V, Double> objects);
+
+    /**
+     * Adds elements to this set only if they already exist.
+     * <p>
+     * Requires <b>Redis 3.0.2 and higher.</b>
+     *
+     * @param objects map of elements to add
+     * @return amount of added elements
+     */
+    Mono<Integer> addAllIfExist(Map<V, Double> objects);
+
+    /**
+     * Adds elements to this set only if new scores greater than current score of existed elements.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param objects map of elements to add
+     * @return amount of added elements
+     */
+    Mono<Integer> addAllIfGreater(Map<V, Double> objects);
+
+    /**
+     * Adds elements to this set only if new scores less than current score of existed elements.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param objects map of elements to add
+     * @return amount of added elements
+     */
+    Mono<Integer> addAllIfLess(Map<V, Double> objects);
+
     /**
      * Adds element to this set, overrides previous score if it has been already added.
      * Finally return the rank of the item
