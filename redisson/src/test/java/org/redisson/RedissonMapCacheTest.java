@@ -500,7 +500,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
         RMapCache<String, String> cache = redisson.getMapCache("simple");
         cache.put("0", "8", 1, TimeUnit.SECONDS);
 
-        cache.expire(100, TimeUnit.MILLISECONDS);
+        cache.expire(Duration.ofMillis(100));
 
         Thread.sleep(500);
 

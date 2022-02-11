@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
@@ -29,13 +30,13 @@ import java.util.concurrent.TimeUnit;
 public interface RExpirableAsync extends RObjectAsync {
 
     /**
-     * Set a timeout for object in async mode. After the timeout has expired,
-     * the key will automatically be deleted.
+     * Use {@link #expireAsync(Duration)} instead
      *
      * @param timeToLive - timeout before object will be deleted
      * @param timeUnit - timeout time unit
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
+    @Deprecated
     RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit);
 
     /**
@@ -64,6 +65,15 @@ public interface RExpirableAsync extends RObjectAsync {
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
     RFuture<Boolean> expireAsync(Instant instant);
+
+    /**
+     * Set a timeout for object. After the timeout has expired,
+     * the key will automatically be deleted.
+     *
+     * @param duration timeout before object will be deleted
+     * @return <code>true</code> if the timeout was set and <code>false</code> if not
+     */
+    RFuture<Boolean> expireAsync(Duration duration);
 
     /**
      * Clear an expire timeout or expire date for object in async mode.

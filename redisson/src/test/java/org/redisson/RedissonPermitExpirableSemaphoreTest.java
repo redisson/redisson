@@ -2,6 +2,7 @@ package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -60,7 +61,7 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
     public void testExpiration() throws InterruptedException {
         RPermitExpirableSemaphore semaphore = redisson.getPermitExpirableSemaphore("some-key");
         semaphore.trySetPermits(1);
-        semaphore.expire(3, TimeUnit.SECONDS);
+        semaphore.expire(Duration.ofSeconds(3));
         semaphore.tryAcquire(1, 1, TimeUnit.SECONDS);
         Thread.sleep(4100);
         assertThat(redisson.getKeys().count()).isZero();

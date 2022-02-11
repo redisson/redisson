@@ -6,6 +6,7 @@ import org.redisson.api.RSetMultimap;
 import org.redisson.client.codec.StringCodec;
 
 import java.io.Serializable;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -410,7 +411,7 @@ public class RedissonSetMultimapTest extends BaseTest {
         map.put("1", "2");
         map.put("2", "3");
 
-        map.expire(100, TimeUnit.MILLISECONDS);
+        map.expire(Duration.ofMillis(100));
 
         Thread.sleep(500);
 

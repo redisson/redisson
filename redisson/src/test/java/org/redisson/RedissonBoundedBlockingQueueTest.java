@@ -10,6 +10,7 @@ import org.redisson.client.RedisException;
 import org.redisson.config.Config;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -715,7 +716,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
                 q.trySetCapacity(10);
                 q.add(value);
                 System.out.println("Message added to [" + i + "]");
-                q.expire(1, TimeUnit.MINUTES);
+                q.expire(Duration.ofSeconds(1));
                 System.out.println("Expiry set to [" + i + "]");
                 String poll = q.poll(1, TimeUnit.SECONDS);
                 System.out.println("Message polled from [" + i + "]" + poll);
@@ -733,7 +734,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         queue.add(1);
         queue.add(2);
 
-        queue.expire(100, TimeUnit.MILLISECONDS);
+        queue.expire(Duration.ofMillis(100));
 
         Thread.sleep(500);
 

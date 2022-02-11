@@ -679,7 +679,7 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
                 RBlockingQueue<String> q = getQueue(String.valueOf(i));
                 q.add(value);
                 System.out.println("Message added to [" + i + "]");
-                q.expire(1, TimeUnit.MINUTES);
+                q.expire(Duration.ofMinutes(1));
                 System.out.println("Expiry set to [" + i + "]");
                 String poll = q.poll(1, TimeUnit.SECONDS);
                 System.out.println("Message polled from [" + i + "]" + poll);

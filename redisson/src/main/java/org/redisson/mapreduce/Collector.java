@@ -15,17 +15,16 @@
  */
 package org.redisson.mapreduce;
 
-import java.io.IOException;
-import java.util.BitSet;
-import java.util.concurrent.TimeUnit;
-
+import io.netty.buffer.ByteBuf;
 import org.redisson.api.RListMultimap;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.mapreduce.RCollector;
 import org.redisson.client.codec.Codec;
 import org.redisson.misc.Hash;
 
-import io.netty.buffer.ByteBuf;
+import java.io.IOException;
+import java.time.Duration;
+import java.util.BitSet;
 
 /**
  * 
@@ -65,7 +64,7 @@ public class Collector<K, V> implements RCollector<K, V> {
             RListMultimap<K, V> multimap = client.getListMultimap(partName, codec);
             multimap.put(key, value);
             if (timeout > 0 && !expirationsBitSet.get(part)) {
-                multimap.expire(timeout, TimeUnit.MILLISECONDS);
+                multimap.expire(Duration.ofMillis(timeout));
                 expirationsBitSet.set(part);
             }
         } catch (IOException e) {

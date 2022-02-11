@@ -1663,7 +1663,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         myObject = service.persist(myObject);
         myObject.setValue("123345");
         assertTrue(service.asLiveObject(myObject).isExists());
-        service.asRMap(myObject).expire(1, TimeUnit.SECONDS);
+        service.asRMap(myObject).expire(Duration.ofSeconds(1));
         Thread.sleep(2000);
         assertFalse(service.asLiveObject(myObject).isExists());
     }

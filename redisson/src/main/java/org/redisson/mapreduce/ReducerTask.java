@@ -15,10 +15,6 @@
  */
 package org.redisson.mapreduce;
 
-import java.io.Serializable;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 import org.redisson.api.RListMultimap;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
@@ -26,6 +22,10 @@ import org.redisson.api.annotation.RInject;
 import org.redisson.api.mapreduce.RReducer;
 import org.redisson.client.codec.Codec;
 import org.redisson.misc.Injector;
+
+import java.io.Serializable;
+import java.time.Duration;
+import java.util.List;
 
 /**
  * 
@@ -80,7 +80,7 @@ public class ReducerTask<KOut, VOut> implements Runnable, Serializable {
             map.put(key, out);
         }
         if (timeout > 0) {
-            map.expire(timeout, TimeUnit.MILLISECONDS);
+            map.expire(Duration.ofMillis(timeout));
         }
         multimap.delete();
     }

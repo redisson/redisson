@@ -50,7 +50,7 @@ public class RedissonRateLimiterTest extends BaseTest {
         rr.trySetRate(RateType.OVERALL, 2, 5, RateIntervalUnit.SECONDS);
         rr.tryAcquire();
 
-        rr.expire(1, TimeUnit.SECONDS);
+        rr.expire(Duration.ofSeconds(1));
         Thread.sleep(1100);
         assertThat(redisson.getKeys().count()).isZero();
     }

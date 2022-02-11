@@ -25,6 +25,7 @@ import org.redisson.tomcat.RedissonSessionManager.UpdateMode;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.security.Principal;
+import java.time.Duration;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -179,9 +180,9 @@ public class RedissonSession extends StandardSession {
         if (broadcastSessionEvents) {
             RSet<String> set = redissonManager.getNotifiedNodes(id);
             set.add(redissonManager.getNodeId());
-            set.expire(60, TimeUnit.SECONDS);
+            set.expire(Duration.ofSeconds(60));
             map.fastPut(IS_EXPIRATION_LOCKED, true);
-            map.expire(60, TimeUnit.SECONDS);
+            map.expire(Duration.ofSeconds(60));
         } else {
             map.delete();
         }
@@ -224,7 +225,7 @@ public class RedissonSession extends StandardSession {
             return;
         }
         if (maxInactiveInterval >= 0) {
-            map.expire(maxInactiveInterval + 60, TimeUnit.SECONDS);
+            map.expire(Duration.ofSeconds(maxInactiveInterval + 60));
         }
     }
 
