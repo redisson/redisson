@@ -152,6 +152,24 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public List<V> pollFirstFromAny(Duration duration, int count, String... queueNames) {
+        return get(pollFirstFromAnyAsync(duration, count, queueNames));
+    }
+
+    @Override
+    public RFuture<List<V>> pollFirstFromAnyAsync(Duration duration, int count, String... queueNames) {
+        List<Object> params = new ArrayList<>();
+        params.add(duration.getSeconds());
+        params.add(queueNames.length + 1);
+        params.add(getName());
+        params.addAll(Arrays.asList(queueNames));
+        params.add("MIN");
+        params.add("COUNT");
+        params.add(count);
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.BZMPOP_SINGLE_LIST, params.toArray());
+    }
+
+    @Override
     public V pollLastFromAny(long timeout, TimeUnit unit, String... queueNames) {
         return get(pollLastFromAnyAsync(timeout, unit, queueNames));
     }
@@ -160,7 +178,25 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     public RFuture<V> pollLastFromAnyAsync(long timeout, TimeUnit unit, String... queueNames) {
         return commandExecutor.pollFromAnyAsync(getRawName(), codec, RedisCommands.BZPOPMAX_VALUE, toSeconds(timeout, unit), queueNames);
     }
-    
+
+    @Override
+    public List<V> pollLastFromAny(Duration duration, int count, String... queueNames) {
+        return get(pollLastFromAnyAsync(duration, count, queueNames));
+    }
+
+    @Override
+    public RFuture<List<V>> pollLastFromAnyAsync(Duration duration, int count, String... queueNames) {
+        List<Object> params = new ArrayList<>();
+        params.add(duration.getSeconds());
+        params.add(queueNames.length + 1);
+        params.add(getName());
+        params.addAll(Arrays.asList(queueNames));
+        params.add("MAX");
+        params.add("COUNT");
+        params.add(count);
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.BZMPOP_SINGLE_LIST, params.toArray());
+    }
+
     @Override
     public V pollLast(long timeout, TimeUnit unit) {
         return get(pollLastAsync(timeout, unit));

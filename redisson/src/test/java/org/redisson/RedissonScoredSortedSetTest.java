@@ -80,6 +80,48 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     }
 
     @Test
+    public void testPollFirstFromAnyCount() {
+//        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("7.0.0") > 0);
+
+        RScoredSortedSet<Integer> queue1 = redisson.getScoredSortedSet("queue:pollany");
+        RScoredSortedSet<Integer> queue2 = redisson.getScoredSortedSet("queue:pollany1");
+        RScoredSortedSet<Integer> queue3 = redisson.getScoredSortedSet("queue:pollany2");
+        queue1.add(0.1, 1);
+        queue1.add(0.2, 2);
+        queue1.add(0.3, 3);
+        queue2.add(0.4, 4);
+        queue2.add(0.5, 5);
+        queue2.add(0.6, 6);
+        queue3.add(0.7, 7);
+        queue3.add(0.8, 8);
+        queue3.add(0.9, 9);
+
+        List<Integer> elements = queue1.pollFirstFromAny(Duration.ofSeconds(4), 2, "queue:pollany1", "queue:pollany2");
+        assertThat(elements).containsExactly(1, 2);
+    }
+
+    @Test
+    public void testPollLastFromAnyCount() {
+//        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("7.0.0") > 0);
+
+        RScoredSortedSet<Integer> queue1 = redisson.getScoredSortedSet("queue:pollany");
+        RScoredSortedSet<Integer> queue2 = redisson.getScoredSortedSet("queue:pollany1");
+        RScoredSortedSet<Integer> queue3 = redisson.getScoredSortedSet("queue:pollany2");
+        queue1.add(0.1, 1);
+        queue1.add(0.2, 2);
+        queue1.add(0.3, 3);
+        queue2.add(0.4, 4);
+        queue2.add(0.5, 5);
+        queue2.add(0.6, 6);
+        queue3.add(0.7, 7);
+        queue3.add(0.8, 8);
+        queue3.add(0.9, 9);
+
+        List<Integer> elements = queue1.pollLastFromAny(Duration.ofSeconds(4), 2, "queue:pollany1", "queue:pollany2");
+        assertThat(elements).containsExactly(3, 2);
+    }
+
+    @Test
     public void testPollLastFromAny() throws InterruptedException {
         Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("5.0.0") > 0);
 

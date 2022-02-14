@@ -43,7 +43,7 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      * <p>
      * Requires <b>Redis 5.0.0 and higher.</b>
      * 
-     * @param queueNames - names of queue
+     * @param queueNames name of queues
      * @param timeout how long to wait before giving up, in units of
      *        {@code unit}
      * @param unit a {@code TimeUnit} determining how to interpret the
@@ -51,7 +51,21 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      * @return the tail element, or {@code null} if all sorted sets are empty 
      */
     Mono<V> pollLastFromAny(long timeout, TimeUnit unit, String... queueNames);
-    
+
+    /**
+     * Removes and returns first available tail elements of <b>any</b> sorted set,
+     * waiting up to the specified wait time if necessary for elements to become available
+     * in any of defined sorted sets <b>including</b> this one.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count elements amount
+     * @param queueNames name of queues
+     * @return the tail elements
+     */
+    Mono<List<V>> pollLastFromAny(Duration duration, int count, String... queueNames);
+
     /**
      * Removes and returns first available head element of <b>any</b> sorted set,
      * waiting up to the specified wait time if necessary for an element to become available
@@ -59,7 +73,7 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      * <p>
      * Requires <b>Redis 5.0.0 and higher.</b>
      * 
-     * @param queueNames - names of queue
+     * @param queueNames name of queues
      * @param timeout how long to wait before giving up, in units of
      *        {@code unit}
      * @param unit a {@code TimeUnit} determining how to interpret the
@@ -68,7 +82,21 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      *  
      */
     Mono<V> pollFirstFromAny(long timeout, TimeUnit unit, String... queueNames);
-    
+
+    /**
+     * Removes and returns first available head elements of <b>any</b> sorted set,
+     * waiting up to the specified wait time if necessary for elements to become available
+     * in any of defined sorted sets <b>including</b> this one.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count elements amount
+     * @param queueNames name of queues
+     * @return the head elements
+     */
+    Mono<List<V>> pollFirstFromAny(Duration duration, int count, String... queueNames);
+
     /**
      * Removes and returns the head element or {@code null} if this sorted set is empty.
      * <p>

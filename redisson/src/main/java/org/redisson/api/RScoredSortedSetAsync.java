@@ -40,7 +40,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * <p>
      * Requires <b>Redis 5.0.0 and higher.</b>
      * 
-     * @param queueNames - names of queue
+     * @param queueNames name of queues
      * @param timeout how long to wait before giving up, in units of
      *        {@code unit}
      * @param unit a {@code TimeUnit} determining how to interpret the
@@ -48,7 +48,21 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @return the tail element, or {@code null} if all sorted sets are empty 
      */
     RFuture<V> pollLastFromAnyAsync(long timeout, TimeUnit unit, String... queueNames);
-    
+
+    /**
+     * Removes and returns first available tail elements of <b>any</b> sorted set,
+     * waiting up to the specified wait time if necessary for elements to become available
+     * in any of defined sorted sets <b>including</b> this one.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count elements amount
+     * @param queueNames name of queues
+     * @return the tail elements
+     */
+    RFuture<List<V>> pollLastFromAnyAsync(Duration duration, int count, String... queueNames);
+
     /**
      * Removes and returns first available head element of <b>any</b> sorted set,
      * waiting up to the specified wait time if necessary for an element to become available
@@ -56,7 +70,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * <p>
      * Requires <b>Redis 5.0.0 and higher.</b>
      * 
-     * @param queueNames - names of queue
+     * @param queueNames name of queues
      * @param timeout how long to wait before giving up, in units of
      *        {@code unit}
      * @param unit a {@code TimeUnit} determining how to interpret the
@@ -65,7 +79,21 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      *  
      */
     RFuture<V> pollFirstFromAnyAsync(long timeout, TimeUnit unit, String... queueNames);
-    
+
+    /**
+     * Removes and returns first available head elements of <b>any</b> sorted set,
+     * waiting up to the specified wait time if necessary for elements to become available
+     * in any of defined sorted sets <b>including</b> this one.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count elements amount
+     * @param queueNames name of queues
+     * @return the head elements
+     */
+    RFuture<List<V>> pollFirstFromAnyAsync(Duration duration, int count, String... queueNames);
+
     /**
      * Removes and returns the head element or {@code null} if this sorted set is empty.
      * <p>
