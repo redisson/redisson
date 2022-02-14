@@ -161,7 +161,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         List<Object> params = new ArrayList<>();
         params.add(duration.getSeconds());
         params.add(queueNames.length + 1);
-        params.add(getName());
+        params.add(getRawName());
         params.addAll(Arrays.asList(queueNames));
         params.add("MIN");
         params.add("COUNT");
@@ -178,7 +178,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     public RFuture<List<V>> pollFirstFromAnyAsync(int count, String... queueNames) {
         List<Object> params = new ArrayList<>();
         params.add(queueNames.length + 1);
-        params.add(getName());
+        params.add(getRawName());
         params.addAll(Arrays.asList(queueNames));
         params.add("MIN");
         params.add("COUNT");
@@ -206,7 +206,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         List<Object> params = new ArrayList<>();
         params.add(duration.getSeconds());
         params.add(queueNames.length + 1);
-        params.add(getName());
+        params.add(getRawName());
         params.addAll(Arrays.asList(queueNames));
         params.add("MAX");
         params.add("COUNT");
@@ -223,7 +223,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     public RFuture<List<V>> pollLastFromAnyAsync(int count, String... queueNames) {
         List<Object> params = new ArrayList<>();
         params.add(queueNames.length + 1);
-        params.add(getName());
+        params.add(getRawName());
         params.addAll(Arrays.asList(queueNames));
         params.add("MAX");
         params.add("COUNT");
