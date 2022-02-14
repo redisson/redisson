@@ -98,6 +98,11 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
         List<Integer> elements = queue1.pollFirstFromAny(Duration.ofSeconds(4), 2, "queue:pollany1", "queue:pollany2");
         assertThat(elements).containsExactly(1, 2);
+        assertThat(queue1.size()).isEqualTo(1);
+
+        List<Integer> elements2 = queue1.pollFirstFromAny(2, "queue:pollany1", "queue:pollany2");
+        assertThat(elements2).containsExactly(3);
+        assertThat(elements2.size()).isEqualTo(1);
     }
 
     @Test
@@ -119,6 +124,11 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
         List<Integer> elements = queue1.pollLastFromAny(Duration.ofSeconds(4), 2, "queue:pollany1", "queue:pollany2");
         assertThat(elements).containsExactly(3, 2);
+        assertThat(queue1.size()).isEqualTo(1);
+
+        List<Integer> elements2 = queue1.pollLastFromAny(2, "queue:pollany1", "queue:pollany2");
+        assertThat(elements2).containsExactly(1);
+        assertThat(elements2.size()).isEqualTo(1);
     }
 
     @Test

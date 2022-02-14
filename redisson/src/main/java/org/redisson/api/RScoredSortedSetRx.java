@@ -68,6 +68,18 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
     Single<List<V>> pollLastFromAny(Duration duration, int count, String... queueNames);
 
     /**
+     * Removes and returns first available tail elements
+     * of <b>any</b> sorted set <b>including</b> this one.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param count elements amount
+     * @param queueNames name of queues
+     * @return the tail elements
+     */
+    Single<List<V>> pollLastFromAny(int count, String... queueNames);
+
+    /**
      * Removes and returns first available head element of <b>any</b> sorted set,
      * waiting up to the specified wait time if necessary for an element to become available
      * in any of defined sorted sets <b>including</b> this one.
@@ -97,6 +109,18 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      * @return the head elements
      */
     Single<List<V>> pollFirstFromAny(Duration duration, int count, String... queueNames);
+
+    /**
+     * Removes and returns first available head elements
+     * of <b>any</b> sorted set <b>including</b> this one.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param count elements amount
+     * @param queueNames name of queues
+     * @return the head elements
+     */
+    Single<List<V>> pollFirstFromAny(int count, String... queueNames);
 
     /**
      * Removes and returns the head element or {@code null} if this sorted set is empty.

@@ -113,6 +113,19 @@ public interface RedisCommands {
     RedisCommand<Integer> ZRANGESTORE = new RedisCommand<>("ZRANGESTORE", new IntegerReplayConvertor());
     RedisCommand<List<Object>> ZPOPMIN = new RedisCommand<List<Object>>("ZPOPMIN", new ObjectListReplayDecoder<Object>());
     RedisCommand<List<Object>> ZPOPMAX = new RedisCommand<List<Object>>("ZPOPMAX", new ObjectListReplayDecoder<Object>());
+    RedisCommand<List<Object>> ZMPOP = new RedisCommand<>("ZMPOP", new ListMultiDecoder2(
+            new ObjectDecoder(StringCodec.INSTANCE.getValueDecoder()) {
+                @Override
+                public Object decode(List parts, State state) {
+                    if (parts.isEmpty()) {
+                        return parts;
+                    }
+                    return parts.get(1);
+                }
+            },
+            new CodecDecoder(),
+            new SublistDecoder()));
+
     RedisStrictCommand<Integer> ZREMRANGEBYRANK = new RedisStrictCommand<Integer>("ZREMRANGEBYRANK", new IntegerReplayConvertor());
     RedisStrictCommand<Integer> ZREMRANGEBYSCORE = new RedisStrictCommand<Integer>("ZREMRANGEBYSCORE", new IntegerReplayConvertor());
     RedisStrictCommand<Integer> ZREMRANGEBYLEX = new RedisStrictCommand<Integer>("ZREMRANGEBYLEX", new IntegerReplayConvertor());
@@ -190,18 +203,7 @@ public interface RedisCommands {
     RedisCommand<Object> BRPOPLPUSH = new RedisCommand<Object>("BRPOPLPUSH");
     RedisCommand<List<Object>> BLPOP = new RedisCommand<List<Object>>("BLPOP", new ObjectListReplayDecoder<Object>());
     RedisCommand<List<Object>> BRPOP = new RedisCommand<List<Object>>("BRPOP", new ObjectListReplayDecoder<Object>());
-    RedisCommand<List<Object>> BZMPOP_SINGLE_LIST = new RedisCommand<>("BZMPOP", new ListMultiDecoder2(
-                                                                                            new ObjectDecoder(StringCodec.INSTANCE.getValueDecoder()) {
-                                                                                                @Override
-                                                                                                public Object decode(List parts, State state) {
-                                                                                                    if (parts.isEmpty()) {
-                                                                                                        return parts;
-                                                                                                    }
-                                                                                                    return parts.get(1);
-                                                                                                }
-                                                                                            },
-                                                                                            new CodecDecoder(),
-                                                                                            new SublistDecoder()));
+    RedisCommand<List<Object>> BZMPOP_SINGLE_LIST = new RedisCommand<>("BZMPOP", ZMPOP.getReplayMultiDecoder());
     RedisCommand<Object> BLPOP_VALUE = new RedisCommand<Object>("BLPOP", new ListObjectDecoder<Object>(1));
     RedisCommand<Object> BLMOVE = new RedisCommand<Object>("BLMOVE");
     RedisCommand<Object> BRPOP_VALUE = new RedisCommand<Object>("BRPOP", new ListObjectDecoder<Object>(1));

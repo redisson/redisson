@@ -170,6 +170,23 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public List<V> pollFirstFromAny(int count, String... queueNames) {
+        return get(pollFirstFromAnyAsync(count, queueNames));
+    }
+
+    @Override
+    public RFuture<List<V>> pollFirstFromAnyAsync(int count, String... queueNames) {
+        List<Object> params = new ArrayList<>();
+        params.add(queueNames.length + 1);
+        params.add(getName());
+        params.addAll(Arrays.asList(queueNames));
+        params.add("MIN");
+        params.add("COUNT");
+        params.add(count);
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZMPOP, params.toArray());
+    }
+
+    @Override
     public V pollLastFromAny(long timeout, TimeUnit unit, String... queueNames) {
         return get(pollLastFromAnyAsync(timeout, unit, queueNames));
     }
@@ -195,6 +212,23 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         params.add("COUNT");
         params.add(count);
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.BZMPOP_SINGLE_LIST, params.toArray());
+    }
+
+    @Override
+    public List<V> pollLastFromAny(int count, String... queueNames) {
+        return get(pollFirstFromAnyAsync(count, queueNames));
+    }
+
+    @Override
+    public RFuture<List<V>> pollLastFromAnyAsync(int count, String... queueNames) {
+        List<Object> params = new ArrayList<>();
+        params.add(queueNames.length + 1);
+        params.add(getName());
+        params.addAll(Arrays.asList(queueNames));
+        params.add("MAX");
+        params.add("COUNT");
+        params.add(count);
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZMPOP, params.toArray());
     }
 
     @Override

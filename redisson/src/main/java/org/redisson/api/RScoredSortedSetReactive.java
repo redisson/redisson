@@ -67,6 +67,18 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
     Mono<List<V>> pollLastFromAny(Duration duration, int count, String... queueNames);
 
     /**
+     * Removes and returns first available tail elements
+     * of <b>any</b> sorted set <b>including</b> this one.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param count elements amount
+     * @param queueNames name of queues
+     * @return the tail elements
+     */
+    Mono<List<V>> pollLastFromAny(int count, String... queueNames);
+
+    /**
      * Removes and returns first available head element of <b>any</b> sorted set,
      * waiting up to the specified wait time if necessary for an element to become available
      * in any of defined sorted sets <b>including</b> this one.
@@ -96,6 +108,18 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      * @return the head elements
      */
     Mono<List<V>> pollFirstFromAny(Duration duration, int count, String... queueNames);
+
+    /**
+     * Removes and returns first available head elements
+     * of <b>any</b> sorted set <b>including</b> this one.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param count elements amount
+     * @param queueNames name of queues
+     * @return the head elements
+     */
+    Mono<List<V>> pollFirstFromAny(int count, String... queueNames);
 
     /**
      * Removes and returns the head element or {@code null} if this sorted set is empty.

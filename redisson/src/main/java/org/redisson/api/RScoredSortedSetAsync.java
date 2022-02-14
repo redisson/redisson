@@ -64,6 +64,18 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<List<V>> pollLastFromAnyAsync(Duration duration, int count, String... queueNames);
 
     /**
+     * Removes and returns first available tail elements
+     * of <b>any</b> sorted set <b>including</b> this one.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param count elements amount
+     * @param queueNames name of queues
+     * @return the tail elements
+     */
+    RFuture<List<V>> pollLastFromAnyAsync(int count, String... queueNames);
+
+    /**
      * Removes and returns first available head element of <b>any</b> sorted set,
      * waiting up to the specified wait time if necessary for an element to become available
      * in any of defined sorted sets <b>including</b> this one.
@@ -93,6 +105,18 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @return the head elements
      */
     RFuture<List<V>> pollFirstFromAnyAsync(Duration duration, int count, String... queueNames);
+
+    /**
+     * Removes and returns first available head elements
+     * of <b>any</b> sorted set <b>including</b> this one.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param count elements amount
+     * @param queueNames name of queues
+     * @return the head elements
+     */
+    RFuture<List<V>> pollFirstFromAnyAsync(int count, String... queueNames);
 
     /**
      * Removes and returns the head element or {@code null} if this sorted set is empty.
