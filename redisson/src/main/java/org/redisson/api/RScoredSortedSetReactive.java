@@ -20,6 +20,7 @@ import org.redisson.client.protocol.ScoredEntry;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -83,6 +84,16 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
     Mono<V> pollFirst(long timeout, TimeUnit unit);
 
     /**
+     * Removes and returns the head elements.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @return the head elements
+     */
+    Mono<List<V>> pollFirst(Duration duration, int count);
+
+    /**
      * Removes and returns the tail element or {@code null} if this sorted set is empty.
      * <p>
      * Requires <b>Redis 5.0.0 and higher.</b>
@@ -94,7 +105,17 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      * @return the tail element or {@code null} if this sorted set is empty
      */
     Mono<V> pollLast(long timeout, TimeUnit unit);
-    
+
+    /**
+     * Removes and returns the tail elements.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @return the tail elements
+     */
+    Mono<List<V>> pollLast(Duration duration, int count);
+
     /**
      * Removes and returns the head elements of this sorted set.
      *

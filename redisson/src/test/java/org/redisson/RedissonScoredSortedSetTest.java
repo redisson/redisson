@@ -11,6 +11,7 @@ import org.redisson.client.protocol.ScoredEntry;
 import org.redisson.config.Config;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -587,7 +588,49 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         assertThat(set.pollFirst(1, TimeUnit.SECONDS)).isEqualTo("a");
         assertThat(set).containsExactly("b", "c");
     }
-    
+
+    @Test
+    public void testPollFirstTimeoutCount() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("7.0.0") > 0);
+
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        assertThat(set.pollFirst(1, TimeUnit.SECONDS)).isNull();
+
+        set.add(0.1, "a");
+        set.add(0.2, "b");
+        set.add(0.3, "c");
+        set.add(0.4, "d");
+        set.add(0.5, "e");
+        set.add(0.6, "f");
+
+        assertThat(set.pollFirst(Duration.ofSeconds(2), 2)).containsExactly("a", "b");
+        assertThat(set).containsExactly("c", "d", "e", "f");
+
+        RScoredSortedSet<String> set2 = redisson.getScoredSortedSet("simple2");
+        assertThat(set2.pollFirst(Duration.ofSeconds(1), 2)).isEmpty();
+    }
+
+    @Test
+    public void testPollLastTimeoutCount() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("7.0.0") > 0);
+
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        assertThat(set.pollFirst(1, TimeUnit.SECONDS)).isNull();
+
+        set.add(0.1, "a");
+        set.add(0.2, "b");
+        set.add(0.3, "c");
+        set.add(0.4, "d");
+        set.add(0.5, "e");
+        set.add(0.6, "f");
+
+        assertThat(set.pollLast(Duration.ofSeconds(2), 2)).containsExactly("f", "e");
+        assertThat(set).containsExactly("a", "b", "c", "d");
+
+        RScoredSortedSet<String> set2 = redisson.getScoredSortedSet("simple2");
+        assertThat(set2.pollLast(Duration.ofSeconds(1), 2)).isEmpty();
+    }
+
     @Test
     public void testPollFistAmount() {
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");

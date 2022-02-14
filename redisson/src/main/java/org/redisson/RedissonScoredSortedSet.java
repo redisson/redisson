@@ -30,6 +30,7 @@ import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.RedissonPromise;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
@@ -168,6 +169,28 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     @Override
     public RFuture<V> pollLastAsync(long timeout, TimeUnit unit) {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.BZPOPMAX_VALUE, getRawName(), toSeconds(timeout, unit));
+    }
+
+    @Override
+    public List<V> pollFirst(Duration duration, int count) {
+        return get(pollFirstAsync(duration, count));
+    }
+
+    @Override
+    public RFuture<List<V>> pollFirstAsync(Duration duration, int count) {
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.BZMPOP_SINGLE_LIST,
+                                    duration.getSeconds(), 1, getRawName(), "MIN", "COUNT", count);
+    }
+
+    @Override
+    public List<V> pollLast(Duration duration, int count) {
+        return get(pollLastAsync(duration, count));
+    }
+
+    @Override
+    public RFuture<List<V>> pollLastAsync(Duration duration, int count) {
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.BZMPOP_SINGLE_LIST,
+                duration.getSeconds(), 1, getRawName(), "MAX", "COUNT", count);
     }
 
     @Override

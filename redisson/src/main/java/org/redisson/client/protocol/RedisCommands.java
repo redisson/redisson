@@ -20,6 +20,7 @@ import org.redisson.api.RType;
 import org.redisson.api.StreamInfo;
 import org.redisson.api.StreamMessageId;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.handler.State;
 import org.redisson.client.protocol.convertor.*;
 import org.redisson.client.protocol.decoder.*;
 import org.redisson.client.protocol.pubsub.PubSubStatusDecoder;
@@ -189,6 +190,18 @@ public interface RedisCommands {
     RedisCommand<Object> BRPOPLPUSH = new RedisCommand<Object>("BRPOPLPUSH");
     RedisCommand<List<Object>> BLPOP = new RedisCommand<List<Object>>("BLPOP", new ObjectListReplayDecoder<Object>());
     RedisCommand<List<Object>> BRPOP = new RedisCommand<List<Object>>("BRPOP", new ObjectListReplayDecoder<Object>());
+    RedisCommand<List<Object>> BZMPOP_SINGLE_LIST = new RedisCommand<>("BZMPOP", new ListMultiDecoder2(
+                                                                                            new ObjectDecoder(StringCodec.INSTANCE.getValueDecoder()) {
+                                                                                                @Override
+                                                                                                public Object decode(List parts, State state) {
+                                                                                                    if (parts.isEmpty()) {
+                                                                                                        return parts;
+                                                                                                    }
+                                                                                                    return parts.get(1);
+                                                                                                }
+                                                                                            },
+                                                                                            new CodecDecoder(),
+                                                                                            new SublistDecoder()));
     RedisCommand<Object> BLPOP_VALUE = new RedisCommand<Object>("BLPOP", new ListObjectDecoder<Object>(1));
     RedisCommand<Object> BLMOVE = new RedisCommand<Object>("BLMOVE");
     RedisCommand<Object> BRPOP_VALUE = new RedisCommand<Object>("BRPOP", new ListObjectDecoder<Object>(1));
@@ -197,7 +210,7 @@ public interface RedisCommands {
 
     Set<String> BLOCKING_COMMAND_NAMES = new HashSet<String>(
             Arrays.asList(BRPOPLPUSH.getName(), BZPOPMIN_VALUE.getName(), BZPOPMAX_VALUE.getName(),
-                    BLPOP.getName(), BRPOP.getName(), BLMOVE.getName()));
+                    BLPOP.getName(), BRPOP.getName(), BLMOVE.getName(), BZMPOP_SINGLE_LIST.getName()));
 
     RedisCommand<Boolean> PFADD = new RedisCommand<Boolean>("PFADD", new BooleanReplayConvertor());
     RedisStrictCommand<Long> PFCOUNT = new RedisStrictCommand<Long>("PFCOUNT");

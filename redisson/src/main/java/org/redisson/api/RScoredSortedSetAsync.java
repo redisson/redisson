@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -80,6 +81,17 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<V> pollFirstAsync(long timeout, TimeUnit unit);
 
     /**
+     * Removes and returns the head elements.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count elements amount
+     * @return the head elements
+     */
+    RFuture<List<V>> pollFirstAsync(Duration duration, int count);
+
+    /**
      * Removes and returns the head element waiting if necessary for an element to become available.
      *
      * @return the head element
@@ -105,7 +117,18 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @return the tail element or {@code null} if this sorted set is empty
      */
     RFuture<V> pollLastAsync(long timeout, TimeUnit unit);
-    
+
+    /**
+     * Removes and returns the tail elements.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count elements amount
+     * @return the tail elements
+     */
+    RFuture<List<V>> pollLastAsync(Duration duration, int count);
+
     /**
      * Removes and returns the head elements of this sorted set.
      *

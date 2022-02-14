@@ -21,6 +21,7 @@ import io.reactivex.rxjava3.core.Single;
 import org.redisson.api.RScoredSortedSet.Aggregate;
 import org.redisson.client.protocol.ScoredEntry;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -84,6 +85,17 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
     Maybe<V> pollFirst(long timeout, TimeUnit unit);
 
     /**
+     * Removes and returns the head elements.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count elements amount
+     * @return the head element
+     */
+    Single<List<V>> pollFirst(Duration duration, int count);
+
+    /**
      * Removes and returns the tail element or {@code null} if this sorted set is empty.
      * <p>
      * Requires <b>Redis 5.0.0 and higher.</b>
@@ -95,7 +107,17 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      * @return the tail element or {@code null} if this sorted set is empty
      */
     Maybe<V> pollLast(long timeout, TimeUnit unit);
-    
+
+    /**
+     * Removes and returns the tail elements.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @return the tail elements
+     */
+    Single<List<V>> pollLast(Duration duration, int count);
+
     /**
      * Removes and returns the head elements of this sorted set.
      *

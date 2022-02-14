@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -124,6 +125,8 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
 
     /**
      * Removes and returns the head element or {@code null} if this sorted set is empty.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
      *
      * @param timeout how long to wait before giving up, in units of
      *        {@code unit}
@@ -135,7 +138,19 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     V pollFirst(long timeout, TimeUnit unit);
 
     /**
+     * Removes and returns the head elements.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @return the head elements
+     */
+    List<V> pollFirst(Duration duration, int count);
+
+    /**
      * Removes and returns the tail element or {@code null} if this sorted set is empty.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
      *
      * @param timeout how long to wait before giving up, in units of
      *        {@code unit}
@@ -144,7 +159,17 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * @return the tail element or {@code null} if this sorted set is empty
      */
     V pollLast(long timeout, TimeUnit unit);
-    
+
+    /**
+     * Removes and returns the tail elements.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @return the tail elements
+     */
+    List<V> pollLast(Duration duration, int count);
+
     /**
      * Removes and returns the head elements of this sorted set.
      *
