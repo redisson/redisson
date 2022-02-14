@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -116,7 +118,36 @@ public interface RBucket<V> extends RExpirable, RBucketAsync<V> {
      * @return previous value
      */
     V getAndSet(V value, long timeToLive, TimeUnit timeUnit);
-    
+
+    /**
+     * Retrieves current element in the holder and sets an expiration duration for it.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param duration of object time to live interval
+     * @return element
+     */
+    V getAndExpire(Duration duration);
+
+    /**
+     * Retrieves current element in the holder and sets an expiration date for it.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param time of exact object expiration moment
+     * @return element
+     */
+    V getAndExpire(Instant time);
+
+    /**
+     * Retrieves current element in the holder and clears expiration date set before.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @return element
+     */
+    V getAndClearExpire();
+
     /**
      * Stores element into the holder. 
      * 

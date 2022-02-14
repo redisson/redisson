@@ -26,6 +26,8 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -96,6 +98,36 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         }
 
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.GETSET, getRawName(), encode(newValue));
+    }
+
+    @Override
+    public V getAndExpire(Instant time) {
+        return get(getAndExpireAsync(time));
+    }
+
+    @Override
+    public RFuture<V> getAndExpireAsync(Instant time) {
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.GETEX, getRawName(), "PXAT", time.toEpochMilli());
+    }
+
+    @Override
+    public V getAndExpire(Duration duration) {
+        return get(getAndExpireAsync(duration));
+    }
+
+    @Override
+    public RFuture<V> getAndExpireAsync(Duration duration) {
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.GETEX, getRawName(), "PX", duration.toMillis());
+    }
+
+    @Override
+    public V getAndClearExpire() {
+        return get(getAndClearExpireAsync());
+    }
+
+    @Override
+    public RFuture<V> getAndClearExpireAsync() {
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.GETEX, getRawName(), "PERSIST");
     }
 
     @Override

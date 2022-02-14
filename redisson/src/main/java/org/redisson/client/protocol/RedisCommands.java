@@ -338,6 +338,7 @@ public interface RedisCommands {
     RedisStrictCommand<Void> RESTORE = new RedisStrictCommand<Void>("RESTORE", new VoidReplayConvertor());
     
     RedisCommand<Object> GET = new RedisCommand<Object>("GET");
+    RedisCommand<Object> GETEX = new RedisCommand<Object>("GETEX");
     RedisCommand<Object> GETRANGE = new RedisCommand<Object>("GETRANGE");
     RedisCommand<Long> SETRANGE = new RedisCommand<Long>("SETRANGE");
     RedisStrictCommand<Long> GET_LONG = new RedisStrictCommand<Long>("GET", new LongReplayConvertor());

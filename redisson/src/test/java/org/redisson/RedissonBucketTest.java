@@ -1,14 +1,5 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.IOException;
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -22,7 +13,43 @@ import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.SetObjectListener;
 import org.redisson.config.Config;
 
+import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class RedissonBucketTest extends BaseTest {
+
+    @Test
+    public void testGetAndClearExpire() {
+        RBucket<Integer> al = redisson.getBucket("test");
+        al.set(1, 1, TimeUnit.SECONDS);
+        assertThat(al.getAndClearExpire()).isEqualTo(1);
+        assertThat(al.remainTimeToLive()).isEqualTo(-1);
+    }
+
+    @Test
+    public void testGetAndExpire() throws InterruptedException {
+        RBucket<Integer> al = redisson.getBucket("test");
+        al.set(1);
+        assertThat(al.getAndExpire(Duration.ofSeconds(1))).isEqualTo(1);
+        Thread.sleep(500);
+        assertThat(al.get()).isEqualTo(1);
+        Thread.sleep(600);
+        assertThat(al.get()).isNull();
+
+        al.set(2);
+        assertThat(al.getAndExpire(Instant.now().plusSeconds(1))).isEqualTo(2);
+        Thread.sleep(500);
+        assertThat(al.get()).isEqualTo(2);
+        Thread.sleep(600);
+        assertThat(al.get()).isNull();
+    }
 
     @Test
     public void testExpireTime() {
