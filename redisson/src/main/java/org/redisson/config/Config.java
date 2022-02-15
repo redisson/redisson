@@ -70,6 +70,8 @@ public class Config {
 
     private long lockWatchdogTimeout = 30 * 1000;
 
+    private boolean checkLockSyncedSlaves = true;
+
     private long reliableTopicWatchdogTimeout = TimeUnit.MINUTES.toMillis(10);
 
     private boolean keepPubSubOrder = true;
@@ -110,6 +112,7 @@ public class Config {
         setUseScriptCache(oldConf.isUseScriptCache());
         setKeepPubSubOrder(oldConf.isKeepPubSubOrder());
         setLockWatchdogTimeout(oldConf.getLockWatchdogTimeout());
+        setCheckLockSyncedSlaves(oldConf.isCheckLockSyncedSlaves());
         setNettyThreads(oldConf.getNettyThreads());
         setThreads(oldConf.getThreads());
         setCodec(oldConf.getCodec());
@@ -503,15 +506,15 @@ public class Config {
     }
 
     /**
-     * This parameter is only used if lock has been acquired without leaseTimeout parameter definition. 
-     * Lock expires after <code>lockWatchdogTimeout</code> if watchdog 
+     * This parameter is only used if lock has been acquired without leaseTimeout parameter definition.
+     * Lock expires after <code>lockWatchdogTimeout</code> if watchdog
      * didn't extend it to next <code>lockWatchdogTimeout</code> time interval.
-     * <p>  
-     * This prevents against infinity locked locks due to Redisson client crush or 
+     * <p>
+     * This prevents against infinity locked locks due to Redisson client crush or
      * any other reason when lock can't be released in proper way.
      * <p>
      * Default is 30000 milliseconds
-     * 
+     *
      * @param lockWatchdogTimeout timeout in milliseconds
      * @return config
      */
@@ -522,6 +525,25 @@ public class Config {
 
     public long getLockWatchdogTimeout() {
         return lockWatchdogTimeout;
+    }
+
+    /**
+     * Defines whether to check synchronized slaves amount
+     * with actual slaves amount after lock acquisition.
+     * <p>
+     * Default is <code>true</code>.
+     *
+     * @param checkLockSyncedSlaves <code>true</code> if check required,
+     *                             <code>false</code> otherwise.
+     * @return config
+     */
+    public Config setCheckLockSyncedSlaves(boolean checkLockSyncedSlaves) {
+        this.checkLockSyncedSlaves = checkLockSyncedSlaves;
+        return this;
+    }
+
+    public boolean isCheckLockSyncedSlaves() {
+        return checkLockSyncedSlaves;
     }
 
     /**

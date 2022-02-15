@@ -223,9 +223,13 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
 
         RFuture<BatchResult<?>> future = executorService.executeAsync();
         CompletionStage<T> f = future.handle((res, ex) -> {
-            if (ex == null && res.getSyncedSlaves() != availableSlaves) {
-                throw new CompletionException(new IllegalStateException("Only "
-                                                        + res.getSyncedSlaves() + " of " + availableSlaves + " slaves were synced"));
+            if (ex != null) {
+                throw new CompletionException(ex);
+            }
+            if (commandExecutor.getConnectionManager().getCfg().isCheckLockSyncedSlaves()
+                    && res.getSyncedSlaves() < availableSlaves) {
+                throw new CompletionException(
+                        new IllegalStateException("Only " + res.getSyncedSlaves() + " of " + availableSlaves + " slaves were synced"));
             }
 
             return result.getNow();
