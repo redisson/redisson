@@ -61,10 +61,18 @@ public interface RExpirableAsync extends RObjectAsync {
      * Set an expire date for object. When expire date comes
      * the key will automatically be deleted.
      *
-     * @param instant - expire date
+     * @param time - expire date
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
-    RFuture<Boolean> expireAsync(Instant instant);
+    RFuture<Boolean> expireAsync(Instant time);
+
+    RFuture<Boolean> expireIfSetAsync(Instant time);
+
+    RFuture<Boolean> expireIfNotSetAsync(Instant time);
+
+    RFuture<Boolean> expireIfGreaterAsync(Instant time);
+
+    RFuture<Boolean> expireIfLessAsync(Instant time);
 
     /**
      * Set a timeout for object. After the timeout has expired,
@@ -74,6 +82,14 @@ public interface RExpirableAsync extends RObjectAsync {
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
     RFuture<Boolean> expireAsync(Duration duration);
+
+    RFuture<Boolean> expireIfSetAsync(Duration duration);
+
+    RFuture<Boolean> expireIfNotSetAsync(Duration duration);
+
+    RFuture<Boolean> expireIfGreaterAsync(Duration duration);
+
+    RFuture<Boolean> expireIfLessAsync(Duration duration);
 
     /**
      * Clear an expire timeout or expire date for object in async mode.

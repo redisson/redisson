@@ -84,40 +84,56 @@ public class RedissonMultimapCache<K> {
                     + "n = n + redis.call('del', unpack(keys, i, math.min(i+4999, table.getn(keys)))) "
                 + "end; "
                 + "return n;",
-                Arrays.<Object>asList(((RedissonObject) object).getRawName(), timeoutSetName),
+                Arrays.asList(((RedissonObject) object).getRawName(), timeoutSetName),
                 prefix);
     }
 
-    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
+    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param) {
         return commandExecutor.evalWriteAsync(((RedissonObject) object).getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "redis.call('zadd', KEYS[2], 92233720368547758, 'redisson__expiretag'); " +
                 "local entries = redis.call('hgetall', KEYS[1]); " +
                 "for i, v in ipairs(entries) do " +
                     "if i % 2 == 0 then " +
-                        "local name = ARGV[2] .. v; " + 
-                        "redis.call('pexpire', name, ARGV[1]); " +
+                        "local name = ARGV[2] .. v; "
+                      + "if ARGV[3] ~= '' then "
+                          + "redis.call('pexpire', name, ARGV[1], ARGV[3]); "
+                      + "else "
+                          + "redis.call('pexpire', name, ARGV[1]); "
+                      + "end; " +
                     "end;" +
                 "end; " +
+                "if ARGV[3] ~= '' then "
+                    + "redis.call('pexpire', KEYS[2], ARGV[1], ARGV[3]); "
+                    + "return redis.call('pexpire', KEYS[1], ARGV[1], ARGV[3]); "
+              + "end; " +
                 "redis.call('pexpire', KEYS[2], ARGV[1]); " +
                 "return redis.call('pexpire', KEYS[1], ARGV[1]); ",
-                Arrays.<Object>asList(((RedissonObject) object).getRawName(), timeoutSetName),
-                timeUnit.toMillis(timeToLive), prefix);
+                Arrays.asList(((RedissonObject) object).getRawName(), timeoutSetName),
+                timeUnit.toMillis(timeToLive), prefix, param);
     }
 
-    public RFuture<Boolean> expireAtAsync(long timestamp) {
+    public RFuture<Boolean> expireAtAsync(long timestamp, String param) {
         return commandExecutor.evalWriteAsync(((RedissonObject) object).getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "redis.call('zadd', KEYS[2], 92233720368547758, 'redisson__expiretag');" +
                 "local entries = redis.call('hgetall', KEYS[1]); " +
                 "for i, v in ipairs(entries) do " +
                     "if i % 2 == 0 then " +
-                        "local name = ARGV[2] .. v; " + 
-                        "redis.call('pexpireat', name, ARGV[1]); " +
+                        "local name = ARGV[2] .. v; "
+                      + "if ARGV[3] ~= '' then "
+                          + "redis.call('pexpireat', name, ARGV[1], ARGV[3]); "
+                      + "else "
+                          + "redis.call('pexpireat', name, ARGV[1]); "
+                      + "end; " +
                     "end;" +
                 "end; " +
+                "if ARGV[3] ~= '' then "
+                    + "redis.call('pexpireat', KEYS[2], ARGV[1], ARGV[3]); "
+                    + "return redis.call('pexpireat', KEYS[1], ARGV[1], ARGV[3]); "
+              + "end; " +
                 "redis.call('pexpireat', KEYS[2], ARGV[1]); " +
                 "return redis.call('pexpireat', KEYS[1], ARGV[1]); ",
                 Arrays.<Object>asList(((RedissonObject) object).getRawName(), timeoutSetName),
-                timestamp, prefix);
+                timestamp, prefix, param);
     }
 
     public RFuture<Boolean> clearExpireAsync() {

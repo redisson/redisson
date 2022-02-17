@@ -328,33 +328,47 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     }
 
     @Override
-    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
+    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local entries = redis.call('hgetall', KEYS[1]); " +
                 "for i, v in ipairs(entries) do " +
                     "if i % 2 == 0 then " +
-                        "local name = ARGV[2] .. v; " + 
-                        "redis.call('pexpire', name, ARGV[1]); " +
-                    "end;" +
-                "end; " +
-                "return redis.call('pexpire', KEYS[1], ARGV[1]); ",
-                Arrays.<Object>asList(getRawName()),
-                timeUnit.toMillis(timeToLive), prefix);
+                        "local name = ARGV[2] .. v; "
+                      + "if ARGV[3] ~= '' then "
+                          + "redis.call('pexpire', name, ARGV[1], ARGV[3]); "
+                      + "else "
+                          + "redis.call('pexpire', name, ARGV[1]); "
+                      + "end; "
+                  + "end;" +
+                "end; "
+              + "if ARGV[3] ~= '' then "
+                  + "return redis.call('pexpire', KEYS[1], ARGV[1], ARGV[3]); "
+              + "end; "
+              + "return redis.call('pexpire', KEYS[1], ARGV[1]); ",
+                Arrays.asList(getRawName()),
+                timeUnit.toMillis(timeToLive), prefix, param);
     }
 
     @Override
-    protected RFuture<Boolean> expireAtAsync(long timestamp, String... keys) {
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                "local entries = redis.call('hgetall', KEYS[1]); " +
+          "local entries = redis.call('hgetall', KEYS[1]); " +
                 "for i, v in ipairs(entries) do " +
                     "if i % 2 == 0 then " +
-                        "local name = ARGV[2] .. v; " + 
-                        "redis.call('pexpireat', name, ARGV[1]); " +
-                    "end;" +
-                "end; " +
-                "return redis.call('pexpireat', KEYS[1], ARGV[1]); ",
-                Arrays.<Object>asList(getRawName()),
-                timestamp, prefix);
+                        "local name = ARGV[2] .. v; "
+                      + "if ARGV[3] ~= '' then "
+                          + "redis.call('pexpireat', name, ARGV[1], ARGV[3]); "
+                      + "else "
+                          + "redis.call('pexpireat', name, ARGV[1]); "
+                      + "end; "
+                  + "end;"
+              + "end; "
+              + "if ARGV[3] ~= '' then "
+                  + "return redis.call('pexpireat', KEYS[1], ARGV[1], ARGV[3]); "
+              + "end; "
+              + "return redis.call('pexpireat', KEYS[1], ARGV[1]); ",
+                Arrays.asList(getRawName()),
+                timestamp, prefix, param);
     }
 
     @Override

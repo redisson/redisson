@@ -329,13 +329,14 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
     }
 
     @Override
-    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
-        return expireAsync(timeToLive, timeUnit, getRawName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName());
+    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
+        return super.expireAsync(timeToLive, timeUnit, param,
+                                    getRawName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName());
     }
 
     @Override
-    protected RFuture<Boolean> expireAtAsync(long timestamp, String... keys) {
-        return super.expireAtAsync(timestamp, getRawName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName());
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
+        return super.expireAtAsync(timestamp, param, getRawName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName());
     }
 
     @Override

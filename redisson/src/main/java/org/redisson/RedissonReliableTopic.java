@@ -276,13 +276,14 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
     }
 
     @Override
-    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
-        return expireAsync(timeToLive, timeUnit, getRawName(), getSubscribersName(), getMapName(), getCounter(), getTimeout());
+    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
+        return super.expireAsync(timeToLive, timeUnit, param,
+                                    getRawName(), getSubscribersName(), getMapName(), getCounter(), getTimeout());
     }
 
     @Override
-    protected RFuture<Boolean> expireAtAsync(long timestamp, String... keys) {
-        return super.expireAtAsync(timestamp, getRawName(), getSubscribersName(), getMapName(), getCounter(), getTimeout());
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
+        return super.expireAtAsync(timestamp, param, getRawName(), getSubscribersName(), getMapName(), getCounter(), getTimeout());
     }
 
     @Override

@@ -15,24 +15,7 @@
  */
 package org.redisson;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
-
-import org.redisson.api.RCountDownLatch;
-import org.redisson.api.RFuture;
-import org.redisson.api.RLock;
-import org.redisson.api.RPermitExpirableSemaphore;
-import org.redisson.api.RReadWriteLock;
-import org.redisson.api.RSemaphore;
-import org.redisson.api.RSet;
-import org.redisson.api.SortOrder;
+import org.redisson.api.*;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
@@ -41,6 +24,10 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.*;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.iterator.RedissonBaseIterator;
+
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 /**
  * Set based Multimap Cache values holder
@@ -91,17 +78,12 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     }
 
     @Override
-    public RFuture<Boolean> expireAsync(Instant instant) {
-        throw new UnsupportedOperationException("This operation is not supported for SetMultimap values");
-    }
-
-    @Override
-    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
+    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
         throw new UnsupportedOperationException("This operation is not supported for SetMultimap values");
     }
     
     @Override
-    public RFuture<Boolean> expireAtAsync(long timestamp) {
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
         throw new UnsupportedOperationException("This operation is not supported for SetMultimap values");
     }
     

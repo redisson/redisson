@@ -15,17 +15,7 @@
  */
 package org.redisson;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-
+import io.netty.buffer.ByteBuf;
 import org.redisson.api.RFuture;
 import org.redisson.api.RSet;
 import org.redisson.api.RSetMultimap;
@@ -38,7 +28,9 @@ import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RedissonPromise;
 
-import io.netty.buffer.ByteBuf;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Nikita Koksharov
@@ -216,17 +208,12 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
             }
             
             @Override
-            public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
+            public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
                 throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
             }
 
             @Override
-            public RFuture<Boolean> expireAsync(Instant instant) {
-                throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
-            }
-
-            @Override
-            public RFuture<Boolean> expireAtAsync(long timestamp) {
+            protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
                 throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
             }
             

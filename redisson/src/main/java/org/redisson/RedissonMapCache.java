@@ -2393,39 +2393,59 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
+    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local maxSize = tonumber(redis.call('hget', KEYS[5], 'max-size')); " +
-                        "if maxSize ~= nil and maxSize ~= 0 then " +
-                        "    redis.call('pexpire', KEYS[5], ARGV[1]); " +
-                        "    redis.call('zadd', KEYS[4], 92233720368547758, 'redisson__expiretag'); " +
-                        "    redis.call('pexpire', KEYS[4], ARGV[1]); " +
-                        "end; " +
+                        "if maxSize ~= nil and maxSize ~= 0 then "
+                            + "redis.call('zadd', KEYS[4], 92233720368547758, 'redisson__expiretag'); "
+                            + "if ARGV[2] ~= '' then "
+                                + "redis.call('pexpire', KEYS[5], ARGV[1], ARGV[2]); "
+                                + "redis.call('pexpire', KEYS[4], ARGV[1], ARGV[2]); "
+                            + "else "
+                                + "redis.call('pexpire', KEYS[5], ARGV[1]); "
+                                + "redis.call('pexpire', KEYS[4], ARGV[1]); "
+                            + "end; "
+                      + "end; " +
                         "redis.call('zadd', KEYS[2], 92233720368547758, 'redisson__expiretag'); " +
-                        "redis.call('pexpire', KEYS[2], ARGV[1]); " +
                         "redis.call('zadd', KEYS[3], 92233720368547758, 'redisson__expiretag'); " +
-                        "redis.call('pexpire', KEYS[3], ARGV[1]); " +
-                        "return redis.call('pexpire', KEYS[1], ARGV[1]); ",
+                        "if ARGV[2] ~= '' then "
+                            + "redis.call('pexpire', KEYS[2], ARGV[1], ARGV[2]); "
+                            + "redis.call('pexpire', KEYS[3], ARGV[1], ARGV[2]); "
+                            + "return redis.call('pexpireat', KEYS[1], ARGV[1], ARGV[2]); "
+                       + "end; "
+                       + "redis.call('pexpire', KEYS[2], ARGV[1]); "
+                       + "redis.call('pexpire', KEYS[3], ARGV[1]); "
+                       + "return redis.call('pexpire', KEYS[1], ARGV[1]); ",
                 Arrays.<Object>asList(getRawName(), getTimeoutSetName(), getIdleSetName(), getLastAccessTimeSetName(), getOptionsName()),
-                timeUnit.toMillis(timeToLive));
+                timeUnit.toMillis(timeToLive), param);
     }
 
     @Override
-    protected RFuture<Boolean> expireAtAsync(long timestamp, String... keys) {
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                         "local maxSize = tonumber(redis.call('hget', KEYS[5], 'max-size')); " +
-                        "if maxSize ~= nil and maxSize ~= 0 then " +
-                        "    redis.call('pexpire', KEYS[5], ARGV[1]); " +
-                        "    redis.call('zadd', KEYS[4], 92233720368547758, 'redisson__expiretag'); " +
-                        "    redis.call('pexpire', KEYS[4], ARGV[1]); " +
-                        "end; " +
-                        "redis.call('zadd', KEYS[2], 92233720368547758, 'redisson__expiretag'); " +
-                        "redis.call('pexpireat', KEYS[2], ARGV[1]); " +
-                        "redis.call('zadd', KEYS[3], 92233720368547758, 'redisson__expiretag'); " +
-                        "redis.call('pexpire', KEYS[3], ARGV[1]); " +
-                        "return redis.call('pexpireat', KEYS[1], ARGV[1]); ",
-                Arrays.<Object>asList(getRawName(), getTimeoutSetName(), getIdleSetName(), getLastAccessTimeSetName(), getOptionsName()),
-                timestamp);
+                        "if maxSize ~= nil and maxSize ~= 0 then "
+                                + "redis.call('zadd', KEYS[4], 92233720368547758, 'redisson__expiretag'); "
+                                + "if ARGV[2] ~= '' then "
+                                    + "redis.call('pexpireat', KEYS[5], ARGV[1], ARGV[2]); "
+                                    + "redis.call('pexpireat', KEYS[4], ARGV[1], ARGV[2]); "
+                                + "else "
+                                    + "redis.call('pexpireat', KEYS[5], ARGV[1]); "
+                                    + "redis.call('pexpireat', KEYS[4], ARGV[1]); "
+                                + "end; "
+                       + "end; "
+                       + "redis.call('zadd', KEYS[2], 92233720368547758, 'redisson__expiretag'); "
+                       + "redis.call('zadd', KEYS[3], 92233720368547758, 'redisson__expiretag'); "
+                       + "if ARGV[2] ~= '' then "
+                            + "redis.call('pexpireat', KEYS[2], ARGV[1], ARGV[2]); "
+                            + "redis.call('pexpireat', KEYS[3], ARGV[1], ARGV[2]); "
+                            + "return redis.call('pexpireat', KEYS[1], ARGV[1], ARGV[2]); "
+                       + "end; "
+                       + "redis.call('pexpireat', KEYS[2], ARGV[1]); "
+                       + "redis.call('pexpireat', KEYS[3], ARGV[1]); "
+                       + "return redis.call('pexpireat', KEYS[1], ARGV[1]); ",
+                Arrays.asList(getRawName(), getTimeoutSetName(), getIdleSetName(), getLastAccessTimeSetName(), getOptionsName()),
+                timestamp, param);
     }
 
     @Override
