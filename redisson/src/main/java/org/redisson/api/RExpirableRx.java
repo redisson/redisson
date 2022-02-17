@@ -32,13 +32,13 @@ import io.reactivex.rxjava3.core.Single;
 public interface RExpirableRx extends RObjectRx {
 
     /**
-     * Set a timeout for object in  mode. After the timeout has expired,
-     * the key will automatically be deleted.
+     * Use {@link #expire(Duration)} instead
      *
      * @param timeToLive - timeout before object will be deleted
      * @param timeUnit - timeout time unit
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
+    @Deprecated
     Single<Boolean> expire(long timeToLive, TimeUnit timeUnit);
 
     /**
@@ -111,6 +111,15 @@ public interface RExpirableRx extends RObjectRx {
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
     Single<Boolean> expireIfLess(Instant time);
+
+    /**
+     * Sets a timeout for this object. After the timeout has expired,
+     * the key will automatically be deleted.
+     *
+     * @param duration timeout before object will be deleted
+     * @return <code>true</code> if the timeout was set and <code>false</code> if not
+     */
+    Single<Boolean> expire(Duration duration);
 
     /**
      * Sets a timeout for this object only if it has been already set.
