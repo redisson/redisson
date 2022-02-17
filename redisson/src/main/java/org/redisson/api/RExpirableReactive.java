@@ -42,7 +42,7 @@ public interface RExpirableReactive extends RObjectReactive {
     Mono<Boolean> expire(long timeToLive, TimeUnit timeUnit);
 
     /**
-     * Use {@link #expireAt(Instant)} instead
+     * Use {@link #expire(Instant)} instead
      *
      * @param timestamp - expire date
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
@@ -51,7 +51,7 @@ public interface RExpirableReactive extends RObjectReactive {
     Mono<Boolean> expireAt(Date timestamp);
 
     /**
-     * Use {@link #expireAt(Instant)} instead
+     * Use {@link #expire(Instant)} instead
      *
      * @param timestamp - expire date in milliseconds (Unix timestamp)
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
@@ -66,7 +66,7 @@ public interface RExpirableReactive extends RObjectReactive {
      * @param instant - expire date
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
-    Mono<Boolean> expireAt(Instant instant);
+    Mono<Boolean> expire(Instant instant);
 
     /**
      * Sets an expiration date for this object only if it has been already set.
