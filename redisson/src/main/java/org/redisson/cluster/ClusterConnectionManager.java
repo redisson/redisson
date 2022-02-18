@@ -664,7 +664,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 MasterSlaveEntry entry = nodeEntries.get(nodeId);
                 BitSet addedSlots = newPartition.copySlots();
                 addedSlots.andNot(currentPartition.slots());
-                currentPartition.addSlots(addedSlots);
 
                 addedSlots.stream().forEach(slot -> {
                     addEntry(slot, entry);
@@ -677,7 +676,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
                 BitSet removedSlots = currentPartition.copySlots();
                 removedSlots.andNot(newPartition.slots());
-                currentPartition.removeSlots(removedSlots);
 
                 removedSlots.stream().forEach(slot -> {
                     if (lastPartitions.remove(slot, currentPartition)) {
@@ -691,9 +689,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
                 if (!addedSlots.isEmpty() || !removedSlots.isEmpty()) {
                     // https://github.com/redisson/redisson/issues/3695, slotRanges not update when slots of node changed.
-                    Set<ClusterSlotRange> slotRanges = currentPartition.getSlotRanges();
-                    slotRanges.clear();
-                    slotRanges.addAll(newPartition.getSlotRanges());
+                    currentPartition.clear();
+                    currentPartition.addSlotRanges(newPartition.getSlotRanges());
                 }
                 break;
             }

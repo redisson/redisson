@@ -101,7 +101,12 @@ public class ClusterPartition {
     public Set<ClusterSlotRange> getSlotRanges() {
         return slotRanges;
     }
-    
+
+    public void clear() {
+        slotRanges.clear();
+        this.slots.clear();
+    }
+
     public Iterable<Integer> getSlots() {
         return slots.stream()::iterator;
     }
