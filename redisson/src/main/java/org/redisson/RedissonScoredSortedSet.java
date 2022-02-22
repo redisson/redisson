@@ -183,7 +183,42 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         params.add("MIN");
         params.add("COUNT");
         params.add(count);
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZMPOP_VALUES, params.toArray());
+    }
+
+    @Override
+    public Map<String, Map<V, Double>> pollFirstEntriesFromAny(int count, String... queueNames) {
+        return get(pollFirstEntriesFromAnyAsync(count, queueNames));
+    }
+
+    @Override
+    public RFuture<Map<String, Map<V, Double>>> pollFirstEntriesFromAnyAsync(int count, String... queueNames) {
+        List<Object> params = new ArrayList<>();
+        params.add(queueNames.length + 1);
+        params.add(getRawName());
+        params.addAll(Arrays.asList(queueNames));
+        params.add("MIN");
+        params.add("COUNT");
+        params.add(count);
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZMPOP, params.toArray());
+    }
+
+    @Override
+    public Map<String, Map<V, Double>> pollFirstEntriesFromAny(Duration duration, int count, String... queueNames) {
+        return get(pollFirstEntriesFromAnyAsync(duration, count, queueNames));
+    }
+
+    @Override
+    public RFuture<Map<String, Map<V, Double>>> pollFirstEntriesFromAnyAsync(Duration duration, int count, String... queueNames) {
+        List<Object> params = new ArrayList<>();
+        params.add(duration.getSeconds());
+        params.add(queueNames.length + 1);
+        params.add(getRawName());
+        params.addAll(Arrays.asList(queueNames));
+        params.add("MIN");
+        params.add("COUNT");
+        params.add(count);
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.BZMPOP, params.toArray());
     }
 
     @Override
@@ -228,7 +263,42 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         params.add("MAX");
         params.add("COUNT");
         params.add(count);
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZMPOP_VALUES, params.toArray());
+    }
+
+    @Override
+    public Map<String, Map<V, Double>> pollLastEntriesFromAny(int count, String... queueNames) {
+        return get(pollLastEntriesFromAnyAsync(count, queueNames));
+    }
+
+    @Override
+    public RFuture<Map<String, Map<V, Double>>> pollLastEntriesFromAnyAsync(int count, String... queueNames) {
+        List<Object> params = new ArrayList<>();
+        params.add(queueNames.length + 1);
+        params.add(getRawName());
+        params.addAll(Arrays.asList(queueNames));
+        params.add("MAX");
+        params.add("COUNT");
+        params.add(count);
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZMPOP, params.toArray());
+    }
+
+    @Override
+    public Map<String, Map<V, Double>> pollLastEntriesFromAny(Duration duration, int count, String... queueNames) {
+        return get(pollLastEntriesFromAnyAsync(duration, count, queueNames));
+    }
+
+    @Override
+    public RFuture<Map<String, Map<V, Double>>> pollLastEntriesFromAnyAsync(Duration duration, int count, String... queueNames) {
+        List<Object> params = new ArrayList<>();
+        params.add(duration.getSeconds());
+        params.add(queueNames.length + 1);
+        params.add(getRawName());
+        params.addAll(Arrays.asList(queueNames));
+        params.add("MAX");
+        params.add("COUNT");
+        params.add(count);
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.BZMPOP, params.toArray());
     }
 
     @Override

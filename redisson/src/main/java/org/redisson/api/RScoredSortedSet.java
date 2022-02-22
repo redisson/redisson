@@ -95,6 +95,32 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     List<V> pollLastFromAny(int count, String... queueNames);
 
     /**
+     * Removes and returns first available tail entries
+     * of <b>any</b> sorted set <b>including</b> this one.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param count entries amount
+     * @param queueNames name of queues
+     * @return the head entries
+     */
+    Map<String, Map<V, Double>> pollLastEntriesFromAny(int count, String... queueNames);
+
+    /**
+     * Removes and returns first available tail entries of <b>any</b> sorted set,
+     * waiting up to the specified wait time if necessary for elements to become available
+     * in any of defined sorted sets <b>including</b> this one.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count entries amount
+     * @param queueNames name of queues
+     * @return the tail entries
+     */
+    Map<String, Map<V, Double>> pollLastEntriesFromAny(Duration duration, int count, String... queueNames);
+
+    /**
      * Removes and returns first available head element of <b>any</b> sorted set,
      * waiting up to the specified wait time if necessary for an element to become available
      * in any of defined sorted sets <b>including</b> this one.
@@ -135,6 +161,32 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * @return the head elements
      */
     List<V> pollFirstFromAny(int count, String... queueNames);
+
+    /**
+     * Removes and returns first available head entries
+     * of <b>any</b> sorted set <b>including</b> this one.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param count entries amount
+     * @param queueNames name of queues
+     * @return the head elements
+     */
+    Map<String, Map<V, Double>> pollFirstEntriesFromAny(int count, String... queueNames);
+
+    /**
+     * Removes and returns first available head entries of <b>any</b> sorted set,
+     * waiting up to the specified wait time if necessary for elements to become available
+     * in any of defined sorted sets <b>including</b> this one.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count entries amount
+     * @param queueNames name of queues
+     * @return the head entries
+     */
+    Map<String, Map<V, Double>> pollFirstEntriesFromAny(Duration duration, int count, String... queueNames);
 
     /**
      * Removes and returns the head element waiting if necessary for an element to become available.

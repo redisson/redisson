@@ -106,6 +106,118 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     }
 
     @Test
+    public void testPollFirstEntriesFromAnyCount() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("7.0.0") > 0);
+
+        RScoredSortedSet<Integer> queue1 = redisson.getScoredSortedSet("queue:pollany");
+        RScoredSortedSet<Integer> queue2 = redisson.getScoredSortedSet("queue:pollany1");
+        RScoredSortedSet<Integer> queue3 = redisson.getScoredSortedSet("queue:pollany2");
+        queue1.add(0.1, 1);
+        queue1.add(0.2, 2);
+        queue1.add(0.3, 3);
+        queue2.add(0.4, 4);
+        queue2.add(0.5, 5);
+        queue2.add(0.6, 6);
+        queue3.add(0.7, 7);
+        queue3.add(0.8, 8);
+        queue3.add(0.9, 9);
+
+        Map<String, Map<Integer, Double>> elements = queue1.pollFirstEntriesFromAny(2, "queue:pollany1", "queue:pollany2");
+        assertThat(elements).hasSize(1);
+        assertThat(elements.get("queue:pollany")).containsEntry(1, 0.1).containsEntry(2, 0.2).hasSize(2);
+        assertThat(queue1.size()).isEqualTo(1);
+
+        Map<String, Map<Integer, Double>> elements2 = queue1.pollFirstEntriesFromAny(2, "queue:pollany1", "queue:pollany2");
+        assertThat(elements2).hasSize(1);
+        assertThat(elements2.get("queue:pollany")).containsEntry(3, 0.3).hasSize(1);
+        assertThat(elements2.size()).isEqualTo(1);
+    }
+
+    @Test
+    public void testPollLastEntriesFromAnyCount() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("7.0.0") > 0);
+
+        RScoredSortedSet<Integer> queue1 = redisson.getScoredSortedSet("queue:pollany");
+        RScoredSortedSet<Integer> queue2 = redisson.getScoredSortedSet("queue:pollany1");
+        RScoredSortedSet<Integer> queue3 = redisson.getScoredSortedSet("queue:pollany2");
+        queue1.add(0.1, 1);
+        queue1.add(0.2, 2);
+        queue1.add(0.3, 3);
+        queue2.add(0.4, 4);
+        queue2.add(0.5, 5);
+        queue2.add(0.6, 6);
+        queue3.add(0.7, 7);
+        queue3.add(0.8, 8);
+        queue3.add(0.9, 9);
+
+        Map<String, Map<Integer, Double>> elements = queue1.pollLastEntriesFromAny(2, "queue:pollany1", "queue:pollany2");
+        assertThat(elements).hasSize(1);
+        assertThat(elements.get("queue:pollany")).containsEntry(3, 0.3).containsEntry(2, 0.2).hasSize(2);
+        assertThat(queue1.size()).isEqualTo(1);
+
+        Map<String, Map<Integer, Double>> elements2 = queue1.pollLastEntriesFromAny(2, "queue:pollany1", "queue:pollany2");
+        assertThat(elements2).hasSize(1);
+        assertThat(elements2.get("queue:pollany")).containsEntry(1, 0.1).hasSize(1);
+        assertThat(elements2.size()).isEqualTo(1);
+    }
+
+    @Test
+    public void testPollFirstEntriesFromAnyTimeout() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("7.0.0") > 0);
+
+        RScoredSortedSet<Integer> queue1 = redisson.getScoredSortedSet("queue:pollany");
+        RScoredSortedSet<Integer> queue2 = redisson.getScoredSortedSet("queue:pollany1");
+        RScoredSortedSet<Integer> queue3 = redisson.getScoredSortedSet("queue:pollany2");
+        queue1.add(0.1, 1);
+        queue1.add(0.2, 2);
+        queue1.add(0.3, 3);
+        queue2.add(0.4, 4);
+        queue2.add(0.5, 5);
+        queue2.add(0.6, 6);
+        queue3.add(0.7, 7);
+        queue3.add(0.8, 8);
+        queue3.add(0.9, 9);
+
+        Map<String, Map<Integer, Double>> elements = queue1.pollFirstEntriesFromAny(Duration.ofSeconds(2), 2, "queue:pollany1", "queue:pollany2");
+        assertThat(elements).hasSize(1);
+        assertThat(elements.get("queue:pollany")).containsEntry(1, 0.1).containsEntry(2, 0.2).hasSize(2);
+        assertThat(queue1.size()).isEqualTo(1);
+
+        Map<String, Map<Integer, Double>> elements2 = queue1.pollFirstEntriesFromAny(Duration.ofSeconds(2),2, "queue:pollany1", "queue:pollany2");
+        assertThat(elements2).hasSize(1);
+        assertThat(elements2.get("queue:pollany")).containsEntry(3, 0.3).hasSize(1);
+        assertThat(elements2.size()).isEqualTo(1);
+    }
+
+    @Test
+    public void testPollLastEntriesFromAnyTimeout() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("7.0.0") > 0);
+
+        RScoredSortedSet<Integer> queue1 = redisson.getScoredSortedSet("queue:pollany");
+        RScoredSortedSet<Integer> queue2 = redisson.getScoredSortedSet("queue:pollany1");
+        RScoredSortedSet<Integer> queue3 = redisson.getScoredSortedSet("queue:pollany2");
+        queue1.add(0.1, 1);
+        queue1.add(0.2, 2);
+        queue1.add(0.3, 3);
+        queue2.add(0.4, 4);
+        queue2.add(0.5, 5);
+        queue2.add(0.6, 6);
+        queue3.add(0.7, 7);
+        queue3.add(0.8, 8);
+        queue3.add(0.9, 9);
+
+        Map<String, Map<Integer, Double>> elements = queue1.pollLastEntriesFromAny(Duration.ofSeconds(2), 2, "queue:pollany1", "queue:pollany2");
+        assertThat(elements).hasSize(1);
+        assertThat(elements.get("queue:pollany")).containsEntry(3, 0.3).containsEntry(2, 0.2).hasSize(2);
+        assertThat(queue1.size()).isEqualTo(1);
+
+        Map<String, Map<Integer, Double>> elements2 = queue1.pollLastEntriesFromAny(Duration.ofSeconds(2),2, "queue:pollany1", "queue:pollany2");
+        assertThat(elements2).hasSize(1);
+        assertThat(elements2.get("queue:pollany")).containsEntry(1, 0.1).hasSize(1);
+        assertThat(elements2.size()).isEqualTo(1);
+    }
+
+    @Test
     public void testPollLastFromAnyCount() {
 //        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("7.0.0") > 0);
 

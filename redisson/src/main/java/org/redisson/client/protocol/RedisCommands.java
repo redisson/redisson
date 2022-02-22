@@ -19,6 +19,8 @@ import org.redisson.api.FastAutoClaimResult;
 import org.redisson.api.RType;
 import org.redisson.api.StreamInfo;
 import org.redisson.api.StreamMessageId;
+import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.convertor.*;
@@ -27,12 +29,8 @@ import org.redisson.client.protocol.pubsub.PubSubStatusDecoder;
 import org.redisson.cluster.ClusterNodeInfo;
 import org.redisson.misc.RedisURI;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 
 /**
  * 
@@ -113,7 +111,36 @@ public interface RedisCommands {
     RedisCommand<Integer> ZRANGESTORE = new RedisCommand<>("ZRANGESTORE", new IntegerReplayConvertor());
     RedisCommand<List<Object>> ZPOPMIN = new RedisCommand<List<Object>>("ZPOPMIN", new ObjectListReplayDecoder<Object>());
     RedisCommand<List<Object>> ZPOPMAX = new RedisCommand<List<Object>>("ZPOPMAX", new ObjectListReplayDecoder<Object>());
-    RedisCommand<List<Object>> ZMPOP = new RedisCommand<>("ZMPOP", new ListMultiDecoder2(
+
+    RedisCommand<Map<String, Map<Object, Double>>> ZMPOP = new RedisCommand<>("ZMPOP",
+            new ListMultiDecoder2(
+                    new ObjectDecoder(StringCodec.INSTANCE.getValueDecoder()) {
+                        @Override
+                        public Object decode(List parts, State state) {
+                            Map<String, Map<Object, Object>> result = new HashMap<>();
+                            for (int i = 0; i < parts.size(); i+= 2) {
+                                List<List<Object>> entries = (List<List<Object>>) parts.get(i + 1);
+                                Map<Object, Object> map = new HashMap<>(entries.size());
+                                for (List<Object> entry : entries) {
+                                    map.put(entry.get(0), entry.get(1));
+                                }
+                                result.put((String) parts.get(i), map);
+                            }
+                            return result;
+                        }
+                    },
+                    new CodecDecoder(),
+                    new CodecDecoder() {
+                        @Override
+                        public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+                            if ((paramNum + 1) % 2 == 0) {
+                                return DoubleCodec.INSTANCE.getValueDecoder();
+                            }
+                            return codec.getValueDecoder();
+                        }
+                    }));
+
+    RedisCommand<List<Object>> ZMPOP_VALUES = new RedisCommand<>("ZMPOP", new ListMultiDecoder2(
             new ObjectDecoder(StringCodec.INSTANCE.getValueDecoder()) {
                 @Override
                 public Object decode(List parts, State state) {
@@ -124,7 +151,15 @@ public interface RedisCommands {
                 }
             },
             new CodecDecoder(),
-            new SublistDecoder()));
+            new ListFirstObjectDecoder() {
+                @Override
+                public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+                    if ((paramNum + 1) % 2 == 0) {
+                        return DoubleCodec.INSTANCE.getValueDecoder();
+                    }
+                    return codec.getValueDecoder();
+                }
+            }));
 
     RedisStrictCommand<Integer> ZREMRANGEBYRANK = new RedisStrictCommand<Integer>("ZREMRANGEBYRANK", new IntegerReplayConvertor());
     RedisStrictCommand<Integer> ZREMRANGEBYSCORE = new RedisStrictCommand<Integer>("ZREMRANGEBYSCORE", new IntegerReplayConvertor());
@@ -203,7 +238,8 @@ public interface RedisCommands {
     RedisCommand<Object> BRPOPLPUSH = new RedisCommand<Object>("BRPOPLPUSH");
     RedisCommand<List<Object>> BLPOP = new RedisCommand<List<Object>>("BLPOP", new ObjectListReplayDecoder<Object>());
     RedisCommand<List<Object>> BRPOP = new RedisCommand<List<Object>>("BRPOP", new ObjectListReplayDecoder<Object>());
-    RedisCommand<List<Object>> BZMPOP_SINGLE_LIST = new RedisCommand<>("BZMPOP", ZMPOP.getReplayMultiDecoder());
+    RedisCommand<Map<String, Map<Object, Double>>> BZMPOP = new RedisCommand<>("BZMPOP", ZMPOP.getReplayMultiDecoder());
+    RedisCommand<List<Object>> BZMPOP_SINGLE_LIST = new RedisCommand<>("BZMPOP", ZMPOP_VALUES.getReplayMultiDecoder());
     RedisCommand<Object> BLPOP_VALUE = new RedisCommand<Object>("BLPOP", new ListObjectDecoder<Object>(1));
     RedisCommand<Object> BLMOVE = new RedisCommand<Object>("BLMOVE");
     RedisCommand<Object> BRPOP_VALUE = new RedisCommand<Object>("BRPOP", new ListObjectDecoder<Object>(1));
