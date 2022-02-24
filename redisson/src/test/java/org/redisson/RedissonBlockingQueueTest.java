@@ -498,13 +498,11 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
         Executors.newSingleThreadScheduledExecutor().schedule(() -> {
             RBlockingQueue<Integer> queue2 = redisson.getBlockingQueue("queue:pollany1");
             RBlockingQueue<Integer> queue3 = redisson.getBlockingQueue("queue:pollany2");
-            try {
+            Assertions.assertDoesNotThrow(() -> {
                 queue3.put(2);
                 queue1.put(1);
                 queue2.put(3);
-            } catch (InterruptedException e) {
-                Assertions.fail();
-            }
+            });
         }, 3, TimeUnit.SECONDS);
 
         long s = System.currentTimeMillis();
