@@ -470,7 +470,7 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
         .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
         RedissonClient redisson = Redisson.create(config);
 
-        final RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");
+        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");
         Executors.newSingleThreadScheduledExecutor().schedule(() -> {
             RBlockingQueue<Integer> queue2 = redisson.getBlockingQueue("queue:pollany1");
             RBlockingQueue<Integer> queue3 = redisson.getBlockingQueue("queue:pollany2");
@@ -483,12 +483,11 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
             }
         }, 3, TimeUnit.SECONDS);
 
-        long s = System.currentTimeMillis();
-        int l = queue1.pollFromAny(4, TimeUnit.SECONDS, "queue:pollany1", "queue:pollany2");
+        Awaitility.await().between(Duration.ofSeconds(2), Duration.ofSeconds(4)).untilAsserted(() -> {
+            int value = queue1.pollFromAny(4, TimeUnit.SECONDS, "queue:pollany1", "queue:pollany2");
+            assertThat(value).isEqualTo(1);
+        });
 
-        Assertions.assertEquals(2, l);
-        Assertions.assertTrue(System.currentTimeMillis() - s > 2000);
-        
         redisson.shutdown();
         process.shutdown();
     }
