@@ -264,9 +264,23 @@ public class RedissonSessionManagerTest {
 
 
     @Test
-    public void testInvalidate() throws Exception {
-        File f = Paths.get("").toAbsolutePath().resolve("src/test/webapp/WEB-INF/redisson.yaml").toFile();
-        Config config = Config.fromYAML(f);
+    public void testInvalidateWithYamlConfig() throws Exception {
+        testInvalidate("src/test/webapp/WEB-INF/redisson.yaml");
+    }
+
+    @Test
+    public void testInvalidateWithTomlConfig() throws Exception {
+        testInvalidate("src/test/webapp/WEB-INF/redisson.toml");
+    }
+
+    private void testInvalidate(String configPath) throws Exception {
+        File f = Paths.get("").toAbsolutePath().resolve(configPath).toFile();
+        Config config;
+        try {
+            config = Config.fromYAML(f);
+        } catch (IOException ignored) {
+            config = Config.fromTOML(f);
+        }
         RedissonClient r = Redisson.create(config);
         r.getKeys().flushall();
 

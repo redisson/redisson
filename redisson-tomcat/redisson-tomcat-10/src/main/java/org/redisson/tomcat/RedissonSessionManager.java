@@ -344,10 +344,16 @@ public class RedissonSessionManager extends ManagerBase {
         } catch (IOException e) {
             // trying next format
             try {
-                config = Config.fromJSON(new File(configPath), getClass().getClassLoader());
+                config = Config.fromTOML(new File(configPath), getClass().getClassLoader());
             } catch (IOException e1) {
-                log.error("Can't parse json config " + configPath, e);
-                throw new LifecycleException("Can't parse yaml config " + configPath, e1);
+                // trying next format
+                try {
+                    config = Config.fromJSON(new File(configPath), getClass().getClassLoader());
+                } catch (IOException e2) {
+                    log.error("Can't parse yaml config " + configPath, e);
+                    log.error("Can't parse toml config " + configPath, e1);
+                    throw new LifecycleException("Can't parse json config " + configPath, e2);
+                }
             }
         }
         

@@ -103,21 +103,33 @@ public class JCachingProvider implements CachingProvider {
             } else {
                 throw new FileNotFoundException("/redisson-jcache.yaml");
             }
-        } catch (JsonProcessingException e) {
-            throw new CacheException(e);
         } catch (IOException e) {
             try {
-                URL jsonUrl = null;
+                URL tomlUrl = null;
                 if (DEFAULT_URI_PATH.equals(uri.getPath())) {
-                    jsonUrl = JCachingProvider.class.getResource("/redisson-jcache.json");
+                    tomlUrl = JCachingProvider.class.getResource("/redisson-jcache.toml");
                 } else {
-                    jsonUrl = uri.toURL();
+                    tomlUrl = uri.toURL();
                 }
-                if (jsonUrl != null) {
-                    config = Config.fromJSON(jsonUrl);
+                if (tomlUrl != null) {
+                    config = Config.fromTOML(tomlUrl);
+                } else {
+                    throw new FileNotFoundException("/redisson-jcache.toml");
                 }
             } catch (IOException ex) {
-                // skip
+                try {
+                    URL jsonUrl = null;
+                    if (DEFAULT_URI_PATH.equals(uri.getPath())) {
+                        jsonUrl = JCachingProvider.class.getResource("/redisson-jcache.json");
+                    } else {
+                        jsonUrl = uri.toURL();
+                    }
+                    if (jsonUrl != null) {
+                        config = Config.fromJSON(jsonUrl);
+                    }
+                } catch (IOException ex1) {
+                    // skip
+                }
             }
         }
         return config;

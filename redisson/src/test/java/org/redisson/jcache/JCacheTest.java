@@ -33,6 +33,8 @@ import javax.cache.expiry.Duration;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.redisson.BaseTest;
 import org.redisson.RedisRunner;
 import org.redisson.RedisRunner.FailedToStartRedisException;
@@ -49,16 +51,22 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 public class JCacheTest extends BaseTest {
 
-    @Test
-    public void testCreatedExpiryPolicy() throws Exception {
+    @ParameterizedTest
+    @MethodSource("configPaths")
+    public void testCreatedExpiryPolicy(String configPath) throws Exception {
         RedisProcess runner = new RedisRunner()
                 .nosave()
                 .randomDir()
                 .port(6311)
                 .run();
 
-        URL configUrl = getClass().getResource("redisson-jcache.yaml");
-        Config cfg = Config.fromYAML(configUrl);
+        URL configUrl = getClass().getResource(configPath);
+        Config cfg;
+        try {
+            cfg = Config.fromYAML(configUrl);
+        } catch (IOException ignored) {
+            cfg = Config.fromTOML(configUrl);
+        }
 
         MutableConfiguration c = new MutableConfiguration();
         c.setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(MILLISECONDS, 500)));
@@ -84,16 +92,22 @@ public class JCacheTest extends BaseTest {
         runner.stop();
     }
 
-    @Test
-    public void testClear() throws Exception {
+    @ParameterizedTest
+    @MethodSource("configPaths")
+    public void testClear(String configPath) throws Exception {
         RedisProcess runner = new RedisRunner()
                 .nosave()
                 .randomDir()
                 .port(6311)
                 .run();
 
-        URL configUrl = getClass().getResource("redisson-jcache.yaml");
-        Config cfg = Config.fromYAML(configUrl);
+        URL configUrl = getClass().getResource(configPath);
+        Config cfg;
+        try {
+            cfg = Config.fromYAML(configUrl);
+        } catch (IOException ignored) {
+            cfg = Config.fromTOML(configUrl);
+        }
 
         Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
@@ -107,16 +121,22 @@ public class JCacheTest extends BaseTest {
         runner.stop();
     }
 
-    @Test
-    public void testAsync() throws Exception {
+    @ParameterizedTest
+    @MethodSource("configPaths")
+    public void testAsync(String configPath) throws Exception {
         RedisProcess runner = new RedisRunner()
                 .nosave()
                 .randomDir()
                 .port(6311)
                 .run();
         
-        URL configUrl = getClass().getResource("redisson-jcache.yaml");
-        Config cfg = Config.fromYAML(configUrl);
+        URL configUrl = getClass().getResource(configPath);
+        Config cfg;
+        try {
+            cfg = Config.fromYAML(configUrl);
+        } catch (IOException ignored) {
+            cfg = Config.fromTOML(configUrl);
+        }
         
         Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
@@ -129,17 +149,23 @@ public class JCacheTest extends BaseTest {
         cache.close();
         runner.stop();
     }
-    
-    @Test
-    public void testReactive() throws Exception {
+
+    @ParameterizedTest
+    @MethodSource("configPaths")
+    public void testReactive(String configPath) throws Exception {
         RedisProcess runner = new RedisRunner()
                 .nosave()
                 .randomDir()
                 .port(6311)
                 .run();
         
-        URL configUrl = getClass().getResource("redisson-jcache.yaml");
-        Config cfg = Config.fromYAML(configUrl);
+        URL configUrl = getClass().getResource(configPath);
+        Config cfg;
+        try {
+            cfg = Config.fromYAML(configUrl);
+        } catch (IOException ignored) {
+            cfg = Config.fromTOML(configUrl);
+        }
         
         Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
@@ -152,17 +178,23 @@ public class JCacheTest extends BaseTest {
         cache.close();
         runner.stop();
     }
-    
-    @Test
-    public void testRx() throws Exception {
+
+    @ParameterizedTest
+    @MethodSource("configPaths")
+    public void testRx(String configPath) throws Exception {
         RedisProcess runner = new RedisRunner()
                 .nosave()
                 .randomDir()
                 .port(6311)
                 .run();
-        
-        URL configUrl = getClass().getResource("redisson-jcache.yaml");
-        Config cfg = Config.fromYAML(configUrl);
+
+        URL configUrl = getClass().getResource(configPath);
+        Config cfg;
+        try {
+            cfg = Config.fromYAML(configUrl);
+        } catch (IOException ignored) {
+            cfg = Config.fromTOML(configUrl);
+        }
         
         Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
@@ -175,17 +207,23 @@ public class JCacheTest extends BaseTest {
         cache.close();
         runner.stop();
     }
-    
-    @Test
-    public void testPutAll() throws Exception {
+
+    @ParameterizedTest
+    @MethodSource("configPaths")
+    public void testPutAll(String configPath) throws Exception {
         RedisProcess runner = new RedisRunner()
                 .nosave()
                 .randomDir()
                 .port(6311)
                 .run();
         
-        URL configUrl = getClass().getResource("redisson-jcache.yaml");
-        Config cfg = Config.fromYAML(configUrl);
+        URL configUrl = getClass().getResource(configPath);
+        Config cfg;
+        try {
+            cfg = Config.fromYAML(configUrl);
+        } catch (IOException ignored) {
+            cfg = Config.fromTOML(configUrl);
+        }
         
         Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
@@ -207,17 +245,23 @@ public class JCacheTest extends BaseTest {
         cache.close();
         runner.stop();
     }
-    
-    @Test
-    public void testRemoveAll() throws Exception {
+
+    @ParameterizedTest
+    @MethodSource("configPaths")
+    public void testRemoveAll(String configPath) throws Exception {
         RedisProcess runner = new RedisRunner()
                 .nosave()
                 .randomDir()
                 .port(6311)
                 .run();
-        
-        URL configUrl = getClass().getResource("redisson-jcache.yaml");
-        Config cfg = Config.fromYAML(configUrl);
+
+        URL configUrl = getClass().getResource(configPath);
+        Config cfg;
+        try {
+            cfg = Config.fromYAML(configUrl);
+        } catch (IOException ignored) {
+            cfg = Config.fromTOML(configUrl);
+        }
         
         Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
@@ -239,16 +283,22 @@ public class JCacheTest extends BaseTest {
         runner.stop();
     }
 
-    @Test
-    public void testGetAllHighVolume() throws Exception {
+    @ParameterizedTest
+    @MethodSource("configPaths")
+    public void testGetAllHighVolume(String configPath) throws Exception {
         RedisProcess runner = new RedisRunner()
                 .nosave()
                 .randomDir()
                 .port(6311)
                 .run();
-        
-        URL configUrl = getClass().getResource("redisson-jcache.yaml");
-        Config cfg = Config.fromYAML(configUrl);
+
+        URL configUrl = getClass().getResource(configPath);
+        Config cfg;
+        try {
+            cfg = Config.fromYAML(configUrl);
+        } catch (IOException ignored) {
+            cfg = Config.fromTOML(configUrl);
+        }
         
         Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
@@ -266,17 +316,23 @@ public class JCacheTest extends BaseTest {
         cache.close();
         runner.stop();
     }
-    
-    @Test
-    public void testGetAll() throws Exception {
+
+    @ParameterizedTest
+    @MethodSource("configPaths")
+    public void testGetAll(String configPath) throws Exception {
         RedisProcess runner = new RedisRunner()
                 .nosave()
                 .randomDir()
                 .port(6311)
                 .run();
-        
-        URL configUrl = getClass().getResource("redisson-jcache.yaml");
-        Config cfg = Config.fromYAML(configUrl);
+
+        URL configUrl = getClass().getResource(configPath);
+        Config cfg;
+        try {
+            cfg = Config.fromYAML(configUrl);
+        } catch (IOException ignored) {
+            cfg = Config.fromTOML(configUrl);
+        }
         
         Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
@@ -294,17 +350,23 @@ public class JCacheTest extends BaseTest {
         cache.close();
         runner.stop();
     }
-    
-    @Test
-    public void testJson() throws InterruptedException, IllegalArgumentException, URISyntaxException, IOException {
+
+    @ParameterizedTest
+    @MethodSource("configPaths")
+    public void testJson(String configPath) throws InterruptedException, IllegalArgumentException, URISyntaxException, IOException {
         RedisProcess runner = new RedisRunner()
                 .nosave()
                 .randomDir()
                 .port(6311)
                 .run();
-        
-        URL configUrl = getClass().getResource("redisson-jcache.yaml");
-        Config cfg = Config.fromYAML(configUrl);
+
+        URL configUrl = getClass().getResource(configPath);
+        Config cfg;
+        try {
+            cfg = Config.fromYAML(configUrl);
+        } catch (IOException ignored) {
+            cfg = Config.fromTOML(configUrl);
+        }
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         cfg.setCodec(new TypedJsonJacksonCodec(String.class, LocalDateTime.class, objectMapper));
@@ -321,16 +383,22 @@ public class JCacheTest extends BaseTest {
         runner.stop();
     }
 
-    @Test
-    public void testRedissonConfig() throws InterruptedException, IllegalArgumentException, IOException {
+    @ParameterizedTest
+    @MethodSource("configPaths")
+    public void testRedissonConfig(String configPath) throws InterruptedException, IllegalArgumentException, IOException {
         RedisProcess runner = new RedisRunner()
                 .nosave()
                 .randomDir()
                 .port(6311)
                 .run();
-        
-        URL configUrl = getClass().getResource("redisson-jcache.yaml");
-        Config cfg = Config.fromYAML(configUrl);
+
+        URL configUrl = getClass().getResource(configPath);
+        Config cfg;
+        try {
+            cfg = Config.fromYAML(configUrl);
+        } catch (IOException ignored) {
+            cfg = Config.fromTOML(configUrl);
+        }
         
         Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
@@ -365,8 +433,9 @@ public class JCacheTest extends BaseTest {
         cache.close();
     }
 
-    @Test
-    public void testExpiration() throws InterruptedException, IllegalArgumentException, URISyntaxException, FailedToStartRedisException, IOException {
+    @ParameterizedTest
+    @MethodSource("configPaths")
+    public void testExpiration(String configPath) throws InterruptedException, IllegalArgumentException, URISyntaxException, FailedToStartRedisException, IOException {
         RedisProcess runner = new RedisRunner()
                 .nosave()
                 .randomDir()
@@ -377,7 +446,7 @@ public class JCacheTest extends BaseTest {
         config.setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, 1)));
         config.setStoreByValue(true);
         
-        URI configUri = getClass().getResource("redisson-jcache.yaml").toURI();
+        URI configUri = getClass().getResource(configPath).toURI();
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager(configUri, null)
                 .createCache("test", config);
 
@@ -400,8 +469,9 @@ public class JCacheTest extends BaseTest {
         runner.stop();
     }
 
-    @Test
-    public void testUpdate() throws IOException, InterruptedException, URISyntaxException {
+    @ParameterizedTest
+    @MethodSource("configPaths")
+    public void testUpdate(String configPath) throws IOException, InterruptedException, URISyntaxException {
         RedisProcess runner = new RedisRunner()
                 .nosave()
                 .randomDir()
@@ -411,7 +481,7 @@ public class JCacheTest extends BaseTest {
         MutableConfiguration<String, String> config = new MutableConfiguration<>();
         config.setStoreByValue(true);
 
-        URI configUri = getClass().getResource("redisson-jcache.yaml").toURI();
+        URI configUri = getClass().getResource(configPath).toURI();
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager(configUri, null)
                 .createCache("test", config);
 
@@ -437,8 +507,9 @@ public class JCacheTest extends BaseTest {
         runner.stop();
     }
 
-    @Test
-    public void testUpdateAsync() throws IOException, InterruptedException, URISyntaxException {
+    @ParameterizedTest
+    @MethodSource("configPaths")
+    public void testUpdateAsync(String configPath) throws IOException, InterruptedException, URISyntaxException {
         RedisProcess runner = new RedisRunner()
                 .nosave()
                 .randomDir()
@@ -448,7 +519,7 @@ public class JCacheTest extends BaseTest {
         MutableConfiguration<String, String> config = new MutableConfiguration<>();
         config.setStoreByValue(true);
 
-        URI configUri = getClass().getResource("redisson-jcache.yaml").toURI();
+        URI configUri = getClass().getResource(configPath).toURI();
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager(configUri, null)
                 .createCache("test", config);
 
@@ -479,8 +550,9 @@ public class JCacheTest extends BaseTest {
         runner.stop();
     }
 
-    @Test
-    public void testUpdateWithoutOldValue() throws IOException, InterruptedException, URISyntaxException {
+    @ParameterizedTest
+    @MethodSource("configPaths")
+    public void testUpdateWithoutOldValue(String configPath) throws IOException, InterruptedException, URISyntaxException {
         RedisProcess runner = new RedisRunner()
                 .nosave()
                 .randomDir()
@@ -490,7 +562,7 @@ public class JCacheTest extends BaseTest {
         MutableConfiguration<String, String> config = new MutableConfiguration<>();
         config.setStoreByValue(true);
 
-        URI configUri = getClass().getResource("redisson-jcache.yaml").toURI();
+        URI configUri = getClass().getResource(configPath).toURI();
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager(configUri, null)
                 .createCache("test", config);
 
@@ -516,8 +588,9 @@ public class JCacheTest extends BaseTest {
         runner.stop();
     }
 
-    @Test
-    public void testRemoveListener() throws IOException, InterruptedException, URISyntaxException {
+    @ParameterizedTest
+    @MethodSource("configPaths")
+    public void testRemoveListener(String configPath) throws IOException, InterruptedException, URISyntaxException {
                 RedisProcess runner = new RedisRunner()
                 .nosave()
                 .randomDir()
@@ -527,7 +600,7 @@ public class JCacheTest extends BaseTest {
         MutableConfiguration<String, String> config = new MutableConfiguration<>();
         config.setStoreByValue(true);
 
-        URI configUri = getClass().getResource("redisson-jcache.yaml").toURI();
+        URI configUri = getClass().getResource(configPath).toURI();
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager(configUri, null)
                 .createCache("test", config);
 
@@ -551,6 +624,13 @@ public class JCacheTest extends BaseTest {
 
         cache.close();
         runner.stop();
+    }
+
+    public static Iterable<Object[]> configPaths() {
+        return Arrays.asList(new Object[][] {
+          {"redisson-jcache.yaml"},
+          {"redisson-jcache.toml"}
+        });
     }
     
     public static class ExpiredListener implements CacheEntryExpiredListener<String, String>, Serializable {

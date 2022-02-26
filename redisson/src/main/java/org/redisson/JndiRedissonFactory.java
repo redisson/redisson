@@ -52,11 +52,16 @@ public class JndiRedissonFactory implements ObjectFactory {
         } catch (IOException e) {
             // trying next format
             try {
-                config = Config.fromJSON(new File(configPath), getClass().getClassLoader());
+                config = Config.fromTOML(new File(configPath), getClass().getClassLoader());
             } catch (IOException e1) {
-                NamingException ex = new NamingException("Can't parse yaml config " + configPath);
-                ex.initCause(e1);
-                throw ex;
+                // trying next format
+                try {
+                    config = Config.fromJSON(new File(configPath), getClass().getClassLoader());
+                } catch (IOException e2) {
+                    NamingException ex = new NamingException("Can't parse config " + configPath);
+                    ex.initCause(e2.initCause(e1.initCause(e)));
+                    throw ex;
+                }
             }
         }
         

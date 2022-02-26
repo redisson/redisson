@@ -105,7 +105,12 @@ public class RedissonCache implements Cache {
             InputStream is = getClass().getClassLoader().getResourceAsStream(config);
             cfg = Config.fromYAML(is);
         } catch (IOException e) {
-            throw new IllegalArgumentException("Can't parse config", e);
+            try {
+                InputStream is = getClass().getClassLoader().getResourceAsStream(config);
+                cfg = Config.fromTOML(is);
+            } catch (IOException e1) {
+                throw new IllegalArgumentException("Can't parse config", e1.initCause(e));
+            }
         }
 
         RedissonClient redisson = Redisson.create(cfg);

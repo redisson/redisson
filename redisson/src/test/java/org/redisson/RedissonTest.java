@@ -973,6 +973,33 @@ public class RedissonTest extends BaseTest {
     }
 
     @Test
+    public void testSingleConfigTOML() throws IOException {
+        RedissonClient r = BaseTest.createInstance();
+        String t = r.getConfig().toTOML();
+        Config c = Config.fromTOML(t);
+        assertThat(c.toTOML()).isEqualTo(t);
+    }
+
+    @Test
+    public void testSentinelTOML() throws IOException {
+        Config c2 = new Config();
+        c2.useSentinelServers().addSentinelAddress("redis://123.1.1.1:1231").setMasterName("mymaster");
+        String t = c2.toTOML();
+        System.out.println(t);
+        Config c = Config.fromTOML(t);
+        assertThat(c.toTOML()).isEqualTo(t);
+    }
+
+    @Test
+    public void testMasterSlaveConfigTOML() throws IOException {
+        Config c2 = new Config();
+        c2.useMasterSlaveServers().setMasterAddress("redis://123.1.1.1:1231").addSlaveAddress("redis://82.12.47.12:1028", "redis://82.12.47.14:1028");
+        String t = c2.toTOML();
+        Config c = Config.fromTOML(t);
+        assertThat(c.toTOML()).isEqualTo(t);
+    }
+
+    @Test
     public void testEvalCache() throws InterruptedException, IOException {
         RedisRunner master1 = new RedisRunner().port(6896).randomDir().nosave();
         RedisRunner master2 = new RedisRunner().port(6891).randomDir().nosave();

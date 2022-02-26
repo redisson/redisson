@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import com.fasterxml.jackson.dataformat.toml.TomlFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.redisson.api.NameMapper;
 import org.redisson.api.NatMapper;
@@ -51,7 +52,7 @@ import java.util.regex.Pattern;
  *
  */
 public class ConfigSupport {
-    
+
     @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "class")
     @JsonFilter("classFilter")
     public static class ClassMixIn {
@@ -80,6 +81,7 @@ public class ConfigSupport {
 
     protected final ObjectMapper jsonMapper = createMapper(null, null);
     protected final ObjectMapper yamlMapper = createMapper(new YAMLFactory(), null);
+    protected final ObjectMapper tomlMapper = createMapper(new TomlFactory(), null);
     
     private String resolveEnvParams(Readable in) {
         Scanner s = new Scanner(in).useDelimiter("\\A");
@@ -177,6 +179,40 @@ public class ConfigSupport {
 
     public String toYAML(Config config) throws IOException {
         return yamlMapper.writeValueAsString(config);
+    }
+
+    public <T> T fromTOML(String content, Class<T> configType) throws IOException {
+        content = resolveEnvParams(content);
+        return tomlMapper.readValue(content, configType);
+    }
+
+    public <T> T fromTOML(File file, Class<T> configType) throws IOException {
+        return fromTOML(file, configType, null);
+    }
+
+    public <T> T fromTOML(File file, Class<T> configType, ClassLoader classLoader) throws IOException {
+        ObjectMapper tomlMapper = createMapper(new TomlFactory(), classLoader);
+        String content = resolveEnvParams(new FileReader(file));
+        return tomlMapper.readValue(content, configType);
+    }
+
+    public <T> T fromTOML(URL url, Class<T> configType) throws IOException {
+        String content = resolveEnvParams(new InputStreamReader(url.openStream()));
+        return tomlMapper.readValue(content, configType);
+    }
+
+    public <T> T fromTOML(Reader reader, Class<T> configType) throws IOException {
+        String content = resolveEnvParams(reader);
+        return tomlMapper.readValue(content, configType);
+    }
+
+    public <T> T fromTOML(InputStream inputStream, Class<T> configType) throws IOException {
+        String content = resolveEnvParams(new InputStreamReader(inputStream));
+        return tomlMapper.readValue(content, configType);
+    }
+
+    public String toTOML(Config config) throws IOException {
+        return tomlMapper.writeValueAsString(config);
     }
 
     public static ConnectionManager createConnectionManager(Config configCopy) {

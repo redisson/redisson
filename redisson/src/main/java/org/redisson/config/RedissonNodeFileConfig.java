@@ -121,5 +121,17 @@ public class RedissonNodeFileConfig extends Config {
         ConfigSupport support = new ConfigSupport();
         return support.fromYAML(file, RedissonNodeFileConfig.class);
     }
-    
+
+    /**
+     * Read config object stored in TOML format from <code>File</code>
+     *
+     * @param file object
+     * @return config
+     * @throws IOException error
+     */
+    public static RedissonNodeFileConfig fromTOML(File file) throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.fromTOML(file, RedissonNodeFileConfig.class);
+    }
+
 }

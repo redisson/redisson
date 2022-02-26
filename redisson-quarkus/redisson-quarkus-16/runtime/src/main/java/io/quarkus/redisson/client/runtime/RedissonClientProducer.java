@@ -52,7 +52,9 @@ public class RedissonClientProducer {
         if (configFile.isPresent()) {
             configStream = getClass().getResourceAsStream(configFile.get());
         } else {
-            configStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("redisson.yaml");
+            configStream = Optional
+              .ofNullable(Thread.currentThread().getContextClassLoader().getResourceAsStream("redisson.yaml"))
+              .orElse(Thread.currentThread().getContextClassLoader().getResourceAsStream("redisson.toml"));
         }
         String config;
         if (configStream != null) {
@@ -71,7 +73,16 @@ public class RedissonClientProducer {
                 yamlMapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
             }
         };
-        Config c = support.fromYAML(config, Config.class);
+        Config c;
+        try {
+            c = support.fromYAML(config, Config.class);
+        } catch (IOException ex) {
+            try {
+                c = support.fromTOML(config, Config.class);
+            } catch (IOException ex1) {
+                throw new IOException("failed to parse config as YAML or TOML", ex1.initCause(ex));
+            }
+        }
         redisson = Redisson.create(c);
         return redisson;
     }

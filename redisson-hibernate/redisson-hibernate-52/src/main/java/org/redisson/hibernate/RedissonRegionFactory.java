@@ -101,6 +101,9 @@ public class RedissonRegionFactory implements RegionFactory {
             if (config == null) {
                 config = loadConfig(RedissonRegionFactory.class.getClassLoader(), "redisson.yaml");
             }
+            if (config == null) {
+                config = loadConfig(RedissonRegionFactory.class.getClassLoader(), "redisson.toml");
+            }
         } else {
             String configPath = ConfigurationHelper.getString(REDISSON_CONFIG_PATH, properties);
             config = loadConfig(RedissonRegionFactory.class.getClassLoader(), configPath);
@@ -122,9 +125,14 @@ public class RedissonRegionFactory implements RegionFactory {
         } catch (IOException e) {
             // trying next format
             try {
-                return Config.fromJSON(new File(configPath));
+                return Config.fromTOML(new File(configPath));
             } catch (IOException e1) {
-                throw new CacheException("Can't parse default yaml config", e1);
+                // trying next format
+                try {
+                    return Config.fromJSON(new File(configPath));
+                } catch (IOException e2) {
+                    throw new CacheException("Can't parse default config", e2.initCause(e1.initCause(e)));
+                }
             }
         }
     }
@@ -137,9 +145,14 @@ public class RedissonRegionFactory implements RegionFactory {
             } catch (IOException e) {
                 try {
                     is = classLoader.getResourceAsStream(fileName);
-                    return Config.fromJSON(is);
+                    return Config.fromTOML(is);
                 } catch (IOException e1) {
-                    throw new CacheException("Can't parse yaml config", e1);
+                    try {
+                        is = classLoader.getResourceAsStream(fileName);
+                        return Config.fromJSON(is);
+                    } catch (IOException e2) {
+                        throw new CacheException("Can't parse config", e2.initCause(e1.initCause(e)));
+                    }
                 }
             }
         }

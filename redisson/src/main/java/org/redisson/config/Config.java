@@ -706,6 +706,81 @@ public class Config {
     }
 
     /**
+     * Read config object stored in TOML format from <code>String</code>
+     *
+     * @param content of config
+     * @return config
+     * @throws IOException error
+     */
+    public static Config fromTOML(String content) throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.fromTOML(content, Config.class);
+    }
+
+    /**
+     * Read config object stored in TOML format from <code>InputStream</code>
+     *
+     * @param inputStream object
+     * @return config
+     * @throws IOException error
+     */
+    public static Config fromTOML(InputStream inputStream) throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.fromTOML(inputStream, Config.class);
+    }
+
+    /**
+     * Read config object stored in TOML format from <code>File</code>
+     *
+     * @param file object
+     * @return config
+     * @throws IOException error
+     */
+    public static Config fromTOML(File file) throws IOException {
+        return fromTOML(file, null);
+    }
+
+    public static Config fromTOML(File file, ClassLoader classLoader) throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.fromTOML(file, Config.class, classLoader);
+    }
+
+    /**
+     * Read config object stored in TOML format from <code>URL</code>
+     *
+     * @param url object
+     * @return config
+     * @throws IOException error
+     */
+    public static Config fromTOML(URL url) throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.fromTOML(url, Config.class);
+    }
+
+    /**
+     * Read config object stored in TOML format from <code>Reader</code>
+     *
+     * @param reader object
+     * @return config
+     * @throws IOException error
+     */
+    public static Config fromTOML(Reader reader) throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.fromTOML(reader, Config.class);
+    }
+
+    /**
+     * Convert current configuration to TOML format
+     *
+     * @return config in toml format
+     * @throws IOException error
+     */
+    public String toTOML() throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.toTOML(this);
+    }
+
+    /**
      * Defines whether to use Lua-script cache on Redis side. 
      * Most Redisson methods are Lua-script based and this setting turned
      * on could increase speed of such methods execution and save network traffic.

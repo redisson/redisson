@@ -264,9 +264,23 @@ public class RedissonSessionManagerTest {
 
 
     @Test
-    public void testInvalidate() throws Exception {
-        File f = Paths.get("").toAbsolutePath().resolve("src/test/webapp/WEB-INF/redisson.yaml").toFile();
-        Config config = Config.fromYAML(f);
+    public void testInvalidateWithYamlConfig() throws Exception {
+        testInvalidate("src/test/webapp/WEB-INF/redisson.yaml");
+    }
+
+    @Test
+    public void testInvalidateWithTomlConfig() throws Exception {
+        testInvalidate("src/test/webapp/WEB-INF/redisson.toml");
+    }
+
+    private void testInvalidate(String configPath) throws Exception {
+        File f = Paths.get("").toAbsolutePath().resolve(configPath).toFile();
+        Config config;
+        try {
+            config = Config.fromYAML(f);
+        } catch (IOException ignored) {
+            config = Config.fromTOML(f);
+        }
         RedissonClient r = Redisson.create(config);
         r.getKeys().flushall();
 
@@ -277,20 +291,20 @@ public class RedissonSessionManagerTest {
         Executor executor = Executor.newInstance();
         BasicCookieStore cookieStore = new BasicCookieStore();
         executor.use(cookieStore);
-        
+
         write(8080, executor, "test", "1234");
         Cookie cookie = cookieStore.getCookies().get(0);
         invalidate(executor);
 
         Executor.closeIdleConnections();
-        
+
         executor = Executor.newInstance();
         cookieStore = new BasicCookieStore();
         cookieStore.addCookie(cookie);
         executor.use(cookieStore);
         read(8080, executor, "test", "null");
         invalidate(executor);
-        
+
         Executor.closeIdleConnections();
         server.stop();
 

@@ -133,9 +133,13 @@ public class RedissonAutoConfiguration {
                 config = Config.fromYAML(redissonProperties.getConfig());
             } catch (IOException e) {
                 try {
-                    config = Config.fromJSON(redissonProperties.getConfig());
-                } catch (IOException e1) {
-                    throw new IllegalArgumentException("Can't parse config", e1);
+                    config = Config.fromTOML(redissonProperties.getConfig());
+                } catch(IOException e1) {
+                    try {
+                        config = Config.fromJSON(redissonProperties.getConfig());
+                    } catch (IOException e2) {
+                        throw new IllegalArgumentException("Can't parse config", e2.initCause(e1.initCause(e)));
+                    }
                 }
             }
         } else if (redissonProperties.getFile() != null) {
@@ -146,9 +150,15 @@ public class RedissonAutoConfiguration {
                 // trying next format
                 try {
                     InputStream is = getConfigStream();
-                    config = Config.fromJSON(is);
+                    config = Config.fromTOML(is);
                 } catch (IOException e1) {
-                    throw new IllegalArgumentException("Can't parse config", e1);
+                    // trying next format
+                    try {
+                        InputStream is = getConfigStream();
+                        config = Config.fromJSON(is);
+                    } catch (IOException e2) {
+                        throw new IllegalArgumentException("Can't parse config", e2.initCause(e1.initCause(e)));
+                    }
                 }
             }
         } else if (redisProperties.getSentinel() != null) {
