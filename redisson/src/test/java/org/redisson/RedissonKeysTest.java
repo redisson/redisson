@@ -246,9 +246,9 @@ public class RedissonKeysTest extends BaseTest {
         map2.fastPut("1", "5");
         assertThat(map2.isExists()).isTrue();
 
-
-        Assertions.assertEquals(4, redisson.getKeys().deleteByPattern("test?"));
-        Assertions.assertEquals(0, redisson.getKeys().deleteByPattern("test?"));
+        assertThat(redisson.getKeys().deleteByPattern("test?")).isEqualTo(4);
+        assertThat(redisson.getKeys().deleteByPattern("test?")).isZero();
+        assertThat(redisson.getKeys().count()).isZero();
     }
 
     @Test

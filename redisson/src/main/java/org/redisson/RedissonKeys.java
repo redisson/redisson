@@ -241,6 +241,8 @@ public class RedissonKeys implements RKeys {
         int batchSize = 500;
         List<CompletableFuture<Long>> futures = new ArrayList<>();
         for (MasterSlaveEntry entry : commandExecutor.getConnectionManager().getEntrySet()) {
+            CompletableFuture<Long> future = new CompletableFuture<>();
+            futures.add(future);
             commandExecutor.getConnectionManager().getExecutor().execute(() -> {
                 long count = 0;
                 try {
@@ -261,12 +263,9 @@ public class RedissonKeys implements RKeys {
                         keys.clear();
                     }
 
-                    RFuture<Long> future = RedissonPromise.newSucceededFuture(count);
-                    futures.add(future.toCompletableFuture());
+                    future.complete(count);
                 } catch (Exception e) {
-                    CompletableFuture<Long> future = new CompletableFuture<>();
                     future.completeExceptionally(e);
-                    futures.add(future);
                 }
             });
         }
