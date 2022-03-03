@@ -24,6 +24,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.ListDrainToDecoder;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -109,10 +110,44 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
      */
     @Override
     public RFuture<V> pollFromAnyAsync(long timeout, TimeUnit unit, String... queueNames) {
-        List<String> names = new ArrayList<>(Arrays.asList(queueNames));
-        names.add(0, getRawName());
         return commandExecutor.pollFromAnyAsync(getRawName(), codec, RedisCommands.BLPOP_VALUE,
-                                    toSeconds(timeout, unit), names.toArray(new String[]{}));
+                                    toSeconds(timeout, unit), queueNames);
+    }
+
+    @Override
+    public Map<String, List<V>> pollFirstFromAny(Duration duration, int count, String... queueNames) throws InterruptedException {
+        return commandExecutor.getInterrupted(pollFirstFromAnyAsync(duration, count, queueNames));
+    }
+
+    @Override
+    public RFuture<Map<String, List<V>>> pollFirstFromAnyAsync(Duration duration, int count, String... queueNames) {
+        List<Object> params = new ArrayList<>();
+        params.add(toSeconds(duration.getSeconds(), TimeUnit.SECONDS));
+        params.add(queueNames.length + 1);
+        params.add(getRawName());
+        params.addAll(Arrays.asList(queueNames));
+        params.add("LEFT");
+        params.add("COUNT");
+        params.add(count);
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.BLMPOP, params.toArray());
+    }
+
+    @Override
+    public Map<String, List<V>> pollLastFromAny(Duration duration, int count, String... queueNames) throws InterruptedException {
+        return commandExecutor.getInterrupted(pollLastFromAnyAsync(duration, count, queueNames));
+    }
+
+    @Override
+    public RFuture<Map<String, List<V>>> pollLastFromAnyAsync(Duration duration, int count, String... queueNames) {
+        List<Object> params = new ArrayList<>();
+        params.add(toSeconds(duration.getSeconds(), TimeUnit.SECONDS));
+        params.add(queueNames.length + 1);
+        params.add(getRawName());
+        params.addAll(Arrays.asList(queueNames));
+        params.add("RIGHT");
+        params.add("COUNT");
+        params.add(count);
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.BLMPOP, params.toArray());
     }
 
     @Override

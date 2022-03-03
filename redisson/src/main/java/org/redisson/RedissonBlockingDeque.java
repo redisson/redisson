@@ -17,6 +17,8 @@ package org.redisson;
 
 import java.time.Duration;
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -126,7 +128,27 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
     public V pollLastAndOfferFirstTo(String queueName, long timeout, TimeUnit unit) throws InterruptedException {
         return blockingQueue.pollLastAndOfferFirstTo(queueName, timeout, unit);
     }
-    
+
+    @Override
+    public Map<String, List<V>> pollFirstFromAny(Duration duration, int count, String... queueNames) throws InterruptedException {
+        return blockingQueue.pollFirstFromAny(duration, count, queueNames);
+    }
+
+    @Override
+    public Map<String, List<V>> pollLastFromAny(Duration duration, int count, String... queueNames) throws InterruptedException {
+        return blockingQueue.pollLastFromAny(duration, count, queueNames);
+    }
+
+    @Override
+    public RFuture<Map<String, List<V>>> pollFirstFromAnyAsync(Duration duration, int count, String... queueNames) {
+        return blockingQueue.pollFirstFromAnyAsync(duration, count, queueNames);
+    }
+
+    @Override
+    public RFuture<Map<String, List<V>>> pollLastFromAnyAsync(Duration duration, int count, String... queueNames) {
+        return blockingQueue.pollLastFromAnyAsync(duration, count, queueNames);
+    }
+
     @Override
     public V takeLastAndOfferFirstTo(String queueName) throws InterruptedException {
         return commandExecutor.getInterrupted(takeLastAndOfferFirstToAsync(queueName));

@@ -15,7 +15,10 @@
  */
 package org.redisson.api;
 
+import java.time.Duration;
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import reactor.core.publisher.Flux;
@@ -43,6 +46,36 @@ public interface RBlockingQueueReactive<V> extends RQueueReactive<V> {
      *         specified waiting time elapses before an element is available
      */
     Mono<V> pollFromAny(long timeout, TimeUnit unit, String... queueNames);
+
+    /**
+     * Retrieves and removes first available head elements of <b>any</b> queue,
+     * waiting up to the specified wait time if necessary for an element to become available
+     * in any of defined queues <b>including</b> queue itself.
+     *
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count elements amount
+     * @param queueNames name of queues
+     * @return the head elements
+     */
+    Mono<Map<String, List<V>>> pollFirstFromAny(Duration duration, int count, String... queueNames) throws InterruptedException;
+
+    /**
+     * Retrieves and removes first available tail elements of <b>any</b> queue,
+     * waiting up to the specified wait time if necessary for an element to become available
+     * in any of defined queues <b>including</b> queue itself.
+     *
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count elements amount
+     * @param queueNames name of queues
+     * @return the tail elements
+     */
+    Mono<Map<String, List<V>>> pollLastFromAny(Duration duration, int count, String... queueNames) throws InterruptedException;
 
     /**
      * Removes at most the given number of available elements from

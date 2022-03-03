@@ -721,7 +721,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
-    public <V> RFuture<V> pollFromAnyAsync(String name, Codec codec, RedisCommand<Object> command, long secondsTimeout, String... queueNames) {
+    public <V> RFuture<V> pollFromAnyAsync(String name, Codec codec, RedisCommand<?> command, long secondsTimeout, String... queueNames) {
         if (connectionManager.isClusterMode() && queueNames.length > 0) {
             AtomicReference<Iterator<String>> ref = new AtomicReference<>();
             List<String> names = new ArrayList<>();
@@ -741,7 +741,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     private <V> CompletionStage<V> poll(Codec codec, AtomicReference<Iterator<String>> ref,
-                                        List<String> names, AtomicLong counter, RedisCommand<Object> command) {
+                                        List<String> names, AtomicLong counter, RedisCommand<?> command) {
         if (ref.get().hasNext()) {
             String currentName = ref.get().next();
             RFuture<V> future = writeAsync(currentName, codec, command, currentName, 1);

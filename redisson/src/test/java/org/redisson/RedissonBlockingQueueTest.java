@@ -2,6 +2,7 @@ package org.redisson;
 
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.redisson.ClusterRunner.ClusterProcesses;
 import org.redisson.RedisRunner.RedisProcess;
@@ -13,10 +14,7 @@ import org.redisson.connection.balancer.RandomLoadBalancer;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -25,6 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.redisson.RedisRunner.KEYSPACE_EVENTS_OPTIONS.l;
 
 public class RedissonBlockingQueueTest extends RedissonQueueTest {
 
@@ -510,6 +509,55 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
 
         Assertions.assertEquals(2, l);
         Assertions.assertTrue(System.currentTimeMillis() - s > 2000);
+    }
+
+    @Test
+    public void testPollFirstFromAny() throws InterruptedException {
+//        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("7.0.0") > 0);
+
+        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");
+        RBlockingQueue<Integer> queue2 = redisson.getBlockingQueue("queue:pollany1");
+        RBlockingQueue<Integer> queue3 = redisson.getBlockingQueue("queue:pollany2");
+        Assertions.assertDoesNotThrow(() -> {
+            queue3.put(1);
+            queue3.put(2);
+            queue3.put(3);
+            queue1.put(4);
+            queue1.put(5);
+            queue1.put(6);
+            queue2.put(7);
+            queue2.put(8);
+            queue2.put(9);
+        });
+
+        Map<String, List<Integer>> res = queue1.pollFirstFromAny(Duration.ofSeconds(4), 2, "queue:pollany1", "queue:pollany2");
+        assertThat(res.get("queue:pollany")).containsExactly(4, 5);
+        queue1.clear();
+        Map<String, List<Integer>> res2 = queue1.pollFirstFromAny(Duration.ofSeconds(4), 2);
+        assertThat(res2).isNull();
+    }
+
+    @Test
+    public void testPollLastFromAny() throws InterruptedException {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("7.0.0") > 0);
+
+        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");
+        RBlockingQueue<Integer> queue2 = redisson.getBlockingQueue("queue:pollany1");
+        RBlockingQueue<Integer> queue3 = redisson.getBlockingQueue("queue:pollany2");
+        Assertions.assertDoesNotThrow(() -> {
+            queue3.put(1);
+            queue3.put(2);
+            queue3.put(3);
+            queue1.put(4);
+            queue1.put(5);
+            queue1.put(6);
+            queue2.put(7);
+            queue2.put(8);
+            queue2.put(9);
+        });
+
+        Map<String, List<Integer>> res = queue1.pollLastFromAny(Duration.ofSeconds(4), 2, "queue:pollany1", "queue:pollany2");
+        assertThat(res.get("queue:pollany")).containsExactly(6, 5);
     }
 
     @Test

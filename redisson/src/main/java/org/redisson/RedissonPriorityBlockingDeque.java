@@ -28,6 +28,7 @@ import org.redisson.misc.RedissonPromise;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -85,6 +86,26 @@ public class RedissonPriorityBlockingDeque<V> extends RedissonPriorityDeque<V> i
 
     @Override
     public V pollFromAny(long timeout, TimeUnit unit, String... queueNames) throws InterruptedException {
+        throw new UnsupportedOperationException("use poll method");
+    }
+
+    @Override
+    public Map<String, List<V>> pollFirstFromAny(Duration duration, int count, String... queueNames) throws InterruptedException {
+        throw new UnsupportedOperationException("use poll method");
+    }
+
+    @Override
+    public Map<String, List<V>> pollLastFromAny(Duration duration, int count, String... queueNames) throws InterruptedException {
+        throw new UnsupportedOperationException("use poll method");
+    }
+
+    @Override
+    public RFuture<Map<String, List<V>>> pollFirstFromAnyAsync(Duration duration, int count, String... queueNames) {
+        throw new UnsupportedOperationException("use poll method");
+    }
+
+    @Override
+    public RFuture<Map<String, List<V>>> pollLastFromAnyAsync(Duration duration, int count, String... queueNames) {
         throw new UnsupportedOperationException("use poll method");
     }
 

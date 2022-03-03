@@ -15,6 +15,9 @@
  */
 package org.redisson.api;
 
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -42,6 +45,36 @@ public interface RBlockingQueue<V> extends BlockingQueue<V>, RQueue<V>, RBlockin
      * @throws InterruptedException if interrupted while waiting
      */
     V pollFromAny(long timeout, TimeUnit unit, String... queueNames) throws InterruptedException;
+
+    /**
+     * Retrieves and removes first available head elements of <b>any</b> queue,
+     * waiting up to the specified wait time if necessary for an element to become available
+     * in any of defined queues <b>including</b> queue itself.
+     *
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count elements amount
+     * @param queueNames name of queues
+     * @return the head elements
+     */
+    Map<String, List<V>> pollFirstFromAny(Duration duration, int count, String... queueNames) throws InterruptedException;
+
+    /**
+     * Retrieves and removes first available tail elements of <b>any</b> queue,
+     * waiting up to the specified wait time if necessary for an element to become available
+     * in any of defined queues <b>including</b> queue itself.
+     *
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count elements amount
+     * @param queueNames name of queues
+     * @return the tail elements
+     */
+    Map<String, List<V>> pollLastFromAny(Duration duration, int count, String... queueNames) throws InterruptedException;
 
     /**
      * Retrieves and removes last available tail element of this queue and adds it at the head of <code>queueName</code>,

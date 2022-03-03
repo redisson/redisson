@@ -246,9 +246,28 @@ public interface RedisCommands {
     RedisCommand<Object> BZPOPMIN_VALUE = new RedisCommand<Object>("BZPOPMIN", new ScoredSortedSetPolledObjectDecoder());
     RedisCommand<Object> BZPOPMAX_VALUE = new RedisCommand<Object>("BZPOPMAX", new ScoredSortedSetPolledObjectDecoder());
 
+    RedisCommand<Map<String, List<Object>>> BLMPOP = new RedisCommand<>("BLMPOP",
+            new ListMultiDecoder2(
+                    new ObjectDecoder(StringCodec.INSTANCE.getValueDecoder()) {
+                        @Override
+                        public Object decode(List parts, State state) {
+                            return Collections.singletonMap(parts.get(0), parts.get(1));
+                        }
+                    },
+                    new CodecDecoder(),
+                    new CodecDecoder() {
+                        @Override
+                        public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+                            if ((paramNum + 1) % 2 == 0) {
+                                return DoubleCodec.INSTANCE.getValueDecoder();
+                            }
+                            return codec.getValueDecoder();
+                        }
+                    }));
+
     Set<String> BLOCKING_COMMAND_NAMES = new HashSet<String>(
             Arrays.asList(BRPOPLPUSH.getName(), BZPOPMIN_VALUE.getName(), BZPOPMAX_VALUE.getName(),
-                    BLPOP.getName(), BRPOP.getName(), BLMOVE.getName(), BZMPOP_SINGLE_LIST.getName()));
+                    BLPOP.getName(), BRPOP.getName(), BLMOVE.getName(), BZMPOP_SINGLE_LIST.getName(), BLMPOP.getName()));
 
     RedisCommand<Boolean> PFADD = new RedisCommand<Boolean>("PFADD", new BooleanReplayConvertor());
     RedisStrictCommand<Long> PFCOUNT = new RedisStrictCommand<Long>("PFCOUNT");
