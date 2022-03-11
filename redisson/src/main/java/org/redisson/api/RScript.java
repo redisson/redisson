@@ -28,7 +28,17 @@ import java.util.List;
  */
 public interface RScript extends RScriptAsync {
 
-    enum Mode {READ_ONLY, READ_WRITE}
+    enum Mode {
+        /**
+         * Execute script as read operation
+         */
+        READ_ONLY,
+
+        /**
+         * Execute script as write operation
+         */
+        READ_WRITE
+    }
 
     enum ReturnType {
         BOOLEAN(RedisCommands.EVAL_BOOLEAN_SAFE),
