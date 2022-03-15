@@ -382,6 +382,16 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
+    public RFunction getFunction() {
+        return new RedissonFuction(commandExecutor);
+    }
+
+    @Override
+    public RFunction getFunction(Codec codec) {
+        return new RedissonFuction(commandExecutor, codec);
+    }
+
+    @Override
     public RScript getScript() {
         return new RedissonScript(commandExecutor);
     }

@@ -498,6 +498,16 @@ public class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
+    public RFunctionReactive getFunction() {
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonFuction(commandExecutor), RFunctionReactive.class);
+    }
+
+    @Override
+    public RFunctionReactive getFunction(Codec codec) {
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonFuction(commandExecutor, codec), RFunctionReactive.class);
+    }
+
+    @Override
     public RScriptReactive getScript() {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonScript(commandExecutor), RScriptReactive.class);
     }

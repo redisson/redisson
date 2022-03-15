@@ -73,6 +73,8 @@ public interface CommandAsyncExecutor {
 
     <R> List<CompletableFuture<R>> executeAll(RedisCommand<?> command, Object... params);
 
+    <R> List<CompletableFuture<R>> executeMasters(RedisCommand<?> command, Object... params);
+
     <R, T> RFuture<R> writeAllAsync(RedisCommand<T> command, SlotCallback<T, R> callback, Object... params);
 
     <T, R> RFuture<Collection<R>> readAllAsync(Codec codec, RedisCommand<T> command, Object... params);

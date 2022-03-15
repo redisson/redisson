@@ -1005,6 +1005,21 @@ public interface RedissonClient {
     RIdGenerator getIdGenerator(String name);
 
     /**
+     * Returns interface for Redis Function feature
+     *
+     * @return function object
+     */
+    RFunction getFunction();
+
+    /**
+     * Returns interface for Redis Function feature using provided codec
+     *
+     * @param codec - codec for params and result
+     * @return function interface
+     */
+    RFunction getFunction(Codec codec);
+
+    /**
      * Returns script operations object
      *
      * @return Script object

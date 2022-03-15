@@ -15,10 +15,7 @@
  */
 package org.redisson.client.protocol;
 
-import org.redisson.api.FastAutoClaimResult;
-import org.redisson.api.RType;
-import org.redisson.api.StreamInfo;
-import org.redisson.api.StreamMessageId;
+import org.redisson.api.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.codec.StringCodec;
@@ -29,8 +26,10 @@ import org.redisson.client.protocol.pubsub.PubSubStatusDecoder;
 import org.redisson.cluster.ClusterNodeInfo;
 import org.redisson.misc.RedisURI;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 /**
  * 
@@ -290,6 +289,84 @@ public interface RedisCommands {
     RedisCommand<Boolean> RPUSH_BOOLEAN = new RedisCommand<Boolean>("RPUSH", new TrueReplayConvertor());
     RedisCommand<Void> RPUSH_VOID = new RedisCommand<Void>("RPUSH", new VoidReplayConvertor());
 
+    RedisStrictCommand<Void> FUNCTION_DELETE = new RedisStrictCommand<>("FUNCTION", "DELETE", new VoidReplayConvertor());
+    RedisStrictCommand<Void> FUNCTION_FLUSH = new RedisStrictCommand<>("FUNCTION", "FLUSH", new VoidReplayConvertor());
+    RedisStrictCommand<Void> FUNCTION_KILL = new RedisStrictCommand<>("FUNCTION", "KILL", new VoidReplayConvertor());
+    RedisStrictCommand<Void> FUNCTION_RESTORE = new RedisStrictCommand<>("FUNCTION", "RESTORE", new VoidReplayConvertor());
+    RedisStrictCommand<Void> FUNCTION_LOAD = new RedisStrictCommand<>("FUNCTION", "LOAD", new VoidReplayConvertor());
+    RedisStrictCommand<Object> FUNCTION_DUMP = new RedisStrictCommand<>("FUNCTION", "DUMP");
+    RedisStrictCommand<Object> FUNCTION_STATS = new RedisStrictCommand<>("FUNCTION", "STATS",
+            new ListMultiDecoder2(
+                    new CodecDecoder() {
+                        @Override
+                        public Object decode(List<Object> parts, State state) {
+                            FunctionStats.RunningFunction runningFunction = (FunctionStats.RunningFunction) parts.get(1);
+                            Map<String, FunctionStats.Engine> engines = (Map<String, FunctionStats.Engine>) parts.get(3);
+                            return new FunctionStats(runningFunction, engines);
+                        }
+                    },
+                    new ObjectDecoder(StringCodec.INSTANCE.getValueDecoder()) {
+                        @Override
+                        public Object decode(List parts, State state) {
+                            if (parts.size() == 2) {
+                                Map<String, FunctionStats.Engine> result = new HashMap<>();
+                                List<Object> objects = (List<Object>) parts.get(1);
+                                Long libraries = (Long) objects.get(1);
+                                Long functions = (Long) objects.get(3);
+                                String engine = (String) parts.get(0);
+                                result.put(engine, new FunctionStats.Engine(libraries, functions));
+                                return result;
+                            }
+                            String name = (String) parts.get(1);
+                            List<Object> command = (List<Object>) parts.get(3);
+                            Long duration = (Long) parts.get(5);
+                            return new FunctionStats.RunningFunction(name, command, Duration.ofMillis(duration));
+                        }
+                    },
+                    new ObjectDecoder(StringCodec.INSTANCE.getValueDecoder())));
+
+    RedisStrictCommand<Object> FUNCTION_LIST = new RedisStrictCommand<>("FUNCTION", "LIST",
+            new ListMultiDecoder2(
+                    new CodecDecoder(),
+                    new ObjectDecoder(StringCodec.INSTANCE.getValueDecoder()) {
+                        @Override
+                        public Object decode(List parts, State state) {
+                            String name = (String) parts.get(1);
+                            String engine = (String) parts.get(3);
+                            String description = (String) parts.get(5);
+                            String code = null;
+                            if (parts.size() > 8) {
+                                code = (String) parts.get(9);
+                            }
+                            List<FunctionLibrary.Function> functions = (List<FunctionLibrary.Function>) parts.get(7);
+                            return new FunctionLibrary(name, engine, description, code, functions);
+                        }
+                    },
+                    new CodecDecoder(),
+                    new ObjectDecoder(StringCodec.INSTANCE.getValueDecoder()) {
+                        @Override
+                        public Object decode(List parts, State state) {
+                            String functionName = (String) parts.get(1);
+                            String functionDescription = (String) parts.get(3);
+                            List<FunctionLibrary.Flag> functionFlags = ((List<String>) parts.get(5)).stream()
+                                    .map(s -> FunctionLibrary.Flag.valueOf(s.toUpperCase().replace("-", "_")))
+                                    .collect(Collectors.toList());
+                            return new FunctionLibrary.Function(functionName, functionDescription, functionFlags);
+                        }
+                    },
+                    new CodecDecoder()));
+
+    RedisStrictCommand<Boolean> FCALL_BOOLEAN_SAFE = new RedisStrictCommand<Boolean>("FCALL", new BooleanNullSafeReplayConvertor());
+    RedisStrictCommand<Long> FCALL_LONG = new RedisStrictCommand<Long>("FCALL");
+    RedisCommand<List<Object>> FCALL_LIST = new RedisCommand<List<Object>>("FCALL", new ObjectListReplayDecoder<Object>());
+    RedisStrictCommand<String> FCALL_STRING = new RedisStrictCommand("FCALL",
+            new ObjectDecoder(StringCodec.INSTANCE.getValueDecoder()));
+    RedisCommand<Object> FCALL_OBJECT = new RedisCommand<Object>("FCALL");
+    RedisCommand<Object> FCALL_MAP_VALUE = new RedisCommand<Object>("FCALL", new MapValueDecoder());
+    RedisCommand<List<Object>> FCALL_MAP_VALUE_LIST = new RedisCommand<List<Object>>("FCALL",
+            new MapValueDecoder(new ObjectListReplayDecoder<>()));
+
+
     RedisStrictCommand<String> SCRIPT_LOAD = new RedisStrictCommand<String>("SCRIPT", "LOAD", new ObjectDecoder(new StringDataDecoder()));
     RedisStrictCommand<Boolean> SCRIPT_KILL = new RedisStrictCommand<Boolean>("SCRIPT", "KILL", new BooleanReplayConvertor());
     RedisStrictCommand<Boolean> SCRIPT_FLUSH = new RedisStrictCommand<Boolean>("SCRIPT", "FLUSH", new BooleanReplayConvertor());
@@ -300,7 +377,7 @@ public interface RedisCommands {
     RedisStrictCommand<Boolean> EVAL_BOOLEAN_SAFE = new RedisStrictCommand<Boolean>("EVAL", new BooleanNullSafeReplayConvertor());
     RedisStrictCommand<Boolean> EVAL_NULL_BOOLEAN = new RedisStrictCommand<Boolean>("EVAL", new BooleanNullReplayConvertor());
     RedisStrictCommand<String> EVAL_STRING = new RedisStrictCommand("EVAL",
-            new ObjectDecoder(new StringReplayDecoder()));
+            new ObjectDecoder(StringCodec.INSTANCE.getValueDecoder()));
     RedisStrictCommand<String> EVAL_PERMIT_DATA = new RedisStrictCommand("EVAL",
             new ObjectDecoder(new PermitDecoder()));
     RedisStrictCommand<Integer> EVAL_INTEGER = new RedisStrictCommand<Integer>("EVAL", new IntegerReplayConvertor());

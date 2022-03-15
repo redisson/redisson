@@ -831,6 +831,21 @@ public interface RedissonReactiveClient {
     RBitSetReactive getBitSet(String name);
 
     /**
+     * Returns interface for Redis Function feature
+     *
+     * @return function object
+     */
+    RFunctionReactive getFunction();
+
+    /**
+     * Returns interface for Redis Function feature using provided codec
+     *
+     * @param codec - codec for params and result
+     * @return function interface
+     */
+    RFunctionReactive getFunction(Codec codec);
+
+    /**
      * Returns script operations object
      *
      * @return Script object

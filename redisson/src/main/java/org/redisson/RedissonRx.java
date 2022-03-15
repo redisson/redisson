@@ -479,6 +479,16 @@ public class RedissonRx implements RedissonRxClient {
     }
 
     @Override
+    public RFunctionRx getFunction() {
+        return RxProxyBuilder.create(commandExecutor, new RedissonFuction(commandExecutor), RFunctionRx.class);
+    }
+
+    @Override
+    public RFunctionRx getFunction(Codec codec) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonFuction(commandExecutor, codec), RFunctionRx.class);
+    }
+
+    @Override
     public RScriptRx getScript() {
         return RxProxyBuilder.create(commandExecutor, new RedissonScript(commandExecutor), RScriptRx.class);
     }

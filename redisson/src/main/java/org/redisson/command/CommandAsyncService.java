@@ -261,6 +261,16 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
+    public <R> List<CompletableFuture<R>> executeMasters(RedisCommand<?> command, Object... params) {
+        List<CompletableFuture<R>> futures = connectionManager.getEntrySet().stream().map(e -> {
+            RFuture<R> f = async(false, new NodeSource(e),
+                    connectionManager.getCodec(), command, params, true, false);
+            return f.toCompletableFuture();
+        }).collect(Collectors.toList());
+        return futures;
+    }
+
+    @Override
     public <R> List<CompletableFuture<R>> executeAll(RedisCommand<?> command, Object... params) {
         Collection<MasterSlaveEntry> nodes = connectionManager.getEntrySet();
         List<CompletableFuture<R>> futures = new ArrayList<>();
@@ -271,7 +281,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
             e.getAllEntries().stream().filter(c -> c.getNodeType() == NodeType.SLAVE).forEach(c -> {
                 RFuture<R> slavePromise = async(true, new NodeSource(e, c.getClient()),
-                        connectionManager.getCodec(), RedisCommands.SCRIPT_LOAD, params, true, false);
+                        connectionManager.getCodec(), command, params, true, false);
                 futures.add(slavePromise.toCompletableFuture());
             });
         });
