@@ -311,6 +311,10 @@ public class MasterSlaveEntry {
         return addSlave(address, uri, false, NodeType.SLAVE, sslHostname);
     }
 
+    public CompletableFuture<Void> addSlave(RedisClient client) {
+        return addSlave(client, false, NodeType.SLAVE);
+    }
+
     private CompletableFuture<Void> addSlave(RedisClient client, boolean freezed, NodeType nodeType) {
         CompletableFuture<InetSocketAddress> addrFuture = client.resolveAddr();
         return addrFuture.thenCompose(res -> {
