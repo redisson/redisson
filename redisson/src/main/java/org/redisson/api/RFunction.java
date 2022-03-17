@@ -30,7 +30,7 @@ public interface RFunction extends RFunctionAsync {
 
     enum Mode {
         /**
-         * Execute script as read operation
+         * Execute function as read operation
          */
         READ,
 
@@ -62,7 +62,7 @@ public interface RFunction extends RFunctionAsync {
         STRING(RedisCommands.FCALL_STRING),
 
         /**
-         * Result is a value of Object type
+         * Result is a value of user defined type
          */
         VALUE(RedisCommands.FCALL_OBJECT),
 
