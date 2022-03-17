@@ -144,7 +144,7 @@ public class RedissonMultiLock implements RLock {
             if (leaseTime != -1) {
                 AtomicInteger counter = new AtomicInteger(acquiredLocks.size());
                 for (RLock rLock : acquiredLocks) {
-                    RFuture<Boolean> future = ((RedissonLock) rLock).expireAsync(unit.toMillis(leaseTime), TimeUnit.MILLISECONDS);
+                    RFuture<Boolean> future = ((RedissonBaseLock) rLock).expireAsync(unit.toMillis(leaseTime), TimeUnit.MILLISECONDS);
                     future.onComplete((res, e) -> {
                         if (e != null) {
                             result.tryFailure(e);
@@ -418,7 +418,7 @@ public class RedissonMultiLock implements RLock {
 
         if (leaseTime != -1) {
             acquiredLocks.stream()
-                    .map(l -> (RedissonLock) l)
+                    .map(l -> (RedissonBaseLock) l)
                     .map(l -> l.expireAsync(unit.toMillis(leaseTime), TimeUnit.MILLISECONDS))
                     .forEach(f -> f.toCompletableFuture().join());
         }
