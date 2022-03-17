@@ -37,6 +37,7 @@ import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 
@@ -139,10 +140,15 @@ public class LoadBalancerManager {
                     CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
                     future.whenComplete((r, e) -> {
                         if (e != null) {
+                            log.error("Unable to unfreeze entry: " + entry, e);
                             entry.setInitialized(false);
+                            connectionManager.newTimeout(t -> {
+                                unfreeze(entry, freezeReason);
+                            }, 1, TimeUnit.SECONDS);
                             return;
                         }
 
+                        log.info("Unfreezed entry: {}", entry);
                         entry.setFreezeReason(null);
                     });
                     return true;
