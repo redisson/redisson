@@ -48,9 +48,9 @@ public class LoadBalancerManager {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private final ConnectionManager connectionManager;
-    private final PubSubConnectionPool pubSubConnectionPool;
-    private final SlaveConnectionPool slaveConnectionPool;
+    protected final ConnectionManager connectionManager;
+    protected final PubSubConnectionPool pubSubConnectionPool;
+    protected final SlaveConnectionPool slaveConnectionPool;
     
     private final Map<RedisClient, ClientConnectionsEntry> client2Entry = new ConcurrentHashMap<>();
 
