@@ -15,10 +15,7 @@
  */
 package org.redisson;
 
-import org.redisson.api.FunctionLibrary;
-import org.redisson.api.FunctionStats;
-import org.redisson.api.RFunction;
-import org.redisson.api.RFuture;
+import org.redisson.api.*;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
@@ -148,7 +145,7 @@ public class RedissonFuction implements RFunction {
 
     @Override
     public RFuture<Void> restoreAsync(byte[] payload) {
-        List<CompletableFuture<Void>> futures = commandExecutor.executeMasters(RedisCommands.FUNCTION_RESTORE, (Object) payload);
+        List<CompletableFuture<Void>> futures = commandExecutor.executeMasters(RedisCommands.FUNCTION_RESTORE, payload);
         CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
         return new CompletableFutureWrapper<>(f);
     }
@@ -178,7 +175,7 @@ public class RedissonFuction implements RFunction {
     }
 
     private List<Object> encode(Collection<?> values, Codec codec) {
-        List<Object> result = new ArrayList<Object>(values.size());
+        List<Object> result = new ArrayList<>(values.size());
         for (Object object : values) {
             result.add(commandExecutor.encode(codec, object));
         }
@@ -186,17 +183,17 @@ public class RedissonFuction implements RFunction {
     }
 
     @Override
-    public <R> R call(String key, Mode mode, String name, ReturnType returnType, List<Object> keys, Object... values) {
+    public <R> R call(String key, FunctionMode mode, String name, FunctionResult returnType, List<Object> keys, Object... values) {
         return commandExecutor.get(callAsync(key, mode, name, returnType, keys, values));
     }
 
     @Override
-    public <R> R call(Mode mode, String name, ReturnType returnType, List<Object> keys, Object... values) {
+    public <R> R call(FunctionMode mode, String name, FunctionResult returnType, List<Object> keys, Object... values) {
         return commandExecutor.get(callAsync(mode, name, returnType, keys, values));
     }
 
     @Override
-    public <R> R call(Mode mode, String name, ReturnType returnType) {
+    public <R> R call(FunctionMode mode, String name, FunctionResult returnType) {
         return commandExecutor.get(callAsync(mode, name, returnType));
     }
 
@@ -211,7 +208,7 @@ public class RedissonFuction implements RFunction {
     }
 
     @Override
-    public <R> RFuture<R> callAsync(String key, Mode mode, String name, ReturnType returnType, List<Object> keys, Object... values) {
+    public <R> RFuture<R> callAsync(String key, FunctionMode mode, String name, FunctionResult returnType, List<Object> keys, Object... values) {
         List<Object> args = new ArrayList<>();
         args.add(name);
         args.add(keys.size());
@@ -219,19 +216,19 @@ public class RedissonFuction implements RFunction {
             args.add(keys);
         }
         args.addAll(encode(Arrays.asList(values), codec));
-        if (mode == Mode.READ) {
+        if (mode == FunctionMode.READ) {
             return commandExecutor.readAsync(key, codec, returnType.getCommand(), args.toArray());
         }
         return commandExecutor.writeAsync(key, codec, returnType.getCommand(), args.toArray());
     }
 
     @Override
-    public <R> RFuture<R> callAsync(Mode mode, String name, ReturnType returnType, List<Object> keys, Object... values) {
+    public <R> RFuture<R> callAsync(FunctionMode mode, String name, FunctionResult returnType, List<Object> keys, Object... values) {
         return callAsync(null, mode, name, returnType, keys, values);
     }
 
     @Override
-    public <R> RFuture<R> callAsync(Mode mode, String name, ReturnType returnType) {
+    public <R> RFuture<R> callAsync(FunctionMode mode, String name, FunctionResult returnType) {
         return callAsync(mode, name, returnType, Collections.emptyList());
 
     }

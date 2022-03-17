@@ -1,9 +1,7 @@
 package org.redisson;
 
 import org.junit.jupiter.api.Test;
-import org.redisson.api.FunctionLibrary;
-import org.redisson.api.FunctionStats;
-import org.redisson.api.RFunction;
+import org.redisson.api.*;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 
@@ -30,7 +28,7 @@ public class RedissonFunctionTest extends BaseTest {
         f.load("lib", "redis.register_function('myfun', function(keys, args) for i = 1, 8829381983, 1 do end return args[1] end)" +
                 "redis.register_function('myfun2', function(keys, args) return 'test' end)" +
                 "redis.register_function('myfun3', function(keys, args) return 123 end)");
-        f.callAsync(RFunction.Mode.READ, "myfun", RFunction.ReturnType.VALUE, Collections.emptyList(), "test");
+        f.callAsync(FunctionMode.READ, "myfun", FunctionResult.VALUE, Collections.emptyList(), "test");
         FunctionStats stats = f.stats();
         FunctionStats.RunningFunction func = stats.getRunningFunction();
         assertThat(func.getName()).isEqualTo("myfun");
@@ -50,15 +48,15 @@ public class RedissonFunctionTest extends BaseTest {
         f.load("lib", "redis.register_function('myfun', function(keys, args) return args[1] end)" +
                                         "redis.register_function('myfun2', function(keys, args) return 'test' end)" +
                                         "redis.register_function('myfun3', function(keys, args) return 123 end)");
-        String s = f.call(RFunction.Mode.READ, "myfun", RFunction.ReturnType.VALUE, Collections.emptyList(), "test");
+        String s = f.call(FunctionMode.READ, "myfun", FunctionResult.VALUE, Collections.emptyList(), "test");
         assertThat(s).isEqualTo("test");
 
         RFunction f2 = redisson.getFunction(StringCodec.INSTANCE);
-        String s2 = f2.call(RFunction.Mode.READ, "myfun2", RFunction.ReturnType.STRING, Collections.emptyList());
+        String s2 = f2.call(FunctionMode.READ, "myfun2", FunctionResult.STRING, Collections.emptyList());
         assertThat(s2).isEqualTo("test");
 
         RFunction f3 = redisson.getFunction(LongCodec.INSTANCE);
-        Long s3 = f3.call(RFunction.Mode.READ, "myfun3", RFunction.ReturnType.LONG, Collections.emptyList());
+        Long s3 = f3.call(FunctionMode.READ, "myfun3", FunctionResult.LONG, Collections.emptyList());
         assertThat(s3).isEqualTo(123L);
     }
 

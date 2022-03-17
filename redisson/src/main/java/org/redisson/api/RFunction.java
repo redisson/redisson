@@ -15,9 +15,6 @@
  */
 package org.redisson.api;
 
-import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommands;
-
 import java.util.List;
 
 /**
@@ -27,69 +24,6 @@ import java.util.List;
  *
  */
 public interface RFunction extends RFunctionAsync {
-
-    enum Mode {
-        /**
-         * Execute function as read operation
-         */
-        READ,
-
-        /**
-         * Execute function as read operation
-         */
-        WRITE
-    }
-
-    enum ReturnType {
-        /**
-         * Result is a value of Boolean type
-         */
-        BOOLEAN(RedisCommands.FCALL_BOOLEAN_SAFE),
-
-        /**
-         * Result is a value of Long type
-         */
-        LONG(RedisCommands.FCALL_LONG),
-
-        /**
-         * Result is a value of List type
-         */
-        LIST(RedisCommands.FCALL_LIST),
-
-        /**
-         * Result is a value of plain String type
-         */
-        STRING(RedisCommands.FCALL_STRING),
-
-        /**
-         * Result is a value of user defined type
-         */
-        VALUE(RedisCommands.FCALL_OBJECT),
-
-        /**
-         * Result is a value of Map Value type. Codec.getMapValueDecoder() and Codec.getMapValueEncoder()
-         * methods are used for data deserialization or serialization.
-         */
-        MAPVALUE(RedisCommands.FCALL_MAP_VALUE),
-
-        /**
-         * Result is a value of List type, which consists of objects of Map Value type.
-         * Codec.getMapValueDecoder() and Codec.getMapValueEncoder()
-         * methods are used for data deserialization or serialization.
-         */
-        MAPVALUELIST(RedisCommands.FCALL_MAP_VALUE_LIST);
-
-        private final RedisCommand<?> command;
-
-        ReturnType(RedisCommand<?> command) {
-            this.command = command;
-        }
-
-        public RedisCommand<?> getCommand() {
-            return command;
-        }
-
-    };
 
     /**
      * Deletes library. Error is thrown if library doesn't exist.
@@ -198,7 +132,7 @@ public interface RFunction extends RFunctionAsync {
      * @param values     - values available through VALUES param in script
      * @return result object
      */
-    <R> R call(String key, Mode mode, String name, ReturnType returnType, List<Object> keys, Object... values);
+    <R> R call(String key, FunctionMode mode, String name, FunctionResult returnType, List<Object> keys, Object... values);
 
     /**
      * Executes function
@@ -211,7 +145,7 @@ public interface RFunction extends RFunctionAsync {
      * @param values     - values available through VALUES param in script
      * @return result object
      */
-    <R> R call(Mode mode, String name, ReturnType returnType, List<Object> keys, Object... values);
+    <R> R call(FunctionMode mode, String name, FunctionResult returnType, List<Object> keys, Object... values);
 
     /**
      * Executes function
@@ -222,6 +156,6 @@ public interface RFunction extends RFunctionAsync {
      * @param returnType - return type
      * @return result object
      */
-    <R> R call(Mode mode, String name, ReturnType returnType);
+    <R> R call(FunctionMode mode, String name, FunctionResult returnType);
 
 }

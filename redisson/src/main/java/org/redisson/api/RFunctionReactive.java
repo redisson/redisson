@@ -134,7 +134,7 @@ public interface RFunctionReactive {
      * @param values     - values available through VALUES param in script
      * @return result object
      */
-    <R> Mono<R> call(String key, RFunction.Mode mode, String name, RFunction.ReturnType returnType, List<Object> keys, Object... values);
+    <R> Mono<R> call(String key, FunctionMode mode, String name, FunctionResult returnType, List<Object> keys, Object... values);
 
     /**
      * Executes function
@@ -147,7 +147,7 @@ public interface RFunctionReactive {
      * @param values     - values available through VALUES param in script
      * @return result object
      */
-    <R> Mono<R> call(RFunction.Mode mode, String name, RFunction.ReturnType returnType, List<Object> keys, Object... values);
+    <R> Mono<R> call(FunctionMode mode, String name, FunctionResult returnType, List<Object> keys, Object... values);
 
     /**
      * Executes function
@@ -158,6 +158,6 @@ public interface RFunctionReactive {
      * @param returnType - return type
      * @return result object
      */
-    <R> Mono<R> call(RFunction.Mode mode, String name, RFunction.ReturnType returnType);
+    <R> Mono<R> call(FunctionMode mode, String name, FunctionResult returnType);
 
 }

@@ -15,9 +15,6 @@
  */
 package org.redisson.api;
 
-import org.redisson.api.RFunction.Mode;
-import org.redisson.api.RFunction.ReturnType;
-
 import java.util.List;
 
 /**
@@ -135,7 +132,7 @@ public interface RFunctionAsync {
      * @param values - values available through VALUES param in script
      * @return result object
      */
-    <R> RFuture<R> callAsync(String key, Mode mode, String name, ReturnType returnType, List<Object> keys, Object... values);
+    <R> RFuture<R> callAsync(String key, FunctionMode mode, String name, FunctionResult returnType, List<Object> keys, Object... values);
 
     /**
      * Executes function
@@ -148,7 +145,7 @@ public interface RFunctionAsync {
      * @param values - values available through VALUES param in script
      * @return result object
      */
-    <R> RFuture<R> callAsync(Mode mode, String name, RFunction.ReturnType returnType, List<Object> keys, Object... values);
+    <R> RFuture<R> callAsync(FunctionMode mode, String name, FunctionResult returnType, List<Object> keys, Object... values);
 
     /**
      * Executes function
@@ -159,6 +156,6 @@ public interface RFunctionAsync {
      * @param returnType - return type
      * @return result object
      */
-    <R> RFuture<R> callAsync(Mode mode, String name, ReturnType returnType);
+    <R> RFuture<R> callAsync(FunctionMode mode, String name, FunctionResult returnType);
 
 }
