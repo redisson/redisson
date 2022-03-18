@@ -250,6 +250,10 @@ public abstract class LocalCacheListener {
         byte[] id = generateId();
         RFuture<Long> future = invalidationTopic.publishAsync(new LocalCachedMapClear(instanceId, id, true));
         CompletionStage<Void> f = future.thenCompose(res -> {
+            if (res.intValue() == 0) {
+                return CompletableFuture.completedFuture(null);
+            }
+
             RSemaphore semaphore = getClearSemaphore(id);
             return semaphore.tryAcquireAsync(res.intValue() - 1, 50, TimeUnit.SECONDS)
                     .thenCompose(r -> {
