@@ -46,7 +46,14 @@ public class RedissonScriptTest extends BaseTest {
         assertThat(objs.get(1)).hasSize(15);
         assertThat(objs.get(2)).hasSize(25);
     }
-    
+
+    @Test
+    public void testString() {
+        RScript script = redisson.getScript(StringCodec.INSTANCE);
+        String res = script.eval(RScript.Mode.READ_ONLY, "return 'hello'", RScript.ReturnType.STATUS);
+        assertThat(res).isEqualTo("hello");
+    }
+
     @Test
     public void testEval() {
         RScript script = redisson.getScript(StringCodec.INSTANCE);
