@@ -3,6 +3,44 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 20-Mar-2022 - 3.17.0 released
+
+Feature - `RFunction` object added (requires Redis 7.0+)  
+Feature - `pollLastEntriesFromAny()` and `pollFirstEntriesFromAny()` methods added to RScoredSortedSet object (requires Redis 7.0+)  
+Feature - `expireIfSet()`, `expireIfNotSet()`, `expireIfGreater()` and `expireIfLess()` methods added to RExpirable interface (requires Redis 7.0+)  
+Feature - `checkLockSyncedSlaves` setting added  
+Feature - `getAndExpire` and `getAndClearExpire()` methods added to `RBucket` object (requires Redis 6.2.0+)  
+Feature - `pollFirstFromAny()` and `pollLastFromAny()` methods with timeout and count added to `RScoredSortedSet` object (requires Redis 7.0+)  
+Feature - `pollFirst()` and `pollLast()` methods with timeout and count added to `RScoredSortedSet` object (requires Redis 7.0+)  
+Feature - `addAllIfLess()`, `addAllIfGreater()`, `addAllIfExist()`, `addAllIfAbsent()` methods added to `RScoredSortedSet` object  
+Feature - `RExpirable.expire(Duration)` method added  
+Feature - `RExpirable.expireTime()` method added (requires Redis 7.0+)  
+Feature - `range()`, `rangeReversed()`, `entryRange()`, `entryRangeReversed()` methods with limit parameter added to `RTimeSeries` object  
+Feature - `TransactionalOperation.syncSlaves` setting added  
+Feature - `pollFirstFromAny()` and `pollLastFromAny()` methods added to RBlockingQueue object (requires Redis 7.0+)  
+
+Improvement - read-only cached scripts should be executed on slaves (requires Redis 7.0+)  
+Improvement - SORT_RO command is used for slave nodes (requires Redis 7.0+)  
+Improvement - decrease size of allocated data by RPermitExpirableSemaphore  
+
+Fixed - `RedissonLocalCachedMap.clearLocalCache()` method throws IllegalArgumentException  
+Fixed - RedissonMultiLock doesn't work properly with RedissonSpinLock  
+Fixed - SlaveConnectionPool no available Redis entries error occurs in Cluster mode  
+Fixed - `RKeys.deleteByPattern()` method does not always delete keys correctly  
+Fixed - `expireAt(Instant)` method of RExpirableReactive and `RExpirableRx` interfaces doesn't work  
+Fixed - wrong detection of added and removed slots in Redis Cluster mode  
+Fixed - `RScoredSortedSet.addIfGreater()` and `RScoredSortedSet.addIfLess()` methods always return false  
+Fixed - Spring Data Connection in multi mode causes thread stuck (regression since 3.16.7)  
+Fixed - Sentinel username setting is not applied (thanks to @nicolas-tg-ch)  
+Fixed - RTimeSeries doesn't handle same values for different timestamps  
+Fixed - Quarkus environment variables aren't parsed correctly  
+Fixed - check expiration before release in RPermitExpirableSemaphore (thanks to @randomVariable2)  
+Fixed - RedisTimeoutException: Command execution timeout for command: (PING) (regression since 3.16.3)  
+Fixed - wrong wait time calculation in RedissonMultiLock lock method causes deadlock  
+Fixed - RLocalCachedMap throws NPE if cache update listener receives message during init  
+Fixed - AsyncRemoteProxy throws Redisson is shutdown exception  
+Fixed - RedisClusterNode.clusterSlots() method throws Exception  
+
 ### 21-Jan-2022 - 3.16.8 released
 
 Fixed - Quarkus redisson config fails to load in cluster mode with one node address  
