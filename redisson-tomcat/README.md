@@ -67,7 +67,7 @@ Amount of Redisson instances created by Tomcat for multiple contexts could be re
   
 [redisson-all-3.17.0.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.17.0&e=jar)
   
-Tomcat 7.x - [redisson-tomcat-7-3.16.8.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-7&v=3.17.0&e=jar)  
+Tomcat 7.x - [redisson-tomcat-7-3.17.0.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-7&v=3.17.0&e=jar)  
 
 Tomcat 8.x - [redisson-tomcat-8-3.17.0.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-8&v=3.17.0&e=jar)  
 
