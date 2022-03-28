@@ -20,6 +20,13 @@ import java.util.Set;
 public class RedissonConnectionTest extends BaseConnectionTest {
 
     @Test
+    public void testExecute() {
+        Long s = (Long) connection.execute("ttl", "key".getBytes());
+        assertThat(s).isEqualTo(-2);
+        connection.execute("flushDb");
+    }
+
+    @Test
     public void testRandomMembers() {
         RedisTemplate<String, Integer> redisTemplate = new RedisTemplate<>();
         redisTemplate.setConnectionFactory(new RedissonConnectionFactory(redisson));

@@ -179,7 +179,9 @@ public class RedissonConnection extends AbstractRedisConnection {
     @Override
     public Object execute(String command, byte[]... args) {
         for (Method method : this.getClass().getDeclaredMethods()) {
-            if (method.getName().equalsIgnoreCase(command) && Modifier.isPublic(method.getModifiers())) {
+            if (method.getName().equalsIgnoreCase(command)
+                    && Modifier.isPublic(method.getModifiers())
+                        && (method.getParameterTypes().length == args.length)) {
                 try {
                     Object t = execute(method, args);
                     if (t instanceof String) {
