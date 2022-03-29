@@ -168,7 +168,11 @@ public class RedissonKeys implements RKeys {
 
     @Override
     public RFuture<Long> touchAsync(String... names) {
-        return commandExecutor.writeAllAsync(RedisCommands.TOUCH_LONG, new SlotCallback<Long, Long>() {
+        if (names.length == 0) {
+            return RedissonPromise.newSucceededFuture(0L);
+        }
+
+        return commandExecutor.writeBatchedAsync(null, RedisCommands.TOUCH_LONG, new SlotCallback<Long, Long>() {
             AtomicLong results = new AtomicLong();
 
             @Override

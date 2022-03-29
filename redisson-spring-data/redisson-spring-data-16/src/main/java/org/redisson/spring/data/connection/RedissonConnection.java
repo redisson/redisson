@@ -1737,19 +1737,10 @@ public class RedissonConnection extends AbstractRedisConnection {
             throw new UnsupportedOperationException();
         }
 
-        RFuture<String> f = executorService.writeAllAsync(StringCodec.INSTANCE, RedisCommands.SCRIPT_LOAD, new SlotCallback<String, String>() {
-            volatile String result;
-            @Override
-            public void onSlotResult(String result) {
-                this.result = result;
-            }
-
-            @Override
-            public String onFinish() {
-                return result;
-            }
-        }, script);
-        return sync(f);
+        List<CompletableFuture<String>> futures = executorService.executeAll(RedisCommands.SCRIPT_LOAD, (Object)script);
+        CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        CompletableFuture<String> s = f.thenApply(r -> futures.get(0).getNow(null));
+        return sync(new CompletableFutureWrapper<>(s));
     }
 
     @Override
@@ -1758,26 +1749,19 @@ public class RedissonConnection extends AbstractRedisConnection {
             throw new UnsupportedOperationException();
         }
 
-        RFuture<List<Boolean>> f = executorService.writeAllAsync(RedisCommands.SCRIPT_EXISTS, new SlotCallback<List<Boolean>, List<Boolean>>() {
-            
-            List<Boolean> result = new ArrayList<Boolean>(scriptShas.length);
-            
-            @Override
-            public synchronized void onSlotResult(List<Boolean> result) {
-                for (int i = 0; i < result.size(); i++) {
-                    if (this.result.size() == i) {
-                        this.result.add(false);
-                    }
-                    this.result.set(i, this.result.get(i) | result.get(i));
+        List<CompletableFuture<List<Boolean>>> futures = executorService.executeMasters(RedisCommands.SCRIPT_EXISTS, (Object[]) scriptShas);
+        CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        CompletableFuture<List<Boolean>> s = f.thenApply(r -> {
+            List<Boolean> result = futures.get(0).getNow(new ArrayList<>());
+            for (CompletableFuture<List<Boolean>> future : futures.subList(1, futures.size())) {
+                List<Boolean> l = future.getNow(new ArrayList<>());
+                for (int i = 0; i < l.size(); i++) {
+                    result.set(i, result.get(i) | l.get(i));
                 }
             }
-
-            @Override
-            public List<Boolean> onFinish() {
-                return result;
-            }
-        }, (Object[])scriptShas);
-        return sync(f);
+            return result;
+        });
+        return sync(new CompletableFutureWrapper<>(s));
     }
 
     @Override

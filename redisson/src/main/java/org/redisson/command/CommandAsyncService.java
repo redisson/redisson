@@ -257,7 +257,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     @Override
     public <T> RFuture<Void> writeAllAsync(RedisCommand<T> command, Object... params) {
-        return writeAllAsync(command, null, params);
+        List<CompletableFuture<Void>> futures = executeMasters(command, params);
+        CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
@@ -288,16 +290,6 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return futures;
     }
 
-    @Override
-    public <R, T> RFuture<R> writeAllAsync(RedisCommand<T> command, SlotCallback<T, R> callback, Object... params) {
-        return allAsync(false, connectionManager.getCodec(), command, callback, params);
-    }
-
-    @Override
-    public <R, T> RFuture<R> writeAllAsync(Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, Object... params) {
-        return allAsync(false, codec, command, callback, params);
-    }
-    
     @Override
     public <R, T> RFuture<R> readAllAsync(RedisCommand<T> command, SlotCallback<T, R> callback, Object... params) {
         return allAsync(true, connectionManager.getCodec(), command, callback, params);
