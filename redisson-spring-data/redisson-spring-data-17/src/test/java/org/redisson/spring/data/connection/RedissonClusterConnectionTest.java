@@ -13,7 +13,6 @@ import org.redisson.config.Config;
 import org.redisson.config.SubscriptionMode;
 import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.connection.balancer.RandomLoadBalancer;
-import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.data.redis.connection.ClusterInfo;
 import org.springframework.data.redis.connection.RedisClusterNode;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -21,17 +20,17 @@ import org.springframework.data.redis.connection.RedisNode.NodeType;
 import org.springframework.data.redis.core.types.RedisClientInfo;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.redisson.connection.MasterSlaveConnectionManager.MAX_SLOT;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonClusterConnectionTest {
 
     static RedissonClient redisson;
     static RedissonClusterConnection connection;
     static ClusterProcesses process;
-    
+
     @BeforeClass
     public static void before() throws FailedToStartRedisException, IOException, InterruptedException {
         RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
@@ -107,6 +106,16 @@ public class RedissonClusterConnectionTest {
     public void testClusterGetSlotForKey() {
         Integer slot = connection.clusterGetSlotForKey("123".getBytes());
         assertThat(slot).isNotNull();
+    }
+
+    @Test
+    public void testKeys() {
+        RedisClusterNode node1 = connection.clusterGetNodeForSlot(1);
+        for (int i = 0; i < 1000; i++) {
+            connection.set(("test" + i).getBytes(), ("" + i).getBytes());
+        }
+        Set<byte[]> keys = connection.keys(node1, "test*".getBytes(StandardCharsets.UTF_8));
+        assertThat(keys).hasSize(342);
     }
     
     @Test

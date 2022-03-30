@@ -87,7 +87,7 @@ public class RedisCommand<R> {
         if (replayMultiDecoder != null) {
             this.replayMultiDecoder = replayMultiDecoder;
         } else {
-            this.replayMultiDecoder = (parts, state) -> null;
+            this.replayMultiDecoder = (parts, state) -> (R) parts;
         }
     }
 

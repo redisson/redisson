@@ -188,11 +188,6 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
-    public <T, R> RFuture<Collection<R>> readAllAsync(RedisCommand<T> command, Object... params) {
-        return readAllAsync(connectionManager.getCodec(), command, params);
-    }
-    
-    @Override
     public <T, R> RFuture<Collection<R>> readAllAsync(Codec codec, RedisCommand<T> command, Object... params) {
         Collection<MasterSlaveEntry> nodes = connectionManager.getEntrySet();
         List<CompletableFuture<?>> futures = new ArrayList<>();

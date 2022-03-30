@@ -97,8 +97,6 @@ public interface CommandAsyncExecutor {
 
     <T, R> RFuture<R> writeAsync(String key, Codec codec, RedisCommand<T> command, Object... params);
 
-    <T, R> RFuture<Collection<R>> readAllAsync(RedisCommand<T> command, Object... params);
-    
     <T> RFuture<Void> writeAllAsync(RedisCommand<T> command, Object... params);
 
     <T, R> RFuture<R> writeAsync(String key, RedisCommand<T> command, Object... params);

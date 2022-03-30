@@ -309,15 +309,14 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         return result;
     }
 
+    private final RedisStrictCommand<List<byte[]>> KEYS = new RedisStrictCommand<>("KEYS");
+
     @Override
     public Set<byte[]> keys(RedisClusterNode node, byte[] pattern) {
-        RFuture<Collection<String>> f = executorService.readAllAsync(RedisCommands.KEYS, pattern);
-        Collection<String> keys = syncFuture(f);
-        Set<byte[]> result = new HashSet<byte[]>();
-        for (String key : keys) {
-            result.add(key.getBytes(CharsetUtil.UTF_8));
-        }
-        return result;
+        MasterSlaveEntry entry = getEntry(node);
+        RFuture<Collection<byte[]>> f = executorService.readAsync(entry, ByteArrayCodec.INSTANCE, KEYS, pattern);
+        Collection<byte[]> keys = syncFuture(f);
+        return new HashSet<>(keys);
     }
 
     @Override
