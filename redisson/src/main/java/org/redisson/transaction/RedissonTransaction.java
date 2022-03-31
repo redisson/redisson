@@ -16,8 +16,6 @@
 package org.redisson.transaction;
 
 import io.netty.buffer.ByteBufUtil;
-import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
 import org.redisson.RedissonBatch;
 import org.redisson.RedissonLocalCachedMap;
 import org.redisson.RedissonObject;
@@ -32,9 +30,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.MasterSlaveEntry;
-import org.redisson.misc.AsyncCountDownLatch;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.transaction.operation.TransactionalOperation;
 import org.redisson.transaction.operation.map.MapOperation;
 
@@ -183,36 +179,37 @@ public class RedissonTransaction implements RTransaction {
         }
 
         String id = generateId();
-        RPromise<Void> result = new RedissonPromise<>();
-        CompletableFuture<Map<HashKey, HashValue>> future = disableLocalCacheAsync(id, localCaches, operations);
-        future.whenComplete((hashes, ex) -> {
-            if (ex != null) {
-                result.tryFailure(new TransactionException("Unable to execute transaction", ex));
-                return;
-            }
-            
-            try {
-                checkTimeout();
-            } catch (TransactionTimeoutException e) {
-                enableLocalCacheAsync(id, hashes);
-                result.tryFailure(e);
-                return;
-            }
-                            
-            RFuture<BatchResult<?>> transactionFuture = transactionExecutor.executeAsync();
-            transactionFuture.onComplete((r, exc) -> {
-                if (exc != null) {
-                    result.tryFailure(new TransactionException("Unable to execute transaction", exc));
-                    return;
-                }
-                
-                enableLocalCacheAsync(id, hashes);
-                executed.set(true);
-                
-                result.trySuccess(null);
+        CompletionStage<Map<HashKey, HashValue>> future = disableLocalCacheAsync(id, localCaches, operations);
+        CompletionStage<Void> ff = future
+            .handle((hashes, ex) -> {
+                    if (ex != null) {
+                        throw new CompletionException(new TransactionException("Unable to execute transaction", ex));
+                    }
+
+                    try {
+                        checkTimeout();
+                    } catch (TransactionTimeoutException e) {
+                        enableLocalCacheAsync(id, hashes);
+                        CompletableFuture<Map<HashKey, HashValue>> f = new CompletableFuture<>();
+                        f.completeExceptionally(e);
+                        return f;
+                    }
+
+                    return hashes;
+                })
+            .thenCompose(hashes -> {
+                RFuture<BatchResult<?>> transactionFuture = transactionExecutor.executeAsync();
+                return transactionFuture.handle((r, exc) -> {
+                    if (exc != null) {
+                        throw new CompletionException(new TransactionException("Unable to execute transaction", exc));
+                    }
+
+                    enableLocalCacheAsync(id, (Map<HashKey, HashValue>) hashes);
+                    executed.set(true);
+                    return null;
+                });
             });
-        });
-        return result;
+        return new CompletableFutureWrapper<>(ff);
     }
 
     private BatchOptions createOptions() {
@@ -281,7 +278,7 @@ public class RedissonTransaction implements RTransaction {
 
     private RFuture<BatchResult<?>> enableLocalCacheAsync(String requestId, Map<HashKey, HashValue> hashes) {
         if (hashes.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(null);
+            return new CompletableFutureWrapper<>((BatchResult<?>) null);
         }
         
         RedissonBatch publishBatch = createBatch();
@@ -377,11 +374,7 @@ public class RedissonTransaction implements RTransaction {
             RTopicAsync topic = publishBatch.getTopic(RedissonObject.suffixName(entry.getKey().getName(), RedissonLocalCachedMap.TOPIC_SUFFIX), LocalCachedMessageCodec.INSTANCE);
             RFuture<Long> future = topic.publishAsync(new LocalCachedMapDisable(requestId, 
                     entry.getValue().getKeyIds().toArray(new byte[entry.getValue().getKeyIds().size()][]), options.getResponseTimeout()));
-            future.onComplete((res, e) -> {
-                if (e != null) {
-                    return;
-                }
-                
+            future.thenAccept(res -> {
                 int receivers = res.intValue();
                 AtomicInteger counter = entry.getValue().getCounter();
                 if (counter.addAndGet(receivers) == 0) {
@@ -408,12 +401,11 @@ public class RedissonTransaction implements RTransaction {
         return hashes;
     }
     
-    private CompletableFuture<Map<HashKey, HashValue>> disableLocalCacheAsync(String requestId, Set<String> localCaches, List<TransactionalOperation> operations) {
+    private CompletionStage<Map<HashKey, HashValue>> disableLocalCacheAsync(String requestId, Set<String> localCaches, List<TransactionalOperation> operations) {
         if (localCaches.isEmpty()) {
             return CompletableFuture.completedFuture(Collections.emptyMap());
         }
         
-        CompletableFuture<Map<HashKey, HashValue>> result = new CompletableFuture<>();
         Map<HashKey, HashValue> hashes = new HashMap<>(localCaches.size());
         RedissonBatch batch = createBatch();
         for (TransactionalOperation transactionalOperation : operations) {
@@ -439,82 +431,52 @@ public class RedissonTransaction implements RTransaction {
         }
 
         RFuture<BatchResult<?>> batchListener = batch.executeAsync();
-        batchListener.onComplete((res, e) -> {
-                if (e != null) {
-                    result.completeExceptionally(e);
-                    return;
-                }
-
-                AsyncCountDownLatch latch = new AsyncCountDownLatch();
-                latch.latch(() -> {
-                    result.complete(hashes);
-                }, hashes.size());
-
+        return batchListener.thenCompose(res -> {
                 List<CompletableFuture<?>> subscriptionFutures = new ArrayList<>();
-
                 List<RTopic> topics = new ArrayList<>();
                 for (Entry<HashKey, HashValue> entry : hashes.entrySet()) {
-                    String disabledAckName = RedissonObject.suffixName(entry.getKey().getName(), requestId + RedissonLocalCachedMap.DISABLED_ACK_SUFFIX);
+                    String disabledAckName = RedissonObject.suffixName(entry.getKey().getName(),
+                                            requestId + RedissonLocalCachedMap.DISABLED_ACK_SUFFIX);
                     RTopic topic = RedissonTopic.createRaw(LocalCachedMessageCodec.INSTANCE,
                                                                 commandExecutor, disabledAckName);
                     topics.add(topic);
                     RFuture<Integer> topicFuture = topic.addListenerAsync(Object.class, (channel, msg) -> {
-                        AtomicInteger counter = entry.getValue().getCounter();
-                        if (counter.decrementAndGet() == 0) {
-                            latch.countDown();
-                        }
                     });
                     subscriptionFutures.add(topicFuture.toCompletableFuture());
                 }
 
                 CompletableFuture<Void> subscriptionFuture = CompletableFuture.allOf(subscriptionFutures.toArray(new CompletableFuture[0]));
-                subscriptionFuture.whenComplete((r, ex) -> {
+                return subscriptionFuture.thenCompose(r -> {
                         RedissonBatch publishBatch = createBatch();
                         for (Entry<HashKey, HashValue> entry : hashes.entrySet()) {
                             String disabledKeysName = RedissonObject.suffixName(entry.getKey().getName(), RedissonLocalCachedMap.DISABLED_KEYS_SUFFIX);
                             RMultimapCacheAsync<LocalCachedMapDisabledKey, String> multimap = publishBatch.getListMultimapCache(disabledKeysName, entry.getKey().getCodec());
                             LocalCachedMapDisabledKey localCacheKey = new LocalCachedMapDisabledKey(requestId, options.getResponseTimeout());
                             multimap.removeAllAsync(localCacheKey);
-                            
-                            RTopicAsync topic = publishBatch.getTopic(RedissonObject.suffixName(entry.getKey().getName(), RedissonLocalCachedMap.TOPIC_SUFFIX), LocalCachedMessageCodec.INSTANCE);
-                            RFuture<Long> publishFuture = topic.publishAsync(new LocalCachedMapDisable(requestId, 
-                                    entry.getValue().getKeyIds().toArray(new byte[entry.getValue().getKeyIds().size()][]), options.getResponseTimeout()));
-                            publishFuture.onComplete((receivers, exc) -> {
-                                if (ex != null) {
-                                    return;
-                                }
-                                
-                                AtomicInteger counter = entry.getValue().getCounter();
-                                if (counter.addAndGet(receivers.intValue()) == 0) {
-                                    latch.countDown();
-                                }
-                            });
+
+                            RTopicAsync topic = publishBatch.getTopic(RedissonObject.suffixName(entry.getKey().getName(),
+                                                        RedissonLocalCachedMap.TOPIC_SUFFIX), LocalCachedMessageCodec.INSTANCE);
+                            topic.publishAsync(new LocalCachedMapDisable(requestId,
+                                                        entry.getValue().getKeyIds().toArray(new byte[entry.getValue().getKeyIds().size()][]),
+                                                            options.getResponseTimeout()));
                         }
-                        
+
                         RFuture<BatchResult<?>> publishFuture = publishBatch.executeAsync();
-                        publishFuture.onComplete((res2, ex2) -> {
-                            result.whenComplete((res3, ex3) -> {
-                                for (RTopic topic : topics) {
-                                    topic.removeAllListeners();
-                                }
-                            });
-                            
-                            if (ex2 != null) {
-                                result.completeExceptionally(ex2);
-                                return;
+                        return publishFuture.thenCompose(res2 -> {
+                            for (RTopic t : topics) {
+                                t.removeAllListenersAsync();
                             }
-                            
-                            commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
-                                @Override
-                                public void run(Timeout timeout) throws Exception {
-                                    result.completeExceptionally(new TransactionTimeoutException("Unable to execute transaction within " + options.getResponseTimeout() + "ms"));
-                                }
-                            }, options.getResponseTimeout(), TimeUnit.MILLISECONDS);
+
+                            CompletableFuture<Map<HashKey, HashValue>> timeoutFuture = new CompletableFuture<>();
+                            commandExecutor.getConnectionManager().newTimeout(timeout ->
+                                    timeoutFuture.completeExceptionally(
+                                                        new TransactionTimeoutException("Unable to execute transaction within "
+                                                                + options.getResponseTimeout() + "ms")),
+                                                            options.getResponseTimeout(), TimeUnit.MILLISECONDS);
+                            return timeoutFuture;
                         });
                 });
-        });
-        
-        return result;
+        }).thenApply(r -> hashes);
     }
 
     private RedissonBatch createBatch() {
@@ -560,19 +522,17 @@ public class RedissonTransaction implements RTransaction {
             transactionalOperation.rollback(executorService);
         }
 
-        RPromise<Void> result = new RedissonPromise<>();
         RFuture<BatchResult<?>> future = executorService.executeAsync();
-        future.onComplete((res, e) -> {
+        CompletionStage<Void> f = future.handle((res, e) -> {
             if (e != null) {
-                result.tryFailure(new TransactionException("Unable to rollback transaction", e));
-                return;
+                throw new CompletionException(new TransactionException("Unable to rollback transaction", e));
             }
-            
+
             operations.clear();
             executed.set(true);
-            result.trySuccess(null);
+            return null;
         });
-        return result;
+        return new CompletableFutureWrapper<>(f);
     }
     
     public Set<String> getLocalCaches() {
