@@ -79,5 +79,12 @@ public interface RTopicAsync {
      * @return amount of subscribers
      */
     RFuture<Long> countSubscribersAsync();
+
+    /**
+     * Removes all listeners from this topic
+     *
+     * @return void
+     */
+    RFuture<Void> removeAllListenersAsync();
     
 }

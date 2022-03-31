@@ -38,6 +38,7 @@ import org.redisson.pubsub.PublishSubscribeService;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Distributed topic implementation. Messages are delivered to all message listeners across Redis cluster.
@@ -148,6 +149,37 @@ public class RedissonTopic implements RTopic {
             subscribeService.unsubscribe(PubSubType.UNSUBSCRIBE, channelName).toCompletableFuture().join();
         }
         semaphore.release();
+    }
+
+    public RFuture<Void> removeAllListenersAsync() {
+        AsyncSemaphore semaphore = subscribeService.getSemaphore(channelName);
+        MasterSlaveServersConfig config = commandExecutor.getConnectionManager().getConfig();
+        int timeout = config.getTimeout() + config.getRetryInterval() * config.getRetryAttempts();
+
+        CompletableFuture<Void> res = new CompletableFuture<>();
+        commandExecutor.getConnectionManager().newTimeout(t -> {
+            res.completeExceptionally(new RedisTimeoutException("Remove listeners operation timeout: (" + timeout + "ms) for " + name + " topic"));
+        }, timeout, TimeUnit.MILLISECONDS);
+        semaphore.acquire(() -> {
+            res.complete(null);
+        });
+
+        CompletableFuture<Void> f = res.thenCompose(r -> {
+            PubSubConnectionEntry entry = subscribeService.getPubSubEntry(channelName);
+            if (entry == null) {
+                semaphore.release();
+                return CompletableFuture.completedFuture(null);
+            }
+
+            if (entry.hasListeners(channelName)) {
+                return subscribeService.unsubscribe(PubSubType.UNSUBSCRIBE, channelName);
+            }
+
+            semaphore.release();
+            return CompletableFuture.completedFuture(null);
+        });
+
+        return new CompletableFutureWrapper<>(f);
     }
 
     protected void acquire(AsyncSemaphore semaphore) {

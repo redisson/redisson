@@ -101,5 +101,12 @@ public interface RTopicRx {
      * @return amount of subscribers
      */
     Single<Long> countSubscribers();
-    
+
+    /**
+     * Removes all listeners from this topic
+     *
+     * @return void
+     */
+    Completable removeAllListeners();
+
 }

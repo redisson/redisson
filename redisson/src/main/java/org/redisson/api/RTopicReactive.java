@@ -100,5 +100,12 @@ public interface RTopicReactive {
      * @return amount of subscribers
      */
     Mono<Long> countSubscribers();
-    
+
+    /**
+     * Removes all listeners from this topic
+     *
+     * @return void
+     */
+    Mono<Void> removeAllListeners();
+
 }
