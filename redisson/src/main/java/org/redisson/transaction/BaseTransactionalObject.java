@@ -17,9 +17,15 @@ package org.redisson.transaction;
 
 import java.time.Instant;
 import java.util.Date;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
+import org.redisson.RedissonMultiLock;
 import org.redisson.api.RFuture;
+import org.redisson.api.RLock;
+import org.redisson.misc.CompletableFutureWrapper;
 
 /**
  * 
@@ -56,5 +62,22 @@ public class BaseTransactionalObject {
         throw new UnsupportedOperationException("migrate method is not supported in transaction");
     }
 
-    
+    protected <R> RFuture<R> executeLocked(long timeout, Supplier<CompletionStage<R>> runnable, RLock lock) {
+        CompletionStage<R> f = lock.lockAsync(timeout, TimeUnit.MILLISECONDS).thenCompose(res -> runnable.get());
+        return new CompletableFutureWrapper<>(f);
+    }
+
+    protected <R> RFuture<R> executeLocked(long timeout, Supplier<CompletionStage<R>> runnable, List<RLock> locks) {
+        RedissonMultiLock multiLock = new RedissonMultiLock(locks.toArray(new RLock[0]));
+        long threadId = Thread.currentThread().getId();
+        CompletionStage<R> f = multiLock.lockAsync(timeout, TimeUnit.MILLISECONDS)
+                .thenCompose(res -> runnable.get())
+                .whenComplete((r, e) -> {
+                    if (e != null) {
+                        multiLock.unlockAsync(threadId);
+                    }
+                });
+        return new CompletableFutureWrapper<>(f);
+    }
+
 }

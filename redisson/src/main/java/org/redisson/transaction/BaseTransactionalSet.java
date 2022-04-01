@@ -16,16 +16,15 @@
 package org.redisson.transaction;
 
 import io.netty.buffer.ByteBuf;
-import org.redisson.RedissonMultiLock;
 import org.redisson.RedissonObject;
 import org.redisson.RedissonSet;
 import org.redisson.ScanResult;
 import org.redisson.api.*;
 import org.redisson.client.RedisClient;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.Hash;
 import org.redisson.misc.HashValue;
-import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 import org.redisson.transaction.operation.DeleteOperation;
 import org.redisson.transaction.operation.TouchOperation;
@@ -35,7 +34,9 @@ import org.redisson.transaction.operation.set.MoveOperation;
 
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 
 /**
  * 
@@ -87,19 +88,12 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
     }
     
     public RFuture<Boolean> touchAsync(CommandAsyncExecutor commandExecutor) {
-        RPromise<Boolean> result = new RedissonPromise<Boolean>();
         if (deleted != null && deleted) {
             operations.add(new TouchOperation(name));
-            result.trySuccess(false);
-            return result;
+            return new CompletableFutureWrapper<>(false);
         }
-        
-        set.isExistsAsync().onComplete((exists, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
-            }
-            
+
+        CompletionStage<Boolean> f = set.isExistsAsync().thenApply(exists -> {
             operations.add(new TouchOperation(name));
             if (!exists) {
                 for (Object value : state.values()) {
@@ -109,10 +103,9 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
                     }
                 }
             }
-            result.trySuccess(exists);
+            return exists;
         });
-                
-        return result;
+        return new CompletableFutureWrapper<>(f);
     }
 
     public RFuture<Boolean> deleteAsync(CommandAsyncExecutor commandExecutor) {
@@ -120,26 +113,21 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
     }
 
     protected RFuture<Boolean> deleteAsync(CommandAsyncExecutor commandExecutor, TransactionalOperation operation) {
-        RPromise<Boolean> result = new RedissonPromise<Boolean>();
         if (deleted != null) {
             operations.add(operation);
-            result.trySuccess(!deleted);
+            CompletableFuture<Boolean> result = new CompletableFuture<>();
+            result.complete(!deleted);
             deleted = true;
-            return result;
+            return new CompletableFutureWrapper<>(result);
         }
-        
-        set.isExistsAsync().onComplete((res, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
-            }
-            
+
+        CompletionStage<Boolean> f = set.isExistsAsync().thenApply(res -> {
             operations.add(operation);
             state.replaceAll((k, v) -> NULL);
             deleted = true;
-            result.trySuccess(res);
+            return res;
         });
-        return result;
+        return new CompletableFutureWrapper<>(f);
     }
     
     public RFuture<Boolean> containsAsync(Object value) {
@@ -182,14 +170,8 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
     protected abstract RFuture<Set<V>> readAllAsyncSource();
     
     public RFuture<Set<V>> readAllAsync() {
-        RPromise<Set<V>> result = new RedissonPromise<>();
         RFuture<Set<V>> future = readAllAsyncSource();
-        future.onComplete((res, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
-            }
-            
+        CompletionStage<Set<V>> f = future.thenApply(res -> {
             Map<HashValue, Object> newstate = new HashMap<>(state);
             for (Iterator<V> iterator = res.iterator(); iterator.hasNext();) {
                 V key = iterator.next();
@@ -198,18 +180,17 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
                     iterator.remove();
                 }
             }
-            
+
             for (Object value : newstate.values()) {
                 if (value == NULL) {
                     continue;
                 }
                 res.add((V) value);
             }
-            
-            result.trySuccess(res);
+            return res;
         });
 
-        return result;
+        return new CompletableFutureWrapper<>(f);
     }
     
     public RFuture<Boolean> addAsync(V value) {
@@ -219,39 +200,27 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
     }
     
     public RFuture<Boolean> addAsync(V value, TransactionalOperation operation) {
-        RPromise<Boolean> result = new RedissonPromise<>();
-        executeLocked(result, value, new Runnable() {
-            @Override
-            public void run() {
-                HashValue keyHash = toHash(value);
-                Object entry = state.get(keyHash);
-                if (entry != null) {
-                    operations.add(operation);
-                    state.put(keyHash, value);
-                    if (deleted != null) {
-                        deleted = false;
-                    }
-                    
-                    result.trySuccess(entry == NULL);
-                    return;
+        return executeLocked(value, () -> {
+            HashValue keyHash = toHash(value);
+            Object entry = state.get(keyHash);
+            if (entry != null) {
+                operations.add(operation);
+                state.put(keyHash, value);
+                if (deleted != null) {
+                    deleted = false;
                 }
-                
-                set.containsAsync(value).onComplete((res, e) -> {
-                    if (e != null) {
-                        result.tryFailure(e);
-                        return;
-                    }
-                    
-                    operations.add(operation);
-                    state.put(keyHash, value);
-                    if (deleted != null) {
-                        deleted = false;
-                    }
-                    result.trySuccess(!res);
-                });
+                return CompletableFuture.completedFuture(entry == NULL);
             }
+
+            return set.containsAsync(value).thenApply(res -> {
+                operations.add(operation);
+                state.put(keyHash, value);
+                if (deleted != null) {
+                    deleted = false;
+                }
+                return !res;
+            });
         });
-        return result;
     }
 
     protected abstract TransactionalOperation createAddOperation(V value, long threadId);
@@ -267,47 +236,31 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
     public RFuture<Boolean> moveAsync(String destination, V value) {
         RSet<V> destinationSet = new RedissonSet<V>(object.getCodec(), commandExecutor, destination, null);
         
-        RPromise<Boolean> result = new RedissonPromise<Boolean>();
         RLock destinationLock = getLock(destinationSet, value);
         RLock lock = getLock(set, value);
-        RedissonMultiLock multiLock = new RedissonMultiLock(destinationLock, lock);
+        List<RLock> locks = Arrays.asList(destinationLock, lock);
+
         long threadId = Thread.currentThread().getId();
-        multiLock.lockAsync(timeout, TimeUnit.MILLISECONDS).onComplete((res, e) -> {
-            if (e != null) {
-                multiLock.unlockAsync(threadId);
-                result.tryFailure(e);
-                return;
-            }
-            
+        return executeLocked(() -> {
             HashValue keyHash = toHash(value);
             Object currentValue = state.get(keyHash);
             if (currentValue != null) {
                 operations.add(createMoveOperation(destination, value, threadId));
                 if (currentValue == NULL) {
-                    result.trySuccess(false);
-                } else {
-                    state.put(keyHash, NULL);
-                    result.trySuccess(true);
+                    return CompletableFuture.completedFuture(false);
                 }
-                return;
+                state.put(keyHash, NULL);
+                return CompletableFuture.completedFuture(true);
             }
-            
-            set.containsAsync(value).onComplete((r, ex) -> {
-                if (ex != null) {
-                    result.tryFailure(ex);
-                    return;
-                }
-                
+
+            return set.containsAsync(value).thenApply(r -> {
                 operations.add(createMoveOperation(destination, value, threadId));
                 if (r) {
                     state.put(keyHash, NULL);
                 }
-
-                result.trySuccess(r);
+                return r;
             });
-        });
-        
-        return result;
+        }, locks);
     }
 
     protected abstract MoveOperation createMoveOperation(String destination, V value, long threadId);
@@ -315,42 +268,27 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
     protected abstract RLock getLock(RCollectionAsync<V> set, V value);
     
     public RFuture<Boolean> removeAsync(Object value) {
-        RPromise<Boolean> result = new RedissonPromise<Boolean>();
         long threadId = Thread.currentThread().getId();
-        executeLocked(result, (V) value, new Runnable() {
-            @Override
-            public void run() {
-                HashValue keyHash = toHash(value);
-                Object currentValue = state.get(keyHash);
-                if (currentValue != null) {
-                    operations.add(createRemoveOperation(value, threadId));
-                    if (currentValue == NULL) {
-                        result.trySuccess(false);
-                    } else {
-                        state.put(keyHash, NULL);
-                        result.trySuccess(true);
-                    }
-                    return;
+        return executeLocked((V) value, () -> {
+            HashValue keyHash = toHash(value);
+            Object currentValue = state.get(keyHash);
+            if (currentValue != null) {
+                operations.add(createRemoveOperation(value, threadId));
+                if (currentValue == NULL) {
+                    return CompletableFuture.completedFuture(false);
                 }
-
-                set.containsAsync(value).onComplete((res, e) -> {
-                    if (e != null) {
-                        result.tryFailure(e);
-                        return;
-                    }
-                    
-                    operations.add(createRemoveOperation(value, threadId));
-                    if (res) {
-                        state.put(keyHash, NULL);
-                    }
-
-                    result.trySuccess(res);
-                });
+                state.put(keyHash, NULL);
+                return CompletableFuture.completedFuture(true);
             }
 
+            return set.containsAsync(value).thenApply(res -> {
+                operations.add(createRemoveOperation(value, threadId));
+                if (res) {
+                    state.put(keyHash, NULL);
+                }
+                return res;
+            });
         });
-        return result;
-        
     }
 
     protected abstract TransactionalOperation createRemoveOperation(Object value, long threadId);
@@ -371,32 +309,19 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
     }
 
     public RFuture<Boolean> addAllAsync(Collection<? extends V> c) {
-        RPromise<Boolean> result = new RedissonPromise<Boolean>();
         long threadId = Thread.currentThread().getId();
-        executeLocked(result, new Runnable() {
-            @Override
-            public void run() {
-                containsAllAsync(c).onComplete((res, e) -> {
-                    if (e != null) {
-                        result.tryFailure(e);
-                        return;
-                    }
-
-                    for (V value : c) {
-                        operations.add(createAddOperation(value, threadId));
-                        HashValue keyHash = toHash(value);
-                        state.put(keyHash, value);
-                    }
-                    
-                    if (deleted != null) {
-                        deleted = false;
-                    }
-                    
-                    result.trySuccess(!res);
-                });
+        return executeLocked(() -> containsAllAsync(c).thenApply(res -> {
+            for (V value : c) {
+                operations.add(createAddOperation(value, threadId));
+                HashValue keyHash = toHash(value);
+                state.put(keyHash, value);
             }
-        }, c);
-        return result;
+
+            if (deleted != null) {
+                deleted = false;
+            }
+            return !res;
+        }), c);
     }
     
     public RFuture<Boolean> retainAllAsync(Collection<?> c) {
@@ -404,28 +329,15 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
     }
     
     public RFuture<Boolean> removeAllAsync(Collection<?> c) {
-        RPromise<Boolean> result = new RedissonPromise<Boolean>();
         long threadId = Thread.currentThread().getId();
-        executeLocked(result, new Runnable() {
-            @Override
-            public void run() {
-                containsAllAsync(c).onComplete((res, e) -> {
-                    if (e != null) {
-                        result.tryFailure(e);
-                        return;
-                    }
-
-                    for (Object value : c) {
-                        operations.add(createRemoveOperation(value, threadId));
-                        HashValue keyHash = toHash(value);
-                        state.put(keyHash, NULL);
-                    }
-                    
-                    result.trySuccess(!res);
-                });
+        return executeLocked(() -> containsAllAsync(c).thenApply(res -> {
+            for (Object value : c) {
+                operations.add(createRemoveOperation(value, threadId));
+                HashValue keyHash = toHash(value);
+                state.put(keyHash, NULL);
             }
-        }, c);
-        return result;
+            return !res;
+        }), c);
     }
     
     public RFuture<Integer> unionAsync(String... names) {
@@ -508,37 +420,18 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
         }
     }
     
-    protected <R> void executeLocked(RPromise<R> promise, Object value, Runnable runnable) {
+    protected <R> RFuture<R> executeLocked(Object value, Supplier<CompletionStage<R>> runnable) {
         RLock lock = getLock(set, (V) value);
-        executeLocked(promise, runnable, lock);
+        return executeLocked(timeout, runnable, lock);
     }
 
-    protected <R> void executeLocked(RPromise<R> promise, Runnable runnable, RLock lock) {
-        lock.lockAsync(timeout, TimeUnit.MILLISECONDS).onComplete((res, e) -> {
-            if (e == null) {
-                runnable.run();
-            } else {
-                promise.tryFailure(e);
-            }
-        });
-    }
-    
-    protected <R> void executeLocked(RPromise<R> promise, Runnable runnable, Collection<?> values) {
-        List<RLock> locks = new ArrayList<RLock>(values.size());
+    protected <R> RFuture<R> executeLocked(Supplier<CompletionStage<R>> runnable, Collection<?> values) {
+        List<RLock> locks = new ArrayList<>(values.size());
         for (Object value : values) {
             RLock lock = getLock(set, (V) value);
             locks.add(lock);
         }
-        RedissonMultiLock multiLock = new RedissonMultiLock(locks.toArray(new RLock[locks.size()]));
-        long threadId = Thread.currentThread().getId();
-        multiLock.lockAsync(timeout, TimeUnit.MILLISECONDS).onComplete((res, e) -> {
-            if (e == null) {
-                runnable.run();
-            } else {
-                multiLock.unlockAsync(threadId);
-                promise.tryFailure(e);
-            }
-        });
+        return executeLocked(timeout, runnable, locks);
     }
-    
+
 }
