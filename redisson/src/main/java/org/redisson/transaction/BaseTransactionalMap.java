@@ -29,7 +29,6 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.Hash;
 import org.redisson.misc.HashValue;
-import org.redisson.misc.RedissonPromise;
 import org.redisson.transaction.operation.DeleteOperation;
 import org.redisson.transaction.operation.TouchOperation;
 import org.redisson.transaction.operation.TransactionalOperation;
@@ -105,7 +104,7 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
     
     public RFuture<Boolean> isExistsAsync() {
         if (deleted != null) {
-            return RedissonPromise.newSucceededFuture(!deleted);
+            return new CompletableFutureWrapper<>(!deleted);
         }
         
         return map.isExistsAsync();
@@ -212,9 +211,9 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
         MapEntry currentValue = state.get(keyHash);
         if (currentValue != null) {
             if (currentValue == MapEntry.NULL) {
-                return RedissonPromise.newSucceededFuture(false);
+                return new CompletableFutureWrapper<>(false);
             } else {
-                return RedissonPromise.newSucceededFuture(true);
+                return new CompletableFutureWrapper<>(true);
             }
         }
         
@@ -224,7 +223,7 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
     public RFuture<Boolean> containsValueAsync(Object value) {
         for (MapEntry entry : state.values()) {
             if (entry != MapEntry.NULL && isEqual(entry.getValue(), value)) {
-                return RedissonPromise.newSucceededFuture(true);
+                return new CompletableFutureWrapper<>(true);
             }
         }
 
@@ -512,11 +511,11 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
         MapEntry entry = state.get(keyHash);
         if (entry != null) {
             if (entry == MapEntry.NULL) {
-                return RedissonPromise.newSucceededFuture(null);
+                return new CompletableFutureWrapper<>((Integer) null);
             } else {
                 ByteBuf valueState = ((RedissonObject) map).encodeMapValue(entry.getValue());
                 try {
-                    return RedissonPromise.newSucceededFuture(valueState.readableBytes());
+                    return new CompletableFutureWrapper<>(valueState.readableBytes());
                 } finally {
                     valueState.release();
                 }
@@ -531,9 +530,9 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
         MapEntry entry = state.get(keyHash);
         if (entry != null) {
             if (entry == MapEntry.NULL) {
-                return RedissonPromise.newSucceededFuture(null);
+                return new CompletableFutureWrapper<>((V) null);
             } else {
-                return RedissonPromise.newSucceededFuture((V) entry.getValue());
+                return new CompletableFutureWrapper<>((V) entry.getValue());
             }
         }
         return ((RedissonMap<K, V>) map).getOperationAsync(key);
@@ -616,7 +615,7 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
         }
 
         if (keysToLoad.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(map);
+            return new CompletableFutureWrapper<>(map);
         }
         
         RFuture<Map<K, V>> future = ((RedissonMap<K, V>) this.map).getAllOperationAsync(keysToLoad);

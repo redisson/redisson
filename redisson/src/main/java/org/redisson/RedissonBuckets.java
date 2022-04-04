@@ -25,7 +25,7 @@ import org.redisson.codec.CompositeCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.BucketsDecoder;
 import org.redisson.connection.decoder.MapGetAllDecoder;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 
 import java.io.IOException;
 import java.util.*;
@@ -72,7 +72,7 @@ public class RedissonBuckets implements RBuckets {
     @Override
     public <V> RFuture<Map<String, V>> getAsync(String... keys) {
         if (keys.length == 0) {
-            return RedissonPromise.newSucceededFuture(Collections.emptyMap());
+            return new CompletableFutureWrapper<>(Collections.emptyMap());
         }
         
         Codec commandCodec = new CompositeCodec(StringCodec.INSTANCE, codec, codec);
@@ -105,7 +105,7 @@ public class RedissonBuckets implements RBuckets {
     @Override
     public RFuture<Boolean> trySetAsync(Map<String, ?> buckets) {
         if (buckets.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(false);
+            return new CompletableFutureWrapper<>(false);
         }
 
         return commandExecutor.writeBatchedAsync(codec, RedisCommands.MSETNX, new SlotCallback<Boolean, Boolean>() {
@@ -142,7 +142,7 @@ public class RedissonBuckets implements RBuckets {
     @Override
     public RFuture<Void> setAsync(Map<String, ?> buckets) {
         if (buckets.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(null);
+            return new CompletableFutureWrapper<>((Void) null);
         }
 
         return commandExecutor.writeBatchedAsync(codec, RedisCommands.MSET, new SlotCallback<Void, Void>() {

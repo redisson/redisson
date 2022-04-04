@@ -27,7 +27,6 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.iterator.RedissonBaseIterator;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
 import org.redisson.misc.CompletableFutureWrapper;
-import org.redisson.misc.RedissonPromise;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -96,7 +95,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     @Override
     public RFuture<Collection<V>> pollFirstAsync(int count) {
         if (count <= 0) {
-            return RedissonPromise.<Collection<V>>newSucceededFuture(Collections.<V>emptyList());
+            return new CompletableFutureWrapper<>(Collections.emptyList());
         }
 
         return poll(0, count-1, RedisCommands.EVAL_LIST);
@@ -105,7 +104,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     @Override
     public RFuture<Collection<V>> pollLastAsync(int count) {
         if (count <= 0) {
-            return RedissonPromise.<Collection<V>>newSucceededFuture(Collections.<V>emptyList());
+            return new CompletableFutureWrapper<>(Collections.emptyList());
         }
         return poll(-count, -1, RedisCommands.EVAL_LIST);
     }
@@ -520,7 +519,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     @Override
     public RFuture<Integer> addAllAsync(Map<V, Double> objects) {
         if (objects.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(0);
+            return new CompletableFutureWrapper<>(0);
         }
         List<Object> params = new ArrayList<Object>(objects.size()*2+1);
         params.add(getRawName());
@@ -540,7 +539,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     @Override
     public RFuture<Integer> addAllIfAbsentAsync(Map<V, Double> objects) {
         if (objects.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(0);
+            return new CompletableFutureWrapper<>(0);
         }
         List<Object> params = new ArrayList<>(objects.size()*2+1);
         params.add(getRawName());
@@ -561,7 +560,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     @Override
     public RFuture<Integer> addAllIfExistAsync(Map<V, Double> objects) {
         if (objects.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(0);
+            return new CompletableFutureWrapper<>(0);
         }
         List<Object> params = new ArrayList<>(objects.size()*2+1);
         params.add(getRawName());
@@ -583,7 +582,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     @Override
     public RFuture<Integer> addAllIfGreaterAsync(Map<V, Double> objects) {
         if (objects.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(0);
+            return new CompletableFutureWrapper<>(0);
         }
         List<Object> params = new ArrayList<>(objects.size()*2+1);
         params.add(getRawName());
@@ -605,7 +604,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     @Override
     public RFuture<Integer> addAllIfLessAsync(Map<V, Double> objects) {
         if (objects.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(0);
+            return new CompletableFutureWrapper<>(0);
         }
         List<Object> params = new ArrayList<>(objects.size()*2+1);
         params.add(getRawName());
@@ -886,7 +885,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     @Override
     public RFuture<Boolean> containsAllAsync(Collection<?> c) {
         if (c.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(true);
+            return new CompletableFutureWrapper<>(true);
         }
         
         return commandExecutor.evalReadAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
@@ -903,7 +902,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     @Override
     public RFuture<Boolean> removeAllAsync(Collection<?> c) {
         if (c.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(false);
+            return new CompletableFutureWrapper<>(false);
         }
         
         List<Object> params = new ArrayList<Object>(c.size()+1);

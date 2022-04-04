@@ -31,7 +31,6 @@ import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.iterator.RedissonBaseIterator;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.CompositeIterable;
-import org.redisson.misc.RedissonPromise;
 import org.redisson.reactive.CommandReactiveBatchService;
 import org.redisson.rx.CommandRxBatchService;
 
@@ -169,7 +168,7 @@ public class RedissonKeys implements RKeys {
     @Override
     public RFuture<Long> touchAsync(String... names) {
         if (names.length == 0) {
-            return RedissonPromise.newSucceededFuture(0L);
+            return new CompletableFutureWrapper<>(0L);
         }
 
         return commandExecutor.writeBatchedAsync(null, RedisCommands.TOUCH_LONG, new SlotCallback<Long, Long>() {
@@ -323,7 +322,7 @@ public class RedissonKeys implements RKeys {
     @Override
     public RFuture<Long> unlinkAsync(String... keys) {
         if (keys.length == 0) {
-            return RedissonPromise.newSucceededFuture(0L);
+            return new CompletableFutureWrapper<>(0L);
         }
 
         return commandExecutor.writeBatchedAsync(null, RedisCommands.UNLINK, new SlotCallback<Long, Long>() {
@@ -344,7 +343,7 @@ public class RedissonKeys implements RKeys {
     @Override
     public RFuture<Long> deleteAsync(String... keys) {
         if (keys.length == 0) {
-            return RedissonPromise.newSucceededFuture(0L);
+            return new CompletableFutureWrapper<>(0L);
         }
 
         return commandExecutor.writeBatchedAsync(null, RedisCommands.DEL, new SlotCallback<Long, Long>() {

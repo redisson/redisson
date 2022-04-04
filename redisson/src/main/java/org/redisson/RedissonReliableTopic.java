@@ -27,7 +27,6 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
-import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -155,7 +154,7 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
         listeners.put(id, new Entry(type, listener));
 
         if (subscriberId.get() != null) {
-            return RedissonPromise.newSucceededFuture(id);
+            return new CompletableFutureWrapper<>(id);
         }
 
         if (subscriberId.compareAndSet(null, id)) {
@@ -178,7 +177,7 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
             return new CompletableFutureWrapper<>(f);
         }
 
-        return RedissonPromise.newSucceededFuture(id);
+        return new CompletableFutureWrapper<>(id);
     }
 
     private void poll(String id, StreamMessageId startId) {
@@ -298,7 +297,7 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
         if (listeners.isEmpty()) {
             return removeSubscriber();
         }
-        return RedissonPromise.newSucceededFuture(null);
+        return new CompletableFutureWrapper<>((Void) null);
     }
 
     private RFuture<Void> removeSubscriber() {

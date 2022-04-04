@@ -19,6 +19,7 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.api.RLockAsync;
 import org.redisson.client.RedisResponseTimeoutException;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
@@ -312,7 +313,7 @@ public class RedissonMultiLock implements RLock {
     
     protected RFuture<Void> unlockInnerAsync(Collection<RLock> locks, long threadId) {
         if (locks.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(null);
+            return new CompletableFutureWrapper<>((Void) null);
         }
         
         RPromise<Void> result = new RedissonPromise<Void>();

@@ -25,7 +25,6 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.Hash;
 import org.redisson.misc.HashValue;
-import org.redisson.misc.RedissonPromise;
 import org.redisson.transaction.operation.DeleteOperation;
 import org.redisson.transaction.operation.TouchOperation;
 import org.redisson.transaction.operation.TransactionalOperation;
@@ -77,7 +76,7 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
     
     public RFuture<Boolean> isExistsAsync() {
         if (deleted != null) {
-            return RedissonPromise.newSucceededFuture(!deleted);
+            return new CompletableFutureWrapper<>(!deleted);
         }
         
         return set.isExistsAsync();
@@ -133,7 +132,7 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
     public RFuture<Boolean> containsAsync(Object value) {
         for (Object val : state.values()) {
             if (val != NULL && isEqual(val, value)) {
-                return RedissonPromise.newSucceededFuture(true);
+                return new CompletableFutureWrapper<>(true);
             }
         }
         

@@ -24,7 +24,6 @@ import org.redisson.api.RLock;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
-import org.redisson.misc.RedissonPromise;
 import org.redisson.transaction.operation.TransactionalOperation;
 import org.redisson.transaction.operation.bucket.BucketSetOperation;
 import org.redisson.transaction.operation.bucket.BucketsTrySetOperation;
@@ -77,7 +76,7 @@ public class RedissonTransactionalBuckets extends RedissonBuckets {
         checkState();
         
         if (keys.length == 0) {
-            return RedissonPromise.newSucceededFuture(Collections.emptyMap());
+            return new CompletableFutureWrapper<>(Collections.emptyMap());
         }
         
         Set<String> keysToLoad = new HashSet<>();
@@ -94,7 +93,7 @@ public class RedissonTransactionalBuckets extends RedissonBuckets {
         }
         
         if (keysToLoad.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(map);
+            return new CompletableFutureWrapper<>(map);
         }
         
         CompletionStage<Map<String, V>> f = super.getAsync(keysToLoad.toArray(new String[0])).thenApply(res -> {

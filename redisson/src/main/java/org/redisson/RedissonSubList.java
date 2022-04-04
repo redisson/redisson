@@ -15,21 +15,6 @@
  */
 package org.redisson;
 
-import static org.redisson.client.protocol.RedisCommands.EVAL_OBJECT;
-import static org.redisson.client.protocol.RedisCommands.LINDEX;
-import static org.redisson.client.protocol.RedisCommands.LPOP;
-import static org.redisson.client.protocol.RedisCommands.LPUSH_BOOLEAN;
-import static org.redisson.client.protocol.RedisCommands.LRANGE;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.NoSuchElementException;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.redisson.api.RFuture;
 import org.redisson.api.RList;
 import org.redisson.client.codec.Codec;
@@ -39,7 +24,12 @@ import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.Convertor;
 import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
+
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.redisson.client.protocol.RedisCommands.*;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.List}
@@ -62,7 +52,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
 
     public RFuture<Integer> sizeAsync() {
         if (size != -1) {
-            return RedissonPromise.newSucceededFuture(size);
+            return new CompletableFutureWrapper<>(size);
         }
         return commandExecutor.readAsync(getRawName(), codec, new RedisStrictCommand<Integer>("LLEN", new IntegerReplayConvertor() {
             @Override
@@ -113,7 +103,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
     @Override
     public RFuture<Boolean> addAllAsync(Collection<? extends V> c) {
         if (c.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(false);
+            return new CompletableFutureWrapper<>(false);
         }
 
         return addAllAsync(toIndex.get() - fromIndex, c);
@@ -124,7 +114,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
         checkIndex(index);
 
         if (coll.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(false);
+            return new CompletableFutureWrapper<>(false);
         }
 
         if (index == 0) { // prepend elements to list
