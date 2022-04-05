@@ -73,7 +73,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
     @Override
     protected CompletableFuture<Void> acquireFailedAsync(long waitTime, TimeUnit unit, long threadId) {
         long wait = threadWaitTime;
-        if (waitTime != -1) {
+        if (waitTime > 0) {
             wait = unit.toMillis(waitTime);
         }
 
@@ -103,7 +103,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
     @Override
     <T> RFuture<T> tryLockInnerAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
         long wait = threadWaitTime;
-        if (waitTime != -1) {
+        if (waitTime > 0) {
             wait = unit.toMillis(waitTime);
         }
 
