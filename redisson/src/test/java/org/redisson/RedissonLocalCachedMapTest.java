@@ -11,6 +11,7 @@ import org.redisson.api.LocalCachedMapOptions.EvictionPolicy;
 import org.redisson.api.LocalCachedMapOptions.ReconnectionStrategy;
 import org.redisson.api.LocalCachedMapOptions.SyncStrategy;
 import org.redisson.api.MapOptions.WriteMode;
+import org.redisson.api.map.MapLoader;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnection;
@@ -622,6 +623,34 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
 
         Awaitility.await().atMost(Durations.ONE_SECOND)
                 .untilAsserted(() -> assertThat(cache.size()).isEqualTo(1));
+    }
+
+    @Test
+    public void testGetStoringCacheMissGetAll() {
+        RLocalCachedMap<String, Integer> map = redisson.getLocalCachedMap("test", LocalCachedMapOptions.<String, Integer>defaults().storeCacheMiss(true).loader(new MapLoader<String, Integer>() {
+            @Override
+            public Integer load(String key) {
+                return null;
+            }
+
+            @Override
+            public Iterable<String> loadAllKeys() {
+                return new ArrayList<>();
+            }
+        }));
+        Map<String, Integer> cache = map.getCachedMap();
+
+        Map<String, Integer> s1 = map.getAll(new HashSet<>(Arrays.asList("1", "2", "3")));
+        assertThat(s1).isEmpty();
+
+        Awaitility.await().atMost(Durations.ONE_SECOND)
+                .untilAsserted(() -> assertThat(cache.size()).isEqualTo(3));
+
+        Map<String, Integer> s2 = map.getAll(new HashSet<>(Arrays.asList("1", "2", "3")));
+        assertThat(s2).isEmpty();
+
+        Awaitility.await().atMost(Durations.ONE_SECOND)
+                .untilAsserted(() -> assertThat(cache.size()).isEqualTo(3));
     }
 
     @Test

@@ -604,7 +604,9 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             CacheKey cacheKey = localCacheView.toCacheKey(key);
             CacheValue value = cache.get(cacheKey);
             if (value != null) {
-                result.put(key, (V) value.getValue());
+                if (value.getValue() != null) {
+                    result.put(key, (V) value.getValue());
+                }
                 iterator.remove();
             }
         }
@@ -629,6 +631,15 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         CompletionStage<Map<K, V>> f = future.thenApply(map -> {
             result.putAll(map);
             cacheMap(map);
+
+            if (storeCacheMiss) {
+                mapKeys.stream()
+                        .filter(key -> !map.containsKey(key))
+                        .forEach(key -> {
+                            CacheKey cacheKey = localCacheView.toCacheKey(key);
+                            cachePut(cacheKey, key, null);
+                        });
+            }
             return result;
         });
         return new CompletableFutureWrapper<>(f);
