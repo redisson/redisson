@@ -271,7 +271,9 @@ public class MasterSlaveEntry {
                 if (!future.isSuccess()) {
                     connectionManager.newTimeout(timeout ->
                             reattachBlockingQueue(commandData), 1, TimeUnit.SECONDS);
+                    return;
                 }
+                log.info("command '{}' has been resent to '{}'", commandData, newConnection.getRedisClient());
             });
             commandData.getPromise().whenComplete((r, ex) -> {
                 entry.releaseWrite(newConnection);
