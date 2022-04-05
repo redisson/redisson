@@ -33,9 +33,8 @@ import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.iterator.RedissonBaseMapIterator;
 import org.redisson.jcache.JMutableEntry.Action;
 import org.redisson.jcache.configuration.JCacheConfiguration;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.Hash;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
 import org.redisson.reactive.ReactiveProxyBuilder;
 import org.redisson.rx.RxProxyBuilder;
 
@@ -54,9 +53,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 /**
@@ -73,8 +70,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
 
     final JCacheManager cacheManager;
     final JCacheConfiguration<K, V> config;
-    private final ConcurrentMap<CacheEntryListenerConfiguration<K, V>, Map<Integer, String>> listeners =
-                                        new ConcurrentHashMap<CacheEntryListenerConfiguration<K, V>, Map<Integer, String>>();
+    private final ConcurrentMap<CacheEntryListenerConfiguration<K, V>, Map<Integer, String>> listeners = new ConcurrentHashMap<>();
     final Redisson redisson;
 
     private CacheLoader<K, V> cacheLoader;
@@ -208,12 +204,35 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
     }
 
+    <V> CompletionStage<V> handleException(CompletionStage<V> f) {
+        return f.handle((r, e) -> {
+            if (e != null) {
+                if (e instanceof CompletionException) {
+                    throw (RuntimeException) e.getCause();
+                }
+                throw new CompletionException(new CacheException(e));
+            }
+            return r;
+        });
+    }
+
+    <V> V sync(RFuture<V> result) {
+        try {
+            return result.toCompletableFuture().join();
+        } catch (Exception e) {
+            if (e.getCause() != null) {
+                throw (RuntimeException) e.getCause();
+            }
+            throw e;
+        }
+    }
+
     @Override
     public V get(K key) {
         RLock lock = getLockedLock(key);
         try {
             RFuture<V> result = getAsync(key);
-            return result.toCompletableFuture().join();
+            return sync(result);
         } finally {
             lock.unlock();
         }
@@ -230,13 +249,13 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
             future = getValue(key);
         } else {
             V value = getValueLocked(key);
-            future = RedissonPromise.newSucceededFuture(value);
+            future = new CompletableFutureWrapper<>(value);
         }
 
-        RPromise<V> result = new RedissonPromise<>();
-        future.onComplete((value, e) -> {
+        CompletableFuture<V> result = new CompletableFuture<>();
+        future.whenComplete((value, e) -> {
             if (e != null) {
-                result.tryFailure(new CacheException(e));
+                result.completeExceptionally(new CacheException(e));
                 return;
             }
 
@@ -246,9 +265,9 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                     redisson.getConnectionManager().getExecutor().execute(() -> {
                         try {
                             V val = loadValue(key);
-                            result.trySuccess(val);
+                            result.complete(val);
                         } catch (Exception ex) {
-                            result.tryFailure(ex);
+                            result.completeExceptionally(ex);
                         }
                     });
                     return;
@@ -257,9 +276,9 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
                 cacheManager.getStatBean(this).addHits(1);
             }
-            result.trySuccess(value);
+            result.complete(value);
         });
-        return result;
+        return new CompletableFutureWrapper<>(result);
     }
 
     V getValueLocked(K key) {
@@ -528,35 +547,20 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
     }
 
     RFuture<Long> handlePutAllResult(double syncId, RFuture<List<Object>> res) {
-        RPromise<Long> result = new RedissonPromise<>();
         if (atomicExecution) {
-            res.onComplete((r, e) -> {
-                if (e != null) {
-                    result.tryFailure(new CacheException(e));
-                    return;
-                }
-
+            CompletionStage<Long> f = res.thenCompose(r -> {
                 Long added = (Long) r.get(0);
                 Long syncs = (Long) r.get(1);
                 if (syncs > 0) {
                     RSemaphore semaphore = redisson.getSemaphore(getSyncName(syncId));
-                    semaphore.acquireAsync(syncs.intValue()).onComplete((obj1, ex) -> {
-                        if (ex != null) {
-                            result.tryFailure(new CacheException(ex));
-                            return;
-                        }
-                        semaphore.deleteAsync().onComplete((obj, exc) -> {
-                            if (exc != null) {
-                                result.tryFailure(new CacheException(exc));
-                                return;
-                            }
-                            result.trySuccess(added);
-                        });
+                    return semaphore.acquireAsync(syncs.intValue()).thenCompose(obj1 -> {
+                        return semaphore.deleteAsync().thenApply(obj -> added);
                     });
-                } else {
-                    result.trySuccess(added);
                 }
+                return CompletableFuture.completedFuture(added);
             });
+            f = handleException(f);
+            return new CompletableFutureWrapper<>(f);
         } else {
             List<Object> r = res.toCompletableFuture().join();
 
@@ -572,9 +576,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 }
             }
 
-            result.trySuccess(added);
+            return new CompletableFutureWrapper<>(added);
         }
-        return result;
     }
 
     RFuture<List<Object>> putAllOperation(CommandAsyncExecutor commandExecutor, double syncId,
@@ -761,55 +764,39 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                      getCreatedSyncChannelName(name), getRemovedSyncChannelName(name), getUpdatedSyncChannelName(name), getOldValueListenerCounter(name)),
              creationTimeout, updateTimeout, System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value), syncId);
 
-        RPromise<Boolean> result = waitSync(syncId, res);
+        RFuture<Boolean> result = waitSync(syncId, res);
 
         return result;
     }
 
-    RPromise<Boolean> waitSync(double syncId, RFuture<List<Object>> res) {
-        RPromise<Boolean> result = new RedissonPromise<>();
+    RFuture<Boolean> waitSync(double syncId, RFuture<List<Object>> res) {
         if (atomicExecution) {
-            res.onComplete((r, e) -> {
-                if (e != null) {
-                    result.tryFailure(new CacheException(e));
-                    return;
-                }
-
+            CompletionStage<Boolean> f = res.thenCompose(r -> {
                 r.add(syncId);
 
                 if (r.size() < 2) {
-                    result.trySuccess((Long) r.get(0) >= 1);
-                    return;
+                    return CompletableFuture.completedFuture((Long) r.get(0) >= 1);
                 }
 
                 Long syncs = (Long) r.get(r.size() - 2);
                 if (syncs != null && syncs > 0) {
                     RSemaphore semaphore = redisson.getSemaphore(getSyncName(syncId));
-                    semaphore.acquireAsync(syncs.intValue()).onComplete((obj1, ex) -> {
-                        if (ex != null) {
-                            result.tryFailure(new CacheException(ex));
-                            return;
-                        }
-                        semaphore.deleteAsync().onComplete((obj, exc) -> {
-                            if (exc != null) {
-                                result.tryFailure(new CacheException(exc));
-                                return;
-                            }
-                            result.trySuccess((Long) r.get(0) >= 1);
-                        });
+                    return semaphore.acquireAsync(syncs.intValue()).thenCompose(obj1 -> {
+                        return semaphore.deleteAsync().thenApply(obj -> (Long) r.get(0) >= 1);
                     });
                 } else {
-                    result.trySuccess((Long) r.get(0) >= 1);
+                    return CompletableFuture.completedFuture((Long) r.get(0) >= 1);
                 }
             });
+            f = handleException(f);
+            return new CompletableFutureWrapper<>(f);
         } else {
             List<Object> r = res.toCompletableFuture().join();
 
             r.add(syncId);
             waitSync(r);
-            result.trySuccess((Long) r.get(0) >= 1);
+            return new CompletableFutureWrapper<>((Long) r.get(0) >= 1);
         }
-        return result;
     }
 
     Long getUpdateTimeout(long baseTime) {
@@ -850,7 +837,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
     RFuture<Boolean> putIfAbsentValue(K key, Object value) {
         Long creationTimeout = getCreationTimeout();
         if (creationTimeout == 0) {
-            return RedissonPromise.newSucceededFuture(false);
+            return new CompletableFutureWrapper<>(false);
         }
 
         String name = getRawName(key);
@@ -941,7 +928,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
 
         RFuture<Map<K, V>> result = getAllAsync(keys);
-        return result.toCompletableFuture().join();
+        return sync(result);
     }
 
     @Override
@@ -1040,11 +1027,11 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                     script, Arrays.asList(name, getTimeoutSetName(name), getRemovedChannelName(name)), args.toArray());
     }
 
-    RPromise<Map<K, V>> handleGetAllResult(long startTime, RFuture<Map<K, V>> res) {
-        RPromise<Map<K, V>> result = new RedissonPromise<>();
-        res.onComplete((r, ex) -> {
+    RFuture<Map<K, V>> handleGetAllResult(long startTime, RFuture<Map<K, V>> res) {
+        CompletableFuture<Map<K, V>> result = new CompletableFuture<>();
+        res.whenComplete((r, ex) -> {
             if (ex != null) {
-                result.tryFailure(ex);
+                result.completeExceptionally(ex);
                 return;
             }
 
@@ -1068,24 +1055,24 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                                 }
                             });
                     } catch (Exception exc) {
-                        result.tryFailure(exc);
+                        result.completeExceptionally(exc);
                         return;
                     }
                     cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
-                    result.trySuccess(map);
+                    result.complete(map);
                 });
             } else {
                 cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
-                result.trySuccess(map);
+                result.complete(map);
             }
         });
-        return result;
+        return new CompletableFutureWrapper<>(result);
     }
 
     @Override
     public boolean containsKey(K key) {
         RFuture<Boolean> future = containsKeyAsync(key);
-        return future.toCompletableFuture().join();
+        return sync(future);
     }
 
     @Override
@@ -1192,40 +1179,34 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
             throw new NullPointerException();
         }
 
-        RPromise<Void> result = new RedissonPromise<>();
         long startTime = currentNanoTime();
         if (config.isWriteThrough()) {
             RLock lock = getLockedLock(key);
             try {
-                RFuture<List<Object>> future;
+                CompletionStage<List<Object>> future;
                 if (atomicExecution) {
                     future = getAndPutValue(key, value);
                 } else {
                     List<Object> res = getAndPutValueLocked(key, value);
-                    future = RedissonPromise.newSucceededFuture(res);
+                    future = new CompletableFutureWrapper<>(res);
                 }
-                future.onComplete((res, ex) -> {
-                    if (ex != null) {
-                        result.tryFailure(new CacheException(ex));
-                        return;
-                    }
-
+                CompletionStage<Void> f = future.thenCompose(res -> {
                     if (res.isEmpty()) {
                         cacheManager.getStatBean(this).addPuts(1);
                         cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
-                        result.trySuccess(null);
-                        return;
+                        return CompletableFuture.completedFuture(null);
                     }
                     Long added = (Long) res.get(0);
                     if (added == null) {
                         cacheManager.getStatBean(this).addPuts(1);
                         cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
-                        result.trySuccess(null);
-                        return;
+                        return CompletableFuture.completedFuture(null);
                     }
 
-                    writeCache(key, value, result, startTime, res, added);
+                    return writeCache(key, value, startTime, res, added);
                 });
+                f = handleException(f);
+                return new CompletableFutureWrapper<>(f);
             } finally {
                 lock.unlock();
             }
@@ -1237,40 +1218,40 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                     future = putValue(key, value);
                 } else {
                     boolean res = putValueLocked(key, value);
-                    future = RedissonPromise.newSucceededFuture(res);
+                    future = new CompletableFutureWrapper<>(res);
                 }
-                future.onComplete((r, e) -> {
+                CompletionStage<Void> f = future.handle((r, e) -> {
                     if (e != null) {
-                        result.tryFailure(new CacheException(e));
-                        return;
+                        throw new CompletionException(new CacheException(e));
                     }
 
                     if (r) {
                         cacheManager.getStatBean(this).addPuts(1);
                     }
                     cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
-                    result.trySuccess(null);
+                    return null;
                 });
+                return new CompletableFutureWrapper<>(f);
             } finally {
                 lock.unlock();
             }
         }
-        return result;
     }
 
-    private void writeCache(K key, V value, RPromise<Void> result, long startTime, List<Object> res, Long added) {
+    private CompletableFuture<Void> writeCache(K key, V value, long startTime, List<Object> res, Long added) {
         Runnable r;
+        CompletableFuture<Void> result = new CompletableFuture<>();
         if (added >= 1) {
             r = () -> {
                 try {
                     cacheWriter.write(new JCacheEntry<K, V>(key, value));
                     cacheManager.getStatBean(this).addPuts(1);
                     cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
-                    result.trySuccess(null);
+                    result.complete(null);
                 } catch (Exception e) {
-                    removeValues(key).onComplete((obj, exc) -> {
+                    removeValues(key).whenComplete((obj, exc) -> {
                         if (exc != null) {
-                            result.tryFailure(new CacheWriterException(exc));
+                            result.completeExceptionally(new CacheWriterException(exc));
                             return;
                         }
 
@@ -1284,12 +1265,12 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                     cacheWriter.delete(key);
                     cacheManager.getStatBean(this).addPuts(1);
                     cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
-                    result.trySuccess(null);
+                    result.complete(null);
                 } catch (Exception e) {
                     if (res.size() == 4 && res.get(1) != null) {
-                        putValue(key, res.get(1)).onComplete((obj, exc) -> {
+                        putValue(key, res.get(1)).whenComplete((obj, exc) -> {
                             if (exc != null) {
-                                result.tryFailure(new CacheWriterException(exc));
+                                result.completeExceptionally(new CacheWriterException(exc));
                                 return;
                             }
 
@@ -1308,12 +1289,13 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         } else {
             r.run();
         }
+        return result;
     }
 
     @Override
     public void put(K key, V value) {
         RFuture<Void> future = putAsync(key, value);
-        future.toCompletableFuture().join();
+        sync(future);
     }
 
     RFuture<Long> removeValues(Object... keys) {
@@ -1435,14 +1417,13 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return result;
     }
 
-    RFuture<List<Object>> getAndPutValue(K key, V value) {
+    CompletionStage<List<Object>> getAndPutValue(K key, V value) {
         Long creationTimeout = getCreationTimeout();
 
         Long updateTimeout = getUpdateTimeout();
 
         double syncId = ThreadLocalRandom.current().nextDouble();
 
-        RPromise<List<Object>> result = new RedissonPromise<>();
         String name = getRawName(key);
         RFuture<List<Object>> future = commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_LIST,
                 "local value = redis.call('hget', KEYS[1], ARGV[4]);"
@@ -1509,25 +1490,18 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                      getRemovedSyncChannelName(name), getCreatedSyncChannelName(name), getUpdatedSyncChannelName(name), getOldValueListenerCounter(name)),
              creationTimeout, updateTimeout, System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value), syncId);
 
-        future.onComplete((r, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
-            }
-
+        return future.thenApply(r -> {
             if (!r.isEmpty()) {
                 r.add(syncId);
             }
-            result.trySuccess(r);
+            return r;
         });
-
-        return result;
     }
 
     @Override
     public V getAndPut(K key, V value) {
         RFuture<V> future = getAndPutAsync(key, value);
-        return future.toCompletableFuture().join();
+        return sync(future);
     }
 
     @Override
@@ -1538,31 +1512,24 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
             throw new NullPointerException();
         }
 
-        RPromise<V> result = new RedissonPromise<>();
         long startTime = currentNanoTime();
         if (config.isWriteThrough()) {
             RLock lock = getLockedLock(key);
             try {
-                RFuture<List<Object>> future;
+                CompletionStage<List<Object>> future;
                 if (atomicExecution) {
                     future = getAndPutValue(key, value);
                 } else {
                     List<Object> res = getAndPutValueLocked(key, value);
-                    future = RedissonPromise.newSucceededFuture(res);
+                    future = new CompletableFutureWrapper<>(res);
                 }
-                future.onComplete((res, ex) -> {
-                    if (ex != null) {
-                        result.tryFailure(new CacheException(ex));
-                        return;
-                    }
-
+                CompletionStage<V> f = future.thenCompose(res -> {
                     if (res.isEmpty()) {
                         cacheManager.getStatBean(this).addPuts(1);
                         cacheManager.getStatBean(this).addMisses(1);
                         cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
                         cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
-                        result.trySuccess(null);
-                        return;
+                        return CompletableFuture.completedFuture((V) null);
                     }
                     Long added = (Long) res.get(0);
                     if (added == null) {
@@ -1570,49 +1537,43 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                         cacheManager.getStatBean(this).addHits(1);
                         cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
                         cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
-                        result.trySuccess((V) res.get(1));
-                        return;
+                        return CompletableFuture.completedFuture((V) res.get(1));
                     }
 
-                    RPromise<Void> writeRes = new RedissonPromise<>();
-                    writeCache(key, value, writeRes, startTime, res, added);
-                    writeRes.onComplete((r, e) -> {
-                        if (e != null) {
-                            result.tryFailure(e);
-                            return;
-                        }
-
+                    CompletableFuture<Void> ff = writeCache(key, value, startTime, res, added);
+                    return ff.thenApply(r -> {
                         V val = getAndPutResult(startTime, res);
-                        result.trySuccess(val);
+                        return val;
                     });
                 });
+                f = handleException(f);
+                return new CompletableFutureWrapper<>(f);
             } finally {
                 lock.unlock();
             }
         } else {
             RLock lock = getLockedLock(key);
             try {
-                RFuture<List<Object>> future;
+                CompletionStage<List<Object>> future;
                 if (atomicExecution) {
                     future = getAndPutValue(key, value);
                 } else {
                     List<Object> res = getAndPutValueLocked(key, value);
-                    future = RedissonPromise.newSucceededFuture(res);
+                    future = new CompletableFutureWrapper<>(res);
                 }
-                future.onComplete((r, e) -> {
+                CompletionStage<V> f = future.handle((r, e) -> {
                     if (e != null) {
-                        result.tryFailure(new CacheException(e));
-                        return;
+                        throw new CompletionException(new CacheException(e));
                     }
 
                     V val = getAndPutResult(startTime, r);
-                    result.trySuccess(val);
+                    return val;
                 });
+                return new CompletableFutureWrapper<>(f);
             } finally {
                 lock.unlock();
             }
         }
-        return result;
     }
 
     private V getAndPutResult(long startTime, List<Object> result) {
@@ -1633,7 +1594,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
     @Override
     public void putAll(Map<? extends K, ? extends V> map) {
         RFuture<Void> result = putAllAsync(map);
-        result.toCompletableFuture().join();
+        sync(result);
     }
 
     @Override
@@ -1652,7 +1613,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
 
         long startTime = currentNanoTime();
         RFuture<Long> future = putAllValues(map);
-        RPromise<Void> result = new RedissonPromise<>();
+        CompletableFuture<Void> result = new CompletableFuture<>();
 
         Runnable r = () -> {
             Map<K, Entry<? extends K, ? extends V>> addedEntries = new HashMap<>();
@@ -1663,9 +1624,9 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
             try {
                 cacheWriter.writeAll(addedEntries.values());
             } catch (Exception e) {
-                removeValues(addedEntries.keySet().toArray()).onComplete((res, ex) -> {
+                removeValues(addedEntries.keySet().toArray()).whenComplete((res, ex) -> {
                     if (ex != null) {
-                        result.tryFailure(new CacheException(ex));
+                        result.completeExceptionally(new CacheException(ex));
                         return;
                     }
 
@@ -1674,12 +1635,12 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 return;
             }
 
-            result.trySuccess(null);
+            result.complete(null);
         };
 
-        future.onComplete((res, ex) -> {
+        future.whenComplete((res, ex) -> {
             if (ex != null) {
-                result.tryFailure(new CacheException(ex));
+                result.completeExceptionally(new CacheException(ex));
                 return;
             }
 
@@ -1690,21 +1651,21 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         });
 
         if (atomicExecution) {
-            future.onComplete((res, ex) -> {
+            future.whenComplete((res, ex) -> {
                 if (config.isWriteThrough()) {
                     commandExecutor.getConnectionManager().getExecutor().execute(r);
                 } else {
-                    result.trySuccess(null);
+                    result.complete(null);
                 }
             });
         } else {
             if (config.isWriteThrough()) {
                 r.run();
             } else {
-                result.trySuccess(null);
+                result.complete(null);
             }
         }
-        return result;
+        return new CompletableFutureWrapper<>(result);
     }
 
     void waitSync(List<Object> result) {
@@ -1728,7 +1689,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
     @Override
     public boolean putIfAbsent(K key, V value) {
         RFuture<Boolean> result = putIfAbsentAsync(key, value);
-        return result.toCompletableFuture().join();
+        return sync(result);
     }
 
     @Override
@@ -1741,18 +1702,18 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
 
         long startTime = currentNanoTime();
         RLock lock = getLockedLock(key);
-        RPromise<Boolean> result = new RedissonPromise<>();
+        CompletableFuture<Boolean> result = new CompletableFuture<>();
         try {
             RFuture<Boolean> future;
             if (atomicExecution) {
                 future = putIfAbsentValue(key, value);
             } else {
                 boolean r = putIfAbsentValueLocked(key, value);
-                future = RedissonPromise.newSucceededFuture(r);
+                future = new CompletableFutureWrapper<>(r);
             }
-            future.onComplete((r, ex) -> {
+            future.whenComplete((r, ex) -> {
                 if (ex != null) {
-                    result.tryFailure(new CacheException(ex));
+                    result.completeExceptionally(new CacheException(ex));
                     return;
                 }
 
@@ -1768,25 +1729,25 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                                 return;
                             }
                             cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
-                            result.trySuccess(r);
+                            result.complete(r);
                         });
                         return;
                     }
                 }
                 cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
-                result.trySuccess(r);
+                result.complete(r);
             });
         } finally {
             lock.unlock();
         }
-        return result;
+        return new CompletableFutureWrapper<>(result);
     }
 
-    void handleException(RPromise<?> result, Exception e) {
+    void handleException(CompletableFuture<?> result, Exception e) {
         if (e instanceof CacheWriterException) {
-            result.tryFailure(e);
+            result.completeExceptionally(e);
         }
-        result.tryFailure(new CacheWriterException(e));
+        result.completeExceptionally(new CacheWriterException(e));
     }
 
     RFuture<Boolean> removeValue(K key) {
@@ -1815,14 +1776,14 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
              Arrays.asList(name, getTimeoutSetName(name), getRemovedChannelName(name), getRemovedSyncChannelName(name)),
              System.currentTimeMillis(), encodeMapKey(key), syncId);
 
-        RPromise<Boolean> result = waitSync(syncId, future);
+        RFuture<Boolean> result = waitSync(syncId, future);
         return result;
     }
 
     @Override
     public boolean remove(K key) {
         RFuture<Boolean> future = removeAsync(key);
-        return future.toCompletableFuture().join();
+        return sync(future);
     }
 
     @Override
@@ -1834,12 +1795,12 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         if (config.isWriteThrough()) {
             RLock lock = getLockedLock(key);
             try {
-                RPromise<Boolean> result = new RedissonPromise<>();
-                RFuture<V> future = getAndRemoveValue(key);
+                CompletableFuture<Boolean> result = new CompletableFuture<>();
+                CompletionStage<V> future = getAndRemoveValue(key);
                 if (atomicExecution) {
-                    future.onComplete((oldValue, ex) -> {
+                    future.whenComplete((oldValue, ex) -> {
                         if (ex != null) {
-                            result.tryFailure(new CacheException(ex));
+                            result.completeExceptionally(new CacheException(ex));
                             return;
                         }
 
@@ -1850,7 +1811,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                                     cacheManager.getStatBean(this).addRemovals(1);
                                 }
                                 cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
-                                result.trySuccess(oldValue != null);
+                                result.complete(oldValue != null);
                             } catch (Exception e) {
                                 if (oldValue != null) {
                                     putValue(key, oldValue);
@@ -1867,7 +1828,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                             cacheManager.getStatBean(this).addRemovals(1);
                         }
                         cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
-                        result.trySuccess(oldValue != null);
+                        result.complete(oldValue != null);
                     } catch (Exception e) {
                         if (oldValue != null) {
                             putValue(key, oldValue);
@@ -1875,24 +1836,21 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                         handleException(result, e);
                     }
                 }
-                return result;
+                return new CompletableFutureWrapper<>(result);
             } finally {
                 lock.unlock();
             }
         } else {
             RFuture<Boolean> result = removeValue(key);
-            result.onComplete((res, ex) -> {
-                if (ex != null) {
-                    return;
-                }
+            CompletionStage<Boolean> f = result.thenApply(res -> {
                 if (res) {
                     cacheManager.getStatBean(this).addRemovals(1);
                 }
                 cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
+                return res;
             });
-            return result;
+            return new CompletableFutureWrapper<>(f);
         }
-
     }
 
     private boolean removeValueLocked(K key, V value) {
@@ -1981,7 +1939,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
     @Override
     public boolean remove(K key, V value) {
         RFuture<Boolean> future = removeAsync(key, value);
-        return future.toCompletableFuture().join();
+        return sync(future);
     }
 
     @Override
@@ -1993,15 +1951,15 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
 
         long startTime = currentNanoTime();
-        RPromise<Boolean> result = new RedissonPromise<>();
         if (config.isWriteThrough()) {
             RLock lock = getLockedLock(key);
             try {
                 if (atomicExecution) {
+                    CompletableFuture<Boolean> result = new CompletableFuture<>();
                     RFuture<Boolean> future = removeValue(key, value);
-                    future.onComplete((r, ex) -> {
+                    future.whenComplete((r, ex) -> {
                         if (ex != null) {
-                            result.tryFailure(new CacheException(ex));
+                            result.completeExceptionally(new CacheException(ex));
                             return;
                         }
 
@@ -2019,14 +1977,15 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                                 cacheManager.getStatBean(this).addHits(1);
                                 cacheManager.getStatBean(this).addRemovals(1);
                                 cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
-                                result.trySuccess(r);
+                                result.complete(r);
                             });
                         } else {
                             cacheManager.getStatBean(this).addMisses(1);
                             cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
-                            result.trySuccess(r);
+                            result.complete(r);
                         }
                     });
+                    return new CompletableFutureWrapper<>(result);
                 } else {
                     boolean res = removeValueLocked(key, value);
                     if (res) {
@@ -2046,7 +2005,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                         cacheManager.getStatBean(this).addMisses(1);
                         cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
                     }
-                    return RedissonPromise.newSucceededFuture(res);
+                    return new CompletableFutureWrapper<>(res);
                 }
             } finally {
                 lock.unlock();
@@ -2059,12 +2018,11 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                     future = removeValue(key, value);
                 } else {
                     boolean res = removeValueLocked(key, value);
-                    future = RedissonPromise.newSucceededFuture(res);
+                    future = new CompletableFutureWrapper<>(res);
                 }
-                future.onComplete((r, ex) -> {
+                CompletionStage<Boolean> f = future.handle((r, ex) -> {
                     if (ex != null) {
-                        result.tryFailure(new CacheException(ex));
-                        return;
+                        throw new CompletionException(new CacheException(ex));
                     }
 
                     if (r) {
@@ -2074,53 +2032,37 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                         cacheManager.getStatBean(this).addMisses(1);
                     }
                     cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
-                    result.trySuccess(r);
+                    return r;
                 });
+                return new CompletableFutureWrapper<>(f);
             } finally {
                 lock.unlock();
             }
         }
-        return result;
     }
 
-    RFuture<Map<K, V>> getAndRemoveValues(Collection<K> keys) {
+    CompletionStage<Map<K, V>> getAndRemoveValues(Collection<K> keys) {
         double syncId = ThreadLocalRandom.current().nextDouble();
 
         RFuture<List<Object>> future = getAndRemoveValuesOperation(commandExecutor, null, getRawName(), (Collection<Object>) keys, syncId);
 
-        RPromise<Map<K, V>> result = new RedissonPromise<>();
         if (atomicExecution) {
-            future.onComplete((r, exc1) -> {
-                if (exc1 != null) {
-                    result.tryFailure(exc1);
-                    return;
-                }
-
+            return future.thenCompose(r -> {
                 long nullsAmount = (long) r.get(1);
                 if (nullsAmount == keys.size()) {
-                    result.trySuccess(Collections.emptyMap());
-                    return;
+                    return CompletableFuture.completedFuture(Collections.emptyMap());
                 }
 
                 long syncs = (long) r.get(0);
                 if (syncs > 0) {
                     RSemaphore semaphore = redisson.getSemaphore(getSyncName(syncId));
-                    semaphore.acquireAsync((int) syncs).onComplete((obj1, ex) -> {
-                        if (ex != null) {
-                            result.tryFailure(ex);
-                            return;
-                        }
-                        semaphore.deleteAsync().onComplete((obj, exc) -> {
-                            if (exc != null) {
-                                result.tryFailure(exc);
-                                return;
-                            }
-
-                            getAndRemoveValuesResult(keys, result, r, nullsAmount);
-                        });
+                    return semaphore.acquireAsync((int) syncs).thenCompose(obj1 -> {
+                        return semaphore.deleteAsync().thenCompose(obj -> {
+                                    return getAndRemoveValuesResult(keys, r, nullsAmount);
+                                });
                     });
                 } else {
-                    getAndRemoveValuesResult(keys, result, r, nullsAmount);
+                    return getAndRemoveValuesResult(keys, r, nullsAmount);
                 }
             });
         } else {
@@ -2128,8 +2070,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
 
             long nullsAmount = (long) r.get(1);
             if (nullsAmount == keys.size()) {
-                result.trySuccess(Collections.emptyMap());
-                return result;
+                return CompletableFuture.completedFuture(Collections.emptyMap());
             }
 
             long syncs = (long) r.get(0);
@@ -2143,10 +2084,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 }
             }
 
-            getAndRemoveValuesResult(keys, result, r, nullsAmount);
+            return getAndRemoveValuesResult(keys, r, nullsAmount);
         }
-
-        return result;
     }
 
     RFuture<List<Object>> getAndRemoveValuesOperation(CommandAsyncExecutor commandExecutor, MasterSlaveEntry entry, String name, Collection<Object> keys, double syncId) {
@@ -2204,11 +2143,10 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 params.toArray());
     }
 
-    private void getAndRemoveValuesResult(Collection<K> keys, RPromise<Map<K, V>> result, List<Object> r,
-                                            long nullsAmount) {
+    private CompletionStage<Map<K, V>> getAndRemoveValuesResult(Collection<K> keys, List<Object> r, long nullsAmount) {
         Map<K, V> res = new HashMap<>();
         fillMap(keys, r, res, nullsAmount, 0);
-        result.trySuccess(res);
+        return CompletableFuture.completedFuture(res);
     }
 
     void fillMap(Collection<K> keys, List<Object> r, Map<K, V> res, long nullsAmount, int baseIndex) {
@@ -2225,9 +2163,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
     }
 
-    RFuture<V> getAndRemoveValue(K key) {
+    CompletionStage<V> getAndRemoveValue(K key) {
         double syncId = ThreadLocalRandom.current().nextDouble();
-        RPromise<V> result = new RedissonPromise<>();
 
         String name = getRawName(key);
         RFuture<List<Object>> future = commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_MAP_VALUE_LIST,
@@ -2252,43 +2189,26 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 System.currentTimeMillis(), encodeMapKey(key), syncId);
 
         if (atomicExecution) {
-            future.onComplete((r, exc1) -> {
-                if (exc1 != null) {
-                    result.tryFailure(exc1);
-                    return;
-                }
-
+            return future.thenCompose(r -> {
                 if (r.size() < 2) {
-                    result.trySuccess(null);
-                    return;
+                    return CompletableFuture.completedFuture((V) null);
                 }
 
                 Long syncs = (Long) r.get(1);
                 if (syncs != null && syncs > 0) {
                     RSemaphore semaphore = redisson.getSemaphore(getSyncName(syncId));
-                    semaphore.acquireAsync(syncs.intValue()).onComplete((obj1, ex) -> {
-                        if (ex != null) {
-                            result.tryFailure(ex);
-                            return;
-                        }
-                        semaphore.deleteAsync().onComplete((obj, exc) -> {
-                            if (exc != null) {
-                                result.tryFailure(exc);
-                                return;
-                            }
-                            result.trySuccess((V) r.get(0));
-                        });
+                    return semaphore.acquireAsync(syncs.intValue()).thenCompose(obj1 -> {
+                        return semaphore.deleteAsync().thenApply(obj -> (V) r.get(0));
                     });
                 } else {
-                    result.trySuccess((V) r.get(0));
+                    return CompletableFuture.completedFuture((V) r.get(0));
                 }
             });
         } else {
             List<Object> r = future.toCompletableFuture().join();
 
             if (r.size() < 2) {
-                result.trySuccess(null);
-                return result;
+                return CompletableFuture.completedFuture((V) null);
             }
 
             Long syncs = (Long) r.get(1);
@@ -2302,16 +2222,14 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 }
             }
 
-            result.trySuccess((V) r.get(0));
+            return CompletableFuture.completedFuture((V) r.get(0));
         }
-
-        return result;
     }
 
     @Override
     public V getAndRemove(K key) {
         RFuture<V> future = getAndRemoveAsync(key);
-        return future.toCompletableFuture().join();
+        return sync(future);
     }
 
     @Override
@@ -2320,13 +2238,13 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         checkKey(key);
 
         long startTime = currentNanoTime();
-        RPromise<V> result = new RedissonPromise<>();
+        CompletableFuture<V> result = new CompletableFuture<>();
         RLock lock = getLockedLock(key);
         try {
-            RFuture<V> future = getAndRemoveValue(key);
-            future.onComplete((value, e) -> {
+            CompletionStage<V> future = getAndRemoveValue(key);
+            future.whenComplete((value, e) -> {
                 if (e != null) {
-                    result.tryFailure(new CacheException(e));
+                    result.completeExceptionally(new CacheException(e));
                     return;
                 }
 
@@ -2351,18 +2269,18 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                         }
                         cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
                         cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
-                        result.trySuccess(value);
+                        result.complete(value);
                     });
                 } else {
                     cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
                     cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
-                    result.trySuccess(value);
+                    result.complete(value);
                 }
             });
         } finally {
             lock.unlock();
         }
-        return result;
+        return new CompletableFutureWrapper<>(result);
     }
 
     private long replaceValueLocked(K key, V oldValue, V newValue) {
@@ -2527,7 +2445,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
     @Override
     public boolean replace(K key, V oldValue, V newValue) {
         RFuture<Boolean> future = replaceAsync(key, oldValue, newValue);
-        return future.toCompletableFuture().join();
+        return sync(future);
     }
 
     @Override
@@ -2543,18 +2461,18 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
 
         long startTime = currentNanoTime();
         RLock lock = getLockedLock(key);
-        RPromise<Boolean> result = new RedissonPromise<>();
+        CompletableFuture<Boolean> result = new CompletableFuture<>();
         try {
             RFuture<Long> future;
             if (atomicExecution) {
                 future = replaceValue(key, oldValue, newValue);
             } else {
                 long res = replaceValueLocked(key, oldValue, newValue);
-                future = RedissonPromise.newSucceededFuture(res);
+                future = new CompletableFutureWrapper<>(res);
             }
-            future.onComplete((res, ex) -> {
+            future.whenComplete((res, ex) -> {
                 if (ex != null) {
-                    result.tryFailure(new CacheException(ex));
+                    result.completeExceptionally(new CacheException(ex));
                     return;
                 }
 
@@ -2574,14 +2492,14 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                             cacheManager.getStatBean(this).addPuts(1);
                             cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
                             cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
-                            result.trySuccess(true);
+                            result.complete(true);
                         });
                     } else {
                         cacheManager.getStatBean(this).addHits(1);
                         cacheManager.getStatBean(this).addPuts(1);
                         cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
                         cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
-                        result.trySuccess(true);
+                        result.complete(true);
                     }
                 } else {
                     if (res == 0) {
@@ -2591,13 +2509,13 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                     }
                     cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
                     cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
-                    result.trySuccess(false);
+                    result.complete(false);
                 }
             });
         } finally {
             lock.unlock();
         }
-        return result;
+        return new CompletableFutureWrapper<>(result);
     }
 
     private boolean replaceValueLocked(K key, V value) {
@@ -2848,7 +2766,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
     @Override
     public boolean replace(K key, V value) {
         RFuture<Boolean> future = replaceAsync(key, value);
-        return future.toCompletableFuture().join();
+        return sync(future);
     }
 
     @Override
@@ -2860,7 +2778,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
 
         long startTime = currentNanoTime();
-        RPromise<Boolean> result = new RedissonPromise<>();
+        CompletableFuture<Boolean> result = new CompletableFuture<>();
         RLock lock = getLockedLock(key);
         try {
             RFuture<Boolean> future;
@@ -2868,12 +2786,12 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 future = replaceValue(key, value);
             } else {
                 boolean res = replaceValueLocked(key, value);
-                future = RedissonPromise.newSucceededFuture(res);
+                future = new CompletableFutureWrapper<>(res);
             }
 
-            future.onComplete((r, ex) -> {
+            future.whenComplete((r, ex) -> {
                 if (ex != null) {
-                    result.tryFailure(new CacheException(ex));
+                    result.completeExceptionally(new CacheException(ex));
                     return;
                 }
 
@@ -2891,7 +2809,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                             cacheManager.getStatBean(this).addHits(1);
                             cacheManager.getStatBean(this).addPuts(1);
                             cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
-                            result.trySuccess(r);
+                            result.complete(r);
                         });
                         return;
                     }
@@ -2902,19 +2820,19 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                     cacheManager.getStatBean(this).addMisses(1);
                 }
                 cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
-                result.trySuccess(r);
+                result.complete(r);
             });
         } finally {
             lock.unlock();
         }
 
-        return result;
+        return new CompletableFutureWrapper<>(result);
     }
 
     @Override
     public V getAndReplace(K key, V value) {
         RFuture<V> future = getAndReplaceAsync(key, value);
-        return future.toCompletableFuture().join();
+        return sync(future);
     }
 
     @Override
@@ -2926,7 +2844,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
 
         long startTime = currentNanoTime();
-        RPromise<V> result = new RedissonPromise<>();
+        CompletableFuture<V> result = new CompletableFuture<>();
         RLock lock = getLockedLock(key);
         try {
             RFuture<V> future;
@@ -2934,11 +2852,11 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 future = getAndReplaceValue(key, value);
             } else {
                 V res = getAndReplaceValueLocked(key, value);
-                future = RedissonPromise.newSucceededFuture(res);
+                future = new CompletableFutureWrapper<>(res);
             }
-            future.onComplete((r, ex) -> {
+            future.whenComplete((r, ex) -> {
                 if (ex != null) {
-                    result.tryFailure(new CacheException(ex));
+                    result.completeExceptionally(new CacheException(ex));
                     return;
                 }
 
@@ -2958,7 +2876,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
 
                             cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
                             cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
-                            result.trySuccess(r);
+                            result.complete(r);
                         });
                         return;
                     }
@@ -2969,18 +2887,18 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 }
                 cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
                 cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
-                result.trySuccess(r);
+                result.complete(r);
             });
         } finally {
             lock.unlock();
         }
-        return result;
+        return new CompletableFutureWrapper<>(result);
     }
 
     @Override
     public void removeAll(Set<? extends K> keys) {
         RFuture<Void> future = removeAllAsync(keys);
-        future.toCompletableFuture().join();
+        sync(future);
     }
 
     @Override
@@ -2992,40 +2910,32 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
 
         long startTime = currentNanoTime();
-        RPromise<Void> result = new RedissonPromise<>();
         if (config.isWriteThrough()) {
-            RFuture<Map<K, V>> future = getAndRemoveValues((Set<K>) keys);
-            future.onComplete((r, ex) -> {
-                if (ex != null) {
-                    result.tryFailure(ex);
-                    return;
-                }
-
+            CompletionStage<Map<K, V>> future = getAndRemoveValues((Set<K>) keys);
+            CompletionStage<Void> f = future.handle((r, ex) -> {
                 try {
                     cacheWriter.deleteAll(r.keySet());
                 } catch (Exception e) {
                     putAllValues(r);
-                    handleException(result, e);
-                    return;
+                    if (e instanceof CacheWriterException) {
+                        throw new CompletionException(e);
+                    }
+                    throw new CompletionException(new CacheWriterException(e));
                 }
                 cacheManager.getStatBean(this).addRemovals(r.size());
                 cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
-                result.trySuccess(null);
+                return null;
             });
-        } else {
-            RFuture<Long> future = removeValues(keys.toArray());
-            future.onComplete((res, ex) -> {
-                if (ex != null) {
-                    result.tryFailure(ex);
-                    return;
-                }
-
-                cacheManager.getStatBean(this).addRemovals(res);
-                cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
-                result.trySuccess(null);
-            });
+            return new CompletableFutureWrapper<>(f);
         }
-        return result;
+
+        RFuture<Long> future = removeValues(keys.toArray());
+        CompletionStage<Void> f = future.thenApply(res -> {
+            cacheManager.getStatBean(this).addRemovals(res);
+            cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
+            return null;
+        });
+        return new CompletableFutureWrapper<>(f);
     }
 
     MapScanResult<Object, Object> scanIterator(String name, RedisClient client, long startPos) {
@@ -3084,7 +2994,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
     @Override
     public void clear() {
         RFuture<Void> future = clearAsync();
-        future.toCompletableFuture().join();
+        sync(future);
     }
 
     @Override
