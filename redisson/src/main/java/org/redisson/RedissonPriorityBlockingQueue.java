@@ -24,14 +24,14 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.ListDrainToDecoder;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -66,23 +66,23 @@ public class RedissonPriorityBlockingQueue<V> extends RedissonPriorityQueue<V> i
 
     @Override
     public RFuture<V> takeAsync() {
-        RPromise<V> result = new RedissonPromise<V>();
+        CompletableFuture<V> result = new CompletableFuture<V>();
         takeAsync(result, 0, 0, RedisCommands.LPOP, getRawName());
-        return result;
+        return new CompletableFutureWrapper<>(result);
     }
 
-    protected <T> void takeAsync(RPromise<V> result, long delay, long timeoutInMicro, RedisCommand<T> command, Object... params) {
+    protected <T> void takeAsync(CompletableFuture<V> result, long delay, long timeoutInMicro, RedisCommand<T> command, Object... params) {
         long start = System.currentTimeMillis();
         commandExecutor.getConnectionManager().getGroup().schedule(() -> {
             RFuture<V> future = wrapLockedAsync(command, params);
             future.whenComplete((res, e) -> {
                     if (e != null && !(e instanceof RedisConnectionException)) {
-                        result.tryFailure(e);
+                        result.completeExceptionally(e);
                         return;
                     }
                     
                     if (res != null) {
-                        result.trySuccess(res);
+                        result.complete(res);
                         return;
                     }
                     
@@ -94,7 +94,7 @@ public class RedissonPriorityBlockingQueue<V> extends RedissonPriorityQueue<V> i
                     if (timeoutInMicro > 0) {
                         remain = timeoutInMicro - ((System.currentTimeMillis() - start))*1000;
                         if (remain <= 0) {
-                            result.trySuccess(null);
+                            result.complete(null);
                             return;
                         }
                     }
@@ -115,9 +115,9 @@ public class RedissonPriorityBlockingQueue<V> extends RedissonPriorityQueue<V> i
     }
 
     public RFuture<V> pollAsync(long timeout, TimeUnit unit) {
-        RPromise<V> result = new RedissonPromise<V>();
+        CompletableFuture<V> result = new CompletableFuture<V>();
         takeAsync(result, 0, unit.toMicros(timeout), RedisCommands.LPOP, getRawName());
-        return result;
+        return new CompletableFutureWrapper<>(result);
     }
 
     @Override
@@ -152,9 +152,9 @@ public class RedissonPriorityBlockingQueue<V> extends RedissonPriorityQueue<V> i
 
     @Override
     public RFuture<V> pollLastAndOfferFirstToAsync(String queueName, long timeout, TimeUnit unit) {
-        RPromise<V> result = new RedissonPromise<V>();
+        CompletableFuture<V> result = new CompletableFuture<V>();
         takeAsync(result, 0, unit.toMicros(timeout), RedisCommands.RPOPLPUSH, getRawName(), queueName);
-        return result;
+        return new CompletableFutureWrapper<>(result);
     }
 
     @Override

@@ -22,13 +22,13 @@ import org.redisson.api.queue.DequeMoveArgs;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -225,9 +225,9 @@ public class RedissonPriorityBlockingDeque<V> extends RedissonPriorityDeque<V> i
 
     @Override
     public RFuture<V> takeLastAsync() {
-        RPromise<V> result = new RedissonPromise<V>();
+        CompletableFuture<V> result = new CompletableFuture<V>();
         blockingQueue.takeAsync(result, 0, 0, RedisCommands.RPOP, getRawName());
-        return result;
+        return new CompletableFutureWrapper<>(result);
     }
 
     @Override
@@ -277,9 +277,9 @@ public class RedissonPriorityBlockingDeque<V> extends RedissonPriorityDeque<V> i
 
     @Override
     public RFuture<V> pollLastAsync(long timeout, TimeUnit unit) {
-        RPromise<V> result = new RedissonPromise<V>();
+        CompletableFuture<V> result = new CompletableFuture<V>();
         blockingQueue.takeAsync(result, 0, unit.toMicros(timeout), RedisCommands.RPOP, getRawName());
-        return result;
+        return new CompletableFutureWrapper<>(result);
     }
 
     @Override
