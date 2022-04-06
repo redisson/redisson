@@ -599,6 +599,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
 
         Map<K, V> result = new HashMap<K, V>();
         Set<K> mapKeys = new HashSet<K>(keys);
+        Set<K> missedKeys = new HashSet<>();
         for (Iterator<K> iterator = mapKeys.iterator(); iterator.hasNext();) {
             K key = iterator.next();
             CacheKey cacheKey = localCacheView.toCacheKey(key);
@@ -608,6 +609,8 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                     result.put(key, (V) value.getValue());
                 }
                 iterator.remove();
+            } else {
+                missedKeys.add(key);
             }
         }
 
@@ -616,24 +619,21 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 return new CompletableFutureWrapper<>(result);
             }
 
-            Set<K> newKeys = new HashSet<>(keys);
-            newKeys.removeAll(result.keySet());
-
-            if (!newKeys.isEmpty()) {
-                CompletionStage<Map<K, V>> f = loadAllAsync(newKeys, false, 1, result)
+            if (!missedKeys.isEmpty()) {
+                CompletionStage<Map<K, V>> f = loadAllAsync(missedKeys, false, 1, result)
                                                     .thenApply(r -> result);
                 return new CompletableFutureWrapper<>(f);
             }
             return new CompletableFutureWrapper<>(result);
         }
 
-        RFuture<Map<K, V>> future = super.getAllAsync(mapKeys);
+        RFuture<Map<K, V>> future = super.getAllAsync(missedKeys);
         CompletionStage<Map<K, V>> f = future.thenApply(map -> {
             result.putAll(map);
             cacheMap(map);
 
             if (storeCacheMiss) {
-                mapKeys.stream()
+                missedKeys.stream()
                         .filter(key -> !map.containsKey(key))
                         .forEach(key -> {
                             CacheKey cacheKey = localCacheView.toCacheKey(key);
