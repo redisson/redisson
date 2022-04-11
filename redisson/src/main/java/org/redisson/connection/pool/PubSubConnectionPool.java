@@ -58,8 +58,8 @@ public class PubSubConnectionPool extends ConnectionPool<RedisPubSubConnection> 
     }
 
     @Override
-    protected void acquireConnection(ClientConnectionsEntry entry, Runnable runnable, RedisCommand<?> command) {
-        entry.acquireSubscribeConnection(runnable);
+    protected CompletableFuture<Void> acquireConnection(ClientConnectionsEntry entry, RedisCommand<?> command) {
+        return entry.acquireSubscribeConnection();
     }
     
     @Override

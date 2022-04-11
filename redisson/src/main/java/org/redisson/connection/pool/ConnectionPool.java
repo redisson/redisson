@@ -39,7 +39,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiConsumer;
 
 /**
  * Base connection pool class 
@@ -105,73 +104,70 @@ abstract class ConnectionPool<T extends RedisConnection> {
             initPromise.completeExceptionally(cause);
             return;
         }
-        
-        acquireConnection(entry, new Runnable() {
-            
-            @Override
-            public void run() {
-                CompletableFuture<T> promise = new CompletableFuture<T>();
-                createConnection(entry, promise);
-                promise.whenComplete((conn, e) -> {
-                        if (e == null) {
-                            if (!initPromise.isDone()) {
-                                entry.addConnection(conn);
-                            } else {
-                                conn.closeAsync();
-                            }
-                        }
 
-                        releaseConnection(entry);
+        CompletableFuture<Void> f = acquireConnection(entry, null);
+        f.thenAccept(r -> {
+            CompletableFuture<T> promise = new CompletableFuture<T>();
+            createConnection(entry, promise);
+            promise.whenComplete((conn, e) -> {
+                if (e == null) {
+                    if (!initPromise.isDone()) {
+                        entry.addConnection(conn);
+                    } else {
+                        conn.closeAsync();
+                    }
+                }
 
-                        if (e != null) {
-                            if (initPromise.isDone()) {
-                                return;
-                            }
-                            
-                            for (RedisConnection connection : entry.getAllConnections()) {
-                                if (!connection.isClosed()) {
-                                    connection.closeAsync();
-                                }
-                            }
-                            entry.getAllConnections().clear();
-                            
-                            for (RedisConnection connection : entry.getAllSubscribeConnections()) {
-                                if (!connection.isClosed()) {
-                                    connection.closeAsync();
-                                }
-                            }
-                            entry.getAllSubscribeConnections().clear();
-                            
-                            int totalInitializedConnections = minimumIdleSize - initializedConnections.get();
-                            String errorMsg;
-                            if (totalInitializedConnections == 0) {
-                                errorMsg = "Unable to connect to Redis server: " + entry.getClient().getAddr();
-                            } else {
-                                errorMsg = "Unable to init enough connections amount! Only " + totalInitializedConnections 
-                                        + " of " + minimumIdleSize + " were initialized. Redis server: " + entry.getClient().getAddr();
-                            }
-                            Throwable cause = new RedisConnectionException(errorMsg, e);
-                            initPromise.completeExceptionally(cause);
-                            return;
-                        }
+                releaseConnection(entry);
 
-                        int value = initializedConnections.decrementAndGet();
-                        if (value == 0) {
-                            if (initPromise.complete(null)) {
-                                log.info("{} connections initialized for {}", minimumIdleSize, entry.getClient().getAddr());
-                            }
-                        } else if (value > 0 && !initPromise.isDone()) {
-                            if (requests.incrementAndGet() <= minimumIdleSize) {
-                                createConnection(checkFreezed, requests, entry, initPromise, minimumIdleSize, initializedConnections);
-                            }
+                if (e != null) {
+                    if (initPromise.isDone()) {
+                        return;
+                    }
+
+                    for (RedisConnection connection : entry.getAllConnections()) {
+                        if (!connection.isClosed()) {
+                            connection.closeAsync();
                         }
-                });
-            }
-        }, null);
+                    }
+                    entry.getAllConnections().clear();
+
+                    for (RedisConnection connection : entry.getAllSubscribeConnections()) {
+                        if (!connection.isClosed()) {
+                            connection.closeAsync();
+                        }
+                    }
+                    entry.getAllSubscribeConnections().clear();
+
+                    int totalInitializedConnections = minimumIdleSize - initializedConnections.get();
+                    String errorMsg;
+                    if (totalInitializedConnections == 0) {
+                        errorMsg = "Unable to connect to Redis server: " + entry.getClient().getAddr();
+                    } else {
+                        errorMsg = "Unable to init enough connections amount! Only " + totalInitializedConnections
+                                + " of " + minimumIdleSize + " were initialized. Redis server: " + entry.getClient().getAddr();
+                    }
+                    Throwable cause = new RedisConnectionException(errorMsg, e);
+                    initPromise.completeExceptionally(cause);
+                    return;
+                }
+
+                int value = initializedConnections.decrementAndGet();
+                if (value == 0) {
+                    if (initPromise.complete(null)) {
+                        log.info("{} connections initialized for {}", minimumIdleSize, entry.getClient().getAddr());
+                    }
+                } else if (value > 0 && !initPromise.isDone()) {
+                    if (requests.incrementAndGet() <= minimumIdleSize) {
+                        createConnection(checkFreezed, requests, entry, initPromise, minimumIdleSize, initializedConnections);
+                    }
+                }
+            });
+        });
     }
 
-    protected void acquireConnection(ClientConnectionsEntry entry, Runnable runnable, RedisCommand<?> command) {
-        entry.acquireConnection(runnable, command);
+    protected CompletableFuture<Void> acquireConnection(ClientConnectionsEntry entry, RedisCommand<?> command) {
+        return entry.acquireConnection(command);
     }
 
     protected abstract int getMinimumIdleSize(ClientConnectionsEntry entry);
@@ -215,20 +211,21 @@ abstract class ConnectionPool<T extends RedisConnection> {
     }
 
     public CompletableFuture<T> get(RedisCommand<?> command, ClientConnectionsEntry entry) {
-            return acquireConnection(command, entry);
-        }
-
-    public abstract static class AcquireCallback<T> implements Runnable, BiConsumer<T, Throwable> {
-        
+        return acquireConnection(command, entry);
     }
-    
+
     protected final CompletableFuture<T> acquireConnection(RedisCommand<?> command, ClientConnectionsEntry entry) {
         CompletableFuture<T> result = new CompletableFuture<T>();
 
-        Runnable callback = () -> {
+        CompletableFuture<Void> f = acquireConnection(entry, command);
+        f.thenAccept(r -> {
             connectTo(entry, result, command);
-        };
-        acquireConnection(entry, callback, command);
+        });
+        result.whenComplete((r, e) -> {
+            if (e != null) {
+                f.completeExceptionally(e);
+            }
+        });
         return result;
     }
         

@@ -27,21 +27,23 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class AsyncSemaphore {
 
     private final AtomicInteger counter;
-    private final Queue<Runnable> listeners = new ConcurrentLinkedQueue<>();
+    private final Queue<CompletableFuture<Void>> listeners = new ConcurrentLinkedQueue<>();
 
     public AsyncSemaphore(int permits) {
         counter = new AtomicInteger(permits);
     }
     
     public boolean tryAcquire(long timeoutMillis) {
-        CountDownLatch latch = new CountDownLatch(1);
-        Runnable runnable = () -> latch.countDown();
-        acquire(runnable);
-        
+        CompletableFuture<Void> f = acquire();
         try {
-            return latch.await(timeoutMillis, TimeUnit.MILLISECONDS);
+            f.get(timeoutMillis, TimeUnit.MILLISECONDS);
+            return true;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            return false;
+        } catch (ExecutionException e) {
+            throw new IllegalStateException(e);
+        } catch (TimeoutException e) {
             return false;
         }
     }
@@ -53,24 +55,34 @@ public class AsyncSemaphore {
     public void removeListeners() {
         listeners.clear();
     }
-    
-    public void acquire(Runnable listener) {
-        listeners.add(listener);
+
+    public CompletableFuture<Void> acquire() {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        listeners.add(future);
         tryRun();
+        return future;
+    }
+
+    public void acquire(Runnable listener) {
+        acquire().thenAccept(r -> listener.run());
     }
 
     private void tryRun() {
-        if (counter.decrementAndGet() >= 0) {
-            Runnable listener = listeners.poll();
-            if (listener == null) {
-                counter.incrementAndGet();
-                return;
+        while (true) {
+            if (counter.decrementAndGet() >= 0) {
+                CompletableFuture<Void> future = listeners.poll();
+                if (future == null) {
+                    counter.incrementAndGet();
+                    return;
+                }
+
+                if (future.complete(null)) {
+                    return;
+                }
             }
 
-            listener.run();
-        } else {
-            if (counter.incrementAndGet() > 0) {
-                tryRun();
+            if (counter.incrementAndGet() <= 0) {
+                return;
             }
         }
     }

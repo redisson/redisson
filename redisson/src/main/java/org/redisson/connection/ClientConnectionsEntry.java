@@ -148,8 +148,8 @@ public class ClientConnectionsEntry {
         freeSubscribeConnectionsCounter.removeListeners();
     }
 
-    public void acquireConnection(Runnable runnable, RedisCommand<?> command) {
-        freeConnectionsCounter.acquire(runnable);
+    public CompletableFuture<Void> acquireConnection(RedisCommand<?> command) {
+        return freeConnectionsCounter.acquire();
     }
     
     public void releaseConnection() {
@@ -263,8 +263,8 @@ public class ClientConnectionsEntry {
         freeSubscribeConnections.add(connection);
     }
 
-    public void acquireSubscribeConnection(Runnable runnable) {
-        freeSubscribeConnectionsCounter.acquire(runnable);
+    public CompletableFuture<Void> acquireSubscribeConnection() {
+        return freeSubscribeConnectionsCounter.acquire();
     }
 
     public void releaseSubscribeConnection() {
