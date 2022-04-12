@@ -2,7 +2,7 @@
 
 Integrates Redisson with [Micronaut](https://micronaut.io/) framework.  
 
-Supports Micronaut 2.0.x - 3.3.x
+Supports Micronaut 2.0.x - 3.4.x
 
 ## Usage  
 
@@ -15,7 +15,7 @@ Maven
     <groupId>org.redisson</groupId>
     <!-- for Micronaut v2.0.x - v2.5.x -->
     <artifactId>redisson-micronaut-20</artifactId>
-    <!-- for Micronaut v3.0.x - v3.3.x -->
+    <!-- for Micronaut v3.0.x - v3.4.x -->
     <artifactId>redisson-micronaut-30</artifactId>
     <version>3.17.0</version>
 </dependency>
@@ -26,7 +26,7 @@ Gradle
 ```groovy
 // for Micronaut v2.0.x - v2.5.x
 compile 'org.redisson:redisson-micronaut-20:3.17.0'
-// for Micronaut v3.0.x - v3.3.x
+// for Micronaut v3.0.x - v3.4.x
 compile 'org.redisson:redisson-micronaut-30:3.17.0'
 ```
 
