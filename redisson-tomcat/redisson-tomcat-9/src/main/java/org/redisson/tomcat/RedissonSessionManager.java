@@ -180,7 +180,7 @@ public class RedissonSessionManager extends ManagerBase {
                 }
 
                 if (attrs.isEmpty() || (broadcastSessionEvents && getNotifiedNodes(id).contains(nodeId))) {
-                    log.info("Session " + id + " can't be found");
+                    log.TRACE("Session " + id + " can't be found");
                     return null;    
                 }
                 
