@@ -234,7 +234,15 @@ public interface RedisCommands {
     RedisStrictCommand<Long> PEXPIRETIME = new RedisStrictCommand<>("PEXPIRETIME");
 
     RedisCommand<Object> RPOPLPUSH = new RedisCommand<Object>("RPOPLPUSH");
-    RedisCommand<Object> BRPOPLPUSH = new RedisCommand<Object>("BRPOPLPUSH");
+    RedisCommand<Object> BRPOPLPUSH = new RedisCommand<Object>("BRPOPLPUSH", new CodecDecoder() {
+        @Override
+        public Object decode(List<Object> parts, State state) {
+            if (parts.isEmpty()) {
+                return null;
+            }
+            return super.decode(parts, state);
+        }
+    });
     RedisCommand<List<Object>> BLPOP = new RedisCommand<List<Object>>("BLPOP", new ObjectListReplayDecoder<Object>());
     RedisCommand<List<Object>> BRPOP = new RedisCommand<List<Object>>("BRPOP", new ObjectListReplayDecoder<Object>());
     RedisCommand<Map<String, Map<Object, Double>>> BZMPOP = new RedisCommand<>("BZMPOP", ZMPOP.getReplayMultiDecoder());

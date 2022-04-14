@@ -618,6 +618,10 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
         Integer value = queue1.pollLastAndOfferFirstTo(queue2.getName(), 5, TimeUnit.SECONDS);
         assertThat(value).isEqualTo(3);
         assertThat(queue2).containsExactly(3, 4, 5, 6);
+
+        RBlockingQueue<Integer> queue3 = redisson.getBlockingQueue("{queue}1");
+        Integer value1 = queue3.pollLastAndOfferFirstTo(queue2.getName(), 1, TimeUnit.SECONDS);
+        assertThat(value1).isNull();
     }
     
     @Test
