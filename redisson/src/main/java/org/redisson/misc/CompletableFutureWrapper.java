@@ -38,6 +38,11 @@ public class CompletableFutureWrapper<V> implements RFuture<V> {
         this(CompletableFuture.completedFuture(value));
     }
 
+    public CompletableFutureWrapper(Throwable ex) {
+        this(new CompletableFuture<>());
+        this.future.completeExceptionally(ex);
+    }
+
     public CompletableFutureWrapper(CompletionStage<V> stage) {
         this.future = stage.toCompletableFuture();
         this.lastFuture = future;

@@ -33,7 +33,6 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.eviction.EvictionScheduler;
 import org.redisson.misc.CompletableFutureWrapper;
-import org.redisson.misc.RedissonPromise;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -773,7 +772,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     @Override
     public RFuture<Void> putAllAsync(Map<? extends K, ? extends V> map, long ttl, TimeUnit ttlUnit) {
         if (map.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(null);
+            return new CompletableFutureWrapper<>((Void) null);
         }
 
         RFuture<Void> future = putAllOperationAsync(map, ttl, ttlUnit);

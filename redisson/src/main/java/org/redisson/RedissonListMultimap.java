@@ -24,7 +24,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.BooleanAmountReplayConvertor;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 
 import java.util.*;
 import java.util.Map.Entry;
@@ -197,7 +197,7 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
             @Override
             public RFuture<Boolean> removeAllAsync(Collection<?> c) {
                 if (c.isEmpty()) {
-                    return RedissonPromise.newSucceededFuture(false);
+                    return new CompletableFutureWrapper<>(false);
                 }
 
                 List<Object> args = new ArrayList<Object>(c.size() + 1);

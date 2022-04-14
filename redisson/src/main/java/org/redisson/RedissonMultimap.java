@@ -29,7 +29,6 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.iterator.RedissonBaseMapIterator;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.Hash;
-import org.redisson.misc.RedissonPromise;
 
 import java.util.*;
 import java.util.Map.Entry;
@@ -221,7 +220,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     @Override
     public RFuture<Long> fastRemoveAsync(K... keys) {
         if (keys == null || keys.length == 0) {
-            return RedissonPromise.newSucceededFuture(0L);
+            return new CompletableFutureWrapper<>(0L);
         }
 
         List<Object> mapKeys = new ArrayList<Object>(keys.length);

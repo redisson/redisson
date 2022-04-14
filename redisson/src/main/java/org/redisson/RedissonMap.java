@@ -32,7 +32,6 @@ import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.iterator.RedissonMapIterator;
 import org.redisson.mapreduce.RedissonMapReduce;
 import org.redisson.misc.CompletableFutureWrapper;
-import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -544,7 +543,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     @Override
     public RFuture<Map<K, V>> getAllAsync(Set<K> keys) {
         if (keys.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(Collections.emptyMap());
+            return new CompletableFutureWrapper<>(Collections.emptyMap());
         }
 
         RFuture<Map<K, V>> future = getAllOperationAsync(keys);
@@ -640,7 +639,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     @Override
     public final RFuture<Void> putAllAsync(Map<? extends K, ? extends V> map) {
         if (map.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(null);
+            return new CompletableFutureWrapper<>((Void) null);
         }
 
         RFuture<Void> future = putAllOperationAsync(map);
@@ -1106,7 +1105,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             keys = options.getLoader().loadAllKeys();
         } catch (Exception e) {
             log.error("Unable to load keys for map " + getRawName(), e);
-            return RedissonPromise.newFailedFuture(e);
+            return new CompletableFutureWrapper<>(e);
         }
         return loadAllAsync(keys, replaceExistingValues, parallelism, null);
     }
@@ -1153,7 +1152,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             }
         } catch (Exception e) {
             log.error("Unable to load keys for map " + getRawName(), e);
-            return RedissonPromise.newFailedFuture(e);
+            return new CompletableFutureWrapper<>(e);
         }
 
         CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
@@ -1292,7 +1291,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         }
 
         if (keys.length == 0) {
-            return RedissonPromise.newSucceededFuture(0L);
+            return new CompletableFutureWrapper<>(0L);
         }
 
         if (hasNoWriter()) {

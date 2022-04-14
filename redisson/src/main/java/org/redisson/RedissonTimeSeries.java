@@ -28,7 +28,7 @@ import org.redisson.client.protocol.decoder.TimeSeriesEntryReplayDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.eviction.EvictionScheduler;
 import org.redisson.iterator.RedissonBaseIterator;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
@@ -504,7 +504,7 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
     @Override
     public RFuture<Collection<V>> pollFirstAsync(int count) {
         if (count <= 0) {
-            return RedissonPromise.newSucceededFuture(Collections.emptyList());
+            return new CompletableFutureWrapper<>(Collections.emptyList());
         }
 
         return pollAsync(0, count, RedisCommands.EVAL_LIST);
@@ -513,7 +513,7 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
     @Override
     public RFuture<Collection<V>> pollLastAsync(int count) {
         if (count <= 0) {
-            return RedissonPromise.newSucceededFuture(Collections.emptyList());
+            return new CompletableFutureWrapper<>(Collections.emptyList());
         }
         return pollAsync(-1, count, RedisCommands.EVAL_LIST_REVERSE);
     }
@@ -652,7 +652,7 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
 
     @Override
     public RFuture<Long> sizeInMemoryAsync() {
-        List<Object> keys = Arrays.<Object>asList(getRawName(), getTimeoutSetName());
+        List<Object> keys = Arrays.asList(getRawName(), getTimeoutSetName());
         return super.sizeInMemoryAsync(keys);
     }
 

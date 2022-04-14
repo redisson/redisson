@@ -36,8 +36,6 @@ import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.misc.CompletableFutureWrapper;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -291,14 +289,14 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     private <T, R> RFuture<R> allAsync(boolean readOnlyMode, Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, Object... params) {
-        RPromise<R> mainPromise = new RedissonPromise<R>();
+        CompletableFuture<R> mainPromise = new CompletableFuture<R>();
         Collection<MasterSlaveEntry> nodes = connectionManager.getEntrySet();
         AtomicInteger counter = new AtomicInteger(nodes.size());
         BiConsumer<T, Throwable> listener = new BiConsumer<T, Throwable>() {
             @Override
             public void accept(T result, Throwable u) {
                 if (u != null && !(u instanceof RedisRedirectException)) {
-                    mainPromise.tryFailure(u);
+                    mainPromise.completeExceptionally(u);
                     return;
                 }
                 
@@ -311,9 +309,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 }
                 if (counter.decrementAndGet() == 0) {
                     if (callback != null) {
-                        mainPromise.trySuccess(callback.onFinish());
+                        mainPromise.complete(callback.onFinish());
                     } else {
-                        mainPromise.trySuccess(null);
+                        mainPromise.complete(null);
                     }
                 }
             }
@@ -323,7 +321,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             RFuture<T> promise = async(readOnlyMode, new NodeSource(entry), codec, command, params, true, false);
             promise.whenComplete(listener);
         }
-        return mainPromise;
+        return new CompletableFutureWrapper<R>(mainPromise);
     }
 
     public RedisException convertException(ExecutionException e) {
@@ -420,7 +418,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return getConnectionManager().getCfg().isUseScriptCache();
     }
     
-    private static final Map<String, String> SHA_CACHE = new LRUCacheMap<String, String>(500, 0, 0);
+    private static final Map<String, String> SHA_CACHE = new LRUCacheMap<>(500, 0, 0);
     
     private String calcSHA(String script) {
         String digest = SHA_CACHE.get(script);
@@ -438,7 +436,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
     
     private Object[] copy(Object[] params) {
-        List<Object> result = new ArrayList<Object>();
+        List<Object> result = new ArrayList<>();
         for (Object object : params) {
             if (object instanceof ByteBuf) {
                 ByteBuf b = (ByteBuf) object;

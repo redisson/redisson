@@ -34,8 +34,6 @@ import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.misc.CompletableFutureWrapper;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -193,7 +191,7 @@ public class CommandBatchService extends CommandAsyncService {
                         .flatMap(e -> e.getCommands().stream())
                         .flatMap(c -> Arrays.stream(c.getParams()))
                         .forEach(obj -> ReferenceCountUtil.safeRelease(obj));
-        return RedissonPromise.newSucceededFuture(null);
+        return new CompletableFutureWrapper<>((Void) null);
     }
     
     public BatchResult<?> execute() {
@@ -219,7 +217,7 @@ public class CommandBatchService extends CommandAsyncService {
         if (commands.isEmpty()) {
             executed.set(true);
             BatchResult<Object> result = new BatchResult<>(Collections.emptyList(), 0);
-            return RedissonPromise.newSucceededFuture(result);
+            return new CompletableFutureWrapper<>(result);
         }
 
         if (isRedisBasedQueue()) {
@@ -252,7 +250,7 @@ public class CommandBatchService extends CommandAsyncService {
             }
         }
         
-        RPromise<BatchResult<?>> promise = new RedissonPromise<>();
+        CompletableFuture<BatchResult<?>> promise = new CompletableFuture<>();
         CompletableFuture<Void> voidPromise = new CompletableFuture<>();
         if (this.options.isSkipResult()
                 && this.options.getSyncSlaves() == 0) {
@@ -264,7 +262,7 @@ public class CommandBatchService extends CommandAsyncService {
                         e.getCommands().forEach(t -> t.tryFailure(ex));
                     }
 
-                    promise.tryFailure(ex);
+                    promise.completeExceptionally(ex);
 
                     commands.clear();
                     nestedServices.clear();
@@ -273,7 +271,7 @@ public class CommandBatchService extends CommandAsyncService {
 
                 commands.clear();
                 nestedServices.clear();
-                promise.trySuccess(new BatchResult<>(Collections.emptyList(), 0));
+                promise.complete(new BatchResult<>(Collections.emptyList(), 0));
             });
         } else {
             voidPromise.whenComplete((res, ex) -> {
@@ -283,7 +281,7 @@ public class CommandBatchService extends CommandAsyncService {
                         e.getCommands().forEach(t -> t.tryFailure(ex));
                     }
 
-                    promise.tryFailure(ex);
+                    promise.completeExceptionally(ex);
 
                     commands.clear();
                     nestedServices.clear();
@@ -321,7 +319,7 @@ public class CommandBatchService extends CommandAsyncService {
                 }
                 
                 BatchResult<Object> result = new BatchResult<Object>(responses, syncedSlaves);
-                promise.trySuccess(result);
+                promise.complete(result);
 
                 commands.clear();
                 nestedServices.clear();
@@ -346,7 +344,7 @@ public class CommandBatchService extends CommandAsyncService {
                                                     connectionManager, this.options, e.getValue(), slots, referenceType, false);
             executor.execute();
         }
-        return promise;
+        return new CompletableFutureWrapper<>(promise);
     }
 
     protected Throwable cause(CompletableFuture<?> future) {
@@ -361,7 +359,7 @@ public class CommandBatchService extends CommandAsyncService {
     }
 
     private <R> RFuture<R> executeRedisBasedQueue() {
-        RPromise<R> resultPromise = new RedissonPromise<R>();
+        CompletableFuture<R> resultPromise = new CompletableFuture<R>();
         long responseTimeout;
         if (options.getResponseTimeout() > 0) {
             responseTimeout = options.getResponseTimeout();
@@ -376,7 +374,7 @@ public class CommandBatchService extends CommandAsyncService {
                     c.getCancelCallback().run();
                 });
 
-                resultPromise.tryFailure(new RedisTimeoutException("Response timeout for queued commands " + responseTimeout + ": " +
+                resultPromise.completeExceptionally(new RedisTimeoutException("Response timeout for queued commands " + responseTimeout + ": " +
                         commands.values().stream()
                                 .flatMap(e -> e.getCommands().stream().map(d -> d.getCommand()))
                                 .collect(Collectors.toList())));
@@ -397,7 +395,7 @@ public class CommandBatchService extends CommandAsyncService {
                     for (BatchCommandData<?, ?> command : entry.getCommands()) {
                         if (command.getPromise().isDone() && command.getPromise().isCompletedExceptionally()) {
 
-                            resultPromise.tryFailure(cause(command.getPromise()));
+                            resultPromise.completeExceptionally(cause(command.getPromise()));
                             break;
                         }
                     }
@@ -429,7 +427,7 @@ public class CommandBatchService extends CommandAsyncService {
                 future.whenComplete((res, ex) -> {
                     executed.set(true);
                     if (ex != null) {
-                        resultPromise.tryFailure(ex);
+                        resultPromise.completeExceptionally(ex);
                         return;
                     }
                     
@@ -472,13 +470,13 @@ public class CommandBatchService extends CommandAsyncService {
                             }
                         }
                         BatchResult<Object> r = new BatchResult<>(responses, syncedSlaves);
-                        resultPromise.trySuccess((R) r);
+                        resultPromise.complete((R) r);
                     } catch (Exception e) {
-                        resultPromise.tryFailure(e);
+                        resultPromise.completeExceptionally(e);
                     }
                 });
         });
-        return resultPromise;
+        return new CompletableFutureWrapper<>(resultPromise);
     }
 
     protected boolean isRedisBasedQueue() {

@@ -28,7 +28,7 @@ import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 
 /**
  * Sorted set contained values of String type
@@ -283,7 +283,7 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
     @Override
     public RFuture<Boolean> addAllAsync(Collection<? extends String> c) {
         if (c.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(false);
+            return new CompletableFutureWrapper<>(false);
         }
         List<Object> params = new ArrayList<Object>(2*c.size());
         params.add(getRawName());

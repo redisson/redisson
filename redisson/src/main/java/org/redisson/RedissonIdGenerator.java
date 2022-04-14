@@ -21,14 +21,14 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -71,7 +71,7 @@ public class RedissonIdGenerator extends RedissonExpirable implements RIdGenerat
 
     private final AtomicLong start = new AtomicLong();
     private final AtomicLong counter = new AtomicLong();
-    private final Queue<RPromise<Long>> queue = new ConcurrentLinkedQueue<>();
+    private final Queue<CompletableFuture<Long>> queue = new ConcurrentLinkedQueue<>();
     private final AtomicBoolean isWorkerActive = new AtomicBoolean();
 
     private void send() {
@@ -92,8 +92,8 @@ public class RedissonIdGenerator extends RedissonExpirable implements RIdGenerat
 
                 long v = counter.decrementAndGet();
                 if (v >= 0) {
-                    RPromise<Long> pp = queue.poll();
-                    pp.trySuccess(start.incrementAndGet());
+                    CompletableFuture<Long> pp = queue.poll();
+                    pp.complete(start.incrementAndGet());
                 } else {
                     try {
                         RFuture<List<Object>> future = commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_LIST,
@@ -117,9 +117,9 @@ public class RedissonIdGenerator extends RedissonExpirable implements RIdGenerat
                         start.set(value);
                         counter.set(allocationSize);
 
-                        RPromise<Long> pp = queue.poll();
+                        CompletableFuture<Long> pp = queue.poll();
                         counter.decrementAndGet();
-                        pp.trySuccess(start.get());
+                        pp.complete(start.get());
                     } catch (Exception e) {
                         if (e instanceof RedissonShutdownException) {
                             break;
@@ -138,10 +138,10 @@ public class RedissonIdGenerator extends RedissonExpirable implements RIdGenerat
 
     @Override
     public RFuture<Long> nextIdAsync() {
-        RPromise<Long> promise = new RedissonPromise<>();
+        CompletableFuture<Long> promise = new CompletableFuture<>();
         queue.add(promise);
         send();
-        return promise;
+        return new CompletableFutureWrapper<>(promise);
     }
 
     @Override

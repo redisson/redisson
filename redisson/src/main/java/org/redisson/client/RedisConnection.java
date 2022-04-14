@@ -28,7 +28,6 @@ import org.redisson.client.handler.CommandsQueuePubSub;
 import org.redisson.client.protocol.*;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.LogHelper;
-import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -237,7 +236,7 @@ public class RedisConnection implements RedisCommands {
         
         if (redisClient.getEventLoopGroup().isShuttingDown()) {
             RedissonShutdownException cause = new RedissonShutdownException("Redisson is shutdown");
-            return RedissonPromise.newFailedFuture(cause);
+            return new CompletableFutureWrapper<>(cause);
         }
 
         Timeout scheduledFuture = redisClient.getTimer().newTimeout(t -> {
