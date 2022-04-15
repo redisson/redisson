@@ -88,7 +88,9 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         }
 
         CompletableFuture<RedissonLockEntry> future = subscribe();
+        Timeout t = semaphorePubSub.timeout(future);
         RedissonLockEntry entry = commandExecutor.getInterrupted(future);
+        t.cancel();
         try {
             while (true) {
                 Long nearestTimeout;
@@ -124,7 +126,9 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         CompletableFuture<String> tryAcquireFuture = tryAcquireAsync(permits, timeoutDate).toCompletableFuture();
         CompletableFuture<String> f = tryAcquireFuture.thenCompose(permitId -> {
             CompletableFuture<RedissonLockEntry> subscribeFuture = subscribe();
+            Timeout t = semaphorePubSub.timeout(subscribeFuture);
             return subscribeFuture.thenCompose(res -> {
+                t.cancel();
                 return acquireAsync(permits, res, ttl, timeUnit);
             });
         });

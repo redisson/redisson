@@ -100,12 +100,15 @@ public class RedissonLock extends RedissonBaseLock {
         }
 
         CompletableFuture<RedissonLockEntry> future = subscribe(threadId);
+        Timeout t = pubSub.timeout(future);
         RedissonLockEntry entry;
         if (interruptibly) {
             entry = commandExecutor.getInterrupted(future);
         } else {
             entry = commandExecutor.get(future);
         }
+
+        t.cancel();
 
         try {
             while (true) {
@@ -229,7 +232,7 @@ public class RedissonLock extends RedissonBaseLock {
         current = System.currentTimeMillis();
         CompletableFuture<RedissonLockEntry> subscribeFuture = subscribe(threadId);
         try {
-            subscribeFuture.toCompletableFuture().get(time, TimeUnit.MILLISECONDS);
+            subscribeFuture.get(time, TimeUnit.MILLISECONDS);
         } catch (ExecutionException | TimeoutException e) {
             if (!subscribeFuture.cancel(false)) {
                 subscribeFuture.whenComplete((res, ex) -> {
@@ -390,12 +393,14 @@ public class RedissonLock extends RedissonBaseLock {
             }
 
             CompletableFuture<RedissonLockEntry> subscribeFuture = subscribe(currentThreadId);
+            Timeout t = pubSub.timeout(subscribeFuture);
             subscribeFuture.whenComplete((res, ex) -> {
                 if (ex != null) {
                     result.completeExceptionally(ex);
                     return;
                 }
 
+                t.cancel();
                 lockAsync(leaseTime, unit, res, result, currentThreadId);
             });
         });
@@ -502,6 +507,7 @@ public class RedissonLock extends RedissonBaseLock {
             long current = System.currentTimeMillis();
             AtomicReference<Timeout> futureRef = new AtomicReference<Timeout>();
             CompletableFuture<RedissonLockEntry> subscribeFuture = subscribe(currentThreadId);
+            pubSub.timeout(subscribeFuture, time.get());
             subscribeFuture.whenComplete((r, ex) -> {
                 if (ex != null) {
                     result.completeExceptionally(ex);

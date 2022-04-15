@@ -20,14 +20,12 @@ import org.redisson.PubSubEntry;
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.ChannelName;
 import org.redisson.client.RedisPubSubListener;
-import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.pubsub.PubSubType;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 
@@ -60,19 +58,20 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
 
     }
 
+    public Timeout timeout(CompletableFuture<?> promise) {
+        return service.timeout(promise);
+    }
+
+    public Timeout timeout(CompletableFuture<?> promise, long timeout) {
+        return service.timeout(promise, timeout);
+    }
+
     public CompletableFuture<E> subscribe(String entryName, String channelName) {
         AsyncSemaphore semaphore = service.getSemaphore(new ChannelName(channelName));
         CompletableFuture<E> newPromise = new CompletableFuture<>();
 
-        int timeout = service.getConnectionManager().getConfig().getTimeout();
-        Timeout lockTimeout = service.getConnectionManager().newTimeout(t -> {
-            newPromise.completeExceptionally(new RedisTimeoutException(
-                    "Unable to acquire subscription lock after " + timeout + "ms. " +
-                            "Increase 'subscriptionsPerConnection' and/or 'subscriptionConnectionPoolSize' parameters."));
-        }, timeout, TimeUnit.MILLISECONDS);
-
         semaphore.acquire(() -> {
-            if (!lockTimeout.cancel()) {
+            if (newPromise.isDone()) {
                 semaphore.release();
                 return;
             }
@@ -109,7 +108,12 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
             }
 
             RedisPubSubListener<Object> listener = createListener(channelName, value);
-            CompletableFuture<PubSubConnectionEntry> s = service.subscribe(LongCodec.INSTANCE, channelName, semaphore, listener);
+            CompletableFuture<PubSubConnectionEntry> s = service.subscribeNoTimeout(LongCodec.INSTANCE, channelName, semaphore, listener);
+            newPromise.whenComplete((r, e) -> {
+                if (e != null) {
+                    s.completeExceptionally(e);
+                }
+            });
             s.whenComplete((r, e) -> {
                 if (e != null) {
                     value.getPromise().completeExceptionally(e);

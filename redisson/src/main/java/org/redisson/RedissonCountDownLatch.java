@@ -149,8 +149,6 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
     @Override
     public RFuture<Boolean> awaitAsync(long waitTime, TimeUnit unit) {
-        CompletableFuture<Boolean> result = new CompletableFuture<>();
-
         AtomicLong time = new AtomicLong(unit.toMillis(waitTime));
         long currentTime = System.currentTimeMillis();
         CompletableFuture<Long> countFuture = getCountAsync().toCompletableFuture();
@@ -164,6 +162,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
             long current = System.currentTimeMillis();
             CompletableFuture<RedissonCountDownLatchEntry> subscribeFuture = subscribe();
+            pubSub.timeout(subscribeFuture, time.get());
             return subscribeFuture.thenCompose(entry -> {
                 long elapsed = System.currentTimeMillis() - current;
                 time.addAndGet(-elapsed);

@@ -80,7 +80,9 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
         }
 
         CompletableFuture<RedissonLockEntry> future = subscribe();
+        Timeout t = semaphorePubSub.timeout(future);
         RedissonLockEntry entry = commandExecutor.getInterrupted(future);
+        t.cancel();
         try {
             while (true) {
                 if (tryAcquire(permits)) {
@@ -118,12 +120,14 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
             }
             
             CompletableFuture<RedissonLockEntry> subscribeFuture = subscribe();
+            Timeout t = semaphorePubSub.timeout(subscribeFuture);
             subscribeFuture.whenComplete((r, e1) -> {
                 if (e1 != null) {
                     result.completeExceptionally(e1);
                     return;
                 }
 
+                t.cancel();
                 acquireAsync(permits, r, result);
             });
         });
@@ -372,18 +376,16 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
             }
             
             long current = System.currentTimeMillis();
-            AtomicReference<Timeout> futureRef = new AtomicReference<Timeout>();
             CompletableFuture<RedissonLockEntry> subscribeFuture = subscribe();
+            Timeout timeout = semaphorePubSub.timeout(subscribeFuture, time.get());
             subscribeFuture.whenComplete((r, ex) -> {
                 if (ex != null) {
                     result.completeExceptionally(ex);
                     return;
                 }
-                
-                if (futureRef.get() != null) {
-                    futureRef.get().cancel();
-                }
-                
+
+                timeout.cancel();
+
                 long elapsed = System.currentTimeMillis() - current;
                 time.addAndGet(-elapsed);
                 
@@ -395,18 +397,6 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
                 
                 tryAcquireAsync(time, permits, r, result);
             });
-            
-            if (!subscribeFuture.isDone()) {
-                Timeout scheduledFuture = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
-                    @Override
-                    public void run(Timeout timeout) throws Exception {
-                        if (!subscribeFuture.isDone()) {
-                            result.complete(false);
-                        }
-                    }
-                }, time.get(), TimeUnit.MILLISECONDS);
-                futureRef.set(scheduledFuture);
-            }
         });
         return new CompletableFutureWrapper<>(result);
     }
