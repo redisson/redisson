@@ -15,7 +15,6 @@
  */
 package org.redisson.pubsub;
 
-import io.netty.util.Timeout;
 import org.redisson.PubSubEntry;
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.ChannelName;
@@ -58,12 +57,12 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
 
     }
 
-    public Timeout timeout(CompletableFuture<?> promise) {
-        return service.timeout(promise);
+    public void timeout(CompletableFuture<?> promise) {
+        service.timeout(promise);
     }
 
-    public Timeout timeout(CompletableFuture<?> promise, long timeout) {
-        return service.timeout(promise, timeout);
+    public void timeout(CompletableFuture<?> promise, long timeout) {
+        service.timeout(promise, timeout);
     }
 
     public CompletableFuture<E> subscribe(String entryName, String channelName) {

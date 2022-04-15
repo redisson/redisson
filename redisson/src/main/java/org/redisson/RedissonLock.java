@@ -100,15 +100,13 @@ public class RedissonLock extends RedissonBaseLock {
         }
 
         CompletableFuture<RedissonLockEntry> future = subscribe(threadId);
-        Timeout t = pubSub.timeout(future);
+        pubSub.timeout(future);
         RedissonLockEntry entry;
         if (interruptibly) {
             entry = commandExecutor.getInterrupted(future);
         } else {
             entry = commandExecutor.get(future);
         }
-
-        t.cancel();
 
         try {
             while (true) {
@@ -393,14 +391,13 @@ public class RedissonLock extends RedissonBaseLock {
             }
 
             CompletableFuture<RedissonLockEntry> subscribeFuture = subscribe(currentThreadId);
-            Timeout t = pubSub.timeout(subscribeFuture);
+            pubSub.timeout(subscribeFuture);
             subscribeFuture.whenComplete((res, ex) -> {
                 if (ex != null) {
                     result.completeExceptionally(ex);
                     return;
                 }
 
-                t.cancel();
                 lockAsync(leaseTime, unit, res, result, currentThreadId);
             });
         });

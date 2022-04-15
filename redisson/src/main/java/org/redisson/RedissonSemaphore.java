@@ -80,9 +80,8 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
         }
 
         CompletableFuture<RedissonLockEntry> future = subscribe();
-        Timeout t = semaphorePubSub.timeout(future);
+        semaphorePubSub.timeout(future);
         RedissonLockEntry entry = commandExecutor.getInterrupted(future);
-        t.cancel();
         try {
             while (true) {
                 if (tryAcquire(permits)) {
@@ -120,14 +119,13 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
             }
             
             CompletableFuture<RedissonLockEntry> subscribeFuture = subscribe();
-            Timeout t = semaphorePubSub.timeout(subscribeFuture);
+            semaphorePubSub.timeout(subscribeFuture);
             subscribeFuture.whenComplete((r, e1) -> {
                 if (e1 != null) {
                     result.completeExceptionally(e1);
                     return;
                 }
 
-                t.cancel();
                 acquireAsync(permits, r, result);
             });
         });
@@ -377,14 +375,12 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
             
             long current = System.currentTimeMillis();
             CompletableFuture<RedissonLockEntry> subscribeFuture = subscribe();
-            Timeout timeout = semaphorePubSub.timeout(subscribeFuture, time.get());
+            semaphorePubSub.timeout(subscribeFuture, time.get());
             subscribeFuture.whenComplete((r, ex) -> {
                 if (ex != null) {
                     result.completeExceptionally(ex);
                     return;
                 }
-
-                timeout.cancel();
 
                 long elapsed = System.currentTimeMillis() - current;
                 time.addAndGet(-elapsed);

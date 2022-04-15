@@ -229,23 +229,23 @@ public class PublishSubscribeService {
         subscribeNoTimeout(codec, channelName, entry, promise, type, lock, attempts, listeners);
 
         int timeout = config.getTimeout() + config.getRetryInterval() * config.getRetryAttempts();
-        Timeout lockTimeout = timeout(promise, timeout);
-        promise.whenComplete((e, r) -> {
-            lockTimeout.cancel();
-        });
+        timeout(promise, timeout);
     }
 
-    public Timeout timeout(CompletableFuture<?> promise) {
+    public void timeout(CompletableFuture<?> promise) {
         int timeout = config.getTimeout() + config.getRetryInterval() * config.getRetryAttempts();
-        return timeout(promise, timeout);
+        timeout(promise, timeout);
     }
 
-    public Timeout timeout(CompletableFuture<?> promise, long timeout) {
-        return connectionManager.newTimeout(t -> {
-                    promise.completeExceptionally(new RedisTimeoutException(
-                            "Unable to acquire subscription lock after " + timeout + "ms. " +
-                                    "Increase 'subscriptionsPerConnection' and/or 'subscriptionConnectionPoolSize' parameters."));
-                }, timeout, TimeUnit.MILLISECONDS);
+    public void timeout(CompletableFuture<?> promise, long timeout) {
+        Timeout task = connectionManager.newTimeout(t -> {
+            promise.completeExceptionally(new RedisTimeoutException(
+                    "Unable to acquire subscription lock after " + timeout + "ms. " +
+                            "Increase 'subscriptionsPerConnection' and/or 'subscriptionConnectionPoolSize' parameters."));
+        }, timeout, TimeUnit.MILLISECONDS);
+        promise.whenComplete((r, e) -> {
+            task.cancel();
+        });
     }
 
     private void subscribeNoTimeout(Codec codec, ChannelName channelName, MasterSlaveEntry entry,
