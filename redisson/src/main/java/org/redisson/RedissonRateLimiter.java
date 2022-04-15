@@ -234,9 +234,13 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
     @Override
     public RFuture<Boolean> trySetRateAsync(RateType type, long rate, long rateInterval, RateIntervalUnit unit) {
         return commandExecutor.evalWriteNoRetryAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                "redis.call('hsetnx', KEYS[1], 'rate', ARGV[1]);"
-              + "redis.call('hsetnx', KEYS[1], 'interval', ARGV[2]);"
-              + "return redis.call('hsetnx', KEYS[1], 'type', ARGV[3]);",
+                "local r = redis.call('hsetnx', KEYS[1], 'rate', ARGV[1]);"
+                        + "if (r == 1) then "
+                        + "  redis.call('expire', KEYS[1], ARGV[2]);"
+                        + "  redis.call('hsetnx', KEYS[1], 'interval', ARGV[2]);"
+                        + "  redis.call('hsetnx', KEYS[1], 'type', ARGV[3]);"
+                        + "end "
+                        + "return r",
                 Collections.singletonList(getRawName()), rate, unit.toMillis(rateInterval), type.ordinal());
     }
 
@@ -247,8 +251,9 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
 
     @Override
     public RFuture<Void> setRateAsync(RateType type, long rate, long rateInterval, RateIntervalUnit unit) {
-         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "redis.call('hset', KEYS[1], 'rate', ARGV[1]);"
+                        + "redis.call('expire', KEYS[1], ARGV[2]);"
                         + "redis.call('hset', KEYS[1], 'interval', ARGV[2]);"
                         + "redis.call('hset', KEYS[1], 'type', ARGV[3]);"
                         + "redis.call('del', KEYS[2], KEYS[3]);",
