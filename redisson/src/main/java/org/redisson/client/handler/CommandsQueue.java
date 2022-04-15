@@ -24,7 +24,6 @@ import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.QueueCommandHolder;
 import org.redisson.misc.LogHelper;
 
-import java.net.SocketAddress;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.Queue;
@@ -42,9 +41,8 @@ public class CommandsQueue extends ChannelDuplexHandler {
     public static final AttributeKey<Deque<QueueCommandHolder>> COMMANDS_QUEUE = AttributeKey.valueOf("COMMANDS_QUEUE");
 
     @Override
-    public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise) throws Exception {
-        super.connect(ctx, remoteAddress, localAddress, promise);
-
+    public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+        super.channelRegistered(ctx);
         ctx.channel().attr(COMMANDS_QUEUE).set(new ConcurrentLinkedDeque<>());
     }
 
