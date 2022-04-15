@@ -121,7 +121,7 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         assertThat(executor.getTaskCount()).isEqualTo(2);
         Thread.sleep(3000);
         assertThat(executor.getTaskCount()).isEqualTo(0);
-        assertThat(redisson.getKeys().countExists("testparam")).isEqualTo(0);
+        assertThat(redisson.getAtomicLong("testparam").get()).isEqualTo(1);
     }
 
     
