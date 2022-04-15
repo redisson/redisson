@@ -41,7 +41,6 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.*;
@@ -975,7 +974,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         check(task);
         ClassBody classBody = getClassBody(task);
         byte[] state = encode(task);
-        ZonedDateTime currentDate = ZonedDateTime.of(LocalDateTime.now(), ZoneId.systemDefault());
+        ZonedDateTime currentDate = ZonedDateTime.of(LocalDateTime.now(), cronSchedule.getZoneId());
         ZonedDateTime startDate = cronSchedule.getExpression().nextTimeAfter(currentDate);
         if (startDate == null) {
             throw new IllegalArgumentException("Wrong cron expression! Unable to calculate start date");
@@ -989,7 +988,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         params.setState(state);
         params.setStartTime(startTime);
         params.setCronExpression(cronSchedule.getExpression().getExpr());
-        params.setTimezone(ZoneId.systemDefault().toString());
+        params.setTimezone(cronSchedule.getZoneId().toString());
         params.setExecutorId(executorId);
         RemotePromise<Void> result = (RemotePromise<Void>) asyncScheduledServiceAtFixed.schedule(params).toCompletableFuture();
         addListener(result);
