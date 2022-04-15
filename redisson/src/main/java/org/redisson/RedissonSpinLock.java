@@ -156,17 +156,19 @@ public class RedissonSpinLock extends RedissonBaseLock {
         }
 
         LockOptions.BackOffPolicy backOffPolicy = backOff.create();
-        while (ttl != null) {
+        while (true) {
             current = System.currentTimeMillis();
             Thread.sleep(backOffPolicy.getNextSleepPeriod());
             ttl = tryAcquire(leaseTime, unit, threadId);
+            if (ttl == null) {
+                return true;
+            }
             time -= System.currentTimeMillis() - current;
             if (time <= 0) {
                 acquireFailed(waitTime, unit, threadId);
                 return false;
             }
         }
-        return true;
     }
 
     @Override
