@@ -265,7 +265,6 @@ public class RedissonConnection extends AbstractRedisConnection {
     public Cursor<byte[]> scan(ScanOptions options) {
         return new ScanCursor<byte[]>(0, options) {
 
-            private RedisClient client;
             private Iterator<MasterSlaveEntry> entries = redisson.getConnectionManager().getEntrySet().iterator();
             private MasterSlaveEntry entry = entries.next();
             
@@ -292,10 +291,9 @@ public class RedissonConnection extends AbstractRedisConnection {
                     args.add(options.getCount());
                 }
                 
-                RFuture<ListScanResult<byte[]>> f = executorService.readAsync(client, entry, ByteArrayCodec.INSTANCE, RedisCommands.SCAN, args.toArray());
+                RFuture<ListScanResult<byte[]>> f = executorService.readAsync(null, entry, ByteArrayCodec.INSTANCE, RedisCommands.SCAN, args.toArray());
                 ListScanResult<byte[]> res = syncFuture(f);
                 long pos = res.getPos();
-                client = res.getRedisClient();
                 if (pos == 0) {
                     if (entries.hasNext()) {
                         pos = -1;
