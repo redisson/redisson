@@ -546,7 +546,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return result;
     }
 
-    RFuture<Long> handlePutAllResult(double syncId, RFuture<List<Object>> res) {
+    RFuture<Long> handlePutAllResult(double syncId, CompletionStage<List<Object>> res) {
         if (atomicExecution) {
             CompletionStage<Long> f = res.thenCompose(r -> {
                 Long added = (Long) r.get(0);

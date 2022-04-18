@@ -21,6 +21,7 @@ import org.redisson.connection.ConnectionManager;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -30,7 +31,7 @@ import java.util.function.Supplier;
  */
 public class ElementsSubscribeService {
     
-    private final Map<Integer, CompletableFuture<?>> subscribeListeners = new HashMap<>();
+    private final Map<Integer, CompletableFuture<?>> subscribeListeners = new ConcurrentHashMap<>();
     private final ConnectionManager connectionManager;
 
     public ElementsSubscribeService(ConnectionManager connectionManager) {
@@ -39,21 +40,16 @@ public class ElementsSubscribeService {
 
     public <V> int subscribeOnElements(Supplier<RFuture<V>> func, Consumer<V> consumer) {
         int id = System.identityHashCode(consumer);
-        synchronized (subscribeListeners) {
-            CompletableFuture<?> currentFuture = subscribeListeners.putIfAbsent(id, CompletableFuture.completedFuture(null));
-            if (currentFuture != null) {
-                throw new IllegalArgumentException("Consumer object with listener id " + id + " already registered");
-            }
+        CompletableFuture<?> currentFuture = subscribeListeners.putIfAbsent(id, CompletableFuture.completedFuture(null));
+        if (currentFuture != null) {
+            throw new IllegalArgumentException("Consumer object with listener id " + id + " already registered");
         }
         resubscribe(func, consumer);
         return id;
     }
 
     public void unsubscribe(int listenerId) {
-        CompletableFuture<?> f;
-        synchronized (subscribeListeners) {
-            f = subscribeListeners.remove(listenerId);
-        }
+        CompletableFuture<?> f = subscribeListeners.remove(listenerId);
         if (f != null) {
             f.cancel(false);
         }
@@ -61,18 +57,11 @@ public class ElementsSubscribeService {
 
     private <V> void resubscribe(Supplier<RFuture<V>> func, Consumer<V> consumer) {
         int listenerId = System.identityHashCode(consumer);
-        if (!subscribeListeners.containsKey(listenerId)) {
+        CompletableFuture<V> f = (CompletableFuture<V>) subscribeListeners.computeIfPresent(listenerId, (k, v) -> {
+            return func.get().toCompletableFuture();
+        });
+        if (f == null) {
             return;
-        }
-
-        CompletableFuture<V> f;
-        synchronized (subscribeListeners) {
-            if (!subscribeListeners.containsKey(listenerId)) {
-                return;
-            }
-
-            f = func.get().toCompletableFuture();
-            subscribeListeners.put(listenerId, f);
         }
 
         f.whenComplete((r, e) -> {
