@@ -386,7 +386,6 @@ public class RedissonClusterConnection extends RedissonConnection implements Def
     public Cursor<byte[]> scan(RedisClusterNode node, ScanOptions options) {
         return new ScanCursor<byte[]>(0, options) {
 
-            private RedisClient client;
             private MasterSlaveEntry entry = getEntry(node);
             
             @Override
@@ -412,10 +411,9 @@ public class RedissonClusterConnection extends RedissonConnection implements Def
                     args.add(options.getCount());
                 }
                 
-                RFuture<ListScanResult<byte[]>> f = executorService.readAsync(client, entry, ByteArrayCodec.INSTANCE, RedisCommands.SCAN, args.toArray());
+                RFuture<ListScanResult<byte[]>> f = executorService.readAsync(null, entry, ByteArrayCodec.INSTANCE, RedisCommands.SCAN, args.toArray());
                 ListScanResult<byte[]> res = syncFuture(f);
                 long pos = res.getPos();
-                client = res.getRedisClient();
                 if (pos == 0) {
                     entry = null;
                 }
