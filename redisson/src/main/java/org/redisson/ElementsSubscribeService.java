@@ -18,7 +18,6 @@ package org.redisson;
 import org.redisson.api.RFuture;
 import org.redisson.connection.ConnectionManager;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
