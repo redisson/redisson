@@ -17,9 +17,12 @@ import org.springframework.data.redis.connection.ClusterInfo;
 import org.springframework.data.redis.connection.RedisClusterNode;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisNode.NodeType;
+import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.types.RedisClientInfo;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -71,6 +74,21 @@ public class RedissonClusterConnectionTest {
             connection.set(key, ("test" + i).getBytes());
         }
         assertThat(connection.del(keys.toArray(new byte[0][]))).isEqualTo(10);
+    }
+
+    @Test
+    public void testScan() {
+        for (int i = 0; i < 1000; i++) {
+            connection.set(("" + i).getBytes(StandardCharsets.UTF_8), ("" + i).getBytes(StandardCharsets.UTF_8));
+        }
+
+        Cursor<byte[]> b = connection.scan(ScanOptions.scanOptions().build());
+        int counter = 0;
+        while (b.hasNext()) {
+            b.next();
+            counter++;
+        }
+        assertThat(counter).isEqualTo(1000);
     }
 
     @Test

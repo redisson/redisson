@@ -280,6 +280,7 @@ public class RedissonConnection extends AbstractRedisConnection {
                     if (entries.hasNext()) {
                         pos = -1;
                         entry = entries.next();
+                        client = null;
                     } else {
                         entry = null;
                     }
