@@ -34,10 +34,7 @@ import org.redisson.misc.CompletableFutureWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.Condition;
 
@@ -59,13 +56,11 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
         }
 
         public synchronized void addThreadId(long threadId) {
-            Integer counter = threadIds.get(threadId);
-            if (counter == null) {
-                counter = 1;
-            } else {
+            threadIds.compute(threadId, (t, counter) -> {
+                counter = Optional.ofNullable(counter).orElse(1);
                 counter++;
-            }
-            threadIds.put(threadId, counter);
+                return counter;
+            });
         }
         public synchronized boolean hasNoThreads() {
             return threadIds.isEmpty();
@@ -77,18 +72,17 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
             return threadIds.keySet().iterator().next();
         }
         public synchronized void removeThreadId(long threadId) {
-            Integer counter = threadIds.get(threadId);
-            if (counter == null) {
-                return;
-            }
-            counter--;
-            if (counter == 0) {
-                threadIds.remove(threadId);
-            } else {
-                threadIds.put(threadId, counter);
-            }
+            threadIds.compute(threadId, (t, counter) -> {
+                if (counter == null) {
+                    return null;
+                }
+                counter--;
+                if (counter == 0) {
+                    return null;
+                }
+                return counter;
+            });
         }
-
 
         public void setTimeout(Timeout timeout) {
             this.timeout = timeout;
