@@ -16,6 +16,8 @@
 package org.redisson;
 
 import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
@@ -111,6 +113,18 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
     @Override
     public Condition newCondition() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    protected CompletionStage<Boolean> renewExpirationAsync(long threadId) {
+        CompletionStage<Boolean> f = super.renewExpirationAsync(threadId);
+        return f.thenCompose(r -> {
+            if (!r) {
+                RedissonReadLock lock = new RedissonReadLock(commandExecutor, getRawName());
+                return lock.renewExpirationAsync(threadId);
+            }
+            return CompletableFuture.completedFuture(r);
+        });
     }
 
     @Override

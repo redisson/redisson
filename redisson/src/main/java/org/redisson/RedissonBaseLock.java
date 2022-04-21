@@ -137,7 +137,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
                     return;
                 }
                 
-                RFuture<Boolean> future = renewExpirationAsync(threadId);
+                CompletionStage<Boolean> future = renewExpirationAsync(threadId);
                 future.whenComplete((res, e) -> {
                     if (e != null) {
                         log.error("Can't update lock " + getRawName() + " expiration", e);
@@ -175,7 +175,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
         }
     }
 
-    protected RFuture<Boolean> renewExpirationAsync(long threadId) {
+    protected CompletionStage<Boolean> renewExpirationAsync(long threadId) {
         return evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) then " +
                         "redis.call('pexpire', KEYS[1], ARGV[1]); " +
