@@ -186,7 +186,7 @@ public final class RedisClient {
         Future<InetSocketAddress> resolveFuture = resolver.resolve(InetSocketAddress.createUnresolved(uri.getHost(), uri.getPort()));
         resolveFuture.addListener((FutureListener<InetSocketAddress>) future -> {
             if (!future.isSuccess()) {
-                promise.completeExceptionally(future.cause());
+                promise.completeExceptionally(new RedisConnectionException(future.cause()));
                 return;
             }
 
@@ -207,7 +207,7 @@ public final class RedisClient {
                 @Override
                 public void operationComplete(final ChannelFuture future) throws Exception {
                     if (bootstrap.config().group().isShuttingDown()) {
-                        IllegalStateException cause = new IllegalStateException("RedisClient is shutdown");
+                        RedisConnectionException cause = new RedisConnectionException("RedisClient is shutdown");
                         r.completeExceptionally(cause);
                         return;
                     }
@@ -264,7 +264,7 @@ public final class RedisClient {
                 @Override
                 public void operationComplete(final ChannelFuture future) throws Exception {
                     if (bootstrap.config().group().isShuttingDown()) {
-                        IllegalStateException cause = new IllegalStateException("RedisClient is shutdown");
+                        RedisConnectionException cause = new RedisConnectionException("RedisClient is shutdown");
                         r.completeExceptionally(cause);
                         return;
                     }

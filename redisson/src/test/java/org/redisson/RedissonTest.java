@@ -1141,6 +1141,19 @@ public class RedissonTest extends BaseTest {
     }
 
     @Test
+    public void testMasterSlaveConnectionFail2() {
+        Assertions.assertThrows(RedisConnectionException.class, () -> {
+            Config config = new Config();
+            config.useMasterSlaveServers()
+                    .setMasterAddress("redis://gadfgdfgdsfg:1111")
+                    .addSlaveAddress("redis://asdfasdfsdfaasdf:1111");
+            Redisson.create(config);
+
+            Thread.sleep(1500);
+        });
+    }
+
+    @Test
     public void testSentinelConnectionFail() {
         Assertions.assertThrows(RedisConnectionException.class, () -> {
             Config config = new Config();

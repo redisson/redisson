@@ -339,7 +339,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         } catch (Exception e) {
             stopThreads();
             if (e instanceof CompletionException) {
-                throw (RuntimeException) e.getCause();
+                if (e.getCause() instanceof RuntimeException) {
+                    throw (RuntimeException) e.getCause();
+                }
+                throw new RedisConnectionException(e.getCause());
             }
             throw e;
         }
