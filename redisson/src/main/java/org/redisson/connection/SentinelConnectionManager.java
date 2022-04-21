@@ -368,7 +368,6 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         future.whenComplete((r, e) -> {
             if (e != null) {
                 log.error("Can't execute SENTINEL commands on " + connection.getRedisClient().getAddr(), e);
-                closeNodeConnection(connection);
             }
 
             getShutdownLatch().release();

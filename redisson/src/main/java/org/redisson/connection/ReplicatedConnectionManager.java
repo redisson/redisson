@@ -178,7 +178,6 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
             result.whenComplete((r, ex) -> {
                 if (ex != null) {
                     log.error(ex.getMessage(), ex);
-                    closeNodeConnection(connection);
                     latch.countDown();
                     return;
                 }
