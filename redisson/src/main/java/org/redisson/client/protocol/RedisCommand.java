@@ -107,6 +107,11 @@ public class RedisCommand<R> {
         return convertor;
     }
 
+    public boolean isNoRetry() {
+        return RedisCommands.NO_RETRY.contains(getName())
+                || RedisCommands.NO_RETRY_COMMANDS.contains(this);
+    }
+
     public boolean isBlockingCommand() {
         return RedisCommands.BLOCKING_COMMAND_NAMES.contains(getName())
                 || RedisCommands.BLOCKING_COMMANDS.contains(this);

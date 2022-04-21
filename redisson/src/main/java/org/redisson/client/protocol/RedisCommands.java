@@ -668,11 +668,12 @@ public interface RedisCommands {
     RedisStrictCommand<Map<String, String>> INFO_CLUSTER = new RedisStrictCommand<Map<String, String>>("INFO", "CLUSTER", new StringMapDataDecoder());
     RedisStrictCommand<Map<String, String>> INFO_KEYSPACE = new RedisStrictCommand<Map<String, String>>("INFO", "KEYSPACE", new StringMapDataDecoder());
 
+    Set<RedisCommand> NO_RETRY_COMMANDS = new HashSet<>(Arrays.asList(SET_BOOLEAN));
+
     Set<String> NO_RETRY = new HashSet<>(
             Arrays.asList(RPOPLPUSH.getName(), LPOP.getName(), RPOP.getName(), LPUSH.getName(), RPUSH.getName(),
                     LPUSHX.getName(), RPUSHX.getName(), GEOADD.getName(), XADD.getName(), APPEND.getName(),
                     DECR.getName(), "DECRBY", INCR.getName(), INCRBY.getName(), ZINCRBY.getName(),
-                    "HINCRBYFLOAT", "HINCRBY", "INCRBYFLOAT", SET_BOOLEAN.getName(), SETNX.getName(),
-                    MSETNX.getName(), HSETNX.getName()));
+                    "HINCRBYFLOAT", "HINCRBY", "INCRBYFLOAT", SETNX.getName(), MSETNX.getName(), HSETNX.getName()));
 
 }

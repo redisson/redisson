@@ -336,7 +336,9 @@ public class RedisExecutor<V, R> {
 
             attemptPromise.completeExceptionally(
                     new RedisResponseTimeoutException("Redis server response timeout (" + timeoutAmount + " ms) occured"
-                            + " after " + attempt + " retry attempts. Increase nettyThreads and/or timeout settings. Try to define pingConnectionInterval setting. Command: "
+                            + " after " + attempt + " retry attempts,"
+                            + " is non-idempotent command: " + (command != null && command.isNoRetry())
+                            + ". Increase nettyThreads and/or timeout settings. Try to define pingConnectionInterval setting. Command: "
                             + LogHelper.toString(command, params) + ", channel: " + connection.getChannel()));
         };
 
@@ -346,7 +348,7 @@ public class RedisExecutor<V, R> {
     protected boolean isResendAllowed(int attempt, int attempts) {
         return attempt < attempts
                 && !noRetry
-                    && (command == null || (!command.isBlockingCommand() && !RedisCommands.NO_RETRY.contains(command.getName())));
+                    && (command == null || (!command.isBlockingCommand() && !command.isNoRetry()));
     }
 
     private void handleBlockingOperations(CompletableFuture<R> attemptPromise, RedisConnection connection, Long popTimeout) {
