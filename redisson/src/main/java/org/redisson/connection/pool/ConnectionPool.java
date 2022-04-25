@@ -85,7 +85,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
 
         CompletableFuture<Void> initPromise = new CompletableFuture<>();
         AtomicInteger initializedConnections = new AtomicInteger(minimumIdleSize);
-        int startAmount = Math.min(10, minimumIdleSize);
+        int startAmount = Math.min(5, minimumIdleSize);
         AtomicInteger requests = new AtomicInteger(startAmount);
         for (int i = 0; i < startAmount; i++) {
             createConnection(checkFreezed, requests, entry, initPromise, minimumIdleSize, initializedConnections);
