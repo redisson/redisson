@@ -188,17 +188,23 @@ public interface RedissonReactiveClient {
      * @return Lock object
      */
     RLockReactive getSpinLock(String name, LockOptions.BackOff backOff);
-    
+
     /**
      * Returns MultiLock instance associated with specified <code>locks</code>
      *
      * @param locks - collection of locks
      * @return MultiLock object
      */
+    RLockReactive getMultiLock(RLockReactive... locks);
+
+    /*
+     * Use getMultiLock(RLockReactive) method instead
+     */
+    @Deprecated
     RLockReactive getMultiLock(RLock... locks);
     
     /*
-     * Use getLock method instead. Returned instance uses Redis Slave synchronization
+     * Use getMultiLock method instead. Returned instance uses Redis Slave synchronization
      */
     @Deprecated
     RLockReactive getRedLock(RLock... locks);

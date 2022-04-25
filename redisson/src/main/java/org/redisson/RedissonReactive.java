@@ -26,6 +26,7 @@ import org.redisson.reactive.*;
 import org.redisson.remote.ResponseEntry;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -152,6 +153,14 @@ public class RedissonReactive implements RedissonReactiveClient {
     public RLockReactive getSpinLock(String name, LockOptions.BackOff backOff) {
         RedissonSpinLock spinLock = new RedissonSpinLock(commandExecutor, name, backOff);
         return ReactiveProxyBuilder.create(commandExecutor, spinLock, RLockReactive.class);
+    }
+
+    @Override
+    public RLockReactive getMultiLock(RLockReactive... locks) {
+        RLock[] ls = Arrays.stream(locks)
+                            .map(l -> new RedissonLock(commandExecutor, l.getName()))
+                            .toArray(RLock[]::new);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonMultiLock(ls), RLockReactive.class);
     }
 
     @Override

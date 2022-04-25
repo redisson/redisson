@@ -25,6 +25,7 @@ import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.remote.ResponseEntry;
 import org.redisson.rx.*;
 
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -145,7 +146,15 @@ public class RedissonRx implements RedissonRxClient {
         RedissonSpinLock spinLock = new RedissonSpinLock(commandExecutor, name, backOff);
         return RxProxyBuilder.create(commandExecutor, spinLock, RLockRx.class);
     }
-    
+
+    @Override
+    public RLockRx getMultiLock(RLockRx... locks) {
+        RLock[] ls = Arrays.stream(locks)
+                            .map(l -> new RedissonLock(commandExecutor, l.getName()))
+                            .toArray(RLock[]::new);
+        return RxProxyBuilder.create(commandExecutor, new RedissonMultiLock(ls), RLockRx.class);
+    }
+
     @Override
     public RLockRx getMultiLock(RLock... locks) {
         return RxProxyBuilder.create(commandExecutor, new RedissonMultiLock(locks), RLockRx.class);
