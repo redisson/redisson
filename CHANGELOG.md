@@ -3,6 +3,34 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 25-Apr-2022 - 3.17.1 released
+
+Feature - transient fields support for LiveObjects to avoid data serialization  
+Feature - `removeAllListenersAsync()` method added to `RTopic` object  
+Feature - `transactionAware` setting added to RedissonSpringCacheManager  
+
+Improvement - amount of created connections in parallel reduced to 5, for better stability
+
+Fixed - `RedissonReactiveClient.getMultilock()` method should accept RLockReactive objects  
+Fixed - `RedissonRxClient.getMultilock()` method should accept RLockRx objects  
+Fixed - don't close connection on error response during topology scan  
+Fixed - SET command should be an idempotent operation  
+Fixed - MasterSlaveConnectionManager throws ClassCastException if host unknown  
+Fixed - `RReadWriteLock` renewal doesn't work if writeLock released before readLock then both were acquired  
+Fixed - Spring Data Redis module. Scan In cluster mode, other nodes cannot be scanned  
+Fixed - `RReliableTopic` object throws "attempt to compare nil with number" error  
+Fixed - `RedissonSpinLock.tryLock()` method returns false instead of true if the remaining wait time is negative  
+Fixed - an error should be thrown if `merge()`, `compute()`, `computeIfAbsent()` and `computeIfPresent()` of `RMap` used in batch  
+Fixed - Unable to specify timezone in CronSchedule object  
+Fixed - `RMapCache.destroy()` method throws NPE  
+Fixed - `RLock.tryLock()` method throws `CancellationException`  
+Fixed - Unable to connect to Redis server error is thrown due to NPE  
+Fixed - `RBlockingQueue.pollLastAndOfferFirstTo()` throws `ClassCastException` if result is empty  
+Fixed - internal AsyncSemaphore doesn't skip canceled tasks in the same thread  
+Fixed - `RLocalCachedMap.getAll()` method doesn't respect `storeCacheMiss` setting  
+Fixed - 0 value for waitTime and leastTime isn't handled correctly by RMultiLock object  
+Fixed - Spring Data Redis module. RedissonConnection.execute() method doesn't invoke overloaded methods correctly  
+
 ### 20-Mar-2022 - 3.17.0 released
 
 Feature - `RFunction` object added (requires Redis 7.0+)  
