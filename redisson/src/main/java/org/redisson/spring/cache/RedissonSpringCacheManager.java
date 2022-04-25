@@ -30,6 +30,7 @@ import org.springframework.beans.factory.BeanDefinitionStoreException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
+import org.springframework.cache.transaction.TransactionAwareCacheDecorator;
 import org.springframework.context.ResourceLoaderAware;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
@@ -49,7 +50,9 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
     private boolean dynamic = true;
     
     private boolean allowNullValues = true;
-    
+
+    private boolean transactionAware = false;
+
     Codec codec;
 
     RedissonClient redisson;
@@ -133,10 +136,22 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
      * <p>
      * Default is <code>true</code>
      * 
-     * @param allowNullValues - stores if <code>true</code>
+     * @param allowNullValues stores if <code>true</code>
      */
     public void setAllowNullValues(boolean allowNullValues) {
         this.allowNullValues = allowNullValues;
+    }
+
+    /**
+     * Defines if cache aware of Spring-managed transactions.
+     * If {@code true} put/evict operations are executed only for successful transaction in after-commit phase.
+     * <p>
+     * Default is <code>false</code>
+     *
+     * @param transactionAware cache is transaction aware if <code>true</code>
+     */
+    public void setTransactionAware(boolean transactionAware) {
+        this.transactionAware = transactionAware;
     }
 
     /**
@@ -225,6 +240,9 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
         RMap<Object, Object> map = getMap(name, config);
         
         Cache cache = new RedissonCache(map, allowNullValues);
+        if (transactionAware) {
+            cache = new TransactionAwareCacheDecorator(cache);
+        }
         Cache oldCache = instanceMap.putIfAbsent(name, cache);
         if (oldCache != null) {
             cache = oldCache;
@@ -243,6 +261,9 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
         RMapCache<Object, Object> map = getMapCache(name, config);
         
         Cache cache = new RedissonCache(map, config, allowNullValues);
+        if (transactionAware) {
+            cache = new TransactionAwareCacheDecorator(cache);
+        }
         Cache oldCache = instanceMap.putIfAbsent(name, cache);
         if (oldCache != null) {
             cache = oldCache;
