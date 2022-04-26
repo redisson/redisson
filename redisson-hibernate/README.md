@@ -46,13 +46,13 @@ Gradle
 
 ```groovy
      // for Hibernate v4.x
-     compile 'org.redisson:redisson-hibernate-4:3.17.0'
+     compile 'org.redisson:redisson-hibernate-4:3.17.1'
      // for Hibernate v5.0.x - v5.1.x
-     compile 'org.redisson:redisson-hibernate-5:3.17.0'
+     compile 'org.redisson:redisson-hibernate-5:3.17.1'
      // for Hibernate v5.2.x
-     compile 'org.redisson:redisson-hibernate-52:3.17.0'
+     compile 'org.redisson:redisson-hibernate-52:3.17.1'
      // for Hibernate v5.3.3+ - v5.6.x
-     compile 'org.redisson:redisson-hibernate-53:3.17.0'
+     compile 'org.redisson:redisson-hibernate-53:3.17.1'
 ```
 
 ### 2. Specify hibernate cache settings

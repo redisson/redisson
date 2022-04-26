@@ -14,14 +14,14 @@ Maven
      <dependency>
          <groupId>org.redisson</groupId>
          <artifactId>redisson-spring-boot-starter</artifactId>
-         <version>3.17.0</version>
+         <version>3.17.1</version>
      </dependency>
 ```
 
 Gradle
 
 ```groovy
-     compile 'org.redisson:redisson-spring-boot-starter:3.17.0'
+     compile 'org.redisson:redisson-spring-boot-starter:3.17.1'
 ```
 
 
@@ -29,10 +29,10 @@ Downgrade `redisson-spring-data` module if necessary to support required Spring 
 
 |redisson-spring-data<br/>module name|Spring Boot<br/>version|
 |----------------------------|-------------------|
-|redisson-spring-data-16     |1.3.z              |
-|redisson-spring-data-17     |1.4.z              |
-|redisson-spring-data-18     |1.5.z              |
-|redisson-spring-data-2x     |2.x.z              |
+|redisson-spring-data-16     |1.3.y              |
+|redisson-spring-data-17     |1.4.y              |
+|redisson-spring-data-18     |1.5.y              |
+|redisson-spring-data-2x     |2.x.y              |
 
 ### 2. Add settings into `application.settings` file
 
