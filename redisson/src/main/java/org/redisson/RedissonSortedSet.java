@@ -25,14 +25,14 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.iterator.RedissonBaseIterator;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 import static org.redisson.client.protocol.RedisCommands.EVAL_LIST_SCAN;
 
@@ -228,37 +228,38 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         }
     }
 
+    @Override
     public RFuture<Boolean> addAsync(final V value) {
-        final RPromise<Boolean> promise = new RedissonPromise<Boolean>();
+        CompletableFuture<Boolean> promise = new CompletableFuture<>();
         commandExecutor.getConnectionManager().getExecutor().execute(new Runnable() {
             public void run() {
                 try {
                     boolean res = add(value);
-                    promise.trySuccess(res);
+                    promise.complete(res);
                 } catch (Exception e) {
-                    promise.tryFailure(e);
+                    promise.completeExceptionally(e);
                 }
             }
         });
-        return promise;
+        return new CompletableFutureWrapper<>(promise);
     }
 
     @Override
     public RFuture<Boolean> removeAsync(final Object value) {
-        final RPromise<Boolean> promise = new RedissonPromise<Boolean>();
+        CompletableFuture<Boolean> promise = new CompletableFuture<>();
         commandExecutor.getConnectionManager().getExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 try {
                     boolean result = remove(value);
-                    promise.trySuccess(result);
+                    promise.complete(result);
                 } catch (Exception e) {
-                    promise.tryFailure(e);
+                    promise.completeExceptionally(e);
                 }
             }
         });
 
-        return promise;
+        return new CompletableFutureWrapper<>(promise);
     }
 
     @Override
@@ -305,7 +306,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     public boolean retainAll(Collection<?> c) {
         boolean changed = false;
         for (Iterator<?> iterator = iterator(); iterator.hasNext();) {
-            Object object = (Object) iterator.next();
+            Object object = iterator.next();
             if (!c.contains(object)) {
                 iterator.remove();
                 changed = true;
@@ -385,7 +386,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
                 + "else "
                 + "return 0; "
                 + "end",
-                Arrays.<Object>asList(getRawName(), getComparatorKeyName()), comparatorSign));
+                Arrays.asList(getRawName(), getComparatorKeyName()), comparatorSign));
         if (res) {
             this.comparator = comparator;
         }
@@ -409,7 +410,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
             @Override
             protected void remove(Object value) {
-                RedissonSortedSet.this.remove((V) value);
+                RedissonSortedSet.this.remove(value);
             }
         };
     }
@@ -437,7 +438,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
                 + "end; "
                 + "redis.call('setex', KEYS[2], 3600, end_index);"
                 + "return {end_index, result};",
-                Arrays.<Object>asList(getRawName(), iteratorName), count);
+                Arrays.asList(getRawName(), iteratorName), count);
     }
 
     // TODO optimize: get three values each time instead of single

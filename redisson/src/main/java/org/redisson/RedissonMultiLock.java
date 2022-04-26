@@ -20,13 +20,9 @@ import org.redisson.api.RLock;
 import org.redisson.api.RLockAsync;
 import org.redisson.client.RedisResponseTimeoutException;
 import org.redisson.misc.CompletableFutureWrapper;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
 
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.*;
 import java.util.concurrent.locks.Condition;
 
 /**
@@ -77,10 +73,9 @@ public class RedissonMultiLock implements RLock {
             acquiredLocks = new ArrayList<>(locks.size());
         }
         
-        void tryAcquireLockAsync(ListIterator<RLock> iterator, RPromise<Boolean> result) {
+        CompletionStage<Boolean> tryAcquireLockAsync(ListIterator<RLock> iterator) {
             if (!iterator.hasNext()) {
-                checkLeaseTimeAsync(result);
-                return;
+                return checkLeaseTimeAsync();
             }
 
             RLock lock = iterator.next();
@@ -91,35 +86,28 @@ public class RedissonMultiLock implements RLock {
                 long awaitTime = Math.min(lockWaitTime, remainTime);
                 lockAcquiredFuture = lock.tryLockAsync(awaitTime, newLeaseTime, TimeUnit.MILLISECONDS, threadId);
             }
-            
-            lockAcquiredFuture.whenComplete((res, e) -> {
+
+            return lockAcquiredFuture
+                    .exceptionally(e -> null)
+                    .thenCompose(res -> {
                 boolean lockAcquired = false;
                 if (res != null) {
                     lockAcquired = res;
-                }
-
-                if (e instanceof RedisResponseTimeoutException) {
+                } else {
                     unlockInnerAsync(Arrays.asList(lock), threadId);
                 }
-                
+
                 if (lockAcquired) {
                     acquiredLocks.add(lock);
                 } else {
                     if (locks.size() - acquiredLocks.size() == failedLocksLimit()) {
-                        checkLeaseTimeAsync(result);
-                        return;
+                        return checkLeaseTimeAsync();
                     }
 
                     if (failedLocksLimit == 0) {
-                        unlockInnerAsync(acquiredLocks, threadId).onComplete((r, ex) -> {
-                            if (ex != null) {
-                                result.tryFailure(ex);
-                                return;
-                            }
-                            
+                        return unlockInnerAsync(acquiredLocks, threadId).thenCompose(r -> {
                             if (waitTime <= 0) {
-                                result.trySuccess(false);
-                                return;
+                                return CompletableFuture.completedFuture(false);
                             }
                             
                             failedLocksLimit = failedLocksLimit();
@@ -129,58 +117,41 @@ public class RedissonMultiLock implements RLock {
                                 iterator.previous();
                             }
                             
-                            checkRemainTimeAsync(iterator, result);
+                            return checkRemainTimeAsync(iterator);
                         });
-                        return;
                     } else {
                         failedLocksLimit--;
                     }
                 }
                 
-                checkRemainTimeAsync(iterator, result);
+                return checkRemainTimeAsync(iterator);
             });
         }
         
-        private void checkLeaseTimeAsync(RPromise<Boolean> result) {
+        private CompletableFuture<Boolean> checkLeaseTimeAsync() {
             if (leaseTime > 0) {
-                AtomicInteger counter = new AtomicInteger(acquiredLocks.size());
+                List<CompletableFuture<Boolean>> futures = new ArrayList<>();
                 for (RLock rLock : acquiredLocks) {
                     RFuture<Boolean> future = ((RedissonBaseLock) rLock).expireAsync(unit.toMillis(leaseTime), TimeUnit.MILLISECONDS);
-                    future.onComplete((res, e) -> {
-                        if (e != null) {
-                            result.tryFailure(e);
-                            return;
-                        }
-                        
-                        if (counter.decrementAndGet() == 0) {
-                            result.trySuccess(true);
-                        }
-                    });
+                    futures.add(future.toCompletableFuture());
                 }
-                return;
+                CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+                return f.thenApply(r -> true);
             }
-            
-            result.trySuccess(true);
+
+            return CompletableFuture.completedFuture(true);
         }
         
-        private void checkRemainTimeAsync(ListIterator<RLock> iterator, RPromise<Boolean> result) {
+        private CompletionStage<Boolean> checkRemainTimeAsync(ListIterator<RLock> iterator) {
             if (remainTime > 0) {
                 remainTime += -(System.currentTimeMillis() - time);
                 time = System.currentTimeMillis();
                 if (remainTime <= 0) {
-                    unlockInnerAsync(acquiredLocks, threadId).onComplete((res, e) -> {
-                        if (e != null) {
-                            result.tryFailure(e);
-                            return;
-                        }
-                        
-                        result.trySuccess(false);
-                    });
-                    return;
+                    return unlockInnerAsync(acquiredLocks, threadId).thenApply(res -> false);
                 }
             }
             
-            tryAcquireLockAsync(iterator, result);
+            return tryAcquireLockAsync(iterator);
         }
         
     }
@@ -240,23 +211,17 @@ public class RedissonMultiLock implements RLock {
                 waitTime = ThreadLocalRandom.current().nextLong(baseWaitTime, waitTime);
             }
         }
-        
-        RPromise<Void> result = new RedissonPromise<Void>();
-        tryLockAsync(threadId, leaseTime, TimeUnit.MILLISECONDS, waitTime, result);
-        return result;
+
+        CompletionStage<Void> f = tryLockAsyncCycle(threadId, leaseTime, TimeUnit.MILLISECONDS, waitTime);
+        return new CompletableFutureWrapper<>(f);
     }
     
-    protected void tryLockAsync(long threadId, long leaseTime, TimeUnit unit, long waitTime, RPromise<Void> result) {
-        tryLockAsync(waitTime, leaseTime, unit, threadId).onComplete((res, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
-            }
-            
+    protected CompletionStage<Void> tryLockAsyncCycle(long threadId, long leaseTime, TimeUnit unit, long waitTime) {
+        return tryLockAsync(waitTime, leaseTime, unit, threadId).thenCompose(res -> {
             if (res) {
-                result.trySuccess(null);
+                return CompletableFuture.completedFuture(null);
             } else {
-                tryLockAsync(threadId, leaseTime, unit, waitTime, result);
+                return tryLockAsyncCycle(threadId, leaseTime, unit, waitTime);
             }
         });
     }
@@ -312,25 +277,13 @@ public class RedissonMultiLock implements RLock {
     }
     
     protected RFuture<Void> unlockInnerAsync(Collection<RLock> locks, long threadId) {
-        if (locks.isEmpty()) {
-            return new CompletableFutureWrapper<>((Void) null);
-        }
-        
-        RPromise<Void> result = new RedissonPromise<Void>();
-        AtomicInteger counter = new AtomicInteger(locks.size());
+        List<CompletableFuture<Void>> futures = new ArrayList<>(locks.size());
         for (RLock lock : locks) {
-            lock.unlockAsync(threadId).onComplete((res, e) -> {
-                if (e != null) {
-                    result.tryFailure(e);
-                    return;
-                }
-                
-                if (counter.decrementAndGet() == 0) {
-                    result.trySuccess(null);
-                }
-            });
+            RFuture<Void> f = lock.unlockAsync(threadId);
+            futures.add(f.toCompletableFuture());
         }
-        return result;
+        CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        return new CompletableFutureWrapper<>(future);
     }
 
     @Override
@@ -429,10 +382,9 @@ public class RedissonMultiLock implements RLock {
 
     @Override
     public RFuture<Boolean> tryLockAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId) {
-        RPromise<Boolean> result = new RedissonPromise<Boolean>();
         LockState state = new LockState(waitTime, leaseTime, unit, threadId);
-        state.tryAcquireLockAsync(locks.listIterator(), result);
-        return result;
+        CompletionStage<Boolean> f = state.tryAcquireLockAsync(locks.listIterator());
+        return new CompletableFutureWrapper<>(f);
     }
     
     @Override

@@ -33,8 +33,6 @@ import org.redisson.connection.decoder.ListDrainToDecoder;
 import org.redisson.executor.RemotePromise;
 import org.redisson.iterator.RedissonListIterator;
 import org.redisson.misc.CompletableFutureWrapper;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
 import org.redisson.remote.RemoteServiceRequest;
 
 import java.time.Duration;
@@ -187,10 +185,9 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
         return true;
     }
 
+    @Override
     public RFuture<Boolean> tryTransferAsync(V v, long timeout, TimeUnit unit) {
-        RPromise<Boolean> result = new RedissonPromise<>();
-        result.setUncancellable();
-
+        CompletableFuture<Boolean> result = new CompletableFuture<>();
         RemotePromise<Void> future = (RemotePromise<Void>) service.invoke(v).toCompletableFuture();
 
         long remainTime = unit.toMillis(timeout);
@@ -205,34 +202,34 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
 
         future.whenComplete((res, exc) -> {
             if (future.isCancelled()) {
-                result.trySuccess(false);
+                result.complete(false);
                 return;
             }
 
             timeoutFuture.cancel();
             if (exc != null) {
-                result.tryFailure(exc);
+                result.completeExceptionally(exc);
                 return;
             }
 
-            result.trySuccess(true);
+            result.complete(true);
         });
 
         future.getAddFuture().whenComplete((added, e) -> {
             if (future.getAddFuture().isCancelled()) {
-                result.trySuccess(false);
+                result.complete(false);
                 return;
             }
 
             if (e != null) {
                 timeoutFuture.cancel();
-                result.tryFailure(e);
+                result.completeExceptionally(e);
                 return;
             }
 
             if (!added) {
                 timeoutFuture.cancel();
-                result.trySuccess(false);
+                result.complete(false);
                 return;
             }
 
@@ -240,13 +237,13 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
                 future.cancelAsync(false).whenComplete((canceled, ex) -> {
                     if (ex != null) {
                         timeoutFuture.cancel();
-                        result.tryFailure(ex);
+                        result.completeExceptionally(ex);
                         return;
                     }
 
                     if (canceled) {
                         timeoutFuture.cancel();
-                        result.trySuccess(false);
+                        result.complete(false);
                     }
                 });
             };
@@ -260,7 +257,7 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
                 task.run();
             }
         });
-        return result;
+        return new CompletableFutureWrapper<>(result);
     }
 
     @Override
