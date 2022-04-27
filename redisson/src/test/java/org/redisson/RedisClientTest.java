@@ -1,7 +1,6 @@
 package org.redisson;
 
 import org.junit.jupiter.api.*;
-import org.redisson.api.RFuture;
 import org.redisson.client.*;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
@@ -9,8 +8,6 @@ import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
 
 import java.io.IOException;
 import java.util.ArrayList;

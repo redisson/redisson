@@ -38,8 +38,6 @@ import org.redisson.command.CommandAsyncService;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.misc.CompletableFutureWrapper;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.geo.*;

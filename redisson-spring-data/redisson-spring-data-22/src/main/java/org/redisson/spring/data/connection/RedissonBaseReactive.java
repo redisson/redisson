@@ -17,6 +17,7 @@ package org.redisson.spring.data.connection;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 import org.reactivestreams.Publisher;
@@ -25,14 +26,11 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.MasterSlaveEntry;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.reactive.CommandReactiveExecutor;
 import org.springframework.data.redis.RedisSystemException;
 import org.springframework.data.redis.connection.RedisClusterNode;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -56,18 +54,10 @@ abstract class RedissonBaseReactive {
         buffer.position(pos);
         return dst;
     }
-    
+
     RFuture<String> toStringFuture(RFuture<Void> f) {
-        RPromise<String> promise = new RedissonPromise<>();
-        f.onComplete((res, e) -> {
-            if (e != null) {
-                promise.tryFailure(e);
-                return;
-            }
-            
-            promise.trySuccess("OK");
-        });
-        return promise;
+        CompletionStage<String> ff = f.thenApply(r -> "OK");
+        return new CompletableFutureWrapper<>(ff);
     }
     
     <T> Mono<T> execute(RedisClusterNode node, RedisCommand<T> command, Object... params) {

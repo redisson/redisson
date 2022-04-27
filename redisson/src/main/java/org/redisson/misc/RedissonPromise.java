@@ -32,6 +32,7 @@ import io.netty.util.concurrent.Promise;
  *
  * @param <T> type of object
  */
+@Deprecated
 public class RedissonPromise<T> extends CompletableFuture<T> implements RPromise<T> {
 
     private static final Field LISTENERS_FIELD;
