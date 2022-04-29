@@ -57,7 +57,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
 
         public synchronized void addThreadId(long threadId) {
             threadIds.compute(threadId, (t, counter) -> {
-                counter = Optional.ofNullable(counter).orElse(0);
+                counter = Optional.ofNullable(counter).orElse(1);
                 counter++;
                 return counter;
             });
