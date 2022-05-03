@@ -15,7 +15,7 @@ Maven
     <groupId>org.redisson</groupId>
     <!-- for Micronaut v2.0.x - v2.5.x -->
     <artifactId>redisson-micronaut-20</artifactId>
-    <!-- for Micronaut v3.0.x - v3.4.x -->
+    <!-- for Micronaut v3.x.x -->
     <artifactId>redisson-micronaut-30</artifactId>
     <version>3.17.1</version>
 </dependency>
@@ -26,7 +26,7 @@ Gradle
 ```groovy
 // for Micronaut v2.0.x - v2.5.x
 compile 'org.redisson:redisson-micronaut-20:3.17.1'
-// for Micronaut v3.0.x - v3.4.x
+// for Micronaut v3.x.x
 compile 'org.redisson:redisson-micronaut-30:3.17.1'
 ```
 
