@@ -347,8 +347,8 @@ public class PublishSubscribeService {
         for (RedisPubSubListener<?> listener : listeners) {
             connEntry.addListener(channelName, listener);
         }
-        SubscribeListener list = connEntry.getSubscribeFuture(channelName, type);
-        CompletableFuture<Void> subscribeFuture = list.getSuccessFuture();
+        SubscribeListener subscribeListener = connEntry.getSubscribeFuture(channelName, type);
+        CompletableFuture<Void> subscribeFuture = subscribeListener.getSuccessFuture();
 
         subscribeFuture.whenComplete((res, e) -> {
             if (e != null) {
