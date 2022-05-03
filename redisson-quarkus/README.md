@@ -42,7 +42,7 @@ Maven
     <groupId>org.redisson</groupId>
     <!-- for Quarkus v1.6.x - v1.13.x -->
     <artifactId>redisson-quarkus-16</artifactId>
-    <!-- for Quarkus v2.0.x - v2.6.x -->
+    <!-- for Quarkus v2.x.x -->
     <artifactId>redisson-quarkus-20</artifactId>
     <version>3.17.1</version>
 </dependency>
@@ -53,7 +53,7 @@ Gradle
 ```groovy
 // for Quarkus v1.6.x - v1.13.x
 compile 'org.redisson:redisson-quarkus-16:3.17.1'
-// for Quarkus v2.0.x - v2.8.x
+// for Quarkus v2.x.x
 compile 'org.redisson:redisson-quarkus-20:3.17.1'
 ```
 
