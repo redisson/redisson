@@ -21,7 +21,6 @@ import io.netty.util.Timeout;
 import org.redisson.PubSubPatternStatusListener;
 import org.redisson.client.*;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ConnectionManager;
@@ -409,7 +408,7 @@ public class PublishSubscribeService {
             }
 
             freePubSubLock.acquire(() -> {
-                PubSubConnectionEntry entry = new PubSubConnectionEntry(conn, config.getSubscriptionsPerConnection());
+                PubSubConnectionEntry entry = new PubSubConnectionEntry(conn, connectionManager);
                 int remainFreeAmount = entry.tryAcquire();
 
                 PubSubKey key = new PubSubKey(channelName, msEntry);
@@ -482,26 +481,7 @@ public class PublishSubscribeService {
 
         };
 
-        ChannelFuture future;
-        if (topicType == PubSubType.UNSUBSCRIBE) {
-            future = entry.unsubscribe(channelName, listener);
-        } else {
-            future = entry.punsubscribe(channelName, listener);
-        }
-
-        future.addListener((ChannelFutureListener) f -> {
-            if (!f.isSuccess()) {
-                return;
-            }
-
-            connectionManager.newTimeout(timeout -> {
-                if (executed.get()) {
-                    return;
-                }
-                entry.getConnection().onMessage(new PubSubStatusMessage(topicType, channelName));
-            }, config.getTimeout(), TimeUnit.MILLISECONDS);
-        });
-
+        entry.unsubscribe(topicType, channelName, listener, executed);
         return result;
     }
 
@@ -558,25 +538,7 @@ public class PublishSubscribeService {
 
                 };
 
-                ChannelFuture future;
-                if (topicType == PubSubType.PUNSUBSCRIBE) {
-                    future = entry.punsubscribe(channelName, listener);
-                } else {
-                    future = entry.unsubscribe(channelName, listener);
-                }
-
-                future.addListener((ChannelFutureListener) f -> {
-                    if (!f.isSuccess()) {
-                        return;
-                    }
-
-                    connectionManager.newTimeout(timeout -> {
-                        if (executed.get()) {
-                            return;
-                        }
-                        entry.getConnection().onMessage(new PubSubStatusMessage(topicType, channelName));
-                    }, config.getTimeout(), TimeUnit.MILLISECONDS);
-                });
+                entry.unsubscribe(topicType, channelName, listener, executed);
             });
         });
 

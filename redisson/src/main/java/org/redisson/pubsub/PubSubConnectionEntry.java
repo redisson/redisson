@@ -19,8 +19,11 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import io.netty.channel.ChannelFutureListener;
 import org.redisson.PubSubMessageListener;
 import org.redisson.PubSubPatternMessageListener;
 import org.redisson.client.BaseRedisPubSubListener;
@@ -29,9 +32,11 @@ import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.SubscribeListener;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 import org.redisson.client.protocol.pubsub.PubSubType;
 
 import io.netty.channel.ChannelFuture;
+import org.redisson.connection.ConnectionManager;
 
 /**
  * 
@@ -48,10 +53,13 @@ public class PubSubConnectionEntry {
 
     private static final Queue<RedisPubSubListener<?>> EMPTY_QUEUE = new LinkedList<>();
 
-    public PubSubConnectionEntry(RedisPubSubConnection conn, int subscriptionsPerConnection) {
+    private final ConnectionManager connectionManager;
+
+    public PubSubConnectionEntry(RedisPubSubConnection conn, ConnectionManager connectionManager) {
         super();
         this.conn = conn;
-        this.subscribedChannelsAmount = new AtomicInteger(subscriptionsPerConnection);
+        this.connectionManager = connectionManager;
+        this.subscribedChannelsAmount = new AtomicInteger(connectionManager.getConfig().getSubscriptionsPerConnection());
     }
 
     public int countListeners(ChannelName channelName) {
@@ -176,11 +184,11 @@ public class PubSubConnectionEntry {
         return listener;
     }
     
-    public ChannelFuture unsubscribe(ChannelName channel, RedisPubSubListener<?> listener) {
+    public void unsubscribe(PubSubType commandType, ChannelName channel, RedisPubSubListener<?> listener, AtomicBoolean executed) {
         conn.addListener(new BaseRedisPubSubListener() {
             @Override
             public boolean onStatus(PubSubType type, CharSequence ch) {
-                if (type == PubSubType.UNSUBSCRIBE && channel.equals(ch)) {
+                if (type == commandType && channel.equals(ch)) {
                     conn.removeListener(this);
                     removeListeners(channel);
                     if (listener != null) {
@@ -190,9 +198,21 @@ public class PubSubConnectionEntry {
                 }
                 return false;
             }
-
         });
-        return conn.unsubscribe(channel);
+
+        ChannelFuture future = conn.unsubscribe(commandType, channel);
+        future.addListener((ChannelFutureListener) f -> {
+            if (!f.isSuccess()) {
+                return;
+            }
+
+            connectionManager.newTimeout(timeout -> {
+                if (executed.get()) {
+                    return;
+                }
+                conn.onMessage(new PubSubStatusMessage(commandType, channel));
+            }, connectionManager.getConfig().getTimeout(), TimeUnit.MILLISECONDS);
+        });
     }
 
     private void removeListeners(ChannelName channel) {
@@ -208,24 +228,6 @@ public class PubSubConnectionEntry {
                 conn.removeListener(listener);
             }
         }
-    }
-
-    public ChannelFuture punsubscribe(final ChannelName channel, final RedisPubSubListener<?> listener) {
-        conn.addListener(new BaseRedisPubSubListener() {
-            @Override
-            public boolean onStatus(PubSubType type, CharSequence ch) {
-                if (type == PubSubType.PUNSUBSCRIBE && channel.equals(ch)) {
-                    conn.removeListener(this);
-                    removeListeners(channel);
-                    if (listener != null) {
-                        listener.onStatus(type, ch);
-                    }
-                    return true;
-                }
-                return false;
-            }
-        });
-        return conn.punsubscribe(channel);
     }
 
     public RedisPubSubConnection getConnection() {
