@@ -132,13 +132,13 @@
             <dependency>
                 <groupId>org.assertj</groupId>
                 <artifactId>assertj-core</artifactId>
-                <version>3.20.2</version>
+                <version>3.22.0</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.awaitility</groupId>
                 <artifactId>awaitility</artifactId>
-                <version>4.1.0</version>
+                <version>4.2.0</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
@@ -175,14 +175,14 @@
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-bom</artifactId>
-                <version>4.1.74.Final</version>
+                <version>4.1.76.Final</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
-                <version>2.13.1</version>
+                <version>2.13.2.20220328</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -201,7 +201,7 @@
           <plugin>
          	<groupId>org.sonatype.plugins</groupId>
          	<artifactId>nexus-staging-maven-plugin</artifactId>
-         	<version>1.6.8</version>
+         	<version>1.6.13</version>
          	<extensions>true</extensions>
                 <configuration>
                     <serverId>ossrepo</serverId>
@@ -226,7 +226,7 @@
           <plugin>
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-enforcer-plugin</artifactId>
-              <version>3.0.0-M3</version>
+              <version>3.0.0</version>
               <executions>
                   <execution>
                       <id>enforce-maven</id>
