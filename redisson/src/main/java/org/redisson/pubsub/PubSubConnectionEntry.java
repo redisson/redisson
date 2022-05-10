@@ -15,28 +15,25 @@
  */
 package org.redisson.pubsub;
 
-import java.util.*;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import org.redisson.PubSubMessageListener;
+import org.redisson.PubSubPatternMessageListener;
+import org.redisson.client.*;
+import org.redisson.client.codec.Codec;
+import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
+import org.redisson.client.protocol.pubsub.PubSubType;
+import org.redisson.connection.ConnectionManager;
+
+import java.util.EventListener;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import io.netty.channel.ChannelFutureListener;
-import org.redisson.PubSubMessageListener;
-import org.redisson.PubSubPatternMessageListener;
-import org.redisson.client.BaseRedisPubSubListener;
-import org.redisson.client.ChannelName;
-import org.redisson.client.RedisPubSubConnection;
-import org.redisson.client.RedisPubSubListener;
-import org.redisson.client.SubscribeListener;
-import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
-import org.redisson.client.protocol.pubsub.PubSubType;
-
-import io.netty.channel.ChannelFuture;
-import org.redisson.connection.ConnectionManager;
 
 /**
  * 
@@ -184,11 +181,14 @@ public class PubSubConnectionEntry {
         return listener;
     }
     
-    public void unsubscribe(PubSubType commandType, ChannelName channel, RedisPubSubListener<?> listener, AtomicBoolean executed) {
+    public void unsubscribe(PubSubType commandType, ChannelName channel, RedisPubSubListener<?> listener) {
+        AtomicBoolean executed = new AtomicBoolean();
         conn.addListener(new BaseRedisPubSubListener() {
             @Override
             public boolean onStatus(PubSubType type, CharSequence ch) {
                 if (type == commandType && channel.equals(ch)) {
+                    executed.set(true);
+
                     conn.removeListener(this);
                     removeListeners(channel);
                     if (listener != null) {

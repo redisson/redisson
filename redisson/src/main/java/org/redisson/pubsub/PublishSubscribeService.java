@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -459,15 +458,12 @@ public class PublishSubscribeService {
             return CompletableFuture.completedFuture(null);
         }
 
-        AtomicBoolean executed = new AtomicBoolean();
         CompletableFuture<Void> result = new CompletableFuture<>();
         BaseRedisPubSubListener listener = new BaseRedisPubSubListener() {
 
             @Override
             public boolean onStatus(PubSubType type, CharSequence channel) {
                 if (type == topicType && channel.equals(channelName)) {
-                    executed.set(true);
-
                     if (entry.release() == 1) {
                         MasterSlaveEntry msEntry = getEntry(channelName);
                         msEntry.returnPubSubConnection(entry.getConnection());
@@ -481,7 +477,7 @@ public class PublishSubscribeService {
 
         };
 
-        entry.unsubscribe(topicType, channelName, listener, executed);
+        entry.unsubscribe(topicType, channelName, listener);
         return result;
     }
 
@@ -521,14 +517,11 @@ public class PublishSubscribeService {
                     entryCodec = entry.getConnection().getChannels().get(channelName);
                 }
 
-                AtomicBoolean executed = new AtomicBoolean();
                 RedisPubSubListener<Object> listener = new BaseRedisPubSubListener() {
 
                     @Override
                     public boolean onStatus(PubSubType type, CharSequence channel) {
                         if (type == topicType && channel.equals(channelName)) {
-                            executed.set(true);
-
                             lock.release();
                             result.complete(entryCodec);
                             return true;
@@ -538,7 +531,7 @@ public class PublishSubscribeService {
 
                 };
 
-                entry.unsubscribe(topicType, channelName, listener, executed);
+                entry.unsubscribe(topicType, channelName, listener);
             });
         });
 
