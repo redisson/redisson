@@ -21,6 +21,7 @@ import org.redisson.misc.LogHelper;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
@@ -73,6 +74,8 @@ public class CommandData<T, R> implements QueueCommand {
             return null;
         } catch (CompletionException e) {
             return e.getCause();
+        } catch (CancellationException e) {
+            return e;
         }
     }
 

@@ -489,12 +489,13 @@ public class CommandBatchService extends CommandAsyncService {
     }
 
     protected void handle(CompletableFuture<Void> mainPromise, AtomicInteger slots, RFuture<?> future) {
-        if (future.isSuccess()) {
+        Throwable c = cause(future.toCompletableFuture());
+        if (c == null) {
             if (slots.decrementAndGet() == 0) {
                 mainPromise.complete(null);
             }
         } else {
-            mainPromise.completeExceptionally(future.cause());
+            mainPromise.completeExceptionally(c);
         }
     }
     
