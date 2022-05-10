@@ -128,7 +128,7 @@ public class LiveObjectInterceptor {
             RFuture<Long> deleteFuture = service.delete(idd, me.getClass().getSuperclass(), namingScheme, ce);
             ce.execute();
             
-            return deleteFuture.getNow() > 0;
+            return commandExecutor.get(deleteFuture.toCompletableFuture()) > 0;
         }
 
         try {

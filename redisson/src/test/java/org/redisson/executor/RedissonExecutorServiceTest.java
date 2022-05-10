@@ -97,7 +97,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
                     new IncrementCallableTask("myCounter"), new IncrementCallableTask("myCounter"));
         
         future.get(5, TimeUnit.SECONDS);
-        future.getTaskFutures().stream().forEach(x -> assertThat(x.getNow()).isEqualTo("1234"));
+        future.getTaskFutures().stream().forEach(x -> assertThat(x.toCompletableFuture().getNow(null)).isEqualTo("1234"));
         
         redisson.getKeys().delete("myCounter");
         assertThat(redisson.getKeys().count()).isZero();

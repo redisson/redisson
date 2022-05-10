@@ -226,7 +226,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
                         new IllegalStateException("Only " + res.getSyncedSlaves() + " of " + availableSlaves + " slaves were synced"));
             }
 
-            return result.getNow();
+            return commandExecutor.getNow(result.toCompletableFuture());
         });
         return new CompletableFutureWrapper<>(f);
     }

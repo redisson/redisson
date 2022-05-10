@@ -207,9 +207,9 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
         RFuture<Long> cardinalityFuture = bs.cardinalityAsync();
         executorService.execute();
 
-        readConfig(configFuture.getNow());
+        readConfig(commandExecutor.getNow(configFuture.toCompletableFuture()));
 
-        return Math.round(-size / ((double) hashIterations) * Math.log(1 - cardinalityFuture.getNow() / ((double) size)));
+        return Math.round(-size / ((double) hashIterations) * Math.log(1 - commandExecutor.getNow(cardinalityFuture.toCompletableFuture()) / ((double) size)));
     }
 
     @Override

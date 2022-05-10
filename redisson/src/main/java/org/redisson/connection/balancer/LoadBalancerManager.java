@@ -148,7 +148,7 @@ public class LoadBalancerManager {
                             return;
                         }
 
-                        log.info("Unfreezed entry: {}", entry);
+                        log.debug("Unfreezed entry: {}", entry);
                         entry.setFreezeReason(null);
                     });
                     return true;
