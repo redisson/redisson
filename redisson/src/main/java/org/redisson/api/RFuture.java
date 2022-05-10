@@ -29,31 +29,54 @@ import java.util.function.BiConsumer;
 public interface RFuture<V> extends java.util.concurrent.Future<V>, CompletionStage<V> {
 
     /**
-     * Returns {@code true} if and only if the I/O operation was completed
-     * successfully.
+     * Use snippet below instead.
+     *
+     * <pre>
+     *                 return toCompletableFuture().isDone() && !toCompletableFuture().isCompletedExceptionally();
+     * </pre>
      * 
      * @return {@code true} if future was completed successfully
      */
+    @Deprecated
     boolean isSuccess();
 
     /**
-     * Returns the cause of the failed I/O operation if the I/O operation has
-     * failed.
+     * Use snippet below instead.
+     *
+     * <pre>
+     *                if (toCompletableFuture().isDone()) {
+     *                    try {
+     *                        toCompletableFuture().getNow(null);
+     *                    } catch (CompletionException e) {
+     *                        return e.getCause();
+     *                    } catch (CancellationException e) {
+     *                        return e;
+     *                    }
+     *                }
+     *                return null;
+     * </pre>
      *
      * @return the cause of the failure.
      *         {@code null} if succeeded or this future is not
      *         completed yet.
      */
+    @Deprecated
     Throwable cause();
-    
+
     /**
-     * Return the result without blocking. If the future is not done yet this will return {@code null}.
+     * Use snippet below instead.
      *
-     * As it is possible that a {@code null} value is used to mark the future as successful you also need to check
-     * if the future is really done with {@link #isDone()} and not relay on the returned {@code null} value.
-     * 
+     * <pre>
+     *                 try {
+     *                     return toCompletableFuture().getNow(null);
+     *                 } catch (Exception e) {
+     *                     return null;
+     *                 }
+     * </pre>
+     *
      * @return object
      */
+    @Deprecated
     V getNow();
     
     /**
