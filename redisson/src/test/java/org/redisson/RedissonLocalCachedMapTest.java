@@ -1062,5 +1062,26 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         Assertions.assertEquals(1, map.size());
     }
 
+    @Test
+    public void testMerge() {
+        LocalCachedMapOptions<String, Integer> options = LocalCachedMapOptions.defaults();
+        options.loader(new MapLoader() {
+            @Override
+            public Object load(Object o) {
+                return null;
+            }
+
+            @Override
+            public Iterable loadAllKeys() {
+                return null;
+            }
+        });
+
+        RLocalCachedMap<String, Integer> localCachedMap = redisson.getLocalCachedMap("map", options);
+        localCachedMap.merge("c", 2, (x, y) -> x * y);
+
+        Integer counter = localCachedMap.get("c");
+        assertThat(counter).isEqualTo(2);
+    }
     
 }

@@ -1130,10 +1130,11 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         if (hasNoLoader()) {
             return future;
         }
-        
+
+        long threadId = Thread.currentThread().getId();
         CompletionStage<V> f = future.thenCompose(res -> {
             if (res == null) {
-                return loadValue(key, false);
+                return loadValue(key, false, threadId);
             }
             return CompletableFuture.completedFuture(res);
         });
@@ -1625,8 +1626,11 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     protected CompletableFuture<V> loadValue(K key, boolean replaceValue) {
+        return loadValue(key, replaceValue, Thread.currentThread().getId());
+    }
+
+    protected CompletableFuture<V> loadValue(K key, boolean replaceValue, long threadId) {
         RLock lock = getLock(key);
-        long threadId = Thread.currentThread().getId();
         return lock.lockAsync(threadId).thenCompose(res -> {
             if (replaceValue) {
                 return loadValue(key, lock, threadId);
