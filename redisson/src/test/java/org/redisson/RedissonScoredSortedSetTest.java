@@ -27,6 +27,23 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
+    public void testReplace() {
+        RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("test");
+        set.add(1, 10);
+        set.add(2, 20);
+        set.add(3, 30);
+
+        assertThat(set.replace(10, 60)).isTrue();
+        assertThat(set.getScore(60)).isEqualTo(1);
+        assertThat(set.size()).isEqualTo(3);
+
+        assertThat(set.replace(10, 80)).isFalse();
+        assertThat(set.getScore(60)).isEqualTo(1);
+        assertThat(set.getScore(80)).isNull();
+        assertThat(set.size()).isEqualTo(3);
+    }
+
+    @Test
     public void testRandom() {
         Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
 

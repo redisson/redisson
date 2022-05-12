@@ -15,18 +15,14 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.mapreduce.RCollectionMapReduce;
+import org.redisson.client.protocol.ScoredEntry;
+
 import java.time.Duration;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-
-import org.redisson.api.mapreduce.RCollectionMapReduce;
-import org.redisson.client.protocol.ScoredEntry;
 
 /**
  * Set containing elements sorted by score.
@@ -566,6 +562,16 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * @return <code>true</code> if element added and <code>false</code> if not.
      */
     boolean addIfGreater(double score, V object);
+
+    /**
+     * Replaces a previous <code>oldObject</code> with a <code>newObject</code>.
+     * Returns <code>false</code> if previous object doesn't exist.
+     *
+     * @param oldObject old object
+     * @param newObject new object
+     * @return <code>true</code> if object has been replaced otherwise <code>false</code>.
+     */
+    boolean replace(V oldObject, V newObject);
 
     /**
      * Returns size of this set.

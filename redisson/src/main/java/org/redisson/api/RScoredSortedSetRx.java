@@ -549,6 +549,16 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
     Single<Boolean> addIfGreater(double score, V object);
 
     /**
+     * Replaces a previous <code>oldObject</code> with a <code>newObject</code>.
+     * Returns <code>false</code> if previous object doesn't exist.
+     *
+     * @param oldObject old object
+     * @param newObject new object
+     * @return <code>true</code> if object has been replaced otherwise <code>false</code>.
+     */
+    Single<Boolean> replace(V oldObject, V newObject);
+
+    /**
      * Removes a single instance of the specified element from this
      * sorted set, if it is present.
      *

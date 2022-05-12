@@ -15,15 +15,15 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.RScoredSortedSet.Aggregate;
+import org.redisson.client.protocol.ScoredEntry;
+
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
-import org.redisson.api.RScoredSortedSet.Aggregate;
-import org.redisson.client.protocol.ScoredEntry;
 
 /**
  * 
@@ -534,6 +534,16 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @return <code>true</code> if an element was removed as a result of this call
      */
     RFuture<Boolean> removeAsync(V o);
+
+    /**
+     * Replaces a previous <code>oldObject</code> with a <code>newObject</code>.
+     * Returns <code>false</code> if previous object doesn't exist.
+     *
+     * @param oldObject old object
+     * @param newObject new object
+     * @return <code>true</code> if object has been replaced otherwise <code>false</code>.
+     */
+    RFuture<Boolean> replaceAsync(V oldObject, V newObject);
 
     /**
      * Returns size of this set.

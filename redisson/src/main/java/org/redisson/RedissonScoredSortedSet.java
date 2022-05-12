@@ -688,6 +688,24 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public boolean replace(V oldValue, V newValue) {
+        return get(replaceAsync(oldValue, newValue));
+    }
+
+    @Override
+    public RFuture<Boolean> replaceAsync(V oldObject, V newObject) {
+        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                        "local score = redis.call('zscore', KEYS[1], ARGV[1]);" +
+                              "if score ~= false then " +
+                                   "redis.call('zrem', KEYS[1], ARGV[1]);" +
+                                   "redis.call('zadd', KEYS[1], score, ARGV[2]);" +
+                                   "return 1;" +
+                              "end;" +
+                              "return 0;",
+                Collections.singletonList(getRawName()), encode(oldObject), encode(newObject));
+    }
+
+    @Override
     public boolean isEmpty() {
         return size() == 0;
     }
