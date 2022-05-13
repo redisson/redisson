@@ -11,7 +11,7 @@
     <artifactId>redisson-quarkus-20-parent</artifactId>
     <packaging>pom</packaging>
 
-    <name>Redisson/Quarkus v2.0.x - v2.8.x integration</name>
+    <name>Redisson/Quarkus v2.x.x integration</name>
 
      <modules>
        <module>deployment</module>
@@ -20,7 +20,7 @@
      </modules>
 
      <properties>
-       <quarkus.version>2.8.0.Final</quarkus.version>
+       <quarkus.version>2.9.0.Final</quarkus.version>
      </properties>
 
      <dependencyManagement>
