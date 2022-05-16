@@ -46,7 +46,7 @@ public class RedissonTopic implements RTopic {
 
     final PublishSubscribeService subscribeService;
     final CommandAsyncExecutor commandExecutor;
-    private final String name;
+    final String name;
     final ChannelName channelName;
     final Codec codec;
 

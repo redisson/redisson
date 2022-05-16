@@ -471,6 +471,16 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
+    public RShardedTopic getShardedTopic(String name) {
+        return new RedissonShardedTopic(commandExecutor, name);
+    }
+
+    @Override
+    public RShardedTopic getShardedTopic(String name, Codec codec) {
+        return new RedissonShardedTopic(codec, commandExecutor, name);
+    }
+
+    @Override
     public RTopic getTopic(String name) {
         return new RedissonTopic(commandExecutor, name);
     }

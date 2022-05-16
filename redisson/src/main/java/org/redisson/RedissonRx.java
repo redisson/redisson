@@ -339,6 +339,18 @@ public class RedissonRx implements RedissonRxClient {
     }
 
     @Override
+    public RShardedTopicRx getShardedTopic(String name) {
+        RShardedTopic topic = new RedissonShardedTopic(commandExecutor, name);
+        return RxProxyBuilder.create(commandExecutor, topic, new RedissonTopicRx(topic), RShardedTopicRx.class);
+    }
+
+    @Override
+    public RShardedTopicRx getShardedTopic(String name, Codec codec) {
+        RShardedTopic topic = new RedissonShardedTopic(codec, commandExecutor, name);
+        return RxProxyBuilder.create(commandExecutor, topic, new RedissonTopicRx(topic), RShardedTopicRx.class);
+    }
+
+    @Override
     public RTopicRx getTopic(String name) {
         RTopic topic = new RedissonTopic(commandExecutor, name);
         return RxProxyBuilder.create(commandExecutor, topic, new RedissonTopicRx(topic), RTopicRx.class);
