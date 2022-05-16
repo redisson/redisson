@@ -28,10 +28,7 @@ import org.redisson.connection.ConnectionManager;
 import java.util.EventListener;
 import java.util.LinkedList;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -159,12 +156,26 @@ public class PubSubConnectionEntry {
         return subscribedChannelsAmount.incrementAndGet();
     }
 
-    public ChannelFuture subscribe(Codec codec, ChannelName channelName) {
-        return conn.subscribe(codec, channelName);
-    }
+    public void subscribe(Codec codec, PubSubType type, ChannelName channelName, CompletableFuture<Void> subscribeFuture) {
+        ChannelFuture future;
+        if (PubSubType.PSUBSCRIBE == type) {
+            future = conn.psubscribe(codec, channelName);
+        } else {
+            future = conn.subscribe(codec, channelName);
+        }
 
-    public ChannelFuture psubscribe(Codec codec, ChannelName pattern) {
-        return conn.psubscribe(codec, pattern);
+        future.addListener((ChannelFutureListener) future1 -> {
+            if (!future1.isSuccess()) {
+                subscribeFuture.completeExceptionally(future1.cause());
+                return;
+            }
+
+            connectionManager.newTimeout(t -> {
+                subscribeFuture.completeExceptionally(new RedisTimeoutException(
+                        "Subscription timeout after " + connectionManager.getConfig().getTimeout() + "ms. " +
+                                "Check network and/or increase 'timeout' parameter."));
+            }, connectionManager.getConfig().getTimeout(), TimeUnit.MILLISECONDS);
+        });
     }
 
     public SubscribeListener getSubscribeFuture(ChannelName channel, PubSubType type) {

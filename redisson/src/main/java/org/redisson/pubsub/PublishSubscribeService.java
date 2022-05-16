@@ -191,7 +191,7 @@ public class PublishSubscribeService {
         Timeout lockTimeout = connectionManager.newTimeout(t -> {
             promise.completeExceptionally(new RedisTimeoutException(
                     "Unable to acquire subscription lock after " + timeout + "ms. " +
-                            "Increase 'subscriptionsPerConnection' and/or 'subscriptionConnectionPoolSize' parameters."));
+                            "Try to increase 'timeout', 'subscriptionsPerConnection', 'subscriptionConnectionPoolSize' parameters."));
         }, timeout, TimeUnit.MILLISECONDS);
         lock.acquire(() -> {
             if (!lockTimeout.cancel() || promise.isDone()) {
@@ -239,7 +239,7 @@ public class PublishSubscribeService {
         Timeout task = connectionManager.newTimeout(t -> {
             promise.completeExceptionally(new RedisTimeoutException(
                     "Unable to acquire subscription lock after " + timeout + "ms. " +
-                            "Increase 'subscriptionsPerConnection' and/or 'subscriptionConnectionPoolSize' parameters."));
+                            "Try to increase 'timeout', 'subscriptionsPerConnection', 'subscriptionConnectionPoolSize' parameters."));
         }, timeout, TimeUnit.MILLISECONDS);
         promise.whenComplete((r, e) -> {
             task.cancel();
@@ -307,29 +307,11 @@ public class PublishSubscribeService {
             freePubSubLock.release();
 
             CompletableFuture<Void> subscribeFuture = addListeners(channelName, promise, type, lock, freeEntry, listeners);
-
-            ChannelFuture future;
-            if (PubSubType.PSUBSCRIBE == type) {
-                future = freeEntry.psubscribe(codec, channelName);
-            } else {
-                future = freeEntry.subscribe(codec, channelName);
-            }
-
-            future.addListener((ChannelFutureListener) future1 -> {
-                if (!future1.isSuccess()) {
-                    if (!promise.isDone()) {
-                        subscribeFuture.cancel(false);
-                    }
-                    return;
+            freeEntry.subscribe(codec, type, channelName, subscribeFuture);
+            subscribeFuture.whenComplete((r, e) -> {
+                if (e instanceof RedisTimeoutException) {
+                    unsubscribe(channelName, type);
                 }
-
-                connectionManager.newTimeout(t -> {
-                    if (subscribeFuture.completeExceptionally(new RedisTimeoutException(
-                            "Subscription timeout after " + config.getTimeout() + "ms. " +
-                                    "Check network and/or increase 'timeout' parameter."))) {
-                        unsubscribe(channelName, type);
-                    }
-                }, config.getTimeout(), TimeUnit.MILLISECONDS);
             });
         });
     }
@@ -426,27 +408,8 @@ public class PublishSubscribeService {
                 }
                 freePubSubLock.release();
 
-                addListeners(channelName, promise, type, lock, entry, listeners);
-
-                ChannelFuture future;
-                if (PubSubType.PSUBSCRIBE == type) {
-                    future = entry.psubscribe(codec, channelName);
-                } else {
-                    future = entry.subscribe(codec, channelName);
-                }
-
-                future.addListener((ChannelFutureListener) future1 -> {
-                    if (!future1.isSuccess()) {
-                        if (!promise.isDone()) {
-                            promise.cancel(false);
-                        }
-                        return;
-                    }
-
-                    connectionManager.newTimeout(timeout ->
-                                    promise.cancel(false),
-                            config.getTimeout(), TimeUnit.MILLISECONDS);
-                });
+                CompletableFuture<Void> subscribeFuture = addListeners(channelName, promise, type, lock, entry, listeners);
+                entry.subscribe(codec, type, channelName, subscribeFuture);
             });
         });
         return connFuture;
