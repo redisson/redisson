@@ -15,8 +15,6 @@
  */
 package org.redisson.pubsub;
 
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.util.Timeout;
 import org.redisson.PubSubPatternStatusListener;
 import org.redisson.client.*;
@@ -225,9 +223,7 @@ public class PublishSubscribeService {
                                     CompletableFuture<PubSubConnectionEntry> promise, PubSubType type,
                                     AsyncSemaphore lock, AtomicInteger attempts, RedisPubSubListener<?>... listeners) {
         subscribeNoTimeout(codec, channelName, entry, promise, type, lock, attempts, listeners);
-
-        int timeout = config.getTimeout() + config.getRetryInterval() * config.getRetryAttempts();
-        timeout(promise, timeout);
+        timeout(promise);
     }
 
     public void timeout(CompletableFuture<?> promise) {
@@ -687,6 +683,39 @@ public class PublishSubscribeService {
             }
         });
         return promise;
+    }
+
+    public CompletableFuture<Void> removeAllListenersAsync(PubSubType type, ChannelName channelName) {
+        AsyncSemaphore semaphore = getSemaphore(channelName);
+        int timeout = config.getTimeout() + config.getRetryInterval() * config.getRetryAttempts();
+
+        CompletableFuture<Void> res = new CompletableFuture<>();
+        connectionManager.newTimeout(t -> {
+            res.completeExceptionally(new RedisTimeoutException("Remove listeners operation timeout: (" + timeout + "ms) for " + channelName + " topic"));
+        }, timeout, TimeUnit.MILLISECONDS);
+        semaphore.acquire(() -> {
+            res.complete(null);
+        });
+
+        CompletableFuture<Void> f = res.thenCompose(r -> {
+            PubSubConnectionEntry entry = getPubSubEntry(channelName);
+            if (entry == null) {
+                semaphore.release();
+                return CompletableFuture.completedFuture(null);
+            }
+
+            if (entry.hasListeners(channelName)) {
+                CompletableFuture<Void> ff = unsubscribe(type, channelName);
+                ff.whenComplete((r1, e1) -> {
+                    semaphore.release();
+                });
+                return ff;
+            }
+
+            semaphore.release();
+            return CompletableFuture.completedFuture(null);
+        });
+        return f;
     }
 
     @Override
