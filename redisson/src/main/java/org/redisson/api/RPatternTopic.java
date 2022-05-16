@@ -75,6 +75,13 @@ public interface RPatternTopic {
      * Removes all listeners from this topic
      */
     void removeAllListeners();
+
+    /**
+     * Removes all listeners from this topic
+     *
+     * @return void
+     */
+    RFuture<Void> removeAllListenersAsync();
     
     RFuture<Integer> addListenerAsync(PatternStatusListener listener);
     

@@ -22,23 +22,19 @@ import org.redisson.api.listener.MessageListener;
 import org.redisson.api.listener.StatusListener;
 import org.redisson.client.ChannelName;
 import org.redisson.client.RedisPubSubListener;
-import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.misc.CompletableFutureWrapper;
-import org.redisson.pubsub.AsyncSemaphore;
 import org.redisson.pubsub.PubSubConnectionEntry;
 import org.redisson.pubsub.PublishSubscribeService;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Distributed topic implementation. Messages are delivered to all message listeners across Redis cluster.
@@ -136,58 +132,13 @@ public class RedissonTopic implements RTopic {
 
     @Override
     public void removeAllListeners() {
-        AsyncSemaphore semaphore = subscribeService.getSemaphore(channelName);
-        acquire(semaphore);
-
-        PubSubConnectionEntry entry = subscribeService.getPubSubEntry(channelName);
-        if (entry == null) {
-            semaphore.release();
-            return;
-        }
-
-        if (entry.hasListeners(channelName)) {
-            subscribeService.unsubscribe(PubSubType.UNSUBSCRIBE, channelName).toCompletableFuture().join();
-        }
-        semaphore.release();
+        commandExecutor.get(removeAllListenersAsync());
     }
 
+    @Override
     public RFuture<Void> removeAllListenersAsync() {
-        AsyncSemaphore semaphore = subscribeService.getSemaphore(channelName);
-        MasterSlaveServersConfig config = commandExecutor.getConnectionManager().getConfig();
-        int timeout = config.getTimeout() + config.getRetryInterval() * config.getRetryAttempts();
-
-        CompletableFuture<Void> res = new CompletableFuture<>();
-        commandExecutor.getConnectionManager().newTimeout(t -> {
-            res.completeExceptionally(new RedisTimeoutException("Remove listeners operation timeout: (" + timeout + "ms) for " + name + " topic"));
-        }, timeout, TimeUnit.MILLISECONDS);
-        semaphore.acquire(() -> {
-            res.complete(null);
-        });
-
-        CompletableFuture<Void> f = res.thenCompose(r -> {
-            PubSubConnectionEntry entry = subscribeService.getPubSubEntry(channelName);
-            if (entry == null) {
-                semaphore.release();
-                return CompletableFuture.completedFuture(null);
-            }
-
-            if (entry.hasListeners(channelName)) {
-                return subscribeService.unsubscribe(PubSubType.UNSUBSCRIBE, channelName);
-            }
-
-            semaphore.release();
-            return CompletableFuture.completedFuture(null);
-        });
-
+        CompletableFuture<Void> f = subscribeService.removeAllListenersAsync(PubSubType.UNSUBSCRIBE, channelName);
         return new CompletableFutureWrapper<>(f);
-    }
-
-    protected void acquire(AsyncSemaphore semaphore) {
-        MasterSlaveServersConfig config = commandExecutor.getConnectionManager().getConfig();
-        int timeout = config.getTimeout() + config.getRetryInterval() * config.getRetryAttempts();
-        if (!semaphore.tryAcquire(timeout)) {
-            throw new RedisTimeoutException("Remove listeners operation timeout: (" + timeout + "ms) for " + name + " topic");
-        }
     }
 
     @Override
