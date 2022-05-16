@@ -576,6 +576,29 @@ public interface RedissonRxClient {
     RLexSortedSetRx getLexSortedSet(String name);
 
     /**
+     * Returns Sharded Topic instance by name.
+     * <p>
+     * Messages are delivered to message listeners connected to the same Topic.
+     * <p>
+     *
+     * @param name - name of object
+     * @return Topic object
+     */
+    RShardedTopicRx getShardedTopic(String name);
+
+    /**
+     * Returns Sharded Topic instance by name using provided codec for messages.
+     * <p>
+     * Messages are delivered to message listeners connected to the same Topic.
+     * <p>
+     *
+     * @param name - name of object
+     * @param codec - codec for message
+     * @return Topic object
+     */
+    RShardedTopicRx getShardedTopic(String name, Codec codec);
+
+    /**
      * Returns topic instance by name.
      *
      * @param name - name of object

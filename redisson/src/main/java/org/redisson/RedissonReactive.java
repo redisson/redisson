@@ -354,6 +354,20 @@ public class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
+    public RShardedTopicReactive getShardedTopic(String name) {
+        RedissonShardedTopic topic = new RedissonShardedTopic(commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, topic,
+                new RedissonTopicReactive(topic), RShardedTopicReactive.class);
+    }
+
+    @Override
+    public RShardedTopicReactive getShardedTopic(String name, Codec codec) {
+        RedissonShardedTopic topic = new RedissonShardedTopic(codec, commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, topic,
+                new RedissonTopicReactive(topic), RShardedTopicReactive.class);
+    }
+
+    @Override
     public RTopicReactive getTopic(String name) {
         RedissonTopic topic = new RedissonTopic(commandExecutor, name);
         return ReactiveProxyBuilder.create(commandExecutor, topic,

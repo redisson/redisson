@@ -13,20 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.protocol.pubsub;
+package org.redisson.api;
 
 /**
- * 
+ * Sharded Topic for Redis Cluster. Messages are delivered to message listeners connected to the same Topic.
+ *
  * @author Nikita Koksharov
  *
  */
-public enum PubSubType {
-
-    SUBSCRIBE,
-    PSUBSCRIBE,
-    SSUBSCRIBE,
-    PUNSUBSCRIBE,
-    UNSUBSCRIBE,
-    SUNSUBSCRIBE
-
+public interface RShardedTopic extends RTopic, RShardedTopicAsync {
 }

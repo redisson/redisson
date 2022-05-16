@@ -158,10 +158,12 @@ public class PubSubConnectionEntry {
 
     public void subscribe(Codec codec, PubSubType type, ChannelName channelName, CompletableFuture<Void> subscribeFuture) {
         ChannelFuture future;
-        if (PubSubType.PSUBSCRIBE == type) {
-            future = conn.psubscribe(codec, channelName);
-        } else {
+        if (PubSubType.SUBSCRIBE == type) {
             future = conn.subscribe(codec, channelName);
+        } else if (PubSubType.SSUBSCRIBE == type) {
+            future = conn.ssubscribe(codec, channelName);
+        } else {
+            future = conn.psubscribe(codec, channelName);
         }
 
         future.addListener((ChannelFutureListener) future1 -> {
