@@ -16,16 +16,16 @@
 package org.redisson.spring.data.connection;
 
 import java.nio.ByteBuffer;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import org.reactivestreams.Publisher;
-import org.redisson.api.RFuture;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.connection.MasterSlaveEntry;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.reactive.CommandReactiveExecutor;
 import org.springframework.data.redis.connection.ReactiveClusterKeyCommands;
 import org.springframework.data.redis.connection.ReactiveRedisConnection;
@@ -52,7 +52,12 @@ public class RedissonReactiveClusterKeyCommands extends RedissonReactiveKeyComma
     @Override
     public Mono<List<ByteBuffer>> keys(RedisClusterNode node, ByteBuffer pattern) {
         Mono<List<String>> m = executorService.reactive(() -> {
-            return (RFuture<List<String>>)(Object) executorService.readAllAsync(StringCodec.INSTANCE, RedisCommands.KEYS, toByteArray(pattern));
+            List<CompletableFuture<List<String>>> futures = executorService.readAllAsync(StringCodec.INSTANCE, RedisCommands.KEYS, toByteArray(pattern));
+            CompletableFuture<Void> ff = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+            CompletableFuture<List<String>> future = ff.thenApply(r -> {
+                return futures.stream().flatMap(f -> f.getNow(new ArrayList<>()).stream()).collect(Collectors.toList());
+            }).toCompletableFuture();
+            return new CompletableFutureWrapper<>(future);
         });
         return m.map(v -> v.stream().map(t -> ByteBuffer.wrap(t.getBytes(CharsetUtil.UTF_8))).collect(Collectors.toList()));
     }

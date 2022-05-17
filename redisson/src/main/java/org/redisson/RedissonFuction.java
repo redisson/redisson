@@ -53,9 +53,7 @@ public class RedissonFuction implements RFunction {
 
     @Override
     public RFuture<Void> deleteAsync(String libraryName) {
-        List<CompletableFuture<Void>> futures = commandExecutor.executeMasters(RedisCommands.FUNCTION_DELETE, libraryName);
-        CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-        return new CompletableFutureWrapper<>(f);
+        return commandExecutor.writeAllVoidAsync(RedisCommands.FUNCTION_DELETE, libraryName);
     }
 
     @Override
@@ -75,9 +73,7 @@ public class RedissonFuction implements RFunction {
 
     @Override
     public RFuture<Void> flushAsync() {
-        List<CompletableFuture<Void>> futures = commandExecutor.executeMasters(RedisCommands.FUNCTION_FLUSH);
-        CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-        return new CompletableFutureWrapper<>(f);
+        return commandExecutor.writeAllVoidAsync(RedisCommands.FUNCTION_FLUSH);
     }
 
     @Override
@@ -87,7 +83,7 @@ public class RedissonFuction implements RFunction {
 
     @Override
     public RFuture<Void> killAsync() {
-        List<CompletableFuture<Void>> futures = commandExecutor.executeAll(RedisCommands.FUNCTION_KILL);
+        List<CompletableFuture<Void>> futures = commandExecutor.executeAllAsync(RedisCommands.FUNCTION_KILL);
         CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
         return new CompletableFutureWrapper<>(f);
     }
@@ -120,9 +116,7 @@ public class RedissonFuction implements RFunction {
 
     @Override
     public RFuture<Void> loadAsync(String libraryName, String code) {
-        List<CompletableFuture<Void>> futures = commandExecutor.executeMasters(RedisCommands.FUNCTION_LOAD, "Lua", libraryName, code);
-        CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-        return new CompletableFutureWrapper<>(f);
+        return commandExecutor.writeAllVoidAsync(RedisCommands.FUNCTION_LOAD, "Lua", libraryName, code);
     }
 
     @Override
@@ -132,10 +126,8 @@ public class RedissonFuction implements RFunction {
 
     @Override
     public RFuture<Void> loadAndReplaceAsync(String libraryName, String code) {
-        List<CompletableFuture<Void>> futures = commandExecutor.executeMasters(RedisCommands.FUNCTION_LOAD,
+        return commandExecutor.writeAllVoidAsync(RedisCommands.FUNCTION_LOAD,
                                                 "Lua", libraryName, "REPLACE", code);
-        CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
@@ -145,9 +137,7 @@ public class RedissonFuction implements RFunction {
 
     @Override
     public RFuture<Void> restoreAsync(byte[] payload) {
-        List<CompletableFuture<Void>> futures = commandExecutor.executeMasters(RedisCommands.FUNCTION_RESTORE, payload);
-        CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-        return new CompletableFutureWrapper<>(f);
+        return commandExecutor.writeAllVoidAsync(RedisCommands.FUNCTION_RESTORE, payload);
     }
 
     @Override
@@ -157,9 +147,7 @@ public class RedissonFuction implements RFunction {
 
     @Override
     public RFuture<Void> restoreAndReplaceAsync(byte[] payload) {
-        List<CompletableFuture<Void>> futures = commandExecutor.executeMasters(RedisCommands.FUNCTION_RESTORE, payload, "REPLACE");
-        CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-        return new CompletableFutureWrapper<>(f);
+        return commandExecutor.writeAllVoidAsync(RedisCommands.FUNCTION_RESTORE, payload, "REPLACE");
     }
 
     @Override
@@ -169,9 +157,7 @@ public class RedissonFuction implements RFunction {
 
     @Override
     public RFuture<Void> restoreAfterFlushAsync(byte[] payload) {
-        List<CompletableFuture<Void>> futures = commandExecutor.executeMasters(RedisCommands.FUNCTION_RESTORE, payload, "FLUSH");
-        CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-        return new CompletableFutureWrapper<>(f);
+        return commandExecutor.writeAllVoidAsync(RedisCommands.FUNCTION_RESTORE, payload, "FLUSH");
     }
 
     private List<Object> encode(Collection<?> values, Codec codec) {

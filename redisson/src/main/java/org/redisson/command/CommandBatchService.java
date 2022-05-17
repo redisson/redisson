@@ -184,7 +184,7 @@ public class CommandBatchService extends CommandAsyncService {
 
         executed.set(true);
         if (isRedisBasedQueue()) {
-            return writeAllAsync(RedisCommands.DISCARD);
+            return writeAllVoidAsync(RedisCommands.DISCARD);
         }
 
         commands.values().stream()

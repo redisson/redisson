@@ -26,7 +26,6 @@ import org.redisson.api.RFuture;
 import org.redisson.cache.LRUCacheMap;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisException;
-import org.redisson.client.RedisRedirectException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
@@ -47,10 +46,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 /**
@@ -186,31 +183,6 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
-    public <T, R> RFuture<Collection<R>> readAllAsync(Codec codec, RedisCommand<T> command, Object... params) {
-        Collection<MasterSlaveEntry> nodes = connectionManager.getEntrySet();
-        List<CompletableFuture<?>> futures = new ArrayList<>();
-        for (MasterSlaveEntry entry : nodes) {
-            RFuture<Object> f = async(true, new NodeSource(entry), codec, command, params, true, false);
-            futures.add(f.toCompletableFuture());
-        }
-
-        CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-        CompletableFuture<Collection<R>> resFuture = future.thenApply(r -> {
-            List<R> results = new ArrayList<>();
-            for (CompletableFuture<?> f : futures) {
-                Object res = f.getNow(null);
-                if (res instanceof Collection) {
-                    results.addAll((Collection) res);
-                } else {
-                    results.add((R) res);
-                }
-            }
-            return results;
-        });
-        return new CompletableFutureWrapper<>(resFuture);
-    }
-    
-    @Override
     public <T, R> RFuture<R> readRandomAsync(Codec codec, RedisCommand<T> command, Object... params) {
         CompletableFuture<R> mainPromise = createPromise();
         List<MasterSlaveEntry> nodes = new ArrayList<MasterSlaveEntry>(connectionManager.getEntrySet());
@@ -249,14 +221,14 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
-    public <T> RFuture<Void> writeAllAsync(RedisCommand<T> command, Object... params) {
-        List<CompletableFuture<Void>> futures = executeMasters(command, params);
+    public <T> RFuture<Void> writeAllVoidAsync(RedisCommand<T> command, Object... params) {
+        List<CompletableFuture<Void>> futures = writeAllAsync(command, params);
         CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
         return new CompletableFutureWrapper<>(f);
     }
 
     @Override
-    public <R> List<CompletableFuture<R>> executeMasters(RedisCommand<?> command, Object... params) {
+    public <R> List<CompletableFuture<R>> writeAllAsync(RedisCommand<?> command, Object... params) {
         List<CompletableFuture<R>> futures = connectionManager.getEntrySet().stream().map(e -> {
             RFuture<R> f = async(false, new NodeSource(e),
                     connectionManager.getCodec(), command, params, true, false);
@@ -266,7 +238,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
-    public <R> List<CompletableFuture<R>> executeRead(Codec codec, RedisCommand<?> command, Object... params) {
+    public <R> List<CompletableFuture<R>> readAllAsync(Codec codec, RedisCommand<?> command, Object... params) {
         List<CompletableFuture<R>> futures = connectionManager.getEntrySet().stream().map(e -> {
             RFuture<R> f = async(true, new NodeSource(e), codec, command, params, true, false);
             return f.toCompletableFuture();
@@ -275,12 +247,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
-    public <R> List<CompletableFuture<R>> executeRead(RedisCommand<?> command, Object... params) {
-        return executeRead(connectionManager.getCodec(), command, params);
+    public <R> List<CompletableFuture<R>> readAllAsync(RedisCommand<?> command, Object... params) {
+        return readAllAsync(connectionManager.getCodec(), command, params);
     }
 
     @Override
-    public <R> List<CompletableFuture<R>> executeAll(RedisCommand<?> command, Object... params) {
+    public <R> List<CompletableFuture<R>> executeAllAsync(RedisCommand<?> command, Object... params) {
         Collection<MasterSlaveEntry> nodes = connectionManager.getEntrySet();
         List<CompletableFuture<R>> futures = new ArrayList<>();
         nodes.forEach(e -> {
@@ -295,47 +267,6 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             });
         });
         return futures;
-    }
-
-    @Override
-    public <R, T> RFuture<R> readAllAsync(RedisCommand<T> command, SlotCallback<T, R> callback, Object... params) {
-        return allAsync(true, connectionManager.getCodec(), command, callback, params);
-    }
-
-    private <T, R> RFuture<R> allAsync(boolean readOnlyMode, Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, Object... params) {
-        CompletableFuture<R> mainPromise = new CompletableFuture<R>();
-        Collection<MasterSlaveEntry> nodes = connectionManager.getEntrySet();
-        AtomicInteger counter = new AtomicInteger(nodes.size());
-        BiConsumer<T, Throwable> listener = new BiConsumer<T, Throwable>() {
-            @Override
-            public void accept(T result, Throwable u) {
-                if (u != null && !(u instanceof RedisRedirectException)) {
-                    mainPromise.completeExceptionally(u);
-                    return;
-                }
-                
-                if (u instanceof RedisRedirectException) {
-                    result = command.getConvertor().convert(result);
-                }
-                
-                if (callback != null) {
-                    callback.onSlotResult(result);
-                }
-                if (counter.decrementAndGet() == 0) {
-                    if (callback != null) {
-                        mainPromise.complete(callback.onFinish());
-                    } else {
-                        mainPromise.complete(null);
-                    }
-                }
-            }
-        };
-
-        for (MasterSlaveEntry entry : nodes) {
-            RFuture<T> promise = async(readOnlyMode, new NodeSource(entry), codec, command, params, true, false);
-            promise.whenComplete(listener);
-        }
-        return new CompletableFutureWrapper<R>(mainPromise);
     }
 
     public RedisException convertException(ExecutionException e) {

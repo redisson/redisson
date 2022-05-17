@@ -27,7 +27,6 @@ import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -71,17 +70,13 @@ public interface CommandAsyncExecutor {
     
     <T, R> RFuture<R> readAsync(RedisClient client, Codec codec, RedisCommand<T> command, Object... params);
 
-    <R> List<CompletableFuture<R>> executeAll(RedisCommand<?> command, Object... params);
+    <R> List<CompletableFuture<R>> executeAllAsync(RedisCommand<?> command, Object... params);
 
-    <R> List<CompletableFuture<R>> executeMasters(RedisCommand<?> command, Object... params);
+    <R> List<CompletableFuture<R>> writeAllAsync(RedisCommand<?> command, Object... params);
 
-    <R> List<CompletableFuture<R>> executeRead(Codec codec, RedisCommand<?> command, Object... params);
+    <R> List<CompletableFuture<R>> readAllAsync(Codec codec, RedisCommand<?> command, Object... params);
 
-    <R> List<CompletableFuture<R>> executeRead(RedisCommand<?> command, Object... params);
-
-    <T, R> RFuture<Collection<R>> readAllAsync(Codec codec, RedisCommand<T> command, Object... params);
-    
-    <R, T> RFuture<R> readAllAsync(RedisCommand<T> command, SlotCallback<T, R> callback, Object... params);
+    <R> List<CompletableFuture<R>> readAllAsync(RedisCommand<?> command, Object... params);
 
     <T, R> RFuture<R> evalReadAsync(RedisClient client, String name, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params);
 
@@ -101,7 +96,7 @@ public interface CommandAsyncExecutor {
 
     <T, R> RFuture<R> writeAsync(String key, Codec codec, RedisCommand<T> command, Object... params);
 
-    <T> RFuture<Void> writeAllAsync(RedisCommand<T> command, Object... params);
+    <T> RFuture<Void> writeAllVoidAsync(RedisCommand<T> command, Object... params);
 
     <T, R> RFuture<R> writeAsync(String key, RedisCommand<T> command, Object... params);
 

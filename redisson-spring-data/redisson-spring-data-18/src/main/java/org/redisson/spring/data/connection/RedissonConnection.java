@@ -24,10 +24,9 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 import org.redisson.Redisson;
-import org.redisson.SlotCallback;
 import org.redisson.api.BatchOptions;
 import org.redisson.api.BatchOptions.ExecutionMode;
 import org.redisson.api.BatchResult;
@@ -246,9 +245,10 @@ public class RedissonConnection extends AbstractRedisConnection {
             return read(null, ByteArrayCodec.INSTANCE, KEYS, pattern);
         }
 
-        RFuture<Collection<byte[]>> f = executorService.readAllAsync(ByteArrayCodec.INSTANCE, KEYS, pattern);
-        CompletableFuture<Set<byte[]>> future = f.thenApply(r -> {
-            return (Set<byte[]>)new HashSet<>(r);
+        List<CompletableFuture<Set<byte[]>>> futures = executorService.readAllAsync(ByteArrayCodec.INSTANCE, KEYS, pattern);
+        CompletableFuture<Void> ff = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        CompletableFuture<Set<byte[]>> future = ff.thenApply(r -> {
+            return futures.stream().flatMap(f -> f.getNow(new HashSet<>()).stream()).collect(Collectors.toSet());
         }).toCompletableFuture();
         return sync(new CompletableFutureWrapper<>(future));
     }
@@ -1657,20 +1657,12 @@ public class RedissonConnection extends AbstractRedisConnection {
         if (isQueueing()) {
             return read(null, StringCodec.INSTANCE, RedisCommands.DBSIZE);
         }
-        
-        RFuture<Long> f = executorService.readAllAsync(RedisCommands.DBSIZE, new SlotCallback<Long, Long>() {
-            AtomicLong results = new AtomicLong();
-            @Override
-            public void onSlotResult(Long result) {
-                results.addAndGet(result);
-            }
 
-            @Override
-            public Long onFinish() {
-                return results.get();
-            }
-        });
-        return sync(f);
+        List<CompletableFuture<Long>> futures = executorService.readAllAsync(RedisCommands.DBSIZE);
+        CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        CompletableFuture<Long> s = f.thenApply(r -> futures.stream().mapToLong(v -> v.getNow(0L)).sum());
+        CompletableFutureWrapper<Long> ff = new CompletableFutureWrapper<>(s);
+        return sync(ff);
     }
 
     @Override
@@ -1680,13 +1672,13 @@ public class RedissonConnection extends AbstractRedisConnection {
             return;
         }
         
-        RFuture<Void> f = executorService.writeAllAsync(RedisCommands.FLUSHDB);
+        RFuture<Void> f = executorService.writeAllVoidAsync(RedisCommands.FLUSHDB);
         sync(f);
     }
 
     @Override
     public void flushAll() {
-        RFuture<Void> f = executorService.writeAllAsync(RedisCommands.FLUSHALL);
+        RFuture<Void> f = executorService.writeAllVoidAsync(RedisCommands.FLUSHALL);
         sync(f);
     }
 
@@ -1781,7 +1773,7 @@ public class RedissonConnection extends AbstractRedisConnection {
             throw new UnsupportedOperationException();
         }
 
-        RFuture<Void> f = executorService.writeAllAsync(RedisCommands.SCRIPT_FLUSH);
+        RFuture<Void> f = executorService.writeAllVoidAsync(RedisCommands.SCRIPT_FLUSH);
         sync(f);
     }
 
@@ -1799,7 +1791,7 @@ public class RedissonConnection extends AbstractRedisConnection {
             throw new UnsupportedOperationException();
         }
 
-        List<CompletableFuture<String>> futures = executorService.executeAll(RedisCommands.SCRIPT_LOAD, (Object)script);
+        List<CompletableFuture<String>> futures = executorService.executeAllAsync(RedisCommands.SCRIPT_LOAD, (Object)script);
         CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
         CompletableFuture<String> s = f.thenApply(r -> futures.get(0).getNow(null));
         return sync(new CompletableFutureWrapper<>(s));
@@ -1811,7 +1803,7 @@ public class RedissonConnection extends AbstractRedisConnection {
             throw new UnsupportedOperationException();
         }
 
-        List<CompletableFuture<List<Boolean>>> futures = executorService.executeMasters(RedisCommands.SCRIPT_EXISTS, (Object[]) scriptShas);
+        List<CompletableFuture<List<Boolean>>> futures = executorService.writeAllAsync(RedisCommands.SCRIPT_EXISTS, (Object[]) scriptShas);
         CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
         CompletableFuture<List<Boolean>> s = f.thenApply(r -> {
             List<Boolean> result = futures.get(0).getNow(new ArrayList<>());
