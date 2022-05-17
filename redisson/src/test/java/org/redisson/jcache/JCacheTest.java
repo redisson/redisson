@@ -352,7 +352,30 @@ public class JCacheTest extends BaseTest {
         cache.close();
         runner.stop();
     }
-    
+
+    @Test
+    public void testScriptCache() throws IOException, InterruptedException {
+        RedisProcess runner = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(6311)
+                .run();
+
+        URL configUrl = getClass().getResource("redisson-jcache.yaml");
+        Config cfg = Config.fromYAML(configUrl);
+        cfg.setUseScriptCache(true);
+
+        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
+        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
+                .createCache("test", config);
+
+        cache.put("1", "2");
+        Assertions.assertEquals("2", cache.get("1"));
+
+        cache.close();
+        runner.stop();
+    }
+
     @Test
     public void testRedissonInstance() throws IllegalArgumentException {
         Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson);
