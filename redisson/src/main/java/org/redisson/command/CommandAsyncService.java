@@ -266,6 +266,20 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
+    public <R> List<CompletableFuture<R>> executeRead(Codec codec, RedisCommand<?> command, Object... params) {
+        List<CompletableFuture<R>> futures = connectionManager.getEntrySet().stream().map(e -> {
+            RFuture<R> f = async(true, new NodeSource(e), codec, command, params, true, false);
+            return f.toCompletableFuture();
+        }).collect(Collectors.toList());
+        return futures;
+    }
+
+    @Override
+    public <R> List<CompletableFuture<R>> executeRead(RedisCommand<?> command, Object... params) {
+        return executeRead(connectionManager.getCodec(), command, params);
+    }
+
+    @Override
     public <R> List<CompletableFuture<R>> executeAll(RedisCommand<?> command, Object... params) {
         Collection<MasterSlaveEntry> nodes = connectionManager.getEntrySet();
         List<CompletableFuture<R>> futures = new ArrayList<>();
@@ -492,8 +506,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 if (e != null) {
                     if (e.getMessage().startsWith("ERR unknown command")) {
                         evalShaROSupported.set(false);
-                        free(pps);
-                        RFuture<R> future = evalAsync(nodeSource, readOnlyMode, codec, evalCommandType, script, keys, noRetry, params);
+                        RFuture<R> future = evalAsync(nodeSource, readOnlyMode, codec, evalCommandType, script, keys, noRetry, pps);
                         transfer(future.toCompletableFuture(), mainPromise);
                     } else if (e.getMessage().startsWith("NOSCRIPT")) {
                         RFuture<String> loadFuture = loadScript(executor.getRedisClient(), script);
