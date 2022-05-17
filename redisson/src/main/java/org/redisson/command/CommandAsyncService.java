@@ -594,13 +594,14 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }
 
         CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-        CompletableFuture<R> result = future.whenComplete((res, e) -> {
+        CompletableFuture<R> result = future.thenApply(r -> {
             futures.forEach(f -> {
                 if (!f.isCompletedExceptionally() && f.getNow(null) != null) {
                     callback.onSlotResult((T) f.getNow(null));
                 }
             });
-        }).thenApply(r -> callback.onFinish());
+            return callback.onFinish();
+        });
 
         return new CompletableFutureWrapper<>(result);
     }
