@@ -309,7 +309,7 @@ public class PublishSubscribeService {
             CompletableFuture<Void> subscribeFuture = addListeners(channelName, promise, type, lock, freeEntry, listeners);
             freeEntry.subscribe(codec, type, channelName, subscribeFuture);
             subscribeFuture.whenComplete((r, e) -> {
-                if (e instanceof RedisTimeoutException) {
+                if (e != null) {
                     unsubscribe(channelName, type);
                 }
             });
@@ -410,6 +410,11 @@ public class PublishSubscribeService {
 
                 CompletableFuture<Void> subscribeFuture = addListeners(channelName, promise, type, lock, entry, listeners);
                 entry.subscribe(codec, type, channelName, subscribeFuture);
+                subscribeFuture.whenComplete((r, e) -> {
+                    if (e != null) {
+                        unsubscribe(channelName, type);
+                    }
+                });
             });
         });
         return connFuture;

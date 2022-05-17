@@ -7,10 +7,7 @@ import org.redisson.RedisRunner.KEYSPACE_EVENTS_OPTIONS;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.*;
 import org.redisson.api.listener.*;
-import org.redisson.client.RedisClient;
-import org.redisson.client.RedisClientConfig;
-import org.redisson.client.RedisConnection;
-import org.redisson.client.RedisTimeoutException;
+import org.redisson.client.*;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
@@ -762,7 +759,49 @@ public class RedissonTopicTest {
         redisson.shutdown();
         runner.stop();
     }
-    
+
+    @Test
+    public void testAddListenerFailover() throws Exception {
+        RedisProcess runner = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .randomPort()
+                .run();
+
+        Config config = new Config();
+        config.useSingleServer()
+                .setAddress(runner.getRedisServerAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+
+        runner.stop();
+
+        RTopic topic = redisson.getTopic("topic");
+        Assertions.assertThrows(RedisException.class, () -> {
+            topic.addListener(Integer.class, (channel, msg) -> {
+            });
+        });
+
+        runner = new RedisRunner()
+                .port(runner.getRedisServerPort())
+                .nosave()
+                .randomDir()
+                .run();
+
+        AtomicBoolean executed = new AtomicBoolean();
+        topic.addListener(Integer.class, (channel, msg) -> {
+            assertThat(msg).isEqualTo(1);
+            executed.set(true);
+        });
+
+        redisson.getTopic("topic").publish(1);
+
+        await().atMost(1, TimeUnit.SECONDS).untilTrue(executed);
+
+        redisson.shutdown();
+        runner.stop();
+    }
+
+
 //    @Test
     public void testReattachInSentinelLong() throws Exception {
         for (int i = 0; i < 25; i++) {
