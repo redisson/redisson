@@ -58,7 +58,7 @@ public class RedissonScript implements RScript {
 
     @Override
     public RFuture<String> scriptLoadAsync(String luaScript) {
-        List<CompletableFuture<String>> futures = commandExecutor.executeAll(RedisCommands.SCRIPT_LOAD, luaScript);
+        List<CompletableFuture<String>> futures = commandExecutor.executeAllAsync(RedisCommands.SCRIPT_LOAD, luaScript);
         CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
         CompletableFuture<String> s = f.thenApply(r -> futures.get(0).getNow(null));
         return new CompletableFutureWrapper<>(s);
@@ -123,7 +123,7 @@ public class RedissonScript implements RScript {
 
     @Override
     public RFuture<Void> scriptKillAsync() {
-        return commandExecutor.writeAllAsync(RedisCommands.SCRIPT_KILL);
+        return commandExecutor.writeAllVoidAsync(RedisCommands.SCRIPT_KILL);
     }
 
     public RFuture<Void> scriptKillAsync(String key) {
@@ -137,7 +137,7 @@ public class RedissonScript implements RScript {
 
     @Override
     public RFuture<List<Boolean>> scriptExistsAsync(String... shaDigests) {
-        List<CompletableFuture<List<Boolean>>> futures = commandExecutor.executeAll(RedisCommands.SCRIPT_EXISTS, (Object[]) shaDigests);
+        List<CompletableFuture<List<Boolean>>> futures = commandExecutor.executeAllAsync(RedisCommands.SCRIPT_EXISTS, (Object[]) shaDigests);
         CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
         CompletableFuture<List<Boolean>> s = f.thenApply(r -> {
             List<Boolean> result = futures.get(0).getNow(new ArrayList<>());
@@ -171,7 +171,7 @@ public class RedissonScript implements RScript {
 
     @Override
     public RFuture<Void> scriptFlushAsync() {
-        return commandExecutor.writeAllAsync(RedisCommands.SCRIPT_FLUSH);
+        return commandExecutor.writeAllVoidAsync(RedisCommands.SCRIPT_FLUSH);
     }
 
     public RFuture<Void> scriptFlushAsync(String key) {

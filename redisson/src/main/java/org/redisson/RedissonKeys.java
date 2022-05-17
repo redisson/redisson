@@ -193,19 +193,10 @@ public class RedissonKeys implements RKeys {
 
     @Override
     public RFuture<Long> countExistsAsync(String... names) {
-        return commandExecutor.readAllAsync(RedisCommands.EXISTS_LONG, new SlotCallback<Long, Long>() {
-            AtomicLong results = new AtomicLong();
-
-            @Override
-            public void onSlotResult(Long result) {
-                results.addAndGet(result);
-            }
-
-            @Override
-            public Long onFinish() {
-                return results.get();
-            }
-        }, names);
+        List<CompletableFuture<Long>> futures = commandExecutor.readAllAsync(RedisCommands.EXISTS_LONG, names);
+        CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        CompletableFuture<Long> s = f.thenApply(r -> futures.stream().mapToLong(v -> v.getNow(0L)).sum());
+        return new CompletableFutureWrapper<>(s);
     }
 
     @Override
@@ -368,19 +359,10 @@ public class RedissonKeys implements RKeys {
 
     @Override
     public RFuture<Long> countAsync() {
-        return commandExecutor.readAllAsync(RedisCommands.DBSIZE, new SlotCallback<Long, Long>() {
-            AtomicLong results = new AtomicLong();
-
-            @Override
-            public void onSlotResult(Long result) {
-                results.addAndGet(result);
-            }
-
-            @Override
-            public Long onFinish() {
-                return results.get();
-            }
-        });
+        List<CompletableFuture<Long>> futures = commandExecutor.readAllAsync(RedisCommands.DBSIZE);
+        CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        CompletableFuture<Long> s = f.thenApply(r -> futures.stream().mapToLong(v -> v.getNow(0L)).sum());
+        return new CompletableFutureWrapper<>(s);
     }
 
     @Override
@@ -390,7 +372,7 @@ public class RedissonKeys implements RKeys {
 
     @Override
     public RFuture<Void> flushdbParallelAsync() {
-        return commandExecutor.writeAllAsync(RedisCommands.FLUSHDB_ASYNC);
+        return commandExecutor.writeAllVoidAsync(RedisCommands.FLUSHDB_ASYNC);
     }
 
     @Override
@@ -400,7 +382,7 @@ public class RedissonKeys implements RKeys {
 
     @Override
     public RFuture<Void> flushallParallelAsync() {
-        return commandExecutor.writeAllAsync(RedisCommands.FLUSHALL_ASYNC);
+        return commandExecutor.writeAllVoidAsync(RedisCommands.FLUSHALL_ASYNC);
     }
 
     @Override
@@ -410,7 +392,7 @@ public class RedissonKeys implements RKeys {
 
     @Override
     public RFuture<Void> flushdbAsync() {
-        return commandExecutor.writeAllAsync(RedisCommands.FLUSHDB);
+        return commandExecutor.writeAllVoidAsync(RedisCommands.FLUSHDB);
     }
 
     @Override
@@ -420,7 +402,7 @@ public class RedissonKeys implements RKeys {
 
     @Override
     public RFuture<Void> flushallAsync() {
-        return commandExecutor.writeAllAsync(RedisCommands.FLUSHALL);
+        return commandExecutor.writeAllVoidAsync(RedisCommands.FLUSHALL);
     }
 
     @Override

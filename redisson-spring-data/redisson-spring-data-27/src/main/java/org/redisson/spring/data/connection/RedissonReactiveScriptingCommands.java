@@ -47,7 +47,7 @@ public class RedissonReactiveScriptingCommands extends RedissonBaseReactive impl
     @Override
     public Mono<String> scriptFlush() {
         return executorService.reactive(() -> {
-            RFuture<Void> f = executorService.writeAllAsync(RedisCommands.SCRIPT_FLUSH);
+            RFuture<Void> f = executorService.writeAllVoidAsync(RedisCommands.SCRIPT_FLUSH);
             return toStringFuture(f);
         });
     }
@@ -60,7 +60,7 @@ public class RedissonReactiveScriptingCommands extends RedissonBaseReactive impl
     @Override
     public Mono<String> scriptLoad(ByteBuffer script) {
         return executorService.reactive(() -> {
-            List<CompletableFuture<String>> futures = executorService.executeAll(RedisCommands.SCRIPT_LOAD, (Object)toByteArray(script));
+            List<CompletableFuture<String>> futures = executorService.executeAllAsync(RedisCommands.SCRIPT_LOAD, (Object)toByteArray(script));
             CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
             CompletableFuture<String> s = f.thenApply(r -> futures.get(0).getNow(null));
             return new CompletableFutureWrapper<>(s);
@@ -70,7 +70,7 @@ public class RedissonReactiveScriptingCommands extends RedissonBaseReactive impl
     @Override
     public Flux<Boolean> scriptExists(List<String> scriptShas) {
         Mono<List<Boolean>> m = executorService.reactive(() -> {
-            List<CompletableFuture<List<Boolean>>> futures = executorService.executeMasters(RedisCommands.SCRIPT_EXISTS, scriptShas.toArray());
+            List<CompletableFuture<List<Boolean>>> futures = executorService.writeAllAsync(RedisCommands.SCRIPT_EXISTS, scriptShas.toArray());
             CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
             CompletableFuture<List<Boolean>> s = f.thenApply(r -> {
                 List<Boolean> result = futures.get(0).getNow(new ArrayList<>());

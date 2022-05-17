@@ -15,10 +15,10 @@
  */
 package org.redisson.spring.data.connection;
 
+import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.CompletableFuture;
 
-import org.redisson.SlotCallback;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
@@ -26,6 +26,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.decoder.ObjectDecoder;
 import org.redisson.client.protocol.decoder.TimeLongObjectDecoder;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.reactive.CommandReactiveExecutor;
 import org.springframework.data.redis.connection.ReactiveServerCommands;
 import org.springframework.data.redis.core.types.RedisClientInfo;
@@ -73,18 +74,10 @@ public class RedissonReactiveServerCommands extends RedissonBaseReactive impleme
     @Override
     public Mono<Long> dbSize() {
         return executorService.reactive(() -> {
-            return executorService.readAllAsync(RedisCommands.DBSIZE, new SlotCallback<Long, Long>() {
-                AtomicLong results = new AtomicLong();
-                @Override
-                public void onSlotResult(Long result) {
-                    results.addAndGet(result);
-                }
-                
-                @Override
-                public Long onFinish() {
-                    return results.get();
-                }
-            });
+            List<CompletableFuture<Long>> futures = executorService.readAllAsync(RedisCommands.DBSIZE);
+            CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+            CompletableFuture<Long> s = f.thenApply(r -> futures.stream().mapToLong(v -> v.getNow(0L)).sum());
+            return new CompletableFutureWrapper<>(s);
         });
     }
     
@@ -93,7 +86,7 @@ public class RedissonReactiveServerCommands extends RedissonBaseReactive impleme
     @Override
     public Mono<String> flushDb() {
         return executorService.reactive(() -> {
-            RFuture<Void> f = executorService.writeAllAsync(FLUSHDB);
+            RFuture<Void> f = executorService.writeAllVoidAsync(FLUSHDB);
             return toStringFuture(f);
         });
     }
@@ -103,7 +96,7 @@ public class RedissonReactiveServerCommands extends RedissonBaseReactive impleme
     @Override
     public Mono<String> flushAll() {
         return executorService.reactive(() -> {
-            RFuture<Void> f = executorService.writeAllAsync(FLUSHALL);
+            RFuture<Void> f = executorService.writeAllVoidAsync(FLUSHALL);
             return toStringFuture(f);
         });
     }
