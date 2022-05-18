@@ -422,22 +422,20 @@ public class RedissonTest extends BaseTest {
         for (RFuture<?> rFuture : futures) {
             try {
                 rFuture.toCompletableFuture().join();
-            } catch (Exception e) {
-                // skip
-            }
-            if (!rFuture.isSuccess()) {
-                if (rFuture.cause().getMessage().contains("READONLY You can't write against")) {
+                success++;
+            } catch (CompletionException e) {
+                if (e.getCause().getMessage().contains("READONLY You can't write against")) {
                     readonlyErrors++;
                 }
                 errors++;
-            } else {
-                success++;
+                // skip
             }
         }
         
         System.out.println("errors " + errors + " success " + success + " readonly " + readonlyErrors);
 
-        assertThat(futures.get(futures.size() - 1).isSuccess()).isTrue();
+        assertThat(futures.get(futures.size() - 1).isDone()).isTrue();
+        assertThat(futures.get(futures.size() - 1).toCompletableFuture().isCompletedExceptionally()).isFalse();
         assertThat(errors).isLessThan(820);
         assertThat(readonlyErrors).isZero();
         
@@ -556,9 +554,6 @@ public class RedissonTest extends BaseTest {
             try {
                 rFuture.toCompletableFuture().join();
             } catch (Exception e) {
-                // skip
-            }
-            if (!rFuture.isSuccess()) {
                 Assertions.fail();
             }
         }
@@ -659,13 +654,9 @@ public class RedissonTest extends BaseTest {
         for (RFuture<?> rFuture : futures) {
             try {
                 rFuture.toCompletableFuture().join();
-            } catch (Exception e) {
-                // skip
-            }
-            if (!rFuture.isSuccess()) {
-                errors++;
-            } else {
                 success++;
+            } catch (Exception e) {
+                errors++;
             }
         }
         
@@ -737,14 +728,11 @@ public class RedissonTest extends BaseTest {
         for (RFuture<?> rFuture : futures) {
             try {
                 rFuture.toCompletableFuture().join();
-            } catch (Exception e) {
-                // skip
-            }
-            if (!rFuture.isSuccess()) {
-                rFuture.cause().printStackTrace();
-                errors++;
-            } else {
                 success++;
+            } catch (Exception e) {
+                e.printStackTrace();
+                errors++;
+                // skip
             }
         }
 
@@ -754,7 +742,8 @@ public class RedissonTest extends BaseTest {
         assertThat(readonlyErrors).isZero();
         assertThat(errors).isLessThan(200);
         assertThat(success).isGreaterThan(600 - 200);
-        assertThat(futures.get(futures.size() - 1).isSuccess()).isTrue();
+        assertThat(futures.get(futures.size() - 1).isDone()).isTrue();
+        assertThat(futures.get(futures.size() - 1).toCompletableFuture().isCompletedExceptionally()).isFalse();
     }
 
 
