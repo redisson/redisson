@@ -27,6 +27,8 @@ import org.redisson.client.protocol.RedisCommands;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -79,10 +81,10 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
 
             if (connection.getUsage() == 0
                     && future != null
-                        && (future.cancel(false) || !future.isSuccess())) {
+                        && (future.cancel(false) || cause(future) != null)) {
                 ctx.channel().close();
-                if (future.cause() != null && !future.isCancelled()) {
-                    log.error("Unable to send PING command over channel: " + ctx.channel(), future.cause());
+                if (cause(future) != null && !future.isCancelled()) {
+                    log.error("Unable to send PING command over channel: " + ctx.channel(), cause(future));
                 }
                 log.debug("channel: {} closed due to PING response timeout set in {} ms", ctx.channel(), config.getPingConnectionInterval());
             } else {
@@ -91,5 +93,15 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
         }, config.getPingConnectionInterval(), TimeUnit.MILLISECONDS);
     }
 
+    protected Throwable cause(RFuture<?> future) {
+        try {
+            future.toCompletableFuture().getNow(null);
+            return null;
+        } catch (CompletionException ex2) {
+            return ex2.getCause();
+        } catch (CancellationException ex1) {
+            return ex1;
+        }
+    }
 
 }

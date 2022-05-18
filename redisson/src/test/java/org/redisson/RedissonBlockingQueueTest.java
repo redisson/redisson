@@ -228,9 +228,6 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
             } catch (ExecutionException | TimeoutException e) {
                 // skip
             }
-            if (f.cause() != null) {
-                f.cause().printStackTrace();
-            }
             Integer result = f.toCompletableFuture().getNow(null);
             assertThat(result).isEqualTo(i*100);
         }
