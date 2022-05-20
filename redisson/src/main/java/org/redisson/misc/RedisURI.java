@@ -20,6 +20,7 @@ import io.netty.util.NetUtil;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Objects;
 
 /**
  * 
@@ -103,35 +104,16 @@ public class RedisURI {
     }
 
     @Override
-    @SuppressWarnings("AvoidInlineConditionals")
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((host == null) ? 0 : host.hashCode());
-        result = prime * result + port;
-        result = prime * result + (ssl ? 1231 : 1237);
-        return result;
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        RedisURI redisURI = (RedisURI) o;
+        return ssl == redisURI.ssl && port == redisURI.port && Objects.equals(host, redisURI.host);
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        RedisURI other = (RedisURI) obj;
-        if (host == null) {
-            if (other.host != null)
-                return false;
-        } else if (!host.equals(other.host))
-            return false;
-        if (port != other.port)
-            return false;
-        if (ssl != other.ssl)
-            return false;
-        return true;
+    public int hashCode() {
+        return Objects.hash(ssl, host, port);
     }
 
     @Override
