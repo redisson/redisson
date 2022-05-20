@@ -32,6 +32,8 @@ public class RedisURI {
     private final boolean ssl;
     private final String host;
     private final int port;
+    private String username;
+    private String password;
 
     public RedisURI(String scheme, String host, int port) {
         this.ssl = "rediss".equals(scheme);
@@ -56,6 +58,15 @@ public class RedisURI {
 
         try {
             URL url = new URL(urlHost);
+            if (url.getUserInfo() != null) {
+                String[] details = url.getUserInfo().split(":", 2);
+                if (details.length == 2) {
+                    if (!details[0].isEmpty()) {
+                        username = details[0];
+                    }
+                    password = details[1];
+                }
+            }
             host = url.getHost();
             port = url.getPort();
             ssl = uri.startsWith("rediss://");
@@ -70,7 +81,15 @@ public class RedisURI {
         }
         return "redis";
     }
-    
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
     public boolean isSsl() {
         return ssl;
     }

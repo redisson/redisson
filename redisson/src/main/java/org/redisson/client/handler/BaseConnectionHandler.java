@@ -26,6 +26,7 @@ import org.redisson.client.protocol.RedisCommands;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -58,16 +59,18 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
     abstract C createConnection(ChannelHandlerContext ctx);
     
     @Override
-    public void channelActive(final ChannelHandlerContext ctx) {
-        List<RFuture<Object>> futures = new ArrayList<RFuture<Object>>();
+    public void channelActive(ChannelHandlerContext ctx) {
+        List<RFuture<Object>> futures = new ArrayList<>();
 
         RedisClientConfig config = redisClient.getConfig();
-        if (config.getPassword() != null) {
+        String password = Objects.toString(config.getAddress().getPassword(), config.getPassword());
+        if (password != null) {
             RFuture<Object> future;
-            if (config.getUsername() != null) {
-                future = connection.async(RedisCommands.AUTH, config.getUsername(), config.getPassword());
+            String username = Objects.toString(config.getAddress().getUsername(), config.getUsername());
+            if (username != null) {
+                future = connection.async(RedisCommands.AUTH, username, password);
             } else {
-                future = connection.async(RedisCommands.AUTH, config.getPassword());
+                future = connection.async(RedisCommands.AUTH, password);
             }
             futures.add(future);
         }
@@ -94,8 +97,8 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
             return;
         }
         
-        final AtomicBoolean retry = new AtomicBoolean();
-        final AtomicInteger commandsCounter = new AtomicInteger(futures.size());
+        AtomicBoolean retry = new AtomicBoolean();
+        AtomicInteger commandsCounter = new AtomicInteger(futures.size());
         for (RFuture<Object> future : futures) {
             future.whenComplete((res, e) -> {
                 if (e != null) {
