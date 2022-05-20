@@ -803,6 +803,26 @@ public class RedissonTest extends BaseTest {
     }
 
     @Test
+    public void testURIPassword() throws InterruptedException, IOException {
+        RedisProcess runner = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .randomPort()
+                .requirepass("1234")
+                .run();
+
+        Config config = new Config();
+        config.useSingleServer()
+              .setAddress("redis://:1234@" + runner.getRedisServerBindAddress() + ":" + runner.getRedisServerPort());
+        RedissonClient redisson = Redisson.create(config);
+        RBucket<String> b = redisson.getBucket("test");
+        b.set("123");
+
+        redisson.shutdown();
+        runner.stop();
+    }
+
+    @Test
     public void testSentinelStartupWithPassword() throws Exception {
         RedisRunner.RedisProcess master = new RedisRunner()
                 .nosave()
