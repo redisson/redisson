@@ -1302,10 +1302,10 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         List<Object> params = new ArrayList<>(keys.length + 1);
         params.add(System.currentTimeMillis());
         encodeMapKeys(params, Arrays.asList(keys));
-        return removeValuesOperation(commandExecutor, getRawName(), null, params);
+        return removeValuesOperation(commandExecutor, getRawName(), null, params, null);
     }
 
-    RFuture<Long> removeValuesOperation(CommandAsyncExecutor commandExecutor, String name, MasterSlaveEntry entry, List<Object> params) {
+    RFuture<Long> removeValuesOperation(CommandAsyncExecutor commandExecutor, String name, MasterSlaveEntry entry, List<Object> params, Object[] keys) {
         String script = "local counter = 0;"
                         + "for i=2, #ARGV do "
                            +  "local value = redis.call('hget', KEYS[1], ARGV[i]); "
@@ -2999,8 +2999,15 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
 
     @Override
     public RFuture<Void> clearAsync() {
+        return clearAsync(commandExecutor, null, getRawName());
+    }
+
+    RFuture<Void> clearAsync(CommandAsyncExecutor commandExecutor, MasterSlaveEntry entry, String name) {
         checkNotClosed();
-        return commandExecutor.writeAsync(getRawName(), RedisCommands.DEL_OBJECTS, getRawName(), getTimeoutSetName());
+        if (entry == null) {
+            return commandExecutor.writeAsync(name, StringCodec.INSTANCE, RedisCommands.DEL_VOID, name, getTimeoutSetName(name));
+        }
+        return commandExecutor.writeAsync(entry, StringCodec.INSTANCE, RedisCommands.DEL_VOID, name, getTimeoutSetName(name));
     }
 
     @Override
