@@ -199,10 +199,10 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         if (cfg.isCheckSentinelsList() && cfg.isSentinelsDiscovery()) {
             if (sentinels.isEmpty()) {
                 stopThreads();
-                throw new RedisConnectionException("SENTINEL SENTINELS command returns empty result! Set checkSentinelsList = false to avoid this check.", lastException);
+                throw new RedisConnectionException("SENTINEL SENTINELS command returns empty result or connection can't be established to some of them! Set checkSentinelsList = false to avoid this check.", lastException);
             } else if (sentinels.size() < 2) {
                 stopThreads();
-                throw new RedisConnectionException("SENTINEL SENTINELS command returns less than 2 nodes! At least two sentinels should be defined in Redis configuration. Set checkSentinelsList = false to avoid this check.", lastException);
+                throw new RedisConnectionException("SENTINEL SENTINELS command returns less than 2 nodes or connection can't be established to some of them! At least two sentinels should be defined in Redis configuration. Set checkSentinelsList = false to avoid this check.", lastException);
             }
         }
         
@@ -587,7 +587,11 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             }
 
             CompletionStage<RedisConnection> f = client.connectAsync();
-            return f.thenApply(resp -> {
+            return f.handle((resp, e) -> {
+                if (e != null) {
+                    log.error(e.getMessage(), e);
+                    throw new CompletionException(e);
+                }
                 if (sentinels.putIfAbsent(ipAddr, client) == null) {
                     log.info("sentinel: {} added", ipAddr);
                 }
