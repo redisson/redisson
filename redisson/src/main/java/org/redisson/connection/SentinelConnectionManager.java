@@ -63,6 +63,15 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     private String scheme;
     private final SentinelServersConfig cfg;
 
+    /**
+     * save all ips resolved from hostnames.
+     */
+    private Map<String,List<RedisURI>> urisFromDNS = new ConcurrentHashMap<>();
+    /**
+     * Mark if all redis Sentinels are dead. 0 indicates alive.
+     */
+    private int sentinelFlag = 0;
+
     public SentinelConnectionManager(SentinelServersConfig cfg, Config config, UUID id) {
         super(config, id);
         
@@ -294,10 +303,31 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     return;
                 }
 
-                future.getNow().stream()
-                        .map(addr -> toURI(addr))
-                        .filter(uri -> !sentinels.containsKey(uri))
-                        .forEach(uri -> registerSentinel(uri, getConfig(), host.getHost()));
+                // get all uris
+                List<RedisURI> urisFromAddr = future.getNow().stream()
+                        .map(this::toURI)
+                        .collect(Collectors.toList());
+
+                // If the hostname is not already in urisFromDNS, add the hostname and IP address.
+                // If the hostname already exists, the old IP of the hostname is obtained as 'oldUris'.
+                List<RedisURI> oldUris = urisFromDNS.putIfAbsent(host.toString(), urisFromAddr);
+
+                // If ordUris is not null, compare the old and new IPs. If they are inconsistent, replace the old one with the new one and call registerSentinel.
+                if (oldUris != null && !oldUris.equals(urisFromAddr)) {
+                    urisFromDNS.replace(host.toString(), urisFromAddr);
+                    urisFromAddr.forEach(uri -> registerSentinel(uri, getConfig(), host.getHost()));
+                    log.info("change ips of hostname, the new ips are " + urisFromAddr.toString());
+                }
+
+                // With K8S, it's possible that all redis Sentinels' pods are dead, but the Service is still alive,
+                // and Redisson needs to be able to sense when the sentinels' pods are pulled up by k8s.
+                // So when sentinelFlag==1 (all the sentinels' pods are dead), the hostname should be constantly resolved to add the proxy IP to the 'sentinels',
+                // and look for other restart sentinels based on this IP.
+                if(sentinelFlag==1){
+                    urisFromAddr.forEach(uri -> registerSentinel(uri, getConfig(), host.getHost()));
+                    sentinelFlag = 0;
+                    log.info("All of redis sentinels have been down. Redisson is waiting for resurgence of redis sentinels");
+                }
             });
             if (commonListener != null) {
                 allNodes.addListener(commonListener);
@@ -327,6 +357,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             if (lastException.get() != null) {
                 log.error("Can't update cluster state", lastException.get());
             }
+            // If all sentinels are dead, set sentinelFlag = 1
+            sentinelFlag = 1;
             performSentinelDNSCheck(null);
             scheduleChangeCheck(cfg, null);
             return;
