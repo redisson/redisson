@@ -42,7 +42,7 @@ Maven
     <artifactId>redisson-quarkus-16</artifactId>
     <!-- for Quarkus v2.x.x -->
     <artifactId>redisson-quarkus-20</artifactId>
-    <version>3.17.1</version>
+    <version>3.17.2</version>
 </dependency>
 ```
 
