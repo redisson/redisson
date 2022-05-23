@@ -2,8 +2,6 @@
 
 Integrates Redisson with Spring Data Redis library. Implements Spring Data's `RedisConnectionFactory` and `ReactiveRedisConnectionFactory` interfaces and allows to interact with Redis through `RedisTemplate` or `ReactiveRedisTemplate` object.
 
-Supports Spring Data Redis 1.6.x - 2.6.x
-
 ## Usage
 
 ### 1. Add `redisson-spring-data` dependency into your project:
