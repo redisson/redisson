@@ -9,6 +9,7 @@ Feature - Spring Data Redis 2.7.0 module added
 Feature - `RPatternTopic.removeAllListenersAsync()` method added  
 Feature - `RShardedTopic` object added (requires Redis 7.0+)  
 Feature - allow to specify username and password in redis connection url  
+Feature - JCache data partitioning with local cache support  
 
 Fixed - "Can't add slave" exceptions after fail over in cluster mode  
 Fixed - "Unable to acquire subscription" error after connection interruption  
