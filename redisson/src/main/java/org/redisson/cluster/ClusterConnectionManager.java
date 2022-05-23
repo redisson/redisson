@@ -520,8 +520,10 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             }
         }
 
-        Set<RedisURI> addedSlaves = new HashSet<>(newPart.getSlaveAddresses());
-        addedSlaves.removeAll(currentPart.getSlaveAddresses());
+        Set<RedisURI> addedSlaves = newPart.getSlaveAddresses().stream()
+                                                                .filter(uri -> !currentPart.getSlaveAddresses().contains(uri)
+                                                                                && !newPart.getFailedSlaveAddresses().contains(uri))
+                                                                .collect(Collectors.toSet());
         for (RedisURI uri : addedSlaves) {
             ClientConnectionsEntry slaveEntry = entry.getEntry(uri);
             if (slaveEntry != null) {
