@@ -574,9 +574,8 @@ public class RedissonTopicTest {
             topic1.publish(new Message("123"));
         }
 
-        Thread.sleep(1000);
-        assertThat(counter.get()).isZero();
-        
+        Awaitility.await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(counter.get()).isZero());
+
         redisson.shutdown();
     }
     
