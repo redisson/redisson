@@ -2,8 +2,6 @@
 
 Integrates Redisson with [Quarkus](https://quarkus.io/) framework.  
 
-Supports Quarkus 1.6.x - 2.8.x  
-
 <details>
     <summary><b>Native image with RemoteService</b>. Click to expand!</summary>
 <br/>
@@ -44,7 +42,7 @@ Maven
     <artifactId>redisson-quarkus-16</artifactId>
     <!-- for Quarkus v2.x.x -->
     <artifactId>redisson-quarkus-20</artifactId>
-    <version>3.17.1</version>
+    <version>3.17.2</version>
 </dependency>
 ```
 
@@ -52,9 +50,9 @@ Gradle
 
 ```groovy
 // for Quarkus v1.6.x - v1.13.x
-compile 'org.redisson:redisson-quarkus-16:3.17.1'
+compile 'org.redisson:redisson-quarkus-16:3.17.2'
 // for Quarkus v2.x.x
-compile 'org.redisson:redisson-quarkus-20:3.17.1'
+compile 'org.redisson:redisson-quarkus-20:3.17.2'
 ```
 
 ### 2. Add settings into `application.properties` file
