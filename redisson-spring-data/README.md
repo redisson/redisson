@@ -61,7 +61,7 @@ Gradle
      // for Spring Data Redis v.2.6.x
      compile 'org.redisson:redisson-spring-data-26:3.17.3'
      // for Spring Data Redis v.2.7.x
-     compile 'org.redisson:redisson-spring-data-26:3.17.3'
+     compile 'org.redisson:redisson-spring-data-27:3.17.3'
 ```
 
 ### 2. Register `RedissonConnectionFactory` in Spring context
