@@ -190,6 +190,7 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
               + "assert(tonumber(rate) >= tonumber(ARGV[1]), 'Requested permits amount could not exceed defined rate'); "
 
               + "local currentValue = redis.call('get', valueName); "
+              + "local res;"
               + "if currentValue ~= false then "
                      + "local expiredValues = redis.call('zrangebyscore', permitsName, 0, tonumber(ARGV[2]) - interval); "
                      + "local released = 0; "
@@ -210,18 +211,25 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
 
                      + "if tonumber(currentValue) < tonumber(ARGV[1]) then "
                          + "local firstValue = redis.call('zrange', permitsName, 0, 0, 'withscores'); "
-                         + "return 3 + interval - (tonumber(ARGV[2]) - tonumber(firstValue[2]));"
+                         + "res = 3 + interval - (tonumber(ARGV[2]) - tonumber(firstValue[2]));"
                      + "else "
                          + "redis.call('zadd', permitsName, ARGV[2], struct.pack('Bc0I', string.len(ARGV[3]), ARGV[3], ARGV[1])); "
                          + "redis.call('decrby', valueName, ARGV[1]); "
-                         + "return nil; "
+                         + "res = nil; "
                      + "end; "
               + "else "
                      + "redis.call('set', valueName, rate); "
                      + "redis.call('zadd', permitsName, ARGV[2], struct.pack('Bc0I', string.len(ARGV[3]), ARGV[3], ARGV[1])); "
                      + "redis.call('decrby', valueName, ARGV[1]); "
-                     + "return nil; "
-              + "end;",
+                     + "res = nil; "
+              + "end;"
+
+              + "local ttl = redis.call('pttl', KEYS[1]); "
+              + "if ttl > 0 then "
+                  + "redis.call('pexpire', valueName, ttl); "
+                  + "redis.call('pexpire', permitsName, ttl); "
+              + "end; "
+              + "return res;",
                 Arrays.asList(getRawName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName()),
                 value, System.currentTimeMillis(), random);
     }
