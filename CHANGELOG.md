@@ -3,6 +3,15 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 27-May-2022 - 3.17.3 released
+
+Feature - Hibernate 6 support  
+
+Improvement - amount of created connections in parallel reduced to 2 for better stability  
+
+Fixed - Spring Boot Starter doesn't start with Spring Boot 2.7  
+Fixed - RRateLimiter doesn't allow to set expiration time of permits and values  
+
 ### 23-May-2022 - 3.17.2 released
 Feature - `RScoredSortedSet.replace()` method added  
 Feature - Spring Data Redis 2.7.0 module added  
