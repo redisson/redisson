@@ -11,7 +11,7 @@
     <artifactId>redisson-hibernate-6</artifactId>
     <packaging>jar</packaging>
 
-    <name>Redisson/Hibernate-6.x+</name>
+    <name>Redisson/Hibernate-6.0.2+</name>
 
     <dependencies>
        <dependency>
