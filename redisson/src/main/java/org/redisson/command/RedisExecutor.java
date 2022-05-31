@@ -363,7 +363,7 @@ public class RedisExecutor<V, R> {
                 if (attemptPromise.complete(null)) {
                     connection.forceFastReconnectAsync();
                 }
-            }, popTimeout + 1, TimeUnit.SECONDS);
+            }, popTimeout + 3, TimeUnit.SECONDS);
         } else {
             scheduledFuture = null;
         }
@@ -543,7 +543,8 @@ public class RedisExecutor<V, R> {
             }
             writeFuture = connection.send(new CommandData<>(attemptPromise, codec, command, params));
 
-            if (connectionManager.getConfig().getMasterConnectionPoolSize() < 10) {
+            if (connectionManager.getConfig().getMasterConnectionPoolSize() < 10
+                    && !command.isBlockingCommand()) {
                 release(connection);
             }
         }
@@ -557,7 +558,9 @@ public class RedisExecutor<V, R> {
         RedisConnection connection = getNow(connectionFuture);
         connectionManager.getShutdownLatch().release();
         if (connectionManager.getConfig().getMasterConnectionPoolSize() < 10) {
-            if (source.getRedirect() == Redirect.ASK || getClass() != RedisExecutor.class) {
+            if (source.getRedirect() == Redirect.ASK
+                    || getClass() != RedisExecutor.class
+                        || (command != null && command.isBlockingCommand())) {
                 release(connection);
             }
         } else {
