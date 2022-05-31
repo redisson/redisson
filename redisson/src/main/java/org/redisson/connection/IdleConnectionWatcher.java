@@ -75,7 +75,8 @@ public class IdleConnectionWatcher {
 
                     if (c instanceof RedisPubSubConnection
                             && (!((RedisPubSubConnection) c).getChannels().isEmpty()
-                                    || !((RedisPubSubConnection) c).getPatternChannels().isEmpty())) {
+                                    || !((RedisPubSubConnection) c).getPatternChannels().isEmpty()
+                                        || !((RedisPubSubConnection) c).getShardedChannels().isEmpty())) {
                         continue;
                     }
 

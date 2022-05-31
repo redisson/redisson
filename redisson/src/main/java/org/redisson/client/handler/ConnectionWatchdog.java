@@ -171,6 +171,9 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
             for (Entry<ChannelName, Codec> entry : conn.getPatternChannels().entrySet()) {
                 conn.psubscribe(entry.getValue(), entry.getKey());
             }
+            for (Entry<ChannelName, Codec> entry : conn.getShardedChannels().entrySet()) {
+                conn.ssubscribe(entry.getValue(), entry.getKey());
+            }
         }
     }
 
