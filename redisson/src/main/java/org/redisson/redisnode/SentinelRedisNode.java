@@ -237,7 +237,7 @@ public class SentinelRedisNode implements RedisSentinel, RedisSentinelAsync {
 
     @Override
     public RFuture<List<Map<String, String>>> getSlavesAsync(String masterName) {
-        return executeAsync(null, StringCodec.INSTANCE, -1, RedisCommands.SENTINEL_SLAVES, masterName);
+        return executeAsync(null, StringCodec.INSTANCE, -1, RedisCommands.SENTINEL_REPLICAS, masterName);
     }
 
     @Override

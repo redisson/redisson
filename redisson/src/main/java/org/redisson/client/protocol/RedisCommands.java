@@ -635,7 +635,7 @@ public interface RedisCommands {
     RedisCommand<List<Map<String, String>>> SENTINEL_MASTERS = new RedisCommand<List<Map<String, String>>>("SENTINEL", "MASTERS",
             new ListMultiDecoder2(new ListResultReplayDecoder(), new ObjectMapReplayDecoder()));
     RedisCommand<Map<String, String>> SENTINEL_MASTER = new RedisCommand("SENTINEL", "MASTER", new ObjectMapReplayDecoder());
-    RedisCommand<List<Map<String, String>>> SENTINEL_SLAVES = new RedisCommand<List<Map<String, String>>>("SENTINEL", "SLAVES",
+    RedisCommand<List<Map<String, String>>> SENTINEL_REPLICAS = new RedisCommand<List<Map<String, String>>>("SENTINEL", "REPLICAS",
             new ListMultiDecoder2(new ListResultReplayDecoder(), new ObjectMapReplayDecoder()));
     RedisCommand<List<Map<String, String>>> SENTINEL_SENTINELS = new RedisCommand<List<Map<String, String>>>("SENTINEL", "SENTINELS",
             new ListMultiDecoder2(new ListResultReplayDecoder(), new ObjectMapReplayDecoder()));

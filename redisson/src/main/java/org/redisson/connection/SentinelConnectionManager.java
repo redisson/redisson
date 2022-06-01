@@ -123,7 +123,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 currentMaster.set(masterHost);
                 log.info("master: {} added", masterHost);
 
-                List<Map<String, String>> sentinelSlaves = connection.sync(StringCodec.INSTANCE, RedisCommands.SENTINEL_SLAVES, cfg.getMasterName());
+                List<Map<String, String>> sentinelSlaves = connection.sync(StringCodec.INSTANCE, RedisCommands.SENTINEL_REPLICAS, cfg.getMasterName());
                 for (Map<String, String> map : sentinelSlaves) {
                     if (map.isEmpty()) {
                         continue;
@@ -429,7 +429,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private CompletionStage<Void> checkSlavesChange(SentinelServersConfig cfg, RedisConnection connection) {
-        RFuture<List<Map<String, String>>> slavesFuture = connection.async(StringCodec.INSTANCE, RedisCommands.SENTINEL_SLAVES, cfg.getMasterName());
+        RFuture<List<Map<String, String>>> slavesFuture = connection.async(StringCodec.INSTANCE, RedisCommands.SENTINEL_REPLICAS, cfg.getMasterName());
         return slavesFuture.thenCompose(slavesMap -> {
             Set<RedisURI> currentSlaves = Collections.newSetFromMap(new ConcurrentHashMap<>(slavesMap.size()));
             List<CompletableFuture<Void>> futures = new ArrayList<>();

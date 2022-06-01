@@ -63,7 +63,7 @@ public class RedissonSentinelConnection implements RedisSentinelConnection {
 
     @Override
     public Collection<RedisServer> slaves(NamedNode master) {
-        List<Map<String, String>> slaves = connection.sync(StringCodec.INSTANCE, RedisCommands.SENTINEL_SLAVES, master.getName());
+        List<Map<String, String>> slaves = connection.sync(StringCodec.INSTANCE, RedisCommands.SENTINEL_REPLICAS, master.getName());
         return toRedisServersList(slaves);
     }
 
