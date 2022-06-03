@@ -461,6 +461,7 @@ public interface RedisCommands {
     RedisStrictCommand<Long> HLEN_LONG = new RedisStrictCommand<Long>("HLEN");
     RedisCommand<Set<Object>> HKEYS = new RedisCommand<Set<Object>>("HKEYS",
                         new MapKeyDecoder(new ObjectSetReplayDecoder()));
+    RedisCommand<List<Object>> HMGET = new RedisCommand<List<Object>>("HMGET", new ObjectListReplayDecoder<Object>());
     RedisCommand<Void> HMSET = new RedisCommand<Void>("HMSET", new VoidReplayConvertor());
     RedisCommand<Object> HGET = new RedisCommand<Object>("HGET", new MapValueDecoder());
     RedisCommand<Long> HDEL = new RedisStrictCommand<Long>("HDEL");
