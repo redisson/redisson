@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import org.redisson.client.codec.Codec;
+import org.redisson.codec.JsonCodec;
 import reactor.core.publisher.Mono;
 
 /**
@@ -165,6 +166,18 @@ public interface RBatchReactive {
     <V> RBucketReactive<V> getBucket(String name);
 
     <V> RBucketReactive<V> getBucket(String name, Codec codec);
+
+    /**
+     * Returns JSON data holder instance by name using provided codec.
+     *
+     * @see org.redisson.codec.JacksonCodec
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @param codec codec for values
+     * @return JsonBucket object
+     */
+    <V> RJsonBucketReactive<V> getJsonBucket(String name, JsonCodec<V> codec);
 
     /**
      * Returns HyperLogLog object by name

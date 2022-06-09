@@ -17,6 +17,7 @@ package org.redisson;
 
 import org.redisson.api.*;
 import org.redisson.client.codec.Codec;
+import org.redisson.codec.JsonCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
 import org.redisson.eviction.EvictionScheduler;
@@ -45,6 +46,11 @@ public class RedissonBatch implements RBatch {
     @Override
     public <V> RBucketAsync<V> getBucket(String name, Codec codec) {
         return new RedissonBucket<V>(codec, executorService, name);
+    }
+
+    @Override
+    public <V> RJsonBucket<V> getJsonBucket(String name, JsonCodec<V> codec) {
+        return new RedissonJsonBucket<>(codec, executorService, name);
     }
 
     @Override

@@ -18,6 +18,7 @@ package org.redisson.reactive;
 import org.redisson.*;
 import org.redisson.api.*;
 import org.redisson.client.codec.Codec;
+import org.redisson.codec.JsonCodec;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
 import reactor.core.publisher.Mono;
@@ -57,6 +58,11 @@ public class RedissonBatchReactive implements RBatchReactive {
     @Override
     public <V> RBucketReactive<V> getBucket(String name, Codec codec) {
         return ReactiveProxyBuilder.create(executorService, new RedissonBucket<V>(codec, executorService, name), RBucketReactive.class);
+    }
+
+    @Override
+    public <V> RJsonBucketReactive<V> getJsonBucket(String name, JsonCodec<V> codec) {
+        return ReactiveProxyBuilder.create(executorService, new RedissonJsonBucket<>(codec, executorService, name), RJsonBucketReactive.class);
     }
 
     @Override

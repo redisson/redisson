@@ -20,6 +20,7 @@ import io.reactivex.rxjava3.core.Maybe;
 import org.redisson.*;
 import org.redisson.api.*;
 import org.redisson.client.codec.Codec;
+import org.redisson.codec.JsonCodec;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
 
@@ -58,6 +59,11 @@ public class RedissonBatchRx implements RBatchRx {
     @Override
     public <V> RBucketRx<V> getBucket(String name, Codec codec) {
         return RxProxyBuilder.create(executorService, new RedissonBucket<V>(codec, executorService, name), RBucketRx.class);
+    }
+
+    @Override
+    public <V> RJsonBucketRx<V> getJsonBucket(String name, JsonCodec<V> codec) {
+        return RxProxyBuilder.create(executorService, new RedissonJsonBucket<V>(codec, executorService, name), RJsonBucketRx.class);
     }
 
     @Override

@@ -18,6 +18,7 @@ package org.redisson.api;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
 import org.redisson.client.codec.Codec;
+import org.redisson.codec.JsonCodec;
 
 /**
  * RxJava2 interface for Redis pipeline feature.
@@ -191,6 +192,18 @@ public interface RBatchRx {
     <V> RBucketRx<V> getBucket(String name);
 
     <V> RBucketRx<V> getBucket(String name, Codec codec);
+
+    /**
+     * Returns JSON data holder instance by name using provided codec.
+     *
+     * @see org.redisson.codec.JacksonCodec
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @param codec codec for values
+     * @return JsonBucket object
+     */
+    <V> RJsonBucketRx<V> getJsonBucket(String name, JsonCodec<V> codec);
 
     /**
      * Returns HyperLogLog object by name

@@ -17,6 +17,7 @@ package org.redisson.api;
 
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
+import org.redisson.codec.JsonCodec;
 
 /**
  * Interface for using Redis pipeline feature.
@@ -189,6 +190,18 @@ public interface RBatch {
     <V> RBucketAsync<V> getBucket(String name);
 
     <V> RBucketAsync<V> getBucket(String name, Codec codec);
+
+    /**
+     * Returns JSON data holder instance by name using provided codec.
+     *
+     * @see org.redisson.codec.JacksonCodec
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @param codec codec for values
+     * @return JsonBucket object
+     */
+    <V> RJsonBucket<V> getJsonBucket(String name, JsonCodec<V> codec);
 
     /**
      * Returns HyperLogLog object
