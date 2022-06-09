@@ -17,6 +17,7 @@ package org.redisson;
 
 import org.redisson.api.*;
 import org.redisson.client.codec.Codec;
+import org.redisson.codec.JsonCodec;
 import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
@@ -224,6 +225,11 @@ public class RedissonReactive implements RedissonReactiveClient {
             }
         }
         return buckets;
+    }
+
+    @Override
+    public <V> RJsonBucketReactive<V> getJsonBucket(String name, JsonCodec<V> codec) {
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonJsonBucket<V>(codec, commandExecutor, name), RJsonBucketReactive.class);
     }
 
     @Override

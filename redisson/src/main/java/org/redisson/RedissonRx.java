@@ -17,6 +17,7 @@ package org.redisson;
 
 import org.redisson.api.*;
 import org.redisson.client.codec.Codec;
+import org.redisson.codec.JsonCodec;
 import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
@@ -202,6 +203,11 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public RBucketsRx getBuckets(Codec codec) {
         return RxProxyBuilder.create(commandExecutor, new RedissonBuckets(codec, commandExecutor), RBucketsRx.class);
+    }
+
+    @Override
+    public <V> RJsonBucketRx<V> getJsonBucket(String name, JsonCodec<V> codec) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonJsonBucket<>(codec, commandExecutor, name), RJsonBucketRx.class);
     }
 
     @Override

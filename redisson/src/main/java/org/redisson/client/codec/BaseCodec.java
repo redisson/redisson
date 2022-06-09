@@ -34,7 +34,7 @@ public abstract class BaseCodec implements Codec {
             StringCodec.class, ByteArrayCodec.class, LocalCachedMessageCodec.class, BitSetCodec.class,
             JCacheEventCodec.class, LongCodec.class, IntegerCodec.class);
     
-    public static Codec copy(ClassLoader classLoader, Codec codec) throws ReflectiveOperationException {
+    public static <T> T copy(ClassLoader classLoader, T codec) throws ReflectiveOperationException {
         if (codec == null) {
             return codec;
         }
@@ -45,7 +45,7 @@ public abstract class BaseCodec implements Codec {
             }
         }
 
-        return codec.getClass().getConstructor(ClassLoader.class, codec.getClass()).newInstance(classLoader, codec);
+        return (T) codec.getClass().getConstructor(ClassLoader.class, codec.getClass()).newInstance(classLoader, codec);
     }
     
     @Override

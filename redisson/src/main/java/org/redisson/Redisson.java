@@ -18,6 +18,7 @@ package org.redisson;
 import org.redisson.api.*;
 import org.redisson.api.redisnode.*;
 import org.redisson.client.codec.Codec;
+import org.redisson.codec.JsonCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandSyncService;
 import org.redisson.config.Config;
@@ -212,6 +213,11 @@ public class Redisson implements RedissonClient {
     @Override
     public RBuckets getBuckets(Codec codec) {
         return new RedissonBuckets(codec, commandExecutor);
+    }
+
+    @Override
+    public <V> RJsonBucket<V> getJsonBucket(String name, JsonCodec<V> codec) {
+        return new RedissonJsonBucket<>(codec, commandExecutor, name);
     }
 
     @Override
