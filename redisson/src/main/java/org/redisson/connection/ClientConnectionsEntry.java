@@ -183,9 +183,9 @@ public class ClientConnectionsEntry {
             return;
         }
 
-        connection.decUsage();
         connection.setLastUsageTime(System.nanoTime());
         freeConnections.add(connection);
+        connection.decUsage();
     }
 
     public CompletionStage<RedisConnection> connect() {
