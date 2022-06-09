@@ -794,4 +794,15 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
     public RFuture<JsonType> getTypeAsync(String path) {
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.JSON_TYPE, getRawName(), path);
     }
+
+    @Override
+    public long delete(String path) {
+        return get(deleteAsync(path));
+    }
+
+    @Override
+    public RFuture<Long> deleteAsync(String path) {
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.JSON_DEL_LONG, getRawName(), path);
+    }
+
 }

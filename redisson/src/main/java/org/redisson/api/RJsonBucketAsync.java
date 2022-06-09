@@ -444,4 +444,12 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
      */
     RFuture<JsonType> getTypeAsync(String path);
 
+    /**
+     * Deletes JSON elements specified by JSONPath
+     *
+     * @param path JSON path
+     * @return number of deleted elements
+     */
+    RFuture<Long> deleteAsync(String path);
+
 }

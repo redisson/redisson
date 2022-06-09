@@ -445,4 +445,12 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
      */
     Mono<JsonType> getType(String path);
 
+    /**
+     * Deletes JSON elements specified by JSONPath
+     *
+     * @param path JSON path
+     * @return number of deleted elements
+     */
+    Mono<Long> delete(String path);
+
 }

@@ -444,4 +444,12 @@ public interface RJsonBucket<V> extends RBucket<V>, RJsonBucketAsync<V> {
      */
     JsonType getType(String path);
 
+    /**
+     * Deletes JSON elements specified by JSONPath
+     *
+     * @param path JSON path
+     * @return number of deleted elements
+     */
+    long delete(String path);
+
 }

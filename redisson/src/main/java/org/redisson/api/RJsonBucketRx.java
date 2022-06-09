@@ -447,4 +447,12 @@ public interface RJsonBucketRx<V> extends RBucketRx<V> {
      */
     Single<JsonType> getType(String path);
 
+    /**
+     * Deletes JSON elements specified by JSONPath
+     *
+     * @param path JSON path
+     * @return number of deleted elements
+     */
+    Single<Long> delete(String path);
+
 }
