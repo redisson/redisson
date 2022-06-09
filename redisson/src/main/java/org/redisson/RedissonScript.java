@@ -24,8 +24,13 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 
@@ -36,6 +41,69 @@ public class RedissonScript implements RScript {
 
     private final Codec codec;
     private final CommandAsyncExecutor commandExecutor;
+    private static String DEFAULT_SCRIPT_PREFIX = "scripts/";
+
+    private static Map<String, String> cacheLoadedScripts = new ConcurrentHashMap<>();
+
+    @Override
+    public  String getScript(String scriptName) {
+
+        Thread.currentThread().getContextClassLoader();
+        return cacheLoadedScripts.computeIfAbsent(scriptName, k -> {
+            try {
+                return loadScript(k);
+            } catch (IOException exception) {
+                exception.printStackTrace();
+                return null;
+            }
+        });
+    }
+
+    private  String loadScript(String scriptName) throws IOException {
+        InputStream inputStream = null;
+
+        String[] resourcePaths = {
+                scriptName,
+                scriptName.concat(".lua"),
+                DEFAULT_SCRIPT_PREFIX.concat(scriptName),
+                DEFAULT_SCRIPT_PREFIX.concat(scriptName).concat(".lua")
+        };
+
+        ClassLoader[] classLoaders = {
+                Thread.currentThread().getContextClassLoader(),
+                RedissonScript.class.getClassLoader()
+        };
+
+        for (int i = 0; i < classLoaders.length; i++) {
+            for (int j = 0; j < resourcePaths.length; j++) {
+                inputStream = classLoaders[i].getResourceAsStream(resourcePaths[j]);
+                if (inputStream != null) {
+                    i = classLoaders.length;
+                    break;
+                }
+            }
+        }
+
+        if (inputStream==null){
+            throw new RuntimeException("No such script"+scriptName);
+        }
+
+        try {
+            String line = null;
+            StringBuilder scriptBuilder = new StringBuilder();
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+            while ((line = bufferedReader.readLine()) != null) {
+                scriptBuilder.append(line);
+            }
+            return scriptBuilder.toString();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } finally {
+            if (inputStream != null) {
+                inputStream.close();
+            }
+        }
+    }
 
     public RedissonScript(CommandAsyncExecutor commandExecutor) {
         this.commandExecutor = commandExecutor;

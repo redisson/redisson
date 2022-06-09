@@ -62,6 +62,12 @@ public interface RScript extends RScriptAsync {
     };
 
     /**
+     * load script from classpath
+     * @param scriptName
+     * @return
+     */
+    String getScript(String scriptName);
+    /**
      * Executes Lua script stored in Redis scripts cache by SHA-1 digest
      * 
      * @param <R> - type of result
