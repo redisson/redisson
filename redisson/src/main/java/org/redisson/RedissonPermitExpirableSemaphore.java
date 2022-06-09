@@ -122,8 +122,12 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     
     private RFuture<String> acquireAsync(int permits, long ttl, TimeUnit timeUnit) {
         long timeoutDate = calcTimeout(ttl, timeUnit);
-        CompletableFuture<String> tryAcquireFuture = tryAcquireAsync(permits, timeoutDate).toCompletableFuture();
-        CompletableFuture<String> f = tryAcquireFuture.thenCompose(permitId -> {
+        RFuture<String> tryAcquireFuture = tryAcquireAsync(permits, timeoutDate);
+        CompletionStage<String> f = tryAcquireFuture.thenCompose(permitId -> {
+            if (permitId != null && !permitId.startsWith(":")) {
+                return CompletableFuture.completedFuture(permitId);
+            }
+
             CompletableFuture<RedissonLockEntry> subscribeFuture = subscribe();
             semaphorePubSub.timeout(subscribeFuture);
             return subscribeFuture.thenCompose(res -> {
@@ -131,7 +135,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             });
         });
         f.whenComplete((r, e) -> {
-            if (f.isCancelled()) {
+            if (f.toCompletableFuture().isCancelled()) {
                 tryAcquireFuture.whenComplete((permitId, ex) -> {
                     if (permitId != null && !permitId.startsWith(":")) {
                         releaseAsync(permitId);

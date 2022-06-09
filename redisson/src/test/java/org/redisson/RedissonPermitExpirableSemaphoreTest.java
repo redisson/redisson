@@ -7,8 +7,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.redisson.api.RFuture;
 import org.redisson.api.RPermitExpirableSemaphore;
 import org.redisson.client.RedisException;
 
@@ -283,6 +285,16 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
         });
 
         assertThat(lockedCounter.get()).isEqualTo(16 * iterations);
+    }
+
+    @Test
+    public void test1() throws InterruptedException {
+        RPermitExpirableSemaphore semaphore = redisson.getPermitExpirableSemaphore("test.sync_semaphore");
+        semaphore.trySetPermits(1);
+        Awaitility.await().atMost(Duration.ofMillis(100)).pollDelay(Duration.ofMillis(10)).untilAsserted(() -> {
+            RFuture<String> permit = semaphore.acquireAsync(5000L, TimeUnit.MILLISECONDS);
+            assertThat(permit.get()).isNotNull();
+        });
     }
 
 }
