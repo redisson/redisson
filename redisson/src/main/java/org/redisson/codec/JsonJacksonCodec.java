@@ -136,7 +136,16 @@ public class JsonJacksonCodec extends BaseCodec {
     }
 
     public JsonJacksonCodec(ObjectMapper mapObjectMapper) {
-        this.mapObjectMapper = mapObjectMapper.copy();
+        this(mapObjectMapper, true);
+        warmup();
+    }
+
+    public JsonJacksonCodec(ObjectMapper mapObjectMapper, boolean copy) {
+        if (copy) {
+            this.mapObjectMapper = mapObjectMapper.copy();
+        } else {
+            this.mapObjectMapper = mapObjectMapper;
+        }
         init(this.mapObjectMapper);
         initTypeInclusion(this.mapObjectMapper);
         warmup();
