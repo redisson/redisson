@@ -186,7 +186,7 @@ public abstract class BaseRemoteProxy {
         }
         
         RBlockingQueue<RRemoteServiceResponse> queue = getBlockingQueue(responseQueueName, codec);
-        RFuture<RRemoteServiceResponse> future = queue.takeAsync();
+        RFuture<RRemoteServiceResponse> future = queue.pollAsync(60, TimeUnit.SECONDS);
         future.whenComplete(createResponseListener());
     }
 
@@ -212,7 +212,7 @@ public abstract class BaseRemoteProxy {
                 List<Result> list = entry.getResponses().get(key);
                 if (list == null) {
                     RBlockingQueue<RRemoteServiceResponse> responseQueue = getBlockingQueue(responseQueueName, codec);
-                    responseQueue.takeAsync().whenComplete(createResponseListener());
+                    responseQueue.pollAsync(60, TimeUnit.SECONDS).whenComplete(createResponseListener());
                     return;
                 }
                 
@@ -228,7 +228,7 @@ public abstract class BaseRemoteProxy {
                     responses.remove(responseQueueName, entry);
                 } else {
                     RBlockingQueue<RRemoteServiceResponse> responseQueue = getBlockingQueue(responseQueueName, codec);
-                    responseQueue.takeAsync().whenComplete(createResponseListener());
+                    responseQueue.pollAsync(60, TimeUnit.SECONDS).whenComplete(createResponseListener());
                 }
             }
 
