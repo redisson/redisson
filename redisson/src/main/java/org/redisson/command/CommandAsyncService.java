@@ -260,7 +260,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                     connectionManager.getCodec(), command, params, true, false);
             futures.add(promise.toCompletableFuture());
 
-            e.getAllEntries().stream().filter(c -> c.getNodeType() == NodeType.SLAVE).forEach(c -> {
+            e.getAllEntries().stream().filter(c -> c.getNodeType() == NodeType.SLAVE && !c.isFreezed()).forEach(c -> {
                 RFuture<R> slavePromise = async(true, new NodeSource(e, c.getClient()),
                         connectionManager.getCodec(), command, params, true, false);
                 futures.add(slavePromise.toCompletableFuture());
