@@ -143,6 +143,16 @@ public class RedissonBatchRx implements RBatchRx {
     }
 
     @Override
+    public RShardedTopicRx getShardedTopic(String name) {
+        return RxProxyBuilder.create(executorService, new RedissonShardedTopic(executorService, name), RShardedTopicRx.class);
+    }
+
+    @Override
+    public RShardedTopicRx getShardedTopic(String name, Codec codec) {
+        return RxProxyBuilder.create(executorService, new RedissonShardedTopic(codec, executorService, name), RShardedTopicRx.class);
+    }
+
+    @Override
     public <V> RQueueRx<V> getQueue(String name) {
         RedissonQueue<V> queue = new RedissonQueue<V>(executorService, name, null);
         return RxProxyBuilder.create(executorService, queue, 
@@ -238,6 +248,16 @@ public class RedissonBatchRx implements RBatchRx {
     @Override
     public RScriptRx getScript(Codec codec) {
         return RxProxyBuilder.create(executorService, new RedissonScript(executorService, codec), RScriptRx.class);
+    }
+
+    @Override
+    public RFunctionRx getFunction() {
+        return RxProxyBuilder.create(executorService, new RedissonFuction(executorService), RFunctionRx.class);
+    }
+
+    @Override
+    public RFunctionRx getFunction(Codec codec) {
+        return RxProxyBuilder.create(executorService, new RedissonFuction(executorService, codec), RFunctionRx.class);
     }
 
     @Override

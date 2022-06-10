@@ -140,6 +140,16 @@ public class RedissonBatchReactive implements RBatchReactive {
     }
 
     @Override
+    public RShardedTopicReactive getShardedTopic(String name) {
+        return ReactiveProxyBuilder.create(executorService, new RedissonShardedTopic(executorService, name), RShardedTopicReactive.class);
+    }
+
+    @Override
+    public RShardedTopicReactive getShardedTopic(String name, Codec codec) {
+        return ReactiveProxyBuilder.create(executorService, new RedissonShardedTopic(codec, executorService, name), RShardedTopicReactive.class);
+    }
+
+    @Override
     public <V> RQueueReactive<V> getQueue(String name) {
         return ReactiveProxyBuilder.create(executorService, new RedissonQueue<V>(executorService, name, null), 
                 new RedissonListReactive<V>(executorService, name), RQueueReactive.class);
@@ -227,6 +237,16 @@ public class RedissonBatchReactive implements RBatchReactive {
     @Override
     public RScriptReactive getScript(Codec codec) {
         return ReactiveProxyBuilder.create(executorService, new RedissonScript(executorService, codec), RScriptReactive.class);
+    }
+
+    @Override
+    public RFunctionReactive getFunction() {
+        return ReactiveProxyBuilder.create(executorService, new RedissonFuction(executorService), RFunctionReactive.class);
+    }
+
+    @Override
+    public RFunctionReactive getFunction(Codec codec) {
+        return ReactiveProxyBuilder.create(executorService, new RedissonFuction(executorService, codec), RFunctionReactive.class);
     }
 
     @Override

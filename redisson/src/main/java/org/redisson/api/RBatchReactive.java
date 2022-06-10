@@ -257,6 +257,29 @@ public interface RBatchReactive {
     RTopicReactive getTopic(String name, Codec codec);
 
     /**
+     * Returns Sharded Topic instance by name.
+     * <p>
+     * Messages are delivered to message listeners connected to the same Topic.
+     * <p>
+     *
+     * @param name - name of object
+     * @return Topic object
+     */
+    RShardedTopicReactive getShardedTopic(String name);
+
+    /**
+     * Returns Sharded Topic instance by name using provided codec for messages.
+     * <p>
+     * Messages are delivered to message listeners connected to the same Topic.
+     * <p>
+     *
+     * @param name - name of object
+     * @param codec - codec for message
+     * @return Topic object
+     */
+    RShardedTopicReactive getShardedTopic(String name, Codec codec);
+
+    /**
      * Returns queue instance by name.
      *
      * @param <V> type of value
@@ -359,7 +382,22 @@ public interface RBatchReactive {
      * @return Script object
      */
     RScriptReactive getScript(Codec codec);
-    
+
+    /**
+     * Returns interface for Redis Function feature
+     *
+     * @return function object
+     */
+    RFunctionReactive getFunction();
+
+    /**
+     * Returns interface for Redis Function feature using provided codec
+     *
+     * @param codec - codec for params and result
+     * @return function interface
+     */
+    RFunctionReactive getFunction(Codec codec);
+
     /**
      * Returns keys operations.
      * Each of Redis/Redisson object associated with own key

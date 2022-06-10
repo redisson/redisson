@@ -104,6 +104,16 @@ public class RedissonBatch implements RBatch {
     }
 
     @Override
+    public RShardedTopicAsync getShardedTopic(String name) {
+        return new RedissonShardedTopic(executorService, name);
+    }
+
+    @Override
+    public RShardedTopicAsync getShardedTopic(String name, Codec codec) {
+        return new RedissonShardedTopic(codec, executorService, name);
+    }
+
+    @Override
     public <V> RQueueAsync<V> getQueue(String name) {
         return new RedissonQueue<V>(executorService, name, null);
     }
@@ -189,8 +199,18 @@ public class RedissonBatch implements RBatch {
     }
     
     @Override
-    public RScript getScript(Codec codec) {
+    public RScriptAsync getScript(Codec codec) {
         return new RedissonScript(executorService, codec);
+    }
+
+    @Override
+    public RFunctionAsync getFunction() {
+        return new RedissonFuction(executorService);
+    }
+
+    @Override
+    public RFunctionAsync getFunction(Codec codec) {
+        return new RedissonFuction(executorService, codec);
     }
 
     @Override
