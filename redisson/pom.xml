@@ -78,17 +78,17 @@
         <dependency>
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-core</artifactId>
-            <version>3.4.13</version>
+            <version>3.4.18</version>
         </dependency>
         <dependency>
             <groupId>org.reactivestreams</groupId>
             <artifactId>reactive-streams</artifactId>
-            <version>1.0.3</version>
+            <version>1.0.4</version>
         </dependency>
         <dependency>
             <groupId>io.reactivex.rxjava3</groupId>
             <artifactId>rxjava</artifactId>
-            <version>3.0.12</version>
+            <version>3.1.5</version>
         </dependency>
 
         <dependency>
@@ -130,19 +130,19 @@
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-core</artifactId>
-            <version>8.5.63</version>
+            <version>8.5.79</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-jasper</artifactId>
-            <version>8.5.51</version>
+            <version>8.5.79</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat</groupId>
             <artifactId>tomcat-jasper</artifactId>
-            <version>8.5.51</version>
+            <version>8.5.79</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -196,14 +196,14 @@
         <dependency>
             <groupId>org.msgpack</groupId>
             <artifactId>jackson-dataformat-msgpack</artifactId>
-            <version>0.8.16</version>
+            <version>0.9.1</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.xerial.snappy</groupId>
             <artifactId>snappy-java</artifactId>
-            <version>1.1.7.7</version>
+            <version>1.1.8.4</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
@@ -246,7 +246,7 @@
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
-            <version>2.9.0</version>
+            <version>3.1.1</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
@@ -282,7 +282,7 @@
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
-            <version>1.11.0</version>
+            <version>1.12.10</version>
         </dependency>
         <dependency>
             <groupId>org.jodd</groupId>
