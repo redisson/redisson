@@ -48,6 +48,7 @@ public class LoadBalancerManager {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
+    protected final Set<RedisURI> upSlaves;
     protected final ConnectionManager connectionManager;
     protected final PubSubConnectionPool pubSubConnectionPool;
     protected final SlaveConnectionPool slaveConnectionPool;
@@ -58,6 +59,7 @@ public class LoadBalancerManager {
         this.connectionManager = connectionManager;
         slaveConnectionPool = new SlaveConnectionPool(config, connectionManager, entry);
         pubSubConnectionPool = new PubSubConnectionPool(config, connectionManager, entry);
+        upSlaves = new HashSet<RedisURI>();
     }
 
     public void changeType(InetSocketAddress address, NodeType nodeType) {
@@ -71,9 +73,11 @@ public class LoadBalancerManager {
     }
 
     public CompletableFuture<Void> add(ClientConnectionsEntry entry) {
+    	RedisURI addr = entry.getClient().getConfig().getAddress();
+    	upSlaves.add(addr);
         CompletableFuture<Void> slaveFuture = slaveConnectionPool.add(entry);
         CompletableFuture<Void> pubSubFuture = pubSubConnectionPool.add(entry);
-
+        
         CompletableFuture<Void> future = CompletableFuture.allOf(slaveFuture, pubSubFuture);
         return future.thenAccept(r -> {
             client2Entry.put(entry.getClient(), entry);
@@ -142,9 +146,12 @@ public class LoadBalancerManager {
                         if (e != null) {
                             log.error("Unable to unfreeze entry: " + entry, e);
                             entry.setInitialized(false);
-                            connectionManager.newTimeout(t -> {
-                                unfreeze(entry, freezeReason);
-                            }, 1, TimeUnit.SECONDS);
+                            //only retry if still up
+                            if (upSlaves.contains(entry.getClient().getConfig().getAddress())) {
+                                connectionManager.newTimeout(t -> {
+                                    unfreeze(entry, freezeReason);
+                                }, 1, TimeUnit.SECONDS);
+                            }
                             return;
                         }
 
@@ -170,6 +177,11 @@ public class LoadBalancerManager {
 
     @SuppressWarnings("BooleanExpressionComplexity")
     public ClientConnectionsEntry freeze(ClientConnectionsEntry connectionEntry, FreezeReason freezeReason) {
+        RedisURI addr = connectionEntry.getClient().getConfig().getAddress();
+    	if (upSlaves.contains(addr)) {
+    		upSlaves.remove(addr);
+    	}
+    	
         if (connectionEntry == null || (connectionEntry.isFailed() 
                 && connectionEntry.getFreezeReason() == FreezeReason.RECONNECT
                     && freezeReason == FreezeReason.RECONNECT)) {
