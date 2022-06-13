@@ -73,8 +73,8 @@ public class LoadBalancerManager {
     }
 
     public CompletableFuture<Void> add(ClientConnectionsEntry entry) {
-    	RedisURI addr = entry.getClient().getConfig().getAddress();
-    	upSlaves.add(addr);
+        RedisURI addr = entry.getClient().getConfig().getAddress();
+        upSlaves.add(addr);
         CompletableFuture<Void> slaveFuture = slaveConnectionPool.add(entry);
         CompletableFuture<Void> pubSubFuture = pubSubConnectionPool.add(entry);
         
@@ -178,10 +178,8 @@ public class LoadBalancerManager {
     @SuppressWarnings("BooleanExpressionComplexity")
     public ClientConnectionsEntry freeze(ClientConnectionsEntry connectionEntry, FreezeReason freezeReason) {
         RedisURI addr = connectionEntry.getClient().getConfig().getAddress();
-    	if (upSlaves.contains(addr)) {
-    		upSlaves.remove(addr);
-    	}
-    	
+        upSlaves.remove(addr);
+        
         if (connectionEntry == null || (connectionEntry.isFailed() 
                 && connectionEntry.getFreezeReason() == FreezeReason.RECONNECT
                     && freezeReason == FreezeReason.RECONNECT)) {
