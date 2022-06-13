@@ -113,7 +113,10 @@ public abstract class BaseRemoteProxy {
 
         }
 
-        pollResponse(entry);
+        if (entry.getStarted().compareAndSet(false, true)) {
+            pollResponse();
+        }
+
         return responseFuture;
     }
 
@@ -176,16 +179,8 @@ public abstract class BaseRemoteProxy {
         });
     }
 
-    private <V> RBlockingQueue<V> getBlockingQueue(String name, Codec codec) {
-        return new RedissonBlockingQueue<V>(codec, commandExecutor, name, null);
-    }
-    
-    private void pollResponse(ResponseEntry ent) {
-        if (!ent.getStarted().compareAndSet(false, true)) {
-            return;
-        }
-        
-        RBlockingQueue<RRemoteServiceResponse> queue = getBlockingQueue(responseQueueName, codec);
+    private void pollResponse() {
+        RBlockingQueue<RRemoteServiceResponse> queue = new RedissonBlockingQueue<>(codec, commandExecutor, responseQueueName, null);
         RFuture<RRemoteServiceResponse> future = queue.pollAsync(60, TimeUnit.SECONDS);
         future.whenComplete(createResponseListener());
     }
@@ -207,12 +202,16 @@ public abstract class BaseRemoteProxy {
                 if (entry == null) {
                     return;
                 }
-                
+
+                if (response == null) {
+                    pollResponse();
+                    return;
+                }
+
                 RequestId key = new RequestId(response.getId());
                 List<Result> list = entry.getResponses().get(key);
                 if (list == null) {
-                    RBlockingQueue<RRemoteServiceResponse> responseQueue = getBlockingQueue(responseQueueName, codec);
-                    responseQueue.pollAsync(60, TimeUnit.SECONDS).whenComplete(createResponseListener());
+                    pollResponse();
                     return;
                 }
                 
@@ -227,8 +226,7 @@ public abstract class BaseRemoteProxy {
                 if (entry.getResponses().isEmpty()) {
                     responses.remove(responseQueueName, entry);
                 } else {
-                    RBlockingQueue<RRemoteServiceResponse> responseQueue = getBlockingQueue(responseQueueName, codec);
-                    responseQueue.pollAsync(60, TimeUnit.SECONDS).whenComplete(createResponseListener());
+                    pollResponse();
                 }
             }
 
