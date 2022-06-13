@@ -42,7 +42,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Low-level Redis client
@@ -52,7 +51,6 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public final class RedisClient {
 
-    private final AtomicReference<CompletableFuture<InetSocketAddress>> resolvedAddrFuture = new AtomicReference<>();
     private final Bootstrap bootstrap;
     private final Bootstrap pubSubBootstrap;
     private final RedisURI uri;
@@ -103,10 +101,6 @@ public final class RedisClient {
         
         uri = copy.getAddress();
         resolvedAddr = copy.getAddr();
-        
-        if (resolvedAddr != null) {
-            resolvedAddrFuture.set(CompletableFuture.completedFuture(resolvedAddr));
-        }
         
         channels = new DefaultChannelGroup(copy.getGroup().next());
         bootstrap = createBootstrap(copy, Type.PLAIN);
@@ -162,14 +156,7 @@ public final class RedisClient {
     }
     
     public CompletableFuture<InetSocketAddress> resolveAddr() {
-        if (resolvedAddrFuture.get() != null) {
-            return resolvedAddrFuture.get();
-        }
-        
         CompletableFuture<InetSocketAddress> promise = new CompletableFuture<>();
-        if (!resolvedAddrFuture.compareAndSet(null, promise)) {
-            return resolvedAddrFuture.get();
-        }
         
         byte[] addr = NetUtil.createByteArrayFromIpAddressString(uri.getHost());
         if (addr != null) {
