@@ -300,7 +300,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         return commandExecutor.readAsync(getRawName(), codec, LINDEX, getRawName(), index);
     }
     
-    public List<V> get(int...indexes) {
+    public List<V> get(int... indexes) {
         return get(getAsync(indexes));
     }
 
@@ -352,7 +352,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
                 Arrays.<Object>asList(getRawName(), iteratorName), count);
     }
 
-    public RFuture<List<V>> getAsync(int...indexes) {
+    public RFuture<List<V>> getAsync(int... indexes) {
         List<Integer> params = new ArrayList<Integer>();
         for (Integer index : indexes) {
             params.add(index);
@@ -918,7 +918,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
             return addListener("__keyevent@*:linsert", (ListInsertListener) listener, ListInsertListener::onListInsert);
         }
         return super.addListener(listener);
-    };
+    }
 
     @Override
     public RFuture<Integer> addListenerAsync(ObjectListener listener) {

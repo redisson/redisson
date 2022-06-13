@@ -65,7 +65,7 @@ public class RedissonPatternTopic implements RPatternTopic {
     @Override
     public int addListener(PatternStatusListener listener) {
         return addListener(new PubSubPatternStatusListener(listener, name));
-    };
+    }
 
     @Override
     public <T> int addListener(Class<T> type, PatternMessageListener<T> listener) {

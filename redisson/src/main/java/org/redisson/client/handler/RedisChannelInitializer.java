@@ -190,7 +190,7 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
             
             @Override
             public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-                if (!sslInitDone && (evt instanceof SslHandshakeCompletionEvent)) {
+                if (!sslInitDone && evt instanceof SslHandshakeCompletionEvent) {
                     SslHandshakeCompletionEvent e = (SslHandshakeCompletionEvent) evt;
                     if (e.isSuccess()) {
                         sslInitDone = true;

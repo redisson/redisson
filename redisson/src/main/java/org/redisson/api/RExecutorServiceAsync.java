@@ -98,7 +98,7 @@ public interface RExecutorServiceAsync {
      * @param tasks - tasks to execute
      * @return Future object
      */
-    RExecutorBatchFuture submitAsync(Callable<?>...tasks);
+    RExecutorBatchFuture submitAsync(Callable<?>... tasks);
     
     /**
      * Submits task for execution asynchronously
@@ -128,6 +128,6 @@ public interface RExecutorServiceAsync {
      * @param tasks - tasks to execute
      * @return Future object
      */
-    RExecutorBatchFuture submitAsync(Runnable...tasks);
+    RExecutorBatchFuture submitAsync(Runnable... tasks);
     
 }

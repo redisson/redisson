@@ -1829,7 +1829,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
             return addListener("__keyevent@*:zadd", (ScoredSortedSetAddListener) listener, ScoredSortedSetAddListener::onAdd);
         }
         return super.addListener(listener);
-    };
+    }
 
     @Override
     public RFuture<Integer> addListenerAsync(ObjectListener listener) {

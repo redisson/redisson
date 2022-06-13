@@ -36,7 +36,7 @@ public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RSortable<
      * @param indexes of elements
      * @return list of elements
      */
-    List<V> get(int...indexes);
+    List<V> get(int... indexes);
 
     /**
      * Returns element iterator that can be shared across multiple applications.

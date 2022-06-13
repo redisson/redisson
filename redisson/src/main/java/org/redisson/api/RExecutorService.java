@@ -69,7 +69,7 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
      * @param tasks - tasks to execute
      * @return Future object
      */
-    RExecutorBatchFuture submit(Callable<?>...tasks);
+    RExecutorBatchFuture submit(Callable<?>... tasks);
     
     /**
      * Synchronously submits a Runnable task for execution asynchronously
@@ -116,7 +116,7 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
      * @param tasks - tasks to execute
      * @return Future object
      */
-    RExecutorBatchFuture submit(Runnable...tasks);
+    RExecutorBatchFuture submit(Runnable... tasks);
     
     /**
      * Returns executor name
@@ -200,6 +200,6 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
      * 
      * @param tasks - tasks to execute
      */
-    void execute(Runnable...tasks);
+    void execute(Runnable... tasks);
 
 }

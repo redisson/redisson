@@ -37,7 +37,7 @@ public interface RListReactive<V> extends RCollectionReactive<V>, RSortableReact
      * @param indexes of elements
      * @return elements
      */
-    Mono<List<V>> get(int...indexes);
+    Mono<List<V>> get(int... indexes);
     
     /**
      * Add <code>element</code> after <code>elementToFind</code>

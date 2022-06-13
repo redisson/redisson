@@ -272,7 +272,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
         return wrapLockedAsync(() -> {
             return commandExecutor.writeAsync(getRawName(), codec, command, params);
         });
-    };
+    }
 
     protected final <T, R> RFuture<R> wrapLockedAsync(Supplier<RFuture<R>> callable) {
         long threadId = Thread.currentThread().getId();

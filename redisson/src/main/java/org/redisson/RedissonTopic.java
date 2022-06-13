@@ -102,7 +102,7 @@ public class RedissonTopic implements RTopic {
     public int addListener(StatusListener listener) {
         RFuture<Integer> future = addListenerAsync(listener);
         return commandExecutor.get(future.toCompletableFuture());
-    };
+    }
 
     @Override
     public <M> int addListener(Class<M> type, MessageListener<? extends M> listener) {

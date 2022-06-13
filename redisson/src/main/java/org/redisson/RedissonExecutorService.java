@@ -339,7 +339,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     }
     
     @Override
-    public void execute(Runnable...tasks) {
+    public void execute(Runnable... tasks) {
         if (tasks.length == 0) {
             throw new NullPointerException("Tasks are not defined");
         }
@@ -591,7 +591,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     }
     
     @Override
-    public RExecutorBatchFuture submit(Callable<?>...tasks) {
+    public RExecutorBatchFuture submit(Callable<?>... tasks) {
         if (tasks.length == 0) {
             throw new NullPointerException("Tasks are not defined");
         }
@@ -630,7 +630,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     }
 
     @Override
-    public RExecutorBatchFuture submitAsync(Callable<?>...tasks) {
+    public RExecutorBatchFuture submitAsync(Callable<?>... tasks) {
         if (tasks.length == 0) {
             throw new NullPointerException("Tasks are not defined");
         }
@@ -713,7 +713,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     }
 
     @Override
-    public RExecutorBatchFuture submit(Runnable...tasks) {
+    public RExecutorBatchFuture submit(Runnable... tasks) {
         if (tasks.length == 0) {
             throw new NullPointerException("Tasks are not defined");
         }
@@ -740,7 +740,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     }
     
     @Override
-    public RExecutorBatchFuture submitAsync(Runnable...tasks) {
+    public RExecutorBatchFuture submitAsync(Runnable... tasks) {
         if (tasks.length == 0) {
             throw new NullPointerException("Tasks are not defined");
         }

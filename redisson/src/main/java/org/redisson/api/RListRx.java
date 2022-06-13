@@ -39,7 +39,7 @@ public interface RListRx<V> extends RCollectionRx<V>, RSortableRx<List<V>> {
      * @param indexes of elements
      * @return elements
      */
-    Single<List<V>> get(int...indexes);
+    Single<List<V>> get(int... indexes);
     
     /**
      * Add <code>element</code> after <code>elementToFind</code>

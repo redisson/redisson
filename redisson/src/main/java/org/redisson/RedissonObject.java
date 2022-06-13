@@ -403,7 +403,7 @@ public abstract class RedissonObject implements RObject {
             return addListener("__keyevent@*:del", (DeletedObjectListener) listener, DeletedObjectListener::onDeleted);
         }
         throw new IllegalArgumentException();
-    };
+    }
     
     @Override
     public RFuture<Integer> addListenerAsync(ObjectListener listener) {
