@@ -180,7 +180,7 @@ public abstract class BaseRemoteProxy {
     }
 
     private void pollResponse() {
-        RBlockingQueue<RRemoteServiceResponse> queue = new RedissonBlockingQueue<>(codec, commandExecutor, responseQueueName, null);
+        RBlockingQueue<RRemoteServiceResponse> queue = new RedissonBlockingQueue<>(codec, commandExecutor, responseQueueName);
         RFuture<RRemoteServiceResponse> future = queue.pollAsync(60, TimeUnit.SECONDS);
         future.whenComplete(createResponseListener());
     }

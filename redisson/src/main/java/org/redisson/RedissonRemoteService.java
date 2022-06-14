@@ -145,7 +145,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
     }
 
     private <V> RBlockingQueue<V> getBlockingQueue(String name, Codec codec) {
-        return new RedissonBlockingQueue<V>(codec, commandExecutor, name, null);
+        return new RedissonBlockingQueue<>(codec, commandExecutor, name);
     }
     
     @Override

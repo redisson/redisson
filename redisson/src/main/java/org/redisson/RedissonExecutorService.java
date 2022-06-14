@@ -125,7 +125,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         tasksCounterName = objectName + ":counter";
         tasksName = objectName + ":tasks";
         statusName = objectName + ":status";
-        terminationTopic = redisson.getTopic(objectName + ":termination-topic", LongCodec.INSTANCE);
+        terminationTopic = RedissonTopic.createRaw(LongCodec.INSTANCE, commandExecutor, objectName + ":termination-topic");
 
         tasksRetryIntervalName = objectName + ":retry-interval";
         tasksExpirationTimeName = objectName + ":expiration";
@@ -136,7 +136,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         workersSemaphoreName = objectName + ":workers-semaphore";
         workersCounterName = objectName + ":workers-counter";
         
-        workersTopic = redisson.getTopic(workersChannelName);
+        workersTopic = RedissonTopic.createRaw(commandExecutor, workersChannelName);
 
         remoteService.setStatusName(statusName);
         remoteService.setSchedulerQueueName(schedulerQueueName);

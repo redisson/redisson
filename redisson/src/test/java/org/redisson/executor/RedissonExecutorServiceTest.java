@@ -322,6 +322,29 @@ public class RedissonExecutorServiceTest extends BaseTest {
     }
 
     @Test
+    public void testNameMapper() throws ExecutionException, InterruptedException, TimeoutException {
+        Config c = createConfig();
+        c.useSingleServer().setNameMapper(new NameMapper() {
+            @Override
+            public String map(String name) {
+                return name + ":mysuffix";
+            }
+
+            @Override
+            public String unmap(String name) {
+                return name.replace(":mysuffix", "");
+            }
+        });
+        RedissonClient redisson = Redisson.create(c);
+
+        RScheduledExecutorService e = redisson.getExecutorService("test");
+        e.registerWorkers(WorkerOptions.defaults());
+
+        RExecutorFuture<?> future = e.submit(new RunnableTask());
+        future.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    }
+
+    @Test
     public void testTaskStarted() throws InterruptedException {
         RExecutorService executor = redisson.getExecutorService("test1");
         CountDownLatch l = new CountDownLatch(1);

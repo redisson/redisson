@@ -48,6 +48,11 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
         super(codec, commandExecutor, name, redisson);
     }
 
+    public RedissonBlockingQueue(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
+        super(codec, commandExecutor, name, null);
+        this.name = name;
+    }
+
     @Override
     public RFuture<Void> putAsync(V e) {
         return addAsync(e, RedisCommands.RPUSH_VOID);

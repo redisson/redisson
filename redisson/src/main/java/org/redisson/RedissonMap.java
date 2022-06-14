@@ -79,6 +79,15 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         }
     }
 
+    public RedissonMap(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
+        super(codec, commandExecutor, name);
+        this.name = name;
+        this.redisson = null;
+        this.options = null;
+        this.writeBehindService = null;
+        writeBehindTask = null;
+    }
+
     public RedissonMap(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson, MapOptions<K, V> options, WriteBehindService writeBehindService) {
         super(codec, commandExecutor, name);
         this.redisson = redisson;
@@ -93,12 +102,12 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             writeBehindTask = null;
         }
     }
-    
+
     @Override
     public <KOut, VOut> RMapReduce<K, V, KOut, VOut> mapReduce() {
         return new RedissonMapReduce<>(this, redisson, commandExecutor);
     }
-    
+
     @Override
     public RPermitExpirableSemaphore getPermitExpirableSemaphore(K key) {
         String lockName = getLockByMapKey(key, "permitexpirablesemaphore");

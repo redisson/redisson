@@ -143,7 +143,7 @@ public abstract class BaseRemoteService {
     }
 
     protected <K, V> RMap<K, V> getMap(String name) {
-        return new RedissonMap<>(new CompositeCodec(StringCodec.INSTANCE, codec, codec), commandExecutor, name, null, null, null);
+        return new RedissonMap<>(new CompositeCodec(StringCodec.INSTANCE, codec, codec), commandExecutor, name);
     }
     
     protected <T> void scheduleCheck(String mapName, RequestId requestId, CompletableFuture<T> cancelRequest) {
