@@ -79,7 +79,12 @@ public class CommandsQueue extends ChannelDuplexHandler {
                 if (lock.compareAndSet(false, true)) {
                     try {
                         queue.add(holder);
-                        ctx.writeAndFlush(data, holder.getChannelPromise());
+                        try {
+                            ctx.writeAndFlush(data, holder.getChannelPromise());
+                        } catch (Exception e) {
+                            queue.remove(holder);
+                            throw e;
+                        }
                     } finally {
                         lock.set(false);
                     }
