@@ -585,25 +585,28 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private CompletableFuture<Void> addSlave(RedisURI uri) {
+        if (config.checkSkipSlavesInit()) {
+            log.info("slave: {} is up", uri);
+            return CompletableFuture.completedFuture(null);
+        }
+
         // to avoid addition twice
         MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
-        if (!entry.hasSlave(uri) && !config.checkSkipSlavesInit()) {
+        if (!entry.hasSlave(uri)) {
             CompletableFuture<Void> future = entry.addSlave(uri);
-            return future.whenComplete((res, e) -> {
-                if (e != null) {
-                    log.error("Can't add slave: " + uri, e);
-                    return;
-                }
-
-                if (entry.isSlaveUnfreezed(uri) || entry.slaveUp(uri, FreezeReason.MANAGER)) {
-                    log.info("slave: {} added", uri);
-                }
+            return future.thenApply(res -> {
+                log.info("slave: {} added", uri);
+                return null;
             });
         }
-        if (entry.hasSlave(uri)) {
-            slaveUp(uri);
-        }
-        return CompletableFuture.completedFuture(null);
+
+        CompletableFuture<Boolean> f = entry.slaveUpAsync(uri, FreezeReason.MANAGER);
+        return f.thenApply(v -> {
+            if (v) {
+                log.info("slave: {} is up", uri);
+            }
+            return null;
+        });
     }
 
     private void slaveDown(RedisURI uri) {
@@ -632,17 +635,6 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             return false;
         }
         return true;
-    }
-    
-    private void slaveUp(RedisURI uri) {
-        if (config.checkSkipSlavesInit()) {
-            log.info("slave: {} is up", uri);
-            return;
-        }
-
-        if (getEntry(singleSlotRange.getStartSlot()).slaveUp(uri, FreezeReason.MANAGER)) {
-            log.info("slave: {} is up", uri);
-        }
     }
 
     @Override
