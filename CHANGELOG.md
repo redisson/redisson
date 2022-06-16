@@ -5,7 +5,7 @@ Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and
 
 ### 16-June-2022 - 3.17.4 released
 
-Feature - `RJsonBucket` object added 
+Feature - [RJsonBucket](https://github.com/redisson/redisson/wiki/6.-distributed-objects/#615-json-object-holder) object added for `JSON.*` commands support  
 Feature - `RFunction` and `RShardedTopic` objects added to `RBatch`  
 
 Fixed - continuous "Unable to unfreeze entry" error in Sentinel mode  
