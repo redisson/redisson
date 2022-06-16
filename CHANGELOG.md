@@ -3,6 +3,23 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 16-June-2022 - 3.17.4 released
+
+Feature - `RJsonBucket` object added 
+Feature - `RFunction` and `RShardedTopic` objects added to `RBatch`  
+
+Fixed - continuous "Unable to unfreeze entry" error in Sentinel mode  
+Fixed - `nameMapper` setting isn't applied to `RExecutorService` and `RScheduledExecutorService`  
+Fixed - channel write exception may lead to wrong commands order  
+Fixed - don't connect to sentinel resolved by DNS if it's not included in result of SENTINEL SENTINELS command  
+Fixed - `RScript.load()` method shouldn't use failed Redis nodes  
+Fixed - `RPermitExpirableSemaphore.acquireAsync()` method hangs until leaseTimeout occurs. (regression since 3.16.8)  
+Fixed - use 60 seconds polling instead of take command for RRemoteService responses  
+Fixed - `eval()` and `evalSha()` methods of Spring Data Redis ReactiveScriptingCommands object throw IndexOutOfBoundsException  
+Fixed - expired entries eviction process is limited to 5000 per call  
+Fixed - sharded topic isn't resubscribed after channel reconnection  
+Fixed - execution of blpop command leads to reconnection  
+
 ### 27-May-2022 - 3.17.3 released
 
 Feature - Hibernate 6 support  
