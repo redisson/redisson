@@ -169,29 +169,6 @@ public class RedissonLockTest extends BaseConcurrentTest {
     }
 
     @Test
-    public void testLockIsNotRenewedAfterInterruptedTryLock() throws InterruptedException {
-        final CountDownLatch countDownLatch = new CountDownLatch(1);
-        RLock lock = redisson.getLock("myLock");
-        assertThat(lock.isLocked()).isFalse();
-
-        Thread thread = new Thread(() -> {
-            countDownLatch.countDown();
-            if (!lock.tryLock()) {
-                return;
-            }
-            lock.unlock();
-        });
-        thread.start();
-        countDownLatch.await();
-        // let the tcp request be sent out
-        TimeUnit.MILLISECONDS.sleep(5);
-        thread.interrupt();
-        TimeUnit.SECONDS.sleep(45);
-
-        assertThat(lock.isLocked()).isFalse();
-    }
-
-    @Test
     public void testRedisFailed() {
         Assertions.assertThrows(WriteRedisConnectionException.class, () -> {
             RedisRunner.RedisProcess master = new RedisRunner()

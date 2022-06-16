@@ -165,13 +165,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
             oldEntry.addThreadId(threadId);
         } else {
             entry.addThreadId(threadId);
-            try {
-                renewExpiration();
-            } finally {
-                if (Thread.currentThread().isInterrupted()) {
-                    cancelExpirationRenewal(threadId);
-                }
-            }
+            renewExpiration();
         }
     }
 
