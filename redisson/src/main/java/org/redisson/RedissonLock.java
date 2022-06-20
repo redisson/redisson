@@ -231,7 +231,7 @@ public class RedissonLock extends RedissonBaseLock {
         CompletableFuture<RedissonLockEntry> subscribeFuture = subscribe(threadId);
         try {
             subscribeFuture.get(time, TimeUnit.MILLISECONDS);
-        } catch (ExecutionException | TimeoutException e) {
+        } catch (TimeoutException e) {
             if (!subscribeFuture.cancel(false)) {
                 subscribeFuture.whenComplete((res, ex) -> {
                     if (ex == null) {
@@ -239,6 +239,9 @@ public class RedissonLock extends RedissonBaseLock {
                     }
                 });
             }
+            acquireFailed(waitTime, unit, threadId);
+            return false;
+        } catch (ExecutionException e) {
             acquireFailed(waitTime, unit, threadId);
             return false;
         }
