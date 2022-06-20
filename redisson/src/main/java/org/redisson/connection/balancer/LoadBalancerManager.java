@@ -257,11 +257,6 @@ public class LoadBalancerManager {
         return getEntry(addr) != null;
     }
 
-    public boolean isUnfreezed(RedisURI addr) {
-        ClientConnectionsEntry entry = getEntry(addr);
-        return !entry.isFreezed();
-    }
-    
     public boolean contains(RedisURI addr) {
         return getEntry(addr) != null;
     }

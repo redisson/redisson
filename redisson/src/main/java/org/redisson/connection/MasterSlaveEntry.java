@@ -409,10 +409,6 @@ public class MasterSlaveEntry {
         return true;
     }
     
-    public boolean isSlaveUnfreezed(RedisURI address) {
-        return slaveBalancer.isUnfreezed(address);
-    }
-    
     public boolean slaveUp(RedisURI address, FreezeReason freezeReason) {
         if (!slaveBalancer.unfreeze(address, freezeReason)) {
             return false;
