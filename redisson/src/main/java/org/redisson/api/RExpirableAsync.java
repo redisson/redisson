@@ -66,12 +66,48 @@ public interface RExpirableAsync extends RObjectAsync {
      */
     RFuture<Boolean> expireAsync(Instant time);
 
+    /**
+     * Sets an expiration date for this object only if it has been already set.
+     * When expire date comes the object will automatically be deleted.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param time expire date
+     * @return <code>true</code> if the timeout was set and <code>false</code> if not
+     */
     RFuture<Boolean> expireIfSetAsync(Instant time);
 
+    /**
+     * Sets an expiration date for this object only if it hasn't been set before.
+     * When expire date comes the object will automatically be deleted.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param time expire date
+     * @return <code>true</code> if the timeout was set and <code>false</code> if not
+     */
     RFuture<Boolean> expireIfNotSetAsync(Instant time);
 
+    /**
+     * Sets an expiration date for this object only if it's greater than expiration date set before.
+     * When expire date comes the object will automatically be deleted.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param time expire date
+     * @return <code>true</code> if the timeout was set and <code>false</code> if not
+     */
     RFuture<Boolean> expireIfGreaterAsync(Instant time);
 
+    /**
+     * Sets an expiration date for this object only if it's less than expiration date set before.
+     * When expire date comes the object will automatically be deleted.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param time expire date
+     * @return <code>true</code> if the timeout was set and <code>false</code> if not
+     */
     RFuture<Boolean> expireIfLessAsync(Instant time);
 
     /**
@@ -83,12 +119,48 @@ public interface RExpirableAsync extends RObjectAsync {
      */
     RFuture<Boolean> expireAsync(Duration duration);
 
+    /**
+     * Sets a timeout for this object only if it has been already set.
+     * After the timeout has expired, the key will automatically be deleted.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration timeout before object will be deleted
+     * @return <code>true</code> if the timeout was set and <code>false</code> if not
+     */
     RFuture<Boolean> expireIfSetAsync(Duration duration);
 
+    /**
+     * Sets a timeout for this object only if it hasn't been set before.
+     * After the timeout has expired, the key will automatically be deleted.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration timeout before object will be deleted
+     * @return <code>true</code> if the timeout was set and <code>false</code> if not
+     */
     RFuture<Boolean> expireIfNotSetAsync(Duration duration);
 
+    /**
+     * Sets a timeout for this object only if it's greater than timeout set before.
+     * After the timeout has expired, the key will automatically be deleted.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration timeout before object will be deleted
+     * @return <code>true</code> if the timeout was set and <code>false</code> if not
+     */
     RFuture<Boolean> expireIfGreaterAsync(Duration duration);
 
+    /**
+     * Sets a timeout for this object only if it's less than timeout set before.
+     * After the timeout has expired, the key will automatically be deleted.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration timeout before object will be deleted
+     * @return <code>true</code> if the timeout was set and <code>false</code> if not
+     */
     RFuture<Boolean> expireIfLessAsync(Duration duration);
 
     /**
