@@ -18,6 +18,7 @@ package org.redisson.misc;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -39,8 +40,8 @@ public class ProxyBuilder {
 
     private static class CacheKey {
         
-        Method method;
-        Class<?> instanceClass;
+        final Method method;
+        final Class<?> instanceClass;
         
         CacheKey(Method method, Class<?> instanceClass) {
             super();
@@ -49,37 +50,17 @@ public class ProxyBuilder {
         }
 
         @Override
-        @SuppressWarnings("AvoidInlineConditionals")
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + ((instanceClass == null) ? 0 : instanceClass.hashCode());
-            result = prime * result + ((method == null) ? 0 : method.hashCode());
-            return result;
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            CacheKey cacheKey = (CacheKey) o;
+            return method.equals(cacheKey.method) && instanceClass.equals(cacheKey.instanceClass);
         }
 
         @Override
-        public boolean equals(Object obj) {
-            if (this == obj)
-                return true;
-            if (obj == null)
-                return false;
-            if (getClass() != obj.getClass())
-                return false;
-            CacheKey other = (CacheKey) obj;
-            if (instanceClass == null) {
-                if (other.instanceClass != null)
-                    return false;
-            } else if (!instanceClass.equals(other.instanceClass))
-                return false;
-            if (method == null) {
-                if (other.method != null)
-                    return false;
-            } else if (!method.equals(other.method))
-                return false;
-            return true;
+        public int hashCode() {
+            return Objects.hash(method, instanceClass);
         }
-        
     }
     
     private static final ConcurrentMap<CacheKey, Method> METHODS_MAPPING = new ConcurrentHashMap<CacheKey, Method>();
