@@ -122,8 +122,14 @@ public class RedissonReactiveScriptingCommands extends RedissonBaseReactive impl
                 return ByteBuffer.wrap((byte[])e);
             }
             if (e instanceof List) {
-                if (!((List) e).isEmpty() && ((List) e).get(0).getClass().isArray()) {
-                    return ((List<byte[]>)e).stream().map(v -> ByteBuffer.wrap(v)).collect(Collectors.toList());
+                List l = (List) e;
+                if (!l.isEmpty()) {
+                    for (int i = 0; i < l.size(); i++) {
+                        if (l.get(i).getClass().isArray()) {
+                            l.set(i, ByteBuffer.wrap((byte[])l.get(i)));
+                        }
+                    }
+                    return l;
                 }
             }
             return e;
