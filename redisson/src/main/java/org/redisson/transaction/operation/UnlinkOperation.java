@@ -19,6 +19,7 @@ import org.redisson.RedissonKeys;
 import org.redisson.RedissonLock;
 import org.redisson.api.RKeys;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.transaction.RedissonTransactionalLock;
 
 /**
  * 
@@ -28,14 +29,16 @@ import org.redisson.command.CommandAsyncExecutor;
 public class UnlinkOperation extends TransactionalOperation {
 
     private String lockName;
+    private String transactionId;
     
     public UnlinkOperation(String name) {
-        this(name, null, 0);
+        this(name, null, 0, null);
     }
     
-    public UnlinkOperation(String name, String lockName, long threadId) {
+    public UnlinkOperation(String name, String lockName, long threadId, String transactionId) {
         super(name, null, threadId);
         this.lockName = lockName;
+        this.transactionId = transactionId;
     }
 
     @Override
@@ -43,7 +46,7 @@ public class UnlinkOperation extends TransactionalOperation {
         RKeys keys = new RedissonKeys(commandExecutor);
         keys.unlinkAsync(getName());
         if (lockName != null) {
-            RedissonLock lock = new RedissonLock(commandExecutor, lockName);
+            RedissonLock lock = new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
             lock.unlockAsync(getThreadId());
         }
     }
@@ -51,7 +54,7 @@ public class UnlinkOperation extends TransactionalOperation {
     @Override
     public void rollback(CommandAsyncExecutor commandExecutor) {
         if (lockName != null) {
-            RedissonLock lock = new RedissonLock(commandExecutor, lockName);
+            RedissonLock lock = new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
             lock.unlockAsync(getThreadId());
         }
     }

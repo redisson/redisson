@@ -26,16 +26,16 @@ import org.redisson.transaction.RedissonTransactionalLock;
  * @author Nikita Koksharov
  *
  */
-public class TouchOperation extends TransactionalOperation {
+public class ClearExpireOperation extends TransactionalOperation {
 
     private String lockName;
     private String transactionId;
-    
-    public TouchOperation(String name) {
+
+    public ClearExpireOperation(String name) {
         this(name, null, 0, null);
     }
-    
-    public TouchOperation(String name, String lockName, long threadId, String transactionId) {
+
+    public ClearExpireOperation(String name, String lockName, long threadId, String transactionId) {
         super(name, null, threadId);
         this.lockName = lockName;
         this.transactionId = transactionId;
@@ -44,7 +44,7 @@ public class TouchOperation extends TransactionalOperation {
     @Override
     public void commit(CommandAsyncExecutor commandExecutor) {
         RKeys keys = new RedissonKeys(commandExecutor);
-        keys.touchAsync(getName());
+        keys.clearExpireAsync(getName());
         if (lockName != null) {
             RedissonLock lock = new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
             lock.unlockAsync(getThreadId());

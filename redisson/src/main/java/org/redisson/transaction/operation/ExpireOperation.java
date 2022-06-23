@@ -15,36 +15,59 @@
  */
 package org.redisson.transaction.operation;
 
-import org.redisson.RedissonKeys;
+import org.redisson.RedissonBucket;
 import org.redisson.RedissonLock;
-import org.redisson.api.RKeys;
+import org.redisson.api.RFuture;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.transaction.RedissonTransactionalLock;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class TouchOperation extends TransactionalOperation {
+public class ExpireOperation extends TransactionalOperation {
+
+    public static final class RedissonBucketExtended extends RedissonBucket {
+
+        public RedissonBucketExtended(CommandAsyncExecutor connectionManager, String name) {
+            super(connectionManager, name);
+        }
+
+        @Override
+        public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
+            return super.expireAsync(timeToLive, timeUnit, param, keys);
+        }
+    }
+
 
     private String lockName;
     private String transactionId;
-    
-    public TouchOperation(String name) {
-        this(name, null, 0, null);
+    private long timeToLive;
+    private TimeUnit timeUnit;
+    private String param;
+    private String[] keys;
+
+    public ExpireOperation(String name) {
+        this(name, null, 0, null, 0, null, null, (String[]) null);
     }
-    
-    public TouchOperation(String name, String lockName, long threadId, String transactionId) {
+
+    public ExpireOperation(String name, String lockName, long threadId, String transactionId, long timeToLive, TimeUnit timeUnit, String param, String... keys) {
         super(name, null, threadId);
         this.lockName = lockName;
         this.transactionId = transactionId;
+        this.timeToLive = timeToLive;
+        this.timeUnit = timeUnit;
+        this.param = param;
+        this.keys = keys;
     }
 
     @Override
     public void commit(CommandAsyncExecutor commandExecutor) {
-        RKeys keys = new RedissonKeys(commandExecutor);
-        keys.touchAsync(getName());
+        RedissonBucketExtended bucket = new RedissonBucketExtended(commandExecutor, name);
+        bucket.expireAsync(timeToLive, timeUnit, param, keys);
         if (lockName != null) {
             RedissonLock lock = new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
             lock.unlockAsync(getThreadId());

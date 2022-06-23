@@ -2,6 +2,7 @@ package org.redisson.transaction;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Assertions;
@@ -51,7 +52,32 @@ public class RedissonTransactionalBucketTest extends BaseTest {
         assertThat(redisson.getKeys().count()).isEqualTo(1);
         assertThat(b.get()).isEqualTo("234");
     }
-    
+
+    @Test
+    public void testExpire() throws InterruptedException {
+        RBucket<String> b = redisson.getBucket("test");
+        b.set("123");
+
+        RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+        RBucket<String> bucket = transaction.getBucket("test");
+        assertThat(bucket.clearExpire()).isFalse();
+        assertThat(bucket.expire(Duration.ofSeconds(2))).isTrue();
+        assertThat(bucket.clearExpire()).isTrue();
+        transaction.commit();
+
+        Thread.sleep(2200);
+
+        assertThat(b.get()).isEqualTo("123");
+
+        RTransaction transaction2 = redisson.createTransaction(TransactionOptions.defaults());
+        RBucket<String> bucket2 = transaction2.getBucket("test");
+        assertThat(bucket2.expire(Duration.ofSeconds(1))).isTrue();
+        transaction2.commit();
+
+        Thread.sleep(1100);
+        assertThat(b.get()).isNull();
+    }
+
     @Test
     public void testGetAndSet() {
         RBucket<String> b = redisson.getBucket("test");
