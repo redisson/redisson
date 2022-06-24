@@ -20,6 +20,7 @@ import org.redisson.RedissonLock;
 import org.redisson.api.RKeys;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.transaction.RedissonTransactionalLock;
+import org.redisson.transaction.RedissonTransactionalWriteLock;
 
 /**
  * 
@@ -28,6 +29,7 @@ import org.redisson.transaction.RedissonTransactionalLock;
  */
 public class UnlinkOperation extends TransactionalOperation {
 
+    private String writeLockName;
     private String lockName;
     private String transactionId;
     
@@ -41,6 +43,11 @@ public class UnlinkOperation extends TransactionalOperation {
         this.transactionId = transactionId;
     }
 
+    public UnlinkOperation(String name, String lockName, String writeLockName, long threadId, String transactionId) {
+        this(name, lockName, threadId, transactionId);
+        this.writeLockName = writeLockName;
+    }
+
     @Override
     public void commit(CommandAsyncExecutor commandExecutor) {
         RKeys keys = new RedissonKeys(commandExecutor);
@@ -49,12 +56,20 @@ public class UnlinkOperation extends TransactionalOperation {
             RedissonLock lock = new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
             lock.unlockAsync(getThreadId());
         }
+        if (writeLockName != null) {
+            RedissonLock lock = new RedissonTransactionalWriteLock(commandExecutor, writeLockName, transactionId);
+            lock.unlockAsync(getThreadId());
+        }
     }
 
     @Override
     public void rollback(CommandAsyncExecutor commandExecutor) {
         if (lockName != null) {
             RedissonLock lock = new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
+            lock.unlockAsync(getThreadId());
+        }
+        if (writeLockName != null) {
+            RedissonLock lock = new RedissonTransactionalWriteLock(commandExecutor, writeLockName, transactionId);
             lock.unlockAsync(getThreadId());
         }
     }

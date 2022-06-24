@@ -63,7 +63,11 @@ public class BaseTransactionalObject {
     }
 
     protected <R> RFuture<R> executeLocked(long timeout, Supplier<CompletionStage<R>> runnable, RLock lock) {
-        CompletionStage<R> f = lock.lockAsync(timeout, TimeUnit.MILLISECONDS).thenCompose(res -> runnable.get());
+        return executeLocked(Thread.currentThread().getId(), timeout, runnable, lock);
+    }
+
+    protected <R> RFuture<R> executeLocked(long threadId, long timeout, Supplier<CompletionStage<R>> runnable, RLock lock) {
+        CompletionStage<R> f = lock.lockAsync(timeout, TimeUnit.MILLISECONDS, threadId).thenCompose(res -> runnable.get());
         return new CompletableFutureWrapper<>(f);
     }
 

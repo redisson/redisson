@@ -141,7 +141,25 @@ public class RedissonTransactionalSetCache<V> extends RedissonSetCache<V> {
         checkState();
         return transactionalSet.removeAllAsync(c);
     }
-    
+
+    @Override
+    public RFuture<Boolean> unlinkAsync() {
+        checkState();
+        return transactionalSet.unlinkAsync();
+    }
+
+    @Override
+    public RFuture<Boolean> touchAsync() {
+        checkState();
+        return transactionalSet.touchAsync();
+    }
+
+    @Override
+    public RFuture<Boolean> deleteAsync() {
+        checkState();
+        return transactionalSet.deleteAsync();
+    }
+
     protected void checkState() {
         if (executed.get()) {
             throw new IllegalStateException("Unable to execute operation. Transaction is in finished state!");
