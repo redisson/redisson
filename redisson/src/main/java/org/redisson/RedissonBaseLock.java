@@ -221,9 +221,9 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
                 throw new CompletionException(ex);
             }
             if (commandExecutor.getConnectionManager().getCfg().isCheckLockSyncedSlaves()
-                    && res.getSyncedSlaves() < availableSlaves) {
+                    && res.getSyncedSlaves() == 0 && availableSlaves > 0) {
                 throw new CompletionException(
-                        new IllegalStateException("Only " + res.getSyncedSlaves() + " of " + availableSlaves + " slaves were synced"));
+                        new IllegalStateException("None of slaves were synced"));
             }
 
             return commandExecutor.getNow(result.toCompletableFuture());
