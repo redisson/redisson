@@ -204,7 +204,8 @@ public class RedisExecutor<V, R> {
                                         }
 
                                         exception = new RedisTimeoutException("Command still hasn't been written into connection! " +
-                                                "Try to increase nettyThreads setting. Payload size in bytes: " + totalSize
+                                                "Check connection with Redis node: " + getNow(connectionFuture).getRedisClient().getAddr() +
+                                                " Try to increase nettyThreads setting. Payload size in bytes: " + totalSize
                                                 + ". Node source: " + source + ", connection: " + getNow(connectionFuture)
                                                 + ", command: " + LogHelper.toString(command, params)
                                                 + " after " + attempt + " retry attempts");
