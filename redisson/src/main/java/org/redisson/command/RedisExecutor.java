@@ -194,19 +194,10 @@ public class RedisExecutor<V, R> {
                             if (attempt == attempts) {
                                 if (writeFuture != null && writeFuture.cancel(false)) {
                                     if (exception == null) {
-                                        long totalSize = 0;
-                                        if (params != null) {
-                                            for (Object param : params) {
-                                                if (param instanceof ByteBuf) {
-                                                    totalSize += ((ByteBuf) param).readableBytes();
-                                                }
-                                            }
-                                        }
-
                                         exception = new RedisTimeoutException("Command still hasn't been written into connection! " +
                                                 "Check connection with Redis node: " + getNow(connectionFuture).getRedisClient().getAddr() +
-                                                " Try to increase nettyThreads setting. Payload size in bytes: " + totalSize
-                                                + ". Node source: " + source + ", connection: " + getNow(connectionFuture)
+                                                " for TCP packet drops. Try to increase nettyThreads setting. "
+                                                + " Node source: " + source + ", connection: " + getNow(connectionFuture)
                                                 + ", command: " + LogHelper.toString(command, params)
                                                 + " after " + attempt + " retry attempts");
                                     }
@@ -339,7 +330,8 @@ public class RedisExecutor<V, R> {
                     new RedisResponseTimeoutException("Redis server response timeout (" + timeoutAmount + " ms) occured"
                             + " after " + attempt + " retry attempts,"
                             + " is non-idempotent command: " + (command != null && command.isNoRetry())
-                            + ". Increase nettyThreads and/or timeout settings. Try to define pingConnectionInterval setting. Command: "
+                            + " Check connection with Redis node: " + connection.getRedisClient().getAddr() + " for TCP packet drops. "
+                            + " Try to increase nettyThreads and/or timeout settings. Command: "
                             + LogHelper.toString(command, params) + ", channel: " + connection.getChannel()));
         };
 
