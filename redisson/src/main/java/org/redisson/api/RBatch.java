@@ -201,7 +201,7 @@ public interface RBatch {
      * @param codec codec for values
      * @return JsonBucket object
      */
-    <V> RJsonBucket<V> getJsonBucket(String name, JsonCodec<V> codec);
+    <V> RJsonBucketAsync<V> getJsonBucket(String name, JsonCodec<V> codec);
 
     /**
      * Returns HyperLogLog object
