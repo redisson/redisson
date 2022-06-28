@@ -15,7 +15,6 @@
  */
 package org.redisson.command;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.util.ReferenceCountUtil;
