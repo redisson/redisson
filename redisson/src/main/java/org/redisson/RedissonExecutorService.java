@@ -577,7 +577,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         check(task);
         TaskParameters taskParameters = createTaskParameters(task);
         taskParameters.setTtl(timeUnit.toMillis(timeToLive));
-        RemotePromise<T> result = (RemotePromise<T>) asyncService.executeCallable(taskParameters);
+        RemotePromise<T> result = (RemotePromise<T>) asyncService.executeCallable(taskParameters).toCompletableFuture();
         addListener(result);
         return createFuture(result);
     }
