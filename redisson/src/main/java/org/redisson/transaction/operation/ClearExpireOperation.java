@@ -20,6 +20,7 @@ import org.redisson.RedissonLock;
 import org.redisson.api.RKeys;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.transaction.RedissonTransactionalLock;
+import org.redisson.transaction.RedissonTransactionalWriteLock;
 
 /**
  * 
@@ -28,17 +29,21 @@ import org.redisson.transaction.RedissonTransactionalLock;
  */
 public class ClearExpireOperation extends TransactionalOperation {
 
+    private String writeLockName;
     private String lockName;
     private String transactionId;
-
-    public ClearExpireOperation(String name) {
-        this(name, null, 0, null);
-    }
 
     public ClearExpireOperation(String name, String lockName, long threadId, String transactionId) {
         super(name, null, threadId);
         this.lockName = lockName;
         this.transactionId = transactionId;
+    }
+
+    public ClearExpireOperation(String name, String lockName, String writeLockName, long threadId, String transactionId) {
+        super(name, null, threadId);
+        this.lockName = lockName;
+        this.transactionId = transactionId;
+        this.writeLockName = writeLockName;
     }
 
     @Override
@@ -49,12 +54,20 @@ public class ClearExpireOperation extends TransactionalOperation {
             RedissonLock lock = new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
             lock.unlockAsync(getThreadId());
         }
+        if (writeLockName != null) {
+            RedissonLock lock = new RedissonTransactionalWriteLock(commandExecutor, writeLockName, transactionId);
+            lock.unlockAsync(getThreadId());
+        }
     }
 
     @Override
     public void rollback(CommandAsyncExecutor commandExecutor) {
         if (lockName != null) {
             RedissonLock lock = new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
+            lock.unlockAsync(getThreadId());
+        }
+        if (writeLockName != null) {
+            RedissonLock lock = new RedissonTransactionalWriteLock(commandExecutor, writeLockName, transactionId);
             lock.unlockAsync(getThreadId());
         }
     }

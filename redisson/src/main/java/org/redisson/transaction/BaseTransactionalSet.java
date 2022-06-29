@@ -25,16 +25,14 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.Hash;
 import org.redisson.misc.HashValue;
-import org.redisson.transaction.operation.DeleteOperation;
-import org.redisson.transaction.operation.TouchOperation;
-import org.redisson.transaction.operation.TransactionalOperation;
-import org.redisson.transaction.operation.UnlinkOperation;
+import org.redisson.transaction.operation.*;
 import org.redisson.transaction.operation.set.MoveOperation;
 
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
@@ -56,6 +54,8 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
     final CommandAsyncExecutor commandExecutor;
     Boolean deleted;
     String transactionId;
+
+    boolean hasExpiration;
 
     public BaseTransactionalSet(CommandAsyncExecutor commandExecutor, long timeout, List<TransactionalOperation> operations,
                                 RCollectionAsync<V> set, String transactionId) {
@@ -105,8 +105,7 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
             return set.isExistsAsync().thenApply(exists -> {
                 operations.add(new TouchOperation(name, null, getLockName(), currentThreadId, transactionId));
                 if (!exists) {
-                    boolean notExists = state.values().stream().noneMatch(v -> v != NULL);
-                    return !notExists;
+                    return isExists();
                 }
                 return exists;
             });
@@ -453,6 +452,62 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
             locks.add(lock);
         }
         return executeLocked(timeout, runnable, locks);
+    }
+
+    public RFuture<Boolean> clearExpireAsync() {
+        long currentThreadId = Thread.currentThread().getId();
+        return executeLocked(timeout, () -> {
+            if (hasExpiration) {
+                operations.add(new ClearExpireOperation(name, null, getLockName(), currentThreadId, transactionId));
+                hasExpiration = false;
+                return CompletableFuture.completedFuture(true);
+            }
+
+            return set.remainTimeToLiveAsync().thenApply(res -> {
+                operations.add(new ClearExpireOperation(name, null, getLockName(), currentThreadId, transactionId));
+                hasExpiration = false;
+                return res > 0;
+            });
+        }, getWriteLock());
+    }
+
+    private boolean isExists() {
+        boolean notExists = state.values().stream().noneMatch(v -> v != NULL);
+        return !notExists;
+    }
+
+    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
+        long currentThreadId = Thread.currentThread().getId();
+        return executeLocked(timeout, () -> {
+            if (isExists()) {
+                operations.add(new ExpireOperation(name, null, getLockName(), currentThreadId, transactionId, timeToLive, timeUnit, param, keys));
+                hasExpiration = true;
+                return CompletableFuture.completedFuture(true);
+            }
+
+            return isExistsAsync().thenApply(res -> {
+                operations.add(new ExpireOperation(name, null, getLockName(), currentThreadId, transactionId, timeToLive, timeUnit, param, keys));
+                hasExpiration = res;
+                return res;
+            });
+        }, getWriteLock());
+    }
+
+    public RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
+        long currentThreadId = Thread.currentThread().getId();
+        return executeLocked(timeout, () -> {
+            if (isExists()) {
+                operations.add(new ExpireAtOperation(name, null, getLockName(), currentThreadId, transactionId, timestamp, param, keys));
+                hasExpiration = true;
+                return CompletableFuture.completedFuture(true);
+            }
+
+            return isExistsAsync().thenApply(res -> {
+                operations.add(new ExpireAtOperation(name, null, getLockName(), currentThreadId, transactionId, timestamp, param, keys));
+                hasExpiration = res;
+                return res;
+            });
+        }, getWriteLock());
     }
 
 }

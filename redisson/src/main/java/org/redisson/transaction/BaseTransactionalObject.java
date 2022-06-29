@@ -15,17 +15,15 @@
  */
 package org.redisson.transaction;
 
-import java.time.Instant;
-import java.util.Date;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
-
 import org.redisson.RedissonMultiLock;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.misc.CompletableFutureWrapper;
+
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 /**
  * 
@@ -34,26 +32,6 @@ import org.redisson.misc.CompletableFutureWrapper;
  */
 public class BaseTransactionalObject {
 
-    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
-        throw new UnsupportedOperationException("expire method is not supported in transaction");
-    }
-    
-    public RFuture<Boolean> expireAtAsync(Date timestamp) {
-        throw new UnsupportedOperationException("expire method is not supported in transaction");
-    }
-
-    public RFuture<Boolean> expireAtAsync(Instant timestamp) {
-        throw new UnsupportedOperationException("expire method is not supported in transaction");
-    }
-
-    public RFuture<Boolean> expireAtAsync(long timestamp) {
-        throw new UnsupportedOperationException("expire method is not supported in transaction");
-    }
-    
-    public RFuture<Boolean> clearExpireAsync() {
-        throw new UnsupportedOperationException("clearExpire method is not supported in transaction");
-    }
-    
     public RFuture<Boolean> moveAsync(int database) {
         throw new UnsupportedOperationException("move method is not supported in transaction");
     }

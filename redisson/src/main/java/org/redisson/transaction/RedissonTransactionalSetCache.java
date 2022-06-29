@@ -57,20 +57,19 @@ public class RedissonTransactionalSetCache<V> extends RedissonSetCache<V> {
         this.transactionalSet = new TransactionalSetCache<V>(commandExecutor, timeout, operations, innerSet, transactionId);
     }
 
-
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
-        throw new UnsupportedOperationException("expire method is not supported in transaction");
+        return transactionalSet.expireAsync(timeToLive, timeUnit, param, keys);
     }
 
     @Override
     protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
-        throw new UnsupportedOperationException("expire method is not supported in transaction");
+        return transactionalSet.expireAtAsync(timestamp, param, keys);
     }
     
     @Override
     public RFuture<Boolean> clearExpireAsync() {
-        throw new UnsupportedOperationException("clearExpire method is not supported in transaction");
+        return transactionalSet.clearExpireAsync();
     }
     
     @Override

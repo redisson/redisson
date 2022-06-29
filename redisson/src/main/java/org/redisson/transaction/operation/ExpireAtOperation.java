@@ -20,6 +20,7 @@ import org.redisson.RedissonLock;
 import org.redisson.api.RFuture;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.transaction.RedissonTransactionalLock;
+import org.redisson.transaction.RedissonTransactionalWriteLock;
 
 /**
  * 
@@ -42,6 +43,7 @@ public class ExpireAtOperation extends TransactionalOperation {
     }
 
 
+    private String writeLockName;
     private String lockName;
     private String transactionId;
     private long timestamp;
@@ -61,6 +63,16 @@ public class ExpireAtOperation extends TransactionalOperation {
         this.keys = keys;
     }
 
+    public ExpireAtOperation(String name, String lockName, String writeLockName, long threadId, String transactionId, long timestamp, String param, String... keys) {
+        super(name, null, threadId);
+        this.lockName = lockName;
+        this.transactionId = transactionId;
+        this.timestamp = timestamp;
+        this.param = param;
+        this.keys = keys;
+        this.writeLockName = writeLockName;
+    }
+
     @Override
     public void commit(CommandAsyncExecutor commandExecutor) {
         RedissonBucketExtended bucket = new RedissonBucketExtended(commandExecutor, name);
@@ -69,12 +81,20 @@ public class ExpireAtOperation extends TransactionalOperation {
             RedissonLock lock = new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
             lock.unlockAsync(getThreadId());
         }
+        if (writeLockName != null) {
+            RedissonLock lock = new RedissonTransactionalWriteLock(commandExecutor, writeLockName, transactionId);
+            lock.unlockAsync(getThreadId());
+        }
     }
 
     @Override
     public void rollback(CommandAsyncExecutor commandExecutor) {
         if (lockName != null) {
             RedissonLock lock = new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
+            lock.unlockAsync(getThreadId());
+        }
+        if (writeLockName != null) {
+            RedissonLock lock = new RedissonTransactionalWriteLock(commandExecutor, writeLockName, transactionId);
             lock.unlockAsync(getThreadId());
         }
     }

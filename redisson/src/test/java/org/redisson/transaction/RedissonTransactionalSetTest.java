@@ -1,15 +1,16 @@
 package org.redisson.transaction;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.HashSet;
-import java.util.Set;
-
 import org.junit.jupiter.api.Test;
 import org.redisson.BaseTest;
 import org.redisson.api.RSet;
 import org.redisson.api.RTransaction;
 import org.redisson.api.TransactionOptions;
+
+import java.time.Duration;
+import java.util.HashSet;
+import java.util.Set;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonTransactionalSetTest extends BaseTest {
 
@@ -111,5 +112,29 @@ public class RedissonTransactionalSetTest extends BaseTest {
         assertThat(s.contains("3")).isFalse();
     }
 
+    @Test
+    public void testExpire() throws InterruptedException {
+        RSet<String> s = redisson.getSet("test");
+        s.add("123");
+
+        RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+        RSet<String> set = transaction.getSet("test");
+        assertThat(set.clearExpire()).isFalse();
+        assertThat(set.expire(Duration.ofSeconds(2))).isTrue();
+        assertThat(set.clearExpire()).isTrue();
+        transaction.commit();
+
+        Thread.sleep(2200);
+
+        assertThat(s).containsOnly("123");
+
+        RTransaction transaction2 = redisson.createTransaction(TransactionOptions.defaults());
+        RSet<String> set2 = transaction2.getSet("test");
+        assertThat(set2.expire(Duration.ofSeconds(1))).isTrue();
+        transaction2.commit();
+
+        Thread.sleep(1100);
+        assertThat(s.isExists()).isFalse();
+    }
     
 }
