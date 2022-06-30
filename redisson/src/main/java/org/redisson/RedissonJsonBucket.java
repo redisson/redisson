@@ -431,7 +431,7 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
 
     @Override
     public RFuture<Boolean> deleteAsync() {
-        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.JSON_DEL, getRawName());
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.JSON_DEL_BOOLEAN, getRawName());
     }
 
     @Override

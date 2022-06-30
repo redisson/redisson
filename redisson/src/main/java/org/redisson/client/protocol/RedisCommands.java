@@ -734,6 +734,8 @@ public interface RedisCommands {
 
     RedisStrictCommand<Long> JSON_DEL_LONG = new RedisStrictCommand<>("JSON.DEL");
 
+    RedisStrictCommand<Boolean> JSON_DEL_BOOLEAN = new RedisStrictCommand<>("JSON.DEL", new BooleanReplayConvertor());
+
     RedisStrictCommand<Void> JSON_SET = new RedisStrictCommand<>("JSON.SET", new VoidReplayConvertor());
     RedisStrictCommand<Boolean> JSON_SET_BOOLEAN = new RedisStrictCommand<>("JSON.SET", new BooleanNotNullReplayConvertor());
 }

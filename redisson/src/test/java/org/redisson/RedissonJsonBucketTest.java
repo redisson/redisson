@@ -416,6 +416,16 @@ public class RedissonJsonBucketTest extends BaseTest {
     }
 
     @Test
+    public void testDelete() {
+        RJsonBucket<TestType> al = redisson.getJsonBucket("test", new JacksonCodec<>(TestType.class));
+        assertThat(al.delete()).isFalse();
+        TestType t = new TestType();
+        t.setName("name1");
+        al.set(t);
+        assertThat(al.delete()).isTrue();
+    }
+
+    @Test
     public void testSetGet() {
         RJsonBucket<TestType> al = redisson.getJsonBucket("test", new JacksonCodec<>(TestType.class));
         assertThat(al.get()).isNull();
