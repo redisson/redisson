@@ -172,7 +172,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         asyncScheduledServiceAtFixed = scheduledRemoteService.get(RemoteExecutorServiceAsync.class, RemoteInvocationOptions.defaults().noAck().noResult());
     }
     
-    protected String generateRequestId() {
+    protected String generateActiveWorkersId() {
         byte[] id = new byte[16];
         ThreadLocalRandom.current().nextBytes(id);
         return ByteBufUtil.hexDump(id);
@@ -210,7 +210,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
 
     @Override
     public int countActiveWorkers() {
-        String id = generateRequestId();
+        String id = generateActiveWorkersId();
         int subscribers = (int) workersTopic.publish(id);
         if (subscribers == 0) {
             return 0;
