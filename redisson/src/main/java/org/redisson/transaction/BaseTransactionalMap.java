@@ -29,10 +29,7 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.Hash;
 import org.redisson.misc.HashValue;
-import org.redisson.transaction.operation.DeleteOperation;
-import org.redisson.transaction.operation.TouchOperation;
-import org.redisson.transaction.operation.TransactionalOperation;
-import org.redisson.transaction.operation.UnlinkOperation;
+import org.redisson.transaction.operation.*;
 import org.redisson.transaction.operation.map.*;
 
 import java.math.BigDecimal;
@@ -40,6 +37,7 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -80,17 +78,14 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
     final List<TransactionalOperation> operations;
     final Map<HashValue, MapEntry> state = new HashMap<>();
     final RMap<K, V> map;
-    final CommandAsyncExecutor commandExecutor;
-    final String transactionId;
     Boolean deleted;
-    
+    boolean hasExpiration;
+
     public BaseTransactionalMap(CommandAsyncExecutor commandExecutor, long timeout, List<TransactionalOperation> operations, RMap<K, V> map, String transactionId) {
-        super();
+        super(transactionId, getLockName(map.getName()), commandExecutor);
         this.timeout = timeout;
         this.operations = operations;
         this.map = map;
-        this.commandExecutor = commandExecutor;
-        this.transactionId = transactionId;
     }
 
     HashValue toKeyHash(Object key) {
@@ -123,14 +118,9 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
         CompletionStage<Boolean> f = map.isExistsAsync().thenApply(exists -> {
             operations.add(new TouchOperation(map.getName()));
             if (!exists) {
-                for (MapEntry entry : state.values()) {
-                    if (entry != MapEntry.NULL) {
-                        exists = true;
-                        break;
-                    }
-                }
+                return isExists();
             }
-            return exists;
+            return true;
         });
         return new CompletableFutureWrapper<>(f);
     }
@@ -773,6 +763,62 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
     protected RLock getLock(K key) {
         String lockName = ((RedissonMap<K, V>) map).getLockByMapKey(key, "lock");
         return new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
+    }
+
+    private boolean isExists() {
+        boolean notExists = state.values().stream().noneMatch(v -> v != MapEntry.NULL);
+        return !notExists;
+    }
+
+    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
+        long currentThreadId = Thread.currentThread().getId();
+        return executeLocked(timeout, () -> {
+            if (isExists()) {
+                operations.add(new ExpireOperation(map.getName(), null, lockName, currentThreadId, transactionId, timeToLive, timeUnit, param, keys));
+                hasExpiration = true;
+                return CompletableFuture.completedFuture(true);
+            }
+
+            return isExistsAsync().thenApply(res -> {
+                operations.add(new ExpireOperation(map.getName(), null, lockName, currentThreadId, transactionId, timeToLive, timeUnit, param, keys));
+                hasExpiration = res;
+                return res;
+            });
+        }, getWriteLock());
+    }
+
+    public RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
+        long currentThreadId = Thread.currentThread().getId();
+        return executeLocked(timeout, () -> {
+            if (isExists()) {
+                operations.add(new ExpireAtOperation(map.getName(), null, lockName, currentThreadId, transactionId, timestamp, param, keys));
+                hasExpiration = true;
+                return CompletableFuture.completedFuture(true);
+            }
+
+            return isExistsAsync().thenApply(res -> {
+                operations.add(new ExpireAtOperation(map.getName(), null, lockName, currentThreadId, transactionId, timestamp, param, keys));
+                hasExpiration = res;
+                return res;
+            });
+        }, getWriteLock());
+    }
+
+    public RFuture<Boolean> clearExpireAsync() {
+        long currentThreadId = Thread.currentThread().getId();
+        return executeLocked(timeout, () -> {
+            if (hasExpiration) {
+                operations.add(new ClearExpireOperation(map.getName(), null, lockName, currentThreadId, transactionId));
+                hasExpiration = false;
+                return CompletableFuture.completedFuture(true);
+            }
+
+            return map.remainTimeToLiveAsync().thenApply(res -> {
+                operations.add(new ClearExpireOperation(map.getName(), null, lockName, currentThreadId, transactionId));
+                hasExpiration = false;
+                return res > 0;
+            });
+        }, getWriteLock());
     }
 
 }

@@ -60,7 +60,7 @@ public class TransactionalSet<V> extends BaseTransactionalSet<V> {
     
     @Override
     protected TransactionalOperation createAddOperation(V value, long threadId) {
-        return new AddOperation(set, value, getLockName(), transactionId, threadId);
+        return new AddOperation(set, value, lockName, transactionId, threadId);
     }
     
     @Override
@@ -70,7 +70,7 @@ public class TransactionalSet<V> extends BaseTransactionalSet<V> {
 
     @Override
     protected TransactionalOperation createRemoveOperation(Object value, long threadId) {
-        return new RemoveOperation(set, value, getLockName(), transactionId, threadId);
+        return new RemoveOperation(set, value, lockName, transactionId, threadId);
     }
     
 }

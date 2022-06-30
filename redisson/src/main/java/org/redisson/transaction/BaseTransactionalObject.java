@@ -18,6 +18,7 @@ package org.redisson.transaction;
 import org.redisson.RedissonMultiLock;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
 
 import java.util.List;
@@ -32,12 +33,34 @@ import java.util.function.Supplier;
  */
 public class BaseTransactionalObject {
 
+    final String transactionId;
+    final String lockName;
+    final CommandAsyncExecutor commandExecutor;
+
+    public BaseTransactionalObject(String transactionId, String lockName, CommandAsyncExecutor commandExecutor) {
+        this.transactionId = transactionId;
+        this.lockName = lockName;
+        this.commandExecutor = commandExecutor;
+    }
+
     public RFuture<Boolean> moveAsync(int database) {
         throw new UnsupportedOperationException("move method is not supported in transaction");
     }
     
     public RFuture<Void> migrateAsync(String host, int port, int database) {
         throw new UnsupportedOperationException("migrate method is not supported in transaction");
+    }
+
+    protected RLock getWriteLock() {
+        return new RedissonTransactionalWriteLock(commandExecutor, lockName, transactionId);
+    }
+
+    protected RLock getReadLock() {
+        return new RedissonTransactionalReadLock(commandExecutor, lockName, transactionId);
+    }
+
+    protected static String getLockName(String name) {
+        return name + ":transaction_lock";
     }
 
     protected <R> RFuture<R> executeLocked(long timeout, Supplier<CompletionStage<R>> runnable, RLock lock) {

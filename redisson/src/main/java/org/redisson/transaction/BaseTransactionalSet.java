@@ -46,26 +46,23 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
     static final Object NULL = new Object();
     
     private final long timeout;
-    final Map<HashValue, Object> state = new HashMap<HashValue, Object>();
+    final Map<HashValue, Object> state = new HashMap<>();
     final List<TransactionalOperation> operations;
     final RCollectionAsync<V> set;
     final RObject object;
     final String name;
-    final CommandAsyncExecutor commandExecutor;
     Boolean deleted;
-    String transactionId;
 
     boolean hasExpiration;
 
     public BaseTransactionalSet(CommandAsyncExecutor commandExecutor, long timeout, List<TransactionalOperation> operations,
                                 RCollectionAsync<V> set, String transactionId) {
-        this.commandExecutor = commandExecutor;
+        super(transactionId, getLockName(((RObject) set).getName()), commandExecutor);
         this.timeout = timeout;
         this.operations = operations;
         this.set = set;
         this.object = (RObject) set;
         this.name = object.getName();
-        this.transactionId = transactionId;
     }
 
     private HashValue toHash(Object value) {
@@ -85,36 +82,32 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
         return set.isExistsAsync();
     }
 
-    protected String getLockName() {
-        return name + ":transaction_lock";
-    }
-
     public RFuture<Boolean> unlinkAsync() {
         long currentThreadId = Thread.currentThread().getId();
-        return deleteAsync(new UnlinkOperation(name, null, getLockName(), currentThreadId, transactionId));
+        return deleteAsync(new UnlinkOperation(name, null, lockName, currentThreadId, transactionId));
     }
 
     public RFuture<Boolean> touchAsync() {
         long currentThreadId = Thread.currentThread().getId();
         return executeLocked(timeout, () -> {
             if (deleted != null && deleted) {
-                operations.add(new TouchOperation(name, null, getLockName(), currentThreadId, transactionId));
+                operations.add(new TouchOperation(name, null, lockName, currentThreadId, transactionId));
                 return new CompletableFutureWrapper<>(false);
             }
 
             return set.isExistsAsync().thenApply(exists -> {
-                operations.add(new TouchOperation(name, null, getLockName(), currentThreadId, transactionId));
+                operations.add(new TouchOperation(name, null, lockName, currentThreadId, transactionId));
                 if (!exists) {
                     return isExists();
                 }
-                return exists;
+                return true;
             });
         }, getWriteLock());
     }
 
     public RFuture<Boolean> deleteAsync() {
         long currentThreadId = Thread.currentThread().getId();
-        return deleteAsync(new DeleteOperation(name, null, getLockName(), transactionId, currentThreadId));
+        return deleteAsync(new DeleteOperation(name, null, lockName, transactionId, currentThreadId));
     }
 
     protected RFuture<Boolean> deleteAsync(TransactionalOperation operation) {
@@ -429,14 +422,6 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
         }
     }
 
-    private RLock getWriteLock() {
-        return new RedissonTransactionalWriteLock(commandExecutor, getLockName(), transactionId);
-    }
-
-    private RLock getReadLock() {
-        return new RedissonTransactionalReadLock(commandExecutor, getLockName(), transactionId);
-    }
-
     protected <R> RFuture<R> executeLocked(Object value, Supplier<CompletionStage<R>> runnable) {
         RLock lock = getLock(set, (V) value);
         long threadId = Thread.currentThread().getId();
@@ -458,13 +443,13 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
         long currentThreadId = Thread.currentThread().getId();
         return executeLocked(timeout, () -> {
             if (hasExpiration) {
-                operations.add(new ClearExpireOperation(name, null, getLockName(), currentThreadId, transactionId));
+                operations.add(new ClearExpireOperation(name, null, lockName, currentThreadId, transactionId));
                 hasExpiration = false;
                 return CompletableFuture.completedFuture(true);
             }
 
             return set.remainTimeToLiveAsync().thenApply(res -> {
-                operations.add(new ClearExpireOperation(name, null, getLockName(), currentThreadId, transactionId));
+                operations.add(new ClearExpireOperation(name, null, lockName, currentThreadId, transactionId));
                 hasExpiration = false;
                 return res > 0;
             });
@@ -480,13 +465,13 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
         long currentThreadId = Thread.currentThread().getId();
         return executeLocked(timeout, () -> {
             if (isExists()) {
-                operations.add(new ExpireOperation(name, null, getLockName(), currentThreadId, transactionId, timeToLive, timeUnit, param, keys));
+                operations.add(new ExpireOperation(name, null, lockName, currentThreadId, transactionId, timeToLive, timeUnit, param, keys));
                 hasExpiration = true;
                 return CompletableFuture.completedFuture(true);
             }
 
             return isExistsAsync().thenApply(res -> {
-                operations.add(new ExpireOperation(name, null, getLockName(), currentThreadId, transactionId, timeToLive, timeUnit, param, keys));
+                operations.add(new ExpireOperation(name, null, lockName, currentThreadId, transactionId, timeToLive, timeUnit, param, keys));
                 hasExpiration = res;
                 return res;
             });
@@ -497,13 +482,13 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
         long currentThreadId = Thread.currentThread().getId();
         return executeLocked(timeout, () -> {
             if (isExists()) {
-                operations.add(new ExpireAtOperation(name, null, getLockName(), currentThreadId, transactionId, timestamp, param, keys));
+                operations.add(new ExpireAtOperation(name, null, lockName, currentThreadId, transactionId, timestamp, param, keys));
                 hasExpiration = true;
                 return CompletableFuture.completedFuture(true);
             }
 
             return isExistsAsync().thenApply(res -> {
-                operations.add(new ExpireAtOperation(name, null, getLockName(), currentThreadId, transactionId, timestamp, param, keys));
+                operations.add(new ExpireAtOperation(name, null, lockName, currentThreadId, transactionId, timestamp, param, keys));
                 hasExpiration = res;
                 return res;
             });

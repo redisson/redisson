@@ -61,17 +61,17 @@ public class RedissonTransactionalMapCache<K, V> extends RedissonMapCache<K, V> 
     
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
-        throw new UnsupportedOperationException("expire method is not supported in transaction");
+        return transactionalMap.expireAsync(timeToLive, timeUnit, param, keys);
     }
     
     @Override
     protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
-        throw new UnsupportedOperationException("expire method is not supported in transaction");
+        return transactionalMap.expireAtAsync(timestamp, param, keys);
     }
 
     @Override
     public RFuture<Boolean> clearExpireAsync() {
-        throw new UnsupportedOperationException("clearExpire method is not supported in transaction");
+        return transactionalMap.clearExpireAsync();
     }
     
     @Override
