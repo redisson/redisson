@@ -330,7 +330,7 @@ public class TasksRunnerService implements RemoteExecutorService {
 
     public void executeRunnable(TaskParameters params, boolean removeTask) {
         try {
-            if (params.getRequestId() != null && params.getRequestId().startsWith("00")) {
+            if (params.getRequestId() != null && !(params instanceof ScheduledParameters)) {
                 RFuture<Long> future = renewRetryTime(params.getRequestId());
                 try {
                     future.toCompletableFuture().get();
