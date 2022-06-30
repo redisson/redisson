@@ -20,6 +20,7 @@ import org.redisson.config.RedissonNodeConfig;
 import java.io.IOException;
 import java.io.Serializable;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -272,7 +273,7 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         
         for (RScheduledFuture<?> future : futures) {
             try {
-                future.toCompletableFuture().get(5100, TimeUnit.MILLISECONDS);
+                future.toCompletableFuture().get(5500, TimeUnit.MILLISECONDS);
             } catch (TimeoutException e) {
                 Assertions.fail(e);
             } catch (ExecutionException e) {
@@ -283,6 +284,41 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         node.shutdown();
     }
     
+//    @Test
+    public void testCronExpression2() throws InterruptedException {
+        ExecutorOptions e = ExecutorOptions.defaults().taskRetryInterval(2, TimeUnit.SECONDS);
+        RScheduledExecutorService executor = redisson.getExecutorService("test", e);
+        LocalDateTime n = LocalDateTime.now();
+        int s = n.getSecond() % 10;
+        Thread.sleep((10 - s)*1000);
+        executor.schedule(new ScheduledRunnableTask("executed"), CronSchedule.of("0/10 * * ? * *"));
+
+        Config config = createConfig();
+        RedissonNodeConfig nodeConfig = new RedissonNodeConfig(config);
+        nodeConfig.setExecutorServiceWorkers(Collections.singletonMap("test", 2));
+        node.shutdown();
+        node = RedissonNode.create(nodeConfig);
+
+        Thread.sleep(18000);
+
+        node.start();
+        Thread.sleep(500);
+
+        assertThat(redisson.getAtomicLong("executed").get()).isEqualTo(1);
+
+        Thread.sleep(1100);
+
+        assertThat(redisson.getAtomicLong("executed").get()).isEqualTo(1);
+
+        Thread.sleep(1100);
+
+        assertThat(redisson.getAtomicLong("executed").get()).isEqualTo(2);
+
+        Thread.sleep(5000);
+
+        assertThat(redisson.getAtomicLong("executed").get()).isEqualTo(2);
+    }
+
     @Test
     public void testCronExpression() throws InterruptedException {
         RScheduledExecutorService executor = redisson.getExecutorService("test");
