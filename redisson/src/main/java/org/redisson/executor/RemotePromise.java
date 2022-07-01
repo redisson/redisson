@@ -15,8 +15,6 @@
  */
 package org.redisson.executor;
 
-import org.redisson.remote.RequestId;
-
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -26,15 +24,15 @@ import java.util.concurrent.CompletableFuture;
  */
 public class RemotePromise<T> extends CompletableFuture<T> {
 
-    private final RequestId requestId;
+    private final String requestId;
     private CompletableFuture<Boolean> addFuture;
     
-    public RemotePromise(RequestId requestId) {
+    public RemotePromise(String requestId) {
         super();
         this.requestId = requestId;
     }
     
-    public RequestId getRequestId() {
+    public String getRequestId() {
         return requestId;
     }
     

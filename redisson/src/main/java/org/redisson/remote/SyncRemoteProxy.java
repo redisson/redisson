@@ -60,10 +60,10 @@ public class SyncRemoteProxy extends BaseRemoteProxy {
                         && !(method.getReturnType().equals(Void.class) || method.getReturnType().equals(Void.TYPE)))
                     throw new IllegalArgumentException("The noResult option only supports void return value");
 
-                RequestId requestId = remoteService.generateRequestId();
+                String requestId = remoteService.generateRequestId();
 
                 String requestQueueName = getRequestQueueName(remoteInterface);
-                RemoteServiceRequest request = new RemoteServiceRequest(executorId, requestId.toString(), method.getName(), 
+                RemoteServiceRequest request = new RemoteServiceRequest(executorId, requestId, method.getName(),
                                                         remoteService.getMethodSignature(method), args, optionsCopy, System.currentTimeMillis());
                 
                 CompletableFuture<RemoteServiceAck> ackFuture;

@@ -50,10 +50,10 @@ public class ResponseEntry {
         
     }
     
-    private final Map<RequestId, List<Result>> responses = new HashMap<RequestId, List<Result>>();
+    private final Map<String, List<Result>> responses = new HashMap<String, List<Result>>();
     private final AtomicBoolean started = new AtomicBoolean(); 
     
-    public Map<RequestId, List<Result>> getResponses() {
+    public Map<String, List<Result>> getResponses() {
         return responses;
     }
     

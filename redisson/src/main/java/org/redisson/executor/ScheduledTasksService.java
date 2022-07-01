@@ -15,6 +15,7 @@
  */
 package org.redisson.executor;
 
+import io.netty.buffer.ByteBufUtil;
 import org.redisson.RedissonExecutorService;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
@@ -24,7 +25,6 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.executor.params.ScheduledParameters;
 import org.redisson.remote.RemoteServiceRequest;
-import org.redisson.remote.RequestId;
 import org.redisson.remote.ResponseEntry;
 
 import java.util.Arrays;
@@ -39,13 +39,13 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public class ScheduledTasksService extends TasksService {
 
-    private RequestId requestId;
+    private String requestId;
     
     public ScheduledTasksService(Codec codec, String name, CommandAsyncExecutor commandExecutor, String redissonId, ConcurrentMap<String, ResponseEntry> responses) {
         super(codec, name, commandExecutor, redissonId, responses);
     }
     
-    public void setRequestId(RequestId requestId) {
+    public void setRequestId(String requestId) {
         this.requestId = requestId;
     }
     
@@ -95,7 +95,7 @@ public class ScheduledTasksService extends TasksService {
     }
     
     @Override
-    protected CompletableFuture<Boolean> removeAsync(String requestQueueName, RequestId taskId) {
+    protected CompletableFuture<Boolean> removeAsync(String requestQueueName, String taskId) {
         RFuture<Boolean> f = commandExecutor.evalWriteNoRetryAsync(name, StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                    // remove from scheduler queue
                     "if redis.call('exists', KEYS[3]) == 0 then "
@@ -141,12 +141,12 @@ public class ScheduledTasksService extends TasksService {
     }
     
     @Override
-    protected RequestId generateRequestId() {
+    protected String generateRequestId() {
         if (requestId == null) {
             byte[] id = new byte[17];
             ThreadLocalRandom.current().nextBytes(id);
             id[0] = 01;
-            return new RequestId(id);
+            return ByteBufUtil.hexDump(id);
         }
         return requestId;
     }    

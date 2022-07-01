@@ -72,7 +72,7 @@ public abstract class BaseRemoteProxy {
     }
     
     protected CompletionStage<RemoteServiceAck> tryPollAckAgainAsync(RemoteInvocationOptions optionsCopy,
-                                                                     String ackName, RequestId requestId) {
+                                                                     String ackName, String requestId) {
         RFuture<Boolean> ackClientsFuture = commandExecutor.evalWriteNoRetryAsync(ackName, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                     "if redis.call('setnx', KEYS[1], 1) == 1 then " 
                         + "redis.call('pexpire', KEYS[1], ARGV[1]);"
@@ -90,7 +90,7 @@ public abstract class BaseRemoteProxy {
     }
 
     protected final <T extends RRemoteServiceResponse> CompletableFuture<T> pollResponse(long timeout,
-            RequestId requestId, boolean insertFirst) {
+                                                                                         String requestId, boolean insertFirst) {
         CompletableFuture<T> responseFuture = new CompletableFuture<T>();
 
         ResponseEntry entry;
@@ -101,7 +101,7 @@ public abstract class BaseRemoteProxy {
 
             ScheduledFuture<?> responseTimeoutFuture = createResponseTimeout(timeout, requestId, responseFuture);
 
-            Map<RequestId, List<Result>> entryResponses = entry.getResponses();
+            Map<String, List<Result>> entryResponses = entry.getResponses();
             List<Result> list = entryResponses.computeIfAbsent(requestId, k -> new ArrayList<>(3));
 
             Result res = new Result(responseFuture, responseTimeoutFuture);
@@ -120,7 +120,7 @@ public abstract class BaseRemoteProxy {
         return responseFuture;
     }
 
-    private <T extends RRemoteServiceResponse> ScheduledFuture<?> createResponseTimeout(long timeout, RequestId requestId, CompletableFuture<T> responseFuture) {
+    private <T extends RRemoteServiceResponse> ScheduledFuture<?> createResponseTimeout(long timeout, String requestId, CompletableFuture<T> responseFuture) {
         return commandExecutor.getConnectionManager().getGroup().schedule(new Runnable() {
                     @Override
                     public void run() {
@@ -148,7 +148,7 @@ public abstract class BaseRemoteProxy {
                 }, timeout, TimeUnit.MILLISECONDS);
     }
 
-    private <T extends RRemoteServiceResponse> void addCancelHandling(RequestId requestId, CompletableFuture<T> responseFuture) {
+    private <T extends RRemoteServiceResponse> void addCancelHandling(String requestId, CompletableFuture<T> responseFuture) {
         responseFuture.whenComplete((res, ex) -> {
             if (!responseFuture.isCancelled()) {
                 return;
@@ -208,7 +208,7 @@ public abstract class BaseRemoteProxy {
                     return;
                 }
 
-                RequestId key = new RequestId(response.getId());
+                String key = response.getId();
                 List<Result> list = entry.getResponses().get(key);
                 if (list == null) {
                     pollResponse();

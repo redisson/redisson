@@ -16,7 +16,6 @@
 package org.redisson.executor;
 
 import org.redisson.api.RExecutorFuture;
-import org.redisson.remote.RequestId;
 
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
@@ -30,9 +29,9 @@ import java.util.concurrent.CompletableFuture;
 public class RedissonExecutorFutureReference extends WeakReference<RExecutorFuture<?>> {
 
     private final CompletableFuture<?> promise;
-    private final RequestId requestId;
+    private final String requestId;
     
-    public RedissonExecutorFutureReference(RequestId requestId, RExecutorFuture<?> referent, ReferenceQueue<? super RExecutorFuture<?>> q, CompletableFuture<?> promise) {
+    public RedissonExecutorFutureReference(String requestId, RExecutorFuture<?> referent, ReferenceQueue<? super RExecutorFuture<?>> q, CompletableFuture<?> promise) {
         super(referent, q);
         this.requestId = requestId;
         this.promise = promise;
@@ -42,7 +41,7 @@ public class RedissonExecutorFutureReference extends WeakReference<RExecutorFutu
         return promise;
     }
     
-    public RequestId getRequestId() {
+    public String getRequestId() {
         return requestId;
     }
 

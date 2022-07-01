@@ -17,7 +17,6 @@ package org.redisson.executor;
 
 import org.redisson.api.RExecutorFuture;
 import org.redisson.misc.CompletableFutureWrapper;
-import org.redisson.remote.RequestId;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -29,20 +28,20 @@ import java.util.concurrent.CompletableFuture;
  */
 public class RedissonExecutorFuture<V> extends CompletableFutureWrapper<V> implements RExecutorFuture<V> {
 
-    private final RequestId taskId;
+    private final String taskId;
     
     public RedissonExecutorFuture(RemotePromise<V> promise) {
         this(promise, promise.getRequestId());
     }
     
-    public RedissonExecutorFuture(CompletableFuture<V> promise, RequestId taskId) {
+    public RedissonExecutorFuture(CompletableFuture<V> promise, String taskId) {
         super(promise);
         this.taskId = taskId;
     }
 
     @Override
     public String getTaskId() {
-        return taskId.toString();
+        return taskId;
     }
 
 }

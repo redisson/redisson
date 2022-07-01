@@ -29,7 +29,6 @@ import org.redisson.executor.*;
 import org.redisson.executor.params.*;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.Injector;
-import org.redisson.remote.RequestId;
 import org.redisson.remote.ResponseEntry;
 import org.redisson.remote.ResponseEntry.Result;
 import org.slf4j.Logger;
@@ -813,7 +812,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return createFuture(result);
     }
     
-    private void cancelResponseHandling(RequestId requestId) {
+    private void cancelResponseHandling(String requestId) {
         synchronized (responses) {
             ResponseEntry entry = responses.get(responseQueueName);
             if (entry == null) {
@@ -852,7 +851,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return f;
     }
     
-    private void storeReference(RExecutorFuture<?> future, RequestId requestId) {
+    private void storeReference(RExecutorFuture<?> future, String requestId) {
         while (true) {
             RedissonExecutorFutureReference r = (RedissonExecutorFutureReference) referenceDueue.poll();
             if (r == null) {
@@ -1037,9 +1036,9 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     @Override
     public RFuture<Boolean> cancelTaskAsync(String taskId) {
         if (taskId.startsWith("01")) {
-            return scheduledRemoteService.cancelExecutionAsync(new RequestId(taskId));
+            return scheduledRemoteService.cancelExecutionAsync(taskId);
         }
-        return executorRemoteService.cancelExecutionAsync(new RequestId(taskId));
+        return executorRemoteService.cancelExecutionAsync(taskId);
     }
 
     private <T> T poll(List<CompletableFuture<?>> futures, long timeout, TimeUnit timeUnit) throws InterruptedException, TimeoutException {

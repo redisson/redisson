@@ -15,6 +15,7 @@
  */
 package org.redisson.executor;
 
+import io.netty.buffer.ByteBufUtil;
 import org.redisson.RedissonExecutorService;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
@@ -150,7 +151,7 @@ public class TasksService extends BaseRemoteService {
     }
     
     @Override
-    protected CompletableFuture<Boolean> removeAsync(String requestQueueName, RequestId taskId) {
+    protected CompletableFuture<Boolean> removeAsync(String requestQueueName, String taskId) {
         RFuture<Boolean> f = commandExecutor.evalWriteNoRetryAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "redis.call('zrem', KEYS[2], 'ff' .. ARGV[1]); "
               + "redis.call('zrem', KEYS[8], ARGV[1]); "
@@ -174,19 +175,19 @@ public class TasksService extends BaseRemoteService {
               + "return 0;",
           Arrays.asList(requestQueueName, schedulerQueueName, tasksCounterName, statusName, terminationTopicName,
                                 tasksName, tasksRetryIntervalName, tasksExpirationTimeName),
-          taskId.toString(), RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE);
+          taskId, RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE);
         return f.toCompletableFuture();
     }
 
     @Override
-    protected RequestId generateRequestId() {
+    protected String generateRequestId() {
         byte[] id = new byte[17];
         ThreadLocalRandom.current().nextBytes(id);
         id[0] = 00;
-        return new RequestId(id);
+        return ByteBufUtil.hexDump(id);
     }
 
-    public RFuture<Boolean> cancelExecutionAsync(RequestId requestId) {
+    public RFuture<Boolean> cancelExecutionAsync(String requestId) {
         String requestQueueName = getRequestQueueName(RemoteExecutorService.class);
         CompletableFuture<Boolean> removeFuture = removeAsync(requestQueueName, requestId);
         CompletableFuture<Boolean> f = removeFuture.thenCompose(res -> {
@@ -195,7 +196,7 @@ public class TasksService extends BaseRemoteService {
             }
 
             RMap<String, RemoteServiceCancelRequest> canceledRequests = getMap(cancelRequestMapName);
-            canceledRequests.putAsync(requestId.toString(), new RemoteServiceCancelRequest(true, true));
+            canceledRequests.putAsync(requestId, new RemoteServiceCancelRequest(true, true));
             canceledRequests.expireAsync(60, TimeUnit.SECONDS);
 
             CompletableFuture<RemoteServiceCancelResponse> response = scheduleCancelResponseCheck(cancelResponseMapName, requestId);
@@ -216,7 +217,7 @@ public class TasksService extends BaseRemoteService {
         return new CompletableFutureWrapper<>(f);
     }
 
-    private CompletableFuture<RemoteServiceCancelResponse> scheduleCancelResponseCheck(String mapName, RequestId requestId) {
+    private CompletableFuture<RemoteServiceCancelResponse> scheduleCancelResponseCheck(String mapName, String requestId) {
         CompletableFuture<RemoteServiceCancelResponse> cancelResponse = new CompletableFuture<>();
 
         commandExecutor.getConnectionManager().newTimeout(timeout -> {
@@ -225,16 +226,16 @@ public class TasksService extends BaseRemoteService {
             }
 
             RMap<String, RemoteServiceCancelResponse> canceledResponses = getMap(mapName);
-            RFuture<RemoteServiceCancelResponse> removeFuture = canceledResponses.removeAsync(requestId.toString());
+            RFuture<RemoteServiceCancelResponse> removeFuture = canceledResponses.removeAsync(requestId);
             CompletableFuture<RemoteServiceCancelResponse> future = removeFuture.thenCompose(response -> {
                 if (response == null) {
-                    RFuture<Boolean> f = hasTaskAsync(requestId.toString());
+                    RFuture<Boolean> f = hasTaskAsync(requestId);
                     return f.thenCompose(r -> {
                         if (r) {
                             return scheduleCancelResponseCheck(mapName, requestId);
                         }
 
-                        RemoteServiceCancelResponse resp = new RemoteServiceCancelResponse(requestId.toString(), false);
+                        RemoteServiceCancelResponse resp = new RemoteServiceCancelResponse(requestId, false);
                         return CompletableFuture.completedFuture(resp);
                     });
                 }

@@ -91,7 +91,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
     }
 
     @Override
-    protected CompletableFuture<Boolean> removeAsync(String requestQueueName, RequestId taskId) {
+    protected CompletableFuture<Boolean> removeAsync(String requestQueueName, String taskId) {
         RFuture<Boolean> f = commandExecutor.evalWriteNoRetryAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('lrem', KEYS[1], 1, ARGV[1]) > 0 then "
                         + "redis.call('hdel', KEYS[2], ARGV[1]);" +
@@ -99,7 +99,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                        "end;"
                       + "return 0;",
               Arrays.asList(requestQueueName, requestQueueName + ":tasks"),
-              taskId.toString());
+              taskId);
         return f.toCompletableFuture();
     }
         
@@ -384,7 +384,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
 
         CompletableFuture<RRemoteServiceResponse> responsePromise = new CompletableFuture<>();
         CompletableFuture<RemoteServiceCancelRequest> cancelRequestFuture = new CompletableFuture<>();
-        scheduleCheck(cancelRequestMapName, new RequestId(request.getId()), cancelRequestFuture);
+        scheduleCheck(cancelRequestMapName, request.getId(), cancelRequestFuture);
 
         responsePromise.whenComplete((result, e) -> {
             if (request.getOptions().isResultExpected()

@@ -91,7 +91,7 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
         InvocationHandler handler = new InvocationHandler() {
             @Override
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                RequestId requestId = remoteService.generateRequestId();
+                String requestId = remoteService.generateRequestId();
 
                 if (method.getName().equals("toString")) {
                     return getClass().getSimpleName() + "-" + remoteInterface.getSimpleName() + "-proxy-" + requestId;
@@ -111,7 +111,7 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
                 Long ackTimeout = optionsCopy.getAckTimeoutInMillis();
                 
 
-                RemoteServiceRequest request = new RemoteServiceRequest(executorId, requestId.toString(), method.getName(), 
+                RemoteServiceRequest request = new RemoteServiceRequest(executorId, requestId, method.getName(),
                                                     remoteService.getMethodSignature(method), args, optionsCopy, System.currentTimeMillis());
 
                 CompletableFuture<RemoteServiceAck> ackFuture;
@@ -256,7 +256,7 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
     }
 
     private RemotePromise<Object> createResultPromise(RemoteInvocationOptions optionsCopy,
-            RequestId requestId, String requestQueueName, Long ackTimeout) {
+                                                      String requestId, String requestQueueName, Long ackTimeout) {
         RemotePromise<Object> result = new RemotePromise<Object>(requestId) {
 
             @Override
@@ -288,7 +288,7 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
                     boolean ackNotSent = commandExecutor.get(future);
                     if (ackNotSent) {
                         RList<Object> list = new RedissonList<>(LongCodec.INSTANCE, commandExecutor, requestQueueName, null);
-                        list.remove(requestId.toString());
+                        list.remove(requestId);
                         super.cancel(mayInterruptIfRunning);
                         return true;
                     }
@@ -333,7 +333,7 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
     }
 
     private CompletableFuture<Boolean> cancelAsync(RemoteInvocationOptions optionsCopy, RemotePromise<Object> promise,
-                                        RequestId requestId, String requestQueueName, Long ackTimeout, boolean mayInterruptIfRunning) {
+                                                   String requestId, String requestQueueName, Long ackTimeout, boolean mayInterruptIfRunning) {
         if (promise.isCancelled()) {
             return CompletableFuture.completedFuture(true);
         }
@@ -361,7 +361,7 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
             return future.thenCompose(ackNotSent -> {
                 if (ackNotSent) {
                     RList<Object> list = new RedissonList<>(LongCodec.INSTANCE, commandExecutor, requestQueueName, null);
-                    CompletableFuture<Boolean> removeFuture = list.removeAsync(requestId.toString()).toCompletableFuture();
+                    CompletableFuture<Boolean> removeFuture = list.removeAsync(requestId).toCompletableFuture();
                     return removeFuture.thenApply(res -> {
                         promise.doCancel(mayInterruptIfRunning);
                         return true;
