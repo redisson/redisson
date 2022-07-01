@@ -43,24 +43,22 @@ public class SyncRemoteProxy extends BaseRemoteProxy {
     public <T> T create(Class<T> remoteInterface, RemoteInvocationOptions options) {
         // local copy of the options, to prevent mutation
         RemoteInvocationOptions optionsCopy = new RemoteInvocationOptions(options);
-        String toString = getClass().getSimpleName() + "-" + remoteInterface.getSimpleName() + "-proxy-"
-                + remoteService.generateRequestId();
         InvocationHandler handler = new InvocationHandler() {
             @Override
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                String requestId = remoteService.generateRequestId(args);
+
                 if (method.getName().equals("toString")) {
-                    return toString;
+                    return getClass().getSimpleName() + "-" + remoteInterface.getSimpleName() + "-proxy-" + requestId;
                 } else if (method.getName().equals("equals")) {
                     return proxy == args[0];
                 } else if (method.getName().equals("hashCode")) {
-                    return toString.hashCode();
+                    return (getClass().getSimpleName() + "-" + remoteInterface.getSimpleName() + "-proxy-" + requestId).hashCode();
                 }
 
                 if (!optionsCopy.isResultExpected()
                         && !(method.getReturnType().equals(Void.class) || method.getReturnType().equals(Void.TYPE)))
                     throw new IllegalArgumentException("The noResult option only supports void return value");
-
-                String requestId = remoteService.generateRequestId();
 
                 String requestQueueName = getRequestQueueName(remoteInterface);
                 RemoteServiceRequest request = new RemoteServiceRequest(executorId, requestId, method.getName(),

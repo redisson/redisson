@@ -180,7 +180,7 @@ public class TasksService extends BaseRemoteService {
     }
 
     @Override
-    protected String generateRequestId() {
+    protected String generateRequestId(Object[] args) {
         byte[] id = new byte[17];
         ThreadLocalRandom.current().nextBytes(id);
         id[0] = 00;

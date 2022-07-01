@@ -16,6 +16,7 @@
 package org.redisson.remote;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
 import io.netty.util.Timeout;
@@ -170,10 +171,10 @@ public abstract class BaseRemoteService {
         }, 3000, TimeUnit.MILLISECONDS);
     }
 
-    protected String generateRequestId() {
+    protected String generateRequestId(Object[] args) {
         byte[] id = new byte[16];
         ThreadLocalRandom.current().nextBytes(id);
-        return new String(id);
+        return ByteBufUtil.hexDump(id);
     }
 
     protected abstract CompletableFuture<Boolean> addAsync(String requestQueueName, RemoteServiceRequest request,

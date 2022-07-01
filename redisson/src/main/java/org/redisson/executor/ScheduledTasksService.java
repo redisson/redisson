@@ -141,7 +141,7 @@ public class ScheduledTasksService extends TasksService {
     }
     
     @Override
-    protected String generateRequestId() {
+    protected String generateRequestId(Object[] args) {
         if (requestId == null) {
             byte[] id = new byte[17];
             ThreadLocalRandom.current().nextBytes(id);

@@ -91,7 +91,7 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
         InvocationHandler handler = new InvocationHandler() {
             @Override
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                String requestId = remoteService.generateRequestId();
+                String requestId = remoteService.generateRequestId(args);
 
                 if (method.getName().equals("toString")) {
                     return getClass().getSimpleName() + "-" + remoteInterface.getSimpleName() + "-proxy-" + requestId;
