@@ -91,14 +91,12 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
         InvocationHandler handler = new InvocationHandler() {
             @Override
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                String requestId = remoteService.generateRequestId(args);
-
                 if (method.getName().equals("toString")) {
-                    return getClass().getSimpleName() + "-" + remoteInterface.getSimpleName() + "-proxy-" + requestId;
+                    return proxy.getClass().getName() + "-" + remoteInterface.getName();
                 } else if (method.getName().equals("equals")) {
                     return proxy == args[0];
                 } else if (method.getName().equals("hashCode")) {
-                    return (getClass().getSimpleName() + "-" + remoteInterface.getSimpleName() + "-proxy-" + requestId).hashCode();
+                    return (proxy.getClass().getName() + "-" + remoteInterface.getName()).hashCode();
                 }
 
                 if (!optionsCopy.isResultExpected() && !(method.getReturnType().equals(Void.class)
@@ -106,11 +104,9 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
                     throw new IllegalArgumentException("The noResult option only supports void return value");
                 }
 
+                String requestId = remoteService.generateRequestId(args);
                 String requestQueueName = getRequestQueueName(syncInterface);
-
                 Long ackTimeout = optionsCopy.getAckTimeoutInMillis();
-                
-
                 RemoteServiceRequest request = new RemoteServiceRequest(executorId, requestId, method.getName(),
                                                     remoteService.getMethodSignature(method), args, optionsCopy, System.currentTimeMillis());
 

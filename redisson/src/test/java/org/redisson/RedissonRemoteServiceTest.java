@@ -669,25 +669,9 @@ public class RedissonRemoteServiceTest extends BaseTest {
         RedissonClient client = createInstance();
         try {
             RemoteInterface service = client.getRemoteService().get(RemoteInterface.class);
-
-            try {
-                System.out.println(service.toString());
-            } catch (Exception e) {
-                Assertions.fail("calling toString on the client service proxy should not make a remote call");
-            }
-
-            try {
-                assertThat(service.hashCode() == service.hashCode()).isTrue();
-            } catch (Exception e) {
-                Assertions.fail("calling hashCode on the client service proxy should not make a remote call");
-            }
-
-            try {
-                assertThat(service.equals(service)).isTrue();
-            } catch (Exception e) {
-                Assertions.fail("calling equals on the client service proxy should not make a remote call");
-            }
-
+            assertThat(service.toString()).contains(RemoteInterface.class.getName());
+            assertThat(service.hashCode()).isEqualTo(service.hashCode());
+            assertThat(service).isEqualTo(service);
         } finally {
             client.shutdown();
         }
