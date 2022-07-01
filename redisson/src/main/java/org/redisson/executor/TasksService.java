@@ -15,7 +15,6 @@
  */
 package org.redisson.executor;
 
-import io.netty.buffer.ByteBufUtil;
 import org.redisson.RedissonExecutorService;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
@@ -29,7 +28,10 @@ import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.remote.*;
 
 import java.util.Arrays;
-import java.util.concurrent.*;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 
@@ -109,7 +111,6 @@ public class TasksService extends BaseRemoteService {
     
     protected CompletableFuture<Boolean> addAsync(String requestQueueName, RemoteServiceRequest request) {
         TaskParameters params = (TaskParameters) request.getArgs()[0];
-        params.setRequestId(request.getId());
 
         long retryStartTime = 0;
         if (tasksRetryInterval > 0) {
@@ -181,10 +182,8 @@ public class TasksService extends BaseRemoteService {
 
     @Override
     protected String generateRequestId(Object[] args) {
-        byte[] id = new byte[17];
-        ThreadLocalRandom.current().nextBytes(id);
-        id[0] = 00;
-        return ByteBufUtil.hexDump(id);
+        TaskParameters params = (TaskParameters) args[0];
+        return params.getRequestId();
     }
 
     public RFuture<Boolean> cancelExecutionAsync(String requestId) {

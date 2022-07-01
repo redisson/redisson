@@ -616,16 +616,24 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return new RedissonExecutorBatchFuture(future, result);
     }
 
+    private String generateId() {
+        byte[] id = new byte[16];
+        ThreadLocalRandom.current().nextBytes(id);
+        return ByteBufUtil.hexDump(id);
+    }
+
     protected TaskParameters createTaskParameters(Callable<?> task) {
         ClassBody classBody = getClassBody(task);
         byte[] state = encode(task);
-        return new TaskParameters(classBody.getClazzName(), classBody.getClazz(), classBody.getLambda(), state);
+        String id = "00" + generateId();
+        return new TaskParameters(id, classBody.getClazzName(), classBody.getClazz(), classBody.getLambda(), state);
     }
     
     protected TaskParameters createTaskParameters(Runnable task) {
         ClassBody classBody = getClassBody(task);
         byte[] state = encode(task);
-        return new TaskParameters(classBody.getClazzName(), classBody.getClazz(), classBody.getLambda(), state);
+        String id = "00" + generateId();
+        return new TaskParameters(id, classBody.getClazzName(), classBody.getClazz(), classBody.getLambda(), state);
     }
 
     @Override
@@ -901,10 +909,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         ClassBody classBody = getClassBody(task);
         byte[] state = encode(task);
         long startTime = System.currentTimeMillis() + unit.toMillis(delay);
-        ScheduledParameters params = new ScheduledParameters(classBody.getClazzName(), classBody.getClazz(), classBody.getLambda(), state, startTime);
-        if (timeToLive > 0) {
-            params.setTtl(ttlUnit.toMillis(timeToLive));
-        }
+        ScheduledParameters params = createScheduledParameters(timeToLive, ttlUnit, classBody, state, startTime);
         RemotePromise<Void> result = (RemotePromise<Void>) asyncScheduledService.scheduleRunnable(params).toCompletableFuture();
         addListener(result);
         return createFuture(result, startTime);
@@ -924,13 +929,19 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         ClassBody classBody = getClassBody(task);
         byte[] state = encode(task);
         long startTime = System.currentTimeMillis() + unit.toMillis(delay);
-        ScheduledParameters params = new ScheduledParameters(classBody.getClazzName(), classBody.getClazz(), classBody.getLambda(), state, startTime);
-        if (timeToLive > 0) {
-            params.setTtl(ttlUnit.toMillis(timeToLive));
-        }
+        ScheduledParameters params = createScheduledParameters(timeToLive, ttlUnit, classBody, state, startTime);
         RemotePromise<V> result = (RemotePromise<V>) asyncScheduledService.scheduleCallable(params).toCompletableFuture();
         addListener(result);
         return createFuture(result, startTime);
+    }
+
+    private ScheduledParameters createScheduledParameters(long timeToLive, TimeUnit ttlUnit, ClassBody classBody, byte[] state, long startTime) {
+        String id = generateScheduledTaskId();
+        ScheduledParameters params = new ScheduledParameters(id, classBody.getClazzName(), classBody.getClazz(), classBody.getLambda(), state, startTime);
+        if (timeToLive > 0) {
+            params.setTtl(ttlUnit.toMillis(timeToLive));
+        }
+        return params;
     }
 
     @Override
@@ -947,7 +958,9 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         ClassBody classBody = getClassBody(task);
         byte[] state = encode(task);
         long startTime = System.currentTimeMillis() + unit.toMillis(initialDelay);
-        ScheduledAtFixedRateParameters params = new ScheduledAtFixedRateParameters();
+
+        String id = generateScheduledTaskId();
+        ScheduledAtFixedRateParameters params = new ScheduledAtFixedRateParameters(id);
         params.setClassName(classBody.getClazzName());
         params.setClassBody(classBody.getClazz());
         params.setLambdaBody(classBody.getLambda());
@@ -958,6 +971,10 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         RemotePromise<Void> result = (RemotePromise<Void>) asyncScheduledServiceAtFixed.scheduleAtFixedRate(params).toCompletableFuture();
         addListener(result);
         return createFuture(result, startTime);
+    }
+
+    private String generateScheduledTaskId() {
+        return "01" + generateId();
     }
 
     @Override
@@ -979,8 +996,9 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             throw new IllegalArgumentException("Wrong cron expression! Unable to calculate start date");
         }
         long startTime = startDate.toInstant().toEpochMilli();
-        
-        ScheduledCronExpressionParameters params = new ScheduledCronExpressionParameters();
+
+        String id = generateScheduledTaskId();
+        ScheduledCronExpressionParameters params = new ScheduledCronExpressionParameters(id);
         params.setClassName(classBody.getClazzName());
         params.setClassBody(classBody.getClazz());
         params.setLambdaBody(classBody.getLambda());
@@ -1014,8 +1032,9 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         ClassBody classBody = getClassBody(task);
         byte[] state = encode(task);
         long startTime = System.currentTimeMillis() + unit.toMillis(initialDelay);
-        
-        ScheduledWithFixedDelayParameters params = new ScheduledWithFixedDelayParameters();
+
+        String id = generateScheduledTaskId();
+        ScheduledWithFixedDelayParameters params = new ScheduledWithFixedDelayParameters(id);
         params.setClassName(classBody.getClazzName());
         params.setClassBody(classBody.getClazz());
         params.setLambdaBody(classBody.getLambda());

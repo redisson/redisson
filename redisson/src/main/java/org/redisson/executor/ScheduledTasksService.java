@@ -15,7 +15,6 @@
  */
 package org.redisson.executor;
 
-import io.netty.buffer.ByteBufUtil;
 import org.redisson.RedissonExecutorService;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
@@ -30,7 +29,6 @@ import org.redisson.remote.ResponseEntry;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * 
@@ -52,7 +50,6 @@ public class ScheduledTasksService extends TasksService {
     @Override
     protected CompletableFuture<Boolean> addAsync(String requestQueueName, RemoteServiceRequest request) {
         ScheduledParameters params = (ScheduledParameters) request.getArgs()[0];
-        params.setRequestId(request.getId());
 
         long expireTime = 0;
         if (params.getTtl() > 0) {
@@ -143,12 +140,9 @@ public class ScheduledTasksService extends TasksService {
     @Override
     protected String generateRequestId(Object[] args) {
         if (requestId == null) {
-            byte[] id = new byte[17];
-            ThreadLocalRandom.current().nextBytes(id);
-            id[0] = 01;
-            return ByteBufUtil.hexDump(id);
+            return super.generateRequestId(args);
         }
         return requestId;
-    }    
+    }
 
 }

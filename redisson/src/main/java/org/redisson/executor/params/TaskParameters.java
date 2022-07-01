@@ -35,9 +35,14 @@ public class TaskParameters implements Serializable {
 
     public TaskParameters() {
     }
-    
-    public TaskParameters(String className, byte[] classBody, byte[] lambdaBody, byte[] state) {
+
+    public TaskParameters(String requestId) {
+        this.requestId = requestId;
+    }
+
+    public TaskParameters(String requestId, String className, byte[] classBody, byte[] lambdaBody, byte[] state) {
         super();
+        this.requestId = requestId;
         this.className = className;
         this.classBody = classBody;
         this.state = state;

@@ -25,7 +25,14 @@ public class ScheduledCronExpressionParameters extends ScheduledParameters {
     private String cronExpression;
     private String timezone; 
     private String executorId;
-    
+
+    public ScheduledCronExpressionParameters() {
+    }
+
+    public ScheduledCronExpressionParameters(String requestId) {
+        super(requestId);
+    }
+
     public String getCronExpression() {
         return cronExpression;
     }

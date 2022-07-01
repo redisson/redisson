@@ -26,6 +26,13 @@ public class ScheduledAtFixedRateParameters extends ScheduledParameters {
     private String executorId;
     private long spentTime;
 
+    public ScheduledAtFixedRateParameters() {
+    }
+
+    public ScheduledAtFixedRateParameters(String requestId) {
+        super(requestId);
+    }
+
     public long getSpentTime() {
         return spentTime;
     }

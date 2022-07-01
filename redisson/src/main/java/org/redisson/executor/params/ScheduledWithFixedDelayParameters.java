@@ -24,7 +24,14 @@ public class ScheduledWithFixedDelayParameters extends ScheduledParameters {
 
     private long delay; 
     private String executorId;
-    
+
+    public ScheduledWithFixedDelayParameters() {
+    }
+
+    public ScheduledWithFixedDelayParameters(String requestId) {
+        super(requestId);
+    }
+
     public long getDelay() {
         return delay;
     }
