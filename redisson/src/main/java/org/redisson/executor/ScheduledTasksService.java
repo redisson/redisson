@@ -127,7 +127,7 @@ public class ScheduledTasksService extends TasksService {
                   + "return 0;",
               Arrays.asList(requestQueueName, schedulerQueueName, tasksCounterName, statusName,
                                 terminationTopicName, tasksName, tasksRetryIntervalName),
-              taskId.toString(), RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE);
+                taskId, RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE);
         return f.toCompletableFuture();
     }
     
