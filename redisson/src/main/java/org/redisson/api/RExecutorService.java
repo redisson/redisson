@@ -154,7 +154,7 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
     void registerWorkers(WorkerOptions options);
 
     /**
-     * Returns amount of tasks awaiting for execution and/or currently in execution.
+     * Returns amount of tasks awaiting for execution or currently in execution.
      *
      * @return amount of tasks
      */
@@ -169,7 +169,7 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
 
     /**
      * Returns <code>true</code> if this Executor Service has task
-     * by <code>taskId</code> awaiting for execution and/or currently in execution
+     * by <code>taskId</code> awaiting for execution or currently in execution
      *
      * @param taskId - id of task
      * @return <code>true</code> if this Executor Service has task
@@ -177,7 +177,7 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
     boolean hasTask(String taskId);
 
     /**
-     * Returns list of task ids awaiting for execution and/or currently in execution.
+     * Returns list of task ids awaiting for execution or currently in execution.
      *
      * @return task ids
      */

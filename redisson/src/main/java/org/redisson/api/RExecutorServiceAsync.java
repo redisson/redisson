@@ -29,7 +29,7 @@ public interface RExecutorServiceAsync {
 
     /**
      * Returns <code>true</code> if this Executor Service has task
-     * by <code>taskId</code> awaiting for execution and/or currently in execution
+     * by <code>taskId</code> awaiting for execution or currently in execution
      *
      * @param taskId - id of task
      * @return <code>true</code> if this Executor Service has task
@@ -37,14 +37,14 @@ public interface RExecutorServiceAsync {
     RFuture<Boolean> hasTaskAsync(String taskId);
 
     /**
-     * Returns amount of tasks awaiting for execution and/or currently in execution.
+     * Returns amount of tasks awaiting for execution or currently in execution.
      *
      * @return amount of tasks
      */
     RFuture<Integer> getTaskCountAsync();
 
     /**
-     * Returns list of task ids awaiting for execution and/or currently in execution.
+     * Returns list of task ids awaiting for execution or currently in execution.
      *
      * @return task ids
      */
