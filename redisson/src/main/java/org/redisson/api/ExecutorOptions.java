@@ -27,6 +27,8 @@ public final class ExecutorOptions {
     
     private long taskRetryInterval = 5 * 60000;
 
+    private IdGenerator idGenerator = IdGenerator.random();
+
     private ExecutorOptions() {
     }
     
@@ -52,6 +54,21 @@ public final class ExecutorOptions {
      */
     public ExecutorOptions taskRetryInterval(long timeout, TimeUnit unit) {
         this.taskRetryInterval = unit.toMillis(timeout);
+        return this;
+    }
+
+    public IdGenerator getIdGenerator() {
+        return idGenerator;
+    }
+
+    /**
+     * Defines identifier generator
+     *
+     * @param idGenerator identifier generator
+     * @return self instance
+     */
+    public ExecutorOptions idGenerator(IdGenerator idGenerator) {
+        this.idGenerator = idGenerator;
         return this;
     }
 

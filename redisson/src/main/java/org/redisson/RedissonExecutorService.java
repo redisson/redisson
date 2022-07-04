@@ -99,9 +99,12 @@ public class RedissonExecutorService implements RScheduledExecutorService {
 
     private final ReferenceQueue<RExecutorFuture<?>> referenceDueue = new ReferenceQueue<>();
     private final Collection<RedissonExecutorFutureReference> references = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+    private final IdGenerator idGenerator;
     
     public RedissonExecutorService(Codec codec, CommandAsyncExecutor commandExecutor, Redisson redisson,
-                                   String name, QueueTransferService queueTransferService, ConcurrentMap<String, ResponseEntry> responses, ExecutorOptions options) {
+                                   String name, QueueTransferService queueTransferService, ConcurrentMap<String, ResponseEntry> responses,
+                                   ExecutorOptions options) {
         super();
         this.codec = codec;
         this.commandExecutor = commandExecutor;
@@ -169,6 +172,8 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         scheduledRemoteService.setTasksRetryInterval(options.getTaskRetryInterval());
         asyncScheduledService = scheduledRemoteService.get(RemoteExecutorServiceAsync.class, RESULT_OPTIONS);
         asyncScheduledServiceAtFixed = scheduledRemoteService.get(RemoteExecutorServiceAsync.class, RemoteInvocationOptions.defaults().noAck().noResult());
+
+        idGenerator = options.getIdGenerator();
     }
     
     protected String generateActiveWorkersId() {
@@ -616,23 +621,17 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return new RedissonExecutorBatchFuture(future, result);
     }
 
-    private String generateId() {
-        byte[] id = new byte[16];
-        ThreadLocalRandom.current().nextBytes(id);
-        return ByteBufUtil.hexDump(id);
-    }
-
     protected TaskParameters createTaskParameters(Callable<?> task) {
         ClassBody classBody = getClassBody(task);
         byte[] state = encode(task);
-        String id = "00" + generateId();
+        String id = "00" + idGenerator.generateId();
         return new TaskParameters(id, classBody.getClazzName(), classBody.getClazz(), classBody.getLambda(), state);
     }
     
     protected TaskParameters createTaskParameters(Runnable task) {
         ClassBody classBody = getClassBody(task);
         byte[] state = encode(task);
-        String id = "00" + generateId();
+        String id = "00" + idGenerator.generateId();
         return new TaskParameters(id, classBody.getClazzName(), classBody.getClazz(), classBody.getLambda(), state);
     }
 
@@ -974,7 +973,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     }
 
     private String generateScheduledTaskId() {
-        return "01" + generateId();
+        return "01" + idGenerator.generateId();
     }
 
     @Override
