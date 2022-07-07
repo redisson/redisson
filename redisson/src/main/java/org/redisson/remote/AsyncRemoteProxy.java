@@ -292,8 +292,8 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
                     return executeCancel(mayInterruptIfRunning);
                 }
 
-                boolean removed = commandExecutor.get(remoteService.removeAsync(requestQueueName, requestId));
-                if (removed) {
+                Boolean removed = commandExecutor.get(remoteService.removeAsync(requestQueueName, requestId));
+                if (removed == null || removed) {
                     super.cancel(mayInterruptIfRunning);
                     return true;
                 }
@@ -370,7 +370,7 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
 
         CompletableFuture<Boolean> removeFuture = remoteService.removeAsync(requestQueueName, requestId);
         return removeFuture.thenCompose(removed -> {
-            if (removed) {
+            if (removed == null || removed) {
                 promise.doCancel(mayInterruptIfRunning);
             }
 

@@ -256,7 +256,15 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
             assertThat(future3.get()).isEqualTo(100);
         });
     }
-    
+
+    @Test
+    public void testSetTaskId() {
+        RScheduledExecutorService executor = redisson.getExecutorService("test");
+        RExecutorFuture<?> future = executor.schedule("1234", new ScheduledRunnableTask("executed1"), Duration.ofSeconds(10));
+        assertThat(future.getTaskId()).isEqualTo("1234");
+        future.cancel(true);
+    }
+
     @Test
     public void testLoad() throws InterruptedException {
         Config config = createConfig();

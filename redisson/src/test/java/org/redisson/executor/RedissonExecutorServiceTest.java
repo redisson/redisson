@@ -397,6 +397,14 @@ public class RedissonExecutorServiceTest extends BaseTest {
     }
 
     @Test
+    public void testSetTaskId() {
+        RExecutorService executor = redisson.getExecutorService("test");
+        RExecutorFuture<?> future = executor.submit("1234", new ScheduledRunnableTask("executed1"));
+        assertThat(future.getTaskId()).isEqualTo("1234");
+        future.cancel(true);
+    }
+
+    @Test
     public void testCancelAndInterrupt() throws InterruptedException, ExecutionException {
         RExecutorService executor = redisson.getExecutorService("test");
         RExecutorFuture<?> future = executor.submit(new ScheduledLongRunnableTask("executed1"));

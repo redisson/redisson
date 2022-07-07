@@ -28,7 +28,6 @@ import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.remote.*;
 
 import java.util.Arrays;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -98,7 +97,7 @@ public class TasksService extends BaseRemoteService {
         
         return future.thenApply(res -> {
             if (!res) {
-                throw new CancellationException();
+                throw new IllegalStateException("Task hasn't been added. Check if executorService exists and task id is unique");
             }
 
             return true;
@@ -154,12 +153,19 @@ public class TasksService extends BaseRemoteService {
     @Override
     protected CompletableFuture<Boolean> removeAsync(String requestQueueName, String taskId) {
         RFuture<Boolean> f = commandExecutor.evalWriteNoRetryAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+          "if redis.call('exists', KEYS[3]) == 0 then " +
+                    "return nil;" +
+                "end;" +
+
                 "redis.call('zrem', KEYS[2], 'ff' .. ARGV[1]); "
               + "redis.call('zrem', KEYS[8], ARGV[1]); "
               + "local task = redis.call('hget', KEYS[6], ARGV[1]); "
               + "redis.call('hdel', KEYS[6], ARGV[1]); "
+
+              + "local removed = redis.call('lrem', KEYS[1], 1, ARGV[1]); "
+
                // remove from executor queue
-              + "if task ~= false and redis.call('exists', KEYS[3]) == 1 and redis.call('lrem', KEYS[1], 1, ARGV[1]) > 0 then "
+              + "if task ~= false and removed > 0 then "
                   + "if redis.call('decr', KEYS[3]) == 0 then "
                      + "redis.call('del', KEYS[3]);"
                      + "if redis.call('get', KEYS[4]) == ARGV[2] then "
@@ -171,7 +177,7 @@ public class TasksService extends BaseRemoteService {
                   + "return 1;"
               + "end;"
               + "if task == false then "
-                  + "return 1; "
+                  + "return nil; "
               + "end;"
               + "return 0;",
           Arrays.asList(requestQueueName, schedulerQueueName, tasksCounterName, statusName, terminationTopicName,
@@ -190,6 +196,9 @@ public class TasksService extends BaseRemoteService {
         String requestQueueName = getRequestQueueName(RemoteExecutorService.class);
         CompletableFuture<Boolean> removeFuture = removeAsync(requestQueueName, requestId);
         CompletableFuture<Boolean> f = removeFuture.thenCompose(res -> {
+            if (res == null) {
+                return CompletableFuture.completedFuture(null);
+            }
             if (res) {
                 return CompletableFuture.completedFuture(true);
             }
