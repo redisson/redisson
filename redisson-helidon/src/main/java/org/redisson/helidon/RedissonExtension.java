@@ -74,7 +74,7 @@ public class RedissonExtension implements Extension {
                     String yamlConfig = PropertiesConvertor.toYaml(Redisson.class.getName() + "." + instanceName + ".",
                             cfg.getPropertyNames(), prop -> {
                                 return cfg.getValue(prop, String.class);
-                    });
+                    }, true);
 
                     try {
                         org.redisson.config.Config config = org.redisson.config.Config.fromYAML(yamlConfig);

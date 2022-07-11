@@ -62,7 +62,7 @@ public class RedissonClientProducer {
         } else {
             String yaml = PropertiesConvertor.toYaml("quarkus.redisson.", ConfigProvider.getConfig().getPropertyNames(), prop -> {
                 return ConfigProvider.getConfig().getValue(prop, String.class);
-            });
+            }, false);
             config = yaml;
         }
 

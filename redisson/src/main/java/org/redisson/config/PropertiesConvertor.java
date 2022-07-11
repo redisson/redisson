@@ -25,36 +25,43 @@ import java.util.function.Function;
  */
 public class PropertiesConvertor {
 
-    public static String toYaml(String suffix, Iterable<String> propertyNames, Function<String, String> resolver) {
+    public static String toYaml(String suffix, Iterable<String> propertyNames, Function<String, String> resolver, boolean caseSensitive) {
         Map<String, Object> map = new HashMap<>();
-        for (String propertyName : propertyNames) {
+
+        List<String> names = new ArrayList<>();
+        propertyNames.iterator().forEachRemaining(names::add);
+        names.sort(Comparator.naturalOrder());
+
+        for (String propertyName : names) {
             if (!propertyName.startsWith(suffix)) {
                 continue;
             }
 
             List<String> pps = Arrays.asList(propertyName.replace(suffix, "").split("\\."));
             String value = resolver.apply(propertyName);
+            String name = convertKey(pps.get(0), caseSensitive);
             if (pps.size() == 2) {
-                Map<String, Object> m = (Map<String, Object>) map.computeIfAbsent(pps.get(0), k -> new HashMap<String, Object>());
-                m.put(pps.get(1), value);
+                Map<String, Object> m = (Map<String, Object>) map.computeIfAbsent(name, k -> new HashMap<String, Object>());
+                String subName = convertKey(pps.get(1), caseSensitive);
+                m.put(subName, value);
             } else {
-                map.put(pps.get(0), value);
+                map.put(name, value);
             }
         }
 
         StringBuilder yaml = new StringBuilder();
         for (Map.Entry<String, Object> entry : map.entrySet()) {
             if (entry.getValue() instanceof Map) {
-                yaml.append(convertKey(entry.getKey())).append(":").append("\n");
+                yaml.append(entry.getKey()).append(":").append("\n");
 
                 Map<String, Object> m = (Map) entry.getValue();
                 for (Map.Entry<String, Object> subEntry : m.entrySet()) {
-                    yaml.append("  ").append(convertKey(subEntry.getKey())).append(": ");
+                    yaml.append("  ").append(subEntry.getKey()).append(": ");
                     addValue(yaml, subEntry);
                     yaml.append("\n");
                 }
             } else {
-                yaml.append(convertKey(entry.getKey())).append(": ");
+                yaml.append(entry.getKey()).append(": ");
                 addValue(yaml, entry);
                 yaml.append("\n");
             }
@@ -62,9 +69,9 @@ public class PropertiesConvertor {
         return yaml.toString();
     }
 
-    private static String convertKey(String key) {
-        if (!key.contains("-")) {
-            return key;
+    private static String convertKey(String key, boolean caseSensitive) {
+        if (!caseSensitive) {
+            return key.replace("-", "");
         }
 
         String[] parts = key.split("-");
