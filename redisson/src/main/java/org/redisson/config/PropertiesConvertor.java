@@ -28,11 +28,7 @@ public class PropertiesConvertor {
     public static String toYaml(String suffix, Iterable<String> propertyNames, Function<String, String> resolver, boolean caseSensitive) {
         Map<String, Object> map = new HashMap<>();
 
-        List<String> names = new ArrayList<>();
-        propertyNames.iterator().forEachRemaining(names::add);
-        names.sort(Comparator.naturalOrder());
-
-        for (String propertyName : names) {
+        for (String propertyName : propertyNames) {
             if (!propertyName.startsWith(suffix)) {
                 continue;
             }
