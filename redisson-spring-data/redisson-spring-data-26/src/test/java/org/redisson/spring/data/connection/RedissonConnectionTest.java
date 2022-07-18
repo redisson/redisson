@@ -73,6 +73,9 @@ public class RedissonConnectionTest extends BaseConnectionTest {
         RedisGeoCommands.GeoRadiusCommandArgs args = RedisGeoCommands.GeoRadiusCommandArgs.newGeoRadiusArgs().includeCoordinates();
         GeoResults<RedisGeoCommands.GeoLocation<String>> res = redisTemplate.opsForGeo().radius(key, within, args);
         assertThat(res.getContent().get(0).getContent().getName()).isEqualTo("a");
+
+        GeoResults<RedisGeoCommands.GeoLocation<String>> res2 = redisTemplate.opsForGeo().search(key, within);
+        assertThat(res2.getContent().size()).isEqualTo(1);
     }
 
     @Test

@@ -15,6 +15,7 @@
  */
 package org.redisson.spring.data.connection;
 
+import io.netty.buffer.ByteBuf;
 import org.redisson.Redisson;
 import org.redisson.api.BatchOptions;
 import org.redisson.api.BatchOptions.ExecutionMode;
@@ -41,6 +42,10 @@ import org.springframework.data.redis.connection.*;
 import org.springframework.data.redis.core.*;
 import org.springframework.data.redis.core.types.Expiration;
 import org.springframework.data.redis.core.types.RedisClientInfo;
+import org.springframework.data.redis.domain.geo.BoxShape;
+import org.springframework.data.redis.domain.geo.GeoReference;
+import org.springframework.data.redis.domain.geo.GeoShape;
+import org.springframework.data.redis.domain.geo.RadiusShape;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.ReflectionUtils;
@@ -2115,7 +2120,127 @@ public class RedissonConnection extends AbstractRedisConnection {
     public Long geoRemove(byte[] key, byte[]... members) {
         return zRem(key, members);
     }
-    
+
+    @Override
+    public GeoResults<GeoLocation<byte[]>> geoSearch(byte[] key, GeoReference<byte[]> reference, GeoShape predicate, GeoSearchCommandArgs args) {
+        Assert.notNull(args, "Args must not be null!");
+        Assert.notNull(key, "Key must not be null!");
+        Assert.notNull(predicate, "Shape must not be null!");
+        Assert.notNull(reference, "Reference must not be null!");
+
+        List<Object> commandParams = new ArrayList<>();
+        commandParams.add(key);
+
+        if (reference instanceof GeoReference.GeoCoordinateReference) {
+            GeoReference.GeoCoordinateReference ref = (GeoReference.GeoCoordinateReference) reference;
+            commandParams.add("FROMLONLAT");
+            commandParams.add(convert(ref.getLongitude()));
+            commandParams.add(convert(ref.getLatitude()));
+        } else if (reference instanceof GeoReference.GeoMemberReference) {
+            GeoReference.GeoMemberReference ref = (GeoReference.GeoMemberReference) reference;
+            commandParams.add("FROMMEMBER");
+            commandParams.add(encode(ref.getMember()));
+        }
+
+        if (predicate instanceof RadiusShape) {
+            commandParams.add("BYRADIUS");
+            RadiusShape shape = (RadiusShape) predicate;
+            commandParams.add(shape.getRadius().getValue());
+            commandParams.add(convert(shape.getMetric()).getAbbreviation());
+        } else if (predicate instanceof BoxShape) {
+            BoxShape shape = (BoxShape) predicate;
+            commandParams.add("BYBOX");
+            commandParams.add(shape.getBoundingBox().getWidth().getValue());
+            commandParams.add(shape.getBoundingBox().getHeight().getValue());
+            commandParams.add(convert(shape.getMetric()).getAbbreviation());
+        }
+
+        if (args.hasSortDirection()) {
+            commandParams.add(args.getSortDirection());
+        }
+        if (args.getLimit() != null) {
+            commandParams.add("COUNT");
+            commandParams.add(args.getLimit());
+            if (args.hasAnyLimit()) {
+                commandParams.add("ANY");
+            }
+        }
+        RedisCommand<GeoResults<GeoLocation<byte[]>>> cmd;
+        if (args.getFlags().contains(GeoRadiusCommandArgs.Flag.WITHCOORD)) {
+            cmd = new RedisCommand<>("GEOSEARCH", postitionDecoder);
+            commandParams.add("WITHCOORD");
+        } else {
+            MultiDecoder<GeoResults<GeoLocation<byte[]>>> distanceDecoder = new ListMultiDecoder2(new GeoResultsDecoder(predicate.getMetric()), new GeoDistanceDecoder());
+            cmd = new RedisCommand<>("GEOSEARCH", distanceDecoder);
+            commandParams.add("WITHDIST");
+        }
+
+        return read(key, ByteArrayCodec.INSTANCE, cmd, commandParams.toArray());
+    }
+
+    @Override
+    public Long geoSearchStore(byte[] destKey, byte[] key, GeoReference<byte[]> reference, GeoShape predicate, GeoSearchStoreCommandArgs args) {
+        Assert.notNull(args, "Args must not be null!");
+        Assert.notNull(key, "Key must not be null!");
+        Assert.notNull(destKey, "DestKey must not be null!");
+        Assert.notNull(predicate, "Shape must not be null!");
+        Assert.notNull(reference, "Reference must not be null!");
+
+        List<Object> commandParams = new ArrayList<>();
+        commandParams.add(destKey);
+        commandParams.add(key);
+
+        if (reference instanceof GeoReference.GeoCoordinateReference) {
+            GeoReference.GeoCoordinateReference ref = (GeoReference.GeoCoordinateReference) reference;
+            commandParams.add("FROMLONLAT");
+            commandParams.add(convert(ref.getLongitude()));
+            commandParams.add(convert(ref.getLatitude()));
+        } else if (reference instanceof GeoReference.GeoMemberReference) {
+            GeoReference.GeoMemberReference ref = (GeoReference.GeoMemberReference) reference;
+            commandParams.add("FROMMEMBER");
+            commandParams.add(encode(ref.getMember()));
+        }
+
+        if (predicate instanceof RadiusShape) {
+            RadiusShape shape = (RadiusShape) predicate;
+            commandParams.add("BYRADIUS");
+            commandParams.add(shape.getRadius().getValue());
+            commandParams.add(convert(shape.getMetric()).getAbbreviation());
+        } else if (predicate instanceof BoxShape) {
+            BoxShape shape = (BoxShape) predicate;
+            commandParams.add("BYBOX");
+            commandParams.add(shape.getBoundingBox().getWidth().getValue());
+            commandParams.add(shape.getBoundingBox().getHeight().getValue());
+            commandParams.add(convert(shape.getMetric()).getAbbreviation());
+        }
+
+        if (args.hasSortDirection()) {
+            commandParams.add(args.getSortDirection());
+        }
+        if (args.getLimit() != null) {
+            commandParams.add("COUNT");
+            commandParams.add(args.getLimit());
+            if (args.hasAnyLimit()) {
+                commandParams.add("ANY");
+            }
+        }
+        if (args.isStoreDistance()) {
+            commandParams.add("STOREDIST");
+        }
+
+        return write(key, LongCodec.INSTANCE, RedisCommands.GEOSEARCHSTORE_STORE, commandParams.toArray());
+    }
+
+    private Metric convert(Metric metric) {
+        if (metric == Metrics.NEUTRAL) {
+            return DistanceUnit.METERS;
+        }
+        return metric;
+    }
+
+    private ByteBuf encode(Object value) {
+        return executorService.encode(ByteArrayCodec.INSTANCE, value);
+    }
     private static final RedisCommand<Long> PFADD = new RedisCommand<Long>("PFADD");
 
     @Override
