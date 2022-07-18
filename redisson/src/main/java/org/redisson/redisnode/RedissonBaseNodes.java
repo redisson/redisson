@@ -129,10 +129,8 @@ public class RedissonBaseNodes implements BaseRedisNodes {
             f.get(timeout, timeUnit);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-        } catch (TimeoutException e) {
-            return false;
         } catch (Exception e) {
-            throw new IllegalStateException(e);
+            return false;
         }
 
         return futures.stream()
