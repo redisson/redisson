@@ -41,6 +41,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.*;
@@ -1223,7 +1224,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         if (startDate == null) {
             throw new IllegalArgumentException("Wrong cron expression! Unable to calculate start date");
         }
-        long startTime = startDate.toInstant().toEpochMilli();
+        long startTime = startDate.withZoneSameLocal(ZoneId.systemDefault()).toInstant().toEpochMilli();
 
         String taskId = id;
         ScheduledCronExpressionParameters params = new ScheduledCronExpressionParameters(taskId);
@@ -1239,7 +1240,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         addListener(result);
         RedissonScheduledFuture<Void> f = new RedissonScheduledFuture<Void>(result, startTime) {
             public long getDelay(TimeUnit unit) {
-                return unit.convert(startDate.toInstant().toEpochMilli() - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+                return unit.convert(startDate.withZoneSameLocal(ZoneId.systemDefault()).toInstant().toEpochMilli() - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
             };
         };
         storeReference(f, result.getRequestId());

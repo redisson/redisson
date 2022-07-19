@@ -143,7 +143,7 @@ public class TasksRunnerService implements RemoteExecutorService {
         RFuture<Void> future = null;
         if (nextStartDate != null) {
             RemoteExecutorServiceAsync service = asyncScheduledServiceAtFixed(params.getExecutorId(), params.getRequestId());
-            params.setStartTime(nextStartDate.toInstant().toEpochMilli());
+            params.setStartTime(nextStartDate.withZoneSameLocal(ZoneId.systemDefault()).toInstant().toEpochMilli());
             future = service.schedule(params);
         }
         try {
