@@ -36,6 +36,8 @@ import org.redisson.liveobject.resolver.NamingScheme;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
@@ -118,7 +120,7 @@ public class AccessorInterceptor {
                 RLiveObject liveObject = (RLiveObject) arg;
 
                 removeIndex(liveMap, me, field);
-                storeIndex(field, me, liveObject.getLiveObjectId());
+                storeIndex(liveMap, field, me, liveObject.getLiveObjectId());
                 
                 Class<? extends Object> rEntity = liveObject.getClass().getSuperclass();
                 NamingScheme ns = commandExecutor.getObjectBuilder().getNamingScheme(rEntity);
@@ -167,7 +169,7 @@ public class AccessorInterceptor {
 
             removeIndex(liveMap, me, field);
             if (arg != null) {
-                storeIndex(field, me, arg);
+                storeIndex(liveMap, field, me, arg);
 
                 if (commandExecutor instanceof CommandBatchService) {
                     liveMap.fastPutAsync(fieldName, arg);
@@ -242,7 +244,7 @@ public class AccessorInterceptor {
                 valueState, ce.encodeMapKey(codec, fieldName));
     }
 
-    private void storeIndex(Field field, Object me, Object arg) {
+    private void storeIndex(RMap<String, Object> liveMap, Field field, Object me, Object arg) {
         if (field.getAnnotation(RIndex.class) == null) {
             return;
         }
@@ -259,17 +261,62 @@ public class AccessorInterceptor {
             ce = new CommandBatchService(commandExecutor);
         }
 
-        if (arg instanceof Number) {
-            RScoredSortedSetAsync<Object> set = new RedissonScoredSortedSet<>(namingScheme.getCodec(), ce, indexName, null);
-            set.addAsync(((Number) arg).doubleValue(), ((RLiveObject) me).getLiveObjectId());
+        if (commandExecutor.getConnectionManager().isClusterMode()) {
+            long ttl = liveMap.remainTimeToLive();
+            if (arg instanceof Number) {
+                RScoredSortedSetAsync<Object> set = new RedissonScoredSortedSet<>(namingScheme.getCodec(), ce, indexName, null);
+                set.addAsync(((Number) arg).doubleValue(), ((RLiveObject) me).getLiveObjectId());
+                if (ttl > 0) {
+                    set.expireAsync(Duration.ofMillis(ttl));
+                }
+            } else {
+                RMultimapAsync<Object, Object> map = new RedissonSetMultimap<>(namingScheme.getCodec(), ce, indexName);
+                map.putAsync(arg, ((RLiveObject) me).getLiveObjectId());
+                if (ttl > 0) {
+                    map.expireAsync(Duration.ofMillis(ttl));
+                }
+            }
         } else {
-            RMultimapAsync<Object, Object> map = new RedissonSetMultimap<>(namingScheme.getCodec(), ce, indexName);
-            map.putAsync(arg, ((RLiveObject) me).getLiveObjectId());
+            if (arg instanceof Number) {
+                addAsync(ce, indexName, ((RedissonObject) liveMap).getRawName(), ((RLiveObject) me), namingScheme.getCodec(), ((Number) arg).doubleValue());
+            } else {
+                RedissonSetMultimap<Object, Object> map = new RedissonSetMultimap<>(namingScheme.getCodec(), ce, indexName);
+                putAsync(map, ((RedissonObject) liveMap).getRawName(), namingScheme.getCodec(), arg, ((RLiveObject) me).getLiveObjectId());
+            }
         }
 
         if (!skipExecution) {
             ce.execute();
         }
+    }
+
+    private void putAsync(RedissonSetMultimap<Object, Object> multimap, String mapName, Codec codec, Object key, Object value) {
+        ByteBuf keyState = commandExecutor.encodeMapKey(codec, key);
+        String keyHash = multimap.hash(keyState);
+        ByteBuf valueState = commandExecutor.encodeMapValue(codec, value);
+
+        String setName = multimap.getValuesName(keyHash);
+        commandExecutor.evalWriteAsync(multimap.getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
+                  "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); " +
+                        "redis.call('sadd', KEYS[2], ARGV[3]); " +
+                        "local ttl = redis.call('pttl', KEYS[3]);" +
+                        "if ttl > 0 then " +
+                            "redis.call('pexpire', KEYS[1], ttl); " +
+                            "redis.call('pexpire', KEYS[2], ttl); " +
+                        "end; ",
+                Arrays.asList(multimap.getRawName(), setName, mapName),
+                keyState, keyHash, valueState);
+    }
+
+    private void addAsync(CommandBatchService ce, String name, String mapName, RLiveObject me, Codec codec, double score) {
+        ce.evalWriteAsync(name, codec, RedisCommands.EVAL_VOID,
+                  "redis.call('zadd', KEYS[1], ARGV[1], ARGV[2]); " +
+                       "local ttl = redis.call('pttl', KEYS[2]);" +
+                       "if ttl > 0 then " +
+                            "redis.call('pexpire', KEYS[1], ttl); " +
+                       "end; ",
+                Arrays.asList(name, mapName),
+                BigDecimal.valueOf(score).toPlainString(), commandExecutor.encode(codec, me.getLiveObjectId()));
     }
 
     private String getFieldName(Class<?> clazz, Method method) {

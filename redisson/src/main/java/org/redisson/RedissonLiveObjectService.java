@@ -812,7 +812,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 
                 .method(ElementMatchers.isDeclaredBy(RExpirable.class)
                         .or(ElementMatchers.isDeclaredBy(RExpirableAsync.class)))
-                .intercept(MethodDelegation.to(RExpirableInterceptor.class))
+                .intercept(MethodDelegation.to(new RExpirableInterceptor(commandExecutor)))
                 .implement(RExpirable.class)
                 
                 .method(ElementMatchers.isDeclaredBy(Map.class)

@@ -15,14 +15,23 @@
  */
 package org.redisson.liveobject.core;
 
-import java.lang.reflect.Method;
-import net.bytebuddy.implementation.bind.annotation.AllArguments;
-import net.bytebuddy.implementation.bind.annotation.FieldValue;
-import net.bytebuddy.implementation.bind.annotation.Origin;
-import net.bytebuddy.implementation.bind.annotation.RuntimeType;
+import net.bytebuddy.description.field.FieldDescription;
+import net.bytebuddy.description.field.FieldList;
+import net.bytebuddy.implementation.bind.annotation.*;
+import net.bytebuddy.matcher.ElementMatchers;
+import org.redisson.RedissonScoredSortedSet;
+import org.redisson.RedissonSetMultimap;
 import org.redisson.api.RExpirable;
 import org.redisson.api.RMap;
+import org.redisson.api.RMultimap;
+import org.redisson.api.RScoredSortedSet;
+import org.redisson.api.annotation.RIndex;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.liveobject.misc.ClassUtils;
+import org.redisson.liveobject.misc.Introspectior;
+import org.redisson.liveobject.resolver.NamingScheme;
+
+import java.lang.reflect.Method;
 
 /**
  *
@@ -30,16 +39,49 @@ import org.redisson.liveobject.misc.ClassUtils;
  */
 public class RExpirableInterceptor {
 
+    private final CommandAsyncExecutor commandExecutor;
+
+    public RExpirableInterceptor(CommandAsyncExecutor commandExecutor) {
+        this.commandExecutor = commandExecutor;
+    }
+
     @RuntimeType
-    public static Object intercept(
+    public Object intercept(
+            @This Object me,
             @Origin Method method,
             @AllArguments Object[] args,
-            @FieldValue("liveObjectLiveMap") RMap<?, ?> map
+            @FieldValue("liveObjectLiveMap") RMap<String, Object> map
     ) throws Exception {
         Class<?>[] cls = new Class[args.length];
         for (int i = 0; i < args.length; i++) {
             cls[i] = args[i].getClass();
         }
-        return ClassUtils.searchForMethod(RExpirable.class, method.getName(), cls).invoke(map, args);
+
+
+        Method m = ClassUtils.searchForMethod(RExpirable.class, method.getName(), cls);
+        FieldList<FieldDescription.InDefinedShape> fields = Introspectior.getFieldsWithAnnotation(me.getClass().getSuperclass(), RIndex.class);
+        if (!fields.isEmpty()) {
+            FieldList<FieldDescription.InDefinedShape> numberFields = fields.filter(ElementMatchers.fieldType(
+                                                                                                    ElementMatchers.isSubTypeOf(Number.class).
+                                                                                                    or(ElementMatchers.anyOf(int.class, long.class, byte.class, short.class, double.class, float.class))));
+            FieldList<FieldDescription.InDefinedShape> nonNumberFields = fields.filter(ElementMatchers.fieldType(ElementMatchers.not(ElementMatchers.isSubTypeOf(Number.class))
+                                                                                                            .and(ElementMatchers.not(ElementMatchers.anyOf(int.class, long.class, byte.class, short.class, double.class, float.class)))));
+            Class<?> rEntity = me.getClass().getSuperclass();
+            NamingScheme namingScheme = commandExecutor.getObjectBuilder().getNamingScheme(rEntity);
+
+            for (FieldDescription.InDefinedShape field : numberFields) {
+                String indexName = namingScheme.getIndexName(rEntity, field.getName());
+                RScoredSortedSet<Object> set = new RedissonScoredSortedSet<>(namingScheme.getCodec(), commandExecutor, indexName, null);
+                m.invoke(set, args);
+            }
+
+            for (FieldDescription.InDefinedShape field : nonNumberFields) {
+                String indexName = namingScheme.getIndexName(rEntity, field.getName());
+                RMultimap<Object, Object> idsMultimap = new RedissonSetMultimap<>(namingScheme.getCodec(), commandExecutor, indexName);
+                m.invoke(idsMultimap, args);
+            }
+        }
+
+        return m.invoke(map, args);
     }
 }

@@ -738,6 +738,35 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     }
 
     @Test
+    public void testExpiration() throws InterruptedException {
+        RLiveObjectService s = redisson.getLiveObjectService();
+        TestIndexed t1 = new TestIndexed("1");
+        t1.setName1("test1");
+        RExpirable expirable = (RExpirable) s.persist(t1);
+        expirable.expire(Duration.ofSeconds(2));
+
+        Thread.sleep(2100);
+
+        assertThat(redisson.getKeys().count()).isZero();
+
+        TestIndexed t2 = new TestIndexed("1");
+        t2.setName1("test1");
+        t2 = s.persist(t2);
+        ((RExpirable)t2).expire(Duration.ofSeconds(2));
+        t2.setNum1(123);
+        t2.setName2("test3");
+
+        Thread.sleep(1000);
+
+        assertThat(t2.getNum1()).isEqualTo(123);
+        assertThat(t2.getName2()).isEqualTo("test3");
+
+        Thread.sleep(1100);
+
+        assertThat(redisson.getKeys().count()).isZero();
+    }
+
+    @Test
     public void testIndexUpdate() {
         RLiveObjectService s = redisson.getLiveObjectService();
         TestIndexed t1 = new TestIndexed("1");
