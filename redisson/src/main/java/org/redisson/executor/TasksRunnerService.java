@@ -50,24 +50,24 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Executor service runs Callable and Runnable tasks.
- * 
+ *
  * @author Nikita Koksharov
  *
  */
 public class TasksRunnerService implements RemoteExecutorService {
 
     private static final Map<HashValue, Codec> CODECS = new LRUCacheMap<HashValue, Codec>(500, 0, 0);
-    
+
     private final Codec codec;
     private final String name;
     private final CommandAsyncExecutor commandExecutor;
 
     private final RedissonClient redisson;
-    
+
     private String tasksCounterName;
     private String statusName;
     private String terminationTopicName;
-    private String tasksName; 
+    private String tasksName;
     private String schedulerQueueName;
     private String schedulerChannelName;
     private String tasksRetryIntervalName;
@@ -75,13 +75,13 @@ public class TasksRunnerService implements RemoteExecutorService {
 
     private TasksInjector tasksInjector;
     private ConcurrentMap<String, ResponseEntry> responses;
-    
+
     public TasksRunnerService(CommandAsyncExecutor commandExecutor, RedissonClient redisson, Codec codec, String name, ConcurrentMap<String, ResponseEntry> responses) {
         this.commandExecutor = commandExecutor;
         this.name = name;
         this.redisson = redisson;
         this.responses = responses;
-        
+
         this.codec = codec;
     }
 
@@ -96,23 +96,23 @@ public class TasksRunnerService implements RemoteExecutorService {
     public void setTasksRetryIntervalName(String tasksRetryInterval) {
         this.tasksRetryIntervalName = tasksRetryInterval;
     }
-    
+
     public void setSchedulerQueueName(String schedulerQueueName) {
         this.schedulerQueueName = schedulerQueueName;
     }
-    
+
     public void setSchedulerChannelName(String schedulerChannelName) {
         this.schedulerChannelName = schedulerChannelName;
     }
-    
+
     public void setTasksName(String tasksName) {
         this.tasksName = tasksName;
     }
-    
+
     public void setTasksCounterName(String tasksCounterName) {
         this.tasksCounterName = tasksCounterName;
     }
-    
+
     public void setStatusName(String statusName) {
         this.statusName = statusName;
     }
@@ -134,7 +134,7 @@ public class TasksRunnerService implements RemoteExecutorService {
         params.setSpentTime(spent);
         asyncScheduledServiceAtFixed(params.getExecutorId(), params.getRequestId()).scheduleAtFixedRate(params);
     }
-    
+
     @Override
     public void schedule(ScheduledCronExpressionParameters params) {
         CronExpression expression = new CronExpression(params.getCronExpression());
@@ -143,7 +143,7 @@ public class TasksRunnerService implements RemoteExecutorService {
         RFuture<Void> future = null;
         if (nextStartDate != null) {
             RemoteExecutorServiceAsync service = asyncScheduledServiceAtFixed(params.getExecutorId(), params.getRequestId());
-            params.setStartTime(nextStartDate.toInstant().toEpochMilli());
+            params.setStartTime(nextStartDate.withZoneSameLocal(ZoneId.systemDefault()).toInstant().toEpochMilli());
             future = service.schedule(params);
         }
         try {
@@ -160,7 +160,7 @@ public class TasksRunnerService implements RemoteExecutorService {
     /**
      * Creates RemoteExecutorServiceAsync with special executor which overrides requestId generation
      * and uses current requestId. Because recurring tasks should use the same requestId.
-     * 
+     *
      * @return
      */
     private RemoteExecutorServiceAsync asyncScheduledServiceAtFixed(String executorId, String requestId) {
@@ -177,29 +177,29 @@ public class TasksRunnerService implements RemoteExecutorService {
         RemoteExecutorServiceAsync asyncScheduledServiceAtFixed = scheduledRemoteService.get(RemoteExecutorServiceAsync.class, RemoteInvocationOptions.defaults().noAck().noResult());
         return asyncScheduledServiceAtFixed;
     }
-    
+
     @Override
     public void scheduleWithFixedDelay(ScheduledWithFixedDelayParameters params) {
         executeRunnable(params, false);
         if (!redisson.getMap(tasksName, StringCodec.INSTANCE).containsKey(params.getRequestId())) {
             return;
         }
-        
+
         long newStartTime = System.currentTimeMillis() + params.getDelay();
         params.setStartTime(newStartTime);
         asyncScheduledServiceAtFixed(params.getExecutorId(), params.getRequestId()).scheduleWithFixedDelay(params);
     }
-    
+
     @Override
     public Object scheduleCallable(ScheduledParameters params) {
         return executeCallable(params);
     }
-    
+
     @Override
     public void scheduleRunnable(ScheduledParameters params) {
         executeRunnable(params);
     }
-    
+
     @Override
     public Object executeCallable(TaskParameters params) {
         Object res;
@@ -249,19 +249,19 @@ public class TasksRunnerService implements RemoteExecutorService {
                     + "name = string.sub(name, 3, string.len(name)); "
                 + "end;"
                 + "local retryInterval = redis.call('get', KEYS[4]);"
-                
+
                 + "if redis.call('exists', KEYS[1]) == 0 and retryInterval ~= false and redis.call('hexists', KEYS[5], name) == 1 then "
                     + "local startTime = tonumber(ARGV[1]) + tonumber(retryInterval);"
                     + "redis.call('zadd', KEYS[2], startTime, scheduledName);"
                     + "local v = redis.call('zrange', KEYS[2], 0, 0); "
-                    // if new task added to queue head then publish its startTime 
-                    // to all scheduler workers 
+                    // if new task added to queue head then publish its startTime
+                    // to all scheduler workers
                     + "if v[1] == ARGV[2] then "
                         + "redis.call('publish', KEYS[3], startTime); "
                     + "end;"
                     + "return retryInterval; "
                 + "end;"
-                + "return nil;", 
+                + "return nil;",
                 Arrays.asList(statusName, schedulerQueueName, schedulerChannelName, tasksRetryIntervalName, tasksName),
                 System.currentTimeMillis(), requestId);
         future.whenComplete((res, e) -> {
@@ -269,14 +269,14 @@ public class TasksRunnerService implements RemoteExecutorService {
                 scheduleRetryTimeRenewal(requestId, 10000L);
                 return;
             }
-            
+
             if (res != null) {
                 scheduleRetryTimeRenewal(requestId, res);
             }
         });
         return future;
     }
-    
+
     @SuppressWarnings("unchecked")
     private <T> T decode(TaskParameters params) {
         ByteBuf classBodyBuf = Unpooled.wrappedBuffer(params.getClassBody());
@@ -287,18 +287,18 @@ public class TasksRunnerService implements RemoteExecutorService {
             if (classLoaderCodec == null) {
                 RedissonClassLoader cl = new RedissonClassLoader(codec.getClassLoader());
                 cl.loadClass(params.getClassName(), params.getClassBody());
-                
+
                 classLoaderCodec = this.codec.getClass().getConstructor(ClassLoader.class).newInstance(cl);
                 CODECS.put(hash, classLoaderCodec);
             }
-            
+
             T task;
             if (params.getLambdaBody() != null) {
                 ByteArrayInputStream is = new ByteArrayInputStream(params.getLambdaBody());
-                
+
                 //set thread context class loader to be the classLoaderCodec.getClassLoader() variable as there could be reflection
                 //done while reading from input stream which reflection will use thread class loader to load classes on demand
-                ClassLoader currentThreadClassLoader = Thread.currentThread().getContextClassLoader();                
+                ClassLoader currentThreadClassLoader = Thread.currentThread().getContextClassLoader();
                 try {
                     Thread.currentThread().setContextClassLoader(classLoaderCodec.getClassLoader());
                     ObjectInput oo = new CustomObjectInputStream(classLoaderCodec.getClassLoader(), is);
@@ -313,11 +313,11 @@ public class TasksRunnerService implements RemoteExecutorService {
 
             Injector.inject(task, RedissonClient.class, redisson);
             Injector.inject(task, String.class, params.getRequestId());
-            
+
             if (tasksInjector != null) {
                 tasksInjector.inject(task);
             }
-            
+
             return task;
         } catch (Exception e) {
             throw new IllegalStateException("Unable to initialize codec with ClassLoader parameter", e);
@@ -355,7 +355,7 @@ public class TasksRunnerService implements RemoteExecutorService {
 
         finish(params.getRequestId(), removeTask);
     }
-    
+
     @Override
     public void executeRunnable(TaskParameters params) {
         executeRunnable(params, true);
@@ -363,12 +363,12 @@ public class TasksRunnerService implements RemoteExecutorService {
 
     /**
      * Check shutdown state. If tasksCounter equals <code>0</code>
-     * and executor in <code>shutdown</code> state, then set <code>terminated</code> state 
+     * and executor in <code>shutdown</code> state, then set <code>terminated</code> state
      * and notify terminationTopicName
      * <p>
      * If <code>scheduledRequestId</code> is not null then
      * delete scheduled task
-     * 
+     *
      * @param requestId
      */
     void finish(String requestId, boolean removeTask) {
@@ -391,7 +391,7 @@ public class TasksRunnerService implements RemoteExecutorService {
                         + "redis.call('set', KEYS[2], ARGV[2]);"
                         + "redis.call('publish', KEYS[3], ARGV[2]);"
                     + "end;"
-                + "end;";  
+                + "end;";
 
         RFuture<Object> f = commandExecutor.evalWriteNoRetryAsync(name, StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 script,
