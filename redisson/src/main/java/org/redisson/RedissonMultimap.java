@@ -105,7 +105,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
         return new RedissonReadWriteLock(commandExecutor, lockName);
     }
     
-    public String hash(ByteBuf objectState) {
+    protected String hash(ByteBuf objectState) {
         return Hash.hash128toBase64(objectState);
     }
 
@@ -153,7 +153,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
         return get(putAsync(key, value));
     }
 
-    public String getValuesName(String hash) {
+    String getValuesName(String hash) {
         return suffixName(getRawName(), hash);
     }
 
