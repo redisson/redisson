@@ -8,11 +8,36 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.BaseTest;
-import org.redisson.api.RBucket;
-import org.redisson.api.RTransaction;
-import org.redisson.api.TransactionOptions;
+import org.redisson.Redisson;
+import org.redisson.api.*;
+import org.redisson.config.Config;
 
 public class RedissonTransactionalBucketTest extends BaseTest {
+
+    @Test
+    public void testNameMapper() {
+        Config c = createConfig();
+        c.useSingleServer().setNameMapper(new NameMapper() {
+            @Override
+            public String map(String name) {
+                return name + ":mysuffix";
+            }
+
+            @Override
+            public String unmap(String name) {
+                return name.replace(":mysuffix", "");
+            }
+        });
+        RedissonClient redisson = Redisson.create(c);
+
+        RTransaction t = redisson.createTransaction(TransactionOptions.defaults());
+        t.getBucket("test").set("1");
+        t.commit();
+
+        assertThat(redisson.getBucket("test").get()).isEqualTo("1");
+
+        redisson.shutdown();
+    }
 
     @Test
     public void testTimeout() throws InterruptedException {
