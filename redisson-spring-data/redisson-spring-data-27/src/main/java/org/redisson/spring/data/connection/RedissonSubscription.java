@@ -53,6 +53,10 @@ public class RedissonSubscription extends AbstractSubscription {
         List<CompletableFuture<?>> list = new ArrayList<>();
         Queue<byte[]> subscribed = new ConcurrentLinkedQueue<>();
         for (byte[] channel : channels) {
+            if (subscribeService.getPubSubEntry(new ChannelName(channel)) != null) {
+                continue;
+            }
+
             CompletableFuture<PubSubConnectionEntry> f = subscribeService.subscribe(ByteArrayCodec.INSTANCE, new ChannelName(channel), new BaseRedisPubSubListener() {
                 @Override
                 public void onMessage(CharSequence ch, Object message) {
@@ -107,6 +111,10 @@ public class RedissonSubscription extends AbstractSubscription {
         List<CompletableFuture<?>> list = new ArrayList<>();
         Queue<byte[]> subscribed = new ConcurrentLinkedQueue<>();
         for (byte[] channel : patterns) {
+            if (subscribeService.getPubSubEntry(new ChannelName(channel)) != null) {
+                continue;
+            }
+
             CompletableFuture<Collection<PubSubConnectionEntry>> f = subscribeService.psubscribe(new ChannelName(channel), ByteArrayCodec.INSTANCE, new BaseRedisPubSubListener() {
                 @Override
                 public void onPatternMessage(CharSequence pattern, CharSequence ch, Object message) {

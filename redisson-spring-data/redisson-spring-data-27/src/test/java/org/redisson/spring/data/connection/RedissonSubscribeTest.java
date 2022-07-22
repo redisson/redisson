@@ -1,11 +1,5 @@
 package org.redisson.spring.data.connection;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.awaitility.Duration;
 import org.junit.Test;
@@ -16,12 +10,46 @@ import org.redisson.config.Config;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.data.redis.connection.RedisConnection;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class RedissonSubscribeTest extends BaseConnectionTest {
+
+    @Test
+    public void testListenersDuplication() {
+        Queue<byte[]> msg = new ConcurrentLinkedQueue<>();
+        MessageListener aListener = (message, pattern) -> {
+            msg.add(message.getBody());
+        };
+
+        RedissonConnectionFactory factory = new RedissonConnectionFactory(redisson);
+        RedisMessageListenerContainer container = new RedisMessageListenerContainer();
+        container.setConnectionFactory(factory);
+        container.addMessageListener(aListener,
+                Arrays.asList(new ChannelTopic("a"), new ChannelTopic("b")));
+        container.addMessageListener(aListener,
+                Arrays.asList(new PatternTopic("c*")));
+        container.afterPropertiesSet();
+        container.start();
+
+        RedisConnection c = factory.getConnection();
+        c.publish("a".getBytes(), "msg".getBytes());
+
+        Awaitility.await().atMost(Duration.ONE_SECOND)
+                .untilAsserted(() -> {
+                    assertThat(msg).containsExactly("msg".getBytes());
+                });
+    }
 
     @Test
     public void testPatterTopic() throws IOException, InterruptedException {
@@ -59,7 +87,7 @@ public class RedissonSubscribeTest extends BaseConnectionTest {
         }, new PatternTopic("__keyevent@0__:del"));
         container.afterPropertiesSet();
         container.start();
-        Assertions.assertThat(container.isRunning()).isTrue();
+        assertThat(container.isRunning()).isTrue();
 
         RedisConnection c = factory.getConnection();
         c.set("mykey".getBytes(), "2".getBytes());
