@@ -1,12 +1,12 @@
 /**
  * Copyright (c) 2013-2021 Nikita Koksharov
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,20 +15,13 @@
  */
 package org.redisson.spring.starter;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.api.RedissonRxClient;
 import org.redisson.config.Config;
 import org.redisson.spring.data.connection.RedissonConnectionFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -45,14 +38,21 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.util.Assert;
 import org.springframework.util.ReflectionUtils;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+
 /**
- *
  * @author Nikita Koksharov
  * @author Nikos Kakavas (https://github.com/nikakis)
  * @author AnJia (https://anjia0532.github.io/)
- *
  */
 @Configuration
 @ConditionalOnClass({Redisson.class, RedisOperations.class})
@@ -63,17 +63,22 @@ public class RedissonAutoConfiguration {
     private static final String REDIS_PROTOCOL_PREFIX = "redis://";
     private static final String REDISS_PROTOCOL_PREFIX = "rediss://";
 
-    @Autowired(required = false)
-    private List<RedissonAutoConfigurationCustomizer> redissonAutoConfigurationCustomizers;
+    private final List<RedissonAutoConfigurationCustomizer> redissonAutoConfigurationCustomizers;
 
-    @Autowired
-    private RedissonProperties redissonProperties;
+    private final RedissonProperties redissonProperties;
 
-    @Autowired
-    private RedisProperties redisProperties;
+    private final RedisProperties redisProperties;
 
-    @Autowired
-    private ApplicationContext ctx;
+    private final ApplicationContext ctx;
+
+    public RedissonAutoConfiguration(ObjectProvider<List<RedissonAutoConfigurationCustomizer>> redissonAutoConfigurationCustomizersProvider,
+                                     RedissonProperties redissonProperties, RedisProperties redisProperties,
+                                     ApplicationContext ctx) {
+        this.redissonAutoConfigurationCustomizers = redissonAutoConfigurationCustomizersProvider.getIfAvailable();
+        this.redissonProperties = redissonProperties;
+        this.redisProperties = redisProperties;
+        this.ctx = ctx;
+    }
 
     @Bean
     @ConditionalOnMissingBean(name = "redisTemplate")
@@ -129,15 +134,7 @@ public class RedissonAutoConfiguration {
         }
 
         if (redissonProperties.getConfig() != null) {
-            try {
-                config = Config.fromYAML(redissonProperties.getConfig());
-            } catch (IOException e) {
-                try {
-                    config = Config.fromJSON(redissonProperties.getConfig());
-                } catch (IOException e1) {
-                    throw new IllegalArgumentException("Can't parse config", e1);
-                }
-            }
+            config = redissonProperties.getConfig();
         } else if (redissonProperties.getFile() != null) {
             try {
                 InputStream is = getConfigStream();
@@ -217,8 +214,7 @@ public class RedissonAutoConfiguration {
 
     private InputStream getConfigStream() throws IOException {
         Resource resource = ctx.getResource(redissonProperties.getFile());
-        InputStream is = resource.getInputStream();
-        return is;
+        return resource.getInputStream();
     }
 
 

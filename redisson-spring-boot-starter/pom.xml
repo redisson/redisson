@@ -23,12 +23,12 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>3.1.2</version>
                 <configuration>
-                    <archive>  
+                    <archive>
                         <manifestEntries>
                             <Build-Time>${maven.build.timestamp}</Build-Time>
                             <Automatic-Module-Name>redisson.spring.boot.starter</Automatic-Module-Name>
                         </manifestEntries>
-                    </archive> 
+                    </archive>
                 </configuration>
             </plugin>
 
@@ -97,7 +97,7 @@
                  <groupId>io.lettuce</groupId>
                  <artifactId>lettuce-core</artifactId>
               </exclusion>
-            </exclusions> 
+            </exclusions>
         </dependency>
 
       	<dependency>
@@ -150,6 +150,12 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 
