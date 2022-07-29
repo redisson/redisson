@@ -601,12 +601,13 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         }
 
         CompletableFuture<Boolean> f = entry.slaveUpAsync(uri, FreezeReason.MANAGER);
-        return f.thenApply(v -> {
-            if (v) {
+        return f.thenCompose(e -> {
+            if (e) {
                 log.info("slave: {} is up", uri);
+                return entry.excludeMasterFromSlaves(uri);
             }
-            return null;
-        });
+            return CompletableFuture.completedFuture(e);
+        }).thenApply(e -> null);
     }
 
     private void slaveDown(RedisURI uri) {

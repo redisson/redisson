@@ -187,6 +187,15 @@ public class MasterSlaveEntry {
         return slaveDown(entry);
     }
 
+    public CompletableFuture<Boolean> slaveDownAsync(RedisURI address, FreezeReason freezeReason) {
+        ClientConnectionsEntry entry = slaveBalancer.freeze(address, freezeReason);
+        if (entry == null) {
+            return CompletableFuture.completedFuture(false);
+        }
+
+        return slaveDownAsync(entry);
+    }
+
     private boolean slaveDown(ClientConnectionsEntry entry) {
         if (entry.isMasterForRead()) {
             return false;
@@ -210,7 +219,7 @@ public class MasterSlaveEntry {
         // add master as slave if no more slaves available
         if (!config.checkSkipSlavesInit() && slaveBalancer.getAvailableClients() == 0) {
             CompletableFuture<Boolean> f = slaveBalancer.unfreezeAsync(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM);
-            f.thenApply(value -> {
+            return f.thenApply(value -> {
                 if (value) {
                     log.info("master {} used as slave", masterEntry.getClient().getAddr());
                 }
@@ -425,28 +434,22 @@ public class MasterSlaveEntry {
         return true;
     }
 
-    public CompletableFuture<Boolean> slaveUpAsync(RedisURI address, FreezeReason freezeReason) {
-        CompletableFuture<Boolean> f = slaveBalancer.unfreezeAsync(address, freezeReason);
-        return f.thenCompose(v -> {
-            if (!v) {
-                return CompletableFuture.completedFuture(false);
+    public CompletableFuture<Boolean> excludeMasterFromSlaves(RedisURI address) {
+        InetSocketAddress addr = masterEntry.getClient().getAddr();
+        if (RedisURI.compare(addr, address)) {
+            return CompletableFuture.completedFuture(false);
+        }
+        CompletableFuture<Boolean> downFuture = slaveDownAsync(addr, FreezeReason.SYSTEM);
+        return downFuture.thenApply(r -> {
+            if (r) {
+                log.info("master {} excluded from slaves", addr);
             }
-
-            InetSocketAddress addr = masterEntry.getClient().getAddr();
-            // exclude master from slaves
-            if (!config.checkSkipSlavesInit()
-                    && !RedisURI.compare(addr, address)) {
-                CompletableFuture<Boolean> downFuture = slaveDownAsync(addr, FreezeReason.SYSTEM);
-                return downFuture.thenApply(r -> {
-                    if (r) {
-                        log.info("master {} excluded from slaves", addr);
-                    }
-                    return r;
-                });
-            }
-
-            return CompletableFuture.completedFuture(true);
+            return r;
         });
+    }
+
+    public CompletableFuture<Boolean> slaveUpAsync(RedisURI address, FreezeReason freezeReason) {
+        return slaveBalancer.unfreezeAsync(address, freezeReason);
     }
 
     public boolean slaveUp(InetSocketAddress address, FreezeReason freezeReason) {
