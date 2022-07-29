@@ -3,6 +3,22 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 22-July-2022 - 3.17.5 released
+
+Feature - `touch()`, `unlink()` and `delete()` methods implemented for transactional `RSetCache` and `RSet` objects  
+Feature - transactional `RBucket`, `RMap`, `RMapCache`, `RSetCache`, `RSet` objects support `expire()`, `expireAt()` and `clearExpire()` methods  
+Feature - `ExecutorOptions.idGenerator()` setting added  
+Feature - methods with task id added to RExecutorService interface  
+
+Fixed - duplicate subscriptions with RedisMessageListenerContainer in Spring Data Redis 2.7  
+Fixed - `NameMapper` applied twice to transactional `RBucket`  
+Fixed - some Quarkus environment variables clear all Redisson properties set through config file  
+Fixed - `RJsonBucket.delete()` method doesn't work  
+Fixed - `RExecutorService.submitAsync(Callable, long, TimeUnit)` method throws ClassCastException (thanks @xyqshi)
+Fixed - Lock synced slaves check  
+Fixed - reactive scripting commands throw ClassCastException if result is list of list  
+Fixed - `RBatch.getJsonBucket()` method should return RJsonBucketAsync interface  
+
 ### 16-June-2022 - 3.17.4 released
 
 Feature - [RJsonBucket](https://github.com/redisson/redisson/wiki/6.-distributed-objects/#615-json-object-holder) object added for `JSON.*` commands support  

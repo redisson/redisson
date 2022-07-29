@@ -10,11 +10,11 @@ JDK compatibility:  1.8 - 18, Android
 
 ## Features
 
-* Redis Replicated setup (including support of [AWS ElastiCache](http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Replication.html) and [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/))  
-* Redis Cluster setup (including support of [AWS ElastiCache Cluster](http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Clusters.html) and [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/))  
+* Redis Replicated setup (also compatible with [AWS ElastiCache](http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Replication.html) and [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/))  
+* Redis Cluster setup (also compatible with [AWS ElastiCache Cluster](http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Clusters.html), [Amazon MemoryDB](https://aws.amazon.com/memorydb) and [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/))  
 * Redis Sentinel setup  
 * Redis with Master with Slave only  
-* Redis single (including support of [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/) and [Google Cloud Memorystore for Redis](https://cloud.google.com/memorystore/docs/redis/))  
+* Redis Single (also compatible with [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/) and [Google Cloud Memorystore for Redis](https://cloud.google.com/memorystore/docs/redis/))  
 * Thread-safe implementation  
 * [JSON datatype](https://github.com/redisson/redisson/wiki/6.-distributed-objects/#615-json-object-holder)
 * [Reactive Streams](https://github.com/redisson/redisson/wiki/3.-operations-execution#32-reactive-way) API  
