@@ -2,7 +2,7 @@
 
 Integrates Redisson with [Helidon](https://helidon.io/) framework.  
 
-Supports Helidon 1.4.x - 2.4.x  
+Supports Helidon 1.4.x - 2.5.x  
 
 ## Usage  
 
@@ -14,14 +14,14 @@ Maven
 <dependency>
     <groupId>org.redisson</groupId>
     <artifactId>redisson-helidon</artifactId>
-    <version>3.17.4</version>
+    <version>3.17.5</version>
 </dependency>
 ```
 
 Gradle
 
 ```groovy
-compile 'org.redisson:redisson-helidon:3.17.4'
+compile 'org.redisson:redisson-helidon:3.17.5'
 ```
 
 ### 2. Add settings into `META-INF/microprofile-config.properties` file
