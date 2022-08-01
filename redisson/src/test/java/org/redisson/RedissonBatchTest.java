@@ -172,11 +172,11 @@ public class RedissonBatchTest extends BaseTest {
         RedissonClient redisson = Redisson.create(config);
 
 		ExecutorService executorService = Executors.newFixedThreadPool(5);
-		AtomicInteger counter = new AtomicInteger(5*150);
+		AtomicInteger counter = new AtomicInteger(5*15);
 		AtomicBoolean hasErrors = new AtomicBoolean();
 		for (int i = 0; i < 5; i++) {
 			executorService.submit(() -> {
-				for (int j = 0 ; j < 150; j++) {
+				for (int j = 0 ; j < 15; j++) {
 					executeBatch(redisson, batchOptions).whenComplete((r, e) -> {
                         if (e != null) {
                             hasErrors.set(true);
@@ -198,7 +198,7 @@ public class RedissonBatchTest extends BaseTest {
 
 	public RFuture<BatchResult<?>> executeBatch(RedissonClient client, BatchOptions batchOptions) {
 		RBatch batch = client.createBatch(batchOptions);
-		for (int i = 0; i < 50; i++) {
+		for (int i = 0; i < 100000; i++) {
 			String key = "" + i;
 			batch.getBucket(key).getAsync();
 		}
