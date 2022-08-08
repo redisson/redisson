@@ -85,7 +85,11 @@ public class MapWriteBehindTask {
     private void flushTasks(Map<Object, Object> addedMap, List<Object> deletedKeys) {
         try {
             if (!deletedKeys.isEmpty()) {
-                options.getWriter().delete(deletedKeys);
+                if (options.getWriter() != null) {
+                    options.getWriter().delete(deletedKeys);
+                } else {
+                    options.getWriterAsync().delete(deletedKeys).toCompletableFuture().join();
+                }
                 deletedKeys.clear();
             }
         } catch (Exception exception) {
@@ -93,7 +97,11 @@ public class MapWriteBehindTask {
         }
         try {
             if (!addedMap.isEmpty()) {
-                options.getWriter().write(addedMap);
+                if (options.getWriter() != null) {
+                    options.getWriter().write(addedMap);
+                } else {
+                    options.getWriterAsync().write(addedMap).toCompletableFuture().join();
+                }
                 addedMap.clear();
             }
         } catch (Exception exception) {
@@ -107,7 +115,11 @@ public class MapWriteBehindTask {
                 try {
                     deletedKeys.add(key);
                     if (deletedKeys.size() == options.getWriteBehindBatchSize()) {
-                        options.getWriter().delete(deletedKeys);
+                        if (options.getWriter() != null) {
+                            options.getWriter().delete(deletedKeys);
+                        } else {
+                            options.getWriterAsync().delete(deletedKeys).toCompletableFuture().join();
+                        }
                         deletedKeys.clear();
 
                     }
@@ -120,7 +132,11 @@ public class MapWriteBehindTask {
                 try {
                     addedMap.put(entry.getKey(), entry.getValue());
                     if (addedMap.size() == options.getWriteBehindBatchSize()) {
-                        options.getWriter().write(addedMap);
+                        if (options.getWriter() != null) {
+                            options.getWriter().write(addedMap);
+                        } else {
+                            options.getWriterAsync().write(addedMap).toCompletableFuture().join();
+                        }
                         addedMap.clear();
                     }
                 } catch (Exception exception) {

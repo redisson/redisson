@@ -46,6 +46,14 @@ public class RedissonMapTest extends BaseMapTest {
         return redisson.getMap("test", options);        
     }
 
+    @Override
+    protected <K, V> RMap<K, V> getWriteBehindAsyncTestMap(String name, Map<K, V> map) {
+        MapOptions<K, V> options = MapOptions.<K, V>defaults()
+                .writerAsync(createMapWriterAsync(map))
+                .writeMode(WriteMode.WRITE_BEHIND);
+        return redisson.getMap("test", options);
+    }
+
     @Test
     public void testEntrySet() {
         Map<Integer, String> map = redisson.getMap("simple12");

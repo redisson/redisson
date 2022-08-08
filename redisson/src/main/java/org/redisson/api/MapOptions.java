@@ -17,6 +17,7 @@ package org.redisson.api;
 
 import org.redisson.api.map.MapLoader;
 import org.redisson.api.map.MapWriter;
+import org.redisson.api.map.MapWriterAsync;
 
 /**
  * Configuration for Map object.
@@ -47,6 +48,8 @@ public class MapOptions<K, V> {
     
     private MapLoader<K, V> loader;
     private MapWriter<K, V> writer;
+    private MapWriterAsync<K, V> writerAsync;
+
     private WriteMode writeMode = WriteMode.WRITE_THROUGH;
     private int writeBehindBatchSize = 50;
     private int writeBehindDelay = 1000;
@@ -77,7 +80,7 @@ public class MapOptions<K, V> {
     }
     
     /**
-     * Sets {@link MapWriter} object.
+     * Defines {@link MapWriter} object which is invoked during write operation.
      * 
      * @param writer object
      * @return MapOptions instance
@@ -89,7 +92,21 @@ public class MapOptions<K, V> {
     public MapWriter<K, V> getWriter() {
         return writer;
     }
-    
+
+    /**
+     * Defines {@link MapWriterAsync} object which is invoked during write operation.
+     *
+     * @param writer object
+     * @return MapOptions instance
+     */
+    public MapOptions<K, V> writerAsync(MapWriterAsync<K, V> writer) {
+        this.writerAsync = writer;
+        return this;
+    }
+    public MapWriterAsync<K, V> getWriterAsync() {
+        return writerAsync;
+    }
+
     /**
      * Sets write behind tasks batch size. 
      * All updates accumulated into a batch of specified size and written with {@link MapWriter}.

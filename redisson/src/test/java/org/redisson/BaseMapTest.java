@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
 import org.redisson.api.map.MapLoader;
 import org.redisson.api.map.MapWriter;
+ import org.redisson.api.map.MapWriterAsync;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.codec.IntegerCodec;
@@ -18,6 +19,8 @@ import java.io.Serializable;
 import java.time.Duration;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -1150,6 +1153,8 @@ public abstract class BaseMapTest extends BaseTest {
     protected abstract <K, V> RMap<K, V> getWriterTestMap(String name, Map<K, V> map);
     
     protected abstract <K, V> RMap<K, V> getWriteBehindTestMap(String name, Map<K, V> map);
+
+    protected abstract <K, V> RMap<K, V> getWriteBehindAsyncTestMap(String name, Map<K, V> map);
     
     protected abstract <K, V> RMap<K, V> getLoaderTestMap(String name, Map<K, V> map);
 
@@ -1201,7 +1206,26 @@ public abstract class BaseMapTest extends BaseTest {
         destroy(map);
     }
 
-    
+    @Test
+    public void testWriteBehindAsyncFastRemove() throws InterruptedException {
+        Map<String, String> store = new HashMap<>();
+        RMap<String, String> map = getWriteBehindAsyncTestMap("test", store);
+
+        map.put("1", "11");
+        map.put("2", "22");
+        map.put("3", "33");
+
+        Thread.sleep(1400);
+
+        map.fastRemove("1", "2", "4");
+
+        Map<String, String> expected = new HashMap<>();
+        expected.put("3", "33");
+        Thread.sleep(1400);
+        assertThat(store).isEqualTo(expected);
+        destroy(map);
+    }
+
     @Test
     public void testWriterFastRemove() {
         Map<String, String> store = new HashMap<>();
@@ -1419,7 +1443,27 @@ public abstract class BaseMapTest extends BaseTest {
         }
         destroy(map);
     }
-    
+
+    protected <K, V> MapWriterAsync<K, V> createMapWriterAsync(Map<K, V> map) {
+        return new MapWriterAsync<K, V>() {
+
+            @Override
+            public CompletionStage<Void> write(Map<K, V> values) {
+                map.putAll(values);
+                return CompletableFuture.completedFuture(null);
+            }
+
+            @Override
+            public CompletionStage<Void> delete(Collection<K> keys) {
+                for (K key : keys) {
+                    map.remove(key);
+                }
+                return CompletableFuture.completedFuture(null);
+            }
+
+        };
+    }
+
     protected <K, V> MapWriter<K, V> createMapWriter(Map<K, V> map) {
         return new MapWriter<K, V>() {
 

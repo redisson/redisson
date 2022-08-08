@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.map.MapLoader;
 import org.redisson.api.map.MapWriter;
+ import org.redisson.api.map.MapWriterAsync;
 
 /**
  * Configuration for LocalCachedMap object.
@@ -385,7 +386,12 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     public LocalCachedMapOptions<K, V> writer(MapWriter<K, V> writer) {
         return (LocalCachedMapOptions<K, V>) super.writer(writer);
     }
-    
+
+    @Override
+    public LocalCachedMapOptions<K, V> writerAsync(MapWriterAsync<K, V> writer) {
+        return (LocalCachedMapOptions<K, V>) super.writerAsync(writer);
+    }
+
     @Override
     public LocalCachedMapOptions<K, V> writeMode(org.redisson.api.MapOptions.WriteMode writeMode) {
         return (LocalCachedMapOptions<K, V>) super.writeMode(writeMode);
