@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * @param <K> key
  * @param <V> value
  */
-public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V>, RDestroyable {
+public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
 
     /**
      * Sets max size of the map and overrides current value.

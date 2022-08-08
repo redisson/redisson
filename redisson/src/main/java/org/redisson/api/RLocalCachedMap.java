@@ -30,7 +30,7 @@ import java.util.Set;
  * @param <K> map key
  * @param <V> map value
  */
-public interface RLocalCachedMap<K, V> extends RMap<K, V>, RDestroyable {
+public interface RLocalCachedMap<K, V> extends RMap<K, V> {
     
     /**
      * Pre-warm the cached entries. Not guaranteed to load ALL values, but statistically

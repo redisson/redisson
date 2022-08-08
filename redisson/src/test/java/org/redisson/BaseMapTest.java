@@ -131,9 +131,7 @@ public abstract class BaseMapTest extends BaseTest {
     }
     
     protected void destroy(RMap<?, ?> map) {
-        if (map instanceof RDestroyable) {
-            ((RDestroyable) map).destroy();
-        }
+        map.destroy();
     }
 
     @Test

@@ -2698,8 +2698,6 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         if (evictionScheduler != null) {
             evictionScheduler.remove(getRawName());
         }
-        if (writeBehindService != null) {
-            writeBehindService.stop(getRawName());
-        }
+        super.destroy();
     }
 }

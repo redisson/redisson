@@ -36,7 +36,7 @@ import org.redisson.api.mapreduce.RMapReduce;
  * @param <K> map key
  * @param <V> value
  */
-public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K, V> {
+public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K, V>, RDestroyable {
 
     /**
      * Loads all map entries to this Redis map using {@link org.redisson.api.map.MapLoader}.

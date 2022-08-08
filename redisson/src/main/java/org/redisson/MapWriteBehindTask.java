@@ -152,6 +152,10 @@ public class MapWriteBehindTask {
         }
 
         commandExecutor.getConnectionManager().newTimeout(t -> {
+            if (!isStarted.get()) {
+                return;
+            }
+
             Map<Object, Object> addedMap = new LinkedHashMap<>();
             List<Object> deletedKeys = new ArrayList<>();
             pollTask(addedMap, deletedKeys);
