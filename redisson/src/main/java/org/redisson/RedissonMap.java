@@ -40,11 +40,13 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.concurrent.ConcurrentMap}
@@ -550,6 +552,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                 commandExecutor.transfer(f, promise);
                 return promise.thenApply(r -> r != null);
             }
+            promise.complete(null);
             return CompletableFuture.completedFuture(res);
         });
         return new CompletableFutureWrapper<>(result);
@@ -616,8 +619,11 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                 Set<K> newKeys = new HashSet<K>(keys);
                 newKeys.removeAll(res.keySet());
 
-                return loadAllAsync(newKeys, false, 1, res)
-                        .thenApply(r -> res);
+                CompletionStage<Map<K, V>> ff = loadAllMapAsync(newKeys.spliterator(), false, 1);
+                return ff.thenApply(map -> {
+                    res.putAll(map);
+                    return res;
+                });
             }
             return CompletableFuture.completedFuture(res);
         });
@@ -1171,16 +1177,75 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             throw new NullPointerException("MapLoader isn't defined");
         }
 
-        Iterable<K> keys;
-        try {
-            keys = options.getLoader().loadAllKeys();
-        } catch (Exception e) {
-            log.error("Unable to load keys for map " + getRawName(), e);
-            return new CompletableFutureWrapper<>(e);
-        }
-        return loadAllAsync(keys, replaceExistingValues, parallelism, null);
+        return loadAllAsync(options.getLoader().loadAllKeys().spliterator(), replaceExistingValues, parallelism);
     }
-    
+
+    private RFuture<Void> loadAllAsync(Spliterator<K> spliterator, boolean replaceExistingValues, int parallelism) {
+        ForkJoinPool customThreadPool = new ForkJoinPool(parallelism);
+        CompletableFuture<Void> result = new CompletableFuture<>();
+        customThreadPool.submit(() -> {
+            try {
+                Stream<K> s = StreamSupport.stream(spliterator, true);
+                List<CompletableFuture<?>> r = s.filter(k -> k != null)
+                        .map(k -> {
+                            if (replaceExistingValues) {
+                                return loadValue(k, true).thenApply(v -> null);
+                            }
+
+                            CompletableFuture<V> valuePromise = new CompletableFuture<>();
+                            containsKeyAsync(k, valuePromise);
+                            return valuePromise.thenApply(v -> null);
+                        }).collect(Collectors.toList());
+
+                CompletableFuture<Void> ff = CompletableFuture.allOf(r.toArray(new CompletableFuture[0]));
+                ff.thenApply(v -> {
+                    customThreadPool.shutdown();
+                    return result.complete(v);
+                });
+            } catch (Exception e) {
+                result.completeExceptionally(e);
+            }
+        });
+
+        return new CompletableFutureWrapper<>(result);
+    }
+
+    protected CompletionStage<Map<K, V>> loadAllMapAsync(Spliterator<K> spliterator, boolean replaceExistingValues, int parallelism) {
+        ForkJoinPool customThreadPool = new ForkJoinPool(parallelism);
+        ConcurrentMap<K, V> map = new ConcurrentHashMap<>();
+        CompletableFuture<Map<K, V>> result = new CompletableFuture<>();
+        customThreadPool.submit(() -> {
+            try {
+                Stream<K> s = StreamSupport.stream(spliterator, true);
+                List<CompletableFuture<?>> r = s.filter(k -> k != null)
+                        .map(k -> {
+                            if (replaceExistingValues) {
+                                return loadValue(k, true).thenApply(v -> map.put(k, v));
+                            }
+
+                            CompletableFuture<V> valuePromise = new CompletableFuture<>();
+                            containsKeyAsync(k, valuePromise);
+                            return valuePromise.thenApply(v -> {
+                                if (v == null) {
+                                    return false;
+                                }
+                                return map.put(k, v);
+                            });
+                        }).collect(Collectors.toList());
+
+                CompletableFuture<Void> ff = CompletableFuture.allOf(r.toArray(new CompletableFuture[0]));
+                ff.thenApply(v -> {
+                    customThreadPool.shutdown();
+                    return result.complete(map);
+                });
+            } catch (Exception e) {
+                result.completeExceptionally(e);
+            }
+        });
+
+        return result;
+    }
+
     @Override
     public void loadAll(Set<? extends K> keys, boolean replaceExistingValues, int parallelism) {
         get(loadAllAsync(keys, replaceExistingValues, parallelism));
@@ -1188,106 +1253,9 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     
     @Override
     public RFuture<Void> loadAllAsync(Set<? extends K> keys, boolean replaceExistingValues, int parallelism) {
-        return loadAllAsync(keys, replaceExistingValues, parallelism, null);
-    }
-    
-    protected RFuture<Void> loadAllAsync(Iterable<? extends K> keys, boolean replaceExistingValues, int parallelism, Map<K, V> loadedEntires) {
-        if (options.getLoader() == null) {
-            throw new NullPointerException("MapLoader isn't defined");
-        }
-
-        if (parallelism < 1) {
-            throw new IllegalArgumentException("parallelism can't be lower than 1");
-        }
-
-        List<CompletableFuture<?>> futures = new ArrayList<>();
-        try {
-            Iterator<? extends K> iter = keys.iterator();
-            for (int i = 0; i < parallelism; i++) {
-                if (!iter.hasNext()) {
-                    break;
-                }
-                
-                K key = iter.next();
-                if (key == null) {
-                    continue;
-                }
-                if (replaceExistingValues) {
-                    CompletableFuture<Void> f = loadValue(iter, key, loadedEntires);
-                    futures.add(f);
-                } else {
-                    CompletableFuture<Void> f = checkAndLoadValue(iter, key, loadedEntires);
-                    futures.add(f);
-                }
-            }
-        } catch (Exception e) {
-            log.error("Unable to load keys for map " + getRawName(), e);
-            return new CompletableFutureWrapper<>(e);
-        }
-
-        CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-        return new CompletableFutureWrapper<>(f);
+        return loadAllAsync((Spliterator<K>) keys.spliterator(), replaceExistingValues, parallelism);
     }
 
-    private CompletableFuture<Void> checkAndLoadValue(Iterator<? extends K> iter, K key, Map<K, V> loadedEntires) {
-        CompletableFuture<V> valuePromise = new CompletableFuture<>();
-        valuePromise.whenComplete((r, e) -> {
-            if (loadedEntires != null && r != null) {
-                loadedEntires.put(key, r);
-            }
-        });
-
-        CompletableFuture<Boolean> future = containsKeyAsync(key, valuePromise).toCompletableFuture();
-        return future.thenCompose(res -> {
-            if (!res) {
-                CompletableFuture<V> promise = loadValue(key, false);
-                return promise.thenCompose(r -> {
-                    if (loadedEntires != null && r != null) {
-                        loadedEntires.put(key, r);
-                    }
-
-                    return checkAndLoadValue(iter, loadedEntires);
-                });
-            }
-            return checkAndLoadValue(iter, loadedEntires);
-        });
-    }
-    
-    private CompletableFuture<Void> checkAndLoadValue(Iterator<? extends K> iter, Map<K, V> loadedEntires) {
-        K key = null;
-        synchronized (iter) {
-            if (iter.hasNext()) {
-                key = iter.next();
-            }
-        }
-        
-        if (key == null) {
-            return CompletableFuture.completedFuture(null);
-        }
-        return checkAndLoadValue(iter, key, loadedEntires);
-    }
-    
-    private CompletableFuture<Void> loadValue(Iterator<? extends K> iter, K k, Map<K, V> loadedEntires) {
-        CompletableFuture<V> promise = loadValue(k, true);
-        return promise.thenCompose(res -> {
-            if (loadedEntires != null && res != null) {
-                loadedEntires.put(k, res);
-            }
-
-            K key = null;
-            synchronized (iter) {
-                if (iter.hasNext()) {
-                    key = iter.next();
-                }
-            }
-
-            if (key == null) {
-                return CompletableFuture.completedFuture(null);
-            }
-            return loadValue(iter, key, loadedEntires);
-        });
-    }
-    
     @Override
     public RFuture<V> putAsync(K key, V value) {
         checkKey(key);
