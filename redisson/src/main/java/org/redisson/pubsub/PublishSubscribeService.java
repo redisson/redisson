@@ -23,6 +23,7 @@ import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
+import org.redisson.misc.AsyncCountDownLatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -674,35 +675,28 @@ public class PublishSubscribeService {
                 entries = Collections.singletonList(entry);
             }
 
-            AtomicInteger counter = new AtomicInteger(entries.size());
-            CompletableFuture<Void> promise = new CompletableFuture<>();
+            List<CompletableFuture<?>> futures = new ArrayList<>(entries.size());
             for (MasterSlaveEntry e : entries) {
                 PubSubConnectionEntry entry = name2PubSubConnection.get(new PubSubKey(channelName, e));
                 if (entry == null) {
-                    if (counter.decrementAndGet() == 0) {
-                        semaphore.release();
-                        return CompletableFuture.completedFuture(null);
-                    }
+                    futures.add(CompletableFuture.completedFuture(null));
                     continue;
                 }
 
                 consumer.accept(entry);
+
+                CompletableFuture<Void> f;
                 if (!entry.hasListeners(channelName)) {
-                    unsubscribe(type, channelName)
-                        .whenComplete((r, ex) -> {
-                            if (counter.decrementAndGet() == 0) {
-                                semaphore.release();
-                                promise.complete(null);
-                            }
-                        });
+                    f = unsubscribe(type, channelName)
+                                .exceptionally(ex -> null);
                 } else {
-                    if (counter.decrementAndGet() == 0) {
-                        semaphore.release();
-                        promise.complete(null);
-                    }
+                    f = CompletableFuture.completedFuture(null);
                 }
+                futures.add(f);
             }
-            return promise;
+
+            CompletableFuture<Void> ff = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+            return ff.whenComplete((v, e) -> semaphore.release());
         });
     }
 

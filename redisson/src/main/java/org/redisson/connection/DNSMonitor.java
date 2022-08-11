@@ -22,15 +22,12 @@ import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
-import org.redisson.misc.AsyncCountDownLatch;
 import org.redisson.misc.RedisURI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -80,33 +77,30 @@ public class DNSMonitor {
     }
     
     private void monitorDnsChange() {
-        dnsMonitorFuture = connectionManager.getGroup().schedule(new Runnable() {
-            @Override
-            public void run() {
-                if (connectionManager.isShuttingDown()) {
-                    return;
-                }
-
-                AsyncCountDownLatch latch = new AsyncCountDownLatch();
-                latch.latch(() -> {
-                    monitorDnsChange();
-                }, masters.size() + slaves.size());
-                monitorMasters(latch);
-                monitorSlaves(latch);
+        dnsMonitorFuture = connectionManager.getGroup().schedule(() -> {
+            if (connectionManager.isShuttingDown()) {
+                return;
             }
 
+            CompletableFuture<Void> mf = monitorMasters();
+            CompletableFuture<Void> sf = monitorSlaves();
+            CompletableFuture.allOf(mf, sf)
+                    .whenComplete((r, e) -> monitorDnsChange());
         }, dnsMonitoringInterval, TimeUnit.MILLISECONDS);
     }
 
-    private void monitorMasters(AsyncCountDownLatch latch) {
+    private CompletableFuture<Void> monitorMasters() {
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (Entry<RedisURI, InetSocketAddress> entry : masters.entrySet()) {
+            CompletableFuture<Void> promise = new CompletableFuture<>();
+            futures.add(promise);
             log.debug("Request sent to resolve ip address for master host: {}", entry.getKey().getHost());
 
             Future<InetSocketAddress> resolveFuture = resolver.resolve(InetSocketAddress.createUnresolved(entry.getKey().getHost(), entry.getKey().getPort()));
             resolveFuture.addListener((FutureListener<InetSocketAddress>) future -> {
                 if (!future.isSuccess()) {
                     log.error("Unable to resolve " + entry.getKey().getHost(), future.cause());
-                    latch.countDown();
+                    promise.complete(null);
                     return;
                 }
 
@@ -122,34 +116,38 @@ public class DNSMonitor {
                     MasterSlaveEntry masterSlaveEntry = connectionManager.getEntry(currentMasterAddr);
                     if (masterSlaveEntry == null) {
                         log.error("Unable to find entry for current master {}", currentMasterAddr);
-                        latch.countDown();
+                        promise.complete(null);
                         return;
                     }
 
                     CompletableFuture<RedisClient> changeFuture = masterSlaveEntry.changeMaster(newMasterAddr, entry.getKey());
                     changeFuture.whenComplete((r, e) -> {
-                        latch.countDown();
+                        promise.complete(null);
 
                         if (e == null) {
                             masters.put(entry.getKey(), newMasterAddr);
                         }
                     });
                 } else {
-                    latch.countDown();
+                    promise.complete(null);
                 }
             });
         }
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
     }
 
-    private void monitorSlaves(AsyncCountDownLatch latch) {
+    private CompletableFuture<Void> monitorSlaves() {
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (Entry<RedisURI, InetSocketAddress> entry : slaves.entrySet()) {
+            CompletableFuture<Void> promise = new CompletableFuture<>();
+            futures.add(promise);
             log.debug("Request sent to resolve ip address for slave host: {}", entry.getKey().getHost());
 
             Future<InetSocketAddress> resolveFuture = resolver.resolve(InetSocketAddress.createUnresolved(entry.getKey().getHost(), entry.getKey().getPort()));
             resolveFuture.addListener((FutureListener<InetSocketAddress>) future -> {
                 if (!future.isSuccess()) {
                     log.error("Unable to resolve " + entry.getKey().getHost(), future.cause());
-                    latch.countDown();
+                    promise.complete(null);
                     return;
                 }
 
@@ -171,11 +169,11 @@ public class DNSMonitor {
                             masterSlaveEntry.slaveUp(newSlaveAddr, FreezeReason.MANAGER);
                             masterSlaveEntry.slaveDown(currentSlaveAddr, FreezeReason.MANAGER);
                             slaves.put(entry.getKey(), newSlaveAddr);
-                            latch.countDown();
+                            promise.complete(null);
                         } else {
                             CompletableFuture<Void> addFuture = masterSlaveEntry.addSlave(newSlaveAddr, entry.getKey());
                             addFuture.whenComplete((res, e) -> {
-                                latch.countDown();
+                                promise.complete(null);
 
                                 if (e != null) {
                                     log.error("Can't add slave: " + newSlaveAddr, e);
@@ -189,14 +187,14 @@ public class DNSMonitor {
                         break;
                     }
                     if (!slaveFound) {
-                        latch.countDown();
+                        promise.complete(null);
                     }
                 } else {
-                    latch.countDown();
+                    promise.complete(null);
                 }
             });
         }
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
     }
 
-    
 }
