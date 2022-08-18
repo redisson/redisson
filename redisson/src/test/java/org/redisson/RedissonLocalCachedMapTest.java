@@ -193,7 +193,13 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         LocalCachedMapOptions<K, V> options = LocalCachedMapOptions.<K, V>defaults().loader(createMapLoader(map));
         return redisson.getLocalCachedMap(name, options);        
     }
-        
+
+    @Override
+    protected <K, V> RMap<K, V> getLoaderAsyncTestMap(String name, Map<K, V> map) {
+        LocalCachedMapOptions<K, V> options = LocalCachedMapOptions.<K, V>defaults().loaderAsync(createMapLoaderAsync(map));
+        return redisson.getLocalCachedMap(name, options);
+    }
+
     @Test
     public void testBigPutAll() throws InterruptedException {
         RLocalCachedMap<Object, Object> m = redisson.getLocalCachedMap("testValuesWithNearCache2",

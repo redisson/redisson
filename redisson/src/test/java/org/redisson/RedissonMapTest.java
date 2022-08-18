@@ -26,12 +26,18 @@ public class RedissonMapTest extends BaseMapTest {
         return redisson.getMap(name, codec);
     }
 
-        @Override
+    @Override
     protected <K, V> RMap<K, V> getLoaderTestMap(String name, Map<K, V> map) {
         MapOptions<K, V> options = MapOptions.<K, V>defaults().loader(createMapLoader(map));
         return redisson.getMap("test", options);        
     }
-    
+
+    @Override
+    protected <K, V> RMap<K, V> getLoaderAsyncTestMap(String name, Map<K, V> map) {
+        MapOptions<K, V> options = MapOptions.<K, V>defaults().loaderAsync(createMapLoaderAsync(map));
+        return redisson.getMap("test", options);
+    }
+
     @Override
     protected <K, V> RMap<K, V> getWriterTestMap(String name, Map<K, V> map) {
         MapOptions<K, V> options = MapOptions.<K, V>defaults().writer(createMapWriter(map));
