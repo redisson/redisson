@@ -44,6 +44,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -1177,15 +1178,15 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             throw new NullPointerException("MapLoader isn't defined");
         }
 
-        return loadAllAsync(options.getLoader().loadAllKeys().spliterator(), replaceExistingValues, parallelism);
+        return loadAllAsync(() -> options.getLoader().loadAllKeys().spliterator(), replaceExistingValues, parallelism);
     }
 
-    private RFuture<Void> loadAllAsync(Spliterator<K> spliterator, boolean replaceExistingValues, int parallelism) {
+    private RFuture<Void> loadAllAsync(Supplier<Spliterator<K>> supplier, boolean replaceExistingValues, int parallelism) {
         ForkJoinPool customThreadPool = new ForkJoinPool(parallelism);
         CompletableFuture<Void> result = new CompletableFuture<>();
         customThreadPool.submit(() -> {
             try {
-                Stream<K> s = StreamSupport.stream(spliterator, true);
+                Stream<K> s = StreamSupport.stream(supplier.get(), true);
                 List<CompletableFuture<?>> r = s.filter(k -> k != null)
                         .map(k -> {
                             if (replaceExistingValues) {
@@ -1253,7 +1254,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     
     @Override
     public RFuture<Void> loadAllAsync(Set<? extends K> keys, boolean replaceExistingValues, int parallelism) {
-        return loadAllAsync((Spliterator<K>) keys.spliterator(), replaceExistingValues, parallelism);
+        return loadAllAsync(() -> (Spliterator<K>) keys.spliterator(), replaceExistingValues, parallelism);
     }
 
     @Override
