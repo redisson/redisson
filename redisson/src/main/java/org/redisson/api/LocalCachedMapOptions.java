@@ -18,6 +18,7 @@ package org.redisson.api;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.map.MapLoader;
+import org.redisson.api.map.MapLoaderAsync;
 import org.redisson.api.map.MapWriter;
  import org.redisson.api.map.MapWriterAsync;
 
@@ -402,4 +403,8 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
         return (LocalCachedMapOptions<K, V>) super.loader(loader);
     }
 
+    @Override
+    public LocalCachedMapOptions<K, V> loaderAsync(MapLoaderAsync<K, V> loaderAsync) {
+        return (LocalCachedMapOptions<K, V>) super.loaderAsync(loaderAsync);
+    }
 }

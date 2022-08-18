@@ -632,7 +632,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     protected boolean hasNoLoader() {
-        return options == null || options.getLoader() == null;
+        return options == null || (options.getLoader() == null && options.getLoaderAsync() == null);
     }
 
     public RFuture<Map<K, V>> getAllOperationAsync(Set<K> keys) {
@@ -1174,11 +1174,62 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     
     @Override
     public RFuture<Void> loadAllAsync(boolean replaceExistingValues, int parallelism) {
-        if (options.getLoader() == null) {
+        if (hasNoLoader()) {
             throw new NullPointerException("MapLoader isn't defined");
         }
 
+        if (options.getLoaderAsync() != null) {
+            return loadAllAsync(options.getLoaderAsync().loadAllKeys(), replaceExistingValues, parallelism);
+        }
+
         return loadAllAsync(() -> options.getLoader().loadAllKeys().spliterator(), replaceExistingValues, parallelism);
+    }
+
+    RFuture<Void> loadAllAsync(AsyncIterator<K> iterator, boolean replaceExistingValues, int parallelism) {
+        CompletionStage<List<K>> f = loadAllAsync(iterator, new ArrayList<>(), new AtomicInteger(parallelism));
+        CompletionStage<Void> ff = f.thenCompose(elements -> {
+            List<CompletableFuture<V>> futures = new ArrayList<>(elements.size());
+            for (K k : elements) {
+                if (replaceExistingValues) {
+                    CompletableFuture<V> vFuture = loadValue(k, true);
+                    futures.add(vFuture);
+                } else {
+                    CompletableFuture<V> vFuture = new CompletableFuture<>();
+                    containsKeyAsync(k, vFuture);
+                    futures.add(vFuture);
+                }
+            }
+
+            CompletableFuture<Void> finalFuture = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+
+            if (elements.size() < parallelism) {
+                return finalFuture;
+            }
+
+            return finalFuture
+                        .thenCompose(v -> loadAllAsync(iterator, replaceExistingValues, parallelism));
+        });
+        return new CompletableFutureWrapper<>(ff);
+    }
+
+    CompletionStage<List<K>> loadAllAsync(AsyncIterator<K> iterator, List<K> elements, AtomicInteger workers) {
+        return iterator.hasNext()
+                .thenCompose(v -> {
+                    int s = workers.decrementAndGet();
+                    if (v) {
+                        return iterator.next().thenCompose(k -> {
+                            if (k != null) {
+                                elements.add(k);
+                            }
+                            if (s > 0) {
+                                return loadAllAsync(iterator, elements, workers);
+                            }
+                            return CompletableFuture.completedFuture(elements);
+                        });
+                    }
+                    return CompletableFuture.completedFuture(elements);
+                });
+
     }
 
     private RFuture<Void> loadAllAsync(Supplier<Spliterator<K>> supplier, boolean replaceExistingValues, int parallelism) {
@@ -1643,7 +1694,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
     
     private CompletableFuture<V> loadValue(K key, RLock lock, long threadId) {
-//        if (options.getLoader() != null) {
+        if (options.getLoader() != null) {
             CompletableFuture<V> result = new CompletableFuture<>();
             commandExecutor.getConnectionManager().getExecutor().execute(new Runnable() {
                 @Override
@@ -1698,33 +1749,33 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                 }
             });
             return result;
-//        }
+        }
 
-//        CompletionStage<V> valueFuture = options.getLoaderAsync().load(key);
-//        return valueFuture.handle((r, ex) -> {
-//            if (r == null) {
-//                return lock.unlockAsync(threadId);
-//            }
-//            if (ex != null) {
-//                log.error("Unable to load value by key " + key + " for map " + getRawName(), ex);
-//                return lock.unlockAsync(threadId);
-//            }
-//
-//            return valueFuture;
-//        }).thenCompose(f -> f)
-//          .thenCompose(value -> {
-//            if (value != null) {
-//                return (CompletionStage<V>) putOperationAsync(key, (V) value).handle((r, ex) -> {
-//                    RFuture<Void> f = lock.unlockAsync(threadId);
-//                    if (ex != null) {
-//                        log.error("Unable to store value by key " + key + " for map " + getRawName(), ex);
-//                        return f;
-//                    }
-//                    return f.thenApply(res -> value);
-//                }).thenCompose(f -> f);
-//            }
-//            return CompletableFuture.completedFuture((V) value);
-//        }).toCompletableFuture();
+        CompletionStage<V> valueFuture = options.getLoaderAsync().load(key);
+        return valueFuture.handle((r, ex) -> {
+            if (r == null) {
+                return lock.unlockAsync(threadId);
+            }
+            if (ex != null) {
+                log.error("Unable to load value by key " + key + " for map " + getRawName(), ex);
+                return lock.unlockAsync(threadId);
+            }
+
+            return valueFuture;
+        }).thenCompose(f -> f)
+          .thenCompose(value -> {
+            if (value != null) {
+                return (CompletionStage<V>) putOperationAsync(key, (V) value).handle((r, ex) -> {
+                    RFuture<Void> f = lock.unlockAsync(threadId);
+                    if (ex != null) {
+                        log.error("Unable to store value by key " + key + " for map " + getRawName(), ex);
+                        return f;
+                    }
+                    return f.thenApply(res -> value);
+                }).thenCompose(f -> f);
+            }
+            return CompletableFuture.completedFuture((V) value);
+        }).toCompletableFuture();
     }
 
     final class EntrySet extends AbstractSet<Map.Entry<K, V>> {

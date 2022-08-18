@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
 import org.redisson.api.map.MapLoader;
+import org.redisson.api.map.MapLoaderAsync;
 import org.redisson.api.map.MapWriter;
  import org.redisson.api.map.MapWriterAsync;
 import org.redisson.client.codec.Codec;
@@ -1156,6 +1157,8 @@ public abstract class BaseMapTest extends BaseTest {
     
     protected abstract <K, V> RMap<K, V> getLoaderTestMap(String name, Map<K, V> map);
 
+    protected abstract <K, V> RMap<K, V> getLoaderAsyncTestMap(String name, Map<K, V> map);
+
     @Test
     public void testMapLoaderGetMulipleNulls() {
         Map<String, String> cache = new HashMap<String, String>();
@@ -1202,6 +1205,37 @@ public abstract class BaseMapTest extends BaseTest {
         Thread.sleep(1400);
         assertThat(store).isEqualTo(expected);
         destroy(map);
+    }
+
+    @Test
+    public void testLoaderGetAsync() {
+        Map<String, String> cache = new HashMap<String, String>();
+        cache.put("1", "11");
+        cache.put("2", "22");
+        cache.put("3", "33");
+
+        RMap<String, String> map = getLoaderAsyncTestMap("test", cache);
+
+        assertThat(map.size()).isEqualTo(0);
+        assertThat(map.get("1")).isEqualTo("11");
+        assertThat(map.size()).isEqualTo(1);
+        assertThat(map.get("0")).isNull();
+        map.put("0", "00");
+        assertThat(map.get("0")).isEqualTo("00");
+        assertThat(map.size()).isEqualTo(2);
+
+        assertThat(map.containsKey("2")).isTrue();
+        assertThat(map.size()).isEqualTo(3);
+
+        Map<String, String> s = map.getAll(new HashSet<>(Arrays.asList("1", "2", "9", "3")));
+        Map<String, String> expectedMap = new HashMap<>();
+        expectedMap.put("1", "11");
+        expectedMap.put("2", "22");
+        expectedMap.put("3", "33");
+        assertThat(s).isEqualTo(expectedMap);
+        assertThat(map.size()).isEqualTo(4);
+        destroy(map);
+
     }
 
     @Test
@@ -1442,6 +1476,25 @@ public abstract class BaseMapTest extends BaseTest {
         destroy(map);
     }
 
+    @Test
+    public void testLoadAllAsync() {
+        Map<String, String> cache = new HashMap<String, String>();
+        for (int i = 0; i < 100; i++) {
+            cache.put("" + i, "" + (i*10 + i));
+        }
+
+        RMap<String, String> map = getLoaderAsyncTestMap("test", cache);
+
+        assertThat(map.size()).isEqualTo(0);
+        map.loadAll(false, 2);
+        assertThat(map.size()).isEqualTo(100);
+
+        for (int i = 0; i < 100; i++) {
+            assertThat(map.containsKey("" + i)).isTrue();
+        }
+        destroy(map);
+    }
+
     protected <K, V> MapWriterAsync<K, V> createMapWriterAsync(Map<K, V> map) {
         return new MapWriterAsync<K, V>() {
 
@@ -1481,7 +1534,34 @@ public abstract class BaseMapTest extends BaseTest {
             
         };
     }
-    
+
+    protected <K, V> MapLoaderAsync<K, V> createMapLoaderAsync(Map<K, V> map) {
+        MapLoaderAsync<K, V> loaderAsync = new MapLoaderAsync<K, V>() {
+            @Override
+            public CompletionStage<V> load(Object key) {
+                return CompletableFuture.completedFuture(map.get(key));
+            }
+
+            @Override
+            public AsyncIterator<K> loadAllKeys() {
+                Iterator<K> iter = map.keySet().iterator();
+                return new AsyncIterator<K>() {
+
+                    @Override
+                    public CompletionStage<Boolean> hasNext() {
+                        return CompletableFuture.completedFuture(iter.hasNext());
+                    }
+
+                    @Override
+                    public CompletionStage<K> next() {
+                        return CompletableFuture.completedFuture(iter.next());
+                    }
+                };
+            }
+        };
+        return loaderAsync;
+    }
+
     protected <K, V> MapLoader<K, V> createMapLoader(Map<K, V> map) {
         return new MapLoader<K, V>() {
             @Override
