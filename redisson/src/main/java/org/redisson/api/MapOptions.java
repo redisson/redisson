@@ -174,6 +174,12 @@ public class MapOptions<K, V> {
         return loader;
     }
 
+    /**
+     * Sets {@link MapLoaderAsync} object.
+     *
+     * @param loaderAsync object
+     * @return MapOptions instance
+     */
     public MapOptions<K, V> loaderAsync(MapLoaderAsync<K, V> loaderAsync) {
         this.loaderAsync = loaderAsync;
         return this;
