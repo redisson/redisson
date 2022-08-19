@@ -60,17 +60,15 @@ public abstract class RedissonObject implements RObject {
     }
 
     public static String prefixName(String prefix, String name) {
-        if (name.contains("{")) {
-            return prefix + ":" + name;
-        }
-        return prefix + ":{" + name + "}";
+        return name.contains("{")
+                ? prefix + ":" + name
+                : prefix + ":{" + name + "}";
     }
     
     public static String suffixName(String name, String suffix) {
-        if (name.contains("{")) {
-            return name + ":" + suffix;
-        }
-        return "{" + name + "}:" + suffix;
+        return name.contains("{")
+                ? name + ":" + suffix
+                : "{" + name + "}:" + suffix;
     }
 
     protected final <T> Stream<T> toStream(Iterator<T> iterator) {
