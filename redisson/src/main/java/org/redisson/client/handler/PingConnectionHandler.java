@@ -19,8 +19,7 @@ import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.redisson.api.RFuture;
-import org.redisson.client.RedisClientConfig;
-import org.redisson.client.RedisConnection;
+import org.redisson.client.*;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.RedisCommands;
@@ -82,9 +81,17 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
             if (connection.getUsage() == 0
                     && future != null
                         && (future.cancel(false) || cause(future) != null)) {
-                ctx.channel().close();
-                if (cause(future) != null && !future.isCancelled()) {
-                    log.error("Unable to send PING command over channel: " + ctx.channel(), cause(future));
+                Throwable cause = cause(future);
+
+                if (!(cause instanceof RedisLoadingException
+                        || cause instanceof RedisTryAgainException
+                            || cause instanceof RedisClusterDownException
+                                || cause instanceof RedisBusyException)) {
+                    ctx.channel().close();
+                }
+
+                if (cause != null && !future.isCancelled()) {
+                    log.error("Unable to send PING command over channel: " + ctx.channel(), cause);
                 }
                 log.debug("channel: {} closed due to PING response timeout set in {} ms", ctx.channel(), config.getPingConnectionInterval());
             } else {
