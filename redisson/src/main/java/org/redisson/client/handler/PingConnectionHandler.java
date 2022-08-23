@@ -87,6 +87,7 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
                         || cause instanceof RedisTryAgainException
                             || cause instanceof RedisClusterDownException
                                 || cause instanceof RedisBusyException)) {
+                    log.debug("channel: {} closed due to PING response timeout set in {} ms", ctx.channel(), config.getPingConnectionInterval());
                     ctx.channel().close();
                 } else {
                     sendPing(ctx);
@@ -95,7 +96,6 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
                 if (cause != null && !future.isCancelled()) {
                     log.error("Unable to send PING command over channel: " + ctx.channel(), cause);
                 }
-                log.debug("channel: {} closed due to PING response timeout set in {} ms", ctx.channel(), config.getPingConnectionInterval());
             } else {
                 sendPing(ctx);
             }
