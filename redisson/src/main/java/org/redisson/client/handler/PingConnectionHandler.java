@@ -88,6 +88,8 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
                             || cause instanceof RedisClusterDownException
                                 || cause instanceof RedisBusyException)) {
                     ctx.channel().close();
+                } else {
+                    sendPing(ctx);
                 }
 
                 if (cause != null && !future.isCancelled()) {
