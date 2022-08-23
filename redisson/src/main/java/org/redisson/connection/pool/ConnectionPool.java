@@ -111,7 +111,9 @@ abstract class ConnectionPool<T extends RedisConnection> {
             createConnection(entry, promise);
             promise.whenComplete((conn, e) -> {
                 if (e == null) {
-                    conn.decUsage();
+                    if (changeUsage()) {
+                        conn.decUsage();
+                    }
                     if (!initPromise.isDone()) {
                         entry.addConnection(conn);
                     } else {
@@ -280,9 +282,15 @@ abstract class ConnectionPool<T extends RedisConnection> {
                 return;
             }
 
-            promise.thenApply(c -> c.incUsage());
+            if (changeUsage()) {
+                promise.thenApply(c -> c.incUsage());
+            }
             connectedSuccessful(entry, promise, conn);
         });
+    }
+
+    protected boolean changeUsage() {
+        return true;
     }
 
     private void connectedSuccessful(ClientConnectionsEntry entry, CompletableFuture<T> promise, T conn) {

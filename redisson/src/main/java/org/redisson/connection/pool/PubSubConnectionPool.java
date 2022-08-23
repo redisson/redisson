@@ -72,4 +72,8 @@ public class PubSubConnectionPool extends ConnectionPool<RedisPubSubConnection> 
         entry.releaseSubscribeConnection(conn);
     }
 
+    @Override
+    protected boolean changeUsage() {
+        return false;
+    }
 }
