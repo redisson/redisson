@@ -135,6 +135,7 @@ public class RedissonAutoConfiguration {
                 try {
                     config = Config.fromJSON(redissonProperties.getConfig());
                 } catch (IOException e1) {
+                    e1.addSuppressed(e);
                     throw new IllegalArgumentException("Can't parse config", e1);
                 }
             }
@@ -148,6 +149,7 @@ public class RedissonAutoConfiguration {
                     InputStream is = getConfigStream();
                     config = Config.fromJSON(is);
                 } catch (IOException e1) {
+                    e1.addSuppressed(e);
                     throw new IllegalArgumentException("Can't parse config", e1);
                 }
             }
