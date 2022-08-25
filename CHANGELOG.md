@@ -3,6 +3,21 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 24-Aug-2022 - 3.17.6 released
+
+Feature - Helidon 3.0 support  
+Feature - ability to specify `MapWriterAsync` and `MapLoaderAsync` in `MapOptions` object  
+
+Improvement - log output string expanded to 1000 characters by default
+
+Fixed - `RBuckets` methods don't use `nameMapper`  
+Fixed - PingConnectionHandler should close channel on RedisLoadingException, RedisTryAgainException, RedisClusterDownException, RedisBusyException  
+Fixed - Invocation timeout isn't applied for `RTopic.removeListenerAsync()` methods  
+Fixed - `WriteBehind` task isn't stopped after `RMap.destroy()` method invocation  
+Fixed - Connection pinging works incorrectly if new connections were created in pool  
+Fixed - "SlaveConnectionPool no available Redis entries" error occurs in Cluster caused by early excluding of master node from nodes for reading  
+Fixed - Permanent blocking calling threads  
+
 ### 22-July-2022 - 3.17.5 released
 
 Feature - `touch()`, `unlink()` and `delete()` methods implemented for transactional `RSetCache` and `RSet` objects  
