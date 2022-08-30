@@ -132,7 +132,7 @@
             <dependency>
                 <groupId>org.assertj</groupId>
                 <artifactId>assertj-core</artifactId>
-                <version>3.22.0</version>
+                <version>3.23.1</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
@@ -168,14 +168,14 @@
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
-                <version>1.2.11</version>
+                <version>1.3.0</version>
                 <scope>test</scope>
             </dependency>
 
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-bom</artifactId>
-                <version>4.1.79.Final</version>
+                <version>4.1.80.Final</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
