@@ -308,8 +308,8 @@ abstract class ConnectionPool<T extends RedisConnection> {
         if (entry.getNodeType() == NodeType.SLAVE) {
             entry.trySetupFistFail();
             if (entry.isFailed()) {
-            checkForReconnect(entry, cause);
-        }
+                checkForReconnect(entry, cause);
+            }
         }
 
         releaseConnection(entry);
@@ -321,12 +321,12 @@ abstract class ConnectionPool<T extends RedisConnection> {
         if (entry.getNodeType() == NodeType.SLAVE) {
             entry.trySetupFistFail();
             if (entry.isFailed()) {
-            conn.closeAsync();
-            entry.getAllConnections().remove(conn);
-            checkForReconnect(entry, null);
+                conn.closeAsync();
+                entry.getAllConnections().remove(conn);
+                checkForReconnect(entry, null);
             } else {
-            releaseConnection(entry, conn);
-        }
+                releaseConnection(entry, conn);
+            }
         } else {
             releaseConnection(entry, conn);
         }
