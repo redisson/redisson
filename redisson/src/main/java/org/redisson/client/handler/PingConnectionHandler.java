@@ -81,22 +81,26 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
             if (connection.getUsage() == 0
                     && future != null
                         && (future.cancel(false) || cause(future) != null)) {
+
                 Throwable cause = cause(future);
 
                 if (!(cause instanceof RedisLoadingException
                         || cause instanceof RedisTryAgainException
                             || cause instanceof RedisClusterDownException
                                 || cause instanceof RedisBusyException)) {
+                    if (!future.isCancelled()) {
+                        log.error("Unable to send PING command over channel: " + ctx.channel(), cause);
+                    }
+
                     log.debug("channel: {} closed due to PING response timeout set in {} ms", ctx.channel(), config.getPingConnectionInterval());
                     ctx.channel().close();
+                    connection.getRedisClient().trySetupFirstFail();
                 } else {
+                    connection.getRedisClient().resetFirstFail();
                     sendPing(ctx);
                 }
-
-                if (cause != null && !future.isCancelled()) {
-                    log.error("Unable to send PING command over channel: " + ctx.channel(), cause);
-                }
             } else {
+                connection.getRedisClient().resetFirstFail();
                 sendPing(ctx);
             }
         }, config.getPingConnectionInterval(), TimeUnit.MILLISECONDS);

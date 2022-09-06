@@ -58,8 +58,6 @@ public class ClientConnectionsEntry {
     private volatile NodeType nodeType;
     private final ConnectionManager connectionManager;
 
-    private final AtomicLong firstFailTime = new AtomicLong(0);
-
     private volatile boolean initialized = false;
 
     public ClientConnectionsEntry(RedisClient client, int poolMinSize, int poolMaxSize, int subscribePoolMinSize, int subscribePoolMaxSize,
@@ -105,18 +103,18 @@ public class ClientConnectionsEntry {
     }
 
     public void resetFirstFail() {
-        firstFailTime.set(0);
+        client.resetFirstFail();
     }
 
     public boolean isFailed() {
-        if (firstFailTime.get() != 0) {
-            return System.currentTimeMillis() - firstFailTime.get() > connectionManager.getConfig().getFailedSlaveCheckInterval(); 
+        if (client.getFirstFailTime() != 0) {
+            return System.currentTimeMillis() - client.getFirstFailTime() > connectionManager.getConfig().getFailedSlaveCheckInterval();
         }
         return false;
     }
     
     public void trySetupFistFail() {
-        firstFailTime.compareAndSet(0, System.currentTimeMillis());
+        client.trySetupFirstFail();
     }
 
     public CompletableFuture<Void> shutdownAsync() {
@@ -277,7 +275,7 @@ public class ClientConnectionsEntry {
                 + ", freeSubscribeConnectionsCounter=" + freeSubscribeConnectionsCounter
                 + ", freeConnectionsAmount=" + freeConnections.size() + ", freeConnectionsCounter="
                 + freeConnectionsCounter + ", freezeReason=" + freezeReason
-                + ", client=" + client + ", nodeType=" + nodeType + ", firstFail=" + firstFailTime
+                + ", client=" + client + ", nodeType=" + nodeType + ", firstFail=" + client.getFirstFailTime()
                 + "]";
     }
 

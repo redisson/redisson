@@ -42,6 +42,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -69,6 +70,8 @@ public final class RedisClient {
     private boolean hasOwnGroup;
     private boolean hasOwnResolver;
     private volatile boolean shutdown;
+
+    private final AtomicLong firstFailTime = new AtomicLong(0);
 
     public static RedisClient create(RedisClientConfig config) {
         return new RedisClient(config);
@@ -128,7 +131,19 @@ public final class RedisClient {
         config.getNettyHook().afterBoostrapInitialization(bootstrap);
         return bootstrap;
     }
-    
+
+    public void resetFirstFail() {
+        firstFailTime.set(0);
+    }
+
+    public long getFirstFailTime() {
+        return firstFailTime.get();
+    }
+
+    public void trySetupFirstFail() {
+        firstFailTime.compareAndSet(0, System.currentTimeMillis());
+    }
+
     public InetSocketAddress getAddr() {
         return resolvedAddr;
     }
