@@ -463,17 +463,17 @@ public class PublishSubscribeService {
             return CompletableFuture.completedFuture(null);
         }
 
-        CompletableFuture<Codec> result = new CompletableFuture<>();
         AsyncSemaphore lock = getSemaphore(channelName);
-        lock.acquire(() -> {
+        CompletableFuture<Void> f = lock.acquire();
+        return f.thenCompose(v -> {
             PubSubConnectionEntry entry = name2PubSubConnection.remove(new PubSubKey(channelName, e));
             if (entry == null) {
                 lock.release();
-                result.complete(null);
-                return;
+                return CompletableFuture.completedFuture(null);
             }
 
-            freePubSubLock.acquire(() -> {
+            CompletableFuture<Void> psf = freePubSubLock.acquire();
+            return psf.thenCompose(r -> {
                 PubSubEntry ee = entry2PubSubConnection.getOrDefault(e, new PubSubEntry());
                 Queue<PubSubConnectionEntry> freePubSubConnections = ee.getEntries();
                 freePubSubConnections.remove(entry);
@@ -488,6 +488,7 @@ public class PublishSubscribeService {
                     entryCodec = entry.getConnection().getChannels().get(channelName);
                 }
 
+                CompletableFuture<Codec> result = new CompletableFuture<>();
                 RedisPubSubListener<Object> listener = new BaseRedisPubSubListener() {
 
                     @Override
@@ -503,10 +504,9 @@ public class PublishSubscribeService {
                 };
 
                 entry.unsubscribe(topicType, channelName, listener);
+                return result;
             });
         });
-
-        return result;
     }
 
     private void addFreeConnectionEntry(ChannelName channelName, PubSubConnectionEntry entry) {
