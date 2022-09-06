@@ -15,38 +15,27 @@
  */
 package org.redisson.spring.data.connection;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import org.reactivestreams.Publisher;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.StringCodec;
-import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.reactive.CommandReactiveExecutor;
 import org.springframework.data.domain.Range;
-import org.springframework.data.redis.connection.ReactiveRedisConnection.AbsentByteBufferResponse;
-import org.springframework.data.redis.connection.ReactiveRedisConnection.BooleanResponse;
-import org.springframework.data.redis.connection.ReactiveRedisConnection.ByteBufferResponse;
-import org.springframework.data.redis.connection.ReactiveRedisConnection.KeyCommand;
-import org.springframework.data.redis.connection.ReactiveRedisConnection.MultiValueResponse;
-import org.springframework.data.redis.connection.ReactiveRedisConnection.NumericResponse;
-import org.springframework.data.redis.connection.ReactiveRedisConnection.RangeCommand;
+import org.springframework.data.redis.connection.ReactiveRedisConnection.*;
 import org.springframework.data.redis.connection.ReactiveStringCommands;
 import org.springframework.data.redis.connection.RedisStringCommands.BitOperation;
 import org.springframework.data.redis.connection.RedisStringCommands.SetOption;
 import org.springframework.util.Assert;
-
-import io.netty.buffer.ByteBuf;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -96,8 +85,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
                     m = write(key, StringCodec.INSTANCE, SET, key, value, "PX", command.getExpiration().get().getExpirationTimeInMilliseconds(), "XX");
                 }
             }
-            return m.map(v -> new BooleanResponse<>(command, v))
-                .switchIfEmpty(Mono.just(new BooleanResponse<>(command, Boolean.FALSE)));
+            return m.map(v -> new BooleanResponse<>(command, v)).switchIfEmpty(Mono.just(new BooleanResponse<>(command, Boolean.FALSE)));
         });
     }
 
