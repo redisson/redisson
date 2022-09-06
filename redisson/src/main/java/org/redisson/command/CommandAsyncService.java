@@ -366,18 +366,15 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     private static final Map<String, String> SHA_CACHE = new LRUCacheMap<>(500, 0, 0);
     
     private String calcSHA(String script) {
-        String digest = SHA_CACHE.get(script);
-        if (digest == null) {
+        return SHA_CACHE.computeIfAbsent(script, k -> {
             try {
                 MessageDigest mdigest = MessageDigest.getInstance("SHA-1");
                 byte[] s = mdigest.digest(script.getBytes());
-                digest = ByteBufUtil.hexDump(s);
-                SHA_CACHE.put(script, digest);
+                return ByteBufUtil.hexDump(s);
             } catch (Exception e) {
                 throw new IllegalStateException(e);
             }
-        }
-        return digest;
+        });
     }
     
     private Object[] copy(Object[] params) {
