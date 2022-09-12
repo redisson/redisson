@@ -708,7 +708,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected CompletableFuture<RedisURI> resolveIP(String scheme, RedisURI address) {
         if (address.isIP()) {
-            RedisURI addr = applyNatMap(address);
+            RedisURI addr = toURI(scheme, address.getHost(), "" + address.getPort());
             return CompletableFuture.completedFuture(addr);
         }
 
