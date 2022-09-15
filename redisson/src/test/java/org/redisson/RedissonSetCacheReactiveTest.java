@@ -8,12 +8,16 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.redisson.api.RSetCacheReactive;
+import org.redisson.api.*;
+import org.redisson.client.codec.StringCodec;
+import org.redisson.config.Config;
+import reactor.core.publisher.Mono;
 
 public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
 
@@ -29,6 +33,33 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
             this.lng = lng;
         }
 
+    }
+
+    @Test
+    public void testBatchScriptCache() throws InterruptedException {
+        Config config = new Config();
+        config.setUseScriptCache(true);
+        config.useSingleServer()
+                .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+        RedissonReactiveClient client = Redisson.create(config).reactive();
+
+        RBatchReactive batch = client.createBatch();
+        Mono<Boolean> setResult = batch.getSetCache("test2",
+                        StringCodec.INSTANCE)
+                .add("setValue", 10, TimeUnit.SECONDS);
+
+        Thread.sleep(400);
+
+        Mono<Integer> monoMsSetSize = batch.getSetCache("test2",
+                StringCodec.INSTANCE).size();
+        batch.execute().subscribe();
+        Integer v = Mono.zip(setResult, monoMsSetSize).flatMap(touple -> {
+            return Mono.just(touple.getT2());
+        }).block();
+
+        assertThat(v).isEqualTo(1);
+
+        client.shutdown();
     }
 
     @Test

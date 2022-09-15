@@ -78,6 +78,11 @@ public class CommandReactiveBatchService extends CommandReactiveService {
         return batchService.executeAsync();
     }
 
+    @Override
+    protected boolean isEvalCacheActive() {
+        return false;
+    }
+
     public RFuture<Void> discardAsync() {
         return batchService.discardAsync();
     }
