@@ -28,6 +28,7 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * <p>Distributed and concurrent implementation of {@link java.util.concurrent.BlockingQueue}.
@@ -126,11 +127,12 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
 
     @Override
     public RFuture<Map<String, List<V>>> pollFirstFromAnyAsync(Duration duration, int count, String... queueNames) {
+        List<String> mappedNames = Arrays.stream(queueNames).map(m -> commandExecutor.getConnectionManager().getConfig().getNameMapper().map(m)).collect(Collectors.toList());
         List<Object> params = new ArrayList<>();
         params.add(toSeconds(duration.getSeconds(), TimeUnit.SECONDS));
         params.add(queueNames.length + 1);
         params.add(getRawName());
-        params.addAll(Arrays.asList(queueNames));
+        params.addAll(mappedNames);
         params.add("LEFT");
         params.add("COUNT");
         params.add(count);
@@ -144,11 +146,12 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
 
     @Override
     public RFuture<Map<String, List<V>>> pollLastFromAnyAsync(Duration duration, int count, String... queueNames) {
+        List<String> mappedNames = Arrays.stream(queueNames).map(m -> commandExecutor.getConnectionManager().getConfig().getNameMapper().map(m)).collect(Collectors.toList());
         List<Object> params = new ArrayList<>();
         params.add(toSeconds(duration.getSeconds(), TimeUnit.SECONDS));
         params.add(queueNames.length + 1);
         params.add(getRawName());
-        params.addAll(Arrays.asList(queueNames));
+        params.addAll(mappedNames);
         params.add("RIGHT");
         params.add("COUNT");
         params.add(count);
@@ -157,7 +160,8 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
 
     @Override
     public RFuture<V> pollLastAndOfferFirstToAsync(String queueName, long timeout, TimeUnit unit) {
-        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.BRPOPLPUSH, getRawName(), queueName, toSeconds(timeout, unit));
+        String mappedName = commandExecutor.getConnectionManager().getConfig().getNameMapper().map(queueName);
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.BRPOPLPUSH, getRawName(), mappedName, toSeconds(timeout, unit));
     }
 
     @Override

@@ -659,19 +659,20 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     @Override
     public <V> RFuture<V> pollFromAnyAsync(String name, Codec codec, RedisCommand<?> command, long secondsTimeout, String... queueNames) {
+        List<String> mappedNames = Arrays.stream(queueNames).map(m -> connectionManager.getConfig().getNameMapper().map(m)).collect(Collectors.toList());
         if (connectionManager.isClusterMode() && queueNames.length > 0) {
             AtomicReference<Iterator<String>> ref = new AtomicReference<>();
             List<String> names = new ArrayList<>();
             names.add(name);
-            names.addAll(Arrays.asList(queueNames));
+            names.addAll(mappedNames);
             ref.set(names.iterator());
             AtomicLong counter = new AtomicLong(secondsTimeout);
             CompletionStage<V> result = poll(codec, ref, names, counter, command);
             return new CompletableFutureWrapper<>(result);
         } else {
-            List<Object> params = new ArrayList<Object>(queueNames.length + 1);
+            List<Object> params = new ArrayList<>(queueNames.length + 1);
             params.add(name);
-            params.addAll(Arrays.asList(queueNames));
+            params.addAll(mappedNames);
             params.add(secondsTimeout);
             return writeAsync(name, codec, command, params.toArray());
         }
