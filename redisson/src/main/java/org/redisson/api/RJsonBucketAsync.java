@@ -46,6 +46,17 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
      * @return {@code true} if successful, or {@code false} if
      *         value was already set
      */
+    RFuture<Boolean> setIfAbsentAsync(String path, Object value);
+
+    /**
+     * Use {@link #setIfAbsentAsync(String, Object)} instead
+     *
+     * @param path JSON path
+     * @param value object
+     * @return {@code true} if successful, or {@code false} if
+     *         value was already set
+     */
+    @Deprecated
     RFuture<Boolean> trySetAsync(String path, Object value);
 
     /**

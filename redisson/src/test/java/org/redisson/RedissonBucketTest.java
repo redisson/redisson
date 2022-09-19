@@ -181,7 +181,7 @@ public class RedissonBucketTest extends BaseTest {
         Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("4.0.0") > 0);
         RBucket<Integer> al = redisson.getBucket("test");
         al.set(1234);
-        assertThat(al.sizeInMemory()).isEqualTo(54);
+        assertThat(al.sizeInMemory()).isEqualTo(56);
     }
     
     @Test
@@ -298,16 +298,16 @@ public class RedissonBucketTest extends BaseTest {
     @Test
     public void testTrySet() {
         RBucket<String> r1 = redisson.getBucket("testTrySet");
-        assertThat(r1.trySet("3")).isTrue();
-        assertThat(r1.trySet("4")).isFalse();
+        assertThat(r1.setIfAbsent("3")).isTrue();
+        assertThat(r1.setIfAbsent("4")).isFalse();
         assertThat(r1.get()).isEqualTo("3");
     }
 
     @Test
     public void testTrySetTTL() throws InterruptedException {
         RBucket<String> r1 = redisson.getBucket("testTrySetTTL");
-        assertThat(r1.trySet("3", 500, TimeUnit.MILLISECONDS)).isTrue();
-        assertThat(r1.trySet("4", 500, TimeUnit.MILLISECONDS)).isFalse();
+        assertThat(r1.setIfAbsent("3", Duration.ofMillis(500))).isTrue();
+        assertThat(r1.setIfAbsent("4", Duration.ofMillis(500))).isFalse();
         assertThat(r1.get()).isEqualTo("3");
 
         Thread.sleep(1000);

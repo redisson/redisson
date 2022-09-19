@@ -39,18 +39,38 @@ public interface RBucketRx<V> extends RExpirableRx {
      * @return object size
      */
     Single<Long> size();
-    
+
     /**
-     * Tries to set element atomically into empty holder.
+     * Sets value only if object holder doesn't exist.
+     *
+     * @param value - value to set
+     * @return {@code true} if successful, or {@code false} if
+     *         element was already set
+     */
+    Single<Boolean> setIfAbsent(V value);
+
+    /**
+     * Sets value with defined duration only if object holder doesn't exist.
+     *
+     * @param value value to set
+     * @param duration expiration duration
+     * @return {@code true} if successful, or {@code false} if
+     *         element was already set
+     */
+    Single<Boolean> setIfAbsent(V value, Duration duration);
+
+    /**
+     * Use {@link #setIfAbsent(Object)} instead
      * 
      * @param value - value to set
      * @return {@code true} if successful, or {@code false} if
      *         element was already set
      */
+    @Deprecated
     Single<Boolean> trySet(V value);
 
     /**
-     * Tries to set element atomically into empty holder with defined <code>timeToLive</code> interval.
+     * Use {@link #setIfAbsent(Object, Duration)} instead
      * 
      * @param value - value to set
      * @param timeToLive - time to live interval
@@ -58,6 +78,7 @@ public interface RBucketRx<V> extends RExpirableRx {
      * @return {@code true} if successful, or {@code false} if
      *         element was already set
      */
+    @Deprecated
     Single<Boolean> trySet(V value, long timeToLive, TimeUnit timeUnit);
 
     /**

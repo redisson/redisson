@@ -408,8 +408,8 @@ public class RedissonJsonBucketTest extends BaseTest {
         NestedType nt2 = new NestedType();
         nt2.setValue(124);
         nt2.setValues(Arrays.asList("t4", "t3"));
-        assertThat(al.trySet("$.type", nt2)).isFalse();
-        assertThat(al.trySet("type", nt2)).isFalse();
+        assertThat(al.setIfAbsent("$.type", nt2)).isFalse();
+        assertThat(al.setIfAbsent("type", nt2)).isFalse();
 
         Integer n2 = al.get(new JacksonCodec<>(Integer.class), "type.value");
         assertThat(n2).isEqualTo(123);

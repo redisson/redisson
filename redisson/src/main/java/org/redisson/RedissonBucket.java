@@ -220,6 +220,33 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
     }
 
     @Override
+    public boolean setIfAbsent(V value) {
+        return get(setIfAbsentAsync(value));
+    }
+
+    @Override
+    public boolean setIfAbsent(V value, Duration duration) {
+        return get(setIfAbsentAsync(value, duration));
+    }
+
+    @Override
+    public RFuture<Boolean> setIfAbsentAsync(V value) {
+        if (value == null) {
+            return commandExecutor.readAsync(getRawName(), codec, RedisCommands.NOT_EXISTS, getRawName());
+        }
+
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SETNX, getRawName(), encode(value));
+    }
+
+    @Override
+    public RFuture<Boolean> setIfAbsentAsync(V value, Duration duration) {
+        if (value == null) {
+            throw new IllegalArgumentException("Value can't be null");
+        }
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SET_BOOLEAN, getRawName(), encode(value), "PX", duration.toMillis(), "NX");
+    }
+
+    @Override
     public boolean setIfExists(V value) {
         return get(setIfExistsAsync(value));
     }

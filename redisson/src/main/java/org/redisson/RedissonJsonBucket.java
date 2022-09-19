@@ -118,6 +118,33 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
     }
 
     @Override
+    public boolean setIfAbsent(V value) {
+        return get(setIfAbsentAsync(value));
+    }
+
+    @Override
+    public boolean setIfAbsent(V value, Duration duration) {
+        return get(setIfAbsentAsync(value, duration));
+    }
+
+    @Override
+    public RFuture<Boolean> setIfAbsentAsync(V value) {
+        return setIfAbsentAsync("$", value);
+    }
+
+    @Override
+    public RFuture<Boolean> setIfAbsentAsync(V value, Duration duration) {
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
+          "local currValue = redis.call('json.set', KEYS[1], '$', ARGV[1], 'NX'); " +
+                "if currValue ~= false then " +
+                    "redis.call('pexpire', KEYS[1], ARGV[2]); " +
+                    "return 1;" +
+                "end;" +
+                "return 0; ",
+        Collections.singletonList(getRawName()), encode(value), duration.toMillis());
+    }
+
+    @Override
     public boolean trySet(V value) {
         return get(trySetAsync(value));
     }
@@ -125,6 +152,20 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
     @Override
     public RFuture<Boolean> trySetAsync(V value) {
         return trySetAsync("$", value);
+    }
+
+    @Override
+    public boolean setIfAbsent(String path, Object value) {
+        return get(setIfAbsentAsync(path, value));
+    }
+
+    @Override
+    public RFuture<Boolean> setIfAbsentAsync(String path, Object value) {
+        if (value == null) {
+            return commandExecutor.readAsync(getRawName(), codec, RedisCommands.NOT_EXISTS, getRawName());
+        }
+
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.JSON_SET_BOOLEAN, getRawName(), path, encode(value), "NX");
     }
 
     @Override
