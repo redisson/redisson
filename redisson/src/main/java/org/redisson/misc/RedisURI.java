@@ -66,6 +66,9 @@ public class RedisURI {
                     }
                     password = details[1];
                 }
+                else if (details.length == 1) {
+                    password = details[0];
+                }
             }
             host = url.getHost();
             port = url.getPort();
