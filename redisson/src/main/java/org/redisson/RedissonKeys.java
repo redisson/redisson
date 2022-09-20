@@ -39,6 +39,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -193,10 +194,32 @@ public class RedissonKeys implements RKeys {
 
     @Override
     public RFuture<Long> countExistsAsync(String... names) {
-        List<CompletableFuture<Long>> futures = commandExecutor.readAllAsync(RedisCommands.EXISTS_LONG, names);
-        CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-        CompletableFuture<Long> s = f.thenApply(r -> futures.stream().mapToLong(v -> v.getNow(0L)).sum());
-        return new CompletableFutureWrapper<>(s);
+        if (names.length == 0) {
+            return new CompletableFutureWrapper<>(0L);
+        }
+
+        List<String> keysList = Arrays.stream(names)
+                .map(k -> commandExecutor.getConnectionManager().getConfig().getNameMapper().map(k))
+                .collect(Collectors.toList());
+
+        return commandExecutor.readBatchedAsync(StringCodec.INSTANCE, RedisCommands.EXISTS_LONG, new SlotCallback<Long, Long>() {
+            final AtomicLong total = new AtomicLong();
+
+            @Override
+            public void onSlotResult(Long result) {
+                total.addAndGet(result);
+            }
+
+            @Override
+            public Long onFinish() {
+                return total.get();
+            }
+
+            @Override
+            public RedisCommand<Long> createCommand(List<String> keys) {
+                return RedisCommands.EXISTS_LONG;
+            }
+        }, keysList.toArray(new String[0]));
     }
 
     @Override

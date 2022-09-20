@@ -61,6 +61,45 @@ public class RedissonKeysTest extends BaseTest {
         assertThat(redisson.getKeys().touch("test3", "test10", "test")).isEqualTo(2);
     }
 
+    @Test
+    public void testExistsInCluster() throws FailedToStartRedisException, IOException, InterruptedException {
+        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave1 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave2 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave3 = new RedisRunner().randomPort().randomDir().nosave();
+
+
+        ClusterRunner clusterRunner = new ClusterRunner()
+                .addNode(master1, slave1)
+                .addNode(master2, slave2)
+                .addNode(master3, slave3);
+        ClusterProcesses process = clusterRunner.run();
+
+        Config config = new Config();
+        config.useClusterServers()
+                .setLoadBalancer(new RandomLoadBalancer())
+                .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+
+        int size = 10000;
+        List<String> list = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            list.add("test" + i);
+            redisson.getBucket("test" + i).set(i);
+        }
+
+        assertThat(redisson.getKeys().countExists("test1", "test2", "test34", "test45", "asdfl;jasf")).isEqualTo(4);
+        long deletedSize = redisson.getKeys().delete(list.toArray(new String[list.size()]));
+
+        assertThat(deletedSize).isEqualTo(size);
+
+        redisson.shutdown();
+        process.shutdown();
+    }
+
+
     
     @Test
     public void testExists() {
