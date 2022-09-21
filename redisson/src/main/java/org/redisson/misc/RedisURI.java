@@ -65,8 +65,7 @@ public class RedisURI {
                         username = details[0];
                     }
                     password = details[1];
-                }
-                else if (details.length == 1) {
+                } else if (details.length == 1) {
                     password = details[0];
                 }
             }
