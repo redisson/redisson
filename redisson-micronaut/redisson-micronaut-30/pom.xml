@@ -103,35 +103,35 @@
         <dependency>
             <groupId>io.micronaut</groupId>
             <artifactId>micronaut-inject</artifactId>
-            <version>3.4.1</version>
+            <version>3.6.3</version>
             <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>io.micronaut.cache</groupId>
             <artifactId>micronaut-cache-core</artifactId>
-            <version>3.3.0</version>
+            <version>3.5.0</version>
             <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>io.micronaut</groupId>
             <artifactId>micronaut-session</artifactId>
-            <version>3.4.1</version>
+            <version>3.6.3</version>
             <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>io.micronaut</groupId>
             <artifactId>micronaut-management</artifactId>
-            <version>3.4.1</version>
+            <version>3.6.3</version>
             <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>io.micronaut</groupId>
             <artifactId>micronaut-inject-java</artifactId>
-            <version>3.4.1</version>
+            <version>3.6.3</version>
             <scope>test</scope>
         </dependency>
 
