@@ -15,15 +15,13 @@
  */
 package org.redisson.reactive;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import org.redisson.api.RFuture;
-
 import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Mono;
+
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 
@@ -36,49 +34,48 @@ public abstract class PublisherAdder<V> {
     public abstract RFuture<Boolean> add(Object o);
 
     public Publisher<Boolean> addAll(Publisher<? extends V> c) {
-        CompletableFuture<Boolean> promise = new CompletableFuture<>();
-        c.subscribe(new BaseSubscriber<V>() {
+        return Mono.create(emitter -> emitter.onRequest(n -> {
+            c.subscribe(new BaseSubscriber<V>() {
 
-            volatile boolean completed;
-            AtomicLong values = new AtomicLong();
-            Subscription s;
-            Boolean lastSize = false;
+                volatile boolean completed;
+                final AtomicLong values = new AtomicLong();
+                Subscription s;
+                volatile Boolean lastSize = false;
 
-            @Override
-            protected void hookOnSubscribe(Subscription s) {
-                this.s = s;
-                s.request(1);
-            }
-
-            @Override
-            protected void hookOnNext(V o) {
-                values.getAndIncrement();
-                add(o).whenComplete((res, e) -> {
-                    if (e != null) {
-                        promise.completeExceptionally(e);
-                        return;
-                    }
-                    
-                    if (res) {
-                        lastSize = true;
-                    }
+                @Override
+                protected void hookOnSubscribe(Subscription s) {
+                    this.s = s;
                     s.request(1);
-                    if (values.decrementAndGet() == 0 && completed) {
-                        promise.complete(lastSize);
-                    }
-                });
-            }
-
-            @Override
-            protected void hookOnComplete() {
-                completed = true;
-                if (values.get() == 0) {
-                    promise.complete(lastSize);
                 }
-            }
-        });
 
-        return Mono.fromCompletionStage(promise);
+                @Override
+                protected void hookOnNext(V o) {
+                    values.getAndIncrement();
+                    add(o).whenComplete((res, e) -> {
+                        if (e != null) {
+                            emitter.error(e);
+                            return;
+                        }
+
+                        if (res) {
+                            lastSize = true;
+                        }
+                        s.request(1);
+                        if (values.decrementAndGet() == 0 && completed) {
+                            emitter.success(lastSize);
+                        }
+                    });
+                }
+
+                @Override
+                protected void hookOnComplete() {
+                    completed = true;
+                    if (values.get() == 0) {
+                        emitter.success(lastSize);
+                    }
+                }
+            });
+        }));
     }
 
 }
