@@ -1832,11 +1832,13 @@ public class RedissonConnection extends AbstractRedisConnection {
         params.add(script);
         params.add(numKeys);
         params.addAll(Arrays.asList(keysAndArgs));
-        return write(null, ByteArrayCodec.INSTANCE, c, params.toArray());
+
+        byte[] key = getKey(numKeys, keysAndArgs);
+        return write(key, ByteArrayCodec.INSTANCE, c, params.toArray());
     }
 
     protected RedisCommand<?> toCommand(ReturnType returnType, String name) {
-        RedisCommand<?> c = null; 
+        RedisCommand<?> c = null;
         if (returnType == ReturnType.BOOLEAN) {
             c = org.redisson.api.RScript.ReturnType.BOOLEAN.getCommand();
         } else if (returnType == ReturnType.INTEGER) {
@@ -1867,7 +1869,9 @@ public class RedissonConnection extends AbstractRedisConnection {
         params.add(scriptSha);
         params.add(numKeys);
         params.addAll(Arrays.asList(keysAndArgs));
-        return write(null, ByteArrayCodec.INSTANCE, c, params.toArray());
+
+        byte[] key = getKey(numKeys, keysAndArgs);
+        return write(key, ByteArrayCodec.INSTANCE, c, params.toArray());
     }
 
     @Override
@@ -1877,7 +1881,16 @@ public class RedissonConnection extends AbstractRedisConnection {
         params.add(scriptSha);
         params.add(numKeys);
         params.addAll(Arrays.asList(keysAndArgs));
-        return write(null, ByteArrayCodec.INSTANCE, c, params.toArray());
+
+        byte[] key = getKey(numKeys, keysAndArgs);
+        return write(key, ByteArrayCodec.INSTANCE, c, params.toArray());
+    }
+
+    private static byte[] getKey(int numKeys, byte[][] keysAndArgs) {
+        if (numKeys > 0 && keysAndArgs.length > 0) {
+            return keysAndArgs[0];
+        }
+        return null;
     }
 
     @Override
