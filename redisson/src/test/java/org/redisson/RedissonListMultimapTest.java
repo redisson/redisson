@@ -362,6 +362,12 @@ public class RedissonListMultimapTest extends BaseTest {
 
         List<SimpleValue> allValues = map.getAll(new SimpleKey("0"));
         assertThat(allValues).containsExactlyElementsOf(values);
+
+        List<SimpleValue> oldValues2 = map.replaceValues(new SimpleKey("0"), Collections.emptyList());
+        assertThat(oldValues2).containsExactlyElementsOf(values);
+
+        List<SimpleValue> vals = map.getAll(new SimpleKey("0"));
+        assertThat(vals).isEmpty();
     }
 
     @Test
