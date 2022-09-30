@@ -207,7 +207,12 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
 
     protected <T> RFuture<T> evalWriteAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
         MasterSlaveEntry entry = commandExecutor.getConnectionManager().getEntry(getRawName());
-        int availableSlaves = entry.getAvailableSlaves();
+        int availableSlaves;
+        if (entry != null) {
+            availableSlaves = entry.getAvailableSlaves();
+        } else {
+            availableSlaves = 0;
+        }
 
         CommandBatchService executorService = createCommandBatchService(availableSlaves);
         RFuture<T> result = executorService.evalWriteAsync(key, codec, evalCommandType, script, keys, params);
