@@ -20,6 +20,7 @@ import io.netty.resolver.AddressResolverGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
+import java.util.stream.Collectors;
 import org.redisson.client.RedisClient;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.RedisURI;
@@ -50,7 +51,9 @@ public class DNSMonitor {
     private ScheduledFuture<?> dnsMonitorFuture;
     private long dnsMonitoringInterval;
 
-    public DNSMonitor(ConnectionManager connectionManager, RedisClient masterHost, Collection<RedisURI> slaveHosts, long dnsMonitoringInterval, AddressResolverGroup<InetSocketAddress> resolverGroup) {
+    private int maxConcurrentDnsQuery;
+
+    public DNSMonitor(ConnectionManager connectionManager, RedisClient masterHost, Collection<RedisURI> slaveHosts, long dnsMonitoringInterval, AddressResolverGroup<InetSocketAddress> resolverGroup, int maxConcurrentDnsQuery) {
         this.resolver = resolverGroup.getResolver(connectionManager.getGroup().next());
         
         masterHost.resolveAddr().join();
@@ -63,6 +66,7 @@ public class DNSMonitor {
         }
         this.connectionManager = connectionManager;
         this.dnsMonitoringInterval = dnsMonitoringInterval;
+        this.maxConcurrentDnsQuery = maxConcurrentDnsQuery;
     }
     
     public void start() {
@@ -137,6 +141,29 @@ public class DNSMonitor {
     }
 
     private CompletableFuture<Void> monitorSlaves() {
+        List<CompletableFuture<Void>> results = partitionMap(slaves).stream().map(c -> monitorSlavesPartial(c)).collect(Collectors.toList());
+        return CompletableFuture.allOf(results.toArray(new CompletableFuture[0]));
+    }
+
+    private List<Map<RedisURI, InetSocketAddress>> partitionMap(Map<RedisURI, InetSocketAddress> map) {
+        List<Map<RedisURI, InetSocketAddress>> list = new ArrayList<>();
+        if (maxConcurrentDnsQuery == 0 || map.size() <= maxConcurrentDnsQuery) {
+            list.add(map);
+        } else {
+            int i = 0;
+            for (Map.Entry<RedisURI, InetSocketAddress> entry : map.entrySet()) {
+                int index = i / maxConcurrentDnsQuery;
+                if (i % maxConcurrentDnsQuery == 0) {
+                    list.add(new HashMap<>());
+                }
+                list.get(index).put(entry.getKey(), entry.getValue());
+                i++;
+            }
+        }
+        return list;
+    }
+
+    private CompletableFuture<Void> monitorSlavesPartial(Map<RedisURI, InetSocketAddress> slaves) {
         List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (Entry<RedisURI, InetSocketAddress> entry : slaves.entrySet()) {
             CompletableFuture<Void> promise = new CompletableFuture<>();

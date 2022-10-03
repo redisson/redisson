@@ -356,7 +356,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (config.getDnsMonitoringInterval() != -1) {
             Set<RedisURI> slaveAddresses = config.getSlaveAddresses().stream().map(r -> new RedisURI(r)).collect(Collectors.toSet());
             dnsMonitor = new DNSMonitor(this, masterHost, 
-                                            slaveAddresses, config.getDnsMonitoringInterval(), resolverGroup);
+                                            slaveAddresses, config.getDnsMonitoringInterval(), resolverGroup, config.getMaxConcurrentDnsQuery());
             dnsMonitor.start();
         }
     }

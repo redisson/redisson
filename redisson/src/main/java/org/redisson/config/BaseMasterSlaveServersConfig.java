@@ -70,7 +70,8 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     private int subscriptionConnectionPoolSize = 50;
 
     private long dnsMonitoringInterval = 5000;
-    
+
+    private int maxConcurrentDnsQuery = 0;
     public BaseMasterSlaveServersConfig() {
     }
 
@@ -86,6 +87,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
         setReadMode(config.getReadMode());
         setSubscriptionMode(config.getSubscriptionMode());
         setDnsMonitoringInterval(config.getDnsMonitoringInterval());
+        setMaxConcurrentDnsQuery(config.getMaxConcurrentDnsQuery());
         setFailedSlaveCheckInterval(config.getFailedSlaveCheckInterval());
         setFailedSlaveReconnectionInterval(config.getFailedSlaveReconnectionInterval());
     }
@@ -313,6 +315,23 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     }
     public long getDnsMonitoringInterval() {
         return dnsMonitoringInterval;
+    }
+
+    /**
+     * Max concurrent calls for the slave dns monitoring. It is disabled by default
+     * Set <code>0</code> to disable.
+     * @param maxConcurrentDnsQuery max concurrent dns call
+     * @return config
+     */
+    public T setMaxConcurrentDnsQuery(int maxConcurrentDnsQuery) {
+        if (maxConcurrentDnsQuery < 0) {
+            throw new IllegalArgumentException("maxConcurrentDnsQuery can be lower than 0");
+        }
+        this.maxConcurrentDnsQuery = maxConcurrentDnsQuery;
+        return (T) this;
+    }
+    public int getMaxConcurrentDnsQuery() {
+        return maxConcurrentDnsQuery;
     }
     
 }

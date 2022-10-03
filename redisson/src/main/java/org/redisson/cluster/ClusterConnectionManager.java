@@ -793,6 +793,25 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
     
     private CompletableFuture<Collection<ClusterPartition>> parsePartitions(List<ClusterNodeInfo> nodes) {
+        List<List<ClusterNodeInfo>> nodeList = new ArrayList<>();
+        if (config.getMaxConcurrentDnsQuery() == 0 || config.getMaxConcurrentDnsQuery() < nodes.size()) {
+            nodeList.add(nodes);
+        } else {
+            for (int i = 0; i < nodes.size(); i += config.getMaxConcurrentDnsQuery()) {
+                nodeList.add(nodes.subList(i, Math.min(i + config.getMaxConcurrentDnsQuery(), nodes.size())));
+            }
+        }
+        List<CompletableFuture<Collection<ClusterPartition>>> results = nodeList.stream().map(c -> parsePartitionsPartially(c)).collect(Collectors.toList());
+        CompletableFuture<Void> allOf = CompletableFuture.allOf(results.toArray(new CompletableFuture[0]));
+        return allOf.thenApply(ix -> {
+            final Collection<ClusterPartition> result = new ArrayList<>(results.size());
+            for (int i = 0; i < results.size(); i++) {
+                result.addAll(results.get(i).join());
+            }
+            return result;
+        });
+    }
+    private CompletableFuture<Collection<ClusterPartition>> parsePartitionsPartially(List<ClusterNodeInfo> nodes) {
         Map<String, ClusterPartition> partitions = new ConcurrentHashMap<>();
         List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (ClusterNodeInfo clusterNodeInfo : nodes) {
