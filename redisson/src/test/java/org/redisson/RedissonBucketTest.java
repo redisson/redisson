@@ -27,6 +27,8 @@ public class RedissonBucketTest extends BaseTest {
 
     @Test
     public void testGetAndClearExpire() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
+
         RBucket<Integer> al = redisson.getBucket("test");
         al.set(1, 1, TimeUnit.SECONDS);
         assertThat(al.getAndClearExpire()).isEqualTo(1);
@@ -35,6 +37,8 @@ public class RedissonBucketTest extends BaseTest {
 
     @Test
     public void testGetAndExpire() throws InterruptedException {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
+
         RBucket<Integer> al = redisson.getBucket("test");
         al.set(1);
         assertThat(al.getAndExpire(Duration.ofSeconds(1))).isEqualTo(1);
@@ -53,6 +57,8 @@ public class RedissonBucketTest extends BaseTest {
 
     @Test
     public void testExpireTime() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("7.0.0") > 0);
+
         RBucket<Integer> al = redisson.getBucket("test");
         al.set(1);
         assertThat(al.getExpireTime()).isEqualTo(-1);

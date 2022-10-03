@@ -1,5 +1,7 @@
 package org.redisson;
 
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
 import org.redisson.client.codec.LongCodec;
@@ -11,6 +13,11 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonFunctionTest extends BaseTest {
+
+    @BeforeAll
+    public static void check() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("7.0.0") > 0);
+    }
 
     @Test
     public void testEmpty() {
