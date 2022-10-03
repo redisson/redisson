@@ -357,7 +357,7 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
     public void testWrongCronExpression() {
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
             RScheduledExecutorService executor = redisson.getExecutorService("test");
-            executor.schedule(new ScheduledRunnableTask("executed"), CronSchedule.of("0 44 12 19 JUN ? 2018"));
+            executor.schedule(new ScheduledRunnableTask("executed"), CronSchedule.of("0 44 12 19 JUN ? 2018 32"));
         });
     }
     

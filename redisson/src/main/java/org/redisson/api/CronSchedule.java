@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import org.redisson.executor.CronExpression;
+import org.redisson.executor.CronExpressionEx;
 
 import java.time.ZoneId;
 
@@ -48,7 +49,7 @@ public final class CronSchedule {
      *             wrapping a ParseException if the expression is invalid
      */
     public static CronSchedule of(String expression) {
-        return new CronSchedule(new CronExpression(expression), ZoneId.systemDefault());
+        return new CronSchedule(new CronExpressionEx(expression), ZoneId.systemDefault());
     }
 
     /**
@@ -61,7 +62,7 @@ public final class CronSchedule {
      *             wrapping a ParseException if the expression is invalid
      */
     public static CronSchedule of(String expression, ZoneId zoneId) {
-        return new CronSchedule(new CronExpression(expression), zoneId);
+        return new CronSchedule(new CronExpressionEx(expression), zoneId);
     }
 
     /**

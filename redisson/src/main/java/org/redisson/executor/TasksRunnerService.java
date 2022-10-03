@@ -137,7 +137,7 @@ public class TasksRunnerService implements RemoteExecutorService {
     
     @Override
     public void schedule(ScheduledCronExpressionParameters params) {
-        CronExpression expression = new CronExpression(params.getCronExpression());
+        CronExpression expression = new CronExpressionEx(params.getCronExpression());
         ZonedDateTime currentDate = ZonedDateTime.of(LocalDateTime.now(), ZoneId.of(params.getTimezone()));
         ZonedDateTime nextStartDate = expression.nextTimeAfter(currentDate);
         RFuture<Void> future = null;
