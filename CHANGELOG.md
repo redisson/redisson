@@ -3,6 +3,25 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 2-Oct-2022 - 3.17.7 released
+
+Improvement - Failed connection ping isn't taken in account in Redis slave health check  
+
+Fixed - RScheduledExecutorService cron expression doesn't support year  
+Fixed - `replaceValues()` method of `RListMultimap` and `RSetMultimap` throws exception for empty collection  
+Fixed - RedissonBaseLock throws NPE after failover  
+Fixed - Spring Data Redis `evalsha()` method doesn't use key for Redis node routing in Cluster mode  
+Fixed - DNS change isn't detected in replicated mode  
+Fixed - `RCollectionReactive.addAll()` method is executed without subscription  
+Fixed - `RKeysAsync.countExists()` method throws errors in cluster mode  
+Fixed - Spring Data Redis reactive setIfAbsent should return `false` on error (thanks @zhuangzibin)  
+Fixed - Micronaut native image configuration  
+Fixed - RBatchReactive execution stuck forever if `useScriptCache = true`  
+Fixed - NameMapper is applied incorrectly to RBoundedBlockingQueue object  
+Fixed - incorrect IPv6 conversion  
+Fixed - Spring Boot Module ignores username parameter set via Spring Redis config  
+Fixed - SpringBoot yaml configuration parsing errors shouldn't be suppressed  
+
 ### 24-Aug-2022 - 3.17.6 released
 
 Feature - Helidon 3.0 support  
