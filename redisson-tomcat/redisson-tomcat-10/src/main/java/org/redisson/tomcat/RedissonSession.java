@@ -158,7 +158,7 @@ public class RedissonSession extends StandardSession {
         return super.getAttributeNames();
     }
 
-    @Override
+    // for backward compatibility with Tomcat 10.0.x
     public String[] getValueNames() {
         if (readMode == ReadMode.REDIS) {
             if (!isValidInternal()) {
@@ -166,10 +166,15 @@ public class RedissonSession extends StandardSession {
                     (sm.getString("standardSession.getAttributeNames.ise"));
             }
             Set<String> keys = map.readAllKeySet();
-            return keys.toArray(new String[keys.size()]);
+            return keys.toArray(new String[0]);
         }
-        
-        return super.getValueNames();
+
+        if (!isValidInternal()) {
+            throw new IllegalStateException
+                    (sm.getString("standardSession.getValueNames.ise"));
+        }
+
+        return keys();
     }
     
     public void delete() {
