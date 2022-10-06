@@ -794,7 +794,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     
     private CompletableFuture<Collection<ClusterPartition>> parsePartitions(List<ClusterNodeInfo> nodes) {
         List<List<ClusterNodeInfo>> nodeList = new ArrayList<>();
-        if (config.getMaxConcurrentDnsQuery() == 0 || config.getMaxConcurrentDnsQuery() < nodes.size()) {
+        if (config.getMaxConcurrentDnsQuery() == 0 || nodes.size() <= config.getMaxConcurrentDnsQuery()) {
             nodeList.add(nodes);
         } else {
             for (int i = 0; i < nodes.size(); i += config.getMaxConcurrentDnsQuery()) {
