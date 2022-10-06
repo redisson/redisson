@@ -72,6 +72,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     private long dnsMonitoringInterval = 5000;
 
     private int maxConcurrentDnsQuery = 0;
+    
     public BaseMasterSlaveServersConfig() {
     }
 
@@ -325,7 +326,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
      */
     public T setMaxConcurrentDnsQuery(int maxConcurrentDnsQuery) {
         if (maxConcurrentDnsQuery < 0) {
-            throw new IllegalArgumentException("maxConcurrentDnsQuery can be lower than 0");
+            throw new IllegalArgumentException("maxConcurrentDnsQuery can not be lower than 0");
         }
         this.maxConcurrentDnsQuery = maxConcurrentDnsQuery;
         return (T) this;
