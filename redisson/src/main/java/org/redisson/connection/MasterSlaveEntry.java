@@ -454,8 +454,32 @@ public class MasterSlaveEntry {
         });
     }
 
+    public CompletableFuture<Boolean> excludeMasterFromSlaves(InetSocketAddress address) {
+        InetSocketAddress addr = masterEntry.getClient().getAddr();
+        if (config.checkSkipSlavesInit() || addr.equals(address)) {
+            return CompletableFuture.completedFuture(false);
+        }
+        CompletableFuture<Boolean> downFuture = slaveDownAsync(addr, FreezeReason.SYSTEM);
+        return downFuture.thenApply(r -> {
+            if (r) {
+                log.info("master {} excluded from slaves", addr);
+            }
+            return r;
+        });
+    }
+
     public CompletableFuture<Boolean> slaveUpAsync(RedisURI address, FreezeReason freezeReason) {
         return slaveBalancer.unfreezeAsync(address, freezeReason);
+    }
+
+    public CompletableFuture<Boolean> slaveUpAsync(InetSocketAddress address, FreezeReason freezeReason) {
+        CompletableFuture<Boolean> f = slaveBalancer.unfreezeAsync(address, freezeReason);
+        return f.thenCompose(r -> {
+            if (r) {
+                return excludeMasterFromSlaves(address);
+            }
+            return CompletableFuture.completedFuture(r);
+        });
     }
 
     public boolean slaveUp(InetSocketAddress address, FreezeReason freezeReason) {

@@ -166,22 +166,30 @@ public class DNSMonitor {
 
                         slaveFound = true;
                         if (masterSlaveEntry.hasSlave(newSlaveAddr)) {
-                            masterSlaveEntry.slaveUp(newSlaveAddr, FreezeReason.MANAGER);
-                            masterSlaveEntry.slaveDown(currentSlaveAddr, FreezeReason.MANAGER);
-                            slaves.put(entry.getKey(), newSlaveAddr);
-                            promise.complete(null);
+                            CompletableFuture<Boolean> slaveUpFuture = masterSlaveEntry.slaveUpAsync(newSlaveAddr, FreezeReason.MANAGER);
+                            slaveUpFuture.whenComplete((r, e) -> {
+                                if (e != null) {
+                                    promise.complete(null);
+                                    return;
+                                }
+                                if (r) {
+                                    slaves.put(entry.getKey(), newSlaveAddr);
+                                    masterSlaveEntry.slaveDownAsync(currentSlaveAddr, FreezeReason.MANAGER);
+                                }
+                                promise.complete(null);
+                            });
                         } else {
                             CompletableFuture<Void> addFuture = masterSlaveEntry.addSlave(newSlaveAddr, entry.getKey());
                             addFuture.whenComplete((res, e) -> {
-                                promise.complete(null);
-
                                 if (e != null) {
                                     log.error("Can't add slave: " + newSlaveAddr, e);
+                                    promise.complete(null);
                                     return;
                                 }
 
-                                masterSlaveEntry.slaveDown(currentSlaveAddr, FreezeReason.MANAGER);
                                 slaves.put(entry.getKey(), newSlaveAddr);
+                                masterSlaveEntry.slaveDownAsync(currentSlaveAddr, FreezeReason.MANAGER);
+                                promise.complete(null);
                             });
                         }
                         break;
