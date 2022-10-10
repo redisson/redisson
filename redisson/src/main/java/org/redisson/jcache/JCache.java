@@ -2093,9 +2093,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         params.add(System.currentTimeMillis());
         params.add(syncId);
 
-        for (Object key : keys) {
-            params.add(encodeMapKey(key));
-        }
+        encodeMapKeys(params, keys);
 
         String script = "local syncs = 0; "
           + "local values = {}; "

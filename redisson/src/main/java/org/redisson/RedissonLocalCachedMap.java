@@ -16,6 +16,7 @@
 package org.redisson;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.util.ReferenceCountUtil;
 import org.redisson.api.LocalCachedMapOptions;
 import org.redisson.api.LocalCachedMapOptions.ReconnectionStrategy;
 import org.redisson.api.LocalCachedMapOptions.SyncStrategy;
@@ -826,7 +827,14 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 continue;
             }
 
-            mapKeys.add(encodeMapKey(value.getKey()));
+            try {
+                mapKeys.add(encodeMapKey(value.getKey()));
+            } catch (Exception e) {
+                mapKeys.forEach(v -> {
+                    ReferenceCountUtil.safeRelease(v);
+                });
+                throw e;
+            }
             result.add((V) value.getValue());
         }
 
@@ -869,7 +877,14 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             if (value == null) {
                 continue;
             }
-            mapKeys.add(encodeMapKey(value.getKey()));
+            try {
+                mapKeys.add(encodeMapKey(value.getKey()));
+            } catch (Exception e) {
+                mapKeys.forEach(v -> {
+                    ReferenceCountUtil.safeRelease(v);
+                });
+                throw e;
+            }
             result.put((K) value.getKey(), (V) value.getValue());
         }
 
@@ -925,7 +940,14 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 continue;
             }
 
-            mapKeys.add(encodeMapKey(value.getKey()));
+            try {
+                mapKeys.add(encodeMapKey(value.getKey()));
+            } catch (Exception e) {
+                mapKeys.forEach(v -> {
+                    ReferenceCountUtil.safeRelease(v);
+                });
+                throw e;
+            }
             result.add(new AbstractMap.SimpleEntry<K, V>((K) value.getKey(), (V) value.getValue()));
         }
 

@@ -227,14 +227,11 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     @Override
     public RFuture<Map<K, V>> getAllOperationAsync(Set<K> keys) {
-        List<Object> args = new ArrayList<Object>(keys.size() + 1);
-        List<Object> plainKeys = new ArrayList<Object>(keys.size());
+        List<Object> args = new ArrayList<>(keys.size() + 1);
+        List<Object> plainKeys = new ArrayList<>(keys);
         
         args.add(System.currentTimeMillis());
-        for (K key : keys) {
-            plainKeys.add(key);
-            args.add(encodeMapKey(key));
-        }
+        encodeMapKeys(args, keys);
 
         return commandExecutor.evalWriteAsync(getRawName(), codec, new RedisCommand<Map<Object, Object>>("EVAL",
                         new MapValueDecoder(new MapGetAllDecoder(plainKeys, 0))),
@@ -1441,10 +1438,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     @Override
     protected RFuture<List<Long>> fastRemoveOperationBatchAsync(K... keys) {
-        List<Object> args = new ArrayList<Object>(keys.length);
-        for (K key : keys) {
-            args.add(encodeMapKey(key));
-        }
+        List<Object> args = new ArrayList<>(keys.length);
+        encodeMapKeys(args, Arrays.asList(keys));
 
         RFuture<List<Long>> future = commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_LIST,
                 "local maxSize = tonumber(redis.call('hget', KEYS[6], 'max-size')); "
@@ -1475,10 +1470,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     @Override
     protected RFuture<Long> fastRemoveOperationAsync(K... keys) {
-        List<Object> params = new ArrayList<Object>(keys.length);
-        for (K key : keys) {
-            params.add(encodeMapKey(key));
-        }
+        List<Object> params = new ArrayList<>(keys.length);
+        encodeMapKeys(params, Arrays.asList(keys));
 
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_LONG,
                 "local maxSize = tonumber(redis.call('hget', KEYS[6], 'max-size')); "
@@ -2082,17 +2075,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     protected RFuture<Void> putAllOperationAsync(Map<? extends K, ? extends V> map) {
         List<Object> params = new ArrayList<Object>(map.size()*2 + 1);
         params.add(System.currentTimeMillis());
-        for (java.util.Map.Entry<? extends K, ? extends V> t : map.entrySet()) {
-            if (t.getKey() == null) {
-                throw new NullPointerException("map key can't be null");
-            }
-            if (t.getValue() == null) {
-                throw new NullPointerException("map value can't be null");
-            }
-
-            params.add(encodeMapKey(t.getKey()));
-            params.add(encodeMapValue(t.getValue()));
-        }
+        encodeMapKeys(params, map);
 
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
                   "local currentTime = tonumber(table.remove(ARGV, 1)); " + // index is the first parameter
@@ -2187,17 +2170,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             ttlTimeout = System.currentTimeMillis() + ttlUnit.toMillis(ttl);
         }
         params.add(ttlTimeout);
-        for (java.util.Map.Entry<? extends K, ? extends V> t : map.entrySet()) {
-            if (t.getKey() == null) {
-                throw new NullPointerException("map key can't be null");
-            }
-            if (t.getValue() == null) {
-                throw new NullPointerException("map value can't be null");
-            }
-
-            params.add(encodeMapKey(t.getKey()));
-            params.add(encodeMapValue(t.getValue()));
-        }
+        encodeMapKeys(params, map);
 
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
                   "local currentTime = tonumber(table.remove(ARGV, 1)); " + // index is the first parameter

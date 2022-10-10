@@ -16,6 +16,7 @@
 package org.redisson;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.util.ReferenceCountUtil;
 import org.redisson.api.*;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.Codec;
@@ -260,8 +261,15 @@ public abstract class RedissonObject implements RObject {
     }
     
     public void encode(Collection<Object> params, Collection<?> values) {
-        for (Object object : values) {
-            params.add(encode(object));
+        try {
+            for (Object object : values) {
+                params.add(encode(object));
+            }
+        } catch (Exception e) {
+            params.forEach(v -> {
+                ReferenceCountUtil.safeRelease(v);
+            });
+            throw e;
         }
     }
     
@@ -282,16 +290,30 @@ public abstract class RedissonObject implements RObject {
             keyState.release();
         }
     }
-    
+
     protected void encodeMapKeys(Collection<Object> params, Collection<?> values) {
-        for (Object object : values) {
-            params.add(encodeMapKey(object));
+        try {
+            for (Object object : values) {
+                params.add(encodeMapKey(object));
+            }
+        } catch (Exception e) {
+            params.forEach(v -> {
+                ReferenceCountUtil.safeRelease(v);
+            });
+            throw e;
         }
     }
 
     protected void encodeMapValues(Collection<Object> params, Collection<?> values) {
-        for (Object object : values) {
-            params.add(encodeMapValue(object));
+        try {
+            for (Object object : values) {
+                params.add(encodeMapValue(object));
+            }
+        } catch (Exception e) {
+            params.forEach(v -> {
+                ReferenceCountUtil.safeRelease(v);
+            });
+            throw e;
         }
     }
     
