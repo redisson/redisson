@@ -148,7 +148,13 @@ public class MasterSlaveEntry {
             if (e != null) {
                 client.shutdownAsync();
             }
-        }).thenApply(r -> client);
+        }).thenApply(r -> {
+            writeConnectionPool.addEntry(masterEntry);
+            if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
+                pubSubConnectionPool.addEntry(masterEntry);
+            }
+            return client;
+        });
     }
 
     public boolean slaveDown(ClientConnectionsEntry entry, FreezeReason freezeReason) {

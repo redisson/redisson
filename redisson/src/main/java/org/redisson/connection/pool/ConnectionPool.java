@@ -66,10 +66,11 @@ abstract class ConnectionPool<T extends RedisConnection> {
     }
 
     public CompletableFuture<Void> add(ClientConnectionsEntry entry) {
-        CompletableFuture<Void> promise = initConnections(entry, true);
-        return promise.thenAccept(r -> {
-            entries.add(entry);
-        });
+        return initConnections(entry, true);
+    }
+
+    public void addEntry(ClientConnectionsEntry entry) {
+        entries.add(entry);
     }
 
     public CompletableFuture<Void> initConnections(ClientConnectionsEntry entry) {

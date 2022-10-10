@@ -76,6 +76,8 @@ public class LoadBalancerManager {
 
         CompletableFuture<Void> future = CompletableFuture.allOf(slaveFuture, pubSubFuture);
         return future.thenAccept(r -> {
+            slaveConnectionPool.addEntry(entry);
+            pubSubConnectionPool.addEntry(entry);
             client2Entry.put(entry.getClient(), entry);
         });
     }
@@ -151,8 +153,6 @@ public class LoadBalancerManager {
                 if (!entry.isInitialized()) {
                     entry.setInitialized(true);
 
-                    entry.resetFirstFail();
-
                     List<CompletableFuture<Void>> futures = new ArrayList<>(2);
                     futures.add(slaveConnectionPool.initConnections(entry));
                     futures.add(pubSubConnectionPool.initConnections(entry));
@@ -168,8 +168,9 @@ public class LoadBalancerManager {
                             return;
                         }
 
-                        log.debug("Unfreezed entry: {}", entry);
+                        entry.resetFirstFail();
                         entry.setFreezeReason(null);
+                        log.debug("Unfreezed entry: {}", entry);
                     });
                     return true;
                 }
@@ -189,8 +190,6 @@ public class LoadBalancerManager {
                 if (!entry.isInitialized()) {
                     entry.setInitialized(true);
 
-                    entry.resetFirstFail();
-
                     List<CompletableFuture<Void>> futures = new ArrayList<>(2);
                     futures.add(slaveConnectionPool.initConnections(entry));
                     futures.add(pubSubConnectionPool.initConnections(entry));
@@ -203,8 +202,9 @@ public class LoadBalancerManager {
                             return;
                         }
 
-                        log.debug("Unfreezed entry: {}", entry);
+                        entry.resetFirstFail();
                         entry.setFreezeReason(null);
+                        log.debug("Unfreezed entry: {}", entry);
                     }).thenApply(e -> true);
                 }
             }
