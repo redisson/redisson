@@ -90,7 +90,7 @@ public class Config {
 
     private boolean useThreadClassLoader = true;
 
-    private AddressResolverGroupFactory addressResolverGroupFactory = new DnsAddressResolverGroupFactory();
+    private AddressResolverGroupFactory addressResolverGroupFactory = new SequentialDnsAddressResolverFactory();
 
     public Config() {
     }
