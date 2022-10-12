@@ -44,7 +44,7 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
 
     public void unsubscribe(E entry, String entryName, String channelName) {
         AsyncSemaphore semaphore = service.getSemaphore(new ChannelName(channelName));
-        semaphore.acquire(() -> {
+        semaphore.acquire().thenAccept(c -> {
             if (entry.release() == 0) {
                 entries.remove(entryName);
                 service.unsubscribe(PubSubType.UNSUBSCRIBE, new ChannelName(channelName))
@@ -55,7 +55,6 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
                 semaphore.release();
             }
         });
-
     }
 
     public void timeout(CompletableFuture<?> promise) {
@@ -70,7 +69,7 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
         AsyncSemaphore semaphore = service.getSemaphore(new ChannelName(channelName));
         CompletableFuture<E> newPromise = new CompletableFuture<>();
 
-        semaphore.acquire(() -> {
+        semaphore.acquire().thenAccept(c -> {
             if (newPromise.isDone()) {
                 semaphore.release();
                 return;
