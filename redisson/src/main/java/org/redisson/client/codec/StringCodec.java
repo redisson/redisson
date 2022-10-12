@@ -25,13 +25,14 @@ import org.redisson.client.protocol.Encoder;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.util.CharsetUtil;
+import org.redisson.codec.JsonCodec;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class StringCodec extends BaseCodec {
+public class StringCodec extends BaseCodec implements JsonCodec<String > {
 
     public static final StringCodec INSTANCE = new StringCodec();
 
