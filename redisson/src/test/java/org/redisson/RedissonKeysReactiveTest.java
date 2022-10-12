@@ -3,10 +3,13 @@ package org.redisson;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import org.redisson.api.RBucketReactive;
 import org.redisson.api.RKeysReactive;
 import org.redisson.api.RMapReactive;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.Iterator;
@@ -33,6 +36,52 @@ public class RedissonKeysReactiveTest extends BaseReactiveTest {
         Awaitility.await().atMost(Duration.ofSeconds(1)).untilAsserted(() -> {
             assertThat(i.get()).isEqualTo(100);
         });
+    }
+
+    @Test
+    public void testKeysByPatternIteratorWithSlowConsumer() throws InterruptedException {
+        int noOfKeys = 1200;
+        for (int i = 0; i < noOfKeys; i++) {
+            redisson.getBucket("key" + i).set(1).block();
+        }
+
+        Flux<String> p = redisson.getKeys().getKeysByPattern(null)
+                .flatMap(string -> Mono.just(string)
+                        .delayElement(Duration.ofMillis(10)));
+        AtomicInteger i = new AtomicInteger();
+        p.doOnNext(t -> {
+            i.incrementAndGet();
+        }).blockLast();
+        assertThat(i.get()).isEqualTo(noOfKeys);
+        i.set(0);
+
+        Flux<String> pp = redisson.getKeys().getKeysByPattern(null);
+
+        pp.doOnNext(t -> {
+            i.incrementAndGet();
+        }).subscribeWith(new Subscriber() {
+
+            @Override
+            public void onSubscribe(Subscription s) {
+                s.request(10);
+            }
+
+            @Override
+            public void onNext(Object o) {
+
+            }
+
+            @Override
+            public void onError(Throwable t) {
+
+            }
+
+            @Override
+            public void onComplete() {
+            }
+        });
+        Thread.sleep(100);
+        assertThat(i.get()).isEqualTo(10);
     }
 
     @Test

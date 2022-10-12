@@ -24,21 +24,16 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongConsumer;
 
 /**
- *
  * @author Nikita Koksharov
- *
  */
 public abstract class IteratorConsumer<V> implements LongConsumer {
 
     private final FluxSink<V> emitter;
 
-    private long nextIterPos;
+    private long nextIterPos = 0;
     private RedisClient client;
-    private AtomicLong elementsRead = new AtomicLong();
 
-    private boolean finished;
-    private volatile boolean completed;
-    private AtomicLong readAmount = new AtomicLong();
+    private final AtomicLong requested = new AtomicLong();
 
     public IteratorConsumer(FluxSink<V> emitter) {
         this.emitter = emitter;
@@ -46,23 +41,15 @@ public abstract class IteratorConsumer<V> implements LongConsumer {
 
     @Override
     public void accept(long value) {
-        readAmount.addAndGet(value);
-        if (completed || elementsRead.get() == 0) {
-            nextValues(emitter);
-            completed = false;
+        if (requested.addAndGet(value) == value) {
+            nextValues();
         }
     }
 
-    protected void nextValues(FluxSink<V> emitter) {
+    protected void nextValues() {
         scanIterator(client, nextIterPos).whenComplete((res, e) -> {
             if (e != null) {
                 emitter.error(e);
-                return;
-            }
-
-            if (finished) {
-                client = null;
-                nextIterPos = 0;
                 return;
             }
 
@@ -72,24 +59,15 @@ public abstract class IteratorConsumer<V> implements LongConsumer {
             for (Object val : res.getValues()) {
                 Object v = transformValue(val);
                 emitter.next((V) v);
-                elementsRead.incrementAndGet();
+                requested.decrementAndGet();
             }
 
-            if (elementsRead.get() >= readAmount.get()) {
+            if (nextIterPos == 0 && !tryAgain()) {
                 emitter.complete();
-                elementsRead.set(0);
-                completed = true;
                 return;
-            }
-            if (res.getPos() == 0 && !tryAgain()) {
-                finished = true;
-                emitter.complete();
             }
 
-            if (finished || completed) {
-                return;
-            }
-            nextValues(emitter);
+            nextValues();
         });
     }
 
