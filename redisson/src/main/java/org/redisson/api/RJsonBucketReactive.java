@@ -47,6 +47,17 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
      * @return {@code true} if successful, or {@code false} if
      *         value was already set
      */
+    Mono<Boolean> setIfAbsent(String path, Object value);
+
+    /**
+     * Use {@link #setIfAbsent(String, Object)} instead
+     *
+     * @param path JSON path
+     * @param value object
+     * @return {@code true} if successful, or {@code false} if
+     *         value was already set
+     */
+    @Deprecated
     Mono<Boolean> trySet(String path, Object value);
 
     /**

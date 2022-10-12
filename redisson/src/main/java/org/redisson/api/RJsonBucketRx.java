@@ -44,11 +44,22 @@ public interface RJsonBucketRx<V> extends RBucketRx<V> {
     /**
      * Sets Json object by JSONPath only if previous value is empty
      *
+     * @param path JSON path
+     * @param value object
+     * @return {@code true} if successful, or {@code false} if
+     *         value was already set
+     */
+    Single<Boolean> setIfAbsent(String path, Object value);
+
+    /**
+     * Use {@link #setIfAbsent(String, Object)} instead
+     *
      * @param path  JSON path
      * @param value object
      * @return {@code true} if successful, or {@code false} if
      * value was already set
      */
+    @Deprecated
     Single<Boolean> trySet(String path, Object value);
 
     /**
