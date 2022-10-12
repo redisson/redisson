@@ -296,7 +296,7 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
         if (update == null) {
             return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
                     "if redis.call('json.get', KEYS[1], ARGV[1]) == ARGV[2] then "
-                            + "redis.call('json.del', KEYS[1]); "
+                            + "redis.call('json.del', KEYS[1], ARGV[1]); "
                             + "return 1 "
                         + "else "
                             + "return 0 end;",
