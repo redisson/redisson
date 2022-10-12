@@ -157,15 +157,6 @@ public class MasterSlaveEntry {
         });
     }
 
-    public boolean slaveDown(ClientConnectionsEntry entry, FreezeReason freezeReason) {
-        ClientConnectionsEntry e = slaveBalancer.freeze(entry, freezeReason);
-        if (e == null) {
-            return false;
-        }
-        
-        return slaveDown(entry);
-    }
-    
     public boolean slaveDown(InetSocketAddress address, FreezeReason freezeReason) {
         ClientConnectionsEntry entry = slaveBalancer.freeze(address, freezeReason);
         if (entry == null) {
@@ -184,15 +175,6 @@ public class MasterSlaveEntry {
         return slaveDownAsync(entry);
     }
 
-    public boolean slaveDown(RedisURI address, FreezeReason freezeReason) {
-        ClientConnectionsEntry entry = slaveBalancer.freeze(address, freezeReason);
-        if (entry == null) {
-            return false;
-        }
-        
-        return slaveDown(entry);
-    }
-
     public CompletableFuture<Boolean> slaveDownAsync(RedisURI address, FreezeReason freezeReason) {
         ClientConnectionsEntry entry = slaveBalancer.freeze(address, freezeReason);
         if (entry == null) {
@@ -208,7 +190,9 @@ public class MasterSlaveEntry {
         }
 
         // add master as slave if no more slaves available
-        if (!config.checkSkipSlavesInit() && slaveBalancer.getAvailableClients() == 0) {
+        if (!config.checkSkipSlavesInit()
+                && !masterEntry.getClient().getAddr().equals(entry.getClient().getAddr())
+                    && slaveBalancer.getAvailableClients() == 0) {
             if (slaveBalancer.unfreeze(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM)) {
                 log.info("master {} used as slave", masterEntry.getClient().getAddr());
             }
@@ -217,13 +201,24 @@ public class MasterSlaveEntry {
         return nodeDown(entry);
     }
 
+    public CompletableFuture<Boolean> slaveDownAsync(ClientConnectionsEntry entry, FreezeReason freezeReason) {
+        ClientConnectionsEntry e = slaveBalancer.freeze(entry, freezeReason);
+        if (e == null) {
+            return CompletableFuture.completedFuture(false);
+        }
+
+        return slaveDownAsync(entry);
+    }
+
     private CompletableFuture<Boolean> slaveDownAsync(ClientConnectionsEntry entry) {
         if (entry.isMasterForRead()) {
             return CompletableFuture.completedFuture(false);
         }
 
         // add master as slave if no more slaves available
-        if (!config.checkSkipSlavesInit() && slaveBalancer.getAvailableClients() == 0) {
+        if (!config.checkSkipSlavesInit()
+                && !masterEntry.getClient().getAddr().equals(entry.getClient().getAddr())
+                    && slaveBalancer.getAvailableClients() == 0) {
             CompletableFuture<Boolean> f = slaveBalancer.unfreezeAsync(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM);
             return f.thenApply(value -> {
                 if (value) {

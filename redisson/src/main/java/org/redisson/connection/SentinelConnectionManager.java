@@ -615,9 +615,11 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             log.warn("slave: {} is down", uri);
         } else {
             MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
-            if (entry.slaveDown(uri, FreezeReason.MANAGER)) {
-                log.warn("slave: {} is down", uri);
-            }
+            entry.slaveDownAsync(uri, FreezeReason.MANAGER).thenAccept(r -> {
+                if (r) {
+                    log.warn("slave: {} is down", uri);
+                }
+            });
         }
     }
 
