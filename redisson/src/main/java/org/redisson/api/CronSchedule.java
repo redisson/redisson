@@ -16,9 +16,9 @@
 package org.redisson.api;
 
 import org.redisson.executor.CronExpression;
-import org.redisson.executor.CronExpressionEx;
 
 import java.time.ZoneId;
+import java.util.TimeZone;
 
 /**
  * Cron expression object used in {@link RScheduledExecutorService}.
@@ -49,7 +49,7 @@ public final class CronSchedule {
      *             wrapping a ParseException if the expression is invalid
      */
     public static CronSchedule of(String expression) {
-        return new CronSchedule(new CronExpressionEx(expression), ZoneId.systemDefault());
+        return of(expression, ZoneId.systemDefault());
     }
 
     /**
@@ -62,7 +62,9 @@ public final class CronSchedule {
      *             wrapping a ParseException if the expression is invalid
      */
     public static CronSchedule of(String expression, ZoneId zoneId) {
-        return new CronSchedule(new CronExpressionEx(expression), zoneId);
+        CronExpression ce = new CronExpression(expression);
+        ce.setTimeZone(TimeZone.getTimeZone(zoneId));
+        return new CronSchedule(ce, zoneId);
     }
 
     /**
