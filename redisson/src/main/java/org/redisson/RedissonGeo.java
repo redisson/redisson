@@ -115,7 +115,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
         for (GeoEntry entry : entries) {
             params.add(entry.getLongitude());
             params.add(entry.getLatitude());
-            params.add(encode(params, entry.getMember()));
+            encode(params, entry.getMember());
         }
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.GEOADD, params.toArray());
     }
@@ -190,7 +190,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
         List<Object> params = new ArrayList<>(members.length + 1);
         params.add(getRawName());
         for (Object member : members) {
-            params.add(encode(params, member));
+            encode(params, member);
         }
         RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("GEOHASH",
                 new MapGetAllDecoder((List<Object>) Arrays.asList(members), 0));
@@ -207,7 +207,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
         List<Object> params = new ArrayList<>(members.length + 1);
         params.add(getRawName());
         for (Object member : members) {
-            params.add(encode(params, member));
+            encode(params, member);
         }
 
         MultiDecoder<Map<Object, Object>> decoder = new ListMultiDecoder2(

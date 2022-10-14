@@ -247,7 +247,7 @@ public abstract class RedissonObject implements RObject {
     protected List<ByteBuf> encode(Collection<?> values) {
         List<ByteBuf> result = new ArrayList<>(values.size());
         for (Object object : values) {
-            result.add(encode(result, object));
+            encode(result, object);
         }
         return result;
     }
@@ -313,9 +313,10 @@ public abstract class RedissonObject implements RObject {
         return commandExecutor.encode(codec, value);
     }
 
-    public ByteBuf encode(Collection<?> params, Object value) {
+    public void encode(Collection<?> params, Object value) {
         try {
-            return commandExecutor.encode(codec, value);
+            Object v = commandExecutor.encode(codec, value);
+            ((Collection<Object>)params).add(v);
         } catch (Exception e) {
             params.forEach(v -> {
                 ReferenceCountUtil.safeRelease(v);

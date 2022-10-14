@@ -408,7 +408,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
             if (t.getValue() == null) {
                 throw new NullPointerException("map value can't be null");
             }
-            params.add(encode(params, t.getKey()));
+            encode(params, t.getKey());
             params.add(BigDecimal.valueOf(t.getValue()).toPlainString());
         }
 
@@ -525,7 +525,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         params.add(getRawName());
         for (Entry<V, Double> entry : objects.entrySet()) {
             params.add(BigDecimal.valueOf(entry.getValue()).toPlainString());
-            params.add(encode(params, entry.getKey()));
+            encode(params, entry.getKey());
         }
 
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZADD_INT, params.toArray());
@@ -546,7 +546,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         params.add("NX");
         for (Entry<V, Double> entry : objects.entrySet()) {
             params.add(BigDecimal.valueOf(entry.getValue()).toPlainString());
-            params.add(encode(params, entry.getKey()));
+            encode(params, entry.getKey());
         }
 
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZADD_INT, params.toArray());
@@ -568,7 +568,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         params.add("CH");
         for (Entry<V, Double> entry : objects.entrySet()) {
             params.add(BigDecimal.valueOf(entry.getValue()).toPlainString());
-            params.add(encode(params, entry.getKey()));
+            encode(params, entry.getKey());
         }
 
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZADD_INT, params.toArray());
@@ -590,7 +590,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         params.add("CH");
         for (Entry<V, Double> entry : objects.entrySet()) {
             params.add(BigDecimal.valueOf(entry.getValue()).toPlainString());
-            params.add(encode(params, entry.getKey()));
+            encode(params, entry.getKey());
         }
 
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZADD_INT, params.toArray());
@@ -612,7 +612,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         params.add("CH");
         for (Entry<V, Double> entry : objects.entrySet()) {
             params.add(BigDecimal.valueOf(entry.getValue()).toPlainString());
-            params.add(encode(params, entry.getKey()));
+            encode(params, entry.getKey());
         }
 
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZADD_INT, params.toArray());
@@ -949,7 +949,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         List<Object> params = new ArrayList<>(c.size() * 2);
         for (Object object : c) {
             params.add(0);
-            params.add(encode(params, object));
+            encode(params, object);
         }
         
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,

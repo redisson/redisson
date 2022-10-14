@@ -117,7 +117,7 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
             byte[] random = new byte[16];
             ThreadLocalRandom.current().nextBytes(random);
             params.add(random);
-            params.add(encode(params, entry.getValue()));
+            encode(params, entry.getValue());
         }
 
         if (timeToLive > 0) {

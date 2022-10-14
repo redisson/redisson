@@ -366,7 +366,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         List<Object> params = new ArrayList<>(c.size() * 2);
         for (Object object : c) {
             params.add(score);
-            params.add(encode(params, object));
+            encode(params, object);
         }
         
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,

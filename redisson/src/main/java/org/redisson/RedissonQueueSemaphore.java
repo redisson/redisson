@@ -57,12 +57,12 @@ public class RedissonQueueSemaphore extends RedissonSemaphore {
             params = new ArrayList<>(values.size() + 1);
             params.add(values.size());
             for (Object value : values) {
-                params.add(encode(params, value));
+                encode(params, value);
             }
         } else {
             params = new ArrayList<>(2);
             params.add(1);
-            params.add(encode(params, value));
+            encode(params, value);
         }
         return commandExecutor.evalWriteNoRetryAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "local value = redis.call('get', KEYS[1]); " +
