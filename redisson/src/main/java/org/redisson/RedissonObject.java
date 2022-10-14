@@ -316,7 +316,7 @@ public abstract class RedissonObject implements RObject {
     public void encode(Collection<?> params, Object value) {
         try {
             Object v = commandExecutor.encode(codec, value);
-            ((Collection<Object>)params).add(v);
+            ((Collection<Object>) params).add(v);
         } catch (Exception e) {
             params.forEach(v -> {
                 ReferenceCountUtil.safeRelease(v);
