@@ -54,15 +54,15 @@ public class RedissonQueueSemaphore extends RedissonSemaphore {
     public RFuture<Boolean> tryAcquireAsync(int permits) {
         List<Object> params;
         if (values != null) {
-            params = new ArrayList<Object>(values.size() + 1);
+            params = new ArrayList<>(values.size() + 1);
             params.add(values.size());
             for (Object value : values) {
-                params.add(encode(value));
+                params.add(encode(params, value));
             }
         } else {
-            params = new ArrayList<Object>(2);
+            params = new ArrayList<>(2);
             params.add(1);
-            params.add(encode(value));
+            params.add(encode(params, value));
         }
         return commandExecutor.evalWriteNoRetryAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "local value = redis.call('get', KEYS[1]); " +

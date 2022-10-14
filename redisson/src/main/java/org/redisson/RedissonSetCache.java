@@ -265,7 +265,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         List<Object> params = new ArrayList<>();
         params.add(System.currentTimeMillis());
         params.add(timeoutDate);
-        params.addAll(encode(values));
+        params.addAll(encode(Arrays.asList(values)));
 
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
                   "for i, v in ipairs(ARGV) do " +
@@ -363,10 +363,10 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         }
         
         long score = 92233720368547758L - System.currentTimeMillis();
-        List<Object> params = new ArrayList<Object>(c.size()*2);
+        List<Object> params = new ArrayList<>(c.size() * 2);
         for (Object object : c) {
             params.add(score);
-            params.add(encode((V) object));
+            params.add(encode(params, object));
         }
         
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,

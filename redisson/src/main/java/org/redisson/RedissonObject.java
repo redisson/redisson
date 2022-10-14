@@ -244,18 +244,10 @@ public abstract class RedissonObject implements RObject {
         return codec;
     }
 
-    protected List<ByteBuf> encode(Object... values) {
-        List<ByteBuf> result = new ArrayList<>(values.length);
-        for (Object object : values) {
-            result.add(encode(object));
-        }
-        return result;
-    }
-
     protected List<ByteBuf> encode(Collection<?> values) {
         List<ByteBuf> result = new ArrayList<>(values.size());
         for (Object object : values) {
-            result.add(encode(object));
+            result.add(encode(result, object));
         }
         return result;
     }
@@ -320,9 +312,31 @@ public abstract class RedissonObject implements RObject {
     public ByteBuf encode(Object value) {
         return commandExecutor.encode(codec, value);
     }
-    
+
+    public ByteBuf encode(Collection<?> params, Object value) {
+        try {
+            return commandExecutor.encode(codec, value);
+        } catch (Exception e) {
+            params.forEach(v -> {
+                ReferenceCountUtil.safeRelease(v);
+            });
+            throw e;
+        }
+    }
+
     public ByteBuf encodeMapKey(Object value) {
         return commandExecutor.encodeMapKey(codec, value);
+    }
+
+    public ByteBuf encodeMapKey(Object value, Collection<Object> params) {
+        try {
+            return encodeMapKey(value);
+        } catch (Exception e) {
+            params.forEach(v -> {
+                ReferenceCountUtil.safeRelease(v);
+            });
+            throw e;
+        }
     }
 
     public ByteBuf encodeMapValue(Object value) {

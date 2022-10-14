@@ -741,7 +741,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
                             "redis.call('sadd', KEYS[1], unpack(ARGV, i, math.min(i+4999, #ARGV))); " +
                         "end; " +
                         "return 1; ",
-                       Arrays.asList(getRawName()), encode(values).toArray());
+                Arrays.asList(getRawName()), encode(Arrays.asList(values).toArray()));
     }
 
     @Override
