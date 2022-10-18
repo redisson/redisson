@@ -28,14 +28,15 @@ import org.redisson.client.RedisClient;
  *
  * @author Nikita Koksharov
  *
- * @param <V> value
+ * @param <V> value type
+ * @param <L> label type
  */
-public class RedissonTimeSeriesRx<V> {
+public class RedissonTimeSeriesRx<V, L> {
 
-    private final RTimeSeries<V> instance;
+    private final RTimeSeries<V, L> instance;
     private final RedissonRxClient redisson;
 
-    public RedissonTimeSeriesRx(RTimeSeries<V> instance, RedissonRxClient redisson) {
+    public RedissonTimeSeriesRx(RTimeSeries<V, L> instance, RedissonRxClient redisson) {
         this.instance = instance;
         this.redisson = redisson;
     }

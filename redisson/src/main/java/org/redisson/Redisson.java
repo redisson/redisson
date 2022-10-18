@@ -156,12 +156,12 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
-    public <V> RTimeSeries<V> getTimeSeries(String name) {
+    public <V, L> RTimeSeries<V, L> getTimeSeries(String name) {
         return new RedissonTimeSeries<>(evictionScheduler, commandExecutor, name);
     }
 
     @Override
-    public <V> RTimeSeries<V> getTimeSeries(String name, Codec codec) {
+    public <V, L> RTimeSeries<V, L> getTimeSeries(String name, Codec codec) {
         return new RedissonTimeSeries<>(codec, evictionScheduler, commandExecutor, name);
     }
 

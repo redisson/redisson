@@ -1005,7 +1005,7 @@ public class RedissonTest extends BaseTest {
                 .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
         RedissonClient redisson = Redisson.create(config);
 
-        RTimeSeries<String> t = redisson.getTimeSeries("test");
+        RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
         t.add(4, "40");
         t.add(2, "20");
         t.add(1, "10", 1, TimeUnit.SECONDS);

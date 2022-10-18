@@ -439,17 +439,17 @@ public class RedissonRx implements RedissonRxClient {
     }
 
     @Override
-    public <V> RTimeSeriesRx<V> getTimeSeries(String name) {
-        RTimeSeries<V> timeSeries = new RedissonTimeSeries<V>(evictionScheduler, commandExecutor, name);
+    public <V, L> RTimeSeriesRx<V, L> getTimeSeries(String name) {
+        RTimeSeries<V, L> timeSeries = new RedissonTimeSeries<V, L>(evictionScheduler, commandExecutor, name);
         return RxProxyBuilder.create(commandExecutor, timeSeries,
-                new RedissonTimeSeriesRx<V>(timeSeries, this), RTimeSeriesRx.class);
+                new RedissonTimeSeriesRx<V, L>(timeSeries, this), RTimeSeriesRx.class);
     }
 
     @Override
-    public <V> RTimeSeriesRx<V> getTimeSeries(String name, Codec codec) {
-        RTimeSeries<V> timeSeries = new RedissonTimeSeries<V>(codec, evictionScheduler, commandExecutor, name);
+    public <V, L> RTimeSeriesRx<V, L> getTimeSeries(String name, Codec codec) {
+        RTimeSeries<V, L> timeSeries = new RedissonTimeSeries<V, L>(codec, evictionScheduler, commandExecutor, name);
         return RxProxyBuilder.create(commandExecutor, timeSeries,
-                new RedissonTimeSeriesRx<V>(timeSeries, this), RTimeSeriesRx.class);
+                new RedissonTimeSeriesRx<V, L>(timeSeries, this), RTimeSeriesRx.class);
     }
 
     @Override

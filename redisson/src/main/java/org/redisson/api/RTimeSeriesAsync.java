@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -24,18 +25,31 @@ import java.util.concurrent.TimeUnit;
  *
  * @author Nikita Koksharov
  *
+ * @param <V> value type
+ * @param <L> label type
+ *
  */
-public interface RTimeSeriesAsync<V> extends RExpirableAsync {
+public interface RTimeSeriesAsync<V, L> extends RExpirableAsync {
 
     /**
      * Adds element to this time-series collection
      * by specified <code>timestamp</code>.
      *
-     * @param timestamp - object timestamp
-     * @param object - object itself
+     * @param timestamp object timestamp
+     * @param object object itself
      * @return void
      */
     RFuture<Void> addAsync(long timestamp, V object);
+
+    /**
+     * Adds element with <code>label</code> to this time-series collection
+     * by specified <code>timestamp</code>.
+     *
+     * @param timestamp object timestamp
+     * @param object object itself
+     * @param label object label
+     */
+    RFuture<Void> addAsync(long timestamp, V object, L label);
 
     /**
      * Adds all elements contained in the specified map to this time-series collection.
@@ -45,6 +59,14 @@ public interface RTimeSeriesAsync<V> extends RExpirableAsync {
      * @return void
      */
     RFuture<Void> addAllAsync(Map<Long, V> objects);
+
+    /**
+     * Adds all entries collection to this time-series collection.
+     *
+     * @param entries collection of time series entries
+     * @return void
+     */
+    RFuture<Void>  addAllAsync(Collection<TimeSeriesEntry<V, L>> entries);
 
     /**
      * Adds element to this time-series collection
@@ -59,6 +81,18 @@ public interface RTimeSeriesAsync<V> extends RExpirableAsync {
     RFuture<Void> addAsync(long timestamp, V object, long timeToLive, TimeUnit timeUnit);
 
     /**
+     * Adds element with <code>label</code> to this time-series collection
+     * by specified <code>timestamp</code>.
+     *
+     * @param timestamp object timestamp
+     * @param object object itself
+     * @param label object label
+     * @param timeToLive time to live interval
+     * @return void
+     */
+    RFuture<Void> addAsync(long timestamp, V object, L label, Duration timeToLive);
+
+    /**
      * Adds all elements contained in the specified map to this time-series collection.
      * Map contains of timestamp mapped by object.
      *
@@ -68,6 +102,16 @@ public interface RTimeSeriesAsync<V> extends RExpirableAsync {
      * @return void
      */
     RFuture<Void> addAllAsync(Map<Long, V> objects, long timeToLive, TimeUnit timeUnit);
+
+    /**
+     * Adds all time series entries collection to this time-series collection.
+     * Specified time to live interval applied to all entries defined in collection.
+     *
+     * @param entries collection of time series entries
+     * @param timeToLive time to live interval
+     * @return void
+     */
+    RFuture<Void> addAllAsync(Collection<TimeSeriesEntry<V, L>> entries, Duration timeToLive);
 
     /**
      * Returns size of this set.
@@ -83,6 +127,14 @@ public interface RTimeSeriesAsync<V> extends RExpirableAsync {
      * @return object
      */
     RFuture<V> getAsync(long timestamp);
+
+    /**
+     * Returns time series entry by specified <code>timestamp</code> or <code>null</code> if it doesn't exist.
+     *
+     * @param timestamp object timestamp
+     * @return time series entry
+     */
+    RFuture<TimeSeriesEntry<V, L>> getEntryAsync(long timestamp);
 
     /**
      * Removes object by specified <code>timestamp</code>.
@@ -222,7 +274,7 @@ public interface RTimeSeriesAsync<V> extends RExpirableAsync {
      * @param endTimestamp - end timestamp
      * @return elements collection
      */
-    RFuture<Collection<TimeSeriesEntry<V>>> entryRangeAsync(long startTimestamp, long endTimestamp);
+    RFuture<Collection<TimeSeriesEntry<V, L>>> entryRangeAsync(long startTimestamp, long endTimestamp);
 
     /**
      * Returns ordered entries of this time-series collection within timestamp range. Including boundary values.
@@ -232,7 +284,7 @@ public interface RTimeSeriesAsync<V> extends RExpirableAsync {
      * @param limit result size limit
      * @return elements collection
      */
-    RFuture<Collection<TimeSeriesEntry<V>>> entryRangeAsync(long startTimestamp, long endTimestamp, int limit);
+    RFuture<Collection<TimeSeriesEntry<V, L>>> entryRangeAsync(long startTimestamp, long endTimestamp, int limit);
 
     /**
      * Returns entries of this time-series collection in reverse order within timestamp range. Including boundary values.
@@ -241,7 +293,7 @@ public interface RTimeSeriesAsync<V> extends RExpirableAsync {
      * @param endTimestamp - end timestamp
      * @return elements collection
      */
-    RFuture<Collection<TimeSeriesEntry<V>>> entryRangeReversedAsync(long startTimestamp, long endTimestamp);
+    RFuture<Collection<TimeSeriesEntry<V, L>>> entryRangeReversedAsync(long startTimestamp, long endTimestamp);
 
     /**
      * Returns entries of this time-series collection in reverse order within timestamp range. Including boundary values.
@@ -251,6 +303,6 @@ public interface RTimeSeriesAsync<V> extends RExpirableAsync {
      * @param limit result size limit
      * @return elements collection
      */
-    RFuture<Collection<TimeSeriesEntry<V>>> entryRangeReversedAsync(long startTimestamp, long endTimestamp, int limit);
+    RFuture<Collection<TimeSeriesEntry<V, L>>> entryRangeReversedAsync(long startTimestamp, long endTimestamp, int limit);
 
 }

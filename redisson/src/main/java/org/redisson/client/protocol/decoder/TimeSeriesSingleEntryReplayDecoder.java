@@ -21,7 +21,6 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -29,28 +28,24 @@ import java.util.List;
  * @author Nikita Koksharov
  *
  */
-public class TimeSeriesEntryReplayDecoder implements MultiDecoder<List<TimeSeriesEntry<Object, Object>>> {
+public class TimeSeriesSingleEntryReplayDecoder implements MultiDecoder<TimeSeriesEntry<Object, Object>> {
 
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
-        if (paramNum % 4 == 2 || paramNum % 4 == 3) {
+        if (paramNum == 0 || paramNum == 1) {
             return LongCodec.INSTANCE.getValueDecoder();
         }
         return MultiDecoder.super.getDecoder(codec, paramNum, state);
     }
     
     @Override
-    public List<TimeSeriesEntry<Object, Object>> decode(List<Object> parts, State state) {
-        List<TimeSeriesEntry<Object, Object>> result = new ArrayList<>();
-        for (int i = 0; i < parts.size(); i += 4) {
-            Long n = (Long) parts.get(i + 2);
-            Object label = null;
-            if (n == 3) {
-               label = parts.get(i + 1);
-            }
-            result.add(new TimeSeriesEntry<>((Long) parts.get(i + 3), parts.get(i), label));
+    public TimeSeriesEntry<Object, Object> decode(List<Object> parts, State state) {
+        Long n = (Long) parts.get(0);
+        Object label = null;
+        if (n == 3) {
+            label = parts.get(3);
         }
-        return result;
+        return new TimeSeriesEntry<>((Long) parts.get(1), parts.get(2), label);
     }
 
 }

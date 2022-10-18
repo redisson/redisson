@@ -36,22 +36,24 @@ public interface RedissonReactiveClient {
     /**
      * Returns time-series instance by <code>name</code>
      *
-     * @param <V> type of value
+     * @param <V> value type
+     * @param <L> label type
      * @param name - name of instance
      * @return RTimeSeries object
      */
-    <V> RTimeSeriesReactive<V> getTimeSeries(String name);
+    <V, L> RTimeSeriesReactive<V, L> getTimeSeries(String name);
 
     /**
      * Returns time-series instance by <code>name</code>
      * using provided <code>codec</code> for values.
      *
-     * @param <V> type of value
+     * @param <V> value type
+     * @param <L> label type
      * @param name - name of instance
      * @param codec - codec for values
      * @return RTimeSeries object
      */
-    <V> RTimeSeriesReactive<V> getTimeSeries(String name, Codec codec);
+    <V, L> RTimeSeriesReactive<V, L> getTimeSeries(String name, Codec codec);
 
     /**
      * Returns stream instance by <code>name</code>

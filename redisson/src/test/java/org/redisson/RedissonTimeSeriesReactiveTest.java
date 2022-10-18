@@ -18,12 +18,12 @@ public class RedissonTimeSeriesReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testOrder() {
-        RTimeSeriesReactive<String> t = redisson.getTimeSeries("test");
+        RTimeSeriesReactive<String, Object> t = redisson.getTimeSeries("test");
         sync(t.add(4, "40"));
         sync(t.add(2, "20"));
         sync(t.add(1, "10", 1, TimeUnit.SECONDS));
 
-        Collection<TimeSeriesEntry<String>> r11 = sync(t.entryRange(1, 5));
+        Collection<TimeSeriesEntry<String, Object>> r11 = sync(t.entryRange(1, 5));
         assertThat(r11).containsExactly(new TimeSeriesEntry<>(1,"10"),
                                         new TimeSeriesEntry<>(2, "20"),
                                         new TimeSeriesEntry<>(4, "40"));
