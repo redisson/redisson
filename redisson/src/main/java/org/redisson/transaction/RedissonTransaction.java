@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,6 +54,11 @@ public class RedissonTransaction implements RTransaction {
     private final TransactionOptions options;
     private List<TransactionalOperation> operations = new CopyOnWriteArrayList<>();
     private Set<String> localCaches = new HashSet<>();
+    private final Map<RLocalCachedMap<?, ?>, RLocalCachedMap<?, ?>> localCacheInstances = new HashMap<>();
+    private final Map<String, Object> instances = new HashMap<>();
+
+    private RedissonTransactionalBuckets bucketsInstance;
+    private RedissonTransactionalBuckets bucketsCodecInstance;
     private final long startTime = System.currentTimeMillis();
     
     private final String id = generateId();
@@ -78,92 +83,120 @@ public class RedissonTransaction implements RTransaction {
         checkState();
 
         localCaches.add(fromInstance.getName());
-        return new RedissonTransactionalLocalCachedMap<K, V>(commandExecutor,
-                operations, options.getTimeout(), executed, fromInstance, id);
+        return (RLocalCachedMap<K, V>) localCacheInstances.computeIfAbsent(fromInstance, k -> {
+            return new RedissonTransactionalLocalCachedMap<>(commandExecutor,
+                    operations, options.getTimeout(), executed, fromInstance, id);
+        });
     }
     
     @Override
     public <V> RBucket<V> getBucket(String name) {
         checkState();
-        
-        return new RedissonTransactionalBucket<V>(commandExecutor, options.getTimeout(), name, operations, executed, id);
+
+        return (RBucket<V>) instances.computeIfAbsent(name, k -> {
+            return new RedissonTransactionalBucket<V>(commandExecutor, options.getTimeout(), name, operations, executed, id);
+        });
     }
     
     @Override
     public <V> RBucket<V> getBucket(String name, Codec codec) {
         checkState();
 
-        return new RedissonTransactionalBucket<V>(codec, commandExecutor, options.getTimeout(), name, operations, executed, id);
+        return (RBucket<V>) instances.computeIfAbsent(name, k -> {
+            return new RedissonTransactionalBucket<V>(codec, commandExecutor, options.getTimeout(), name, operations, executed, id);
+        });
     }
 
     @Override
     public RBuckets getBuckets() {
         checkState();
-        
-        return new RedissonTransactionalBuckets(commandExecutor, options.getTimeout(), operations, executed, id);
+
+        if (bucketsInstance == null) {
+            bucketsInstance = new RedissonTransactionalBuckets(commandExecutor, options.getTimeout(), operations, executed, id);
+        }
+        return bucketsInstance;
     }
 
     @Override
     public RBuckets getBuckets(Codec codec) {
         checkState();
-        
-        return new RedissonTransactionalBuckets(codec, commandExecutor, options.getTimeout(), operations, executed, id);
+
+        if (bucketsCodecInstance == null) {
+            bucketsCodecInstance = new RedissonTransactionalBuckets(codec, commandExecutor, options.getTimeout(), operations, executed, id);
+        }
+        return bucketsCodecInstance;
     }
     
     @Override
     public <V> RSet<V> getSet(String name) {
         checkState();
-        
-        return new RedissonTransactionalSet<V>(commandExecutor, name, operations, options.getTimeout(), executed, id);        
+
+        return (RSet<V>) instances.computeIfAbsent(name, k -> {
+            return new RedissonTransactionalSet<V>(commandExecutor, name, operations, options.getTimeout(), executed, id);
+        });
     }
     
     @Override
     public <V> RSet<V> getSet(String name, Codec codec) {
         checkState();
-        
-        return new RedissonTransactionalSet<V>(codec, commandExecutor, name, operations, options.getTimeout(), executed, id);
+
+        return (RSet<V>) instances.computeIfAbsent(name, k -> {
+            return new RedissonTransactionalSet<V>(codec, commandExecutor, name, operations, options.getTimeout(), executed, id);
+        });
     }
     
     @Override
     public <V> RSetCache<V> getSetCache(String name) {
         checkState();
-        
-        return new RedissonTransactionalSetCache<V>(commandExecutor, name, operations, options.getTimeout(), executed, id);        
+
+        return (RSetCache<V>) instances.computeIfAbsent(name, k -> {
+            return new RedissonTransactionalSetCache<V>(commandExecutor, name, operations, options.getTimeout(), executed, id);
+        });
     }
     
     @Override
     public <V> RSetCache<V> getSetCache(String name, Codec codec) {
         checkState();
-        
-        return new RedissonTransactionalSetCache<V>(codec, commandExecutor, name, operations, options.getTimeout(), executed, id);
+
+        return (RSetCache<V>) instances.computeIfAbsent(name, k -> {
+            return new RedissonTransactionalSetCache<V>(codec, commandExecutor, name, operations, options.getTimeout(), executed, id);
+        });
     }
 
     @Override
     public <K, V> RMap<K, V> getMap(String name) {
         checkState();
-        
-        return new RedissonTransactionalMap<K, V>(commandExecutor, name, operations, options.getTimeout(), executed, id);
+
+        return (RMap<K, V>) instances.computeIfAbsent(name, k -> {
+            return new RedissonTransactionalMap<K, V>(commandExecutor, name, operations, options.getTimeout(), executed, id);
+        });
     }
 
     @Override
     public <K, V> RMap<K, V> getMap(String name, Codec codec) {
         checkState();
-        
-        return new RedissonTransactionalMap<K, V>(codec, commandExecutor, name, operations, options.getTimeout(), executed, id);
+
+        return (RMap<K, V>) instances.computeIfAbsent(name, k -> {
+            return new RedissonTransactionalMap<K, V>(codec, commandExecutor, name, operations, options.getTimeout(), executed, id);
+        });
     }
 
     @Override
     public <K, V> RMapCache<K, V> getMapCache(String name) {
         checkState();
-        
-        return new RedissonTransactionalMapCache<K, V>(commandExecutor, name, operations, options.getTimeout(), executed, id);
+
+        return (RMapCache<K, V>) instances.computeIfAbsent(name, k -> {
+            return new RedissonTransactionalMapCache<K, V>(commandExecutor, name, operations, options.getTimeout(), executed, id);
+        });
     }
 
     @Override
     public <K, V> RMapCache<K, V> getMapCache(String name, Codec codec) {
         checkState();
-        
-        return new RedissonTransactionalMapCache<K, V>(codec, commandExecutor, name, operations, options.getTimeout(), executed, id);
+
+        return (RMapCache<K, V>) instances.computeIfAbsent(name, k -> {
+            return new RedissonTransactionalMapCache<K, V>(codec, commandExecutor, name, operations, options.getTimeout(), executed, id);
+        });
     }
     
     @Override

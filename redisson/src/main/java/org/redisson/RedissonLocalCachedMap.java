@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -826,7 +826,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 continue;
             }
 
-            mapKeys.add(encodeMapKey(value.getKey()));
+            mapKeys.add(encodeMapKey(value.getKey(), mapKeys));
             result.add((V) value.getValue());
         }
 
@@ -869,7 +869,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             if (value == null) {
                 continue;
             }
-            mapKeys.add(encodeMapKey(value.getKey()));
+            mapKeys.add(encodeMapKey(value.getKey(), mapKeys));
             result.put((K) value.getKey(), (V) value.getValue());
         }
 
@@ -925,7 +925,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 continue;
             }
 
-            mapKeys.add(encodeMapKey(value.getKey()));
+            mapKeys.add(encodeMapKey(value.getKey(), mapKeys));
             result.add(new AbstractMap.SimpleEntry<K, V>((K) value.getKey(), (V) value.getValue()));
         }
 

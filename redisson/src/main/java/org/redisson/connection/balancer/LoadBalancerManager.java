@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,6 +76,8 @@ public class LoadBalancerManager {
 
         CompletableFuture<Void> future = CompletableFuture.allOf(slaveFuture, pubSubFuture);
         return future.thenAccept(r -> {
+            slaveConnectionPool.addEntry(entry);
+            pubSubConnectionPool.addEntry(entry);
             client2Entry.put(entry.getClient(), entry);
         });
     }
@@ -151,8 +153,6 @@ public class LoadBalancerManager {
                 if (!entry.isInitialized()) {
                     entry.setInitialized(true);
 
-                    entry.resetFirstFail();
-
                     List<CompletableFuture<Void>> futures = new ArrayList<>(2);
                     futures.add(slaveConnectionPool.initConnections(entry));
                     futures.add(pubSubConnectionPool.initConnections(entry));
@@ -168,8 +168,9 @@ public class LoadBalancerManager {
                             return;
                         }
 
-                        log.debug("Unfreezed entry: {}", entry);
+                        entry.resetFirstFail();
                         entry.setFreezeReason(null);
+                        log.debug("Unfreezed entry: {}", entry);
                     });
                     return true;
                 }
@@ -189,8 +190,6 @@ public class LoadBalancerManager {
                 if (!entry.isInitialized()) {
                     entry.setInitialized(true);
 
-                    entry.resetFirstFail();
-
                     List<CompletableFuture<Void>> futures = new ArrayList<>(2);
                     futures.add(slaveConnectionPool.initConnections(entry));
                     futures.add(pubSubConnectionPool.initConnections(entry));
@@ -203,8 +202,9 @@ public class LoadBalancerManager {
                             return;
                         }
 
-                        log.debug("Unfreezed entry: {}", entry);
+                        entry.resetFirstFail();
                         entry.setFreezeReason(null);
+                        log.debug("Unfreezed entry: {}", entry);
                     }).thenApply(e -> true);
                 }
             }

@@ -294,7 +294,7 @@ public class RedissonSessionManagerTest {
         Executor.closeIdleConnections();
         server.stop();
 
-        TimeUnit.SECONDS.sleep(60);
+        TimeUnit.SECONDS.sleep(61);
         Assert.assertEquals(0, r.getKeys().count());
     }
     

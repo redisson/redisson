@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import org.redisson.client.ChannelName;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.pubsub.PubSubType;
+import org.redisson.misc.AsyncSemaphore;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,7 +44,7 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
 
     public void unsubscribe(E entry, String entryName, String channelName) {
         AsyncSemaphore semaphore = service.getSemaphore(new ChannelName(channelName));
-        semaphore.acquire(() -> {
+        semaphore.acquire().thenAccept(c -> {
             if (entry.release() == 0) {
                 entries.remove(entryName);
                 service.unsubscribe(PubSubType.UNSUBSCRIBE, new ChannelName(channelName))
@@ -54,7 +55,6 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
                 semaphore.release();
             }
         });
-
     }
 
     public void timeout(CompletableFuture<?> promise) {
@@ -69,7 +69,7 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
         AsyncSemaphore semaphore = service.getSemaphore(new ChannelName(channelName));
         CompletableFuture<E> newPromise = new CompletableFuture<>();
 
-        semaphore.acquire(() -> {
+        semaphore.acquire().thenAccept(c -> {
             if (newPromise.isDone()) {
                 semaphore.release();
                 return;

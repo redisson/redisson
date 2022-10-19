@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.redisson;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.util.ReferenceCountUtil;
 import org.redisson.api.*;
 import org.redisson.api.MapOptions.WriteMode;
 import org.redisson.api.mapreduce.RMapReduce;
@@ -768,13 +769,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     protected RFuture<Void> putAllOperationAsync(Map<? extends K, ? extends V> map) {
         List<Object> params = new ArrayList<>(map.size()*2 + 1);
         params.add(getRawName());
-        for (java.util.Map.Entry<? extends K, ? extends V> t : map.entrySet()) {
-            checkKey(t.getKey());
-            checkValue(t.getValue());
-
-            params.add(encodeMapKey(t.getKey()));
-            params.add(encodeMapValue(t.getValue()));
-        }
+        encodeMapKeys(params, map);
 
         RFuture<Void> future = commandExecutor.writeAsync(getRawName(), codec, RedisCommands.HMSET, params.toArray());
         return future;
@@ -1040,6 +1035,23 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     protected void checkValue(Object value) {
         if (value == null) {
             throw new NullPointerException("map value can't be null");
+        }
+    }
+
+    protected void encodeMapKeys(Collection<Object> params, Map<?, ?> map) {
+        try {
+            for (java.util.Map.Entry<?, ?> t : map.entrySet()) {
+                checkKey(t.getKey());
+                checkValue(t.getValue());
+
+                params.add(encodeMapKey(t.getKey()));
+                params.add(encodeMapValue(t.getValue()));
+            }
+        } catch (Exception e) {
+            params.forEach(v -> {
+                ReferenceCountUtil.safeRelease(v);
+            });
+            throw e;
         }
     }
 
@@ -1430,9 +1442,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     protected RFuture<List<Long>> fastRemoveOperationBatchAsync(K... keys) {
         List<Object> args = new ArrayList<>(keys.length);
-        for (K key : keys) {
-            args.add(encodeMapKey(key));
-        }
+        encodeMapKeys(args, Arrays.asList(keys));
 
         RFuture<List<Long>> future = commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_LIST,
                         "local result = {}; " + 
@@ -1449,9 +1459,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     protected RFuture<Long> fastRemoveOperationAsync(K... keys) {
         List<Object> args = new ArrayList<>(keys.length + 1);
         args.add(getRawName());
-        for (K key : keys) {
-            args.add(encodeMapKey(key));
-        }
+        encodeMapKeys(args, Arrays.asList(keys));
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.HDEL, args.toArray());
     }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
+import org.redisson.misc.AsyncSemaphore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -196,7 +197,7 @@ public class PublishSubscribeService {
                     "Unable to acquire subscription lock after " + timeout + "ms. " +
                             "Try to increase 'timeout', 'subscriptionsPerConnection', 'subscriptionConnectionPoolSize' parameters."));
         }, timeout, TimeUnit.MILLISECONDS);
-        lock.acquire(() -> {
+        lock.acquire().thenAccept(r -> {
             if (!lockTimeout.cancel() || promise.isDone()) {
                 lock.release();
                 return;
@@ -256,7 +257,7 @@ public class PublishSubscribeService {
             return;
         }
 
-        freePubSubLock.acquire(() -> {
+        freePubSubLock.acquire().thenAccept(c -> {
             if (promise.isDone()) {
                 lock.release();
                 freePubSubLock.release();
@@ -389,7 +390,7 @@ public class PublishSubscribeService {
                 return;
             }
 
-            freePubSubLock.acquire(() -> {
+            freePubSubLock.acquire().thenAccept(c -> {
                 PubSubConnectionEntry entry = new PubSubConnectionEntry(conn, connectionManager);
                 int remainFreeAmount = entry.tryAcquire();
 
@@ -552,7 +553,7 @@ public class PublishSubscribeService {
                     continue;
                 }
 
-                freePubSubLock.acquire(() -> {
+                freePubSubLock.acquire().thenAccept(r -> {
                     e.getValue().getEntries().remove(entry);
                     freePubSubLock.release();
                 });

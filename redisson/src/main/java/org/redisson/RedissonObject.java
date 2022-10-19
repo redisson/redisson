@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.redisson;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.util.ReferenceCountUtil;
 import org.redisson.api.*;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.Codec;
@@ -243,25 +244,24 @@ public abstract class RedissonObject implements RObject {
         return codec;
     }
 
-    protected List<ByteBuf> encode(Object... values) {
-        List<ByteBuf> result = new ArrayList<>(values.length);
-        for (Object object : values) {
-            result.add(encode(object));
-        }
-        return result;
-    }
-
     protected List<ByteBuf> encode(Collection<?> values) {
         List<ByteBuf> result = new ArrayList<>(values.size());
         for (Object object : values) {
-            result.add(encode(object));
+            encode(result, object);
         }
         return result;
     }
     
     public void encode(Collection<Object> params, Collection<?> values) {
-        for (Object object : values) {
-            params.add(encode(object));
+        try {
+            for (Object object : values) {
+                params.add(encode(object));
+            }
+        } catch (Exception e) {
+            params.forEach(v -> {
+                ReferenceCountUtil.safeRelease(v);
+            });
+            throw e;
         }
     }
     
@@ -282,25 +282,62 @@ public abstract class RedissonObject implements RObject {
             keyState.release();
         }
     }
-    
+
     protected void encodeMapKeys(Collection<Object> params, Collection<?> values) {
-        for (Object object : values) {
-            params.add(encodeMapKey(object));
+        try {
+            for (Object object : values) {
+                params.add(encodeMapKey(object));
+            }
+        } catch (Exception e) {
+            params.forEach(v -> {
+                ReferenceCountUtil.safeRelease(v);
+            });
+            throw e;
         }
     }
 
     protected void encodeMapValues(Collection<Object> params, Collection<?> values) {
-        for (Object object : values) {
-            params.add(encodeMapValue(object));
+        try {
+            for (Object object : values) {
+                params.add(encodeMapValue(object));
+            }
+        } catch (Exception e) {
+            params.forEach(v -> {
+                ReferenceCountUtil.safeRelease(v);
+            });
+            throw e;
         }
     }
     
     public ByteBuf encode(Object value) {
         return commandExecutor.encode(codec, value);
     }
-    
+
+    public void encode(Collection<?> params, Object value) {
+        try {
+            Object v = commandExecutor.encode(codec, value);
+            ((Collection<Object>) params).add(v);
+        } catch (Exception e) {
+            params.forEach(v -> {
+                ReferenceCountUtil.safeRelease(v);
+            });
+            throw e;
+        }
+    }
+
     public ByteBuf encodeMapKey(Object value) {
         return commandExecutor.encodeMapKey(codec, value);
+    }
+
+    public ByteBuf encodeMapKey(Object value, Collection<Object> params) {
+        try {
+            return encodeMapKey(value);
+        } catch (Exception e) {
+            params.forEach(v -> {
+                ReferenceCountUtil.safeRelease(v);
+            });
+            throw e;
+        }
     }
 
     public ByteBuf encodeMapValue(Object value) {

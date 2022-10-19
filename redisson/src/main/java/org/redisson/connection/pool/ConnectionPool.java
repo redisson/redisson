@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,10 +66,11 @@ abstract class ConnectionPool<T extends RedisConnection> {
     }
 
     public CompletableFuture<Void> add(ClientConnectionsEntry entry) {
-        CompletableFuture<Void> promise = initConnections(entry, true);
-        return promise.thenAccept(r -> {
-            entries.add(entry);
-        });
+        return initConnections(entry, true);
+    }
+
+    public void addEntry(ClientConnectionsEntry entry) {
+        entries.add(entry);
     }
 
     public CompletableFuture<Void> initConnections(ClientConnectionsEntry entry) {
@@ -338,12 +339,14 @@ abstract class ConnectionPool<T extends RedisConnection> {
     }
 
     private void checkForReconnect(ClientConnectionsEntry entry, Throwable cause) {
-        if (masterSlaveEntry.slaveDown(entry, FreezeReason.RECONNECT)) {
-            log.error("slave " + entry.getClient().getAddr() + " has been disconnected after " 
+        masterSlaveEntry.slaveDownAsync(entry, FreezeReason.RECONNECT).thenAccept(r -> {
+            if (r) {
+                log.error("slave " + entry.getClient().getAddr() + " has been disconnected after "
                         + config.getFailedSlaveCheckInterval() + " ms interval since moment of the first failed connection", cause);
-            scheduleCheck(entry);
+                scheduleCheck(entry);
             }
-        }
+        });
+    }
 
     private void scheduleCheck(ClientConnectionsEntry entry) {
 

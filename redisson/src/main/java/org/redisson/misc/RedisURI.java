@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,15 +46,8 @@ public class RedisURI {
                 && !uri.startsWith("rediss://")) {
             throw new IllegalArgumentException("Redis url should start with redis:// or rediss:// (for SSL connection)");
         }
-        
-        String urlHost = uri.replaceFirst("redis://", "http://").replaceFirst("rediss://", "http://");
-        String ipV6Host = uri.substring(uri.indexOf("://")+3, uri.lastIndexOf(":"));
-        if (ipV6Host.contains("@")) {
-            ipV6Host = ipV6Host.split("@")[1];
-        }
-        if (ipV6Host.contains(":")) {
-            urlHost = urlHost.replace(ipV6Host, "[" + ipV6Host + "]");
-        }
+
+        String urlHost = parseUrl(uri);
 
         try {
             URL url = new URL(urlHost);
@@ -74,7 +67,19 @@ public class RedisURI {
             throw new IllegalArgumentException(e);
         }
     }
-    
+
+    private String parseUrl(String uri) {
+        String urlHost = uri.replaceFirst("redis://", "http://").replaceFirst("rediss://", "http://");
+        String ipV6Host = uri.substring(uri.indexOf("://")+3, uri.lastIndexOf(":"));
+        if (ipV6Host.contains("@")) {
+            ipV6Host = ipV6Host.split("@")[1];
+        }
+        if (ipV6Host.contains(":")) {
+            urlHost = urlHost.replace(ipV6Host, "[" + ipV6Host + "]");
+        }
+        return urlHost;
+    }
+
     public String getScheme() {
         if (ssl) {
             return "rediss";

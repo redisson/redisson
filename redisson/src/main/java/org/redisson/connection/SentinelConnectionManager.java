@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -615,9 +615,11 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             log.warn("slave: {} is down", uri);
         } else {
             MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
-            if (entry.slaveDown(uri, FreezeReason.MANAGER)) {
-                log.warn("slave: {} is down", uri);
-            }
+            entry.slaveDownAsync(uri, FreezeReason.MANAGER).thenAccept(r -> {
+                if (r) {
+                    log.warn("slave: {} is down", uri);
+                }
+            });
         }
     }
 

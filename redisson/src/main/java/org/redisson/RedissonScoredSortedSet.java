@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -400,7 +400,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public RFuture<List<Integer>> addAndGetRevRankAsync(Map<? extends V, Double> map) {
-        final List<Object> params = new ArrayList<Object>(map.size() * 2);
+        final List<Object> params = new ArrayList<>(map.size() * 2);
         for (java.util.Map.Entry<? extends V, Double> t : map.entrySet()) {
             if (t.getKey() == null) {
                 throw new NullPointerException("map key can't be null");
@@ -408,7 +408,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
             if (t.getValue() == null) {
                 throw new NullPointerException("map value can't be null");
             }
-            params.add(encode(t.getKey()));
+            encode(params, t.getKey());
             params.add(BigDecimal.valueOf(t.getValue()).toPlainString());
         }
 
@@ -521,11 +521,11 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         if (objects.isEmpty()) {
             return new CompletableFutureWrapper<>(0);
         }
-        List<Object> params = new ArrayList<Object>(objects.size()*2+1);
+        List<Object> params = new ArrayList<>(objects.size() * 2 + 1);
         params.add(getRawName());
         for (Entry<V, Double> entry : objects.entrySet()) {
             params.add(BigDecimal.valueOf(entry.getValue()).toPlainString());
-            params.add(encode(entry.getKey()));
+            encode(params, entry.getKey());
         }
 
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZADD_INT, params.toArray());
@@ -546,7 +546,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         params.add("NX");
         for (Entry<V, Double> entry : objects.entrySet()) {
             params.add(BigDecimal.valueOf(entry.getValue()).toPlainString());
-            params.add(encode(entry.getKey()));
+            encode(params, entry.getKey());
         }
 
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZADD_INT, params.toArray());
@@ -568,7 +568,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         params.add("CH");
         for (Entry<V, Double> entry : objects.entrySet()) {
             params.add(BigDecimal.valueOf(entry.getValue()).toPlainString());
-            params.add(encode(entry.getKey()));
+            encode(params, entry.getKey());
         }
 
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZADD_INT, params.toArray());
@@ -590,7 +590,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         params.add("CH");
         for (Entry<V, Double> entry : objects.entrySet()) {
             params.add(BigDecimal.valueOf(entry.getValue()).toPlainString());
-            params.add(encode(entry.getKey()));
+            encode(params, entry.getKey());
         }
 
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZADD_INT, params.toArray());
@@ -612,7 +612,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         params.add("CH");
         for (Entry<V, Double> entry : objects.entrySet()) {
             params.add(BigDecimal.valueOf(entry.getValue()).toPlainString());
-            params.add(encode(entry.getKey()));
+            encode(params, entry.getKey());
         }
 
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZADD_INT, params.toArray());
@@ -946,10 +946,10 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
             return deleteAsync();
         }
         
-        List<Object> params = new ArrayList<Object>(c.size()*2);
+        List<Object> params = new ArrayList<>(c.size() * 2);
         for (Object object : c) {
             params.add(0);
-            params.add(encode((V) object));
+            encode(params, object);
         }
         
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
@@ -958,7 +958,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
                  + "local size = redis.call('zinterstore', KEYS[1], 2, KEYS[1], KEYS[2], 'aggregate', 'sum');"
                  + "redis.call('del', KEYS[2]); "
                  + "return size ~= prevSize and 1 or 0; ",
-             Arrays.<Object>asList(getRawName(), "redisson_temp__{" + getRawName() + "}"), params.toArray());
+             Arrays.asList(getRawName(), "redisson_temp__{" + getRawName() + "}"), params.toArray());
     }
 
     @Override
@@ -982,7 +982,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
                 "redis.call('zincrby', KEYS[1], ARGV[1], ARGV[2]); "
                +"return redis.call('zrank', KEYS[1], ARGV[2]); ",
-                Collections.<Object>singletonList(getRawName()), new BigDecimal(value.toString()).toPlainString(), encode(object));
+                Collections.singletonList(getRawName()), new BigDecimal(value.toString()).toPlainString(), encode(object));
     }
 
     @Override
@@ -995,7 +995,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
                 "redis.call('zincrby', KEYS[1], ARGV[1], ARGV[2]); "
                +"return redis.call('zrevrank', KEYS[1], ARGV[2]); ",
-                Collections.<Object>singletonList(getRawName()), new BigDecimal(value.toString()).toPlainString(), encode(object));
+                Collections.singletonList(getRawName()), new BigDecimal(value.toString()).toPlainString(), encode(object));
     }
 
     @Override
@@ -1194,7 +1194,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     
     @Override
     public RFuture<Integer> intersectionAsync(Aggregate aggregate, String... names) {
-        List<Object> args = new ArrayList<Object>(names.length + 4);
+        List<Object> args = new ArrayList<>(names.length + 4);
         args.add(getRawName());
         args.add(names.length);
         args.addAll(Arrays.asList(names));
@@ -1220,12 +1220,12 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public RFuture<Integer> intersectionAsync(Aggregate aggregate, Map<String, Double> nameWithWeight) {
-        List<Object> args = new ArrayList<Object>(nameWithWeight.size()*2 + 5);
+        List<Object> args = new ArrayList<>(nameWithWeight.size() * 2 + 5);
         args.add(getRawName());
         args.add(nameWithWeight.size());
         args.addAll(nameWithWeight.keySet());
         args.add("WEIGHTS");
-        List<String> weights = new ArrayList<String>();
+        List<String> weights = new ArrayList<>();
         for (Double weight : nameWithWeight.values()) {
             weights.add(BigDecimal.valueOf(weight).toPlainString());
         }
@@ -1252,7 +1252,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public RFuture<Collection<V>> readIntersectionAsync(Aggregate aggregate, String... names) {
-        List<Object> args = new ArrayList<Object>(names.length + 4);
+        List<Object> args = new ArrayList<>(names.length + 4);
         args.add(names.length + 1);
         args.add(getRawName());
         args.addAll(Arrays.asList(names));
@@ -1278,12 +1278,12 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public RFuture<Collection<V>> readIntersectionAsync(Aggregate aggregate, Map<String, Double> nameWithWeight) {
-        List<Object> args = new ArrayList<Object>(nameWithWeight.size()*2 + 5);
+        List<Object> args = new ArrayList<>(nameWithWeight.size() * 2 + 5);
         args.add(nameWithWeight.size() + 1);
         args.add(getRawName());
         args.addAll(nameWithWeight.keySet());
         args.add("WEIGHTS");
-        List<String> weights = new ArrayList<String>();
+        List<String> weights = new ArrayList<>();
         for (Double weight : nameWithWeight.values()) {
             weights.add(BigDecimal.valueOf(weight).toPlainString());
         }
@@ -1338,7 +1338,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     
     @Override
     public RFuture<Integer> unionAsync(Aggregate aggregate, String... names) {
-        List<Object> args = new ArrayList<Object>(names.length + 4);
+        List<Object> args = new ArrayList<>(names.length + 4);
         args.add(getRawName());
         args.add(names.length);
         args.addAll(Arrays.asList(names));
@@ -1364,12 +1364,12 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public RFuture<Integer> unionAsync(Aggregate aggregate, Map<String, Double> nameWithWeight) {
-        List<Object> args = new ArrayList<Object>(nameWithWeight.size()*2 + 5);
+        List<Object> args = new ArrayList<>(nameWithWeight.size() * 2 + 5);
         args.add(getRawName());
         args.add(nameWithWeight.size());
         args.addAll(nameWithWeight.keySet());
         args.add("WEIGHTS");
-        List<String> weights = new ArrayList<String>();
+        List<String> weights = new ArrayList<>();
         for (Double weight : nameWithWeight.values()) {
             weights.add(BigDecimal.valueOf(weight).toPlainString());
         }
@@ -1422,12 +1422,12 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public RFuture<Collection<V>> readUnionAsync(Aggregate aggregate, Map<String, Double> nameWithWeight) {
-        List<Object> args = new ArrayList<Object>(nameWithWeight.size()*2 + 5);
+        List<Object> args = new ArrayList<>(nameWithWeight.size() * 2 + 5);
         args.add(nameWithWeight.size() + 1);
         args.add(getRawName());
         args.addAll(nameWithWeight.keySet());
         args.add("WEIGHTS");
-        List<String> weights = new ArrayList<String>();
+        List<String> weights = new ArrayList<>();
         for (Double weight : nameWithWeight.values()) {
             weights.add(BigDecimal.valueOf(weight).toPlainString());
         }
@@ -1479,7 +1479,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public <T> Collection<T> readSort(String byPattern, List<String> getPatterns, SortOrder order) {
-        return (Collection<T>) get(readSortAsync(byPattern, getPatterns, order));
+        return get(readSortAsync(byPattern, getPatterns, order));
     }
     
     @Override
@@ -1489,7 +1489,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     
     @Override
     public <T> Collection<T> readSort(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
-        return (Collection<T>) get(readSortAsync(byPattern, getPatterns, order, offset, count));
+        return get(readSortAsync(byPattern, getPatterns, order, offset, count));
     }
 
     @Override
@@ -1519,12 +1519,12 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public <T> Collection<T> readSortAlpha(String byPattern, List<String> getPatterns, SortOrder order) {
-        return (Collection<T>) get(readSortAlphaAsync(byPattern, getPatterns, order));
+        return get(readSortAlphaAsync(byPattern, getPatterns, order));
     }
 
     @Override
     public <T> Collection<T> readSortAlpha(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
-        return (Collection<T>) get(readSortAlphaAsync(byPattern, getPatterns, order, offset, count));
+        return get(readSortAlphaAsync(byPattern, getPatterns, order, offset, count));
     }
 
     @Override
@@ -1564,7 +1564,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     
     @Override
     public RFuture<Integer> sortToAsync(String destName, SortOrder order) {
-        return sortToAsync(destName, null, Collections.<String>emptyList(), order, -1, -1);
+        return sortToAsync(destName, null, Collections.emptyList(), order, -1, -1);
     }
     
     @Override
@@ -1574,7 +1574,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     
     @Override
     public RFuture<Integer> sortToAsync(String destName, SortOrder order, int offset, int count) {
-        return sortToAsync(destName, null, Collections.<String>emptyList(), order, offset, count);
+        return sortToAsync(destName, null, Collections.emptyList(), order, offset, count);
     }
 
     @Override
@@ -1589,12 +1589,12 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public RFuture<Integer> sortToAsync(String destName, String byPattern, SortOrder order) {
-        return sortToAsync(destName, byPattern, Collections.<String>emptyList(), order, -1, -1);
+        return sortToAsync(destName, byPattern, Collections.emptyList(), order, -1, -1);
     }
 
     @Override
     public RFuture<Integer> sortToAsync(String destName, String byPattern, SortOrder order, int offset, int count) {
-        return sortToAsync(destName, byPattern, Collections.<String>emptyList(), order, offset, count);
+        return sortToAsync(destName, byPattern, Collections.emptyList(), order, offset, count);
     }
 
     @Override
@@ -1614,7 +1614,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public RFuture<Integer> sortToAsync(String destName, String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
-        List<Object> params = new ArrayList<Object>();
+        List<Object> params = new ArrayList<>();
         params.add(getRawName());
         if (byPattern != null) {
             params.add("BY");
@@ -1641,7 +1641,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     private <T> RFuture<Collection<T>> readSortAsync(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count, boolean alpha) {
-        List<Object> params = new ArrayList<Object>();
+        List<Object> params = new ArrayList<>();
         params.add(getRawName());
         if (byPattern != null) {
             params.add("BY");
@@ -1679,7 +1679,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public RFuture<Collection<V>> readDiffAsync(String... names) {
-        List<Object> args = new ArrayList<Object>(names.length + 2);
+        List<Object> args = new ArrayList<>(names.length + 2);
         args.add(names.length + 1);
         args.add(getRawName());
         args.addAll(Arrays.asList(names));

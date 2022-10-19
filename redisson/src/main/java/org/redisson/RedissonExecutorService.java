@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,8 +40,6 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -1218,12 +1216,11 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         check(task);
         ClassBody classBody = getClassBody(task);
         byte[] state = encode(task);
-        ZonedDateTime currentDate = ZonedDateTime.of(LocalDateTime.now(), cronSchedule.getZoneId());
-        ZonedDateTime startDate = cronSchedule.getExpression().nextTimeAfter(currentDate);
+        Date startDate = cronSchedule.getExpression().getNextValidTimeAfter(new Date());
         if (startDate == null) {
             throw new IllegalArgumentException("Wrong cron expression! Unable to calculate start date");
         }
-        long startTime = startDate.toInstant().toEpochMilli();
+        long startTime = startDate.getTime();
 
         String taskId = id;
         ScheduledCronExpressionParameters params = new ScheduledCronExpressionParameters(taskId);
@@ -1232,14 +1229,14 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         params.setLambdaBody(classBody.getLambda());
         params.setState(state);
         params.setStartTime(startTime);
-        params.setCronExpression(cronSchedule.getExpression().getExpr());
+        params.setCronExpression(cronSchedule.getExpression().getCronExpression());
         params.setTimezone(cronSchedule.getZoneId().toString());
         params.setExecutorId(executorId);
         RemotePromise<Void> result = (RemotePromise<Void>) asyncScheduledServiceAtFixed.schedule(params).toCompletableFuture();
         addListener(result);
         RedissonScheduledFuture<Void> f = new RedissonScheduledFuture<Void>(result, startTime) {
             public long getDelay(TimeUnit unit) {
-                return unit.convert(startDate.toInstant().toEpochMilli() - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+                return unit.convert(startDate.getTime() - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
             };
         };
         storeReference(f, result.getRequestId());

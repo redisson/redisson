@@ -68,7 +68,7 @@ public class RedissonSetReactiveTest extends BaseReactiveTest {
         assertThat(sync(set.random())).isIn(1, 2, 3);
         assertThat(sync(set.random())).isIn(1, 2, 3);
 
-        assertThat(sync(set)).containsOnly(1, 2, 3);
+        assertThat(sync(set)).containsExactlyInAnyOrder(1, 2, 3);
     }
 
     @Test
@@ -101,14 +101,14 @@ public class RedissonSetReactiveTest extends BaseReactiveTest {
 
         Assertions.assertTrue(sync(set.remove(1)));
         Assertions.assertFalse(sync(set.contains(1)));
-        assertThat(sync(set)).containsExactly(3, 7);
+        assertThat(sync(set)).containsExactlyInAnyOrder(3, 7);
 
         Assertions.assertFalse(sync(set.remove(1)));
-        assertThat(sync(set)).containsExactly(3, 7);
+        assertThat(sync(set)).containsExactlyInAnyOrder(3, 7);
 
         sync(set.remove(3));
         Assertions.assertFalse(sync(set.contains(3)));
-        assertThat(sync(set)).containsExactly(7);
+        assertThat(sync(set)).containsExactlyInAnyOrder(7);
     }
 
     @Test

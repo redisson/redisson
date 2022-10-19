@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,17 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
      * @return {@code true} if successful, or {@code false} if
      *         value was already set
      */
+    Mono<Boolean> setIfAbsent(String path, Object value);
+
+    /**
+     * Use {@link #setIfAbsent(String, Object)} instead
+     *
+     * @param path JSON path
+     * @param value object
+     * @return {@code true} if successful, or {@code false} if
+     *         value was already set
+     */
+    @Deprecated
     Mono<Boolean> trySet(String path, Object value);
 
     /**

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.JsonType;
 import org.redisson.api.RJsonBucket;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.JacksonCodec;
 
 import java.math.BigDecimal;
@@ -68,6 +69,16 @@ public class RedissonJsonBucketTest extends BaseTest {
         public void setType(NestedType type) {
             this.type = type;
         }
+    }
+
+    @Test
+    public void testCompareAndSetUpdate() {
+        RJsonBucket<String> b = redisson.getJsonBucket("test", StringCodec.INSTANCE);
+        b.set("{\"foo\": false, \"bar\":true}");
+        boolean s = b.compareAndSet("$.foo", false, null);
+        assertThat(s).isTrue();
+        boolean result = b.isExists();
+        assertThat(result).isTrue();
     }
 
     @Test
