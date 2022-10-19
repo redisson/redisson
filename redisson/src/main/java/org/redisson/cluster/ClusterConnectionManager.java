@@ -108,7 +108,14 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 lastClusterNode = addr;
                 
                 CompletableFuture<Collection<ClusterPartition>> partitionsFuture = parsePartitions(nodes);
-                Collection<ClusterPartition> partitions = partitionsFuture.join();
+                Collection<ClusterPartition> partitions;
+                try {
+                    partitions = partitionsFuture.join();
+                } catch (CompletionException e) {
+                    lastException = e.getCause();
+                    break;
+                }
+
                 List<CompletableFuture<Void>> masterFutures = new ArrayList<>();
                 for (ClusterPartition partition : partitions) {
                     if (partition.isMasterFail()) {
@@ -457,18 +464,25 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 }
 
                 CompletableFuture<Collection<ClusterPartition>> newPartitionsFuture = parsePartitions(nodes);
-                newPartitionsFuture
-                        .thenCompose(newPartitions -> checkMasterNodesChange(cfg, newPartitions))
-                        .thenCompose(r -> newPartitionsFuture)
-                        .thenCompose(newPartitions -> checkSlaveNodesChange(newPartitions))
-                        .thenCompose(r -> newPartitionsFuture)
-                        .thenApply(newPartitions -> {
-                            checkSlotsMigration(newPartitions);
-                            checkSlotsChange(newPartitions);
-                            getShutdownLatch().release();
-                            scheduleClusterChangeCheck(cfg);
-                            return newPartitions;
-                        });
+                newPartitionsFuture.whenComplete((newPartitions, e1) -> {
+                    if (e1 != null) {
+                        log.error("Got exception while parsing CLUSTER NODES result", e1);
+                        lastException.set(e1);
+                        getShutdownLatch().release();
+                        checkClusterState(cfg, iterator, lastException);
+                        return;
+                    }
+
+                    checkMasterNodesChange(cfg, newPartitions)
+                            .thenRun(() -> checkSlaveNodesChange(newPartitions))
+                            .thenRun(() -> {
+                                checkSlotsMigration(newPartitions);
+                                checkSlotsChange(newPartitions);
+
+                                getShutdownLatch().release();
+                                scheduleClusterChangeCheck(cfg);
+                            });
+                });
         });
     }
 
@@ -845,6 +859,10 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
         CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
         return future.handle((r, e) -> {
+            if (e != null) {
+                throw new CompletionException(e);
+            }
+
             addCascadeSlaves(partitions.values());
 
             List<ClusterPartition> ps = partitions.values()
