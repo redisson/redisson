@@ -145,13 +145,36 @@ public interface RTimeSeriesAsync<V, L> extends RExpirableAsync {
     RFuture<Boolean> removeAsync(long timestamp);
 
     /**
-     * Removes and returns the head elements or {@code null} if this time-series collection is empty.
+     * Removes and returns object by specified <code>timestamp</code>.
+     *
+     * @param timestamp - object timestamp
+     * @return object or <code>null</code> if it doesn't exist
+     */
+    RFuture<V> getAndRemoveAsync(long timestamp);
+
+    /**
+     * Removes and returns entry by specified <code>timestamp</code>.
+     *
+     * @param timestamp - object timestamp
+     * @return entry or <code>null</code> if it doesn't exist
+     */
+    RFuture<TimeSeriesEntry<V, L>> getAndRemoveEntryAsync(long timestamp);
+
+    /**
+     * Removes and returns the head elements
      *
      * @param count - elements amount
-     * @return the head element,
-     *         or {@code null} if this time-series collection is empty
+     * @return collection of head elements
      */
     RFuture<Collection<V>> pollFirstAsync(int count);
+
+    /**
+     * Removes and returns head entries
+     *
+     * @param count - entries amount
+     * @return collection of head entries
+     */
+    RFuture<Collection<TimeSeriesEntry<V, L>>> pollFirstEntriesAsync(int count);
 
     /**
      * Removes and returns the tail elements or {@code null} if this time-series collection is empty.
@@ -162,12 +185,28 @@ public interface RTimeSeriesAsync<V, L> extends RExpirableAsync {
     RFuture<Collection<V>> pollLastAsync(int count);
 
     /**
+     * Removes and returns tail entries
+     *
+     * @param count - entries amount
+     * @return collection of tail entries
+     */
+    RFuture<Collection<TimeSeriesEntry<V, L>>> pollLastEntriesAsync(int count);
+
+    /**
      * Removes and returns the head element or {@code null} if this time-series collection is empty.
      *
      * @return the head element,
      *         or {@code null} if this time-series collection is empty
      */
     RFuture<V> pollFirstAsync();
+
+    /**
+     * Removes and returns head entry or {@code null} if this time-series collection is empty.
+     *
+     * @return the head entry,
+     *         or {@code null} if this time-series collection is empty
+     */
+    RFuture<TimeSeriesEntry<V, L>> pollFirstEntryAsync();
 
     /**
      * Removes and returns the tail element or {@code null} if this time-series collection is empty.
@@ -177,6 +216,13 @@ public interface RTimeSeriesAsync<V, L> extends RExpirableAsync {
     RFuture<V> pollLastAsync();
 
     /**
+     * Removes and returns the tail entry or {@code null} if this time-series collection is empty.
+     *
+     * @return the tail entry or {@code null} if this time-series collection is empty
+     */
+    RFuture<TimeSeriesEntry<V, L>> pollLastEntryAsync();
+
+    /**
      * Returns the tail element or {@code null} if this time-series collection is empty.
      *
      * @return the tail element or {@code null} if this time-series collection is empty
@@ -184,11 +230,25 @@ public interface RTimeSeriesAsync<V, L> extends RExpirableAsync {
     RFuture<V> lastAsync();
 
     /**
+     * Returns the tail entry or {@code null} if this time-series collection is empty.
+     *
+     * @return the tail entry or {@code null} if this time-series collection is empty
+     */
+    RFuture<TimeSeriesEntry<V, L>> lastEntryAsync();
+
+    /**
      * Returns the head element or {@code null} if this time-series collection is empty.
      *
      * @return the head element or {@code null} if this time-series collection is empty
      */
     RFuture<V> firstAsync();
+
+    /**
+     * Returns the head entry or {@code null} if this time-series collection is empty.
+     *
+     * @return the head entry or {@code null} if this time-series collection is empty
+     */
+    RFuture<TimeSeriesEntry<V, L>> firstEntryAsync();
 
     /**
      * Returns timestamp of the head timestamp or {@code null} if this time-series collection is empty.
@@ -213,12 +273,28 @@ public interface RTimeSeriesAsync<V, L> extends RExpirableAsync {
     RFuture<Collection<V>> lastAsync(int count);
 
     /**
+     * Returns the tail entries of this time-series collection.
+     *
+     * @param count - entries amount
+     * @return the tail entries
+     */
+    RFuture<Collection<TimeSeriesEntry<V, L>>> lastEntriesAsync(int count);
+
+    /**
      * Returns the head elements of this time-series collection.
      *
      * @param count - elements amount
      * @return the head elements
      */
     RFuture<Collection<V>> firstAsync(int count);
+
+    /**
+     * Returns the head entries of this time-series collection.
+     *
+     * @param count - entries amount
+     * @return the head entries
+     */
+    RFuture<Collection<TimeSeriesEntry<V, L>>> firstEntriesAsync(int count);
 
     /**
      * Removes values within timestamp range. Including boundary values.

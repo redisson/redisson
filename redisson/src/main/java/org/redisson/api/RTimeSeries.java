@@ -139,13 +139,36 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
     boolean remove(long timestamp);
 
     /**
-     * Removes and returns the head elements or {@code null} if this time-series collection is empty.
+     * Removes and returns object by specified <code>timestamp</code>.
+     *
+     * @param timestamp - object timestamp
+     * @return object or <code>null</code> if it doesn't exist
+     */
+    V getAndRemove(long timestamp);
+
+    /**
+     * Removes and returns entry by specified <code>timestamp</code>.
+     *
+     * @param timestamp - object timestamp
+     * @return entry or <code>null</code> if it doesn't exist
+     */
+    TimeSeriesEntry<V, L> getAndRemoveEntry(long timestamp);
+
+    /**
+     * Removes and returns the head elements
      *
      * @param count - elements amount
-     * @return the head element,
-     *         or {@code null} if this time-series collection is empty
+     * @return collection of head elements
      */
     Collection<V> pollFirst(int count);
+
+    /**
+     * Removes and returns head entries
+     *
+     * @param count - entries amount
+     * @return collection of head entries
+     */
+    Collection<TimeSeriesEntry<V, L>> pollFirstEntries(int count);
 
     /**
      * Removes and returns the tail elements or {@code null} if this time-series collection is empty.
@@ -156,12 +179,28 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
     Collection<V> pollLast(int count);
 
     /**
+     * Removes and returns tail entries
+     *
+     * @param count - entries amount
+     * @return collection of tail entries
+     */
+    Collection<TimeSeriesEntry<V, L>> pollLastEntries(int count);
+
+    /**
      * Removes and returns the head element or {@code null} if this time-series collection is empty.
      *
      * @return the head element,
      *         or {@code null} if this time-series collection is empty
      */
     V pollFirst();
+
+    /**
+     * Removes and returns head entry or {@code null} if this time-series collection is empty.
+     *
+     * @return the head entry,
+     *         or {@code null} if this time-series collection is empty
+     */
+    TimeSeriesEntry<V, L> pollFirstEntry();
 
     /**
      * Removes and returns the tail element or {@code null} if this time-series collection is empty.
@@ -171,6 +210,13 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
     V pollLast();
 
     /**
+     * Removes and returns the tail entry or {@code null} if this time-series collection is empty.
+     *
+     * @return the tail entry or {@code null} if this time-series collection is empty
+     */
+    TimeSeriesEntry<V, L> pollLastEntry();
+
+    /**
      * Returns the tail element or {@code null} if this time-series collection is empty.
      *
      * @return the tail element or {@code null} if this time-series collection is empty
@@ -178,11 +224,25 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
     V last();
 
     /**
+     * Returns the tail entry or {@code null} if this time-series collection is empty.
+     *
+     * @return the tail entry or {@code null} if this time-series collection is empty
+     */
+    TimeSeriesEntry<V, L> lastEntry();
+
+    /**
      * Returns the head element or {@code null} if this time-series collection is empty.
      *
      * @return the head element or {@code null} if this time-series collection is empty
      */
     V first();
+
+    /**
+     * Returns the head entry or {@code null} if this time-series collection is empty.
+     *
+     * @return the head entry or {@code null} if this time-series collection is empty
+     */
+    TimeSeriesEntry<V, L> firstEntry();
 
     /**
      * Returns timestamp of the head timestamp or {@code null} if this time-series collection is empty.
@@ -207,12 +267,28 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
     Collection<V> last(int count);
 
     /**
+     * Returns the tail entries of this time-series collection.
+     *
+     * @param count - entries amount
+     * @return the tail entries
+     */
+    Collection<TimeSeriesEntry<V, L>> lastEntries(int count);
+
+    /**
      * Returns the head elements of this time-series collection.
      *
      * @param count - elements amount
      * @return the head elements
      */
     Collection<V> first(int count);
+
+    /**
+     * Returns the head entries of this time-series collection.
+     *
+     * @param count - entries amount
+     * @return the head entries
+     */
+    Collection<TimeSeriesEntry<V, L>> firstEntries(int count);
 
     /**
      * Removes values within timestamp range. Including boundary values.

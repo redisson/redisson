@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.redisson.api.RTimeSeries;
 import org.redisson.api.TimeSeriesEntry;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -11,6 +12,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.redisson.RedisRunner.KEYSPACE_EVENTS_OPTIONS.s;
 
 /**
  *
@@ -167,6 +169,53 @@ public class RedissonTimeSeriesTest extends BaseTest {
     }
 
     @Test
+    public void testGetAndRemoveEntry() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(1, "10", "100");
+        t.add(2, "20");
+        t.add(3, "30", "300", Duration.ofSeconds(2));
+        t.add(4, "40");
+
+        TimeSeriesEntry<String, String> e1 = t.getAndRemoveEntry(1);
+        assertThat(e1.getValue()).isEqualTo("10");
+        assertThat(e1.getTimestamp()).isEqualTo(1);
+        assertThat(e1.getLabel()).isEqualTo("100");
+
+        TimeSeriesEntry<String, String> e2 = t.getAndRemoveEntry(2);
+        assertThat(e2.getValue()).isEqualTo("20");
+        assertThat(e2.getTimestamp()).isEqualTo(2);
+        assertThat(e2.getLabel()).isNull();
+
+        TimeSeriesEntry<String, String> e3 = t.getAndRemoveEntry(3);
+        assertThat(e3.getValue()).isEqualTo("30");
+        assertThat(e3.getTimestamp()).isEqualTo(3);
+        assertThat(e3.getLabel()).isEqualTo("300");
+
+        TimeSeriesEntry<String, String> e4 = t.getAndRemoveEntry(4);
+        assertThat(e4.getValue()).isEqualTo("40");
+        assertThat(e4.getTimestamp()).isEqualTo(4);
+        assertThat(e4.getLabel()).isNull();
+    }
+
+
+    @Test
+    public void testGetAndRemove() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(1, "10", "100");
+        t.add(2, "20");
+        t.add(3, "30", "300", Duration.ofSeconds(2));
+        t.add(4, "40");
+
+        String s1 = t.getAndRemove(1);
+        assertThat(s1).isEqualTo("10");
+        String s2 = t.getAndRemove(2);
+        assertThat(s2).isEqualTo("20");
+        String s3 = t.getAndRemove(3);
+        assertThat(s3).isEqualTo("30");
+        assertThat(t.size()).isEqualTo(1);
+    }
+
+    @Test
     public void test() {
         RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
         t.add(1, "10");
@@ -266,6 +315,34 @@ public class RedissonTimeSeriesTest extends BaseTest {
     }
 
     @Test
+    public void testPollLastEntries() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(1, "10");
+        t.add(2, "20", "200");
+        t.add(3, "30");
+
+        Collection<TimeSeriesEntry<String, String>> s = t.pollLastEntries(2);
+        assertThat(s).containsExactly(new TimeSeriesEntry<>(2, "20", "200"),
+                new TimeSeriesEntry<>(3, "30"));
+
+        assertThat(t.size()).isEqualTo(1);
+    }
+
+    @Test
+    public void testPollFirstEntries() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(1, "10", "100");
+        t.add(2, "20");
+        t.add(3, "30");
+
+        Collection<TimeSeriesEntry<String, String>> s = t.pollFirstEntries(2);
+        assertThat(s).containsExactly(new TimeSeriesEntry<>(1, "10", "100"),
+                                        new TimeSeriesEntry<>(2, "20"));
+
+        assertThat(t.size()).isEqualTo(1);
+    }
+
+    @Test
     public void testPoll() throws InterruptedException {
         RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
         t.add(1, "10");
@@ -292,6 +369,66 @@ public class RedissonTimeSeriesTest extends BaseTest {
         assertThat(t.size()).isEqualTo(4);
         assertThat(t.pollLast(2)).containsExactly("50", "60");
         assertThat(t.size()).isEqualTo(2);
+    }
+
+    @Test
+    public void testPollFirstEntry() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(1, "10", "100");
+        t.add(2, "20");
+        t.add(3, "30");
+
+        TimeSeriesEntry<String, String> e = t.pollFirstEntry();
+        assertThat(e).isEqualTo(new TimeSeriesEntry<>(1, "10", "100"));
+
+        assertThat(t.size()).isEqualTo(2);
+
+        TimeSeriesEntry<String, String> ee = t.firstEntry();
+        assertThat(ee).isEqualTo(new TimeSeriesEntry<>(2, "20"));
+    }
+
+    @Test
+    public void testPollLastEntry() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(1, "10", "100");
+        t.add(2, "20");
+        t.add(3, "30");
+
+        TimeSeriesEntry<String, String> e = t.pollLastEntry();
+        assertThat(e).isEqualTo(new TimeSeriesEntry<>(3, "30"));
+
+        assertThat(t.size()).isEqualTo(2);
+
+        TimeSeriesEntry<String, String> ee = t.lastEntry();
+        assertThat(ee).isEqualTo(new TimeSeriesEntry<>(2, "20"));
+    }
+
+    @Test
+    public void testLastEntries() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(1, "10");
+        t.add(2, "20", "200");
+        t.add(3, "30");
+
+        Collection<TimeSeriesEntry<String, String>> s = t.lastEntries(2);
+        assertThat(s).containsExactly(new TimeSeriesEntry<>(2, "20", "200"),
+                new TimeSeriesEntry<>(3, "30"));
+
+        assertThat(t.size()).isEqualTo(3);
+    }
+
+    @Test
+    public void testFirstEntries() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(1, "10", "100");
+        t.add(2, "20");
+        t.add(3, "30");
+
+        Collection<TimeSeriesEntry<String, String>> s = t.firstEntries(2);
+        assertThat(s).containsExactly(new TimeSeriesEntry<>(1, "10", "100"),
+                new TimeSeriesEntry<>(2, "20"));
+
+        assertThat(t.size()).isEqualTo(3);
     }
 
 }

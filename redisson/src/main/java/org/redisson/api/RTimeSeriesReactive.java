@@ -155,6 +155,22 @@ public interface RTimeSeriesReactive<V, L> extends RExpirableReactive {
     Mono<Boolean> remove(long timestamp);
 
     /**
+     * Removes and returns object by specified <code>timestamp</code>.
+     *
+     * @param timestamp - object timestamp
+     * @return object or <code>null</code> if it doesn't exist
+     */
+    Mono<V> getAndRemove(long timestamp);
+
+    /**
+     * Removes and returns entry by specified <code>timestamp</code>.
+     *
+     * @param timestamp - object timestamp
+     * @return entry or <code>null</code> if it doesn't exist
+     */
+    Mono<TimeSeriesEntry<V, L>> getAndRemoveEntry(long timestamp);
+
+    /**
      * Removes and returns the head elements or {@code null} if this time-series collection is empty.
      *
      * @param count - elements amount
@@ -162,6 +178,14 @@ public interface RTimeSeriesReactive<V, L> extends RExpirableReactive {
      *         or {@code null} if this time-series collection is empty
      */
     Mono<Collection<V>> pollFirst(int count);
+
+    /**
+     * Removes and returns head entries
+     *
+     * @param count - entries amount
+     * @return collection of head entries
+     */
+    Mono<Collection<TimeSeriesEntry<V, L>>> pollFirstEntries(int count);
 
     /**
      * Removes and returns the tail elements or {@code null} if this time-series collection is empty.
@@ -172,12 +196,28 @@ public interface RTimeSeriesReactive<V, L> extends RExpirableReactive {
     Mono<Collection<V>> pollLast(int count);
 
     /**
+     * Removes and returns tail entries
+     *
+     * @param count - entries amount
+     * @return collection of tail entries
+     */
+    Mono<Collection<TimeSeriesEntry<V, L>>> pollLastEntries(int count);
+
+    /**
      * Removes and returns the head element or {@code null} if this time-series collection is empty.
      *
      * @return the head element,
      *         or {@code null} if this time-series collection is empty
      */
     Mono<V> pollFirst();
+
+    /**
+     * Removes and returns head entry or {@code null} if this time-series collection is empty.
+     *
+     * @return the head entry,
+     *         or {@code null} if this time-series collection is empty
+     */
+    Mono<TimeSeriesEntry<V, L>> pollFirstEntry();
 
     /**
      * Removes and returns the tail element or {@code null} if this time-series collection is empty.
@@ -187,6 +227,13 @@ public interface RTimeSeriesReactive<V, L> extends RExpirableReactive {
     Mono<V> pollLast();
 
     /**
+     * Removes and returns the tail entry or {@code null} if this time-series collection is empty.
+     *
+     * @return the tail entry or {@code null} if this time-series collection is empty
+     */
+    Mono<TimeSeriesEntry<V, L>> pollLastEntry();
+
+    /**
      * Returns the tail element or {@code null} if this time-series collection is empty.
      *
      * @return the tail element or {@code null} if this time-series collection is empty
@@ -194,11 +241,25 @@ public interface RTimeSeriesReactive<V, L> extends RExpirableReactive {
     Mono<V> last();
 
     /**
+     * Returns the tail entry or {@code null} if this time-series collection is empty.
+     *
+     * @return the tail entry or {@code null} if this time-series collection is empty
+     */
+    Mono<TimeSeriesEntry<V, L>> lastEntry();
+
+    /**
      * Returns the head element or {@code null} if this time-series collection is empty.
      *
      * @return the head element or {@code null} if this time-series collection is empty
      */
     Mono<V> first();
+
+    /**
+     * Returns the head entry or {@code null} if this time-series collection is empty.
+     *
+     * @return the head entry or {@code null} if this time-series collection is empty
+     */
+    Mono<TimeSeriesEntry<V, L>> firstEntry();
 
     /**
      * Returns timestamp of the head timestamp or {@code null} if this time-series collection is empty.
@@ -223,12 +284,28 @@ public interface RTimeSeriesReactive<V, L> extends RExpirableReactive {
     Mono<Collection<V>> last(int count);
 
     /**
+     * Returns the tail entries of this time-series collection.
+     *
+     * @param count - entries amount
+     * @return the tail entries
+     */
+    Mono<Collection<TimeSeriesEntry<V, L>>> lastEntries(int count);
+
+    /**
      * Returns the head elements of this time-series collection.
      *
      * @param count - elements amount
      * @return the head elements
      */
     Mono<Collection<V>> first(int count);
+
+    /**
+     * Returns the head entries of this time-series collection.
+     *
+     * @param count - entries amount
+     * @return the head entries
+     */
+    Mono<Collection<TimeSeriesEntry<V, L>>> firstEntries(int count);
 
     /**
      * Removes values within timestamp range. Including boundary values.

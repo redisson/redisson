@@ -22,6 +22,7 @@ import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -30,6 +31,16 @@ import java.util.List;
  *
  */
 public class TimeSeriesEntryReplayDecoder implements MultiDecoder<List<TimeSeriesEntry<Object, Object>>> {
+
+    private boolean reverse;
+
+    public TimeSeriesEntryReplayDecoder() {
+        this(false);
+    }
+
+    public TimeSeriesEntryReplayDecoder(boolean reverse) {
+        this.reverse = reverse;
+    }
 
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
@@ -49,6 +60,9 @@ public class TimeSeriesEntryReplayDecoder implements MultiDecoder<List<TimeSerie
                label = parts.get(i + 1);
             }
             result.add(new TimeSeriesEntry<>((Long) parts.get(i + 3), parts.get(i), label));
+        }
+        if (reverse) {
+            Collections.reverse(result);
         }
         return result;
     }
