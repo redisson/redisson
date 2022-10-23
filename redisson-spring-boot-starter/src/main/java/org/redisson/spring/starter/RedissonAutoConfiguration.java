@@ -29,7 +29,7 @@ import org.redisson.api.RedissonRxClient;
 import org.redisson.config.Config;
 import org.redisson.spring.data.connection.RedissonConnectionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.AutoConfigureBefore;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
@@ -38,7 +38,6 @@ import org.springframework.boot.autoconfigure.data.redis.RedisProperties.Sentine
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.Resource;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -54,9 +53,10 @@ import org.springframework.util.ReflectionUtils;
  * @author AnJia (https://anjia0532.github.io/)
  *
  */
-@Configuration
+@AutoConfiguration(
+        before = {RedisAutoConfiguration.class,}
+)
 @ConditionalOnClass({Redisson.class, RedisOperations.class})
-@AutoConfigureBefore(RedisAutoConfiguration.class)
 @EnableConfigurationProperties({RedissonProperties.class, RedisProperties.class})
 public class RedissonAutoConfiguration {
 
