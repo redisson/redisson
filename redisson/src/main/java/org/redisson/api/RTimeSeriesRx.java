@@ -166,7 +166,7 @@ public interface RTimeSeriesRx<V, L> extends RExpirableRx {
      * @param timestamp - object timestamp
      * @return entry or <code>null</code> if it doesn't exist
      */
-    Maybe<TimeSeriesEntry<V, L>>     getAndRemoveEntry(long timestamp);
+    Maybe<TimeSeriesEntry<V, L>> getAndRemoveEntry(long timestamp);
 
     /**
      * Removes and returns the head elements or {@code null} if this time-series collection is empty.
@@ -324,6 +324,16 @@ public interface RTimeSeriesRx<V, L> extends RExpirableRx {
     Single<Collection<V>> range(long startTimestamp, long endTimestamp);
 
     /**
+     * Returns ordered elements of this time-series collection within timestamp range. Including boundary values.
+     *
+     * @param startTimestamp start timestamp
+     * @param endTimestamp end timestamp
+     * @param limit result size limit
+     * @return elements collection
+     */
+    Single<Collection<V>> range(long startTimestamp, long endTimestamp, int limit);
+
+    /**
      * Returns elements of this time-series collection in reverse order within timestamp range. Including boundary values.
      *
      * @param startTimestamp - start timestamp
@@ -331,6 +341,16 @@ public interface RTimeSeriesRx<V, L> extends RExpirableRx {
      * @return elements collection
      */
     Single<Collection<V>> rangeReversed(long startTimestamp, long endTimestamp);
+
+    /**
+     * Returns elements of this time-series collection in reverse order within timestamp range. Including boundary values.
+     *
+     * @param startTimestamp start timestamp
+     * @param endTimestamp end timestamp
+     * @param limit result size limit
+     * @return elements collection
+     */
+    Single<Collection<V>> rangeReversed(long startTimestamp, long endTimestamp, int limit);
 
     /**
      * Returns ordered entries of this time-series collection within timestamp range. Including boundary values.
@@ -342,6 +362,16 @@ public interface RTimeSeriesRx<V, L> extends RExpirableRx {
     Single<Collection<TimeSeriesEntry<V, L>>> entryRange(long startTimestamp, long endTimestamp);
 
     /**
+     * Returns ordered entries of this time-series collection within timestamp range. Including boundary values.
+     *
+     * @param startTimestamp start timestamp
+     * @param endTimestamp end timestamp
+     * @param limit result size limit
+     * @return elements collection
+     */
+    Single<Collection<TimeSeriesEntry<V, L>>> entryRange(long startTimestamp, long endTimestamp, int limit);
+
+    /**
      * Returns entries of this time-series collection in reverse order within timestamp range. Including boundary values.
      *
      * @param startTimestamp - start timestamp
@@ -349,5 +379,15 @@ public interface RTimeSeriesRx<V, L> extends RExpirableRx {
      * @return elements collection
      */
     Single<Collection<TimeSeriesEntry<V, L>>> entryRangeReversed(long startTimestamp, long endTimestamp);
+
+    /**
+     * Returns entries of this time-series collection in reverse order within timestamp range. Including boundary values.
+     *
+     * @param startTimestamp start timestamp
+     * @param endTimestamp end timestamp
+     * @param limit result size limit
+     * @return elements collection
+     */
+    Single<Collection<TimeSeriesEntry<V, L>>> entryRangeReversed(long startTimestamp, long endTimestamp, int limit);
 
 }

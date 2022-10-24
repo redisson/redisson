@@ -326,6 +326,16 @@ public interface RTimeSeriesReactive<V, L> extends RExpirableReactive {
     Mono<Collection<V>> range(long startTimestamp, long endTimestamp);
 
     /**
+     * Returns ordered elements of this time-series collection within timestamp range. Including boundary values.
+     *
+     * @param startTimestamp start timestamp
+     * @param endTimestamp end timestamp
+     * @param limit result size limit
+     * @return elements collection
+     */
+    Mono<Collection<V>> range(long startTimestamp, long endTimestamp, int limit);
+
+    /**
      * Returns elements of this time-series collection in reverse order within timestamp range. Including boundary values.
      *
      * @param startTimestamp - start timestamp
@@ -333,6 +343,16 @@ public interface RTimeSeriesReactive<V, L> extends RExpirableReactive {
      * @return elements collection
      */
     Mono<Collection<V>> rangeReversed(long startTimestamp, long endTimestamp);
+
+    /**
+     * Returns elements of this time-series collection in reverse order within timestamp range. Including boundary values.
+     *
+     * @param startTimestamp start timestamp
+     * @param endTimestamp end timestamp
+     * @param limit result size limit
+     * @return elements collection
+     */
+    Mono<Collection<V>> rangeReversed(long startTimestamp, long endTimestamp, int limit);
 
     /**
      * Returns ordered entries of this time-series collection within timestamp range. Including boundary values.
@@ -344,6 +364,16 @@ public interface RTimeSeriesReactive<V, L> extends RExpirableReactive {
     Mono<Collection<TimeSeriesEntry<V, L>>> entryRange(long startTimestamp, long endTimestamp);
 
     /**
+     * Returns ordered entries of this time-series collection within timestamp range. Including boundary values.
+     *
+     * @param startTimestamp start timestamp
+     * @param endTimestamp end timestamp
+     * @param limit result size limit
+     * @return elements collection
+     */
+    Mono<Collection<TimeSeriesEntry<V, L>>> entryRange(long startTimestamp, long endTimestamp, int limit);
+
+    /**
      * Returns entries of this time-series collection in reverse order within timestamp range. Including boundary values.
      *
      * @param startTimestamp - start timestamp
@@ -351,5 +381,15 @@ public interface RTimeSeriesReactive<V, L> extends RExpirableReactive {
      * @return elements collection
      */
     Mono<Collection<TimeSeriesEntry<V, L>>> entryRangeReversed(long startTimestamp, long endTimestamp);
+
+    /**
+     * Returns entries of this time-series collection in reverse order within timestamp range. Including boundary values.
+     *
+     * @param startTimestamp start timestamp
+     * @param endTimestamp end timestamp
+     * @param limit result size limit
+     * @return elements collection
+     */
+    Mono<Collection<TimeSeriesEntry<V, L>>> entryRangeReversed(long startTimestamp, long endTimestamp, int limit);
 
 }
