@@ -241,6 +241,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             entry.getAllEntries().forEach(e -> entry.nodeDown(e));
             entry.masterDown();
             entry.shutdownAsync();
+            disconnectNode(new RedisURI(entry.getConfig().getMasterAddress()));
+            entry.getConfig().getSlaveAddresses().forEach(slaveAddress -> disconnectNode(new RedisURI(slaveAddress)));
             subscribeService.remove(entry);
 
             String slaves = entry.getAllEntries().stream()
