@@ -15,11 +15,11 @@
  */
 package org.redisson.spring.starter.converters;
 
-import org.redisson.client.codec.Codec;
+import org.redisson.connection.balancer.LoadBalancer;
 import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
 import org.springframework.stereotype.Component;
 
 @Component
 @ConfigurationPropertiesBinding
-public class StringToCodecConverter extends StringToGenericConverter<Codec> {
+public class FqnToLoadBalancerConverter extends FqnToGenericConverter<LoadBalancer> {
 }

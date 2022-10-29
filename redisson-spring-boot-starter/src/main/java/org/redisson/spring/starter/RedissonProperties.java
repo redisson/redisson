@@ -28,16 +28,22 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class RedissonProperties {
 
     /**
-     * Redisson configuration
+     * Redisson configuration as Spring Boot configuration.
      */
     private Config springBootConfiguration;
+    /**
+     * Flag to enable Spring Boot configuration. Default: true.
+     */
     private boolean useSpringBootConfiguration = true;
 
     /**
-     * Redisson configuration specified in either YAML or JSON format.
+     * Redisson configuration specified as String in either YAML or JSON format.
      */
     private String config;
 
+    /**
+     * Path pointing to a file containing Redisson configuration.
+     */
     private String file;
 
     public String getConfig() {

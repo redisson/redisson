@@ -19,7 +19,12 @@ import org.springframework.core.convert.converter.Converter;
 
 import java.lang.reflect.InvocationTargetException;
 
-public abstract class StringToGenericConverter<T> implements Converter<String, T> {
+/**
+ * Convert a fully qualified class name (FQN) to an instance.
+ *
+ * @param <T> the type that the FQN will be part of.
+ */
+public abstract class FqnToGenericConverter<T> implements Converter<String, T> {
     @Override
     public T convert(String sourceClassName) {
         try {
