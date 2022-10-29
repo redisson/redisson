@@ -27,11 +27,15 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "spring.redis.redisson")
 public class RedissonProperties {
 
-    private Config configuration;
     /**
-     * DEPRECATED: in favor of configuration.
+     * Redisson configuration
      */
-    @Deprecated
+    private Config springBootConfiguration;
+    private boolean useSpringBootConfiguration = true;
+
+    /**
+     * Redisson configuration specified in either YAML or JSON format.
+     */
     private String config;
 
     private String file;
@@ -52,11 +56,19 @@ public class RedissonProperties {
         this.file = file;
     }
 
-    public void setConfiguration(Config configuration) {
-        this.configuration = configuration;
+    public void setSpringBootConfiguration(Config springBootConfiguration) {
+        this.springBootConfiguration = springBootConfiguration;
     }
 
-    public Config getConfiguration() {
-        return configuration;
+    public Config getSpringBootConfiguration() {
+        return springBootConfiguration;
+    }
+
+    public boolean getUseSpringBootConfiguration() {
+        return useSpringBootConfiguration;
+    }
+
+    public void setUseSpringBootConfiguration(boolean useSpringBootConfiguration) {
+        this.useSpringBootConfiguration = useSpringBootConfiguration;
     }
 }
