@@ -15,6 +15,7 @@
  */
 package org.redisson.spring.starter;
 
+import org.redisson.config.Config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -26,6 +27,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "spring.redis.redisson")
 public class RedissonProperties {
 
+    private Config configuration;
+    /**
+     * DEPRECATED: in favor of configuration.
+     */
+    @Deprecated
     private String config;
 
     private String file;
@@ -44,5 +50,13 @@ public class RedissonProperties {
 
     public void setFile(String file) {
         this.file = file;
+    }
+
+    public void setConfiguration(Config configuration) {
+        this.configuration = configuration;
+    }
+
+    public Config getConfiguration() {
+        return configuration;
     }
 }
