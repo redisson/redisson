@@ -344,6 +344,20 @@ public class RedissonJsonBucketTest extends BaseTest {
         assertThat(nt3.getValues()).isEqualTo(nt2.getValues());
     }
 
+    @Test
+    public void testKeys() {
+        RJsonBucket<String> jb = redisson.getJsonBucket("test", StringCodec.INSTANCE);
+        jb.set("{\"a\":false, \"nested\": {\"a\": {\"b\":2, \"c\": 1, \"d\": 3}}}");
+
+        List<String> keys1 = jb.getKeys();
+        assertThat(keys1).containsExactly("a", "nested");
+
+        List<String> keys3 = jb.getKeys("nested.a");
+        assertThat(keys3).containsExactly("b", "c", "d");
+
+        List<List<String>> keys5 = jb.getKeysMulti("$.nested.a");
+        assertThat(keys5).isEqualTo(Arrays.asList(Arrays.asList("b", "c", "d")));
+    }
 
     @Test
     public void testCompareAndSet() {
