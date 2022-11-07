@@ -67,16 +67,16 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     public RedissonLocalCachedMap(CommandAsyncExecutor commandExecutor, String name, LocalCachedMapOptions<K, V> options, 
             EvictionScheduler evictionScheduler, RedissonClient redisson, WriteBehindService writeBehindService) {
         super(commandExecutor, name, redisson, options, writeBehindService);
-        init(options, redisson, evictionScheduler);
+        init(options, evictionScheduler);
     }
 
     public RedissonLocalCachedMap(Codec codec, CommandAsyncExecutor connectionManager, String name, LocalCachedMapOptions<K, V> options, 
             EvictionScheduler evictionScheduler, RedissonClient redisson, WriteBehindService writeBehindService) {
         super(codec, connectionManager, name, redisson, options, writeBehindService);
-        init(options, redisson, evictionScheduler);
+        init(options, evictionScheduler);
     }
 
-    private void init(LocalCachedMapOptions<K, V> options, RedissonClient redisson, EvictionScheduler evictionScheduler) {
+    private void init(LocalCachedMapOptions<K, V> options, EvictionScheduler evictionScheduler) {
         syncStrategy = options.getSyncStrategy();
         storeMode = options.getStoreMode();
         storeCacheMiss = options.isStoreCacheMiss();

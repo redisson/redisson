@@ -605,6 +605,20 @@ public class RedissonRx implements RedissonRxClient {
     }
 
     @Override
+    public <K, V> RLocalCachedMapRx<K, V> getLocalCachedMap(String name, LocalCachedMapOptions<K, V> options) {
+        RMap<K, V> map = new RedissonLocalCachedMap<>(commandExecutor, name, options, evictionScheduler, null, writeBehindService);
+        return RxProxyBuilder.create(commandExecutor, map,
+                new RedissonMapRx<>(map, commandExecutor), RLocalCachedMapRx.class);
+    }
+
+    @Override
+    public <K, V> RLocalCachedMapRx<K, V> getLocalCachedMap(String name, Codec codec, LocalCachedMapOptions<K, V> options) {
+        RMap<K, V> map = new RedissonLocalCachedMap<>(codec, commandExecutor, name, options, evictionScheduler, null, writeBehindService);
+        return RxProxyBuilder.create(commandExecutor, map,
+                new RedissonMapRx<>(map, commandExecutor), RLocalCachedMapRx.class);
+    }
+
+    @Override
     public RTransactionRx createTransaction(TransactionOptions options) {
         return new RedissonTransactionRx(commandExecutor, options);
     }
