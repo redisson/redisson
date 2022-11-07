@@ -115,6 +115,9 @@ public class RedissonPriorityBlockingQueue<V> extends RedissonPriorityQueue<V> i
     }
 
     public RFuture<V> pollAsync(long timeout, TimeUnit unit) {
+        if (timeout < 0) {
+            return new CompletableFutureWrapper<>((V) null);
+        }
         CompletableFuture<V> result = new CompletableFuture<V>();
         takeAsync(result, 0, unit.toMicros(timeout), RedisCommands.LPOP, getRawName());
         return new CompletableFutureWrapper<>(result);
@@ -152,6 +155,9 @@ public class RedissonPriorityBlockingQueue<V> extends RedissonPriorityQueue<V> i
 
     @Override
     public RFuture<V> pollLastAndOfferFirstToAsync(String queueName, long timeout, TimeUnit unit) {
+        if (timeout < 0) {
+            return new CompletableFutureWrapper<>((V) null);
+        }
         CompletableFuture<V> result = new CompletableFuture<V>();
         takeAsync(result, 0, unit.toMicros(timeout), RedisCommands.RPOPLPUSH, getRawName(), queueName);
         return new CompletableFutureWrapper<>(result);

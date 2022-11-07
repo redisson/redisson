@@ -144,6 +144,19 @@ public class RedissonPriorityBlockingQueueTest extends RedissonBlockingQueueTest
         queue1.drainTo(dst, 2);
         assertThat(dst).containsExactly(3);
     }
-    
+
+    @Test
+    public void testPollWithNegativeTimeout() throws Exception {
+        RBlockingQueue<Integer> queue1 = getQueue();
+        queue1.put(1);
+        queue1.put(2);
+        queue1.put(3);
+
+        Integer first = queue1.poll(1, TimeUnit.SECONDS);
+        Assertions.assertEquals(1, first);
+
+        Integer second = queue1.poll(-1, TimeUnit.SECONDS);
+        Assertions.assertNull(second);
+    }
     
 }
