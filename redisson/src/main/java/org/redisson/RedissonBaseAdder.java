@@ -44,10 +44,10 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
     private final RTopic topic;
     private final int listenerId;
     
-    public RedissonBaseAdder(CommandAsyncExecutor connectionManager, String name, RedissonClient redisson) {
-        super(connectionManager, name);
+    public RedissonBaseAdder(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
+        super(commandExecutor, name);
         
-        topic = redisson.getTopic(suffixName(getRawName(), "topic"), StringCodec.INSTANCE);
+        topic = RedissonTopic.createRaw(StringCodec.INSTANCE, commandExecutor, suffixName(getRawName(), "topic"));
         this.redisson = redisson;
         listenerId = topic.addListener(String.class, (channel, msg) -> {
             String[] parts = msg.split(":");
