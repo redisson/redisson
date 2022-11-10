@@ -78,7 +78,7 @@
         <dependency>
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-core</artifactId>
-            <version>3.4.18</version>
+            <version>3.4.24</version>
         </dependency>
         <dependency>
             <groupId>org.reactivestreams</groupId>
@@ -282,7 +282,7 @@
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
-            <version>1.12.10</version>
+            <version>1.12.18</version>
         </dependency>
         <dependency>
             <groupId>org.yaml</groupId>
