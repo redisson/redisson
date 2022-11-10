@@ -3,6 +3,35 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 11-Nov-2022 - 3.18.0 released
+
+Feature - Tomcat 10.1.x support  
+Feature - labels support for RTimeSeries object  
+Feature - compatibility with Spring Boot 3 (thanks @olivierboudet)  
+Feature - RxJava and Reactive interfaces for RLocalCachedMap object  
+Feature - local cache support for JsonBucket object  
+
+Improvement - StringCodec now implements JsonCodec  
+
+Fixed - `RDoubleAdder` and `RLongAdder` objects don't work with `nameMapper`  
+Fixed - `RBlockingQueue` methods should return null if negative timeout defined  
+Fixed - `RLocalCachedMap.clearLocalCacheAsync()` method shouldn't retain semaphore after invocation  
+Fixed - Spring Data Redis methods weren't implemented: `zRandMember()`, `zRandMemberWithScore()`, `zPopMin()`, `bZPopMin()`, `zPopMax()`, `bZPopMax()`, `zMScore()`, `zDiff()`, `zDiffWithScores()`, `zDiffStore()`, `zInter()`, `zInterWithScores()`, `zUnion()`, `zUnionWithScores()`, `hRandField()`, `hRandFieldWithValues()`, `copy()`, `lMove()`, `bLMove()`, `lPop()`, `rPop()`, `sMIsMember()`, `getEx()`, `getDel()`  
+Fixed - attempts to connect to the failed master after failover in cluster mode  
+Fixed - `RMapCache` `MapEntryListener` doesn't work with `nameMapper`  
+Fixed - `RJsonBucket.getKeys()` method doesn't use path parameter  
+Fixed - `RRateLimiter.getConfig().getRate()` throws NPE if it doesn't exist (thanks @Tanky-Zhang)  
+Fixed - `RTransaction` objects should be the same instances on each "get..." call  
+Fixed - `RScheduledExecutorService` cron triggers fire continuously for hours for some time zones (regression since 3.16.5)  
+Fixed - `RSortedSet.add()` throws NPE (thanks @yuwei)  
+Fixed - `RKeysReactive.getKeysByPattern()` method isn't giving all entries if downstream consumer is slow  
+Fixed - "Unable to unfreeze entry" errors in sentinel mode  
+Fixed - `JsonBucket.compareAndSet()` method with null as update value deletes whole object  
+Fixed - Redis Cluster topology scanned partially in case of DNS resolution error  
+Fixed - Slave nodes failed to pass complete initialization shouldn't be added as nodes  
+Fixed - ByteBuf leaks when one of multiple parameters can't be encoded  
+Fixed - `SearchDomainUnknownHostException` is thrown occasionally  
+
 ### 2-Oct-2022 - 3.17.7 released
 
 Improvement - Failed connection ping isn't taken in account in Redis slave health check  
