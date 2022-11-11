@@ -2284,7 +2284,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         }
 
         if (listener instanceof EntryRemovedListener) {
-            RTopic topic = redisson.getTopic(getRemovedChannelName(), new MapCacheEventCodec(codec, osType));
+            RTopic topic = RedissonTopic.createRaw(new MapCacheEventCodec(codec, osType), commandExecutor, getRemovedChannelName());
             return topic.addListener(List.class, new MessageListener<List<Object>>() {
                 @Override
                 public void onMessage(CharSequence channel, List<Object> msg) {
@@ -2295,7 +2295,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         }
 
         if (listener instanceof EntryCreatedListener) {
-            RTopic topic = redisson.getTopic(getCreatedChannelName(), new MapCacheEventCodec(codec, osType));
+            RTopic topic = RedissonTopic.createRaw(new MapCacheEventCodec(codec, osType), commandExecutor, getCreatedChannelName());
             return topic.addListener(List.class, new MessageListener<List<Object>>() {
                 @Override
                 public void onMessage(CharSequence channel, List<Object> msg) {
@@ -2306,7 +2306,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         }
 
         if (listener instanceof EntryUpdatedListener) {
-            RTopic topic = redisson.getTopic(getUpdatedChannelName(), new MapCacheEventCodec(codec, osType));
+            RTopic topic = RedissonTopic.createRaw(new MapCacheEventCodec(codec, osType), commandExecutor, getUpdatedChannelName());
             return topic.addListener(List.class, new MessageListener<List<Object>>() {
                 @Override
                 public void onMessage(CharSequence channel, List<Object> msg) {
@@ -2317,7 +2317,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         }
 
         if (listener instanceof EntryExpiredListener) {
-            RTopic topic = redisson.getTopic(getExpiredChannelName(), new MapCacheEventCodec(codec, osType));
+            RTopic topic = RedissonTopic.createRaw(new MapCacheEventCodec(codec, osType), commandExecutor, getExpiredChannelName());
             return topic.addListener(List.class, new MessageListener<List<Object>>() {
                 @Override
                 public void onMessage(CharSequence channel, List<Object> msg) {
@@ -2334,16 +2334,16 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     public void removeListener(int listenerId) {
         super.removeListener(listenerId);
         
-        RTopic removedTopic = redisson.getTopic(getRemovedChannelName());
+        RTopic removedTopic = RedissonTopic.createRaw(new MapCacheEventCodec(codec, osType), commandExecutor, getRemovedChannelName());
         removedTopic.removeListener(listenerId);
 
-        RTopic createdTopic = redisson.getTopic(getCreatedChannelName());
+        RTopic createdTopic = RedissonTopic.createRaw(new MapCacheEventCodec(codec, osType), commandExecutor, getCreatedChannelName());
         createdTopic.removeListener(listenerId);
 
-        RTopic updatedTopic = redisson.getTopic(getUpdatedChannelName());
+        RTopic updatedTopic = RedissonTopic.createRaw(new MapCacheEventCodec(codec, osType), commandExecutor, getUpdatedChannelName());
         updatedTopic.removeListener(listenerId);
 
-        RTopic expiredTopic = redisson.getTopic(getExpiredChannelName());
+        RTopic expiredTopic = RedissonTopic.createRaw(new MapCacheEventCodec(codec, osType), commandExecutor, getExpiredChannelName());
         expiredTopic.removeListener(listenerId);
     }
 

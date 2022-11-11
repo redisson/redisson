@@ -251,23 +251,7 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
             return trySetAsync(update);
         }
 
-        if (update == null) {
-            return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
-                    "if redis.call('json.get', KEYS[1]) == ARGV[1] then "
-                            + "redis.call('json.del', KEYS[1]); "
-                            + "return 1 "
-                        + "else "
-                            + "return 0 end;",
-                    Collections.singletonList(getRawName()), encode(expect));
-        }
-
-        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
-                "if redis.call('json.get', KEYS[1]) == ARGV[1] then "
-                        + "redis.call('json.set', KEYS[1], '$', ARGV[2]); "
-                        + "return 1 "
-                    + "else "
-                        + "return 0 end",
-                Collections.singletonList(getRawName()), encode(expect), encode(update));
+        return compareAndSetUpdateAsync("$", expect, update);
     }
 
     @Override
@@ -293,6 +277,10 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
             expect = Arrays.asList(expect);
         }
 
+        return compareAndSetUpdateAsync(path, expect, update);
+    }
+
+    protected RFuture<Boolean> compareAndSetUpdateAsync(String path, Object expect, Object update) {
         if (update == null) {
             return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
                     "if redis.call('json.get', KEYS[1], ARGV[1]) == ARGV[2] then "
@@ -783,7 +771,7 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
 
     @Override
     public RFuture<List<String>> getKeysAsync(String path) {
-        return commandExecutor.readAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.JSON_OBJKEYS, getRawName());
+        return commandExecutor.readAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.JSON_OBJKEYS, getRawName(), path);
     }
 
     @Override

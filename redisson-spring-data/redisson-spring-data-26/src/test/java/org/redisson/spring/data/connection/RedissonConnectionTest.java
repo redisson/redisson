@@ -123,5 +123,14 @@ public class RedissonConnectionTest extends BaseConnectionTest {
         assertThat(t.next().getValue()).isEqualTo("value2".getBytes());
     }
 
+    @Test
+    public void testZPopMin() {
+        connection.zAdd("key".getBytes(), 1, "value1".getBytes());
+        connection.zAdd("key".getBytes(), 2, "value2".getBytes());
+
+        RedisZSetCommands.Tuple r = connection.zPopMin("key".getBytes());
+        assertThat(r.getValue()).isEqualTo("value1".getBytes());
+        assertThat(r.getScore()).isEqualTo(1);
+    }
     
 }

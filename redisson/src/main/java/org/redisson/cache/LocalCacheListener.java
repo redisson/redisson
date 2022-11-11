@@ -34,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -345,6 +346,7 @@ public abstract class LocalCacheListener {
     private RSemaphore getClearSemaphore(byte[] requestId) {
         String id = ByteBufUtil.hexDump(requestId);
         RSemaphore semaphore = new RedissonSemaphore(commandExecutor, name + ":clear:" + id);
+        semaphore.expireAsync(Duration.ofSeconds(60));
         return semaphore;
     }
 

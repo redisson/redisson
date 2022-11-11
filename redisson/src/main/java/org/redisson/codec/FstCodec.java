@@ -53,6 +53,7 @@ import io.netty.buffer.ByteBufOutputStream;
  * @author Nikita Koksharov
  *
  */
+@Deprecated
 public class FstCodec extends BaseCodec {
 
     @SuppressWarnings("AvoidInlineConditionals")

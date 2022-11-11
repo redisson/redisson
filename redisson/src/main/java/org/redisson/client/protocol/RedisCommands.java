@@ -717,9 +717,9 @@ public interface RedisCommands {
 
     RedisCommand<List<Long>> JSON_OBJLEN_LIST = new RedisCommand("JSON.OBJLEN", new ObjectListReplayDecoder<Long>(), new LongReplayConvertor());
 
-    RedisCommand<List<String>> JSON_OBJKEYS = new RedisCommand("JSON.OBJKEYS", new StringListReplayDecoder());
+    RedisCommand<List<String>> JSON_OBJKEYS = new RedisCommand("JSON.OBJKEYS", new StringListListReplayDecoder());
 
-    RedisCommand<List<List<String>>> JSON_OBJKEYS_LIST = new RedisCommand("JSON.OBJKEYS", new StringListReplayDecoder());
+    RedisCommand<List<List<String>>> JSON_OBJKEYS_LIST = new RedisCommand("JSON.OBJKEYS", new StringListListReplayDecoder());
 
     RedisCommand<Boolean> JSON_TOGGLE = new RedisCommand<Boolean>("JSON.TOGGLE", new BooleanReplayConvertor());
 

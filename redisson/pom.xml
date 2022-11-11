@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-parent</artifactId>
-        <version>3.17.8-SNAPSHOT</version>
+        <version>3.18.1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
@@ -78,7 +78,7 @@
         <dependency>
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-core</artifactId>
-            <version>3.4.18</version>
+            <version>3.4.24</version>
         </dependency>
         <dependency>
             <groupId>org.reactivestreams</groupId>
@@ -282,7 +282,12 @@
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
-            <version>1.12.10</version>
+            <version>1.12.18</version>
+        </dependency>
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>1.33</version>
         </dependency>
         <dependency>
             <groupId>org.jodd</groupId>

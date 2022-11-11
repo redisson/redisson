@@ -537,6 +537,31 @@ public interface RedissonRxClient {
     <K, V> RMapRx<K, V> getMap(String name, Codec codec, MapOptions<K, V> options);
 
     /**
+     * Returns local cached map instance by name.
+     * Configured by parameters of options-object.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param options - local map options
+     * @return LocalCachedMap object
+     */
+    <K, V> RLocalCachedMapRx<K, V> getLocalCachedMap(String name, LocalCachedMapOptions<K, V> options);
+
+    /**
+     * Returns local cached map instance by name
+     * using provided codec. Configured by parameters of options-object.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for keys and values
+     * @param options - local map options
+     * @return LocalCachedMap object
+     */
+    <K, V> RLocalCachedMapRx<K, V> getLocalCachedMap(String name, Codec codec, LocalCachedMapOptions<K, V> options);
+
+    /**
      * Returns set instance by name.
      *
      * @param <V> type of values
