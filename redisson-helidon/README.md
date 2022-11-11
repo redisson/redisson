@@ -17,7 +17,7 @@ Maven
     <artifactId>redisson-helidon-20</artifactId>
     <!-- for Helidon v3.0.x -->
     <artifactId>redisson-helidon-30</artifactId>
-    <version>3.17.7</version>
+    <version>3.18.0</version>
 </dependency>
 ```
 
@@ -25,9 +25,9 @@ Gradle
 
 ```groovy
 // for Helidon v1.4.x - v2.5.x
-compile 'org.redisson:redisson-helidon-20:3.17.7'
+compile 'org.redisson:redisson-helidon-20:3.18.0'
 // for Helidon v3.0.x
-compile 'org.redisson:redisson-helidon-30:3.17.7'
+compile 'org.redisson:redisson-helidon-30:3.18.0'
 ```
 
 ### 2. Add settings into `META-INF/microprofile-config.properties` file
