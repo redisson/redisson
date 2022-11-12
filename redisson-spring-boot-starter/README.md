@@ -54,13 +54,21 @@ spring:
       nodes:
 ```
 
-Using Redisson settings:
+Using Redisson config file:
 
 ```yaml
 spring:
   redis:
    redisson: 
       file: classpath:redisson.yaml
+```
+
+Using Redisson settings:
+
+```yaml
+spring:
+  redis:
+   redisson: 
       config: |
         clusterServersConfig:
           idleConnectionTimeout: 10000
