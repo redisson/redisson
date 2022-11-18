@@ -208,7 +208,7 @@ public class RedissonKeysTest extends BaseTest {
         Iterator<String> iterator = redisson.getKeys().getKeys().iterator();
         for (; iterator.hasNext();) {
             String key = iterator.next();
-            keys.remove(key);
+            keys.remove(redisson.getConfig().useSingleServer().getNameMapper().map(key));
             iterator.remove();
         }
         Assertions.assertEquals(0, keys.size());
