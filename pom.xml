@@ -175,14 +175,14 @@
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-bom</artifactId>
-                <version>4.1.82.Final</version>
+                <version>4.1.85.Final</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
-                <version>2.13.4.20221013</version>
+                <version>2.14.1</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
