@@ -860,7 +860,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             List<ClusterPartition> ps = partitions.values()
                     .stream()
                     .filter(cp -> cp.getType() == Type.MASTER
-                            && cp.getMasterAddress() != null)
+                                    && cp.getMasterAddress() != null
+                                        && ((!cp.slots().isEmpty() && partitions.size() == 1) || partitions.size() > 1))
                     .collect(Collectors.toList());
             return ps;
         });
