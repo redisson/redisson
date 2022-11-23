@@ -850,6 +850,8 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
         });
     }
 
+    public static final RedisCommand<Long> ZRANGESTORE = new RedisCommand<>("ZRANGESTORE");
+
     @Override
     public Flux<CommandResponse<ZRangeStoreCommand, Mono<Long>>> zRangeStore(Publisher<ZRangeStoreCommand> commands) {
         return execute(commands, command -> {
@@ -859,30 +861,50 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
             Assert.notNull(command.getRange(), "Range must not be null");
             Assert.notNull(command.getLimit(), "Limit must not be null");
 
-//            Limit limit = LettuceConverters.toLimit(command.getLimit());
-//            Mono<Long> result;
-//
-//            if (command.getDirection() == Direction.ASC) {
-//
-//                switch (command.getRangeMode()) {
-//                    case ByScore -> result = cmd.zrangestorebyscore(command.getDestKey(), command.getKey(),
-//                            (Range<? extends Number>) LettuceConverters.toRange(command.getRange()), limit);
-//                    case ByLex -> result = cmd.zrangestorebylex(command.getDestKey(), command.getKey(),
-//                            RangeConverter.toRange(command.getRange()), limit);
-//                    default -> throw new IllegalStateException("Unsupported value: " + command.getRangeMode());
-//                }
-//            } else {
-//                switch (command.getRangeMode()) {
-//                    case ByScore -> result = cmd.zrevrangestorebyscore(command.getDestKey(), command.getKey(),
-//                            (Range<? extends Number>) LettuceConverters.toRange(command.getRange()), limit);
-//                    case ByLex -> result = cmd.zrevrangestorebylex(command.getDestKey(), command.getKey(),
-//                            RangeConverter.toRange(command.getRange()), limit);
-//                    default -> throw new IllegalStateException("Unsupported value: " + command.getRangeMode());
-//                }
-//            }
+            byte[] keyBuf = toByteArray(command.getKey());
+            byte[] destKeyBuf = toByteArray(command.getDestKey());
 
-            return Mono.empty();
-//            return Mono.just(new CommandResponse<>(command, result));
+            Object start = command.getRange().getLowerBound().getValue().map(r -> {
+                if (r instanceof Double) {
+                    if (((Double) r).isInfinite()) {
+                        return "-";
+                    }
+                }
+                return r;
+            }).orElse("-");
+            Object end = command.getRange().getUpperBound().getValue().map(r -> {
+                if (r instanceof Double) {
+                    if (((Double) r).isInfinite()) {
+                        return "+";
+                    }
+                }
+                return r;
+            }).orElse("+");
+
+            List<Object> args = new ArrayList<>(9);
+            args.add(destKeyBuf);
+            args.add(keyBuf);
+            args.add(start);
+            args.add(end);
+
+            if (command.getRangeMode() == ZRangeStoreCommand.RangeMode.ByScore) {
+                args.add("BYSCORE");
+            } else {
+                args.add("BYLEX");
+            }
+
+            if (command.getDirection() == Direction.DESC) {
+                args.add("REV");
+            }
+
+            if (!command.getLimit().isUnlimited()) {
+                args.add("LIMIT");
+                args.add(command.getLimit().getOffset());
+                args.add(command.getLimit().getCount());
+            }
+
+            Mono<Long> m = write(keyBuf, LongCodec.INSTANCE, ZRANGESTORE, args.toArray());
+            return Mono.just(new CommandResponse<>(command, m));
         });
     }
 }
