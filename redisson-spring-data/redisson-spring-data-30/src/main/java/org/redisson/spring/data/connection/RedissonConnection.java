@@ -2562,20 +2562,22 @@ public class RedissonConnection extends AbstractRedisConnection {
         return zUnionWithScores(null, (Weights) null, sets);
     }
 
-    private static final RedisCommand<Object> HRANDFIELD = new RedisCommand<Object>("HRANDFIELD");
+    private static final RedisCommand<Object> HRANDFIELD = new RedisCommand<>("HRANDFIELD");
 
     @Override
     public byte[] hRandField(byte[] key) {
         Assert.notNull(key, "Key must not be null!");
 
-        return read(key, ByteArrayCodec.INSTANCE, HRANDFIELD, (Object) key);
+        return read(key, ByteArrayCodec.INSTANCE, HRANDFIELD, key);
     }
+
+    private static final RedisCommand<Entry<Object, Object>> HRANDFIELD_SINGLE = new RedisCommand("HRANDFIELD", new SingleMapEntryDecoder());
 
     @Override
     public Entry<byte[], byte[]> hRandFieldWithValues(byte[] key) {
         Assert.notNull(key, "Key must not be null!");
 
-        return read(key, ByteArrayCodec.INSTANCE, RedisCommands.HRANDFIELD, (Object) key);
+        return read(key, ByteArrayCodec.INSTANCE, HRANDFIELD_SINGLE, key, 1, "WITHVALUES");
     }
 
     private static final RedisCommand<List<Object>> HRANDFIELD_LIST = new RedisCommand<>("HRANDFIELD", new ObjectListReplayDecoder<>());
@@ -2587,11 +2589,13 @@ public class RedissonConnection extends AbstractRedisConnection {
         return read(key, ByteArrayCodec.INSTANCE, HRANDFIELD_LIST, key, count);
     }
 
+    private static final RedisCommand<List<Entry<Object, Object>>> HRANDFIELD_VALUES = new RedisCommand("HRANDFIELD",
+                                                                                        new ObjectMapEntryReplayDecoder(), new EmptyListConvertor());
     @Override
     public List<Entry<byte[], byte[]>> hRandFieldWithValues(byte[] key, long count) {
         Assert.notNull(key, "Key must not be null!");
 
-        return read(key, ByteArrayCodec.INSTANCE, RedisCommands.HRANDFIELD, (Object) key, count);
+        return read(key, ByteArrayCodec.INSTANCE, HRANDFIELD_VALUES, key, count, "WITHVALUES");
     }
 
     @Override

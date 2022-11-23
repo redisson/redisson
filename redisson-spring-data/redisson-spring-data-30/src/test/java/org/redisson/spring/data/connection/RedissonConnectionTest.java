@@ -16,6 +16,8 @@ import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.SetOperations;
 import org.springframework.data.redis.core.types.Expiration;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class RedissonConnectionTest extends BaseConnectionTest {
@@ -121,5 +123,20 @@ public class RedissonConnectionTest extends BaseConnectionTest {
         assertThat(t.next().getValue()).isEqualTo("value2".getBytes());
     }
 
+    @Test
+    public void testRandFieldWithValues() {
+        connection.hSet("map".getBytes(), "key1".getBytes(), "value1".getBytes());
+        connection.hSet("map".getBytes(), "key2".getBytes(), "value2".getBytes());
+        connection.hSet("map".getBytes(), "key3".getBytes(), "value3".getBytes());
+
+        List<Map.Entry<byte[], byte[]>> s = connection.hRandFieldWithValues("map".getBytes(), 2);
+        assertThat(s).hasSize(2);
+
+        Map.Entry<byte[], byte[]> s2 = connection.hRandFieldWithValues("map".getBytes());
+        assertThat(s2).isNotNull();
+
+        byte[] f = connection.hRandField("map".getBytes());
+        assertThat((Object) f).isIn("key1".getBytes(), "key2".getBytes(), "key3".getBytes());
+    }
     
 }
