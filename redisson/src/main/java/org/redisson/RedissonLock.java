@@ -19,6 +19,7 @@ import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisException;
+import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
@@ -232,7 +233,9 @@ public class RedissonLock extends RedissonBaseLock {
         try {
             subscribeFuture.get(time, TimeUnit.MILLISECONDS);
         } catch (TimeoutException e) {
-            if (!subscribeFuture.cancel(false)) {
+            if (!subscribeFuture.completeExceptionally(new RedisTimeoutException(
+                    "Unable to acquire subscription lock after " + time + "ms. " +
+                            "Try to increase 'subscriptionsPerConnection' and/or 'subscriptionConnectionPoolSize' parameters."))) {
                 subscribeFuture.whenComplete((res, ex) -> {
                     if (ex == null) {
                         unsubscribe(res, threadId);

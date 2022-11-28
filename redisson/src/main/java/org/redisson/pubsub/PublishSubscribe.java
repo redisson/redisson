@@ -115,6 +115,7 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
             });
             s.whenComplete((r, e) -> {
                 if (e != null) {
+                    entries.remove(entryName);
                     value.getPromise().completeExceptionally(e);
                     return;
                 }
