@@ -140,9 +140,9 @@ public class RedisConnection implements RedisCommands {
             }
         }
 
-        QueueCommand command = channel.attr(CommandsQueuePubSub.CURRENT_COMMAND).get();
-        if (command instanceof CommandData) {
-            return (CommandData<?, ?>) command;
+        QueueCommandHolder holder = channel.attr(CommandsQueuePubSub.CURRENT_COMMAND).get();
+        if (holder != null && holder.getCommand() instanceof CommandData) {
+            return (CommandData<?, ?>) holder.getCommand();
         }
         return null;
     }

@@ -65,7 +65,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
     }
 
     @Override
-    protected QueueCommand getCommand(ChannelHandlerContext ctx) {
+    protected QueueCommandHolder getCommand(ChannelHandlerContext ctx) {
         return ctx.channel().attr(CommandsQueuePubSub.CURRENT_COMMAND).get();
     }
 

@@ -69,18 +69,18 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         this.scheme = scheme;
     }
 
-    protected QueueCommand getCommand(ChannelHandlerContext ctx) {
+    protected QueueCommandHolder getCommand(ChannelHandlerContext ctx) {
         Queue<QueueCommandHolder> queue = ctx.channel().attr(CommandsQueue.COMMANDS_QUEUE).get();
-        QueueCommandHolder holder = queue.peek();
-        if (holder != null) {
-            return holder.getCommand();
-        }
-        return null;
+        return queue.peek();
     }
 
     @Override
     protected final void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
-        QueueCommand data = getCommand(ctx);
+        QueueCommandHolder holder = getCommand(ctx);
+        QueueCommand data = null;
+        if (holder != null) {
+            data = holder.getCommand();
+        }
 
         if (state() == null) {
             state(new State());
@@ -91,13 +91,20 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 int endIndex = skipCommand(in);
 
                 try {
-                    decode(ctx, in, data, 0);
+                    decode(ctx, in, null, 0);
                 } catch (Exception e) {
                     in.readerIndex(endIndex);
                     throw e;
                 }
             }
         } else {
+            if (!holder.getChannelPromise().isSuccess()) {
+                sendNext(ctx.channel());
+                // throw REPLAY error
+                in.indexOf(Integer.MAX_VALUE/2, Integer.MAX_VALUE, (byte) 0);
+                return;
+            }
+
             int endIndex = 0;
             if (!(data instanceof CommandsData)) {
                 endIndex = skipCommand(in);

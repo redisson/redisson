@@ -88,6 +88,55 @@ public class RedissonTest extends BaseTest {
     }
 
     @Test
+    public void testResponseHandling2() throws InterruptedException {
+        Config config = new Config();
+        config.useSingleServer()
+                .setTimeout(10)
+                .setRetryAttempts(0)
+                .setConnectionPoolSize(1)
+                .setConnectionMinimumIdleSize(1)
+                .setPingConnectionInterval(0)
+                .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+
+        RedissonClient redisson = Redisson.create(config);
+
+        RBucket<String> bucket1 = redisson.getBucket("name1");
+        RBucket<String> bucket2 = redisson.getBucket("name2");
+
+        bucket1.set("val1");
+        bucket2.set("val2");
+
+        ExecutorService executor1 = Executors.newCachedThreadPool();
+        ExecutorService executor2 = Executors.newCachedThreadPool();
+
+        AtomicBoolean hasError = new AtomicBoolean();
+        for (int i = 0; i < 100000; i++) {
+            executor1.submit(() -> {
+                String get = bucket1.get();
+                if (get.equals("val2")) {
+                    hasError.set(true);
+                }
+            });
+
+            executor2.submit(() -> {
+                String get = bucket2.get();
+                if (get.equals("val1")) {
+                    hasError.set(true);
+                }
+            });
+        }
+
+        executor1.shutdown();
+        assertThat(executor1.awaitTermination(5, TimeUnit.SECONDS)).isTrue();
+        executor2.shutdown();
+        assertThat(executor2.awaitTermination(5, TimeUnit.SECONDS)).isTrue();
+        assertThat(hasError).isFalse();
+
+        redisson.shutdown();
+    }
+
+
+    @Test
     public void testResponseHandling() throws InterruptedException {
         List<Integer> list = new ArrayList<>();
         for (int i = 0; i < 10000; i++) {
