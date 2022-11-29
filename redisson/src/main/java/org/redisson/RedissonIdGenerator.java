@@ -101,6 +101,9 @@ public class RedissonIdGenerator extends RedissonExpirable implements RIdGenerat
             } else {
                 counter.incrementAndGet();
                 isWorkerActive.set(false);
+                if (!queue.isEmpty()) {
+                    startIdRequestsHandle();
+                }
             }
         } else {
             RFuture<List<Object>> future = commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_LIST,
