@@ -3,10 +3,12 @@ package org.redisson.spring.data.connection;
 import org.awaitility.Awaitility;
 import org.awaitility.Duration;
 import org.junit.Test;
+import org.redisson.ClusterRunner;
 import org.redisson.RedisRunner;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
+import org.redisson.connection.balancer.RandomLoadBalancer;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.data.redis.connection.RedisConnection;
@@ -24,6 +26,92 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonSubscribeTest extends BaseConnectionTest {
+
+    @Test
+    public void testCluster() throws IOException, InterruptedException {
+        RedisRunner master1 = new RedisRunner().port(6890).randomDir().nosave()                .notifyKeyspaceEvents(
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.K,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.g,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.x,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.$)
+                ;
+        RedisRunner master2 = new RedisRunner().port(6891).randomDir().nosave()                .notifyKeyspaceEvents(
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.K,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.g,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.x,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.$)
+                ;
+        RedisRunner master3 = new RedisRunner().port(6892).randomDir().nosave()                .notifyKeyspaceEvents(
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.K,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.g,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.x,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.$)
+                ;
+        RedisRunner slave1 = new RedisRunner().port(6900).randomDir().nosave()                .notifyKeyspaceEvents(
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.K,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.g,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.x,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.$)
+                ;
+        RedisRunner slave2 = new RedisRunner().port(6901).randomDir().nosave()                .notifyKeyspaceEvents(
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.K,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.g,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.x,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.$)
+                ;
+        RedisRunner slave3 = new RedisRunner().port(6902).randomDir().nosave()                .notifyKeyspaceEvents(
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.K,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.g,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.x,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.$)
+                ;
+
+        ClusterRunner clusterRunner = new ClusterRunner()
+                .addNode(master1, slave1)
+                .addNode(master2, slave2)
+                .addNode(master3, slave3);
+        ClusterRunner.ClusterProcesses process = clusterRunner.run();
+
+        Thread.sleep(5000);
+
+        Config config = new Config();
+        config.useClusterServers()
+                .setPingConnectionInterval(0)
+                .setLoadBalancer(new RandomLoadBalancer())
+                .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+
+        RedissonConnectionFactory factory = new RedissonConnectionFactory(redisson);
+
+        RedisMessageListenerContainer container = new RedisMessageListenerContainer();
+        container.setConnectionFactory(factory);
+        Queue<String> names = new ConcurrentLinkedQueue<>();
+        container.addMessageListener(new MessageListener() {
+            @Override
+            public void onMessage(Message message, byte[] pattern) {
+                names.add(new String(message.getBody()));
+            }
+        }, new PatternTopic("__keyevent@0__:expired"));
+        container.afterPropertiesSet();
+        container.start();
+
+        factory.getConnection().setEx("EG:test:key1".getBytes(), 3, "123".getBytes());
+        factory.getConnection().setEx("test:key2".getBytes(), 3, "123".getBytes());
+        factory.getConnection().setEx("test:key1".getBytes(), 3, "123".getBytes());
+
+        Awaitility.await().atMost(Duration.FIVE_SECONDS).untilAsserted(() -> {
+            assertThat(names).containsExactlyInAnyOrder("EG:test:key1", "test:key2", "test:key1");
+        });
+
+        redisson.shutdown();
+        process.shutdown();
+    }
 
     @Test
     public void testListenersDuplication() {

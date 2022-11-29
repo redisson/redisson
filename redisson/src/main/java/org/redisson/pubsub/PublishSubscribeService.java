@@ -101,8 +101,6 @@ public class PublishSubscribeService {
 
     private final ConcurrentMap<MasterSlaveEntry, PubSubEntry> entry2PubSubConnection = new ConcurrentHashMap<>();
 
-    private final Queue<PubSubConnectionEntry> emptyQueue = new LinkedList<>();
-
     private final SemaphorePubSub semaphorePubSub = new SemaphorePubSub(this);
 
     private final CountDownLatchPubSub countDownLatchPubSub = new CountDownLatchPubSub(this);
@@ -169,7 +167,15 @@ public class PublishSubscribeService {
             });
         }
 
-        CompletableFuture<PubSubConnectionEntry> f = subscribe(PubSubType.PSUBSCRIBE, codec, channelName, getEntry(channelName), listeners);
+        MasterSlaveEntry entry = getEntry(channelName);
+        if (entry == null) {
+            RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node for name: " + channelName + " hasn't been discovered yet. Check cluster slots coverage using CLUSTER NODES command. Increase value of retryAttempts and/or retryInterval settings.");
+            CompletableFuture<Collection<PubSubConnectionEntry>> promise = new CompletableFuture<>();
+            promise.completeExceptionally(ex);
+            return promise;
+        }
+
+        CompletableFuture<PubSubConnectionEntry> f = subscribe(PubSubType.PSUBSCRIBE, codec, channelName, entry, listeners);
         return f.thenApply(res -> Collections.singletonList(res));
     }
 
@@ -180,11 +186,25 @@ public class PublishSubscribeService {
     }
 
     public CompletableFuture<PubSubConnectionEntry> subscribe(Codec codec, ChannelName channelName, RedisPubSubListener<?>... listeners) {
-        return subscribe(PubSubType.SUBSCRIBE, codec, channelName, getEntry(channelName), listeners);
+        MasterSlaveEntry entry = getEntry(channelName);
+        if (entry == null) {
+            RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node for name: " + channelName + " hasn't been discovered yet. Check cluster slots coverage using CLUSTER NODES command. Increase value of retryAttempts and/or retryInterval settings.");
+            CompletableFuture<PubSubConnectionEntry> promise = new CompletableFuture<>();
+            promise.completeExceptionally(ex);
+            return promise;
+        }
+        return subscribe(PubSubType.SUBSCRIBE, codec, channelName, entry, listeners);
     }
 
     public CompletableFuture<PubSubConnectionEntry> ssubscribe(Codec codec, ChannelName channelName, RedisPubSubListener<?>... listeners) {
-        return subscribe(PubSubType.SSUBSCRIBE, codec, channelName, getEntry(channelName), listeners);
+        MasterSlaveEntry entry = getEntry(channelName);
+        if (entry == null) {
+            RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node for name: " + channelName + " hasn't been discovered yet. Check cluster slots coverage using CLUSTER NODES command. Increase value of retryAttempts and/or retryInterval settings.");
+            CompletableFuture<PubSubConnectionEntry> promise = new CompletableFuture<>();
+            promise.completeExceptionally(ex);
+            return promise;
+        }
+        return subscribe(PubSubType.SSUBSCRIBE, codec, channelName, entry, listeners);
     }
 
     private CompletableFuture<PubSubConnectionEntry> subscribe(PubSubType type, Codec codec, ChannelName channelName,
@@ -211,7 +231,14 @@ public class PublishSubscribeService {
     public CompletableFuture<PubSubConnectionEntry> subscribeNoTimeout(Codec codec, String channelName,
                                                               AsyncSemaphore semaphore, RedisPubSubListener<?>... listeners) {
         CompletableFuture<PubSubConnectionEntry> promise = new CompletableFuture<>();
-        subscribeNoTimeout(codec, new ChannelName(channelName), getEntry(new ChannelName(channelName)), promise,
+        MasterSlaveEntry entry = getEntry(new ChannelName(channelName));
+        if (entry == null) {
+            RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node for name: " + channelName + " hasn't been discovered yet. Check cluster slots coverage using CLUSTER NODES command. Increase value of retryAttempts and/or retryInterval settings.");
+            promise.completeExceptionally(ex);
+            return promise;
+        }
+
+        subscribeNoTimeout(codec, new ChannelName(channelName), entry, promise,
                         PubSubType.SUBSCRIBE, semaphore, new AtomicInteger(), listeners);
         return promise;
     }
@@ -406,7 +433,8 @@ public class PublishSubscribeService {
                 }
 
                 if (remainFreeAmount > 0) {
-                    addFreeConnectionEntry(channelName, entry);
+                    PubSubEntry psEntry = entry2PubSubConnection.computeIfAbsent(msEntry, e -> new PubSubEntry());
+                    psEntry.getEntries().add(entry);
                 }
                 freePubSubLock.release();
 
@@ -436,7 +464,11 @@ public class PublishSubscribeService {
                 if (type == topicType && channel.equals(channelName)) {
                     if (entry.release() == 1) {
                         MasterSlaveEntry msEntry = getEntry(channelName);
-                        msEntry.returnPubSubConnection(entry.getConnection());
+                        if (msEntry != null) {
+                            msEntry.returnPubSubConnection(entry.getConnection());
+                        } else {
+                            entry.getConnection().closeAsync();
+                        }
                     }
 
                     result.complete(null);
@@ -456,7 +488,15 @@ public class PublishSubscribeService {
     }
 
     public CompletableFuture<Codec> unsubscribe(ChannelName channelName, PubSubType topicType) {
-        return unsubscribe(channelName, getEntry(channelName), topicType);
+        MasterSlaveEntry entry = getEntry(channelName);
+        if (entry == null) {
+            RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node for name: " + channelName + " hasn't been discovered yet. Check cluster slots coverage using CLUSTER NODES command. Increase value of retryAttempts and/or retryInterval settings.");
+            CompletableFuture<Codec> promise = new CompletableFuture<>();
+            promise.completeExceptionally(ex);
+            return promise;
+        }
+
+        return unsubscribe(channelName, entry, topicType);
     }
 
     private CompletableFuture<Codec> unsubscribe(ChannelName channelName, MasterSlaveEntry e, PubSubType topicType) {
@@ -508,12 +548,6 @@ public class PublishSubscribeService {
                 return result;
             });
         });
-    }
-
-    private void addFreeConnectionEntry(ChannelName channelName, PubSubConnectionEntry entry) {
-        MasterSlaveEntry me = getEntry(channelName);
-        PubSubEntry psEntry = entry2PubSubConnection.computeIfAbsent(me, e -> new PubSubEntry());
-        psEntry.getEntries().add(entry);
     }
 
     public void reattachPubSub(int slot) {
