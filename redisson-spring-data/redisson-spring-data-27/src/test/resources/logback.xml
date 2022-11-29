@@ -24,8 +24,8 @@
       </encoder>
     </appender>
 
-    <logger name="org.redisson" additivity="true">
-        <level value="trace"/>
+    <logger name="org.redisson.client" additivity="true">
+        <level value="info"/>
     </logger>
 
     <root>
