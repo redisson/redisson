@@ -149,6 +149,8 @@ public class RedissonKeys implements RKeys {
             return commandExecutor.readAsync(client, entry, StringCodec.INSTANCE, command, startPos, "COUNT",
                     count);
         }
+
+        pattern = map(pattern);
         return commandExecutor.readAsync(client, entry, StringCodec.INSTANCE, command, startPos, "MATCH",
                 pattern, "COUNT", count);
     }
