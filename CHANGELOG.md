@@ -3,6 +3,20 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 30-Nov-2022 - 3.18.1 released
+
+Feature - Spring Data Redis 3.0.0 module added  
+
+Fixed - PubSub subscription in cluster sometimes doesn't apply to all nodes  
+Fixed - command replies don't match if connection pool size < 10 and at least one command failed  
+Fixed - `RLock` throws `CancellationException` continuously  
+Fixed - `None of slaves were synced` error is thrown after failover during RLock acquisition  
+Fixed - AWS Elasticache cluster failover  
+Fixed - `hRandFieldWithValues()` and `hRandField()` methods of Spring Data Redis module throw `ClassCastException`  
+Fixed - `trySetPermitsAsync()` method of RPermitExpirableSemaphore object shouldn't allow to overwrite the number of permits if value == 0 (thanks @kscaldef)  
+Fixed - `RKeys` object doesn't use `nameMapper`  
+Fixed - connection leak after master failover  
+
 ### 11-Nov-2022 - 3.18.0 released
 
 Feature - Tomcat 10.1.x support  
