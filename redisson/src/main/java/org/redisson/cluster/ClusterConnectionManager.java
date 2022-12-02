@@ -108,7 +108,14 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 lastClusterNode = addr;
                 
                 CompletableFuture<Collection<ClusterPartition>> partitionsFuture = parsePartitions(nodes);
-                Collection<ClusterPartition> partitions = partitionsFuture.join();
+                Collection<ClusterPartition> partitions;
+                try {
+                    partitions = partitionsFuture.join();
+                } catch (CompletionException e) {
+                    lastException = e.getCause();
+                    break;
+                }
+
                 List<CompletableFuture<Void>> masterFutures = new ArrayList<>();
                 for (ClusterPartition partition : partitions) {
                     if (partition.isMasterFail()) {
@@ -458,8 +465,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
                 lastClusterNode = uri;
 
-                StringBuilder nodesValue = new StringBuilder();
                 if (log.isDebugEnabled()) {
+                    StringBuilder nodesValue = new StringBuilder();
                     for (ClusterNodeInfo clusterNodeInfo : nodes) {
                         nodesValue.append(clusterNodeInfo.getNodeInfo()).append("\n");
                     }
@@ -468,6 +475,18 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
                 CompletableFuture<Collection<ClusterPartition>> newPartitionsFuture = parsePartitions(nodes);
                 newPartitionsFuture
+                        .whenComplete((r, ex) -> {
+                            if (ex != null) {
+                                StringBuilder nodesValue = new StringBuilder();
+                                for (ClusterNodeInfo clusterNodeInfo : nodes) {
+                                    nodesValue.append(clusterNodeInfo.getNodeInfo()).append("\n");
+                                }
+                                log.error("Unable to parse cluster nodes state got from: " + connection.getRedisClient().getAddr() + ":\n" + nodesValue, ex);
+                                lastException.set(ex);
+                                getShutdownLatch().release();
+                                checkClusterState(cfg, iterator, lastException);
+                            }
+                        })
                         .thenCompose(newPartitions -> checkMasterNodesChange(cfg, newPartitions))
                         .thenCompose(r -> newPartitionsFuture)
                         .thenCompose(newPartitions -> checkSlaveNodesChange(newPartitions))
