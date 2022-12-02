@@ -103,7 +103,7 @@
         <dependency>
             <groupId>io.micronaut</groupId>
             <artifactId>micronaut-inject</artifactId>
-            <version>3.6.3</version>
+            <version>3.7.4</version>
             <optional>true</optional>
         </dependency>
 
@@ -117,21 +117,21 @@
         <dependency>
             <groupId>io.micronaut</groupId>
             <artifactId>micronaut-session</artifactId>
-            <version>3.6.3</version>
+            <version>3.7.4</version>
             <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>io.micronaut</groupId>
             <artifactId>micronaut-management</artifactId>
-            <version>3.6.3</version>
+            <version>3.7.4</version>
             <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>io.micronaut</groupId>
             <artifactId>micronaut-inject-java</artifactId>
-            <version>3.6.3</version>
+            <version>3.7.4</version>
             <scope>test</scope>
         </dependency>
 
@@ -160,7 +160,7 @@
         <dependency>
           <groupId>io.micronaut.test</groupId>
           <artifactId>micronaut-test-junit5</artifactId>
-          <version>3.1.1</version>
+          <version>3.8.0</version>
           <scope>test</scope>
         </dependency>
         <dependency>
