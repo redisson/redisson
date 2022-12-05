@@ -397,6 +397,8 @@ public interface RedisCommands {
     RedisCommand<List<Object>> EVAL_LIST = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<Object>());
     RedisCommand<List<Object>> EVAL_LIST_REVERSE = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<>(true));
     RedisCommand<List<Integer>> EVAL_INT_LIST = new RedisCommand("EVAL", new ObjectListReplayDecoder<Integer>(), new IntegerReplayConvertor());
+
+    RedisCommand<List<Long>> EVAL_LONG_LIST = new RedisCommand("EVAL", new ObjectListReplayDecoder<Long>());
     RedisCommand<ListScanResult<Object>> EVAL_LIST_SCAN = new RedisCommand<ListScanResult<Object>>("EVAL", new ListMultiDecoder2(new ListScanResultReplayDecoder(), new ObjectListReplayDecoder<Object>()));
     RedisCommand<Set<Object>> EVAL_SET = new RedisCommand<Set<Object>>("EVAL", new ObjectSetReplayDecoder<Object>());
     RedisCommand<Object> EVAL_OBJECT = new RedisCommand<Object>("EVAL");

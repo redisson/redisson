@@ -512,6 +512,8 @@ public interface RedissonClient {
      */
     RLock getSpinLock(String name, LockOptions.BackOff backOff);
 
+    RFencedLock getFencedLock(String name);
+
     /**
      * Returns MultiLock instance associated with specified <code>locks</code>
      * 

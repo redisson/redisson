@@ -358,6 +358,11 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
+    public RFencedLock getFencedLock(String name) {
+        return new RedissonFencedLock(commandExecutor, name);
+    }
+
+    @Override
     public RLock getMultiLock(RLock... locks) {
         return new RedissonMultiLock(locks);
     }

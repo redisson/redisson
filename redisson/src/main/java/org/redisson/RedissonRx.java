@@ -149,6 +149,12 @@ public class RedissonRx implements RedissonRxClient {
     }
 
     @Override
+    public RFencedLockRx getFencedLock(String name) {
+        RedissonFencedLock lock = new RedissonFencedLock(commandExecutor, name);
+        return RxProxyBuilder.create(commandExecutor, lock, RFencedLockRx.class);
+    }
+
+    @Override
     public RLockRx getMultiLock(RLockRx... locks) {
         RLock[] ls = Arrays.stream(locks)
                             .map(l -> new RedissonLock(commandExecutor, l.getName()))

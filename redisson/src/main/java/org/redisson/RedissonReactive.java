@@ -157,6 +157,12 @@ public class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
+    public RFencedLockReactive getFencedLock(String name) {
+        RedissonFencedLock lock = new RedissonFencedLock(commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, lock, RFencedLockReactive.class);
+    }
+
+    @Override
     public RLockReactive getMultiLock(RLockReactive... locks) {
         RLock[] ls = Arrays.stream(locks)
                             .map(l -> new RedissonLock(commandExecutor, l.getName()))

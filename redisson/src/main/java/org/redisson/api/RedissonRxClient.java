@@ -192,6 +192,16 @@ public interface RedissonRxClient {
     RLockRx getSpinLock(String name, LockOptions.BackOff backOff);
 
     /**
+     * Returns Fenced Lock by name.
+     * <p>
+     * Implements a <b>non-fair</b> locking so doesn't guarantee an acquire order by threads.
+     *
+     * @param name name of object
+     * @return Lock object
+     */
+    RFencedLockRx getFencedLock(String name);
+
+    /**
      * Returns MultiLock instance associated with specified <code>locks</code>
      *
      * @param locks - collection of locks
