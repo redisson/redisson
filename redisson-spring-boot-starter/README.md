@@ -2,7 +2,7 @@
 
 Integrates Redisson with Spring Boot library. Depends on [Spring Data Redis](https://github.com/redisson/redisson/tree/master/redisson-spring-data#spring-data-redis-integration) module.
 
-Supports Spring Boot 1.3.x - 2.7.x
+Supports Spring Boot 1.3.x - 3.0.x
 
 ## Usage
 
@@ -33,6 +33,7 @@ Downgrade `redisson-spring-data` module if necessary to support required Spring 
 |redisson-spring-data-17     |1.4.y              |
 |redisson-spring-data-18     |1.5.y              |
 |redisson-spring-data-2x     |2.x.y              |
+|redisson-spring-data-3x     |3.x.y              |
 
 ### 2. Add settings into `application.settings` file
 
