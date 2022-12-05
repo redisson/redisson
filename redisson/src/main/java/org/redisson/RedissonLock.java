@@ -197,17 +197,13 @@ public class RedissonLock extends RedissonBaseLock {
 
     <T> RFuture<T> tryLockInnerAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
         return evalWriteAsync(getRawName(), LongCodec.INSTANCE, command,
-                "if (redis.call('exists', KEYS[1]) == 0) then " +
+                "if ((redis.call('exists', KEYS[1]) == 0) " +
+                            "or (redis.call('hexists', KEYS[1], ARGV[2]) == 1)) then " +
                         "redis.call('hincrby', KEYS[1], ARGV[2], 1); " +
                         "redis.call('pexpire', KEYS[1], ARGV[1]); " +
                         "return nil; " +
-                        "end; " +
-                        "if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) then " +
-                        "redis.call('hincrby', KEYS[1], ARGV[2], 1); " +
-                        "redis.call('pexpire', KEYS[1], ARGV[1]); " +
-                        "return nil; " +
-                        "end; " +
-                        "return redis.call('pttl', KEYS[1]);",
+                    "end; " +
+                    "return redis.call('pttl', KEYS[1]);",
                 Collections.singletonList(getRawName()), unit.toMillis(leaseTime), getLockName(threadId));
     }
 
@@ -338,27 +334,27 @@ public class RedissonLock extends RedissonBaseLock {
                 "if (redis.call('del', KEYS[1]) == 1) then "
                         + "redis.call('publish', KEYS[2], ARGV[1]); "
                         + "return 1 "
-                        + "else "
+                    + "else "
                         + "return 0 "
-                        + "end",
+                    + "end",
                 Arrays.asList(getRawName(), getChannelName()), LockPubSub.UNLOCK_MESSAGE);
     }
 
     protected RFuture<Boolean> unlockInnerAsync(long threadId) {
         return evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                "if (redis.call('hexists', KEYS[1], ARGV[3]) == 0) then " +
+              "if (redis.call('hexists', KEYS[1], ARGV[3]) == 0) then " +
                         "return nil;" +
-                        "end; " +
-                        "local counter = redis.call('hincrby', KEYS[1], ARGV[3], -1); " +
-                        "if (counter > 0) then " +
+                    "end; " +
+                    "local counter = redis.call('hincrby', KEYS[1], ARGV[3], -1); " +
+                    "if (counter > 0) then " +
                         "redis.call('pexpire', KEYS[1], ARGV[2]); " +
                         "return 0; " +
-                        "else " +
+                    "else " +
                         "redis.call('del', KEYS[1]); " +
                         "redis.call('publish', KEYS[2], ARGV[1]); " +
                         "return 1; " +
-                        "end; " +
-                        "return nil;",
+                    "end; " +
+                    "return nil;",
                 Arrays.asList(getRawName(), getChannelName()), LockPubSub.UNLOCK_MESSAGE, internalLockLeaseTime, getLockName(threadId));
     }
 
