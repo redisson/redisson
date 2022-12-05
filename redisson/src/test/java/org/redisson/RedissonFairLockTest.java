@@ -931,7 +931,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
             t1.start();
         }
 
-        await().atMost(30, TimeUnit.SECONDS).until(() -> lockedCounter.get() == totalThreads);
+        await().atMost(35, TimeUnit.SECONDS).until(() -> lockedCounter.get() == totalThreads);
     }
 
 
