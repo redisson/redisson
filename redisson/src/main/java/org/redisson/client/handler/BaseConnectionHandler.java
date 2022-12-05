@@ -64,7 +64,7 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
 
         RedisClientConfig config = redisClient.getConfig();
         String password = Objects.toString(config.getAddress().getPassword(), config.getPassword());
-        if (password != null) {
+        if (password != null && !password.equals("")) {
             RFuture<Object> future;
             String username = Objects.toString(config.getAddress().getUsername(), config.getUsername());
             if (username != null) {
