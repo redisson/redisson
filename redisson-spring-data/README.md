@@ -33,6 +33,8 @@ Maven
          <artifactId>redisson-spring-data-26</artifactId>
          <!-- for Spring Data Redis v.2.7.x -->
          <artifactId>redisson-spring-data-27</artifactId>
+         <!-- for Spring Data Redis v.3.0.x -->
+         <artifactId>redisson-spring-data-30</artifactId>
          <version>3.18.1</version>
      </dependency>
 ```
@@ -62,6 +64,8 @@ Gradle
      compile 'org.redisson:redisson-spring-data-26:3.18.1'
      // for Spring Data Redis v.2.7.x
      compile 'org.redisson:redisson-spring-data-27:3.18.1'
+     // for Spring Data Redis v.3.0.x
+     compile 'org.redisson:redisson-spring-data-30:3.18.1'
 ```
 
 ### 2. Register `RedissonConnectionFactory` in Spring context
