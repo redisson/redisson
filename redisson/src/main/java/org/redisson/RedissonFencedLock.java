@@ -35,14 +35,23 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * Redis based implementation of Fenced Lock with reentrancy support.
+ * <p>
+ * Each lock acquisition increases fencing token. It should be
+ * checked if it's greater or equal with the previous one by
+ * the service guarded by this lock and reject operation if condition is false.
+ *
+ * @author Nikita Koksharov
+ *
+ */
 public class RedissonFencedLock extends RedissonLock implements RFencedLock {
+
+    private final String tokenName;
 
     public RedissonFencedLock(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
-    }
-
-    String getTokenName() {
-        return prefixName("redisson_lock_token", getRawName());
+        tokenName = prefixName("redisson_lock_token", getRawName());
     }
 
     @Override
@@ -52,7 +61,7 @@ public class RedissonFencedLock extends RedissonLock implements RFencedLock {
 
     @Override
     public RFuture<Long> getTokenAsync() {
-        return commandExecutor.writeAsync(getTokenName(), StringCodec.INSTANCE, RedisCommands.GET_LONG, getTokenName());
+        return commandExecutor.writeAsync(tokenName, StringCodec.INSTANCE, RedisCommands.GET_LONG, tokenName);
     }
 
     @Override
@@ -105,7 +114,7 @@ public class RedissonFencedLock extends RedissonLock implements RFencedLock {
                             "return {-1, token}; " +
                         "end; " +
                         "return {redis.call('pttl', KEYS[1]), -1};",
-                Arrays.asList(getRawName(), getTokenName()),
+                Arrays.asList(getRawName(), tokenName),
                 unit.toMillis(leaseTime), getLockName(threadId));
     }
 
@@ -298,8 +307,34 @@ public class RedissonFencedLock extends RedissonLock implements RFencedLock {
                             "return nil; " +
                         "end; " +
                         "return redis.call('pttl', KEYS[1]);",
-                Arrays.asList(getRawName(), getTokenName()),
+                Arrays.asList(getRawName(), tokenName),
                 unit.toMillis(leaseTime), getLockName(threadId));
+    }
+
+    @Override
+    public RFuture<Boolean> deleteAsync() {
+        return deleteAsync(getRawName(), tokenName);
+    }
+
+    @Override
+    public RFuture<Long> sizeInMemoryAsync() {
+        List<Object> keys = Arrays.asList(getRawName(), tokenName);
+        return super.sizeInMemoryAsync(keys);
+    }
+
+    @Override
+    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
+        return super.expireAsync(timeToLive, timeUnit, param, getRawName(), tokenName);
+    }
+
+    @Override
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
+        return super.expireAtAsync(timestamp, param, getRawName(), tokenName);
+    }
+
+    @Override
+    public RFuture<Boolean> clearExpireAsync() {
+        return clearExpireAsync(getRawName(), tokenName);
     }
 
 }
