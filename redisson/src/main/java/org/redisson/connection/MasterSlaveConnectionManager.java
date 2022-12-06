@@ -402,6 +402,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         c.setKeepAlive(cfg.isKeepAlive());
         c.setTcpNoDelay(cfg.isTcpNoDelay());
         c.setNameMapper(cfg.getNameMapper());
+        c.setCredentialsResolver(cfg.getCredentialsResolver());
 
         return c;
     }
@@ -456,8 +457,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
               .setTcpNoDelay(config.isTcpNoDelay())
               .setUsername(config.getUsername())
               .setPassword(config.getPassword())
-              .setNettyHook(cfg.getNettyHook());
-        
+              .setNettyHook(cfg.getNettyHook())
+              .setCredentialsResolver(config.getCredentialsResolver());
+
         if (type != NodeType.SENTINEL) {
             redisConfig.setDatabase(config.getDatabase());
         }

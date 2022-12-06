@@ -64,6 +64,7 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
         newconfig.setKeepAlive(cfg.isKeepAlive());
         newconfig.setTcpNoDelay(cfg.isTcpNoDelay());
         newconfig.setNameMapper(cfg.getNameMapper());
+        newconfig.setCredentialsResolver(cfg.getCredentialsResolver());
         
         return newconfig;
     }

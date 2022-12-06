@@ -15,18 +15,18 @@
  */
 package org.redisson.client;
 
-import java.net.InetSocketAddress;
-import java.net.URL;
-import java.util.concurrent.ExecutorService;
-
-import org.redisson.config.SslProvider;
-import org.redisson.misc.RedisURI;
-
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.resolver.AddressResolverGroup;
 import io.netty.util.Timer;
+import org.redisson.config.CredentialsResolver;
+import org.redisson.config.SslProvider;
+import org.redisson.misc.RedisURI;
+
+import java.net.InetSocketAddress;
+import java.net.URL;
+import java.util.concurrent.ExecutorService;
 
 /**
  * 
@@ -65,6 +65,7 @@ public class RedisClientConfig {
     private String sslKeystorePassword;
     private String[] sslProtocols;
     private NettyHook nettyHook = new DefaultNettyHook();
+    private CredentialsResolver credentialsResolver = new DefaultCredentialsResolver();
 
     public RedisClientConfig() {
     }
@@ -97,13 +98,15 @@ public class RedisClientConfig {
         this.sslKeystorePassword = config.sslKeystorePassword;
         this.resolverGroup = config.resolverGroup;
         this.sslHostname = config.sslHostname;
+        this.credentialsResolver = config.credentialsResolver;
     }
 
     public NettyHook getNettyHook() {
         return nettyHook;
     }
-    public void setNettyHook(NettyHook nettyHook) {
+    public RedisClientConfig setNettyHook(NettyHook nettyHook) {
         this.nettyHook = nettyHook;
+        return this;
     }
 
     public String getSslHostname() {
@@ -319,6 +322,15 @@ public class RedisClientConfig {
     }
     public RedisClientConfig setSslProtocols(String[] sslProtocols) {
         this.sslProtocols = sslProtocols;
+        return this;
+    }
+
+    public CredentialsResolver getCredentialsResolver() {
+        return credentialsResolver;
+    }
+
+    public RedisClientConfig setCredentialsResolver(CredentialsResolver credentialsResolver) {
+        this.credentialsResolver = credentialsResolver;
         return this;
     }
 }

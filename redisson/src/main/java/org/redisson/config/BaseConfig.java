@@ -16,6 +16,7 @@
 package org.redisson.config;
 
 import org.redisson.api.NameMapper;
+import org.redisson.client.DefaultCredentialsResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,6 +65,8 @@ public class BaseConfig<T extends BaseConfig<T>> {
     private String password;
 
     private String username;
+
+    private CredentialsResolver credentialsResolver = new DefaultCredentialsResolver();
 
     /**
      * Subscriptions per Redis connection limit
@@ -122,6 +125,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
         setKeepAlive(config.isKeepAlive());
         setTcpNoDelay(config.isTcpNoDelay());
         setNameMapper(config.getNameMapper());
+        setCredentialsResolver(config.getCredentialsResolver());
     }
 
     /**
@@ -473,6 +477,22 @@ public class BaseConfig<T extends BaseConfig<T>> {
      */
     public T setNameMapper(NameMapper nameMapper) {
         this.nameMapper = nameMapper;
+        return (T) this;
+    }
+
+    public CredentialsResolver getCredentialsResolver() {
+        return credentialsResolver;
+    }
+
+    /**
+     * Defines Credentials resolver which is invoked during connection/reconnection process.
+     * It makes possible to specify dynamically changing Redis credentials.
+     *
+     * @param credentialsResolver Credentials resolver object
+     * @return config
+     */
+    public T setCredentialsResolver(CredentialsResolver credentialsResolver) {
+        this.credentialsResolver = credentialsResolver;
         return (T) this;
     }
 }

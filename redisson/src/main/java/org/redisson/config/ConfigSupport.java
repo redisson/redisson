@@ -234,6 +234,7 @@ public class ConfigSupport {
         mapper.addMixIn(NatMapper.class, ClassMixIn.class);
         mapper.addMixIn(NameMapper.class, ClassMixIn.class);
         mapper.addMixIn(NettyHook.class, ClassMixIn.class);
+        mapper.addMixIn(CredentialsResolver.class, ClassMixIn.class);
 
         FilterProvider filterProvider = new SimpleFilterProvider()
                 .addFilter("classFilter", SimpleBeanPropertyFilter.filterOutAllExcept());
