@@ -187,11 +187,15 @@
             <groupId>org.jboss.marshalling</groupId>
             <artifactId>jboss-marshalling</artifactId>
             <version>2.0.11.Final</version>
+            <scope>provided</scope>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.jboss.marshalling</groupId>
             <artifactId>jboss-marshalling-river</artifactId>
             <version>2.0.11.Final</version>
+            <scope>provided</scope>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.msgpack</groupId>
@@ -213,13 +217,17 @@
             <version>2.57</version>
             <scope>provided</scope>
             <optional>true</optional>
+            <exclusions>
+              <exclusion>
+                 <groupId>org.objenesis</groupId>
+                 <artifactId>objenesis</artifactId>
+              </exclusion>
+            </exclusions> 
         </dependency>
         <dependency>
             <groupId>com.esotericsoftware</groupId>
             <artifactId>kryo</artifactId>
             <version>5.3.0</version>
-            <scope>provided</scope>
-            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

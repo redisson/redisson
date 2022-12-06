@@ -19,7 +19,7 @@ import io.netty.channel.EventLoopGroup;
 import org.redisson.client.DefaultNettyHook;
 import org.redisson.client.NettyHook;
 import org.redisson.client.codec.Codec;
-import org.redisson.codec.MarshallingCodec;
+import org.redisson.codec.Kryo5Codec;
 import org.redisson.connection.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -101,7 +101,7 @@ public class Config {
 
         if (oldConf.getCodec() == null) {
             // use it by default
-            oldConf.setCodec(new MarshallingCodec());
+            oldConf.setCodec(new Kryo5Codec());
         }
 
         setConnectionListener(oldConf.getConnectionListener());
@@ -159,10 +159,10 @@ public class Config {
     }
 
     /**
-     * Redis data codec. Default is MarshallingCodec codec
+     * Redis data codec. Default is Kryo5Codec codec
      *
      * @see org.redisson.client.codec.Codec
-     * @see org.redisson.codec.MarshallingCodec
+     * @see org.redisson.codec.Kryo5Codec
      * 
      * @param codec object
      * @return config

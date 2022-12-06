@@ -64,8 +64,7 @@ class QuarkusRedissonClientProcessor {
         nativeResources.produce(new NativeImageResourceBuildItem("META-INF/services/org.jboss.marshalling.ProviderDescriptor"));
         watchedFiles.produce(new HotDeploymentWatchedFileBuildItem("redisson.yaml"));
 
-        reflectiveItems.produce(new ReflectiveClassBuildItem(false, false, "org.redisson.codec.MarshallingCodec"));
-        reflectiveItems.produce(new ReflectiveClassBuildItem(false, false, "org.jboss.marshalling.river.RiverProviderDescriptor"));
+        reflectiveItems.produce(new ReflectiveClassBuildItem(false, false, "org.redisson.codec.Kryo5Codec"));
 
         reflectiveItems.produce(new ReflectiveClassBuildItem(true, false, "org.redisson.executor.RemoteExecutorService"));
         reflectiveItems.produce(new ReflectiveClassBuildItem(true, false, "org.redisson.executor.RemoteExecutorServiceAsync"));

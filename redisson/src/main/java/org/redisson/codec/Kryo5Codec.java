@@ -24,6 +24,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
+import org.objenesis.strategy.StdInstantiatorStrategy;
 import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
@@ -82,6 +83,7 @@ public class Kryo5Codec extends BaseCodec {
         if (classLoader != null) {
             kryo.setClassLoader(classLoader);
         }
+        kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
         kryo.setRegistrationRequired(false);
         kryo.setReferences(false);
         kryo.addDefaultSerializer(Throwable.class, new JavaSerializer());
