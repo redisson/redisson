@@ -485,7 +485,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * Defines Credentials resolver which is invoked during connection/reconnection process.
+     * Defines Credentials resolver which is invoked during connection for Redis server authentication.
      * It makes possible to specify dynamically changing Redis credentials.
      *
      * @param credentialsResolver Credentials resolver object
