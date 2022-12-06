@@ -629,8 +629,8 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     }
 
     @Override
-    public int totalPermits() {
-        return get(totalPermitsAsync());
+    public int maximumPermits() {
+        return get(maximumPermitsAsync());
     }
 
     @Override
@@ -656,7 +656,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     }
 
     @Override
-    public RFuture<Integer> totalPermitsAsync() {
+    public RFuture<Integer> maximumPermitsAsync() {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
                 "local expiredIds = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, -1); " +
                 "if #expiredIds > 0 then " +
@@ -665,11 +665,10 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                     "if tonumber(value) > 0 then " +
                         "redis.call('publish', KEYS[3], value); " +
                     "end;" +
-                    "return value; " +
                 "end; " +
                 "local available = redis.call('get', KEYS[1]); " +
-                "local claimed = redis.call('zcount', KEYS[2], 0, ARGV[1]); " +
-                "return available == false and 0 or (available + (claimed == false and 0 or claimed));",
+                "local claimed = redis.call('zcount', KEYS[2], 0, '+inf'); " +
+                "return available == false and 0 or (tonumber(available) + (claimed == false and 0 or claimed));",
                 Arrays.<Object>asList(getRawName(), timeoutName, getChannelName()), System.currentTimeMillis());
     }
 
@@ -683,9 +682,8 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                     "if tonumber(value) > 0 then " +
                         "redis.call('publish', KEYS[3], value); " +
                     "end;" +
-                    "return value; " +
                 "end; " +
-                "local claimed = redis.call('zcount', KEYS[2], 0, ARGV[1]); " +
+                "local claimed = redis.call('zcount', KEYS[2], 0, '+inf'); " +
                 "return claimed == false and 0 or claimed;",
                 Arrays.<Object>asList(getRawName(), timeoutName, getChannelName()), System.currentTimeMillis());
     }
@@ -704,24 +702,24 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     public RFuture<Boolean> trySetMaximumPermitsAsync(int permits) {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local available = redis.call('get', KEYS[1]); " +
-                "if (available == false) then "
-                    + "redis.call('set', KEYS[1], ARGV[1]); "
-                    + "redis.call('publish', KEYS[2], ARGV[1]); "
-                    + "return 1;"
-                + "end;"
-                "local claimed = redis.call('zcount', KEYS[2], 0, ARGV[1]); " +
+                "if (available == false) then " +
+                    "redis.call('set', KEYS[1], ARGV[1]); " +
+                    "redis.call('publish', KEYS[2], ARGV[1]); " +
+                    "return 1;" +
+                "end;" +
+                "local claimed = redis.call('zcount', KEYS[3], 0, '+inf'); " +
                 "local maximum = (claimed == false and 0 or claimed) + tonumber(available); " +
-                "if (maximum == ARGV[1]) then "
-                    + "return 0;"
-                + "end;"
-                "local delta = maximum - tonumber(ARGV[1]); " +
-                "if (delta == 0) then "
-                    + "return 0;"
-                + "end;"
-                "redis.call('incrby', KEYS[1], tonumber(delta)); " +
-                "redis.call('publish', KEYS[2], permits); " +
-                "return 0;",
-                Arrays.<Object>asList(getRawName(), getChannelName()), permits);
+                "if (maximum == ARGV[1]) then " +
+                    "return 1;" +
+                "end;" +
+                "local delta = tonumber(ARGV[1]) - maximum; " +
+                "if (delta == 0) then " +
+                    "return 1;" +
+                "end;" +
+                "redis.call('incrby', KEYS[1], delta); " +
+                "redis.call('publish', KEYS[2], ARGV[1]); " +
+                "return 1;",
+                Arrays.<Object>asList(getRawName(), getChannelName(), timeoutName), permits);
     }
 
     @Override
@@ -751,7 +749,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
               + "end;"
               + "redis.call('set', KEYS[1], tonumber(value) + tonumber(ARGV[1])); "
               + "if tonumber(ARGV[1]) > 0 then "
-                  + "redis.call('publish', KEYS[2], tonumber(value) + tonumbers(ARGV[1])); "
+                  + "redis.call('publish', KEYS[2], tonumber(value) + tonumber(ARGV[1])); "
               + "end;",
                 Arrays.<Object>asList(getRawName(), getChannelName()), permits);
     }
