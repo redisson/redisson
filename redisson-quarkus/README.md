@@ -66,7 +66,7 @@ Config structure is a flat Redisson YAML configuration -
 
 NOTE: Setting names in camel case should be joined with hyphens (-).
 
-Below is the configuration for Redisson in single mode.
+Below is example for Redisson in single mode.
 ```
 quarkus.redisson.single-server-config.address=redis://localhost:6379
 quarkus.redisson.single-server-config.password=null
