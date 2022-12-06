@@ -516,8 +516,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             return f;
         }
         // fix for https://github.com/redisson/redisson/issues/1548
-        if (source.getRedirect() != null 
-                && !RedisURI.compare(entry.getClient().getAddr(), source.getAddr()) 
+        if (source.getRedirect() != null
+                && !source.getAddr().equals(entry.getClient().getAddr())
                     && entry.hasSlave(source.getAddr())) {
             return entry.redirectedConnectionWriteOp(command, source.getAddr());
         }

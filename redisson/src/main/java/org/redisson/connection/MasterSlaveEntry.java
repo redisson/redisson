@@ -427,7 +427,7 @@ public class MasterSlaveEntry {
         InetSocketAddress addr = masterEntry.getClient().getAddr();
         // exclude master from slaves
         if (!config.checkSkipSlavesInit()
-                && !RedisURI.compare(addr, address)) {
+                && !address.equals(addr)) {
             if (slaveDown(addr, FreezeReason.SYSTEM)) {
                 log.info("master {} excluded from slaves", addr);
             }
@@ -437,7 +437,7 @@ public class MasterSlaveEntry {
 
     public CompletableFuture<Boolean> excludeMasterFromSlaves(RedisURI address) {
         InetSocketAddress addr = masterEntry.getClient().getAddr();
-        if (RedisURI.compare(addr, address)) {
+        if (address.equals(addr)) {
             return CompletableFuture.completedFuture(false);
         }
         CompletableFuture<Boolean> downFuture = slaveDownAsync(addr, FreezeReason.SYSTEM);

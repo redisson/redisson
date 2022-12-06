@@ -268,7 +268,7 @@ public class LoadBalancerManager {
     public ClientConnectionsEntry getEntry(RedisURI addr) {
         for (ClientConnectionsEntry entry : client2Entry.values()) {
             InetSocketAddress entryAddr = entry.getClient().getAddr();
-            if (RedisURI.compare(entryAddr, addr)) {
+            if (addr.equals(entryAddr)) {
                 return entry;
             }
         }

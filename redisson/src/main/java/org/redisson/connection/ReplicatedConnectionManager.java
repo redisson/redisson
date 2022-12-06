@@ -170,7 +170,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                     }
 
                     RedisConnection connection = connectionFuture.toCompletableFuture().join();
-                    if (!RedisURI.compare(connection.getRedisClient().getAddr(), ip)) {
+                    if (!ip.equals(connection.getRedisClient().getAddr())) {
                         disconnectNode(uri);
                         log.info("Hostname: " + uri + " has changed IP from: "
                                     + connection.getRedisClient().getAddr() + " to " + ip);

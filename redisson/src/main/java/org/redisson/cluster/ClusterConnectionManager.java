@@ -174,7 +174,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     protected MasterSlaveEntry getEntry(RedisURI addr) {
         for (MasterSlaveEntry entry : client2entry.values()) {
-            if (RedisURI.compare(entry.getClient().getAddr(), addr)) {
+            if (addr.equals(entry.getClient().getAddr())) {
                 return entry;
             }
             if (entry.hasSlave(addr)) {

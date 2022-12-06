@@ -56,12 +56,12 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
         RedisURI addr = new RedisURI(address);
         for (MasterSlaveEntry masterSlaveEntry : entries) {
             if (masterSlaveEntry.getAllEntries().isEmpty() 
-                    && RedisURI.compare(masterSlaveEntry.getClient().getAddr(), addr)) {
+                    && addr.equals(masterSlaveEntry.getClient().getAddr())) {
                 return (N) new RedisClientEntry(masterSlaveEntry.getClient(), commandExecutor, NodeType.MASTER);
             }
 
             for (ClientConnectionsEntry entry : masterSlaveEntry.getAllEntries()) {
-                if (RedisURI.compare(entry.getClient().getAddr(), addr) 
+                if (addr.equals(entry.getClient().getAddr())
                         && entry.getFreezeReason() != FreezeReason.MANAGER) {
                     return (N) new RedisClientEntry(entry.getClient(), commandExecutor, entry.getNodeType());
                 }
