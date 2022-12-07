@@ -689,37 +689,37 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     }
 
     @Override
-    public boolean trySetPermits(int permits) {
-        return get(trySetPermitsAsync(permits));
+    public boolean trySetPermits(int maxPermits) {
+        return get(trySetPermitsAsync(maxPermits));
     }
 
     @Override
-    public boolean trySetMaximumPermits(int permits) {
-        return get(trySetMaximumPermitsAsync(permits));
+    public int setMaximumPermits(int maxPermits) {
+        return get(setMaximumPermitsAsync(maxPermits));
     }
 
     @Override
-    public RFuture<Boolean> trySetMaximumPermitsAsync(int permits) {
-        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+    public RFuture<Integer> setMaximumPermitsAsync(int maxPermits) {
+        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
                 "local available = redis.call('get', KEYS[1]); " +
                 "if (available == false) then " +
                     "redis.call('set', KEYS[1], ARGV[1]); " +
                     "redis.call('publish', KEYS[2], ARGV[1]); " +
-                    "return 1;" +
+                    "return ARGV[1];" +
                 "end;" +
                 "local claimed = redis.call('zcount', KEYS[3], 0, '+inf'); " +
                 "local maximum = (claimed == false and 0 or claimed) + tonumber(available); " +
                 "if (maximum == ARGV[1]) then " +
-                    "return 1;" +
+                    "return 0;" +
                 "end;" +
                 "local delta = tonumber(ARGV[1]) - maximum; " +
                 "if (delta == 0) then " +
-                    "return 1;" +
+                    "return 0;" +
                 "end;" +
                 "redis.call('incrby', KEYS[1], delta); " +
                 "redis.call('publish', KEYS[2], ARGV[1]); " +
-                "return 1;",
-                Arrays.<Object>asList(getRawName(), getChannelName(), timeoutName), permits);
+                "return delta;",
+                Arrays.<Object>asList(getRawName(), getChannelName(), timeoutName), maxPermits);
     }
 
     @Override
