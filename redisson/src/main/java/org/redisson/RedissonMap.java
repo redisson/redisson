@@ -1723,7 +1723,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                             return;
                         }
                     } catch (Exception e) {
-                        log.error("Unable to load value by key " + key + " for map " + getRawName(), e);
+                        log.error("Unable to load value by key {} for map {}", key, getRawName(), e);
                         lock.unlockAsync(threadId)
                                 .whenComplete((r, ex) -> {
                                     if (ex != null) {
@@ -1765,7 +1765,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                 return lock.unlockAsync(threadId);
             }
             if (ex != null) {
-                log.error("Unable to load value by key " + key + " for map " + getRawName(), ex);
+                log.error("Unable to load value by key {} for map {}", key, getRawName(), ex);
                 return lock.unlockAsync(threadId);
             }
 
@@ -1776,7 +1776,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                 return (CompletionStage<V>) putOperationAsync(key, (V) value).handle((r, ex) -> {
                     RFuture<Void> f = lock.unlockAsync(threadId);
                     if (ex != null) {
-                        log.error("Unable to store value by key " + key + " for map " + getRawName(), ex);
+                        log.error("Unable to store value by key {} for map {}", key, getRawName(), ex);
                         return f;
                     }
                     return f.thenApply(res -> value);

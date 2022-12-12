@@ -44,7 +44,7 @@ public class ErrorsLoggingHandler extends ChannelDuplexHandler {
             }
         }
 
-        log.error("Exception occured. Channel: " + ctx.channel(), cause);
+        log.error("Exception occured. Channel: {}", ctx.channel(), cause);
     }
 
 }

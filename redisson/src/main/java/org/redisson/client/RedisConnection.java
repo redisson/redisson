@@ -69,7 +69,7 @@ public class RedisConnection implements RedisCommands {
         updateChannel(channel);
         lastUsageTime = System.nanoTime();
 
-        LOG.debug("Connection created " + redisClient);
+        LOG.debug("Connection created {}", redisClient);
     }
     
     protected RedisConnection(RedisClient redisClient) {

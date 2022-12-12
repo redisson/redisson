@@ -38,7 +38,7 @@ public class Version {
                     }
                     String name = attrs.getValue("Bundle-Name");
                     if ("Redisson".equals(name)) {
-                        log.info("Redisson " + attrs.getValue("Bundle-Version"));
+                        log.info("Redisson {}", attrs.getValue("Bundle-Version"));
                         break;
                     }
             }

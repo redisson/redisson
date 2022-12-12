@@ -94,7 +94,7 @@ public final class RedissonNode {
             try {
                 config = RedissonNodeFileConfig.fromYAML(new File(configPath));
             } catch (IOException e1) {
-                log.error("Can't parse json config " + configPath, e);
+                log.error("Can't parse json config {}", configPath, e);
                 throw new IllegalArgumentException("Can't parse yaml config " + configPath, e1);
             }
         }

@@ -335,7 +335,7 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
                 System.currentTimeMillis() + commandExecutor.getConnectionManager().getCfg().getReliableTopicWatchdogTimeout(), subscriberId.get());
             future.whenComplete((res, e) -> {
                 if (e != null) {
-                    log.error("Can't update reliable topic " + getRawName() + " expiration time", e);
+                    log.error("Can't update reliable topic {} expiration time", getRawName(), e);
                     return;
                 }
 

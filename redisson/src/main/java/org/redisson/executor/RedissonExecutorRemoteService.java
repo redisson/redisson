@@ -118,7 +118,7 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
             }
             RemoteServiceResponse response = new RemoteServiceResponse(request.getId(), e.getCause());
             responsePromise.complete(response);
-            log.error("Can't execute: " + request, e);
+            log.error("Can't execute: {}", request, e);
         }
 
         if (cancelRequestFuture != null) {
