@@ -290,6 +290,7 @@ public class RedissonTopicTest {
         
         await().atMost(Duration.ofSeconds(1)).untilTrue(stringMessageReceived);
         await().atMost(Duration.ofSeconds(1)).untilTrue(longMessageReceived);
+        redisson.shutdown();
     }
     
     @Test
@@ -366,6 +367,7 @@ public class RedissonTopicTest {
         topic1.removeListener(listenerId2);
 
         assertThat(l.await(5, TimeUnit.SECONDS)).isTrue();
+        redisson.shutdown();
     }
 
     @Test
