@@ -7,6 +7,7 @@ import org.redisson.api.*;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -73,11 +74,11 @@ public class RedissonFunctionTest extends BaseTest {
 	f.flush();
 	f.load("lib", "redis.register_function('myfun', function(keys, args) return keys[1] end)" +
 					"redis.register_function('myfun2', function(keys, args) return args[1] end");
-	String s = f.call(FunctionMode.READ, "myfun", FunctionResult.VALUE, List.of("testKey"), "arg1");
+	String s = f.call(FunctionMode.READ, "myfun", FunctionResult.VALUE, Arrays.asList("testKey"), "arg1");
 	assertThat(s).isEqualTo("testKey");
 
 	RFunction f2 = redisson.getFunction(StringCodec.INSTANCE);
-	String s2 = f2.call(FunctionMode.READ, "myfun2", FunctionResult.STRING, List.of("testKey1", "testKey2"), "arg1");
+	String s2 = f2.call(FunctionMode.READ, "myfun2", FunctionResult.STRING, Arrays.asList("testKey1", "testKey2"), "arg1");
 	assertThat(s2).isEqualTo("arg1");
     }
 
