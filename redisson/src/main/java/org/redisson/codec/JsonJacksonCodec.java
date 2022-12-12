@@ -130,7 +130,7 @@ public class JsonJacksonCodec extends BaseCodec {
     }
 
     protected static ObjectMapper createObjectMapper(ClassLoader classLoader, ObjectMapper om) {
-        TypeFactory tf = TypeFactory.defaultInstance().withClassLoader(classLoader);
+        TypeFactory tf = om.getTypeFactory().withClassLoader(classLoader);
         om.setTypeFactory(tf);
         return om;
     }
