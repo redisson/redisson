@@ -74,13 +74,7 @@ public class PublishSubscribeService {
 
     public static class PubSubEntry {
 
-        Set<PubSubKey> keys = Collections.newSetFromMap(new ConcurrentHashMap<>());
-
         Queue<PubSubConnectionEntry> entries = new ConcurrentLinkedQueue<>();
-
-        public Set<PubSubKey> getKeys() {
-            return keys;
-        }
 
         public Queue<PubSubConnectionEntry> getEntries() {
             return entries;
@@ -581,27 +575,30 @@ public class PublishSubscribeService {
     }
 
     public void reattachPubSub(RedisPubSubConnection redisPubSubConnection) {
-        for (Map.Entry<MasterSlaveEntry, PubSubEntry> e : entry2PubSubConnection.entrySet()) {
-            for (PubSubConnectionEntry entry : e.getValue().getEntries()) {
-                if (!entry.getConnection().equals(redisPubSubConnection)) {
-                    continue;
-                }
-
-                freePubSubLock.acquire().thenAccept(r -> {
-                    e.getValue().getEntries().remove(entry);
-                    freePubSubLock.release();
-                });
-
-                reattachPubSubListeners(redisPubSubConnection.getChannels().keySet(), e.getKey(), entry, PubSubType.UNSUBSCRIBE);
-                reattachPubSubListeners(redisPubSubConnection.getShardedChannels().keySet(), e.getKey(), entry, PubSubType.SUNSUBSCRIBE);
-                reattachPubSubListeners(redisPubSubConnection.getPatternChannels().keySet(), e.getKey(), entry, PubSubType.PUNSUBSCRIBE);
-                return;
-            }
+        MasterSlaveEntry en = connectionManager.getEntry(redisPubSubConnection.getRedisClient());
+        if (en == null) {
+            return;
         }
+
+        freePubSubLock.acquire().thenAccept(r -> {
+            try {
+                PubSubEntry ee = entry2PubSubConnection.get(en);
+                if (ee != null) {
+                    ee.getEntries().removeIf(e -> e.getConnection().equals(redisPubSubConnection));
+                }
+            } finally {
+                freePubSubLock.release();
+            }
+        });
+
+        reattachPubSubListeners(redisPubSubConnection.getChannels().keySet(), en, PubSubType.UNSUBSCRIBE);
+        reattachPubSubListeners(redisPubSubConnection.getShardedChannels().keySet(), en, PubSubType.SUNSUBSCRIBE);
+        reattachPubSubListeners(redisPubSubConnection.getPatternChannels().keySet(), en, PubSubType.PUNSUBSCRIBE);
     }
 
-    private void reattachPubSubListeners(Set<ChannelName> channels, MasterSlaveEntry en, PubSubConnectionEntry entry, PubSubType topicType) {
+    private void reattachPubSubListeners(Set<ChannelName> channels, MasterSlaveEntry en, PubSubType topicType) {
         for (ChannelName channelName : channels) {
+            PubSubConnectionEntry entry = name2PubSubConnection.get(new PubSubKey(channelName, en));
             Collection<RedisPubSubListener<?>> listeners = entry.getListeners(channelName);
             CompletableFuture<Codec> subscribeCodecFuture = unsubscribe(channelName, en, topicType);
             if (listeners.isEmpty()) {

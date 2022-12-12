@@ -244,7 +244,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     private void shutdownEntry(MasterSlaveEntry entry) {
         if (entry != null && entry.decReference() == 0) {
-            client2entry.remove(entry.getClient());
             entry.getAllEntries().forEach(e -> {
                 RedisURI uri = new RedisURI(e.getClient().getConfig().getAddress().getScheme(),
                         e.getClient().getAddr().getAddress().getHostAddress(),
@@ -259,6 +258,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                                         entry.getClient().getAddr().getAddress().getHostAddress(),
                                         entry.getClient().getAddr().getPort());
             disconnectNode(uri);
+
+            client2entry.remove(entry.getClient());
 
             String slaves = entry.getAllEntries().stream()
                     .filter(e -> !e.getClient().getAddr().equals(entry.getClient().getAddr()))
