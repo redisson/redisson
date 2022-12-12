@@ -187,7 +187,7 @@ public class RedisExecutor<V, R> {
         TimerTask task = timeout -> {
             if (connectionFuture.cancel(false)) {
                 exception = new RedisTimeoutException("Unable to acquire connection! " + this.connectionFuture +
-                        "Increase connection pool size. "
+                        "Increase connection pool size or timeout. "
                         + "Node source: " + source
                         + ", command: " + LogHelper.toString(command, params)
                         + " after " + attempt + " retry attempts");

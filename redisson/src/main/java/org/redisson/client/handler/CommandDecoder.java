@@ -98,7 +98,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 }
             }
         } else {
-            if (!holder.getChannelPromise().isSuccess()) {
+            if (holder.getChannelPromise().isDone() && !holder.getChannelPromise().isSuccess()) {
                 sendNext(ctx.channel());
                 // throw REPLAY error
                 in.indexOf(Integer.MAX_VALUE/2, Integer.MAX_VALUE, (byte) 0);
