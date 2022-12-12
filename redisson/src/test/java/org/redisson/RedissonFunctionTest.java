@@ -68,6 +68,20 @@ public class RedissonFunctionTest extends BaseTest {
     }
 
     @Test
+    public void testKeysLoadAsExpected() {
+	RFunction f = redisson.getFunction();
+	f.flush();
+	f.load("lib", "redis.register_function('myfun', function(keys, args) return keys[1] end)" +
+					"redis.register_function('myfun2', function(keys, args) return args[1] end");
+	String s = f.call(FunctionMode.READ, "myfun", FunctionResult.VALUE, List.of("testKey"), "arg1");
+	assertThat(s).isEqualTo("testKey");
+
+	RFunction f2 = redisson.getFunction(StringCodec.INSTANCE);
+	String s2 = f2.call(FunctionMode.READ, "myfun2", FunctionResult.STRING, List.of("testKey1", "testKey2"), "arg1");
+	assertThat(s2).isEqualTo("arg1");
+    }
+
+    @Test
     public void testList() {
         RFunction f = redisson.getFunction();
         f.flush();

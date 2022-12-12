@@ -199,7 +199,7 @@ public class RedissonFuction implements RFunction {
         args.add(name);
         args.add(keys.size());
         if (keys.size() > 0) {
-            args.add(keys);
+            args.addAll(keys);
         }
         args.addAll(encode(Arrays.asList(values), codec));
         if (mode == FunctionMode.READ) {
