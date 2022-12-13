@@ -205,7 +205,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 decode(in, cmd, null, channel, false, null);
                 sendNext(channel, data);
             } catch (Exception e) {
-                log.error("Unable to decode data. channel: " + channel + ", reply: " + LogHelper.toString(in) + ", command: " + LogHelper.toString(data), e);
+                log.error("Unable to decode data. channel: {}, reply: {}, command: {}", channel, LogHelper.toString(in), LogHelper.toString(data), e);
                 in.readerIndex(endIndex);
                 sendNext(channel);
                 cmd.tryFailure(e);
@@ -228,7 +228,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 }
                 sendNext(channel);
             } catch (Exception e) {
-                log.error("Unable to decode data. channel: " + channel + ", reply: " + LogHelper.toString(in), e);
+                log.error("Unable to decode data. channel: {}, reply: {}", channel, LogHelper.toString(in), e);
                 sendNext(channel);
                 throw e;
             }

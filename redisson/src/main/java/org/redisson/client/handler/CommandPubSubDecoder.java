@@ -87,7 +87,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
                 }
                 sendNext(channel);
             } catch (Exception e) {
-                log.error("Unable to decode data. channel: " + channel + ", reply: " + LogHelper.toString(in), e);
+                log.error("Unable to decode data. channel: {}, reply: {}", channel, LogHelper.toString(in), e);
                 sendNext(channel);
                 throw e;
             }
@@ -99,7 +99,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
                 }
                 sendNext(channel, data);
             } catch (Exception e) {
-                log.error("Unable to decode data. channel: " + channel + ", reply: " + LogHelper.toString(in), e);
+                log.error("Unable to decode data. channel: {}, reply: {}", channel, LogHelper.toString(in), e);
                 cmd.tryFailure(e);
                 sendNext(channel);
                 throw e;

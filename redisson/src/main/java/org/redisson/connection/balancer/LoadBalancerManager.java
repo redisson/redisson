@@ -160,7 +160,7 @@ public class LoadBalancerManager {
                     CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
                     future.whenComplete((r, e) -> {
                         if (e != null) {
-                            log.error("Unable to unfreeze entry: " + entry, e);
+                            log.error("Unable to unfreeze entry: {}", entry, e);
                             entry.setInitialized(false);
                             connectionManager.newTimeout(t -> {
                                 unfreeze(entry, freezeReason);
@@ -197,7 +197,7 @@ public class LoadBalancerManager {
                     CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
                     return future.whenComplete((r, e) -> {
                         if (e != null) {
-                            log.error("Unable to unfreeze entry: " + entry, e);
+                            log.error("Unable to unfreeze entry: {}", entry, e);
                             entry.setInitialized(false);
                             return;
                         }

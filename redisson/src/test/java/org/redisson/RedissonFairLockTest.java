@@ -76,21 +76,21 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         for (int i = 0; i < 50; i++) {
             final int finalI = i;
             executor.submit(() -> {
-                log.info("running " + finalI + " in thread " + Thread.currentThread().getId());
+                log.info("running {} in thread {}", finalI, Thread.currentThread().getId());
                 try {
                     if (lock.tryLock(500, leaseTimeSeconds * 1000, TimeUnit.MILLISECONDS)) {
-                        log.info("Lock taken by thread " + Thread.currentThread().getId());
+                        log.info("Lock taken by thread {}", Thread.currentThread().getId());
                         Thread.sleep(10000);
                         try {
                             //this could fail before use sleep for the same value as the lock expiry, that's fine
                             //for the purpose of this test
                             lock.unlock();
-                            log.info("Lock released by thread " + Thread.currentThread().getId());
+                            log.info("Lock released by thread {}", Thread.currentThread().getId());
                         } catch (Exception ignored) {
                         }
                     }
                 } catch (InterruptedException ex) {
-                    log.warn("Interrupted " + Thread.currentThread().getId());
+                    log.warn("Interrupted {}", Thread.currentThread().getId());
                 } catch (Exception ex) {
                     log.error(ex.getMessage(), ex);
                 }
@@ -104,17 +104,17 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         //we now launch one more thread and kill it before it manages to fail and clean up
         //that thread will end up with a timeout that will prevent any others from taking the lock for a long time
         executor.submit(() -> {
-            log.info("Final thread trying to take the lock with thread id: " + Thread.currentThread().getId());
+            log.info("Final thread trying to take the lock with thread id: {}", Thread.currentThread().getId());
             try {
                 lastThreadTryingToLock.set(true);
                 if (lock.tryLock(30000, 30000, TimeUnit.MILLISECONDS)) {
-                    log.info("Lock taken by final thread " + Thread.currentThread().getId());
+                    log.info("Lock taken by final thread {}", Thread.currentThread().getId());
                     Thread.sleep(1000);
                     lock.unlock();
-                    log.info("Lock released by final thread " + Thread.currentThread().getId());
+                    log.info("Lock released by final thread {}", Thread.currentThread().getId());
                 }
             } catch (InterruptedException ex) {
-                log.warn("Interrupted " + Thread.currentThread().getId());
+                log.warn("Interrupted {}", Thread.currentThread().getId());
             } catch (Exception ex) {
                 log.error(ex.getMessage(), ex);
             }
@@ -148,7 +148,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         int i = 0;
         for (Long timeout : queue) {
             long epiry = ((timeout - new Date().getTime()) / 1000);
-            log.info("Item " + (i++) + " expires in " + epiry + " seconds");
+            log.info("Item {} expires in {} seconds", i++, epiry);
             //the Redisson library uses this 60000*5ms delay in the code
             if (epiry > leaseTimeSeconds + 60*5) {
                 Assertions.fail("It would take more than " + leaseTimeSeconds + "s to get the lock!");
@@ -168,21 +168,21 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         for (int i = 0; i < 3; i++) {
             final int finalI = i;
             executor.submit(() -> {
-                log.info("running " + finalI + " in thread " + Thread.currentThread().getId());
+                log.info("running {} in thread {}", finalI, Thread.currentThread().getId());
                 try {
                     if (lock.tryLock(3000, leaseTimeSeconds * 1000, TimeUnit.MILLISECONDS)) {
-                        log.info("Lock taken by thread " + Thread.currentThread().getId());
+                        log.info("Lock taken by thread {}", Thread.currentThread().getId());
                         Thread.sleep(100);
                         try {
                             //this could fail before use sleep for the same value as the lock expiry, that's fine
                             //for the purpose of this test
                             lock.unlock();
-                            log.info("Lock released by thread " + Thread.currentThread().getId());
+                            log.info("Lock released by thread {}", Thread.currentThread().getId());
                         } catch (Exception ignored) {
                         }
                     }
                 } catch (InterruptedException ex) {
-                    log.warn("Interrupted " + Thread.currentThread().getId());
+                    log.warn("Interrupted {}", Thread.currentThread().getId());
                 } catch (Exception ex) {
                     log.error(ex.getMessage(), ex);
                 }
@@ -196,14 +196,14 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         //we now launch one more thread and kill it before it manages to fail and clean up
         //that thread will end up with a timeout that will prevent any others from taking the lock for a long time
         executor.submit(() -> {
-            log.info("Final thread trying to take the lock with thread id: " + Thread.currentThread().getId());
+            log.info("Final thread trying to take the lock with thread id: {}", Thread.currentThread().getId());
             try {
                 lastThreadTryingToLock.set(true);
                 if (lock.tryLock(30000, 30000, TimeUnit.MILLISECONDS)) {
-                    log.info("Lock taken by final thread " + Thread.currentThread().getId());
+                    log.info("Lock taken by final thread {}", Thread.currentThread().getId());
                     Thread.sleep(1000);
                     lock.unlock();
-                    log.info("Lock released by final thread " + Thread.currentThread().getId());
+                    log.info("Lock released by final thread {}", Thread.currentThread().getId());
                 }
             } catch (InterruptedException ex) {
                 log.warn("Interrupted");
@@ -240,7 +240,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         int i = 0;
         for (Long timeout : queue) {
             long epiry = ((timeout - new Date().getTime()) / 1000);
-            log.info("Item " + (i++) + " expires in " + epiry + " seconds");
+            log.info("Item {} expires in {} seconds", i++, epiry);
             //the Redisson library uses this 5000ms delay in the code
             if (epiry > leaseTimeSeconds + 60*5) {
                 Assertions.fail("It would take more than " + leaseTimeSeconds + "s to get the lock!");
@@ -499,21 +499,21 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         for (int i = 0; i < 10; i++) {
             final int finalI = i;
             executor.submit(() -> {
-                log.info("running " + finalI + " in thread " + Thread.currentThread().getId());
+                log.info("running {} in thread {}", finalI, Thread.currentThread().getId());
                 try {
                     if (lock.tryLock(3000, leaseTimeSeconds * 1000, TimeUnit.MILLISECONDS)) {
-                        log.info("Lock taken by thread " + Thread.currentThread().getId());
+                        log.info("Lock taken by thread {}", Thread.currentThread().getId());
                         Thread.sleep(100);
                         try {
                             //this could fail before use sleep for the same value as the lock expiry, that's fine
                             //for the purpose of this test
                             lock.unlock();
-                            log.info("Lock released by thread " + Thread.currentThread().getId());
+                            log.info("Lock released by thread {}", Thread.currentThread().getId());
                         } catch (Exception ignored) {
                         }
                     }
                 } catch (InterruptedException ex) {
-                    log.warn("Interrupted " + Thread.currentThread().getId());
+                    log.warn("Interrupted {}", Thread.currentThread().getId());
                 } catch (Exception ex) {
                     log.error(ex.getMessage(), ex);
                 }
@@ -527,17 +527,17 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         //we now launch one more thread and kill it before it manages to fail and clean up
         //that thread will end up with a timeout that will prevent any others from taking the lock for a long time
         executor.submit(() -> {
-            log.info("Final thread trying to take the lock with thread id: " + Thread.currentThread().getId());
+            log.info("Final thread trying to take the lock with thread id: {}", Thread.currentThread().getId());
             try {
                 lastThreadTryingToLock.set(true);
                 if (lock.tryLock(30000, 30000, TimeUnit.MILLISECONDS)) {
-                    log.info("Lock taken by final thread " + Thread.currentThread().getId());
+                    log.info("Lock taken by final thread {}", Thread.currentThread().getId());
                     Thread.sleep(1000);
                     lock.unlock();
-                    log.info("Lock released by final thread " + Thread.currentThread().getId());
+                    log.info("Lock released by final thread {}", Thread.currentThread().getId());
                 }
             } catch (InterruptedException ex) {
-                log.warn("Interrupted " + Thread.currentThread().getId());
+                log.warn("Interrupted {}", Thread.currentThread().getId());
             } catch (Exception ex) {
                 log.error(ex.getMessage(), ex);
             }
@@ -571,7 +571,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         for (int i = 0; i < queue.size(); i++) {
             long timeout = queue.get(i);
             long epiry = ((timeout - new Date().getTime()) / 1000);
-            log.info("Item " + i + " expires in " + epiry + " seconds");
+            log.info("Item {} expires in {} seconds", i, epiry);
             // the Redisson library uses this 60000*5ms delay in the code
             Assertions.assertFalse(epiry > leaseTimeSeconds + 60*5 * (i + 1),
                                     "It would take more than " + (leaseTimeSeconds + 60*5 * (i + 1)) + "s to get the lock!");

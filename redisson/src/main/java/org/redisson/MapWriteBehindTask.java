@@ -93,7 +93,7 @@ public class MapWriteBehindTask {
                 deletedKeys.clear();
             }
         } catch (Exception exception) {
-            log.error("Unable to delete keys: " + deletedKeys, exception);
+            log.error("Unable to delete keys: {}", deletedKeys, exception);
         }
         try {
             if (!addedMap.isEmpty()) {
@@ -105,7 +105,7 @@ public class MapWriteBehindTask {
                 addedMap.clear();
             }
         } catch (Exception exception) {
-            log.error("Unable to add keys: " + addedMap, exception);
+            log.error("Unable to add keys: {}", addedMap, exception);
         }
     }
 
@@ -124,7 +124,7 @@ public class MapWriteBehindTask {
 
                     }
                 } catch (Exception exception) {
-                    log.error("Unable to delete keys: " + deletedKeys, exception);
+                    log.error("Unable to delete keys: {}", deletedKeys, exception);
                 }
             }
         } else {
@@ -140,7 +140,7 @@ public class MapWriteBehindTask {
                         addedMap.clear();
                     }
                 } catch (Exception exception) {
-                    log.error("Unable to add keys: " + addedMap, exception);
+                    log.error("Unable to add keys: {}", addedMap, exception);
                 }
             }
         }

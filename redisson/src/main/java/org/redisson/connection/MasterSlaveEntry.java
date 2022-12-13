@@ -525,7 +525,7 @@ public class MasterSlaveEntry {
                     masterEntry.shutdownAsync();
                     masterEntry = oldMaster;
                 }
-                log.error("Unable to change master from: " + oldMaster.getClient().getAddr() + " to: " + address, e);
+                log.error("Unable to change master from: {} to: {}", oldMaster.getClient().getAddr(), address, e);
                 return;
             }
             

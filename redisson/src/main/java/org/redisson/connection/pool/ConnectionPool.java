@@ -341,8 +341,8 @@ abstract class ConnectionPool<T extends RedisConnection> {
     private void checkForReconnect(ClientConnectionsEntry entry, Throwable cause) {
         masterSlaveEntry.slaveDownAsync(entry, FreezeReason.RECONNECT).thenAccept(r -> {
             if (r) {
-                log.error("slave " + entry.getClient().getAddr() + " has been disconnected after "
-                        + config.getFailedSlaveCheckInterval() + " ms interval since moment of the first failed connection", cause);
+                log.error("slave {} has been disconnected after {} ms interval since moment of the first failed connection",
+                    entry.getClient().getAddr(), config.getFailedSlaveCheckInterval(), cause);
                 scheduleCheck(entry);
             }
         });

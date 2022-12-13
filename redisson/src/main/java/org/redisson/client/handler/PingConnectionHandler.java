@@ -89,7 +89,7 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
                             || cause instanceof RedisClusterDownException
                                 || cause instanceof RedisBusyException)) {
                     if (!future.isCancelled()) {
-                        log.error("Unable to send PING command over channel: " + ctx.channel(), cause);
+                        log.error("Unable to send PING command over channel: {}", ctx.channel(), cause);
                     }
 
                     log.debug("channel: {} closed due to PING response timeout set in {} ms", ctx.channel(), config.getPingConnectionInterval());

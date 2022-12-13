@@ -99,7 +99,7 @@ public class DNSMonitor {
             Future<InetSocketAddress> resolveFuture = resolver.resolve(InetSocketAddress.createUnresolved(entry.getKey().getHost(), entry.getKey().getPort()));
             resolveFuture.addListener((FutureListener<InetSocketAddress>) future -> {
                 if (!future.isSuccess()) {
-                    log.error("Unable to resolve " + entry.getKey().getHost(), future.cause());
+                    log.error("Unable to resolve {}", entry.getKey().getHost(), future.cause());
                     promise.complete(null);
                     return;
                 }
@@ -146,7 +146,7 @@ public class DNSMonitor {
             Future<InetSocketAddress> resolveFuture = resolver.resolve(InetSocketAddress.createUnresolved(entry.getKey().getHost(), entry.getKey().getPort()));
             resolveFuture.addListener((FutureListener<InetSocketAddress>) future -> {
                 if (!future.isSuccess()) {
-                    log.error("Unable to resolve " + entry.getKey().getHost(), future.cause());
+                    log.error("Unable to resolve {}", entry.getKey().getHost(), future.cause());
                     promise.complete(null);
                     return;
                 }
@@ -182,7 +182,7 @@ public class DNSMonitor {
                             CompletableFuture<Void> addFuture = masterSlaveEntry.addSlave(newSlaveAddr, entry.getKey());
                             addFuture.whenComplete((res, e) -> {
                                 if (e != null) {
-                                    log.error("Can't add slave: " + newSlaveAddr, e);
+                                    log.error("Can't add slave: {}", newSlaveAddr, e);
                                     promise.complete(null);
                                     return;
                                 }
