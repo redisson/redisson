@@ -280,7 +280,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                         if (exc instanceof RedissonShutdownException) {
                             return;
                         }
-                        log.error("Can't process the remote service request with id " + requestId, exc);
+                        log.error("Can't process the remote service request with id {}", requestId, exc);
                             
                         // re-subscribe after a failed takeAsync
                         resubscribe(remoteInterface, requestQueue, executor, bean);
@@ -330,7 +330,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                                         if (ex instanceof RedissonShutdownException) {
                                             return;
                                         }
-                                        log.error("Can't send ack for request: " + request, ex);
+                                        log.error("Can't send ack for request: {}", request, ex);
 
                                         // re-subscribe after a failed send (ack)
                                         resubscribe(remoteInterface, requestQueue, executor, bean);
@@ -350,7 +350,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                                             if (exce instanceof RedissonShutdownException) {
                                                 return;
                                             }
-                                            log.error("Can't send ack for request: " + request, exce);
+                                            log.error("Can't send ack for request: {}", request, exce);
 
                                             // re-subscribe after a failed send (ack)
                                             resubscribe(remoteInterface, requestQueue, executor, bean);
@@ -413,13 +413,13 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                             if (exc instanceof RedissonShutdownException) {
                                 return;
                             }
-                            log.error("Can't send response: " + response + " for request: " + request, exc);
+                            log.error("Can't send response: {} for request: {}", response, request, exc);
                         }
 
                         resubscribe(remoteInterface, requestQueue, executor, method.getBean());
                     });
                 } catch (Exception ex) {
-                    log.error("Can't send response: " + result + " for request: " + request, ex);
+                    log.error("Can't send response: {} for request: {}", result, request, ex);
                 }
             } else {
                 resubscribe(remoteInterface, requestQueue, executor, method.getBean());
@@ -465,7 +465,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
         } catch (Exception e) {
             RemoteServiceResponse response = new RemoteServiceResponse(request.getId(), e.getCause());
             responsePromise.complete(response);
-            log.error("Can't execute: " + request, e);
+            log.error("Can't execute: {}", request, e);
         }
 
         if (cancelRequestFuture != null) {

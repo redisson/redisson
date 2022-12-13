@@ -192,7 +192,7 @@ public abstract class BaseRemoteProxy {
                     return;
                 }
 
-                log.error("Can't get response from " + responseQueueName, e);
+                log.error("Can't get response from {}", responseQueueName, e);
                 return;
             }
 

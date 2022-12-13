@@ -312,7 +312,7 @@ public class CommandBatchService extends CommandAsyncService {
                                 entryResult = objectBuilder.tryHandleReference(entryResult, referenceType);
                             }
                         } catch (ReflectiveOperationException exc) {
-                            log.error("Unable to handle reference from " + entryResult, exc);
+                            log.error("Unable to handle reference from {}", entryResult, exc);
                         }
                         responses.add(entryResult);
                     }

@@ -572,7 +572,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     public void releaseWrite(NodeSource source, RedisConnection connection) {
         MasterSlaveEntry entry = getEntry(source);
         if (entry == null) {
-            log.error("Node: " + source + " can't be found");
+            log.error("Node: {} can't be found", source);
         } else {
             entry.releaseWrite(connection);
         }
@@ -582,7 +582,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     public void releaseRead(NodeSource source, RedisConnection connection) {
         MasterSlaveEntry entry = getEntry(source);
         if (entry == null) {
-            log.error("Node: " + source + " can't be found");
+            log.error("Node: {} can't be found", source);
         } else {
             entry.releaseRead(connection);
         }
@@ -720,7 +720,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         Future<InetSocketAddress> future = resolver.resolve(addr);
         future.addListener((FutureListener<InetSocketAddress>) f -> {
             if (!f.isSuccess()) {
-                log.error("Unable to resolve " + address, f.cause());
+                log.error("Unable to resolve {}", address, f.cause());
                 result.completeExceptionally(f.cause());
                 return;
             }
