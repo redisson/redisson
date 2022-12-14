@@ -254,7 +254,7 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(2);
         
         redisson.getKeys().delete("counter");
-        assertThat(redisson.getKeys().count()).isEqualTo(2);
+        assertThat(redisson.getKeys().count()).isEqualTo(1);
     }
 
     @Test
