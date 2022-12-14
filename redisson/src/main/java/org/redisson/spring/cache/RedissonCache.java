@@ -46,6 +46,8 @@ public class RedissonCache implements Cache {
     private final AtomicLong puts = new AtomicLong();
     
     private final AtomicLong misses = new AtomicLong();
+
+    private final AtomicLong evictions = new AtomicLong();
     
     public RedissonCache(RMapCache<Object, Object> mapCache, CacheConfig config, boolean allowNullValues) {
         this(mapCache, allowNullValues);
@@ -144,7 +146,8 @@ public class RedissonCache implements Cache {
 
     @Override
     public void evict(Object key) {
-        map.fastRemove(key);
+        long delta = map.fastRemove(key);
+        addCacheEvictions(delta);
     }
 
     @Override
@@ -238,6 +241,10 @@ public class RedissonCache implements Cache {
     long getCachePuts() {
         return puts.get();
     }
+
+    long getCacheEvictions() {
+        return evictions.get();
+    }
     
     private void addCachePut() {
         puts.incrementAndGet();
@@ -251,4 +258,7 @@ public class RedissonCache implements Cache {
         misses.incrementAndGet();
     }
 
+    private void addCacheEvictions(long delta) {
+        evictions.addAndGet(delta);
+    }
 }

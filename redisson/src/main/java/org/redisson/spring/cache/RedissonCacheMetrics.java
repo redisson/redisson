@@ -63,7 +63,7 @@ public class RedissonCacheMetrics extends CacheMeterBinder {
 
     @Override
     protected Long evictionCount() {
-        return null;
+        return cache.getCacheEvictions();
     }
 
     @Override
