@@ -318,7 +318,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
         RExecutorFuture<?> future = executor.submit(new TestClass());
         future.get();
         String id = redisson.<String>getBucket("id").get();
-        assertThat(id).hasSize(34);
+        assertThat(future.getTaskId()).isEqualTo(id);
     }
 
     @Test
