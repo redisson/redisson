@@ -62,11 +62,11 @@ public class ScheduledTasksService extends TasksService {
                     + "local retryInterval = redis.call('get', KEYS[6]); "
                     + "if retryInterval ~= false then "
                         + "local time = tonumber(ARGV[1]) + tonumber(retryInterval);"
-                        + "redis.call('zadd', KEYS[3], time, 'ff' .. ARGV[2]);"
+                        + "redis.call('zadd', KEYS[3], time, 'ff:' .. ARGV[2]);"
                     + "elseif tonumber(ARGV[4]) > 0 then "
                         + "redis.call('set', KEYS[6], ARGV[4]);"
                         + "local time = tonumber(ARGV[1]) + tonumber(ARGV[4]);"
-                        + "redis.call('zadd', KEYS[3], time, 'ff' .. ARGV[2]);"
+                        + "redis.call('zadd', KEYS[3], time, 'ff:' .. ARGV[2]);"
                     + "end; "
 
                     + "if tonumber(ARGV[5]) > 0 then "
@@ -102,7 +102,7 @@ public class ScheduledTasksService extends TasksService {
                   + "local task = redis.call('hget', KEYS[6], ARGV[1]); "
                   + "redis.call('hdel', KEYS[6], ARGV[1]); "
                   
-                  + "redis.call('zrem', KEYS[2], 'ff' .. ARGV[1]); "
+                  + "redis.call('zrem', KEYS[2], 'ff:' .. ARGV[1]); "
                   + "redis.call('zrem', KEYS[8], ARGV[1]); "
 
                   + "local removedScheduled = redis.call('zrem', KEYS[2], ARGV[1]); "

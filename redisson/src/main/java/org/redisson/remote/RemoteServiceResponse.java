@@ -58,7 +58,10 @@ public class RemoteServiceResponse implements RRemoteServiceResponse, Serializab
 
     @Override
     public String toString() {
-        return "RemoteServiceResponse [result=" + result + ", error=" + error + "]";
+        return "RemoteServiceResponse{" +
+                "result=" + result +
+                ", error=" + error +
+                ", id='" + id + '\'' +
+                '}';
     }
-    
 }

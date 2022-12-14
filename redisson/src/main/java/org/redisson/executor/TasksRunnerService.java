@@ -242,10 +242,10 @@ public class TasksRunnerService implements RemoteExecutorService {
                 // check if executor service not in shutdown state
                   "local name = ARGV[2];"
                 + "local scheduledName = ARGV[2];"
-                + "if string.sub(scheduledName, 1, 2) ~= 'ff' then "
-                    + "scheduledName = 'ff' .. scheduledName; "
+                + "if string.sub(scheduledName, 1, 3) ~= 'ff:' then "
+                    + "scheduledName = 'ff:' .. scheduledName; "
                 + "else "
-                    + "name = string.sub(name, 3, string.len(name)); "
+                    + "name = string.sub(name, 4, string.len(name)); "
                 + "end;"
                 + "local retryInterval = redis.call('get', KEYS[4]);"
                 
@@ -382,7 +382,7 @@ public class TasksRunnerService implements RemoteExecutorService {
                         + "redis.call('hdel', KEYS[4], ARGV[3]); "
                     + "end;";
         }
-        script += "redis.call('zrem', KEYS[5], 'ff' .. ARGV[3]);" +
+        script += "redis.call('zrem', KEYS[5], 'ff:' .. ARGV[3]);" +
                   "if redis.call('decr', KEYS[1]) == 0 then "
                    + "redis.call('del', KEYS[1]);"
                     + "if redis.call('get', KEYS[2]) == ARGV[1] then "
