@@ -146,13 +146,22 @@ public class RedissonCache implements Cache {
 
     @Override
     public void evict(Object key) {
+        evictIfPresent(key);
+    }
+
+    public boolean evictIfPresent(Object key) {
         long delta = map.fastRemove(key);
         addCacheEvictions(delta);
+        return delta > 0;
     }
 
     @Override
     public void clear() {
         map.clear();
+    }
+
+    public boolean invalidate() {
+        return map.delete();
     }
 
     private ValueWrapper toValueWrapper(Object value) {
