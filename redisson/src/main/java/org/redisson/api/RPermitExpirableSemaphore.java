@@ -138,7 +138,7 @@ public interface RPermitExpirableSemaphore extends RExpirable, RPermitExpirableS
      * @param permits - number of permits to use as the maximum
      * @return the number of permits that were added
      */
-    int setPermits(int maxPermits);
+    int setPermits(int permits);
 
     /**
      * Increases or decreases the number of available permits by defined value. 

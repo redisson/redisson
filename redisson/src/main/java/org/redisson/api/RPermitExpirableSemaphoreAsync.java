@@ -135,7 +135,7 @@ public interface RPermitExpirableSemaphoreAsync extends RExpirableAsync {
      * @param permits - number of permits to use as the maximum
      * @return the number of permits that were added
      */
-    RFuture<Integer> setPermitsAsync(int maxPermits);
+    RFuture<Integer> setPermitsAsync(int permits);
 
     /**
      * Increases or decreases the number of available permits by defined value. 
