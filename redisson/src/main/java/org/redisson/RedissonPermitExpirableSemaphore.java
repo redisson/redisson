@@ -629,8 +629,8 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     }
 
     @Override
-    public int maximumPermits() {
-        return get(maximumPermitsAsync());
+    public int getPermits() {
+        return get(getPermitsAsync());
     }
 
     @Override
@@ -656,7 +656,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     }
 
     @Override
-    public RFuture<Integer> maximumPermitsAsync() {
+    public RFuture<Integer> getPermitsAsync() {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
                 "local expiredIds = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, -1); " +
                 "if #expiredIds > 0 then " +
@@ -668,7 +668,13 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 "end; " +
                 "local available = redis.call('get', KEYS[1]); " +
                 "local claimed = redis.call('zcount', KEYS[2], 0, '+inf'); " +
-                "return available == false and 0 or (tonumber(available) + (claimed == false and 0 or claimed));",
+                "if available == false then " +
+                    "return 0 " +
+                "end;" +
+                "if claimed == false then " +
+                    "return tonumber(available) " +
+                "end;" +
+                "return tonumber(available) + claimed;",
                 Arrays.<Object>asList(getRawName(), timeoutName, getChannelName()), System.currentTimeMillis());
     }
 
@@ -694,12 +700,12 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     }
 
     @Override
-    public int setMaximumPermits(int maxPermits) {
-        return get(setMaximumPermitsAsync(maxPermits));
+    public int setPermits(int maxPermits) {
+        return get(setPermitsAsync(maxPermits));
     }
 
     @Override
-    public RFuture<Integer> setMaximumPermitsAsync(int maxPermits) {
+    public RFuture<Integer> setPermitsAsync(int maxPermits) {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
                 "local available = redis.call('get', KEYS[1]); " +
                 "if (available == false) then " +

@@ -109,16 +109,16 @@ public interface RPermitExpirableSemaphore extends RExpirable, RPermitExpirableS
     int availablePermits();
 
     /**
-     * Returns the maximum number of permits.
+     * Returns the number of permits.
      *
-     * @return maximum number of permits
+     * @return number of permits
      */
-    int maximumPermits();
+    int getPermits();
 
     /**
      * Returns the number of claimed permits.
      *
-     * @return number of permits claimed
+     * @return number of claimed permits
      */
     int claimedPermits();
 
@@ -131,14 +131,14 @@ public interface RPermitExpirableSemaphore extends RExpirable, RPermitExpirableS
     boolean trySetPermits(int permits);
 
     /**
-     * Sets the avaiable number of permits such that the number of claimed
-     * permits and the number of available permits is equal to the provided max value.
-     * If the number of permits has not been set yet, it will be set to the max value.
+     * Sets the number of permits such that the number of claimed
+     * permits plus the number of available permits is equal to the provided value.
+     * If the number of permits has not been set yet, it will be set to the provided value.
      *
      * @param permits - number of permits to use as the maximum
      * @return the number of permits that were added
      */
-    int setMaximumPermits(int maxPermits);
+    int setPermits(int maxPermits);
 
     /**
      * Increases or decreases the number of available permits by defined value. 
