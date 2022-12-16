@@ -324,7 +324,8 @@ public class PublishSubscribeService {
 
                 CompletableFuture<RedisPubSubConnection> connectFuture = connect(codec, channelName, entry, promise, type, lock, listeners);
                 connectionManager.newTimeout(t -> {
-                    if (!connectFuture.cancel(false)) {
+                    if (!connectFuture.cancel(false)
+                            && !connectFuture.isCompletedExceptionally()) {
                         return;
                     }
 
