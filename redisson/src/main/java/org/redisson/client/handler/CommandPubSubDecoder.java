@@ -47,7 +47,8 @@ public class CommandPubSubDecoder extends CommandDecoder {
 
     private static final Set<String> UNSUBSCRIBE_COMMANDS = new HashSet<>(Arrays.asList(RedisCommands.PUNSUBSCRIBE.getName(), RedisCommands.UNSUBSCRIBE.getName(), RedisCommands.SUNSUBSCRIBE.getName()));
     private static final Set<String> SUBSCRIBE_COMMANDS = new HashSet<>(Arrays.asList(RedisCommands.PSUBSCRIBE.getName(), RedisCommands.SUBSCRIBE.getName(), RedisCommands.SSUBSCRIBE.getName()));
-    private static final Set<String> MESSAGES = new HashSet<String>(Arrays.asList("subscribe", "psubscribe", "punsubscribe", "unsubscribe", "ssubscribe", "sunsubscribe"));
+    private static final Set<String> MESSAGES = new HashSet<>(Arrays.asList("subscribe", "psubscribe", "punsubscribe", "unsubscribe", "ssubscribe", "sunsubscribe"));
+    private static final Set<String> TYPE_MESSAGES = new HashSet<>(Arrays.asList("message", "smessage", "pmessage"));
     // It is not needed to use concurrent map because responses are coming consecutive
     private final Map<ChannelName, PubSubEntry> entries = new HashMap<>();
     private final Map<PubSubKey, CommandData<Object, Object>> commands = new ConcurrentHashMap<>();
@@ -222,16 +223,9 @@ public class CommandPubSubDecoder extends CommandDecoder {
                 return null;
             }
             return commandData.getCommand().getReplayMultiDecoder();
-        } else if ("message".equals(command)) {
+        } else if (TYPE_MESSAGES.contains(command)) {
             byte[] channelName = (byte[]) parts.get(1);
             PubSubEntry entry = entries.get(new ChannelName(channelName));
-            if (entry == null) {
-                return null;
-            }
-            return entry.getDecoder();
-        } else if ("pmessage".equals(command)) {
-            byte[] patternName = (byte[]) parts.get(1);
-            PubSubEntry entry = entries.get(new ChannelName(patternName));
             if (entry == null) {
                 return null;
             }
@@ -255,8 +249,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
             if (parts.size() == 2 && "pmessage".equals(parts.get(0))) {
                 return ByteArrayCodec.INSTANCE.getValueDecoder();
             }
-            
-            if (parts.size() == 2 && "message".equals(parts.get(0))) {
+            if (parts.size() == 2 && TYPE_MESSAGES.contains(parts.get(0).toString())) {
                 byte[] channelName = (byte[]) parts.get(1);
                 return getDecoder(null, parts, channelName);
             }
