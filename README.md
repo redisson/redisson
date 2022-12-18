@@ -7,15 +7,12 @@
 
 Based on high-performance async and lock-free Java Redis client and [Netty](http://netty.io) framework.  
 Supported JDK:   1.8 ... 19 and Android  
-Supported Redis: 3.0 ... 7.0
+Supported Redis: 3.0 ... 7.0  
+Compatible with [AWS ElastiCache](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/WhatIs.html), [Amazon MemoryDB](https://aws.amazon.com/memorydb), [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/), [Google Cloud Memorystore for Redis](https://cloud.google.com/memorystore/docs/redis/), [Redis Enterprise](https://redis.com/redis-enterprise/)
 
 ## Features
 
-* Redis Replicated setup (also compatible with [AWS ElastiCache](http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Replication.html) and [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/))  
-* Redis Cluster setup (also compatible with [AWS ElastiCache Cluster](http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Clusters.html), [Amazon MemoryDB](https://aws.amazon.com/memorydb) and [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/))  
-* Redis Sentinel setup  
-* Redis with Master with Slave only  
-* Redis Single (also compatible with [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/) and [Google Cloud Memorystore for Redis](https://cloud.google.com/memorystore/docs/redis/))  
+* Supports [Redis Replicated](https://github.com/redisson/redisson/wiki/2.-Configuration/#25-replicated-mode), [Redis Cluster](https://github.com/redisson/redisson/wiki/2.-Configuration/#24-cluster-mode), [Redis Sentinel](https://github.com/redisson/redisson/wiki/2.-Configuration/#27-sentinel-mode), [Redis Master and Slaves](https://github.com/redisson/redisson/wiki/2.-Configuration/#28-master-slave-mode), [Redis Single](https://github.com/redisson/redisson/wiki/2.-Configuration/#26-single-instance-mode) setup
 * Thread-safe implementation  
 * [JSON datatype](https://github.com/redisson/redisson/wiki/6.-distributed-objects/#615-json-object-holder)
 * [Reactive Streams](https://github.com/redisson/redisson/wiki/3.-operations-execution#32-reactive-way) API  
