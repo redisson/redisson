@@ -8,18 +8,22 @@
 Based on high-performance async and lock-free Java Redis client and [Netty](http://netty.io) framework.  
 Supported JDK:   1.8 ... 19 and Android  
 Supported Redis: 3.0 ... 7.0  
-Compatible with [AWS ElastiCache](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/WhatIs.html), [Amazon MemoryDB](https://aws.amazon.com/memorydb), [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/), [Google Cloud Memorystore for Redis](https://cloud.google.com/memorystore/docs/redis/), [Redis Enterprise](https://redis.com/redis-enterprise/)
 
 ## Features
 
-* Supports [Redis Replicated](https://github.com/redisson/redisson/wiki/2.-Configuration/#25-replicated-mode), [Redis Cluster](https://github.com/redisson/redisson/wiki/2.-Configuration/#24-cluster-mode), [Redis Sentinel](https://github.com/redisson/redisson/wiki/2.-Configuration/#27-sentinel-mode), [Redis Master and Slaves](https://github.com/redisson/redisson/wiki/2.-Configuration/#28-master-slave-mode), [Redis Single](https://github.com/redisson/redisson/wiki/2.-Configuration/#26-single-instance-mode) setup
 * Thread-safe implementation  
+* Supports [Redis Replicated](https://github.com/redisson/redisson/wiki/2.-Configuration/#25-replicated-mode), [Redis Cluster](https://github.com/redisson/redisson/wiki/2.-Configuration/#24-cluster-mode), [Redis Sentinel](https://github.com/redisson/redisson/wiki/2.-Configuration/#27-sentinel-mode), [Redis Master and Slaves](https://github.com/redisson/redisson/wiki/2.-Configuration/#28-master-slave-mode), [Redis Single](https://github.com/redisson/redisson/wiki/2.-Configuration/#26-single-instance-mode) setup
+* Supports [AWS ElastiCache](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/WhatIs.html), [Amazon MemoryDB](https://aws.amazon.com/memorydb), [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/), [Google Cloud Memorystore for Redis](https://cloud.google.com/memorystore/docs/redis/), [Redis Enterprise](https://redis.com/redis-enterprise/)
+* Supports auto-reconnection  
+* Supports failed to send command auto-retry  
+* Supports OSGi  
+* Supports SSL  
+* Asynchronous connection pool  
+* Lua scripting  
 * [JSON datatype](https://github.com/redisson/redisson/wiki/6.-distributed-objects/#615-json-object-holder)
 * [Reactive Streams](https://github.com/redisson/redisson/wiki/3.-operations-execution#32-reactive-way) API  
 * [RxJava3](https://github.com/redisson/redisson/wiki/3.-operations-execution#32-reactive-way) API  
 * [Asynchronous](https://github.com/redisson/redisson/wiki/3.-operations-execution#31-async-way) API  
-* Asynchronous connection pool  
-* Lua scripting  
 * Local cache support including [Caffeine](https://github.com/ben-manes/caffeine)-based implementation
 * [Distributed Java objects](https://github.com/redisson/redisson/wiki/6.-Distributed-objects)  
     Object holder, Binary stream holder, Geospatial holder, BitSet, AtomicLong, AtomicDouble, PublishSubscribe,
@@ -44,13 +48,8 @@ Compatible with [AWS ElastiCache](https://docs.aws.amazon.com/AmazonElastiCache/
 * [Tomcat Session Manager](https://github.com/redisson/redisson/tree/master/redisson-tomcat) implementation
 * [Spring Session](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#147-spring-session) implementation
 * [Redis pipelining](https://github.com/redisson/redisson/wiki/10.-additional-features#103-execution-batches-of-commands) (command batches)
-* Supports Android platform  
-* Supports auto-reconnection  
-* Supports failed to send command auto-retry  
-* Supports OSGi  
-* Supports SSL  
 * Supports many popular codecs ([JBoss Marshalling](https://github.com/jboss-remoting/jboss-marshalling), [Jackson JSON](https://github.com/FasterXML/jackson), [Avro](http://avro.apache.org/), [Smile](http://wiki.fasterxml.com/SmileFormatSpec), [CBOR](http://cbor.io/), [MsgPack](http://msgpack.org/), [Kryo](https://github.com/EsotericSoftware/kryo), [Amazon Ion](https://amzn.github.io/ion-docs/), [LZ4](https://github.com/jpountz/lz4-java), [Snappy](https://github.com/xerial/snappy-java) and JDK Serialization)
-* With over 2000 unit tests  
+* Over 1800 unit tests  
 <!--
 Used by
 ================================
