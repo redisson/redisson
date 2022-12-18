@@ -187,7 +187,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
     }
 
     protected RBitSetAsync createBitSet(CommandBatchService executorService) {
-        return new RedissonBitSet(executorService, getRawName());
+        return new RedissonBitSet(executorService, getName());
     }
 
     private void addConfigCheck(int hashIterations, long size, CommandBatchService executorService) {
