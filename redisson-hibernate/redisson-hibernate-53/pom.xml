@@ -26,6 +26,12 @@
          <artifactId>hibernate-testing</artifactId>
          <version>5.6.12.Final</version>
          <scope>test</scope>
+         <exclusions>
+           <exclusion>
+              <groupId>org.apache.logging.log4j</groupId>
+              <artifactId>log4j-core</artifactId>
+           </exclusion>
+         </exclusions> 
        </dependency>
 
        <dependency>
@@ -40,6 +46,18 @@
            <version>2.3.1</version>
            <scope>test</scope>
        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>log4j-over-slf4j</artifactId>
+            <version>1.7.36</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
