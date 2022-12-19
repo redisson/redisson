@@ -667,10 +667,10 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                     "end;" +
                 "end; " +
                 "local available = redis.call('get', KEYS[1]); " +
-                "local claimed = redis.call('zcount', KEYS[2], 0, '+inf'); " +
                 "if available == false then " +
                     "return 0 " +
                 "end;" +
+                "local claimed = redis.call('zcount', KEYS[2], 0, '+inf'); " +
                 "if claimed == false then " +
                     "return tonumber(available) " +
                 "end;" +
@@ -755,7 +755,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
               + "end;"
               + "redis.call('set', KEYS[1], tonumber(value) + tonumber(ARGV[1])); "
               + "if tonumber(ARGV[1]) > 0 then "
-                  + "redis.call('publish', KEYS[2], tonumber(value) + tonumber(ARGV[1])); "
+                  + "redis.call('publish', KEYS[2], ARGV[1]); "
               + "end;",
                 Arrays.<Object>asList(getRawName(), getChannelName()), permits);
     }
