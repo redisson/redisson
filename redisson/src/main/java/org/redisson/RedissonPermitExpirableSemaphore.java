@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class RedissonPermitExpirableSemaphore extends RedissonExpirable implements RPermitExpirableSemaphore {
 
+    private final String channelName;
     private final SemaphorePubSub semaphorePubSub;
 
     final CommandAsyncExecutor commandExecutor;
@@ -50,20 +51,10 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
 
     public RedissonPermitExpirableSemaphore(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
-        this.timeoutName = suffixName(name, "timeout");
+        this.timeoutName = suffixName(getRawName(), "timeout");
         this.commandExecutor = commandExecutor;
         this.semaphorePubSub = commandExecutor.getConnectionManager().getSubscribeService().getSemaphorePubSub();
-    }
-
-    String getChannelName() {
-        return getChannelName(getRawName());
-    }
-    
-    public static String getChannelName(String name) {
-        if (name.contains("{")) {
-            return "redisson_sc:" + name;
-        }
-        return "redisson_sc:{" + name + "}";
+        this.channelName = prefixName("redisson_sc", getRawName());
     }
 
     @Override
@@ -383,7 +374,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                       "return ':' .. tostring(v[2]); " +
                   "end " +
                   "return nil;",
-                  Arrays.asList(getRawName(), timeoutName, getChannelName()),
+                  Arrays.asList(getRawName(), timeoutName, channelName),
                 permits, timeoutDate, id, System.currentTimeMillis(), nonExpirableTimeout);
     }
 
@@ -534,11 +525,11 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     }
 
     private CompletableFuture<RedissonLockEntry> subscribe() {
-        return semaphorePubSub.subscribe(getRawName(), getChannelName());
+        return semaphorePubSub.subscribe(getRawName(), channelName);
     }
 
     private void unsubscribe(RedissonLockEntry entry) {
-        semaphorePubSub.unsubscribe(entry, getRawName(), getChannelName());
+        semaphorePubSub.unsubscribe(entry, getRawName(), channelName);
     }
 
     @Override
@@ -578,7 +569,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                             "return 0;" +
                         "end;" +
                         "return 1;",
-                Arrays.asList(getRawName(), getChannelName(), timeoutName),
+                Arrays.asList(getRawName(), channelName, timeoutName),
                 id, 1, System.currentTimeMillis());
     }
     
@@ -642,7 +633,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 "end; " +
                 "local ret = redis.call('get', KEYS[1]); " + 
                 "return ret == false and 0 or ret;",
-                Arrays.<Object>asList(getRawName(), timeoutName, getChannelName()), System.currentTimeMillis());
+                Arrays.<Object>asList(getRawName(), timeoutName, channelName), System.currentTimeMillis());
     }
 
     @Override
@@ -660,7 +651,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                     + "return 1;"
                 + "end;"
                 + "return 0;",
-                Arrays.<Object>asList(getRawName(), getChannelName()), permits);
+                Arrays.<Object>asList(getRawName(), channelName), permits);
     }
 
     @Override
@@ -679,7 +670,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
               + "if tonumber(ARGV[1]) > 0 then "
                   + "redis.call('publish', KEYS[2], ARGV[1]); "
               + "end;",
-                Arrays.<Object>asList(getRawName(), getChannelName()), permits);
+                Arrays.<Object>asList(getRawName(), channelName), permits);
     }
 
     @Override
@@ -702,7 +693,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                     + "return 1;"
                 + "end;"
                 + "return 0;",
-                Arrays.asList(getRawName(), timeoutName, getChannelName()),
+                Arrays.asList(getRawName(), timeoutName, channelName),
                 id, timeoutDate, System.currentTimeMillis());
     }
 
