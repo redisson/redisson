@@ -62,10 +62,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
     }
     
     public static String getChannelName(String name) {
-        if (name.contains("{")) {
-            return "redisson_sc:" + name;
-        }
-        return "redisson_sc:{" + name + "}";
+        return prefixName("redisson_sc", name);
     }
 
     @Override
