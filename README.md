@@ -13,7 +13,7 @@ Supported Redis: 3.0 ... 7.0
 
 * Thread-safe implementation  
 * Supports [Redis Replicated](https://github.com/redisson/redisson/wiki/2.-Configuration/#25-replicated-mode), [Redis Cluster](https://github.com/redisson/redisson/wiki/2.-Configuration/#24-cluster-mode), [Redis Sentinel](https://github.com/redisson/redisson/wiki/2.-Configuration/#27-sentinel-mode), [Redis Master and Slaves](https://github.com/redisson/redisson/wiki/2.-Configuration/#28-master-slave-mode), [Redis Single](https://github.com/redisson/redisson/wiki/2.-Configuration/#26-single-instance-mode) setup
-* Supports [AWS ElastiCache](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/WhatIs.html), [Amazon MemoryDB](https://aws.amazon.com/memorydb), [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/), [Google Cloud Memorystore for Redis](https://cloud.google.com/memorystore/docs/redis/), [Redis Enterprise](https://redis.com/redis-enterprise/), [Aiven for Redis](https://aiven.io/redis)
+* Supports [AWS ElastiCache](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/WhatIs.html), [Amazon MemoryDB](https://aws.amazon.com/memorydb), [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/), [Google Cloud Memorystore for Redis](https://cloud.google.com/memorystore/docs/redis/), [Redis&nbsp;Enterprise](https://redis.com/redis-enterprise/), [Aiven for Redis](https://aiven.io/redis)
 * Supports auto-reconnection  
 * Supports failed to send command auto-retry  
 * Supports OSGi  
