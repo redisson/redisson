@@ -719,9 +719,6 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                     "return 0;" +
                 "end;" +
                 "local delta = tonumber(ARGV[1]) - maximum; " +
-                "if (delta == 0) then " +
-                    "return 0;" +
-                "end;" +
                 "redis.call('incrby', KEYS[1], delta); " +
                 "redis.call('publish', KEYS[2], ARGV[1]); " +
                 "return delta;",

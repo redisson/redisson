@@ -247,6 +247,8 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
         assertThat(s.availablePermits()).isEqualTo(15);
         s.addPermits(-10);
         assertThat(s.availablePermits()).isEqualTo(5);
+        s.addPermits(-10);
+        assertThat(s.availablePermits()).isEqualTo(-5);
     }
     
     @Test
