@@ -128,12 +128,12 @@ public interface RPermitExpirableSemaphoreAsync extends RExpirableAsync {
     RFuture<Boolean> trySetPermitsAsync(int permits);
 
     /**
-     * Sets the avaiable number of permits such that the number of claimed
-     * permits and the number of available permits is equal to the provided max value.
-     * If the number of permits has not been set yet, it will be set to the max value.
+     * Sets the number of permits to the provided value and returns the number of permits added.
+     * Calculates the <code>delta</code> between the given <code>permits</code> vaue and the
+     * current number of permits, then increases the number of available permits by <code>delta</code>.
      *
-     * @param permits - number of permits to use as the maximum
-     * @return the number of permits that were added
+     * @param permits - number of permits
+     * @return delta - number of permits that were added, will be negative if permits were removed
      */
     RFuture<Integer> setPermitsAsync(int permits);
 

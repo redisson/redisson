@@ -131,12 +131,12 @@ public interface RPermitExpirableSemaphore extends RExpirable, RPermitExpirableS
     boolean trySetPermits(int permits);
 
     /**
-     * Sets the number of permits such that the number of claimed
-     * permits plus the number of available permits is equal to the provided value.
-     * If the number of permits has not been set yet, it will be set to the provided value.
+     * Sets the number of permits to the provided value and returns the number of permits added.
+     * Calculates the <code>delta</code> between the given <code>permits</code> value and the
+     * current number of permits, then increases the number of available permits by <code>delta</code>.
      *
-     * @param permits - number of permits to use as the maximum
-     * @return the number of permits that were added
+     * @param permits - number of permits
+     * @return delta - number of permits that were added, will be negative if permits were removed
      */
     int setPermits(int permits);
 
