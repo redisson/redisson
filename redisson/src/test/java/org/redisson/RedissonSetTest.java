@@ -16,6 +16,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.assertj.core.api.ListAssert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.ClusterRunner.ClusterProcesses;
@@ -26,6 +27,7 @@ import org.redisson.api.RSet;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.SortOrder;
 import org.redisson.client.codec.IntegerCodec;
+import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
 import org.redisson.connection.balancer.RandomLoadBalancer;
@@ -44,6 +46,29 @@ public class RedissonSetTest extends BaseTest {
             this.lng = lng;
         }
 
+    }
+
+    @Test
+    public void testContainsEach() {
+        RSet<Integer> set = redisson.getSet("list", IntegerCodec.INSTANCE);
+        set.add(0);
+        set.add(1);
+
+        assertThat(set.containsEach(Collections.emptySet())).isEmpty();
+        assertThat(set.containsEach(Arrays.asList(0, 1)))
+                .hasSize(2)
+                .containsOnly(0, 1);
+
+        assertThat(set.containsEach(Arrays.asList(0, 1, 2)))
+                .hasSize(2)
+                .containsOnly(0, 1);
+
+        assertThat(set.containsEach(Arrays.asList(0, 1, 0, 2)))
+                .hasSize(3)
+                .containsOnly(0, 1, 0);
+
+        assertThat(set.containsEach(Arrays.asList(2, 3, 4)))
+                .hasSize(0);
     }
 
     @Test

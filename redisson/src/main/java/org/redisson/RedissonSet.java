@@ -387,6 +387,34 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
     }
 
     @Override
+    public RFuture<List<V>> containsEachAsync(Collection<V> c) {
+        if (c.isEmpty()) {
+            return RedissonPromise.newSucceededFuture(Collections.emptyList());
+        }
+        List<Object> args = new ArrayList<Object>(c.size() + 1);
+        args.add(getRawName());
+        encode(args, c);
+
+        RFuture<List<Long>> future = commandExecutor.readAsync(getRawName(), codec, RedisCommands.SMISMEMBER, args.toArray());
+        List<V> keysToCheck = new ArrayList<>(c);
+        RPromise<List<V>> result = new RedissonPromise<>();
+        future.onComplete((res, e) -> {
+            if (e != null) {
+                result.tryFailure(e);
+                return;
+            }
+            List<V> containedKeys = new ArrayList<>();
+            for (int i = 0; i < res.size(); i++) {
+                if (res.get(i) == 1) {
+                    containedKeys.add(keysToCheck.get(i));
+                }
+            }
+            result.trySuccess(containedKeys);
+        });
+        return result;
+    }
+
+    @Override
     public boolean removeAll(Collection<?> c) {
         return get(removeAllAsync(c));
     }
@@ -726,6 +754,11 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
     @Override
     public boolean tryAdd(V... values) {
         return get(tryAddAsync(values));
+    }
+
+    @Override
+    public List<V> containsEach(Collection<V> c) {
+        return get(containsEachAsync(c));
     }
 
     @Override
