@@ -97,5 +97,26 @@ public interface RSetCacheRx<V> extends RCollectionRx<V>, RDestroyable {
      * @return values
      */
     Single<Set<V>> readAll();
-    
+
+    /**
+     * Tries to add elements only if none of them in set.
+     *
+     * @param values - values to add
+     * @return <code>true</code> if elements successfully added,
+     *          otherwise <code>false</code>.
+     */
+    Single<Boolean> tryAdd(V... values);
+
+    /**
+     * Tries to add elements only if none of them in set.
+     *
+     * @param values - values to add
+     * @param ttl - time to live for value.
+     *              If <code>0</code> then stores infinitely.
+     * @param unit - time unit
+     * @return <code>true</code> if elements successfully added,
+     *          otherwise <code>false</code>.
+     */
+    Single<Boolean> tryAdd(long ttl, TimeUnit unit, V... values);
+
 }
