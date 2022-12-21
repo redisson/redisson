@@ -239,4 +239,14 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
      */
     Mono<Set<V>> readIntersection(String... names);
 
+    /**
+     * Tries to add elements only if none of them in set.
+     *
+     * @param values - values to add
+     * @return <code>true</code> if elements successfully added,
+     *          otherwise <code>false</code>.
+     */
+    Mono<Boolean> tryAdd(V... values);
+
+
 }

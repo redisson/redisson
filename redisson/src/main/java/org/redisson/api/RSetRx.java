@@ -241,4 +241,13 @@ public interface RSetRx<V> extends RCollectionRx<V>, RSortableRx<Set<V>> {
      */
     Single<Set<V>> readIntersection(String... names);
 
+    /**
+     * Tries to add elements only if none of them in set.
+     *
+     * @param values - values to add
+     * @return <code>true</code> if elements successfully added,
+     *          otherwise <code>false</code>.
+     */
+    Single<Boolean> tryAdd(V... values);
+
 }
