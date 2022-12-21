@@ -26,6 +26,7 @@ import org.redisson.mapreduce.RedissonCollectionMapReduce;
 import org.redisson.misc.CompletableFutureWrapper;
 
 import java.util.*;
+import java.util.concurrent.CompletionStage;
 import java.util.stream.Stream;
 
 /**
@@ -379,7 +380,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
             return new CompletableFutureWrapper<>(0);
         }
 
-        List<Object> args = new ArrayList<Object>(c.size() + 1);
+        List<Object> args = new ArrayList<>(c.size() + 1);
         args.add(getRawName());
         encode(args, c);
 
@@ -389,29 +390,25 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
     @Override
     public RFuture<List<V>> containsEachAsync(Collection<V> c) {
         if (c.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(Collections.emptyList());
+            return new CompletableFutureWrapper<>(Collections.emptyList());
         }
-        List<Object> args = new ArrayList<Object>(c.size() + 1);
+
+        List<Object> args = new ArrayList<>(c.size() + 1);
         args.add(getRawName());
         encode(args, c);
 
         RFuture<List<Long>> future = commandExecutor.readAsync(getRawName(), codec, RedisCommands.SMISMEMBER, args.toArray());
         List<V> keysToCheck = new ArrayList<>(c);
-        RPromise<List<V>> result = new RedissonPromise<>();
-        future.onComplete((res, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
-            }
+        CompletionStage<List<V>> f = future.thenApply(res -> {
             List<V> containedKeys = new ArrayList<>();
             for (int i = 0; i < res.size(); i++) {
                 if (res.get(i) == 1) {
                     containedKeys.add(keysToCheck.get(i));
                 }
             }
-            result.trySuccess(containedKeys);
+            return containedKeys;
         });
-        return result;
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
