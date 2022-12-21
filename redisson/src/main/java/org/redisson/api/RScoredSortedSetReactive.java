@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +15,17 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.RScoredSortedSet.Aggregate;
+import org.redisson.client.protocol.ScoredEntry;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
-import org.redisson.api.RScoredSortedSet.Aggregate;
-import org.redisson.client.protocol.ScoredEntry;
-
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 /**
  * Reactive interface for SortedSet object
@@ -43,7 +43,7 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      * <p>
      * Requires <b>Redis 5.0.0 and higher.</b>
      * 
-     * @param queueNames - names of queue
+     * @param queueNames name of queues
      * @param timeout how long to wait before giving up, in units of
      *        {@code unit}
      * @param unit a {@code TimeUnit} determining how to interpret the
@@ -51,7 +51,59 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      * @return the tail element, or {@code null} if all sorted sets are empty 
      */
     Mono<V> pollLastFromAny(long timeout, TimeUnit unit, String... queueNames);
-    
+
+    /**
+     * Removes and returns first available tail elements of <b>any</b> sorted set,
+     * waiting up to the specified wait time if necessary for elements to become available
+     * in any of defined sorted sets <b>including</b> this one.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count elements amount
+     * @param queueNames name of queues
+     * @return the tail elements
+     */
+    Mono<List<V>> pollLastFromAny(Duration duration, int count, String... queueNames);
+
+    /**
+     * Removes and returns first available tail elements
+     * of <b>any</b> sorted set <b>including</b> this one.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param count elements amount
+     * @param queueNames name of queues
+     * @return the tail elements
+     */
+    Mono<List<V>> pollLastFromAny(int count, String... queueNames);
+
+    /**
+     * Removes and returns first available tail entries
+     * of <b>any</b> sorted set <b>including</b> this one.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param count entries amount
+     * @param queueNames name of queues
+     * @return the head entries
+     */
+    Mono<Map<String, Map<V, Double>>> pollLastEntriesFromAny(int count, String... queueNames);
+
+    /**
+     * Removes and returns first available tail entries of <b>any</b> sorted set,
+     * waiting up to the specified wait time if necessary for elements to become available
+     * in any of defined sorted sets <b>including</b> this one.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count entries amount
+     * @param queueNames name of queues
+     * @return the tail entries
+     */
+    Mono<Map<String, Map<V, Double>>> pollLastEntriesFromAny(Duration duration, int count, String... queueNames);
+
     /**
      * Removes and returns first available head element of <b>any</b> sorted set,
      * waiting up to the specified wait time if necessary for an element to become available
@@ -59,7 +111,7 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      * <p>
      * Requires <b>Redis 5.0.0 and higher.</b>
      * 
-     * @param queueNames - names of queue
+     * @param queueNames name of queues
      * @param timeout how long to wait before giving up, in units of
      *        {@code unit}
      * @param unit a {@code TimeUnit} determining how to interpret the
@@ -68,7 +120,59 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      *  
      */
     Mono<V> pollFirstFromAny(long timeout, TimeUnit unit, String... queueNames);
-    
+
+    /**
+     * Removes and returns first available head elements of <b>any</b> sorted set,
+     * waiting up to the specified wait time if necessary for elements to become available
+     * in any of defined sorted sets <b>including</b> this one.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count elements amount
+     * @param queueNames name of queues
+     * @return the head elements
+     */
+    Mono<List<V>> pollFirstFromAny(Duration duration, int count, String... queueNames);
+
+    /**
+     * Removes and returns first available head elements
+     * of <b>any</b> sorted set <b>including</b> this one.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param count elements amount
+     * @param queueNames name of queues
+     * @return the head elements
+     */
+    Mono<List<V>> pollFirstFromAny(int count, String... queueNames);
+
+    /**
+     * Removes and returns first available head entries
+     * of <b>any</b> sorted set <b>including</b> this one.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param count entries amount
+     * @param queueNames name of queues
+     * @return the head elements
+     */
+    Mono<Map<String, Map<V, Double>>> pollFirstEntriesFromAny(int count, String... queueNames);
+
+    /**
+     * Removes and returns first available head entries of <b>any</b> sorted set,
+     * waiting up to the specified wait time if necessary for elements to become available
+     * in any of defined sorted sets <b>including</b> this one.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count entries amount
+     * @param queueNames name of queues
+     * @return the head entries
+     */
+    Mono<Map<String, Map<V, Double>>> pollFirstEntriesFromAny(Duration duration, int count, String... queueNames);
+
     /**
      * Removes and returns the head element or {@code null} if this sorted set is empty.
      * <p>
@@ -84,6 +188,16 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
     Mono<V> pollFirst(long timeout, TimeUnit unit);
 
     /**
+     * Removes and returns the head elements.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @return the head elements
+     */
+    Mono<List<V>> pollFirst(Duration duration, int count);
+
+    /**
      * Removes and returns the tail element or {@code null} if this sorted set is empty.
      * <p>
      * Requires <b>Redis 5.0.0 and higher.</b>
@@ -95,7 +209,17 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      * @return the tail element or {@code null} if this sorted set is empty
      */
     Mono<V> pollLast(long timeout, TimeUnit unit);
-    
+
+    /**
+     * Removes and returns the tail elements.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @return the tail elements
+     */
+    Mono<List<V>> pollLast(Duration duration, int count);
+
     /**
      * Removes and returns the head elements of this sorted set.
      *
@@ -299,7 +423,47 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      * @return amount of added elements, not including already existing in this sorted set
      */
     Mono<Integer> addAll(Map<V, Double> objects);
-    
+
+    /**
+     * Adds elements to this set only if they haven't been added before.
+     * <p>
+     * Requires <b>Redis 3.0.2 and higher.</b>
+     *
+     * @param objects map of elements to add
+     * @return amount of added elements
+     */
+    Mono<Integer> addAllIfAbsent(Map<V, Double> objects);
+
+    /**
+     * Adds elements to this set only if they already exist.
+     * <p>
+     * Requires <b>Redis 3.0.2 and higher.</b>
+     *
+     * @param objects map of elements to add
+     * @return amount of added elements
+     */
+    Mono<Integer> addAllIfExist(Map<V, Double> objects);
+
+    /**
+     * Adds elements to this set only if new scores greater than current score of existed elements.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param objects map of elements to add
+     * @return amount of added elements
+     */
+    Mono<Integer> addAllIfGreater(Map<V, Double> objects);
+
+    /**
+     * Adds elements to this set only if new scores less than current score of existed elements.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param objects map of elements to add
+     * @return amount of added elements
+     */
+    Mono<Integer> addAllIfLess(Map<V, Double> objects);
+
     /**
      * Adds element to this set, overrides previous score if it has been already added.
      * Finally return the rank of the item
@@ -329,15 +493,25 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
     Mono<List<Integer>> addAndGetRevRank(Map<? extends V, Double> map);
 
     /**
+     * Use {@link #addIfAbsent(double, Object)} instead
+     *
+     * @param score - object score
+     * @param object - object itself
+     * @return <code>true</code> if element has added and <code>false</code> if not.
+     */
+    @Deprecated
+    Mono<Boolean> tryAdd(double score, V object);
+
+    /**
      * Adds element to this set only if has not been added before.
      * <p>
      * Requires <b>Redis 3.0.2 and higher.</b>
      *
      * @param score - object score
      * @param object - object itself
-     * @return <code>true</code> if element has added and <code>false</code> if not.
+     * @return <code>true</code> if element added and <code>false</code> if not.
      */
-    Mono<Boolean> tryAdd(double score, V object);
+    Mono<Boolean> addIfAbsent(double score, V object);
 
     /**
      * Adds element to this set only if it's already exists.
@@ -371,6 +545,16 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      * @return <code>true</code> if element added and <code>false</code> if not.
      */
     Mono<Boolean> addIfGreater(double score, V object);
+
+    /**
+     * Replaces a previous <code>oldObject</code> with a <code>newObject</code>.
+     * Returns <code>false</code> if previous object doesn't exist.
+     *
+     * @param oldObject old object
+     * @param newObject new object
+     * @return <code>true</code> if object has been replaced otherwise <code>false</code>.
+     */
+    Mono<Boolean> replace(V oldObject, V newObject);
 
     /**
      * Removes a single instance of the specified element from this
@@ -832,6 +1016,27 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      * @return result of intersection
      */
     Mono<Collection<V>> readIntersection(Aggregate aggregate, Map<String, Double> nameWithWeight);
+
+    /**
+     * Counts elements of set as a result of sets intersection with current set.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param names - name of sets
+     * @return amount of elements
+     */
+    Mono<Integer> countIntersection(String... names);
+
+    /**
+     * Counts elements of set as a result of sets intersection with current set.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param names - name of sets
+     * @param limit - sets intersection limit
+     * @return amount of elements
+     */
+    Mono<Integer> countIntersection(int limit, String... names);
 
     /**
      * Union provided ScoredSortedSets 

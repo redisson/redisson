@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import org.redisson.client.handler.State;
 import org.redisson.client.protocol.convertor.StreamIdConvertor;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 
@@ -30,9 +31,19 @@ public class StreamGroupInfoDecoder implements MultiDecoder<StreamGroup> {
 
     @Override
     public StreamGroup decode(List<Object> parts, State state) {
-        return new StreamGroup((String) parts.get(1), 
-                ((Long) parts.get(3)).intValue(), ((Long) parts.get(5)).intValue(),
-                StreamIdConvertor.INSTANCE.convert(parts.get(7)));
+        if (parts.size() == 8) {
+            return new StreamGroup((String) parts.get(1),
+                                    ((Long) parts.get(3)).intValue(),
+                                    ((Long) parts.get(5)).intValue(),
+                                    StreamIdConvertor.INSTANCE.convert(parts.get(7)));
+        }
+
+        return new StreamGroup((String) parts.get(1),
+                ((Long) parts.get(3)).intValue(),
+                ((Long) parts.get(5)).intValue(),
+                StreamIdConvertor.INSTANCE.convert(parts.get(7)),
+                Optional.ofNullable((Long) parts.get(9)).orElse(0L).intValue(),
+                Optional.ofNullable((Long) parts.get(11)).orElse(0L).intValue());
     }
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,7 @@
  */
 package org.redisson;
 
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.concurrent.TimeUnit;
-
+import io.netty.buffer.ByteBuf;
 import org.redisson.api.RFuture;
 import org.redisson.api.RSet;
 import org.redisson.api.RSetMultimapCache;
@@ -28,7 +24,9 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.eviction.EvictionScheduler;
 
-import io.netty.buffer.ByteBuf;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Nikita Koksharov
@@ -197,18 +195,13 @@ public class RedissonSetMultimapCache<K, V> extends RedissonSetMultimap<K, V> im
     }
 
     @Override
-    public RFuture<Boolean> expireAsync(Instant instant) {
-        return expireAtAsync(instant.toEpochMilli());
+    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
+        return baseCache.expireAsync(timeToLive, timeUnit, param);
     }
 
     @Override
-    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
-        return baseCache.expireAsync(timeToLive, timeUnit);
-    }
-
-    @Override
-    public RFuture<Boolean> expireAtAsync(long timestamp) {
-        return baseCache.expireAtAsync(timestamp);
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
+        return baseCache.expireAtAsync(timestamp, param);
     }
 
     @Override

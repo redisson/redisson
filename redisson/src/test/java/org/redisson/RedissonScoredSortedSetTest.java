@@ -1,24 +1,5 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -29,7 +10,38 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.ScoredEntry;
 import org.redisson.config.Config;
 
+import java.io.IOException;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class RedissonScoredSortedSetTest extends BaseTest {
+
+    @Test
+    public void testReplace() {
+        RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("test");
+        set.add(1, 10);
+        set.add(2, 20);
+        set.add(3, 30);
+
+        assertThat(set.replace(10, 60)).isTrue();
+        assertThat(set.getScore(60)).isEqualTo(1);
+        assertThat(set.size()).isEqualTo(3);
+
+        assertThat(set.replace(10, 80)).isFalse();
+        assertThat(set.getScore(60)).isEqualTo(1);
+        assertThat(set.getScore(80)).isNull();
+        assertThat(set.size()).isEqualTo(3);
+    }
 
     @Test
     public void testRandom() {
@@ -82,6 +94,170 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
         Assertions.assertEquals(2, l);
         Assertions.assertTrue(System.currentTimeMillis() - s > 2000);
+    }
+
+    @Test
+    public void testPollFirstFromAnyCount() {
+//        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("7.0.0") > 0);
+
+        RScoredSortedSet<Integer> queue1 = redisson.getScoredSortedSet("queue:pollany");
+        RScoredSortedSet<Integer> queue2 = redisson.getScoredSortedSet("queue:pollany1");
+        RScoredSortedSet<Integer> queue3 = redisson.getScoredSortedSet("queue:pollany2");
+        queue1.add(0.1, 1);
+        queue1.add(0.2, 2);
+        queue1.add(0.3, 3);
+        queue2.add(0.4, 4);
+        queue2.add(0.5, 5);
+        queue2.add(0.6, 6);
+        queue3.add(0.7, 7);
+        queue3.add(0.8, 8);
+        queue3.add(0.9, 9);
+
+        List<Integer> elements = queue1.pollFirstFromAny(Duration.ofSeconds(4), 2, "queue:pollany1", "queue:pollany2");
+        assertThat(elements).containsExactly(1, 2);
+        assertThat(queue1.size()).isEqualTo(1);
+
+        List<Integer> elements2 = queue1.pollFirstFromAny(2, "queue:pollany1", "queue:pollany2");
+        assertThat(elements2).containsExactly(3);
+        assertThat(elements2.size()).isEqualTo(1);
+    }
+
+    @Test
+    public void testPollFirstEntriesFromAnyCount() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("7.0.0") > 0);
+
+        RScoredSortedSet<Integer> queue1 = redisson.getScoredSortedSet("queue:pollany");
+        RScoredSortedSet<Integer> queue2 = redisson.getScoredSortedSet("queue:pollany1");
+        RScoredSortedSet<Integer> queue3 = redisson.getScoredSortedSet("queue:pollany2");
+        queue1.add(0.1, 1);
+        queue1.add(0.2, 2);
+        queue1.add(0.3, 3);
+        queue2.add(0.4, 4);
+        queue2.add(0.5, 5);
+        queue2.add(0.6, 6);
+        queue3.add(0.7, 7);
+        queue3.add(0.8, 8);
+        queue3.add(0.9, 9);
+
+        Map<String, Map<Integer, Double>> elements = queue1.pollFirstEntriesFromAny(2, "queue:pollany1", "queue:pollany2");
+        assertThat(elements).hasSize(1);
+        assertThat(elements.get("queue:pollany")).containsEntry(1, 0.1).containsEntry(2, 0.2).hasSize(2);
+        assertThat(queue1.size()).isEqualTo(1);
+
+        Map<String, Map<Integer, Double>> elements2 = queue1.pollFirstEntriesFromAny(2, "queue:pollany1", "queue:pollany2");
+        assertThat(elements2).hasSize(1);
+        assertThat(elements2.get("queue:pollany")).containsEntry(3, 0.3).hasSize(1);
+        assertThat(elements2.size()).isEqualTo(1);
+    }
+
+    @Test
+    public void testPollLastEntriesFromAnyCount() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("7.0.0") > 0);
+
+        RScoredSortedSet<Integer> queue1 = redisson.getScoredSortedSet("queue:pollany");
+        RScoredSortedSet<Integer> queue2 = redisson.getScoredSortedSet("queue:pollany1");
+        RScoredSortedSet<Integer> queue3 = redisson.getScoredSortedSet("queue:pollany2");
+        queue1.add(0.1, 1);
+        queue1.add(0.2, 2);
+        queue1.add(0.3, 3);
+        queue2.add(0.4, 4);
+        queue2.add(0.5, 5);
+        queue2.add(0.6, 6);
+        queue3.add(0.7, 7);
+        queue3.add(0.8, 8);
+        queue3.add(0.9, 9);
+
+        Map<String, Map<Integer, Double>> elements = queue1.pollLastEntriesFromAny(2, "queue:pollany1", "queue:pollany2");
+        assertThat(elements).hasSize(1);
+        assertThat(elements.get("queue:pollany")).containsEntry(3, 0.3).containsEntry(2, 0.2).hasSize(2);
+        assertThat(queue1.size()).isEqualTo(1);
+
+        Map<String, Map<Integer, Double>> elements2 = queue1.pollLastEntriesFromAny(2, "queue:pollany1", "queue:pollany2");
+        assertThat(elements2).hasSize(1);
+        assertThat(elements2.get("queue:pollany")).containsEntry(1, 0.1).hasSize(1);
+        assertThat(elements2.size()).isEqualTo(1);
+    }
+
+    @Test
+    public void testPollFirstEntriesFromAnyTimeout() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("7.0.0") > 0);
+
+        RScoredSortedSet<Integer> queue1 = redisson.getScoredSortedSet("queue:pollany");
+        RScoredSortedSet<Integer> queue2 = redisson.getScoredSortedSet("queue:pollany1");
+        RScoredSortedSet<Integer> queue3 = redisson.getScoredSortedSet("queue:pollany2");
+        queue1.add(0.1, 1);
+        queue1.add(0.2, 2);
+        queue1.add(0.3, 3);
+        queue2.add(0.4, 4);
+        queue2.add(0.5, 5);
+        queue2.add(0.6, 6);
+        queue3.add(0.7, 7);
+        queue3.add(0.8, 8);
+        queue3.add(0.9, 9);
+
+        Map<String, Map<Integer, Double>> elements = queue1.pollFirstEntriesFromAny(Duration.ofSeconds(2), 2, "queue:pollany1", "queue:pollany2");
+        assertThat(elements).hasSize(1);
+        assertThat(elements.get("queue:pollany")).containsEntry(1, 0.1).containsEntry(2, 0.2).hasSize(2);
+        assertThat(queue1.size()).isEqualTo(1);
+
+        Map<String, Map<Integer, Double>> elements2 = queue1.pollFirstEntriesFromAny(Duration.ofSeconds(2),2, "queue:pollany1", "queue:pollany2");
+        assertThat(elements2).hasSize(1);
+        assertThat(elements2.get("queue:pollany")).containsEntry(3, 0.3).hasSize(1);
+        assertThat(elements2.size()).isEqualTo(1);
+    }
+
+    @Test
+    public void testPollLastEntriesFromAnyTimeout() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("7.0.0") > 0);
+
+        RScoredSortedSet<Integer> queue1 = redisson.getScoredSortedSet("queue:pollany");
+        RScoredSortedSet<Integer> queue2 = redisson.getScoredSortedSet("queue:pollany1");
+        RScoredSortedSet<Integer> queue3 = redisson.getScoredSortedSet("queue:pollany2");
+        queue1.add(0.1, 1);
+        queue1.add(0.2, 2);
+        queue1.add(0.3, 3);
+        queue2.add(0.4, 4);
+        queue2.add(0.5, 5);
+        queue2.add(0.6, 6);
+        queue3.add(0.7, 7);
+        queue3.add(0.8, 8);
+        queue3.add(0.9, 9);
+
+        Map<String, Map<Integer, Double>> elements = queue1.pollLastEntriesFromAny(Duration.ofSeconds(2), 2, "queue:pollany1", "queue:pollany2");
+        assertThat(elements).hasSize(1);
+        assertThat(elements.get("queue:pollany")).containsEntry(3, 0.3).containsEntry(2, 0.2).hasSize(2);
+        assertThat(queue1.size()).isEqualTo(1);
+
+        Map<String, Map<Integer, Double>> elements2 = queue1.pollLastEntriesFromAny(Duration.ofSeconds(2),2, "queue:pollany1", "queue:pollany2");
+        assertThat(elements2).hasSize(1);
+        assertThat(elements2.get("queue:pollany")).containsEntry(1, 0.1).hasSize(1);
+        assertThat(elements2.size()).isEqualTo(1);
+    }
+
+    @Test
+    public void testPollLastFromAnyCount() {
+//        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("7.0.0") > 0);
+
+        RScoredSortedSet<Integer> queue1 = redisson.getScoredSortedSet("queue:pollany");
+        RScoredSortedSet<Integer> queue2 = redisson.getScoredSortedSet("queue:pollany1");
+        RScoredSortedSet<Integer> queue3 = redisson.getScoredSortedSet("queue:pollany2");
+        queue1.add(0.1, 1);
+        queue1.add(0.2, 2);
+        queue1.add(0.3, 3);
+        queue2.add(0.4, 4);
+        queue2.add(0.5, 5);
+        queue2.add(0.6, 6);
+        queue3.add(0.7, 7);
+        queue3.add(0.8, 8);
+        queue3.add(0.9, 9);
+
+        List<Integer> elements = queue1.pollLastFromAny(Duration.ofSeconds(4), 2, "queue:pollany1", "queue:pollany2");
+        assertThat(elements).containsExactly(3, 2);
+        assertThat(queue1.size()).isEqualTo(1);
+
+        List<Integer> elements2 = queue1.pollLastFromAny(2, "queue:pollany1", "queue:pollany2");
+        assertThat(elements2).containsExactly(1);
+        assertThat(elements2.size()).isEqualTo(1);
     }
 
     @Test
@@ -418,13 +594,114 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     }
 
     @Test
+    public void testAddAllIfAbsent() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        set.add(10, "1981");
+        set.add(11, "1984");
+
+        Map<String, Double> map = new HashMap<>();
+        map.put("1981", 111D);
+        map.put("1982", 112D);
+        map.put("1983", 113D);
+        map.put("1984", 114D);
+
+        assertThat(set.addAllIfAbsent(map)).isEqualTo(2);
+        assertThat(set.getScore("1981")).isEqualTo(10);
+        assertThat(set.getScore("1984")).isEqualTo(11);
+        assertThat(set).contains("1981", "1982", "1983", "1984");
+    }
+
+    @Test
+    public void testAddAllIfExist() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        set.add(10, "1981");
+        set.add(11, "1984");
+
+        Map<String, Double> map = new HashMap<>();
+        map.put("1981", 111D);
+        map.put("1982", 112D);
+        map.put("1983", 113D);
+        map.put("1984", 114D);
+
+        assertThat(set.addAllIfExist(map)).isEqualTo(2);
+        assertThat(set.getScore("1981")).isEqualTo(111D);
+        assertThat(set.getScore("1984")).isEqualTo(114D);
+    }
+
+    @Test
+    public void testAddAllIfGreater() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        set.add(10, "1981");
+        set.add(11, "1984");
+        set.add(13, "1985");
+
+        Map<String, Double> map = new HashMap<>();
+        map.put("1981", 111D);
+        map.put("1982", 112D);
+        map.put("1983", 113D);
+        map.put("1984", 8D);
+        map.put("1985", 3D);
+
+        assertThat(set.addAllIfGreater(map)).isEqualTo(3);
+        assertThat(set.size()).isEqualTo(5);
+        assertThat(set.getScore("1981")).isEqualTo(111D);
+        assertThat(set.getScore("1982")).isEqualTo(112D);
+        assertThat(set.getScore("1983")).isEqualTo(113D);
+        assertThat(set.getScore("1984")).isEqualTo(11D);
+        assertThat(set.getScore("1985")).isEqualTo(13D);
+    }
+
+    @Test
+    public void testAddAllIfLess() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        set.add(10D, "1981");
+        set.add(11D, "1984");
+        set.add(13D, "1985");
+
+        Map<String, Double> map = new HashMap<>();
+        map.put("1981", 111D);
+        map.put("1982", 112D);
+        map.put("1983", 113D);
+        map.put("1984", 8D);
+        map.put("1985", 3D);
+
+        assertThat(set.addAllIfLess(map)).isEqualTo(4);
+        assertThat(set.size()).isEqualTo(5);
+        assertThat(set.getScore("1981")).isEqualTo(10D);
+        assertThat(set.getScore("1982")).isEqualTo(112D);
+        assertThat(set.getScore("1983")).isEqualTo(113D);
+        assertThat(set.getScore("1984")).isEqualTo(8D);
+        assertThat(set.getScore("1985")).isEqualTo(3D);
+    }
+
+    @Test
+    public void testAddIfGreater() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        set.add(123, "1980");
+        assertThat(set.addIfGreater(120, "1980")).isFalse();
+        assertThat(set.getScore("1980")).isEqualTo(123);
+        assertThat(set.addIfGreater(125, "1980")).isTrue();
+        assertThat(set.getScore("1980")).isEqualTo(125);
+    }
+
+    @Test
+    public void testAddIfLess() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        set.add(123, "1980");
+        assertThat(set.addIfLess(120, "1980")).isTrue();
+        assertThat(set.getScore("1980")).isEqualTo(120);
+        assertThat(set.addIfLess(125, "1980")).isFalse();
+        assertThat(set.getScore("1980")).isEqualTo(120);
+    }
+
+    @Test
     public void testAddIfExists() {
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
 
         assertThat(set.addIfExists(123.81, "1980")).isFalse();
         assertThat(set.getScore("1980")).isNull();
         set.add(111, "1980");
-        assertThat(set.addIfExists(32, "1980")).isFalse();
+        assertThat(set.addIfExists(32, "1980")).isTrue();
         assertThat(set.getScore("1980")).isEqualTo(32);
     }
 
@@ -492,7 +769,49 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         assertThat(set.pollFirst(1, TimeUnit.SECONDS)).isEqualTo("a");
         assertThat(set).containsExactly("b", "c");
     }
-    
+
+    @Test
+    public void testPollFirstTimeoutCount() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("7.0.0") > 0);
+
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        assertThat(set.pollFirst(1, TimeUnit.SECONDS)).isNull();
+
+        set.add(0.1, "a");
+        set.add(0.2, "b");
+        set.add(0.3, "c");
+        set.add(0.4, "d");
+        set.add(0.5, "e");
+        set.add(0.6, "f");
+
+        assertThat(set.pollFirst(Duration.ofSeconds(2), 2)).containsExactly("a", "b");
+        assertThat(set).containsExactly("c", "d", "e", "f");
+
+        RScoredSortedSet<String> set2 = redisson.getScoredSortedSet("simple2");
+        assertThat(set2.pollFirst(Duration.ofSeconds(1), 2)).isEmpty();
+    }
+
+    @Test
+    public void testPollLastTimeoutCount() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("7.0.0") > 0);
+
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        assertThat(set.pollFirst(1, TimeUnit.SECONDS)).isNull();
+
+        set.add(0.1, "a");
+        set.add(0.2, "b");
+        set.add(0.3, "c");
+        set.add(0.4, "d");
+        set.add(0.5, "e");
+        set.add(0.6, "f");
+
+        assertThat(set.pollLast(Duration.ofSeconds(2), 2)).containsExactly("f", "e");
+        assertThat(set).containsExactly("a", "b", "c", "d");
+
+        RScoredSortedSet<String> set2 = redisson.getScoredSortedSet("simple2");
+        assertThat(set2.pollLast(Duration.ofSeconds(1), 2)).isEmpty();
+    }
+
     @Test
     public void testPollFistAmount() {
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
@@ -1540,5 +1859,39 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         assertThat(out.getScore("three")).isEqualTo(9);
     }
 
-    
+    @Test
+    public void testDistributedIterator() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("set", StringCodec.INSTANCE);
+
+        // populate set with elements
+        Map<String, Double> stringsOne = IntStream.range(0, 128).boxed()
+                .collect(Collectors.toMap(i -> "one-" + i, Integer::doubleValue));
+        Map<String, Double> stringsTwo = IntStream.range(0, 128).boxed()
+                .collect(Collectors.toMap(i -> "two-" + i, Integer::doubleValue));;
+        set.addAll(stringsOne);
+        set.addAll(stringsTwo);
+
+        Iterator<String> stringIterator = set.distributedIterator("iterator_{set}", "one*", 10);
+
+        // read some elements using iterator
+        List<String> strings = new ArrayList<>();
+        for (int i = 0; i < 64; i++) {
+            if (stringIterator.hasNext()) {
+                strings.add(stringIterator.next());
+            }
+        }
+
+        // create another iterator instance using the same name
+        RScoredSortedSet<String> set2 = redisson.getScoredSortedSet("set", StringCodec.INSTANCE);
+        Iterator<String> stringIterator2 = set2.distributedIterator("iterator_{set}", "one*", 10);
+
+        assertTrue(stringIterator2.hasNext());
+
+        // read all remaining elements
+        stringIterator2.forEachRemaining(strings::add);
+        stringIterator.forEachRemaining(strings::add);
+
+        assertThat(strings).containsAll(stringsOne.keySet());
+        assertThat(strings).hasSize(stringsOne.size());
+    }
 }

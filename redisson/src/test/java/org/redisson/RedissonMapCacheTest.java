@@ -121,13 +121,27 @@ public class RedissonMapCacheTest extends BaseMapTest {
                                     .writeMode(WriteMode.WRITE_BEHIND);
         return redisson.getMapCache("test", options);        
     }
-    
+
+    @Override
+    protected <K, V> RMap<K, V> getWriteBehindAsyncTestMap(String name, Map<K, V> map) {
+        MapOptions<K, V> options = MapOptions.<K, V>defaults()
+                .writerAsync(createMapWriterAsync(map))
+                .writeMode(WriteMode.WRITE_BEHIND);
+        return redisson.getMapCache("test", options);
+    }
+
     @Override
     protected <K, V> RMap<K, V> getLoaderTestMap(String name, Map<K, V> map) {
         MapOptions<K, V> options = MapOptions.<K, V>defaults().loader(createMapLoader(map));
         return redisson.getMapCache("test", options);        
     }
-    
+
+    @Override
+    protected <K, V> RMap<K, V> getLoaderAsyncTestMap(String name, Map<K, V> map) {
+        MapOptions<K, V> options = MapOptions.<K, V>defaults().loaderAsync(createMapLoaderAsync(map));
+        return redisson.getMapCache("test", options);
+    }
+
     @Test
     public void testSizeInMemory() {
         Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("4.0.0") > 0);
@@ -500,7 +514,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
         RMapCache<String, String> cache = redisson.getMapCache("simple");
         cache.put("0", "8", 1, TimeUnit.SECONDS);
 
-        cache.expire(100, TimeUnit.MILLISECONDS);
+        cache.expire(Duration.ofMillis(100));
 
         Thread.sleep(500);
 

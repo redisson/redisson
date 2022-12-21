@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ public interface RTopicAsync {
      * @return locally unique listener id
      * @see org.redisson.api.listener.MessageListener
      */
-    <M> RFuture<Integer> addListenerAsync(Class<M> type, MessageListener<M> listener);
+    <M> RFuture<Integer> addListenerAsync(Class<M> type, MessageListener<? extends M> listener);
     
     /**
      * Removes the listener by <code>id</code> for listening this topic
@@ -79,5 +79,12 @@ public interface RTopicAsync {
      * @return amount of subscribers
      */
     RFuture<Long> countSubscribersAsync();
+
+    /**
+     * Removes all listeners from this topic
+     *
+     * @return void
+     */
+    RFuture<Void> removeAllListenersAsync();
     
 }

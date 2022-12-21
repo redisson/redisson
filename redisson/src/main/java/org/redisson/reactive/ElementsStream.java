@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ public class ElementsStream {
             return;
         }
         futureRef.set(future);
-        future.onComplete((res, e) -> {
+        future.whenComplete((res, e) -> {
             if (e != null) {
                 emitter.error(e);
                 return;

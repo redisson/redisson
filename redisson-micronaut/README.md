@@ -2,7 +2,7 @@
 
 Integrates Redisson with [Micronaut](https://micronaut.io/) framework.  
 
-Supports Micronaut 2.0.x - 3.0.x
+Supports Micronaut 2.0.x - 3.5.x
 
 ## Usage  
 
@@ -15,9 +15,9 @@ Maven
     <groupId>org.redisson</groupId>
     <!-- for Micronaut v2.0.x - v2.5.x -->
     <artifactId>redisson-micronaut-20</artifactId>
-    <!-- for Micronaut v3.0.x -->
+    <!-- for Micronaut v3.x.x -->
     <artifactId>redisson-micronaut-30</artifactId>
-    <version>3.16.3</version>
+    <version>3.19.0</version>
 </dependency>
 ```
 
@@ -25,9 +25,9 @@ Gradle
 
 ```groovy
 // for Micronaut v2.0.x - v2.5.x
-compile 'org.redisson:redisson-micronaut-20:3.16.3'
-// for Micronaut v3.0.x
-compile 'org.redisson:redisson-micronaut-30:3.16.3'
+compile 'org.redisson:redisson-micronaut-20:3.19.0'
+// for Micronaut v3.x.x
+compile 'org.redisson:redisson-micronaut-30:3.19.0'
 ```
 
 ### 2. Add settings into `application.yml` file
@@ -81,7 +81,7 @@ redisson:
 |Setting name| `redisson.caches.[CACHE_NAME].codec` |
 |Type| `java.lang.Class` |
 |Description| Redis data codec applied to cache entries. |
-|Default value| `MarshallingCodec` |
+|Default value| `Kryo5Codec` |
 
 | | |
 |-|-|
@@ -143,7 +143,7 @@ redisson:
       expire-after-write: 10s
       expire-after-access: 3s
       max-size: 1000
-      codec: org.redisson.codec.MarshallingCodec
+      codec: org.redisson.codec.Kryo5Codec
     my-cache2: 
       expire-after-write: 200s
       expire-after-access: 30s
@@ -169,7 +169,7 @@ _This feature is available only in [Redisson PRO](https://redisson.pro)_
 |Setting name| `redisson.clustered-caches.[CACHE_NAME].codec` |
 |Type| `java.lang.Class` |
 |Description| Redis data codec applied to cache entries. |
-|Default value| `MarshallingCodec` |
+|Default value| `Kryo5Codec` |
 
 | | |
 |-|-|
@@ -230,7 +230,7 @@ redisson:
       expire-after-write: 10s
       expire-after-access: 3s
       max-size: 1000
-      codec: org.redisson.codec.MarshallingCodec
+      codec: org.redisson.codec.Kryo5Codec
     my-cache2: 
       expire-after-write: 200s
       expire-after-access: 30s
@@ -256,7 +256,7 @@ _This feature is available only in [Redisson PRO](https://redisson.pro)_
 |Setting name| `redisson.clustered-local-caches.[CACHE_NAME].codec` |
 |Type| `java.lang.Class` |
 |Description| Redis data codec applied to cache entries. |
-|Default value| `MarshallingCodec` |
+|Default value| `Kryo5Codec` |
 
 | | |
 |-|-|
@@ -375,7 +375,7 @@ redisson:
       expire-after-write: 10s
       expire-after-access: 3s
       max-size: 1000
-      codec: org.redisson.codec.MarshallingCodec
+      codec: org.redisson.codec.Kryo5Codec
       store-сache-miss: true
       eviction-policy: `WEAK`
       cache-size: 5000
@@ -404,7 +404,7 @@ _This feature is available only in [Redisson PRO](https://redisson.pro)_
 |Setting name| `redisson.local-caches.[CACHE_NAME].codec` |
 |Type| `java.lang.Class` |
 |Description| Redis data codec applied to cache entries. |
-|Default value| `MarshallingCodec` |
+|Default value| `Kryo5Codec` |
 
 | | |
 |-|-|
@@ -523,7 +523,7 @@ redisson:
       expire-after-write: 10s
       expire-after-access: 3s
       max-size: 1000
-      codec: org.redisson.codec.MarshallingCodec
+      codec: org.redisson.codec.Kryo5Codec
       store-сache-miss: true
       eviction-policy: `WEAK`
       cache-size: 5000
@@ -542,7 +542,7 @@ Additional settings to [HttpSessionConfiguration](https://docs.micronaut.io/2.5.
 |------------|----|-----------|
 |micronaut.session.http.redisson.enabled|java.lang.Boolean|Enables Session store|
 |micronaut.session.http.redisson.key-prefix|java.lang.Integer|Defines string prefix applied to all objects stored in Redis.|
-|micronaut.session.http.redisson.codec|java.lang.Class|Redis data codec applied to cache entries. Default is MarshallingCodec codec.|
+|micronaut.session.http.redisson.codec|java.lang.Class|Redis data codec applied to cache entries. Default is Kryo5Codec codec.|
 |micronaut.session.http.redisson.update-mode|java.lang.String|Defines session attributes update mode.<br/>`WRITE_BEHIND` - session changes stored asynchronously.<br/>`AFTER_REQUEST` - session changes stored only on `SessionStore#save(Session)` method invocation. Default value.|
 |micronaut.session.http.redisson.broadcastSessionUpdates|java.lang.Boolean|Defines broadcasting of session updates across all micronaut services.|
 

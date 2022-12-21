@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.redisson;
 import org.redisson.api.*;
 import org.redisson.api.redisnode.*;
 import org.redisson.client.codec.Codec;
+import org.redisson.codec.JsonCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandSyncService;
 import org.redisson.config.Config;
@@ -155,12 +156,12 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
-    public <V> RTimeSeries<V> getTimeSeries(String name) {
+    public <V, L> RTimeSeries<V, L> getTimeSeries(String name) {
         return new RedissonTimeSeries<>(evictionScheduler, commandExecutor, name);
     }
 
     @Override
-    public <V> RTimeSeries<V> getTimeSeries(String name, Codec codec) {
+    public <V, L> RTimeSeries<V, L> getTimeSeries(String name, Codec codec) {
         return new RedissonTimeSeries<>(codec, evictionScheduler, commandExecutor, name);
     }
 
@@ -212,6 +213,11 @@ public class Redisson implements RedissonClient {
     @Override
     public RBuckets getBuckets(Codec codec) {
         return new RedissonBuckets(codec, commandExecutor);
+    }
+
+    @Override
+    public <V> RJsonBucket<V> getJsonBucket(String name, JsonCodec<V> codec) {
+        return new RedissonJsonBucket<>(codec, commandExecutor, name);
     }
 
     @Override
@@ -352,6 +358,11 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
+    public RFencedLock getFencedLock(String name) {
+        return new RedissonFencedLock(commandExecutor, name);
+    }
+
+    @Override
     public RLock getMultiLock(RLock... locks) {
         return new RedissonMultiLock(locks);
     }
@@ -379,6 +390,16 @@ public class Redisson implements RedissonClient {
     @Override
     public <V> RSet<V> getSet(String name, Codec codec) {
         return new RedissonSet<V>(codec, commandExecutor, name, this);
+    }
+
+    @Override
+    public RFunction getFunction() {
+        return new RedissonFuction(commandExecutor);
+    }
+
+    @Override
+    public RFunction getFunction(Codec codec) {
+        return new RedissonFuction(commandExecutor, codec);
     }
 
     @Override
@@ -458,6 +479,16 @@ public class Redisson implements RedissonClient {
     @Override
     public RLexSortedSet getLexSortedSet(String name) {
         return new RedissonLexSortedSet(commandExecutor, name, this);
+    }
+
+    @Override
+    public RShardedTopic getShardedTopic(String name) {
+        return new RedissonShardedTopic(commandExecutor, name);
+    }
+
+    @Override
+    public RShardedTopic getShardedTopic(String name, Codec codec) {
+        return new RedissonShardedTopic(codec, commandExecutor, name);
     }
 
     @Override

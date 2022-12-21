@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,6 +54,8 @@ public interface RReliableTopicReactive extends RExpirableReactive {
      * <code>MessageListener.onMessage</code> method is called when any message
      * is published on this topic.
      * <p>
+     * Though messages broadcasted across all topic instances, listener is attached to this topic instance.
+     * <p>
      * Watchdog is started when listener was registered.
      *
      * @see org.redisson.config.Config#setReliableTopicWatchdogTimeout(long)
@@ -61,13 +63,13 @@ public interface RReliableTopicReactive extends RExpirableReactive {
      * @param <M> - type of message
      * @param type - type of message
      * @param listener for messages
-     * @return locally unique listener id
+     * @return id of listener attached to this topic instance
      * @see MessageListener
      */
     <M> Mono<String> addListener(Class<M> type, MessageListener<M> listener);
     
     /**
-     * Removes the listener by <code>id</code> for listening this topic
+     * Removes the listener by <code>id</code> attached to this topic instance
      *
      * @param listenerIds - listener ids
      * @return void
@@ -75,7 +77,7 @@ public interface RReliableTopicReactive extends RExpirableReactive {
     Mono<Void> removeListener(String... listenerIds);
 
     /**
-     * Removes all listeners from this topic
+     * Removes all listeners attached to this topic instance
      */
     Mono<Void> removeAllListeners();
 

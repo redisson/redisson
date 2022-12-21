@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import org.redisson.api.executor.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.RPromise;
 import org.redisson.remote.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -71,7 +71,7 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
                     + "redis.call('zrem', KEYS[2], ARGV[1]); "
 
                     + "redis.call('zrem', KEYS[7], ARGV[1]); "
-                    + "redis.call('zrem', KEYS[7], 'ff' .. ARGV[1]);"
+                    + "redis.call('zrem', KEYS[7], 'ff:' .. ARGV[1]);"
 
                     + "redis.call('hdel', KEYS[1], ARGV[1]); "
                     + "if redis.call('decr', KEYS[3]) == 0 then "
@@ -93,12 +93,13 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
 
     @Override
     protected <T> void invokeMethod(RemoteServiceRequest request, RemoteServiceMethod method,
-                RFuture<RemoteServiceCancelRequest> cancelRequestFuture, RPromise<RRemoteServiceResponse> responsePromise) {
-        startedListeners.stream().forEach(l -> l.onStarted(request.getId()));
+                                    CompletableFuture<RemoteServiceCancelRequest> cancelRequestFuture,
+                                    CompletableFuture<RRemoteServiceResponse> responsePromise) {
+        startedListeners.forEach(l -> l.onStarted(request.getId()));
 
         if (taskTimeout > 0) {
             commandExecutor.getConnectionManager().getGroup().schedule(() -> {
-                ((RPromise) cancelRequestFuture).trySuccess(new RemoteServiceCancelRequest(true, false));
+                cancelRequestFuture.complete(new RemoteServiceCancelRequest(true, false));
             }, taskTimeout, TimeUnit.MILLISECONDS);
         }
 
@@ -106,7 +107,7 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
             Object result = method.getMethod().invoke(method.getBean(), request.getArgs());
 
             RemoteServiceResponse response = new RemoteServiceResponse(request.getId(), result);
-            responsePromise.trySuccess(response);
+            responsePromise.complete(response);
         } catch (Exception e) {
             if (e instanceof InvocationTargetException
                 && e.getCause() instanceof RedissonShutdownException) {
@@ -116,26 +117,26 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
                 return;
             }
             RemoteServiceResponse response = new RemoteServiceResponse(request.getId(), e.getCause());
-            responsePromise.trySuccess(response);
-            log.error("Can't execute: " + request, e);
+            responsePromise.complete(response);
+            log.error("Can't execute: {}", request, e);
         }
 
         if (cancelRequestFuture != null) {
             cancelRequestFuture.cancel(false);
         }
 
-        if (responsePromise.getNow() instanceof RemoteServiceResponse) {
-            RemoteServiceResponse response = (RemoteServiceResponse) responsePromise.getNow();
+        if (commandExecutor.getNow(responsePromise) instanceof RemoteServiceResponse) {
+            RemoteServiceResponse response = (RemoteServiceResponse) commandExecutor.getNow(responsePromise);
             if (response.getError() == null) {
-                successListeners.stream().forEach(l -> l.onSucceeded(request.getId(), response.getResult()));
+                successListeners.forEach(l -> l.onSucceeded(request.getId(), response.getResult()));
             } else {
-                failureListeners.stream().forEach(l -> l.onFailed(request.getId(), response.getError()));
+                failureListeners.forEach(l -> l.onFailed(request.getId(), response.getError()));
             }
         } else {
-            failureListeners.stream().forEach(l -> l.onFailed(request.getId(), null));
+            failureListeners.forEach(l -> l.onFailed(request.getId(), null));
         }
 
-        finishedListeners.stream().forEach(l -> l.onFinished(request.getId()));
+        finishedListeners.forEach(l -> l.onFinished(request.getId()));
     }
 
     public void setListeners(List<TaskListener> listeners) {

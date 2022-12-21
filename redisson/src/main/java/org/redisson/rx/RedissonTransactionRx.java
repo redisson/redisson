@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -116,12 +116,12 @@ public class RedissonTransactionRx implements RTransactionRx {
 
     @Override
     public Completable commit() {
-        return executorService.flowable(() -> transaction.commitAsync()).ignoreElements();
+        return executorService.flowable(() -> transaction.commitAsync().toCompletableFuture()).ignoreElements();
     }
 
     @Override
     public Completable rollback() {
-        return executorService.flowable(() -> transaction.rollbackAsync()).ignoreElements();
+        return executorService.flowable(() -> transaction.rollbackAsync().toCompletableFuture()).ignoreElements();
     }
     
 }

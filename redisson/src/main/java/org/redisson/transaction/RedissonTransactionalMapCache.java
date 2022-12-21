@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,10 @@ import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.transaction.operation.TransactionalOperation;
 
-import java.time.Instant;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -58,28 +60,18 @@ public class RedissonTransactionalMapCache<K, V> extends RedissonMapCache<K, V> 
     }
     
     @Override
-    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
-        throw new UnsupportedOperationException("expire method is not supported in transaction");
+    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
+        return transactionalMap.expireAsync(timeToLive, timeUnit, param, keys);
     }
     
     @Override
-    public RFuture<Boolean> expireAtAsync(Date timestamp) {
-        throw new UnsupportedOperationException("expire method is not supported in transaction");
-    }
-    
-    @Override
-    public RFuture<Boolean> expireAtAsync(long timestamp) {
-        throw new UnsupportedOperationException("expire method is not supported in transaction");
-    }
-
-    @Override
-    public RFuture<Boolean> expireAsync(Instant timestamp) {
-        throw new UnsupportedOperationException("expire method is not supported in transaction");
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
+        return transactionalMap.expireAtAsync(timestamp, param, keys);
     }
 
     @Override
     public RFuture<Boolean> clearExpireAsync() {
-        throw new UnsupportedOperationException("clearExpire method is not supported in transaction");
+        return transactionalMap.clearExpireAsync();
     }
     
     @Override

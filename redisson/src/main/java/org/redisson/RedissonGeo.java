@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,7 +107,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
     }
 
     private RFuture<Long> addAsync(String subCommand, GeoEntry... entries) {
-        List<Object> params = new ArrayList<Object>(entries.length + 2);
+        List<Object> params = new ArrayList<>(entries.length + 2);
         params.add(getRawName());
         if (!subCommand.isEmpty()) {
             params.add(subCommand);
@@ -115,7 +115,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
         for (GeoEntry entry : entries) {
             params.add(entry.getLongitude());
             params.add(entry.getLatitude());
-            params.add(encode(entry.getMember()));
+            encode(params, entry.getMember());
         }
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.GEOADD, params.toArray());
     }
@@ -187,10 +187,10 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
 
     @Override
     public RFuture<Map<V, String>> hashAsync(V... members) {
-        List<Object> params = new ArrayList<Object>(members.length + 1);
+        List<Object> params = new ArrayList<>(members.length + 1);
         params.add(getRawName());
         for (Object member : members) {
-            params.add(encode(member));
+            encode(params, member);
         }
         RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("GEOHASH",
                 new MapGetAllDecoder((List<Object>) Arrays.asList(members), 0));
@@ -204,10 +204,10 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
 
     @Override
     public RFuture<Map<V, GeoPosition>> posAsync(V... members) {
-        List<Object> params = new ArrayList<Object>(members.length + 1);
+        List<Object> params = new ArrayList<>(members.length + 1);
         params.add(getRawName());
         for (Object member : members) {
-            params.add(encode(member));
+            encode(params, member);
         }
 
         MultiDecoder<Map<Object, Object>> decoder = new ListMultiDecoder2(

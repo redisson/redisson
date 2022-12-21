@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import org.redisson.api.RSetCache;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.transaction.RedissonTransactionalLock;
+import org.redisson.transaction.RedissonTransactionalReadLock;
 import org.redisson.transaction.operation.TransactionalOperation;
 
 /**
@@ -52,6 +53,10 @@ public abstract class SetOperation extends TransactionalOperation {
     protected RLock getLock(RSet<?> setCache, CommandAsyncExecutor commandExecutor, Object value) {
         String lockName = ((RedissonSet<?>) setCache).getLockByValue(value, "lock");
         return new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
+    }
+
+    protected RLock getReadLock(String readLockName, CommandAsyncExecutor commandExecutor) {
+        return new RedissonTransactionalReadLock(commandExecutor, readLockName, transactionId);
     }
 
 }

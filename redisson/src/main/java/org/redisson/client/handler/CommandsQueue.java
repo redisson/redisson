@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.QueueCommandHolder;
 import org.redisson.misc.LogHelper;
 
-import java.net.SocketAddress;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.Queue;
@@ -42,9 +41,8 @@ public class CommandsQueue extends ChannelDuplexHandler {
     public static final AttributeKey<Deque<QueueCommandHolder>> COMMANDS_QUEUE = AttributeKey.valueOf("COMMANDS_QUEUE");
 
     @Override
-    public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise) throws Exception {
-        super.connect(ctx, remoteAddress, localAddress, promise);
-
+    public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+        super.channelRegistered(ctx);
         ctx.channel().attr(COMMANDS_QUEUE).set(new ConcurrentLinkedDeque<>());
     }
 
@@ -81,7 +79,12 @@ public class CommandsQueue extends ChannelDuplexHandler {
                 if (lock.compareAndSet(false, true)) {
                     try {
                         queue.add(holder);
-                        ctx.writeAndFlush(data, holder.getChannelPromise());
+                        try {
+                            ctx.writeAndFlush(data, holder.getChannelPromise());
+                        } catch (Exception e) {
+                            queue.remove(holder);
+                            throw e;
+                        }
                     } finally {
                         lock.set(false);
                     }

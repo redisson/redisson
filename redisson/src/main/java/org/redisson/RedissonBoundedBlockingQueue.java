@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,13 +24,13 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.ListDrainToDecoder;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -41,40 +41,42 @@ import java.util.function.Consumer;
  */
 public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements RBoundedBlockingQueue<V> {
 
-    private final CommandAsyncExecutor commandExecutor;
-    
+    private final RedissonBlockingQueue<V> blockingQueue;
+    private final RedissonQueueSemaphore semaphore;
+    private final String channelName;
+
     protected RedissonBoundedBlockingQueue(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name, redisson);
-        this.commandExecutor = commandExecutor;
+        blockingQueue = new RedissonBlockingQueue<V>(commandExecutor, name, redisson);
+        semaphore = new RedissonQueueSemaphore(commandExecutor, getSemaphoreName());
+        channelName = RedissonSemaphore.getChannelName(semaphore.getRawName());
     }
 
     protected RedissonBoundedBlockingQueue(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(codec, commandExecutor, name, redisson);
-        this.commandExecutor = commandExecutor;
+        blockingQueue = new RedissonBlockingQueue<V>(commandExecutor, name, redisson);
+        semaphore = new RedissonQueueSemaphore(commandExecutor, getSemaphoreName());
+        channelName = RedissonSemaphore.getChannelName(semaphore.getRawName());
     }
     
     private String getSemaphoreName() {
-        return prefixName("redisson_bqs", getRawName());
+        return prefixName("redisson_bqs", getName());
     }
     
     @Override
     public RFuture<Boolean> addAsync(V e) {
-        RPromise<Boolean> result = new RedissonPromise<Boolean>();
         RFuture<Boolean> future = offerAsync(e);
-        future.onComplete((res, ex) -> {
+        CompletionStage<Boolean> f = future.handle((res, ex) -> {
             if (ex != null) {
-                result.tryFailure(ex);
-                return;
+                throw new CompletionException(ex);
             }
-            
+
             if (!res) {
-                result.tryFailure(new IllegalStateException("Queue is full"));
-                return;
+                throw new CompletionException(new IllegalStateException("Queue is full"));
             }
-            
-            result.trySuccess(res);
+            return true;
         });
-        return result;
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
@@ -116,34 +118,23 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
 
     @Override
     public RFuture<V> takeAsync() {
-        RFuture<V> takeFuture = commandExecutor.writeAsync(getRawName(), codec, RedisCommands.BLPOP_VALUE, getRawName(), 0);
+        RFuture<V> takeFuture = blockingQueue.takeAsync();
         return wrapTakeFuture(takeFuture);
     }
 
-    private RPromise<V> wrapTakeFuture(RFuture<V> takeFuture) {
-        RPromise<V> result = new RedissonPromise<V>() {
-            @Override
-            public boolean cancel(boolean mayInterruptIfRunning) {
-                super.cancel(mayInterruptIfRunning);
-                return takeFuture.cancel(mayInterruptIfRunning);
-            };
-        };
-        
-        takeFuture.onComplete((res, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
-            }
-            
+    private <V> RFuture<V> wrapTakeFuture(RFuture<V> takeFuture) {
+        CompletableFuture<V> f = takeFuture.toCompletableFuture().thenCompose(res -> {
             if (res == null) {
-                result.trySuccess(takeFuture.getNow());
-                return;
+                return CompletableFuture.completedFuture(null);
             }
-            createSemaphore(null).releaseAsync().onComplete((r, ex) -> {
-                result.trySuccess(takeFuture.getNow());
-            });
+            return createSemaphore(null).releaseAsync().handle((r, ex) -> res);
         });
-        return result;
+        f.whenComplete((r, e) -> {
+            if (f.isCancelled()) {
+                takeFuture.cancel(false);
+            }
+        });
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
@@ -154,10 +145,9 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
     @Override
     public RFuture<Boolean> removeAllAsync(Collection<?> c) {
         if (c.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(false);
+            return new CompletableFutureWrapper<>(false);
         }
 
-        String channelName = RedissonSemaphore.getChannelName(getSemaphoreName());
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
                         "local count = 0; " +
                         "for i = 1, #ARGV, 1 do "
@@ -171,12 +161,11 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
                             + "return 1;"
                         + "end;"
                        + "return 0 ",
-                       Arrays.<Object>asList(getRawName(), getSemaphoreName(), channelName), encode(c).toArray());
+                       Arrays.asList(getRawName(), semaphore.getRawName(), channelName), encode(c).toArray());
     }
     
     @Override
     public RFuture<V> pollAsync() {
-        String channelName = RedissonSemaphore.getChannelName(getSemaphoreName());
         return commandExecutor.evalWriteNoRetryAsync(getRawName(), codec, RedisCommands.EVAL_OBJECT,
                 "local res = redis.call('lpop', KEYS[1]);"
                 + "if res ~= false then " +
@@ -184,7 +173,7 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
                     "redis.call('publish', KEYS[3], value); "
                 + "end;"
                 + "return res;",
-                Arrays.<Object>asList(getRawName(), getSemaphoreName(), channelName), 1);
+                Arrays.asList(getRawName(), semaphore.getRawName(), channelName), 1);
     }
     
     /*
@@ -198,7 +187,7 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
 
     @Override
     public RFuture<V> pollAsync(long timeout, TimeUnit unit) {
-        RFuture<V> takeFuture = commandExecutor.writeAsync(getRawName(), codec, RedisCommands.BLPOP_VALUE, getRawName(), toSeconds(timeout, unit));
+        RFuture<V> takeFuture = blockingQueue.pollAsync(timeout, unit);
         return wrapTakeFuture(takeFuture);
     }
 
@@ -226,8 +215,30 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
      */
     @Override
     public RFuture<V> pollFromAnyAsync(long timeout, TimeUnit unit, String... queueNames) {
-        RFuture<V> takeFuture = commandExecutor.pollFromAnyAsync(getRawName(), codec, RedisCommands.BLPOP_VALUE, toSeconds(timeout, unit), queueNames);
+        RFuture<V> takeFuture = blockingQueue.pollFromAnyAsync(timeout, unit, queueNames);
         return wrapTakeFuture(takeFuture);
+    }
+
+    @Override
+    public Map<String, List<V>> pollFirstFromAny(Duration duration, int count, String... queueNames) {
+        return get(pollFirstFromAnyAsync(duration, count, queueNames));
+    }
+
+    @Override
+    public Map<String, List<V>> pollLastFromAny(Duration duration, int count, String... queueNames) {
+        return get(pollLastFromAnyAsync(duration, count, queueNames));
+    }
+
+    @Override
+    public RFuture<Map<String, List<V>>> pollFirstFromAnyAsync(Duration duration, int count, String... queueNames) {
+        RFuture<Map<String, List<V>>> future = blockingQueue.pollFirstFromAnyAsync(duration, count, queueNames);
+        return wrapTakeFuture(future);
+    }
+
+    @Override
+    public RFuture<Map<String, List<V>>> pollLastFromAnyAsync(Duration duration, int count, String... queueNames) {
+        RFuture<Map<String, List<V>>> future = blockingQueue.pollLastFromAnyAsync(duration, count, queueNames);
+        return wrapTakeFuture(future);
     }
 
     @Override
@@ -252,7 +263,7 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
     
     @Override
     public RFuture<V> pollLastAndOfferFirstToAsync(String queueName, long timeout, TimeUnit unit) {
-        RFuture<V> takeFuture = commandExecutor.writeAsync(getRawName(), codec, RedisCommands.BRPOPLPUSH, getRawName(), queueName, unit.toSeconds(timeout));
+        RFuture<V> takeFuture = blockingQueue.pollLastAndOfferFirstToAsync(queueName, timeout, unit);
         return wrapTakeFuture(takeFuture);
     }
 
@@ -276,9 +287,8 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
         if (c == null) {
             throw new NullPointerException();
         }
-        
-        String channelName = RedissonSemaphore.getChannelName(getSemaphoreName());
-        return commandExecutor.evalWriteAsync(getRawName(), codec, new RedisCommand<Object>("EVAL", new ListDrainToDecoder((Collection<Object>) c)),
+
+        return commandExecutor.evalWriteAsync(getRawName(), codec, new RedisCommand<Object>("EVAL", new ListDrainToDecoder(c)),
               "local vals = redis.call('lrange', KEYS[1], 0, -1); " +
               "redis.call('del', KEYS[1]); " +
               "if #vals > 0 then "
@@ -286,7 +296,7 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
                 "redis.call('publish', KEYS[3], value); "
             + "end; " +
               "return vals", 
-              Arrays.<Object>asList(getRawName(), getSemaphoreName(), channelName));
+              Arrays.asList(getRawName(), semaphore.getRawName(), channelName));
     }
     
     @Override
@@ -303,10 +313,8 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
         if (c == null) {
             throw new NullPointerException();
         }
-        
-        String channelName = RedissonSemaphore.getChannelName(getSemaphoreName());
-        
-        return commandExecutor.evalWriteAsync(getRawName(), codec, new RedisCommand<Object>("EVAL", new ListDrainToDecoder((Collection<Object>) c)),
+
+        return commandExecutor.evalWriteAsync(getRawName(), codec, new RedisCommand<Object>("EVAL", new ListDrainToDecoder(c)),
                 "local elemNum = math.min(ARGV[1], redis.call('llen', KEYS[1])) - 1;" +
                         "local vals = redis.call('lrange', KEYS[1], 0, elemNum); " +
                         "redis.call('ltrim', KEYS[1], elemNum + 1, -1); " +
@@ -315,12 +323,11 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
                           "redis.call('publish', KEYS[3], value); "
                       + "end; " +
                         "return vals",
-                        Arrays.<Object>asList(getRawName(), getSemaphoreName(), channelName), maxElements);
+                        Arrays.asList(getRawName(), semaphore.getRawName(), channelName), maxElements);
     }
     
     @Override
     public RFuture<Boolean> trySetCapacityAsync(int capacity) {
-        String channelName = RedissonSemaphore.getChannelName(getSemaphoreName());
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local value = redis.call('get', KEYS[1]); " +
                 "if (value == false) then "
@@ -329,7 +336,7 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
                     + "return 1;"
                 + "end;"
                 + "return 0;",
-                Arrays.<Object>asList(getSemaphoreName(), channelName), capacity);
+                Arrays.asList(semaphore.getRawName(), channelName), capacity);
     }
     
     @Override
@@ -339,7 +346,6 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
     
     @Override
     public void clear() {
-        String channelName = RedissonSemaphore.getChannelName(getSemaphoreName());
         get(commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
               "local len = redis.call('llen', KEYS[1]); " +
               "if len > 0 then "
@@ -347,7 +353,7 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
               + "local value = redis.call('incrby', KEYS[2], len); " +
                 "redis.call('publish', KEYS[3], value); "
             + "end; ", 
-              Arrays.<Object>asList(getRawName(), getSemaphoreName(), channelName)));
+              Arrays.asList(getRawName(), semaphore.getRawName(), channelName)));
 
     }
     
@@ -363,13 +369,13 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
     }
 
     @Override
-    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
-        return expireAsync(timeToLive, timeUnit, getRawName(), getSemaphoreName());
+    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
+        return super.expireAsync(timeToLive, timeUnit, param, getRawName(), getSemaphoreName());
     }
 
     @Override
-    protected RFuture<Boolean> expireAtAsync(long timestamp, String... keys) {
-        return super.expireAtAsync(timestamp, getRawName(), getSemaphoreName());
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
+        return super.expireAtAsync(timestamp, param, getRawName(), getSemaphoreName());
     }
 
     @Override
@@ -380,7 +386,7 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
     @Override
     public RFuture<Boolean> addAllAsync(Collection<? extends V> c) {
         if (c.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(false);
+            return new CompletableFutureWrapper<>(false);
         }
 
         RedissonQueueSemaphore semaphore = new RedissonQueueSemaphore(commandExecutor, getSemaphoreName());

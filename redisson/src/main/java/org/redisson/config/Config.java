@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import io.netty.channel.EventLoopGroup;
 import org.redisson.client.DefaultNettyHook;
 import org.redisson.client.NettyHook;
 import org.redisson.client.codec.Codec;
-import org.redisson.codec.MarshallingCodec;
+import org.redisson.codec.Kryo5Codec;
 import org.redisson.connection.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,6 +70,8 @@ public class Config {
 
     private long lockWatchdogTimeout = 30 * 1000;
 
+    private boolean checkLockSyncedSlaves = true;
+
     private long reliableTopicWatchdogTimeout = TimeUnit.MINUTES.toMillis(10);
 
     private boolean keepPubSubOrder = true;
@@ -88,7 +90,7 @@ public class Config {
 
     private boolean useThreadClassLoader = true;
 
-    private AddressResolverGroupFactory addressResolverGroupFactory = new DnsAddressResolverGroupFactory();
+    private AddressResolverGroupFactory addressResolverGroupFactory = new SequentialDnsAddressResolverFactory();
 
     public Config() {
     }
@@ -99,7 +101,7 @@ public class Config {
 
         if (oldConf.getCodec() == null) {
             // use it by default
-            oldConf.setCodec(new MarshallingCodec());
+            oldConf.setCodec(new Kryo5Codec());
         }
 
         setConnectionListener(oldConf.getConnectionListener());
@@ -110,6 +112,7 @@ public class Config {
         setUseScriptCache(oldConf.isUseScriptCache());
         setKeepPubSubOrder(oldConf.isKeepPubSubOrder());
         setLockWatchdogTimeout(oldConf.getLockWatchdogTimeout());
+        setCheckLockSyncedSlaves(oldConf.isCheckLockSyncedSlaves());
         setNettyThreads(oldConf.getNettyThreads());
         setThreads(oldConf.getThreads());
         setCodec(oldConf.getCodec());
@@ -156,10 +159,10 @@ public class Config {
     }
 
     /**
-     * Redis data codec. Default is MarshallingCodec codec
+     * Redis data codec. Default is Kryo5Codec codec
      *
      * @see org.redisson.client.codec.Codec
-     * @see org.redisson.codec.MarshallingCodec
+     * @see org.redisson.codec.Kryo5Codec
      * 
      * @param codec object
      * @return config
@@ -503,15 +506,15 @@ public class Config {
     }
 
     /**
-     * This parameter is only used if lock has been acquired without leaseTimeout parameter definition. 
-     * Lock expires after <code>lockWatchdogTimeout</code> if watchdog 
+     * This parameter is only used if lock has been acquired without leaseTimeout parameter definition.
+     * Lock expires after <code>lockWatchdogTimeout</code> if watchdog
      * didn't extend it to next <code>lockWatchdogTimeout</code> time interval.
-     * <p>  
-     * This prevents against infinity locked locks due to Redisson client crush or 
+     * <p>
+     * This prevents against infinity locked locks due to Redisson client crush or
      * any other reason when lock can't be released in proper way.
      * <p>
      * Default is 30000 milliseconds
-     * 
+     *
      * @param lockWatchdogTimeout timeout in milliseconds
      * @return config
      */
@@ -522,6 +525,25 @@ public class Config {
 
     public long getLockWatchdogTimeout() {
         return lockWatchdogTimeout;
+    }
+
+    /**
+     * Defines whether to check synchronized slaves amount
+     * with actual slaves amount after lock acquisition.
+     * <p>
+     * Default is <code>true</code>.
+     *
+     * @param checkLockSyncedSlaves <code>true</code> if check required,
+     *                             <code>false</code> otherwise.
+     * @return config
+     */
+    public Config setCheckLockSyncedSlaves(boolean checkLockSyncedSlaves) {
+        this.checkLockSyncedSlaves = checkLockSyncedSlaves;
+        return this;
+    }
+
+    public boolean isCheckLockSyncedSlaves() {
+        return checkLockSyncedSlaves;
     }
 
     /**

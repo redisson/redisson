@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,11 @@
  */
 package org.redisson.command;
 
-import java.util.List;
-
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -31,8 +27,6 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class CommandSyncService extends CommandAsyncService implements CommandExecutor {
-
-    final Logger log = LoggerFactory.getLogger(getClass());
 
     public CommandSyncService(ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder) {
         super(connectionManager, objectBuilder, RedissonObjectBuilder.ReferenceType.DEFAULT);
@@ -46,28 +40,6 @@ public class CommandSyncService extends CommandAsyncService implements CommandEx
     @Override
     public <T, R> R read(String key, Codec codec, RedisCommand<T> command, Object... params) {
         RFuture<R> res = readAsync(key, codec, command, params);
-        return get(res);
-    }
-
-    @Override
-    public <T, R> R evalRead(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
-        return evalRead(key, connectionManager.getCodec(), evalCommandType, script, keys, params);
-    }
-
-    @Override
-    public <T, R> R evalRead(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
-        RFuture<R> res = evalReadAsync(key, codec, evalCommandType, script, keys, params);
-        return get(res);
-    }
-
-    @Override
-    public <T, R> R evalWrite(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
-        return evalWrite(key, connectionManager.getCodec(), evalCommandType, script, keys, params);
-    }
-
-    @Override
-    public <T, R> R evalWrite(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
-        RFuture<R> res = evalWriteAsync(key, codec, evalCommandType, script, keys, params);
         return get(res);
     }
 

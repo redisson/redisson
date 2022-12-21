@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ import org.redisson.api.mapreduce.RMapReduce;
  * @param <K> map key
  * @param <V> value
  */
-public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K, V> {
+public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K, V>, RDestroyable {
 
     /**
      * Loads all map entries to this Redis map using {@link org.redisson.api.map.MapLoader}.

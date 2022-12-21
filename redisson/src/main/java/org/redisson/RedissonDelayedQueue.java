@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 
 /**
  * 
@@ -72,7 +72,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
                          + "return v[2]; "
                       + "end "
                       + "return nil;",
-                      Arrays.<Object>asList(getRawName(), timeoutSetName, queueName),
+                      Arrays.asList(getRawName(), timeoutSetName, queueName),
                       System.currentTimeMillis(), 100);
             }
             
@@ -112,7 +112,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
               + "if v[1] == value then "
                  + "redis.call('publish', KEYS[4], ARGV[1]); "
               + "end;",
-              Arrays.<Object>asList(getRawName(), timeoutSetName, queueName, channelName),
+              Arrays.asList(getRawName(), timeoutSetName, queueName, channelName),
               timeout, randomId, encode(e));
     }
 
@@ -320,7 +320,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
     @Override
     public RFuture<Boolean> containsAllAsync(Collection<?> c) {
         if (c.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(true);
+            return new CompletableFutureWrapper<>(true);
         }
 
         return commandExecutor.evalReadAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
@@ -352,7 +352,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
     @Override
     public RFuture<Boolean> removeAllAsync(Collection<?> c) {
         if (c.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(false);
+            return new CompletableFutureWrapper<>(false);
         }
 
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
@@ -376,7 +376,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
                     + "i = i + 1;"
                + "end; " 
                + "return result;",
-               Arrays.<Object>asList(queueName, timeoutSetName), encode(c).toArray());
+               Arrays.asList(queueName, timeoutSetName), encode(c).toArray());
     }
 
     @Override
@@ -415,7 +415,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
                         + "i = i + 1; "
                    + "end; "
                    + "return changed; ",
-                Collections.<Object>singletonList(queueName), encode(c).toArray());
+                Collections.singletonList(queueName), encode(c).toArray());
     }  
 
     @Override
@@ -430,18 +430,18 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
     
     @Override
     public RFuture<Long> sizeInMemoryAsync() {
-        List<Object> keys = Arrays.<Object>asList(queueName, timeoutSetName);
+        List<Object> keys = Arrays.asList(queueName, timeoutSetName);
         return super.sizeInMemoryAsync(keys);
     }
 
     @Override
-    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
-        return expireAsync(timeToLive, timeUnit, queueName, timeoutSetName);
+    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
+        return super.expireAsync(timeToLive, timeUnit, param, queueName, timeoutSetName);
     }
 
     @Override
-    protected RFuture<Boolean> expireAtAsync(long timestamp, String... keys) {
-        return super.expireAtAsync(timestamp, queueName, timeoutSetName);
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
+        return super.expireAtAsync(timestamp, param, queueName, timeoutSetName);
     }
 
     @Override
@@ -458,7 +458,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
                   + "return value; "
               + "end "
               + "return nil;",
-              Arrays.<Object>asList(queueName));
+              Arrays.asList(queueName));
     }
 
     @Override
@@ -471,7 +471,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
                     + "return value; "
                 + "end "
                 + "return nil;",
-                Arrays.<Object>asList(queueName, timeoutSetName));
+                Arrays.asList(queueName, timeoutSetName));
     }
 
     @Override
@@ -490,7 +490,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
                   + "return value; "
               + "end "
               + "return nil;",
-              Arrays.<Object>asList(this.queueName, timeoutSetName, queueName));
+              Arrays.asList(this.queueName, timeoutSetName, queueName));
     }
 
     @Override
@@ -505,7 +505,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
                             + "end; "
                        + "end;" +
                        "return 0;",
-                Collections.<Object>singletonList(queueName), encode(o));
+                Collections.singletonList(queueName), encode(o));
     }
 
     @Override

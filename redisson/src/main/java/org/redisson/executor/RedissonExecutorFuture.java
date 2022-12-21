@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,9 @@
 package org.redisson.executor;
 
 import org.redisson.api.RExecutorFuture;
-import org.redisson.misc.PromiseDelegator;
-import org.redisson.misc.RPromise;
-import org.redisson.remote.RequestId;
+import org.redisson.misc.CompletableFutureWrapper;
+
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 
@@ -26,22 +26,22 @@ import org.redisson.remote.RequestId;
  *
  * @param <V> value type
  */
-public class RedissonExecutorFuture<V> extends PromiseDelegator<V> implements RExecutorFuture<V> {
+public class RedissonExecutorFuture<V> extends CompletableFutureWrapper<V> implements RExecutorFuture<V> {
 
-    private final RequestId taskId;
+    private final String taskId;
     
     public RedissonExecutorFuture(RemotePromise<V> promise) {
         this(promise, promise.getRequestId());
     }
     
-    public RedissonExecutorFuture(RPromise<V> promise, RequestId taskId) {
+    public RedissonExecutorFuture(CompletableFuture<V> promise, String taskId) {
         super(promise);
         this.taskId = taskId;
     }
 
     @Override
     public String getTaskId() {
-        return taskId.toString();
+        return taskId;
     }
 
 }

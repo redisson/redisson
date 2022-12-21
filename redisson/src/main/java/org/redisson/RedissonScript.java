@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,10 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.misc.CompletableFutureWrapper;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 
@@ -56,18 +58,10 @@ public class RedissonScript implements RScript {
 
     @Override
     public RFuture<String> scriptLoadAsync(String luaScript) {
-        return commandExecutor.writeAllAsync(StringCodec.INSTANCE, RedisCommands.SCRIPT_LOAD, new SlotCallback<String, String>() {
-            volatile String result;
-            @Override
-            public void onSlotResult(String result) {
-                this.result = result;
-            }
-
-            @Override
-            public String onFinish() {
-                return result;
-            }
-        }, luaScript);
+        List<CompletableFuture<String>> futures = commandExecutor.executeAllAsync(RedisCommands.SCRIPT_LOAD, luaScript);
+        CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        CompletableFuture<String> s = f.thenApply(r -> futures.get(0).getNow(null));
+        return new CompletableFutureWrapper<>(s);
     }
 
     @Override
@@ -129,7 +123,7 @@ public class RedissonScript implements RScript {
 
     @Override
     public RFuture<Void> scriptKillAsync() {
-        return commandExecutor.writeAllAsync(RedisCommands.SCRIPT_KILL);
+        return commandExecutor.writeAllVoidAsync(RedisCommands.SCRIPT_KILL);
     }
 
     public RFuture<Void> scriptKillAsync(String key) {
@@ -142,24 +136,20 @@ public class RedissonScript implements RScript {
     }
 
     @Override
-    public RFuture<List<Boolean>> scriptExistsAsync(final String... shaDigests) {
-         return commandExecutor.writeAllAsync(RedisCommands.SCRIPT_EXISTS, new SlotCallback<List<Boolean>, List<Boolean>>() {
-            volatile List<Boolean> result = new ArrayList<Boolean>(shaDigests.length);
-            @Override
-            public synchronized void onSlotResult(List<Boolean> result) {
-                for (int i = 0; i < result.size(); i++) {
-                    if (this.result.size() == i) {
-                        this.result.add(false);
-                    }
-                    this.result.set(i, this.result.get(i) | result.get(i));
+    public RFuture<List<Boolean>> scriptExistsAsync(String... shaDigests) {
+        List<CompletableFuture<List<Boolean>>> futures = commandExecutor.executeAllAsync(RedisCommands.SCRIPT_EXISTS, (Object[]) shaDigests);
+        CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        CompletableFuture<List<Boolean>> s = f.thenApply(r -> {
+            List<Boolean> result = futures.get(0).getNow(new ArrayList<>());
+            for (CompletableFuture<List<Boolean>> future : futures.subList(1, futures.size())) {
+                List<Boolean> l = future.getNow(new ArrayList<>());
+                for (int i = 0; i < l.size(); i++) {
+                    result.set(i, result.get(i) | l.get(i));
                 }
             }
-
-            @Override
-            public List<Boolean> onFinish() {
-                return new ArrayList<Boolean>(result);
-            }
-        }, (Object[]) shaDigests);
+            return result;
+        });
+        return new CompletableFutureWrapper<>(s);
     }
 
     public List<Boolean> scriptExists(String key, String... shaDigests) {
@@ -181,7 +171,7 @@ public class RedissonScript implements RScript {
 
     @Override
     public RFuture<Void> scriptFlushAsync() {
-        return commandExecutor.writeAllAsync(RedisCommands.SCRIPT_FLUSH);
+        return commandExecutor.writeAllVoidAsync(RedisCommands.SCRIPT_FLUSH);
     }
 
     public RFuture<Void> scriptFlushAsync(String key) {
@@ -210,8 +200,20 @@ public class RedissonScript implements RScript {
     public <R> RFuture<R> evalShaAsync(String key, Mode mode, String shaDigest, ReturnType returnType,
             List<Object> keys, Object... values) {
         RedisCommand command = new RedisCommand(returnType.getCommand(), "EVALSHA");
-        if (mode == Mode.READ_ONLY) {
-            return commandExecutor.evalReadAsync(key, codec, command, shaDigest, keys, encode(Arrays.asList(values), codec).toArray());
+        if (mode == Mode.READ_ONLY && commandExecutor.isEvalShaROSupported()) {
+            RedisCommand cmd = new RedisCommand(returnType.getCommand(), "EVALSHA_RO");
+            RFuture<R> f = commandExecutor.evalReadAsync(key, codec, cmd, shaDigest, keys, encode(Arrays.asList(values), codec).toArray());
+            CompletableFuture<R> result = new CompletableFuture<>();
+            f.whenComplete((r, e) -> {
+                if (e != null && e.getMessage().startsWith("ERR unknown command")) {
+                    commandExecutor.setEvalShaROSupported(false);
+                    RFuture<R> s = evalShaAsync(key, mode, shaDigest, returnType, keys, values);
+                    commandExecutor.transfer(s.toCompletableFuture(), result);
+                    return;
+                }
+                commandExecutor.transfer(f.toCompletableFuture(), result);
+            });
+            return new CompletableFutureWrapper<>(result);
         }
         return commandExecutor.evalWriteAsync(key, codec, command, shaDigest, keys, encode(Arrays.asList(values), codec).toArray());
     }
@@ -228,13 +230,13 @@ public class RedissonScript implements RScript {
     @Override
     public <R> R evalSha(String key, Mode mode, String shaDigest, ReturnType returnType, List<Object> keys,
             Object... values) {
-        return commandExecutor.get((RFuture<R>) evalShaAsync(key, mode, shaDigest, returnType, keys, values));
+        return commandExecutor.get(evalShaAsync(key, mode, shaDigest, returnType, keys, values));
     }
 
     @Override
     public <R> R eval(String key, Mode mode, String luaScript, ReturnType returnType, List<Object> keys,
             Object... values) {
-        return commandExecutor.get((RFuture<R>) evalAsync(key, mode, luaScript, returnType, keys, values));
+        return commandExecutor.get(evalAsync(key, mode, luaScript, returnType, keys, values));
     }
 
 }

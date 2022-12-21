@@ -3,12 +3,17 @@ package org.redisson;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RSet;
 import org.redisson.api.RSetMultimap;
+import org.redisson.client.codec.StringCodec;
 
 import java.io.Serializable;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RedissonSetMultimapTest extends BaseTest {
 
@@ -406,7 +411,7 @@ public class RedissonSetMultimapTest extends BaseTest {
         map.put("1", "2");
         map.put("2", "3");
 
-        map.expire(100, TimeUnit.MILLISECONDS);
+        map.expire(Duration.ofMillis(100));
 
         Thread.sleep(500);
 
@@ -424,7 +429,14 @@ public class RedissonSetMultimapTest extends BaseTest {
         assertThat(oldValues).containsOnly(new SimpleValue("1"));
 
         Set<SimpleValue> allValues = map.getAll(new SimpleKey("0"));
-        assertThat(allValues).containsOnlyElementsOf(values);
+        assertThat(allValues).containsExactlyElementsOf(values);
+
+        Set<SimpleValue> oldValues2 = map.replaceValues(new SimpleKey("0"), Collections.emptyList());
+        assertThat(oldValues2).containsExactlyElementsOf(values);
+
+        Set<SimpleValue> vals = map.getAll(new SimpleKey("0"));
+        assertThat(vals).isEmpty();
+
     }
 
     @Test
@@ -520,4 +532,40 @@ public class RedissonSetMultimapTest extends BaseTest {
         assertThat(map4.get("2")).containsOnly("3");
     }
 
+    @Test
+    public void testDistributedIterator() {
+        RSetMultimap<String, String> map = redisson.getSetMultimap("set", StringCodec.INSTANCE);
+
+        // populate set with elements
+        List<String> stringsOne = IntStream.range(0, 128).mapToObj(i -> "one-" + i).collect(Collectors.toList());
+        List<String> stringsTwo = IntStream.range(0, 128).mapToObj(i -> "two-" + i).collect(Collectors.toList());
+        map.putAll("someKey", stringsOne);
+        map.putAll("someKey", stringsTwo);
+
+        Iterator<String> stringIterator = map.get("someKey")
+                .distributedIterator("iterator_{set}", "one*", 10);
+
+        // read some elements using iterator
+        List<String> strings = new ArrayList<>();
+        for (int i = 0; i < 64; i++) {
+            if (stringIterator.hasNext()) {
+                strings.add(stringIterator.next());
+            }
+        }
+
+        // create another iterator instance using the same name
+        RSetMultimap<String, String> map2 = redisson.getSetMultimap("set", StringCodec.INSTANCE);
+        Iterator<String> stringIterator2 = map2.get("someKey")
+                .distributedIterator("iterator_{set}", "one*", 10);
+
+
+        assertTrue(stringIterator2.hasNext());
+
+        // read all remaining elements
+        stringIterator2.forEachRemaining(strings::add);
+        stringIterator.forEachRemaining(strings::add);
+
+        assertThat(strings).containsAll(stringsOne);
+        assertThat(strings).hasSize(stringsOne.size());
+    }
 }

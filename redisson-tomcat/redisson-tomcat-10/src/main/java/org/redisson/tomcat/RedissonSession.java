@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import org.redisson.tomcat.RedissonSessionManager.UpdateMode;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.security.Principal;
+import java.time.Duration;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -157,7 +158,7 @@ public class RedissonSession extends StandardSession {
         return super.getAttributeNames();
     }
 
-    @Override
+    // for backward compatibility with Tomcat 10.0.x
     public String[] getValueNames() {
         if (readMode == ReadMode.REDIS) {
             if (!isValidInternal()) {
@@ -165,10 +166,15 @@ public class RedissonSession extends StandardSession {
                     (sm.getString("standardSession.getAttributeNames.ise"));
             }
             Set<String> keys = map.readAllKeySet();
-            return keys.toArray(new String[keys.size()]);
+            return keys.toArray(new String[0]);
         }
-        
-        return super.getValueNames();
+
+        if (!isValidInternal()) {
+            throw new IllegalStateException
+                    (sm.getString("standardSession.getValueNames.ise"));
+        }
+
+        return keys();
     }
     
     public void delete() {
@@ -179,9 +185,9 @@ public class RedissonSession extends StandardSession {
         if (broadcastSessionEvents) {
             RSet<String> set = redissonManager.getNotifiedNodes(id);
             set.add(redissonManager.getNodeId());
-            set.expire(60, TimeUnit.SECONDS);
+            set.expire(Duration.ofSeconds(60));
             map.fastPut(IS_EXPIRATION_LOCKED, true);
-            map.expire(60, TimeUnit.SECONDS);
+            map.expire(Duration.ofSeconds(60));
         } else {
             map.delete();
         }
@@ -224,7 +230,7 @@ public class RedissonSession extends StandardSession {
             return;
         }
         if (maxInactiveInterval >= 0) {
-            map.expire(maxInactiveInterval + 60, TimeUnit.SECONDS);
+            map.expire(Duration.ofSeconds(maxInactiveInterval + 60));
         }
     }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,33 +15,31 @@
  */
 package org.redisson.executor;
 
-import org.redisson.api.RFuture;
-import org.redisson.misc.RedissonPromise;
-import org.redisson.remote.RequestId;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class RemotePromise<T> extends RedissonPromise<T> {
+public class RemotePromise<T> extends CompletableFuture<T> {
 
-    private final RequestId requestId;
-    private RFuture<Boolean> addFuture;
+    private final String requestId;
+    private CompletableFuture<Boolean> addFuture;
     
-    public RemotePromise(RequestId requestId) {
+    public RemotePromise(String requestId) {
         super();
         this.requestId = requestId;
     }
     
-    public RequestId getRequestId() {
+    public String getRequestId() {
         return requestId;
     }
     
-    public void setAddFuture(RFuture<Boolean> addFuture) {
+    public void setAddFuture(CompletableFuture<Boolean> addFuture) {
         this.addFuture = addFuture;
     }
-    public RFuture<Boolean> getAddFuture() {
+    public CompletableFuture<Boolean> getAddFuture() {
         return addFuture;
     }
     
@@ -49,8 +47,8 @@ public class RemotePromise<T> extends RedissonPromise<T> {
         super.cancel(mayInterruptIfRunning);
     }
 
-    public RFuture<Boolean> cancelAsync(boolean mayInterruptIfRunning) {
-        return RemotePromise.newSucceededFuture(false);
+    public CompletableFuture<Boolean> cancelAsync(boolean mayInterruptIfRunning) {
+        return CompletableFuture.completedFuture(false);
     }
 
 }

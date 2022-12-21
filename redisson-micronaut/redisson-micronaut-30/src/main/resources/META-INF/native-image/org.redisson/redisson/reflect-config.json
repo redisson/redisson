@@ -1,5 +1,13 @@
 [
 {
+  "name": "java.lang.reflect.Proxy",
+  "fields": [
+    {
+      "name": "h"
+    }
+  ]
+},
+{
   "name":"io.netty.buffer.AbstractByteBufAllocator",
   "allDeclaredMethods":true
 },

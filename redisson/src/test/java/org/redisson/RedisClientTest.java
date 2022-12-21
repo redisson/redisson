@@ -1,7 +1,6 @@
 package org.redisson;
 
 import org.junit.jupiter.api.*;
-import org.redisson.api.RFuture;
 import org.redisson.client.*;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
@@ -9,8 +8,6 @@ import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -59,9 +56,9 @@ public class RedisClientTest {
 
     @Test
     public void testConnectAsync() throws InterruptedException {
-        RFuture<RedisConnection> f = redisClient.connectAsync();
+        CompletionStage<RedisConnection> f = redisClient.connectAsync();
         CountDownLatch l = new CountDownLatch(2);
-        f.onComplete((conn, e) -> {
+        f.whenComplete((conn, e) -> {
             assertThat(conn.sync(RedisCommands.PING)).isEqualTo("PONG");
             l.countDown();
         });
@@ -137,7 +134,7 @@ public class RedisClientTest {
         CommandData<String, String> cmd4 = conn.create(null, RedisCommands.PING);
         commands.add(cmd4);
 
-        RPromise<Void> p = new RedissonPromise<Void>();
+        CompletableFuture<Void> p = new CompletableFuture<Void>();
         conn.send(new CommandsData(p, commands, false, false));
 
         assertThat(cmd1.getPromise().get()).isEqualTo("PONG");
@@ -172,7 +169,7 @@ public class RedisClientTest {
             commands.add(cmd1);
         }
 
-        RPromise<Void> p = new RedissonPromise<Void>();
+        CompletableFuture<Void> p = new CompletableFuture<Void>();
         conn.send(new CommandsData(p, commands, false, false));
 
         for (CommandData<?, ?> commandData : commands) {

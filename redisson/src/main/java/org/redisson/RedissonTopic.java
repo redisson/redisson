@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,22 +22,19 @@ import org.redisson.api.listener.MessageListener;
 import org.redisson.api.listener.StatusListener;
 import org.redisson.client.ChannelName;
 import org.redisson.client.RedisPubSubListener;
-import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.config.MasterSlaveServersConfig;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
-import org.redisson.pubsub.AsyncSemaphore;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.pubsub.PubSubConnectionEntry;
 import org.redisson.pubsub.PublishSubscribeService;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Distributed topic implementation. Messages are delivered to all message listeners across Redis cluster.
@@ -49,7 +46,7 @@ public class RedissonTopic implements RTopic {
 
     final PublishSubscribeService subscribeService;
     final CommandAsyncExecutor commandExecutor;
-    private final String name;
+    final String name;
     final ChannelName channelName;
     final Codec codec;
 
@@ -104,15 +101,13 @@ public class RedissonTopic implements RTopic {
     @Override
     public int addListener(StatusListener listener) {
         RFuture<Integer> future = addListenerAsync(listener);
-        commandExecutor.syncSubscription(future);
-        return future.getNow();
-    };
+        return commandExecutor.get(future.toCompletableFuture());
+    }
 
     @Override
     public <M> int addListener(Class<M> type, MessageListener<? extends M> listener) {
-        RFuture<Integer> future = addListenerAsync(type, (MessageListener<M>) listener);
-        commandExecutor.syncSubscription(future);
-        return future.getNow();
+        RFuture<Integer> future = addListenerAsync(type, listener);
+        return commandExecutor.get(future.toCompletableFuture());
     }
 
     @Override
@@ -122,74 +117,51 @@ public class RedissonTopic implements RTopic {
     }
 
     @Override
-    public <M> RFuture<Integer> addListenerAsync(Class<M> type, MessageListener<M> listener) {
-        PubSubMessageListener<M> pubSubListener = new PubSubMessageListener<>(type, listener, name);
+    public <M> RFuture<Integer> addListenerAsync(Class<M> type, MessageListener<? extends M> listener) {
+        PubSubMessageListener<M> pubSubListener = new PubSubMessageListener<>(type, (MessageListener<M>) listener, name);
         return addListenerAsync(pubSubListener);
     }
 
     protected RFuture<Integer> addListenerAsync(RedisPubSubListener<?> pubSubListener) {
-        RFuture<PubSubConnectionEntry> future = subscribeService.subscribe(codec, channelName, pubSubListener);
-        RPromise<Integer> result = new RedissonPromise<>();
-        result.onComplete((res, e) -> {
-            if (e != null) {
-                ((RPromise<PubSubConnectionEntry>) future).tryFailure(e);
-            }
+        CompletableFuture<PubSubConnectionEntry> future = subscribeService.subscribe(codec, channelName, pubSubListener);
+        CompletableFuture<Integer> f = future.thenApply(res -> {
+            return System.identityHashCode(pubSubListener);
         });
-        future.onComplete((res, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
-            }
-
-            result.trySuccess(System.identityHashCode(pubSubListener));
-        });
-        return result;
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
     public void removeAllListeners() {
-        AsyncSemaphore semaphore = subscribeService.getSemaphore(channelName);
-        acquire(semaphore);
-
-        PubSubConnectionEntry entry = subscribeService.getPubSubEntry(channelName);
-        if (entry == null) {
-            semaphore.release();
-            return;
-        }
-
-        if (entry.hasListeners(channelName)) {
-            subscribeService.unsubscribe(PubSubType.UNSUBSCRIBE, channelName).syncUninterruptibly();
-        }
-        semaphore.release();
+        commandExecutor.get(removeAllListenersAsync());
     }
 
-    protected void acquire(AsyncSemaphore semaphore) {
-        MasterSlaveServersConfig config = commandExecutor.getConnectionManager().getConfig();
-        int timeout = config.getTimeout() + config.getRetryInterval() * config.getRetryAttempts();
-        if (!semaphore.tryAcquire(timeout)) {
-            throw new RedisTimeoutException("Remove listeners operation timeout: (" + timeout + "ms) for " + name + " topic");
-        }
+    @Override
+    public RFuture<Void> removeAllListenersAsync() {
+        CompletableFuture<Void> f = subscribeService.removeAllListenersAsync(PubSubType.UNSUBSCRIBE, channelName);
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
     public void removeListener(MessageListener<?> listener) {
         RFuture<Void> future = removeListenerAsync(listener);
-        commandExecutor.syncSubscription(future);
+        commandExecutor.get(future.toCompletableFuture());
     }
 
     @Override
     public RFuture<Void> removeListenerAsync(MessageListener<?> listener) {
-        return subscribeService.removeListenerAsync(PubSubType.UNSUBSCRIBE, channelName, listener);
+        CompletableFuture<Void> f = subscribeService.removeListenerAsync(PubSubType.UNSUBSCRIBE, channelName, listener);
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
     public RFuture<Void> removeListenerAsync(Integer... listenerIds) {
-        return subscribeService.removeListenerAsync(PubSubType.UNSUBSCRIBE, channelName, listenerIds);
+        CompletableFuture<Void> f = subscribeService.removeListenerAsync(PubSubType.UNSUBSCRIBE, channelName, listenerIds);
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
     public void removeListener(Integer... listenerIds) {
-        commandExecutor.syncSubscription(removeListenerAsync(listenerIds));
+        commandExecutor.get(removeListenerAsync(listenerIds).toCompletableFuture());
     }
 
     @Override

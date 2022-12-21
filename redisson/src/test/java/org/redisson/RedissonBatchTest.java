@@ -16,6 +16,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.cluster.ClusterNodeInfo;
 import org.redisson.codec.JsonJacksonCodec;
+import org.redisson.command.BatchPromise;
 import org.redisson.config.Config;
 import org.redisson.config.SubscriptionMode;
 
@@ -119,7 +120,17 @@ public class RedissonBatchTest extends BaseTest {
 
         batch.execute();
 
-        futures.forEach(f -> assertThat(f.awaitUninterruptibly(1)).isTrue());
+        futures.forEach(f -> {
+            try {
+                f.toCompletableFuture().get(1, TimeUnit.MILLISECONDS);
+            } catch (TimeoutException e) {
+                org.junit.jupiter.api.Assertions.fail(e);
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
 
         sourceClient.shutdown();
         destinationClient.shutdown();
@@ -161,11 +172,11 @@ public class RedissonBatchTest extends BaseTest {
         RedissonClient redisson = Redisson.create(config);
 
 		ExecutorService executorService = Executors.newFixedThreadPool(5);
-		AtomicInteger counter = new AtomicInteger(5*150);
+		AtomicInteger counter = new AtomicInteger(5*15);
 		AtomicBoolean hasErrors = new AtomicBoolean();
 		for (int i = 0; i < 5; i++) {
 			executorService.submit(() -> {
-				for (int j = 0 ; j < 150; j++) {
+				for (int j = 0 ; j < 15; j++) {
 					executeBatch(redisson, batchOptions).whenComplete((r, e) -> {
                         if (e != null) {
                             hasErrors.set(true);
@@ -179,7 +190,7 @@ public class RedissonBatchTest extends BaseTest {
 		Awaitility.await().atMost(10, TimeUnit.SECONDS).until(() -> counter.get() == 0);
 		Assertions.assertThat(hasErrors).isTrue();
 
-		executeBatch(redisson, batchOptions).syncUninterruptibly();
+		executeBatch(redisson, batchOptions).toCompletableFuture().join();
 
         redisson.shutdown();
         process.shutdown();
@@ -187,7 +198,7 @@ public class RedissonBatchTest extends BaseTest {
 
 	public RFuture<BatchResult<?>> executeBatch(RedissonClient client, BatchOptions batchOptions) {
 		RBatch batch = client.createBatch(batchOptions);
-		for (int i = 0; i < 50; i++) {
+		for (int i = 0; i < 100000; i++) {
 			String key = "" + i;
 			batch.getBucket(key).getAsync();
 		}
@@ -272,7 +283,7 @@ public class RedissonBatchTest extends BaseTest {
         assertThat(e.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
 
         for (RFuture<?> future : futures) {
-            future.syncUninterruptibly();
+            future.toCompletableFuture().join();
         }
     }
 
@@ -354,6 +365,8 @@ public class RedissonBatchTest extends BaseTest {
             String[] t = redisson.getKeys().getKeysStreamByPattern("*").toArray(String[]::new);
         } catch (Exception ex) {
             ex.printStackTrace();
+        } finally {
+            redisson.shutdown();
         }
     }
 
@@ -411,7 +424,7 @@ public class RedissonBatchTest extends BaseTest {
         for (int i = 0; i < total; i++) {
             RFuture<String> f = map.putAsync("" + i, "" + i, 5, TimeUnit.MINUTES);
             if (batchOptions.getExecutionMode() == ExecutionMode.REDIS_WRITE_ATOMIC) {
-                f.syncUninterruptibly();
+                ((BatchPromise)f.toCompletableFuture()).getSentPromise().join();
             }
         }
         
@@ -474,10 +487,10 @@ public class RedissonBatchTest extends BaseTest {
         
         List<Object> list = (List<Object>) f.getResponses();
         assertThat(list).containsExactly(1L, 2L, 3L, 2L);
-        assertThat(f1.getNow()).isEqualTo(1);
-        assertThat(f2.getNow()).isEqualTo(2);
-        assertThat(f3.getNow()).isEqualTo(3);
-        assertThat(d1.getNow()).isEqualTo(2);
+        assertThat(f1.toCompletableFuture().getNow(null)).isEqualTo(1);
+        assertThat(f2.toCompletableFuture().getNow(null)).isEqualTo(2);
+        assertThat(f3.toCompletableFuture().getNow(null)).isEqualTo(3);
+        assertThat(d1.toCompletableFuture().getNow(null)).isEqualTo(2);
     }
     
     @ParameterizedTest
@@ -535,8 +548,8 @@ public class RedissonBatchTest extends BaseTest {
         RFuture<Object> val2 = b.getMap("test2", StringCodec.INSTANCE).getAsync("21");
         b.execute();
 
-        org.junit.jupiter.api.Assertions.assertEquals("2", val1.getNow());
-        org.junit.jupiter.api.Assertions.assertEquals("3", val2.getNow());
+        org.junit.jupiter.api.Assertions.assertEquals("2", val1.toCompletableFuture().getNow(null));
+        org.junit.jupiter.api.Assertions.assertEquals("3", val2.toCompletableFuture().getNow(null));
     }
 
     @ParameterizedTest
@@ -549,8 +562,8 @@ public class RedissonBatchTest extends BaseTest {
         RFuture<Object> val2 = b.getMap("test2", StringCodec.INSTANCE).getAsync("21");
         b.execute();
 
-        org.junit.jupiter.api.Assertions.assertEquals("2", val1.getNow());
-        org.junit.jupiter.api.Assertions.assertEquals("3", val2.getNow());
+        org.junit.jupiter.api.Assertions.assertEquals("2", val1.toCompletableFuture().getNow(null));
+        org.junit.jupiter.api.Assertions.assertEquals("3", val2.toCompletableFuture().getNow(null));
     }
     
     @ParameterizedTest
@@ -706,7 +719,7 @@ public class RedissonBatchTest extends BaseTest {
         int i = 0;
         for (Object element : s.getResponses()) {
             RFuture<Long> a = futures.get(i);
-            org.junit.jupiter.api.Assertions.assertEquals(a.getNow(), element);
+            org.junit.jupiter.api.Assertions.assertEquals(a.toCompletableFuture().getNow(null), element);
             i++;
         }
     }

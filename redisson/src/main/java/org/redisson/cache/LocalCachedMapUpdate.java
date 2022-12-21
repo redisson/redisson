@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,15 +61,19 @@ public class LocalCachedMapUpdate implements Serializable {
     
     private List<Entry> entries = new ArrayList<Entry>();
 
+    private byte[] excludedId;
+
     public LocalCachedMapUpdate() {
     }
     
-    public LocalCachedMapUpdate(List<Entry> entries) {
+    public LocalCachedMapUpdate(byte[] excludedId, List<Entry> entries) {
         super();
+        this.excludedId = excludedId;
         this.entries = entries;
     }
 
-    public LocalCachedMapUpdate(ByteBuf keyBuf, ByteBuf valueBuf) {
+    public LocalCachedMapUpdate(byte[] excludedId, ByteBuf keyBuf, ByteBuf valueBuf) {
+        this.excludedId = excludedId;
         byte[] key = new byte[keyBuf.readableBytes()];
         keyBuf.getBytes(keyBuf.readerIndex(), key);
         
@@ -86,4 +90,7 @@ public class LocalCachedMapUpdate implements Serializable {
         return entries;
     }
 
+    public byte[] getExcludedId() {
+        return excludedId;
+    }
 }

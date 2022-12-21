@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,7 +83,8 @@ public class TypedJsonJacksonCodec extends JsonJacksonCodec {
     private final Class<?> mapValueClass;
 
     public TypedJsonJacksonCodec(Class<?> valueClass) {
-        this(valueClass, new ObjectMapper());
+        this(null, null, null,
+                valueClass, null, null, new ObjectMapper(), false);
     }
 
     public TypedJsonJacksonCodec(Class<?> valueClass, ObjectMapper mapper) {
@@ -99,11 +100,13 @@ public class TypedJsonJacksonCodec extends JsonJacksonCodec {
     }
     
     public TypedJsonJacksonCodec(Class<?> valueClass, Class<?> mapKeyClass, Class<?> mapValueClass) {
-        this(null, null, null, valueClass, mapKeyClass, mapValueClass, new ObjectMapper());
+        this(null, null, null,
+                valueClass, mapKeyClass, mapValueClass, new ObjectMapper(), false);
     }
     
     public TypedJsonJacksonCodec(Class<?> valueClass, Class<?> mapKeyClass, Class<?> mapValueClass, ObjectMapper mapper) {
-        this(null, null, null, valueClass, mapKeyClass, mapValueClass, mapper);
+        this(null, null, null,
+                valueClass, mapKeyClass, mapValueClass, mapper, true);
     }
 
     public TypedJsonJacksonCodec(TypeReference<?> valueTypeReference) {
@@ -123,23 +126,24 @@ public class TypedJsonJacksonCodec extends JsonJacksonCodec {
     }
     
     public TypedJsonJacksonCodec(TypeReference<?> valueTypeReference, TypeReference<?> mapKeyTypeReference, TypeReference<?> mapValueTypeReference) {
-        this(valueTypeReference, mapKeyTypeReference, mapValueTypeReference, null, null, null, new ObjectMapper());
+        this(valueTypeReference, mapKeyTypeReference, mapValueTypeReference,
+                null, null, null, new ObjectMapper(), false);
     }
     
     public TypedJsonJacksonCodec(TypeReference<?> valueTypeReference, TypeReference<?> mapKeyTypeReference, TypeReference<?> mapValueTypeReference, ObjectMapper mapper) {
-        this(valueTypeReference, mapKeyTypeReference, mapValueTypeReference, null, null, null, mapper);
+        this(valueTypeReference, mapKeyTypeReference, mapValueTypeReference,
+                null, null, null, mapper, true);
     }
     
     public TypedJsonJacksonCodec(ClassLoader classLoader, TypedJsonJacksonCodec codec) {
         this(codec.valueTypeReference, codec.mapKeyTypeReference, codec.mapValueTypeReference, 
               codec.valueClass, codec.mapKeyClass, codec.mapValueClass,
-                createObjectMapper(classLoader, codec.mapObjectMapper.copy()));
+                createObjectMapper(classLoader, codec.mapObjectMapper.copy()), false);
     }
 
-    TypedJsonJacksonCodec(
-            TypeReference<?> valueTypeReference, TypeReference<?> mapKeyTypeReference, TypeReference<?> mapValueTypeReference, 
-            Class<?> valueClass, Class<?> mapKeyClass, Class<?> mapValueClass, ObjectMapper mapper) {
-        super(mapper);
+    TypedJsonJacksonCodec(TypeReference<?> valueTypeReference, TypeReference<?> mapKeyTypeReference, TypeReference<?> mapValueTypeReference,
+                            Class<?> valueClass, Class<?> mapKeyClass, Class<?> mapValueClass, ObjectMapper mapper, boolean copy) {
+        super(mapper, copy);
         this.mapValueDecoder = createDecoder(mapValueClass, mapValueTypeReference);
         this.mapKeyDecoder = createDecoder(mapKeyClass, mapKeyTypeReference);
         this.valueDecoder = createDecoder(valueClass, valueTypeReference);

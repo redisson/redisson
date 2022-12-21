@@ -11,6 +11,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.redisson.ClusterRunner.ClusterProcesses;
 import org.redisson.RedisRunner.FailedToStartRedisException;
+import org.redisson.api.NameMapper;
 import org.redisson.api.RBucket;
 import org.redisson.api.RBuckets;
 import org.redisson.api.RedissonClient;
@@ -19,6 +20,63 @@ import org.redisson.config.Config;
 import org.redisson.connection.balancer.RandomLoadBalancer;
 
 public class RedissonBucketsTest extends BaseTest {
+
+    @Test
+    public void testGetInClusterNameMapper() throws FailedToStartRedisException, IOException, InterruptedException {
+        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave1 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave2 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave3 = new RedisRunner().randomPort().randomDir().nosave();
+
+        ClusterRunner clusterRunner = new ClusterRunner()
+                .addNode(master1, slave1)
+                .addNode(master2, slave2)
+                .addNode(master3, slave3);
+        ClusterProcesses process = clusterRunner.run();
+
+        Config config = new Config();
+        config.useClusterServers()
+                .setNameMapper(new NameMapper() {
+                    @Override
+                    public String map(String name) {
+                        return "test::" + name;
+                    }
+
+                    @Override
+                    public String unmap(String name) {
+                        return name.replace("test::", "");
+                    }
+                })
+                .setLoadBalancer(new RandomLoadBalancer())
+                .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+
+        int size = 10000;
+        Map<String, Integer> map = new HashMap<>();
+        for (int i = 0; i < 10; i++) {
+            map.put("test" + i, i);
+        }
+        for (int i = 10; i < size; i++) {
+            map.put("test" + i + "{" + (i%100)+ "}", i);
+        }
+
+        redisson.getBuckets().set(map);
+
+        Set<String> queryKeys = new HashSet<>(map.keySet());
+        queryKeys.add("test_invalid");
+        Map<String, Integer> buckets = redisson.getBuckets().get(queryKeys.toArray(new String[map.size()]));
+
+        assertThat(buckets).isEqualTo(map);
+
+        for (int i = 0; i < 10; i++) {
+            assertThat(redisson.getBucket("test" + i).get()).isEqualTo(i);
+        }
+
+        redisson.shutdown();
+        process.shutdown();
+    }
 
     @Test
     public void testGetInCluster() throws FailedToStartRedisException, IOException, InterruptedException {

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,17 +29,14 @@ import org.redisson.api.listener.MessageListener;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * 
@@ -188,11 +185,13 @@ public abstract class LocalCacheListener {
                     
                     if (msg instanceof LocalCachedMapClear) {
                         LocalCachedMapClear clearMsg = (LocalCachedMapClear) msg;
-                        cache.clear();
+                        if (!Arrays.equals(clearMsg.getExcludedId(), instanceId)) {
+                            cache.clear();
 
-                        if (clearMsg.isReleaseSemaphore()) {
-                            RSemaphore semaphore = getClearSemaphore(clearMsg.getRequestId());
-                            semaphore.releaseAsync();
+                            if (clearMsg.isReleaseSemaphore()) {
+                                RSemaphore semaphore = getClearSemaphore(clearMsg.getRequestId());
+                                semaphore.releaseAsync();
+                            }
                         }
                     }
                     
@@ -208,20 +207,21 @@ public abstract class LocalCacheListener {
                     
                     if (msg instanceof LocalCachedMapUpdate) {
                         LocalCachedMapUpdate updateMsg = (LocalCachedMapUpdate) msg;
-                        
-                        for (LocalCachedMapUpdate.Entry entry : updateMsg.getEntries()) {
-                            ByteBuf keyBuf = Unpooled.wrappedBuffer(entry.getKey());
-                            ByteBuf valueBuf = Unpooled.wrappedBuffer(entry.getValue());
-                            try {
-                                updateCache(keyBuf, valueBuf);
-                            } catch (IOException e) {
-                                log.error("Can't decode map entry", e);
-                            } finally {
-                                keyBuf.release();
-                                valueBuf.release();
+
+                        if (!Arrays.equals(updateMsg.getExcludedId(), instanceId)) {
+                            for (LocalCachedMapUpdate.Entry entry : updateMsg.getEntries()) {
+                                ByteBuf keyBuf = Unpooled.wrappedBuffer(entry.getKey());
+                                ByteBuf valueBuf = Unpooled.wrappedBuffer(entry.getValue());
+                                try {
+                                    updateCache(keyBuf, valueBuf);
+                                } catch (IOException e) {
+                                    log.error("Can't decode map entry", e);
+                                } finally {
+                                    keyBuf.release();
+                                    valueBuf.release();
+                                }
                             }
                         }
-                        
                     }
                     
                     if (options.getReconnectionStrategy() == ReconnectionStrategy.LOAD) {
@@ -247,34 +247,25 @@ public abstract class LocalCacheListener {
     }
     
     public RFuture<Void> clearLocalCacheAsync() {
-        RPromise<Void> result = new RedissonPromise<Void>();
+        cache.clear();
+        if (syncListenerId == 0) {
+            return new CompletableFutureWrapper<>((Void) null);
+        }
+
         byte[] id = generateId();
-        RFuture<Long> future = invalidationTopic.publishAsync(new LocalCachedMapClear(id, true));
-        future.onComplete((res, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
+        RFuture<Long> future = invalidationTopic.publishAsync(new LocalCachedMapClear(instanceId, id, true));
+        CompletionStage<Void> f = future.thenCompose(res -> {
+            if (res.intValue() == 0) {
+                return CompletableFuture.completedFuture(null);
             }
 
             RSemaphore semaphore = getClearSemaphore(id);
-            semaphore.tryAcquireAsync(res.intValue(), 50, TimeUnit.SECONDS).onComplete((r, ex) -> {
-                if (ex != null) {
-                    result.tryFailure(ex);
-                    return;
-                }
-                
-                semaphore.deleteAsync().onComplete((re, exc) -> {
-                    if (exc != null) {
-                        result.tryFailure(exc);
-                        return;
-                    }
-
-                    result.trySuccess(null);
-                });
-            });
+            return semaphore.tryAcquireAsync(res.intValue() - 1, 50, TimeUnit.SECONDS)
+                    .thenCompose(r -> {
+                        return semaphore.deleteAsync().thenApply(re -> null);
+                    });
         });
-        
-        return result;
+        return new CompletableFutureWrapper<>(f);
     }
 
     public RTopic getInvalidationTopic() {
@@ -324,7 +315,7 @@ public abstract class LocalCacheListener {
             return;
         }
         
-        object.isExistsAsync().onComplete((res, e) -> {
+        object.isExistsAsync().whenComplete((res, e) -> {
             if (e != null) {
                 log.error("Can't check existance", e);
                 return;
@@ -335,9 +326,9 @@ public abstract class LocalCacheListener {
                 return;
             }
             
-            RScoredSortedSet<byte[]> logs = new RedissonScoredSortedSet<byte[]>(ByteArrayCodec.INSTANCE, commandExecutor, getUpdatesLogName(), null);
+            RScoredSortedSet<byte[]> logs = new RedissonScoredSortedSet<>(ByteArrayCodec.INSTANCE, commandExecutor, getUpdatesLogName(), null);
             logs.valueRangeAsync(lastInvalidate, true, Double.POSITIVE_INFINITY, true)
-            .onComplete((r, ex) -> {
+            .whenComplete((r, ex) -> {
                 if (ex != null) {
                     log.error("Can't load update log", ex);
                     return;
@@ -355,6 +346,7 @@ public abstract class LocalCacheListener {
     private RSemaphore getClearSemaphore(byte[] requestId) {
         String id = ByteBufUtil.hexDump(requestId);
         RSemaphore semaphore = new RedissonSemaphore(commandExecutor, name + ":clear:" + id);
+        semaphore.expireAsync(Duration.ofSeconds(60));
         return semaphore;
     }
 

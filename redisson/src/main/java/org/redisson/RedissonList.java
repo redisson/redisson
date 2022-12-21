@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.redisson;
 import org.redisson.api.*;
 import org.redisson.api.listener.*;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
+import org.redisson.client.RedisClient;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
@@ -27,13 +28,15 @@ import org.redisson.client.protocol.convertor.BooleanNumberReplayConvertor;
 import org.redisson.client.protocol.convertor.Convertor;
 import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.iterator.RedissonBaseIterator;
 import org.redisson.iterator.RedissonListIterator;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
-import org.redisson.misc.CountableListener;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Predicate;
 
 import static org.redisson.client.protocol.RedisCommands.*;
@@ -136,7 +139,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public RFuture<Boolean> removeAsync(Object o, int count) {
-        return commandExecutor.writeAsync(getRawName(), codec, LREM_SINGLE, getRawName(), count, encode(o));
+        return commandExecutor.writeAsync(getRawName(), codec, LREM, getRawName(), count, encode(o));
     }
 
     @Override
@@ -147,7 +150,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     @Override
     public RFuture<Boolean> containsAllAsync(Collection<?> c) {
         if (c.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(true);
+            return new CompletableFutureWrapper<>(true);
         }
 
         return commandExecutor.evalReadAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
@@ -176,7 +179,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     @Override
     public RFuture<Boolean> addAllAsync(Collection<? extends V> c) {
         if (c.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(false);
+            return new CompletableFutureWrapper<>(false);
         }
 
         List<Object> args = new ArrayList<Object>(c.size() + 1);
@@ -192,7 +195,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         }
 
         if (coll.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(false);
+            return new CompletableFutureWrapper<>(false);
         }
 
         if (index == 0) { // prepend elements to list
@@ -234,7 +237,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     @Override
     public RFuture<Boolean> removeAllAsync(Collection<?> c) {
         if (c.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(false);
+            return new CompletableFutureWrapper<>(false);
         }
 
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
@@ -297,11 +300,59 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         return commandExecutor.readAsync(getRawName(), codec, LINDEX, getRawName(), index);
     }
     
-    public List<V> get(int...indexes) {
+    public List<V> get(int... indexes) {
         return get(getAsync(indexes));
     }
-    
-    public RFuture<List<V>> getAsync(int...indexes) {
+
+    @Override
+    public Iterator<V> distributedIterator(final int count) {
+        String iteratorName = "__redisson_list_cursor_{" + getRawName() + "}";
+        return distributedIterator(iteratorName, count);
+    }
+
+    @Override
+    public Iterator<V> distributedIterator(final String iteratorName, final int count) {
+        return new RedissonBaseIterator<V>() {
+
+            @Override
+            protected ScanResult<Object> iterator(RedisClient client, long nextIterPos) {
+                return distributedScanIterator(iteratorName, count);
+            }
+
+            @Override
+            protected void remove(Object value) {
+                RedissonList.this.remove((V) value);
+            }
+        };
+    }
+
+    private ScanResult<Object> distributedScanIterator(String iteratorName, int count) {
+        return get(distributedScanIteratorAsync(iteratorName, count));
+    }
+
+    private RFuture<ScanResult<Object>> distributedScanIteratorAsync(String iteratorName, int count) {
+        return commandExecutor.evalWriteAsync(getRawName(), codec, EVAL_LIST_SCAN,
+                "local start_index = redis.call('get', KEYS[2]); "
+                + "if start_index ~= false then "
+                    + "start_index = tonumber(start_index); "
+                + "else "
+                    + "start_index = 0;"
+                + "end;"
+                + "if start_index == -1 then "
+                    + "return {0, {}};"
+                + "end;"
+                + "local end_index = start_index + ARGV[1];"
+                + "local result; "
+                + "result = redis.call('lrange', KEYS[1], start_index, end_index - 1); "
+                + "if end_index > redis.call('llen', KEYS[1]) then "
+                    + "end_index = -1;"
+                + "end; "
+                + "redis.call('setex', KEYS[2], 3600, end_index);"
+                + "return {end_index, result};",
+                Arrays.<Object>asList(getRawName(), iteratorName), count);
+    }
+
+    public RFuture<List<V>> getAsync(int... indexes) {
         List<Integer> params = new ArrayList<Integer>();
         for (Integer index : indexes) {
             params.add(index);
@@ -340,25 +391,21 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public RFuture<V> setAsync(int index, V element) {
-        RPromise<V> result = new RedissonPromise<V>();
         RFuture<V> future = commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_OBJECT,
                 "local v = redis.call('lindex', KEYS[1], ARGV[1]); " +
                         "redis.call('lset', KEYS[1], ARGV[1], ARGV[2]); " +
                         "return v",
-                Collections.<Object>singletonList(getRawName()), index, encode(element));
-        future.onComplete((res, e) -> {
+                Collections.singletonList(getRawName()), index, encode(element));
+        CompletionStage<V> f = future.handle((res, e) -> {
             if (e != null) {
                 if (e.getMessage().contains("ERR index out of range")) {
-                    result.tryFailure(new IndexOutOfBoundsException("index out of range"));
-                    return;
+                    throw new CompletionException(new IndexOutOfBoundsException("index out of range"));
                 }
-                result.tryFailure(e);
-                return;
+                throw new CompletionException(e);
             }
-            
-            result.trySuccess(res);
+            return res;
         });
-        return result;
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
@@ -871,7 +918,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
             return addListener("__keyevent@*:linsert", (ListInsertListener) listener, ListInsertListener::onListInsert);
         }
         return super.addListener(listener);
-    };
+    }
 
     @Override
     public RFuture<Integer> addListenerAsync(ObjectListener listener) {
@@ -915,27 +962,26 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
-        RPromise<Void> result = new RedissonPromise<>();
-        CountableListener<Void> listener = new CountableListener<>(result, null, 5);
-
         RPatternTopic addTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:rpush");
-        addTopic.removeListenerAsync(listenerId).onComplete(listener);
+        RFuture<Void> f1 = addTopic.removeListenerAsync(listenerId);
 
         RPatternTopic remTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:lrem");
-        remTopic.removeListenerAsync(listenerId).onComplete(listener);
+        RFuture<Void> f2 = remTopic.removeListenerAsync(listenerId);
 
         RPatternTopic trimTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:ltrim");
-        trimTopic.removeListenerAsync(listenerId).onComplete(listener);
+        RFuture<Void> f3 = trimTopic.removeListenerAsync(listenerId);
 
         RPatternTopic setTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:lset");
-        setTopic.removeListenerAsync(listenerId).onComplete(listener);
+        RFuture<Void> f4 = setTopic.removeListenerAsync(listenerId);
 
         RPatternTopic insertTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:linsert");
-        insertTopic.removeListenerAsync(listenerId).onComplete(listener);
+        RFuture<Void> f5 = insertTopic.removeListenerAsync(listenerId);
 
-        removeListenersAsync(listenerId, listener);
+        RFuture<Void> f6 = super.removeListenerAsync(listenerId);
 
-        return result;
+        CompletableFuture<Void> f = CompletableFuture.allOf(f1.toCompletableFuture(), f2.toCompletableFuture(), f3.toCompletableFuture(),
+                f4.toCompletableFuture(), f5.toCompletableFuture(), f5.toCompletableFuture(), f6.toCompletableFuture());
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override

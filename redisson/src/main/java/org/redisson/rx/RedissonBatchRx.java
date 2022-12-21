@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import io.reactivex.rxjava3.core.Maybe;
 import org.redisson.*;
 import org.redisson.api.*;
 import org.redisson.client.codec.Codec;
+import org.redisson.codec.JsonCodec;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
 
@@ -58,6 +59,11 @@ public class RedissonBatchRx implements RBatchRx {
     @Override
     public <V> RBucketRx<V> getBucket(String name, Codec codec) {
         return RxProxyBuilder.create(executorService, new RedissonBucket<V>(codec, executorService, name), RBucketRx.class);
+    }
+
+    @Override
+    public <V> RJsonBucketRx<V> getJsonBucket(String name, JsonCodec<V> codec) {
+        return RxProxyBuilder.create(executorService, new RedissonJsonBucket<V>(codec, executorService, name), RJsonBucketRx.class);
     }
 
     @Override
@@ -134,6 +140,16 @@ public class RedissonBatchRx implements RBatchRx {
     @Override
     public RTopicRx getTopic(String name, Codec codec) {
         return RxProxyBuilder.create(executorService, new RedissonTopic(codec, executorService, name), RTopicRx.class);
+    }
+
+    @Override
+    public RShardedTopicRx getShardedTopic(String name) {
+        return RxProxyBuilder.create(executorService, new RedissonShardedTopic(executorService, name), RShardedTopicRx.class);
+    }
+
+    @Override
+    public RShardedTopicRx getShardedTopic(String name, Codec codec) {
+        return RxProxyBuilder.create(executorService, new RedissonShardedTopic(codec, executorService, name), RShardedTopicRx.class);
     }
 
     @Override
@@ -232,6 +248,16 @@ public class RedissonBatchRx implements RBatchRx {
     @Override
     public RScriptRx getScript(Codec codec) {
         return RxProxyBuilder.create(executorService, new RedissonScript(executorService, codec), RScriptRx.class);
+    }
+
+    @Override
+    public RFunctionRx getFunction() {
+        return RxProxyBuilder.create(executorService, new RedissonFuction(executorService), RFunctionRx.class);
+    }
+
+    @Override
+    public RFunctionRx getFunction(Codec codec) {
+        return RxProxyBuilder.create(executorService, new RedissonFuction(executorService, codec), RFunctionRx.class);
     }
 
     @Override

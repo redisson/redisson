@@ -85,7 +85,7 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
 
         RLock lock = redisson.getSpinLock("lock");
 
-        Awaitility.await().between(Duration.ofMillis(3000), Duration.ofMillis(3200)).untilAsserted(() -> {
+        Awaitility.await().between(Duration.ofMillis(3000), Duration.ofMillis(3500)).untilAsserted(() -> {
             lock.tryLock(3, TimeUnit.SECONDS);
         });
     }
@@ -432,7 +432,7 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
         AtomicBoolean lockAsyncSucceed = new AtomicBoolean();
         Thread thread = new Thread(() -> {
             RFuture<Void> booleanRFuture = lock.lockAsync();
-            booleanRFuture.onComplete((res, e) -> {
+            booleanRFuture.whenComplete((res, e) -> {
                 if (e != null) {
                     Assertions.fail("Lock aquire failed for some reason");
                 }
@@ -456,7 +456,7 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
         AtomicBoolean lockAsyncSucceed = new AtomicBoolean();
         Thread thread = new Thread(() -> {
             RFuture<Boolean> booleanRFuture = lock.tryLockAsync(1, 30, TimeUnit.SECONDS);
-            booleanRFuture.onComplete((res, e) -> {
+            booleanRFuture.whenComplete((res, e) -> {
                 if (e != null) {
                     Assertions.fail("Lock aquire failed for some reason");
                 }
@@ -481,7 +481,7 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
         AtomicBoolean lockAsyncSucceed = new AtomicBoolean();
         Thread thread = new Thread(() -> {
             RFuture<Boolean> booleanRFuture = lock.tryLockAsync();
-            booleanRFuture.onComplete((res, e) -> {
+            booleanRFuture.whenComplete((res, e) -> {
                 if (e != null) {
                     Assertions.fail("Lock aquire failed for some reason");
                 }

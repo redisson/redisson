@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,14 +27,22 @@ public class StreamGroup {
     private final int consumers;
     private final int pending;
     private final StreamMessageId lastDeliveredId;
+    private final int entriesRead;
+    private final int lag;
     
     public StreamGroup(String name, int consumers, int pending, StreamMessageId lastDeliveredId) {
+        this(name, consumers, pending, lastDeliveredId, 0, 0);
+    }
+
+    public StreamGroup(String name, int consumers, int pending, StreamMessageId lastDeliveredId, int entriesRead, int lag) {
         this.name = name;
         this.consumers = consumers;
         this.pending = pending;
         this.lastDeliveredId = lastDeliveredId;
+        this.entriesRead = entriesRead;
+        this.lag = lag;
     }
-    
+
     /**
      * Returns last delivered StreamMessageId for this group
      * 
@@ -70,5 +78,22 @@ public class StreamGroup {
     public int getPending() {
         return pending;
     }
-    
+
+    /**
+     * Returns amount of entries that the group had read
+     *
+     * @return amount of read entries
+     */
+    public int getEntriesRead() {
+        return entriesRead;
+    }
+
+    /**
+     * Returns amount of entries that are still waiting for delivery
+     *
+     * @return amount of entries for delivery
+     */
+    public int getLag() {
+        return lag;
+    }
 }

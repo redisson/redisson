@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -130,13 +130,22 @@ public class JsonJacksonCodec extends BaseCodec {
     }
 
     protected static ObjectMapper createObjectMapper(ClassLoader classLoader, ObjectMapper om) {
-        TypeFactory tf = TypeFactory.defaultInstance().withClassLoader(classLoader);
+        TypeFactory tf = om.getTypeFactory().withClassLoader(classLoader);
         om.setTypeFactory(tf);
         return om;
     }
 
     public JsonJacksonCodec(ObjectMapper mapObjectMapper) {
-        this.mapObjectMapper = mapObjectMapper.copy();
+        this(mapObjectMapper, true);
+        warmup();
+    }
+
+    public JsonJacksonCodec(ObjectMapper mapObjectMapper, boolean copy) {
+        if (copy) {
+            this.mapObjectMapper = mapObjectMapper.copy();
+        } else {
+            this.mapObjectMapper = mapObjectMapper;
+        }
         init(this.mapObjectMapper);
         initTypeInclusion(this.mapObjectMapper);
         warmup();
@@ -152,7 +161,7 @@ public class JsonJacksonCodec extends BaseCodec {
                     }
                     // fall through
                 case OBJECT_AND_NON_CONCRETE:
-                    return (t.getRawClass() == Object.class) || !t.isConcrete();
+                    return t.getRawClass() == Object.class || !t.isConcrete();
                 case NON_FINAL:
                     while (t.isArrayType()) {
                         t = t.getContentType();

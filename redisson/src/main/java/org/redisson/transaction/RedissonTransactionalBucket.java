@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,19 +21,17 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
-import org.redisson.transaction.operation.DeleteOperation;
-import org.redisson.transaction.operation.TouchOperation;
-import org.redisson.transaction.operation.TransactionalOperation;
-import org.redisson.transaction.operation.UnlinkOperation;
+import org.redisson.misc.CompletableFutureWrapper;
+import org.redisson.transaction.operation.*;
 import org.redisson.transaction.operation.bucket.*;
 
-import java.time.Instant;
-import java.util.Date;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 /**
  * 
@@ -49,6 +47,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
     private final AtomicBoolean executed;
     private final List<TransactionalOperation> operations;
     private Object state;
+    private boolean hasExpiration;
     private final String transactionId;
     
     public RedissonTransactionalBucket(CommandAsyncExecutor commandExecutor, long timeout, String name, List<TransactionalOperation> operations, AtomicBoolean executed, String transactionId) {
@@ -68,28 +67,60 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
     }
     
     @Override
-    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
-        throw new UnsupportedOperationException("expire method is not supported in transaction");
-    }
-    
-    @Override
-    public RFuture<Boolean> expireAtAsync(Date timestamp) {
-        throw new UnsupportedOperationException("expire method is not supported in transaction");
-    }
-    
-    @Override
-    public RFuture<Boolean> expireAtAsync(long timestamp) {
-        throw new UnsupportedOperationException("expire method is not supported in transaction");
-    }
+    protected RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
+        checkState();
+        long currentThreadId = Thread.currentThread().getId();
+        return executeLocked(() -> {
+            if (state != null) {
+                operations.add(new ExpireOperation(getName(), getLockName(), currentThreadId, transactionId, timeToLive, timeUnit, param, keys));
+                hasExpiration = true;
+                return CompletableFuture.completedFuture(state != NULL);
+            }
 
+            return isExistsAsync().thenApply(res -> {
+                operations.add(new ExpireOperation(getName(), getLockName(), currentThreadId, transactionId, timeToLive, timeUnit, param, keys));
+                hasExpiration = res;
+                return res;
+            });
+        });
+    }
+    
     @Override
-    public RFuture<Boolean> expireAsync(Instant timestamp) {
-        throw new UnsupportedOperationException("expire method is not supported in transaction");
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
+        checkState();
+        long currentThreadId = Thread.currentThread().getId();
+        return executeLocked(() -> {
+            if (state != null) {
+                operations.add(new ExpireAtOperation(getName(), getLockName(), currentThreadId, transactionId, timestamp, param, keys));
+                hasExpiration = true;
+                return CompletableFuture.completedFuture(state != NULL);
+            }
+
+            return isExistsAsync().thenApply(res -> {
+                operations.add(new ExpireAtOperation(getName(), getLockName(), currentThreadId, transactionId, timestamp, param, keys));
+                hasExpiration = res;
+                return res;
+            });
+        });
     }
 
     @Override
     public RFuture<Boolean> clearExpireAsync() {
-        throw new UnsupportedOperationException("clearExpire method is not supported in transaction");
+        checkState();
+        long currentThreadId = Thread.currentThread().getId();
+        return executeLocked(() -> {
+            if (hasExpiration) {
+                operations.add(new ClearExpireOperation(getName(), getLockName(), currentThreadId, transactionId));
+                hasExpiration = false;
+                return CompletableFuture.completedFuture(true);
+            }
+
+            return remainTimeToLiveAsync().thenApply(res -> {
+                operations.add(new ClearExpireOperation(getName(), getLockName(), currentThreadId, transactionId));
+                hasExpiration = false;
+                return res > 0;
+            });
+        });
     }
     
     @Override
@@ -107,12 +138,12 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
         checkState();
         if (state != null) {
             if (state == NULL) {
-                return RedissonPromise.newSucceededFuture(0L);
+                return new CompletableFutureWrapper<>(0L);
             } else {
                 ByteBuf buf = encode(state);
                 long size = buf.readableBytes();
                 buf.release();
-                return RedissonPromise.newSucceededFuture(size);
+                return new CompletableFutureWrapper<>(size);
             }
         }
 
@@ -123,11 +154,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
     public RFuture<Boolean> isExistsAsync() {
         checkState();
         if (state != null) {
-            if (state == NULL) {
-                return RedissonPromise.newSucceededFuture(null);
-            } else {
-                return RedissonPromise.newSucceededFuture(true);
-            }
+            return new CompletableFutureWrapper<>(state != NULL);
         }
         
         return super.isExistsAsync();
@@ -136,97 +163,64 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
     @Override
     public RFuture<Boolean> touchAsync() {
         checkState();
-        RPromise<Boolean> result = new RedissonPromise<Boolean>();
         long currentThreadId = Thread.currentThread().getId();
-        executeLocked(result, new Runnable() {
-            @Override
-            public void run() {
-                if (state != null) {
-                    operations.add(new TouchOperation(getRawName(), getLockName(), currentThreadId));
-                    result.trySuccess(state != NULL);
-                    return;
-                }
-                
-                isExistsAsync().onComplete((res, e) -> {
-                    if (e != null) {
-                        result.tryFailure(e);
-                        return;
-                    }
-                    
-                    operations.add(new TouchOperation(getRawName(), getLockName(), currentThreadId));
-                    result.trySuccess(res);
-                });
+        return executeLocked(() -> {
+            if (state != null) {
+                operations.add(new TouchOperation(getName(), getLockName(), currentThreadId, transactionId));
+                return CompletableFuture.completedFuture(state != NULL);
             }
+
+            return isExistsAsync().thenApply(res -> {
+                operations.add(new TouchOperation(getName(), getLockName(), currentThreadId, transactionId));
+                return res;
+            });
         });
-        return result;
     }
 
     @Override
     public RFuture<Boolean> unlinkAsync() {
         checkState();
-        RPromise<Boolean> result = new RedissonPromise<Boolean>();
         long currentThreadId = Thread.currentThread().getId();
-        executeLocked(result, new Runnable() {
-            @Override
-            public void run() {
-                if (state != null) {
-                    operations.add(new UnlinkOperation(getRawName(), getLockName(), currentThreadId));
-                    if (state == NULL) {
-                        result.trySuccess(false);
-                    } else {
-                        state = NULL;
-                        result.trySuccess(true);
-                    }
-                    return;
-                }
-                
-                isExistsAsync().onComplete((res, e) -> {
-                    if (e != null) {
-                        result.tryFailure(e);
-                        return;
-                    }
-                    
-                    operations.add(new UnlinkOperation(getRawName(), getLockName(), currentThreadId));
+        return executeLocked(() -> {
+            if (state != null) {
+                operations.add(new UnlinkOperation(getName(), getLockName(), currentThreadId, transactionId));
+                if (state == NULL) {
+                    return CompletableFuture.completedFuture(false);
+                } else {
                     state = NULL;
-                    result.trySuccess(res);
-                });
+                    return CompletableFuture.completedFuture(true);
+                }
             }
+
+            return isExistsAsync().thenApply(res -> {
+                operations.add(new UnlinkOperation(getName(), getLockName(), currentThreadId, transactionId));
+                state = NULL;
+                return res;
+            });
         });
-        return result;
     }
     
     @Override
     public RFuture<Boolean> deleteAsync() {
         checkState();
-        RPromise<Boolean> result = new RedissonPromise<Boolean>();
         long threadId = Thread.currentThread().getId();
-        executeLocked(result, new Runnable() {
-            @Override
-            public void run() {
-                if (state != null) {
-                    operations.add(new DeleteOperation(getRawName(), getLockName(), transactionId, threadId));
-                    if (state == NULL) {
-                        result.trySuccess(false);
-                    } else {
-                        state = NULL;
-                        result.trySuccess(true);
-                    }
-                    return;
-                }
-                
-                isExistsAsync().onComplete((res, e) -> {
-                    if (e != null) {
-                        result.tryFailure(e);
-                        return;
-                    }
-                    
-                    operations.add(new DeleteOperation(getRawName(), getLockName(), transactionId, threadId));
+        return executeLocked(() -> {
+            if (state != null) {
+                operations.add(new DeleteOperation(getName(), getLockName(), transactionId, threadId));
+                if (state == NULL) {
+                    return CompletableFuture.completedFuture(false);
+                } else {
                     state = NULL;
-                    result.trySuccess(res);
-                });
+                    return CompletableFuture.completedFuture(true);
+                }
             }
+
+            return isExistsAsync().thenApply(res -> {
+                operations.add(new DeleteOperation(getName(), getLockName(), transactionId, threadId));
+                state = NULL;
+                return res;
+            });
         });
-        return result;
     }
     
     @Override
@@ -235,9 +229,9 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
         checkState();
         if (state != null) {
             if (state == NULL) {
-                return RedissonPromise.newSucceededFuture(null);
+                return new CompletableFutureWrapper<>((V) null);
             } else {
-                return RedissonPromise.newSucceededFuture((V) state);
+                return new CompletableFutureWrapper<>((V) state);
             }
         }
         
@@ -247,225 +241,138 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
     @Override
     public RFuture<Boolean> compareAndSetAsync(V expect, V update) {
         checkState();
-        RPromise<Boolean> result = new RedissonPromise<>();
         long currentThreadId = Thread.currentThread().getId();
-        executeLocked(result, new Runnable() {
-            @Override
-            public void run() {
-                if (state != null) {
-                    operations.add(new BucketCompareAndSetOperation<V>(getRawName(), getLockName(), getCodec(), expect, update, transactionId, currentThreadId));
-                    if ((state == NULL && expect == null)
-                            || isEquals(state, expect)) {
-                        if (update == null) {
-                            state = NULL;
-                        } else {
-                            state = update;
-                        }
-                        result.trySuccess(true);
-                    } else {
-                        result.trySuccess(false);
-                    }
-                    return;
+        return executeLocked(() -> {
+            if (state != null) {
+                operations.add(new BucketCompareAndSetOperation<V>(getName(), getLockName(), getCodec(), expect, update, transactionId, currentThreadId));
+                if ((state == NULL && expect == null)
+                        || isEquals(state, expect)) {
+                    state = Optional.ofNullable((Object) update).orElse(NULL);
+                    return CompletableFuture.completedFuture(true);
                 }
-                
-                getAsync().onComplete((res, e) -> {
-                    if (e != null) {
-                        result.tryFailure(e);
-                        return;
-                    }
-                    
-                    operations.add(new BucketCompareAndSetOperation<V>(getRawName(), getLockName(), getCodec(), expect, update, transactionId, currentThreadId));
-                    if ((res == null && expect == null) 
-                            || isEquals(res, expect)) {
-                        if (update == null) {
-                            state = NULL;
-                        } else {
-                            state = update;
-                        }
-                        result.trySuccess(true);
-                    } else {
-                        result.trySuccess(false);
-                    }
-                });
+                return CompletableFuture.completedFuture(false);
             }
+
+            return getAsync().thenApply(res -> {
+                operations.add(new BucketCompareAndSetOperation<V>(getName(), getLockName(), getCodec(), expect, update, transactionId, currentThreadId));
+                if ((res == null && expect == null)
+                        || isEquals(res, expect)) {
+                    state = Optional.ofNullable((Object) update).orElse(NULL);
+                    return true;
+                }
+                return false;
+            });
         });
-        return result;
     }
     
     @Override
     public RFuture<V> getAndSetAsync(V value, long timeToLive, TimeUnit timeUnit) {
-        return getAndSet(value, new BucketGetAndSetOperation<V>(getRawName(), getLockName(), getCodec(), value, timeToLive, timeUnit, transactionId));
+        return getAndSet(value, new BucketGetAndSetOperation<V>(getName(), getLockName(), getCodec(), value, timeToLive, timeUnit, transactionId));
     }
     
     @Override
     public RFuture<V> getAndSetAsync(V value) {
-        return getAndSet(value, new BucketGetAndSetOperation<V>(getRawName(), getLockName(), getCodec(), value, transactionId));
+        return getAndSet(value, new BucketGetAndSetOperation<V>(getName(), getLockName(), getCodec(), value, transactionId));
     }
     
     @SuppressWarnings("unchecked")
     private RFuture<V> getAndSet(V newValue, TransactionalOperation operation) {
         checkState();
-        RPromise<V> result = new RedissonPromise<V>();
-        executeLocked(result, new Runnable() {
-            @Override
-            public void run() {
-                if (state != null) {
-                    Object prevValue;
-                    if (state == NULL) {
-                        prevValue = null;
-                    } else {
-                        prevValue = state;
-                    }
-                    operations.add(operation);
-                    if (newValue == null) {
-                        state = NULL;
-                    } else {
-                        state = newValue;
-                    }
-                    result.trySuccess((V) prevValue);
-                    return;
-                }
-                
-                getAsync().onComplete((res, e) -> {
-                    if (e != null) {
-                        result.tryFailure(e);
-                        return;
-                    }
-                    
-                    if (newValue == null) {
-                        state = NULL;
-                    } else {
-                        state = newValue;
-                    }
-                    operations.add(operation);
-                    result.trySuccess(res);
-                });
+        return executeLocked(() -> {
+            if (state != null) {
+                Object prevValue = Optional.of(state).filter(s -> s != NULL).orElse(null);
+                operations.add(operation);
+                state = Optional.ofNullable((Object) newValue).orElse(NULL);
+                return CompletableFuture.completedFuture((V) prevValue);
             }
+
+            return getAsync().thenApply(res -> {
+                state = Optional.ofNullable((Object) newValue).orElse(NULL);
+                operations.add(operation);
+                return res;
+            });
         });
-        return result;
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public RFuture<V> getAndDeleteAsync() {
         checkState();
-        RPromise<V> result = new RedissonPromise<V>();
         long currentThreadId = Thread.currentThread().getId();
-        executeLocked(result, new Runnable() {
-            @Override
-            public void run() {
-                if (state != null) {
-                    Object prevValue;
-                    if (state == NULL) {
-                        prevValue = null;
-                    } else {
-                        prevValue = state;
-                    }
-                    operations.add(new BucketGetAndDeleteOperation<V>(getRawName(), getLockName(), getCodec(), transactionId, currentThreadId));
-                    state = NULL;
-                    result.trySuccess((V) prevValue);
-                    return;
-                }
-                
-                getAsync().onComplete((res, e) -> {
-                    if (e != null) {
-                        result.tryFailure(e);
-                        return;
-                    }
-                    
-                    state = NULL;
-                    operations.add(new BucketGetAndDeleteOperation<V>(getRawName(), getLockName(), getCodec(), transactionId, currentThreadId));
-                    result.trySuccess(res);
-                });
+        return executeLocked(() -> {
+            if (state != null) {
+                Object prevValue = Optional.of(state).filter(s -> s != NULL).orElse(null);
+                operations.add(new BucketGetAndDeleteOperation<V>(getName(), getLockName(), getCodec(), transactionId, currentThreadId));
+                state = NULL;
+                return CompletableFuture.completedFuture((V) prevValue);
             }
+
+            return getAsync().thenApply(res -> {
+                state = NULL;
+                operations.add(new BucketGetAndDeleteOperation<V>(getName(), getLockName(), getCodec(), transactionId, currentThreadId));
+                return res;
+            });
         });
-        return result;
     }
     
     @Override
     public RFuture<Void> setAsync(V newValue) {
         long currentThreadId = Thread.currentThread().getId();
-        return setAsync(newValue, new BucketSetOperation<V>(getRawName(), getLockName(), getCodec(), newValue, transactionId, currentThreadId));
+        return setAsync(newValue, new BucketSetOperation<V>(getName(), getLockName(), getCodec(), newValue, transactionId, currentThreadId));
     }
 
-    private RFuture<Void> setAsync(V newValue, TransactionalOperation operation) {
+    private RFuture<Void> setAsync(V newValue, BucketSetOperation operation) {
         checkState();
-        RPromise<Void> result = new RedissonPromise<Void>();
-        executeLocked(result, new Runnable() {
-            @Override
-            public void run() {
-                operations.add(operation);
-                if (newValue == null) {
-                    state = NULL;
-                } else {
-                    state = newValue;
-                }
-                result.trySuccess(null);
-            }
+        return executeLocked(() -> {
+            hasExpiration = operation.getTimeUnit() != null;
+            operations.add(operation);
+            state = Optional.ofNullable((Object) newValue).orElse(NULL);
+            return CompletableFuture.completedFuture(null);
         });
-        return result;
     }
     
     @Override
     public RFuture<Void> setAsync(V value, long timeToLive, TimeUnit timeUnit) {
         long currentThreadId = Thread.currentThread().getId();
-        return setAsync(value, new BucketSetOperation<V>(getRawName(), getLockName(), getCodec(), value, timeToLive, timeUnit, transactionId, currentThreadId));
+        return setAsync(value, new BucketSetOperation<V>(getName(), getLockName(), getCodec(), value, timeToLive, timeUnit, transactionId, currentThreadId));
     }
     
     @Override
     public RFuture<Boolean> trySetAsync(V newValue) {
         long currentThreadId = Thread.currentThread().getId();
-        return trySet(newValue, new BucketTrySetOperation<V>(getRawName(), getLockName(), getCodec(), newValue, transactionId, currentThreadId));
+        return trySet(newValue, new BucketTrySetOperation<V>(getName(), getLockName(), getCodec(), newValue, transactionId, currentThreadId));
     }
     
     @Override
     public RFuture<Boolean> trySetAsync(V value, long timeToLive, TimeUnit timeUnit) {
         long currentThreadId = Thread.currentThread().getId();
-        return trySet(value, new BucketTrySetOperation<V>(getRawName(), getLockName(), getCodec(), value, timeToLive, timeUnit, transactionId, currentThreadId));
+        return trySet(value, new BucketTrySetOperation<V>(getName(), getLockName(), getCodec(), value, timeToLive, timeUnit, transactionId, currentThreadId));
     }
 
-    private RFuture<Boolean> trySet(V newValue, TransactionalOperation operation) {
+    private RFuture<Boolean> trySet(V newValue, BucketTrySetOperation operation) {
         checkState();
-        RPromise<Boolean> result = new RedissonPromise<Boolean>();
-        executeLocked(result, new Runnable() {
-            @Override
-            public void run() {
-                if (state != null) {
-                    operations.add(operation);
-                    if (state == NULL) {
-                        if (newValue == null) {
-                            state = NULL;
-                        } else {
-                            state = newValue;
-                        }
-                        result.trySuccess(true);
-                    } else {
-                        result.trySuccess(false);
-                    }
-                    return;
+        return executeLocked(() -> {
+            if (state != null) {
+                operations.add(operation);
+                if (state == NULL) {
+                    state = Optional.ofNullable((Object) newValue).orElse(NULL);
+                    hasExpiration = operation.getTimeUnit() != null;
+                    return CompletableFuture.completedFuture(true);
+                } else {
+                    return CompletableFuture.completedFuture(false);
                 }
-                
-                getAsync().onComplete((res, e) -> {
-                    if (e != null) {
-                        result.tryFailure(e);
-                        return;
-                    }
-                    
-                    operations.add(operation);
-                    if (res == null) {
-                        if (newValue == null) {
-                            state = NULL;
-                        } else {
-                            state = newValue;
-                        }
-                        result.trySuccess(true);
-                    } else {
-                        result.trySuccess(false);
-                    }
-                });
             }
+
+            return getAsync().thenApply(res -> {
+                operations.add(operation);
+                if (res == null) {
+                    hasExpiration = operation.getTimeUnit() != null;
+                    state = Optional.ofNullable((Object) newValue).orElse(NULL);
+                    return true;
+                }
+                return false;
+            });
         });
-        return result;
     }
 
     private boolean isEquals(Object value, Object oldValue) {
@@ -480,15 +387,10 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
         }
     }
     
-    protected <R> void executeLocked(RPromise<R> promise, Runnable runnable) {
+    protected <R> RFuture<R> executeLocked(Supplier<CompletionStage<R>> runnable) {
         RLock lock = getLock();
-        lock.lockAsync(timeout, TimeUnit.MILLISECONDS).onComplete((res, e) -> {
-            if (e == null) {
-                runnable.run();
-            } else {
-                promise.tryFailure(e);
-            }
-        });
+        CompletionStage<R> f = lock.lockAsync(timeout, TimeUnit.MILLISECONDS).thenCompose(res -> runnable.get());
+        return new CompletableFutureWrapper<>(f);
     }
 
     private RLock getLock() {
@@ -496,7 +398,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
     }
 
     private String getLockName() {
-        return getRawName() + ":transaction_lock";
+        return getName() + ":transaction_lock";
     }
 
     protected void checkState() {

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,29 +22,47 @@ import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
  * 
  * @author Nikita Koksharov
  *
- * @param <T> type of element
  */
-public class TimeSeriesEntryReplayDecoder<T> implements MultiDecoder<List<TimeSeriesEntry<T>>> {
+public class TimeSeriesEntryReplayDecoder implements MultiDecoder<List<TimeSeriesEntry<Object, Object>>> {
+
+    private boolean reverse;
+
+    public TimeSeriesEntryReplayDecoder() {
+        this(false);
+    }
+
+    public TimeSeriesEntryReplayDecoder(boolean reverse) {
+        this.reverse = reverse;
+    }
 
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
-        if (paramNum % 2 != 0) {
+        if (paramNum % 4 == 2 || paramNum % 4 == 3) {
             return LongCodec.INSTANCE.getValueDecoder();
         }
         return MultiDecoder.super.getDecoder(codec, paramNum, state);
     }
     
     @Override
-    public List<TimeSeriesEntry<T>> decode(List<Object> parts, State state) {
-        List<TimeSeriesEntry<T>> result = new ArrayList<>();
-        for (int i = 0; i < parts.size(); i += 2) {
-            result.add(new TimeSeriesEntry<T>((Long) parts.get(i + 1), (T) parts.get(i)));
+    public List<TimeSeriesEntry<Object, Object>> decode(List<Object> parts, State state) {
+        List<TimeSeriesEntry<Object, Object>> result = new ArrayList<>();
+        for (int i = 0; i < parts.size(); i += 4) {
+            Long n = (Long) parts.get(i + 2);
+            Object label = null;
+            if (n == 3) {
+               label = parts.get(i + 1);
+            }
+            result.add(new TimeSeriesEntry<>((Long) parts.get(i + 3), parts.get(i), label));
+        }
+        if (reverse) {
+            Collections.reverse(result);
         }
         return result;
     }

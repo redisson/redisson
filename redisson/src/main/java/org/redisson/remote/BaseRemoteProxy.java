@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package org.redisson.remote;
 
 import io.netty.util.concurrent.ScheduledFuture;
 import org.redisson.RedissonBlockingQueue;
+import org.redisson.RedissonShutdownException;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RFuture;
 import org.redisson.api.RemoteInvocationOptions;
@@ -24,13 +25,13 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
 import org.redisson.remote.ResponseEntry.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
@@ -70,9 +71,8 @@ public abstract class BaseRemoteProxy {
         return requestQueueNameCache.computeIfAbsent(remoteInterface, k -> "{" + name + ":" + k.getName() + "}");
     }
     
-    protected RFuture<RemoteServiceAck> tryPollAckAgainAsync(RemoteInvocationOptions optionsCopy,
-            String ackName, RequestId requestId) {
-        RPromise<RemoteServiceAck> promise = new RedissonPromise<>();
+    protected CompletionStage<RemoteServiceAck> tryPollAckAgainAsync(RemoteInvocationOptions optionsCopy,
+                                                                     String ackName, String requestId) {
         RFuture<Boolean> ackClientsFuture = commandExecutor.evalWriteNoRetryAsync(ackName, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                     "if redis.call('setnx', KEYS[1], 1) == 1 then " 
                         + "redis.call('pexpire', KEYS[1], ARGV[1]);"
@@ -80,33 +80,18 @@ public abstract class BaseRemoteProxy {
                     + "end;" 
                     + "redis.call('del', KEYS[1]);" 
                     + "return 1;",
-                Arrays.<Object> asList(ackName), optionsCopy.getAckTimeoutInMillis());
-        ackClientsFuture.onComplete((res, e) -> {
-            if (e != null) {
-                promise.tryFailure(e);
-                return;
-            }
-
+                Arrays.asList(ackName), optionsCopy.getAckTimeoutInMillis());
+        return ackClientsFuture.thenCompose(res -> {
             if (res) {
-                RPromise<RemoteServiceAck> ackFuture = pollResponse(commandExecutor.getConnectionManager().getConfig().getTimeout(), requestId, true);
-                ackFuture.onComplete((r, ex) -> {
-                    if (ex != null) {
-                        promise.tryFailure(ex);
-                        return;
-                    }
-
-                    promise.trySuccess(r);
-                });
-            } else {
-                promise.trySuccess(null);
+                return pollResponse(commandExecutor.getConnectionManager().getConfig().getTimeout(), requestId, true);
             }
+            return CompletableFuture.completedFuture(null);
         });
-        return promise;
     }
 
-    protected final <T extends RRemoteServiceResponse> RPromise<T> pollResponse(long timeout,
-            RequestId requestId, boolean insertFirst) {
-        RPromise<T> responseFuture = new RedissonPromise<T>();
+    protected final <T extends RRemoteServiceResponse> CompletableFuture<T> pollResponse(long timeout,
+                                                                                         String requestId, boolean insertFirst) {
+        CompletableFuture<T> responseFuture = new CompletableFuture<T>();
 
         ResponseEntry entry;
         synchronized (responses) {
@@ -116,7 +101,7 @@ public abstract class BaseRemoteProxy {
 
             ScheduledFuture<?> responseTimeoutFuture = createResponseTimeout(timeout, requestId, responseFuture);
 
-            Map<RequestId, List<Result>> entryResponses = entry.getResponses();
+            Map<String, List<Result>> entryResponses = entry.getResponses();
             List<Result> list = entryResponses.computeIfAbsent(requestId, k -> new ArrayList<>(3));
 
             Result res = new Result(responseFuture, responseTimeoutFuture);
@@ -125,13 +110,17 @@ public abstract class BaseRemoteProxy {
             } else {
                 list.add(res);
             }
+
         }
 
-        pollResponse(entry);
+        if (entry.getStarted().compareAndSet(false, true)) {
+            pollResponse();
+        }
+
         return responseFuture;
     }
 
-    private <T extends RRemoteServiceResponse> ScheduledFuture<?> createResponseTimeout(long timeout, RequestId requestId, RPromise<T> responseFuture) {
+    private <T extends RRemoteServiceResponse> ScheduledFuture<?> createResponseTimeout(long timeout, String requestId, CompletableFuture<T> responseFuture) {
         return commandExecutor.getConnectionManager().getGroup().schedule(new Runnable() {
                     @Override
                     public void run() {
@@ -142,7 +131,7 @@ public abstract class BaseRemoteProxy {
                             }
 
                             RemoteServiceTimeoutException ex = new RemoteServiceTimeoutException("No response after " + timeout + "ms");
-                            if (!responseFuture.tryFailure(ex)) {
+                            if (!responseFuture.completeExceptionally(ex)) {
                                 return;
                             }
 
@@ -159,8 +148,8 @@ public abstract class BaseRemoteProxy {
                 }, timeout, TimeUnit.MILLISECONDS);
     }
 
-    private <T extends RRemoteServiceResponse> void addCancelHandling(RequestId requestId, RPromise<T> responseFuture) {
-        responseFuture.onComplete((res, ex) -> {
+    private <T extends RRemoteServiceResponse> void addCancelHandling(String requestId, CompletableFuture<T> responseFuture) {
+        responseFuture.whenComplete((res, ex) -> {
             if (!responseFuture.isCancelled()) {
                 return;
             }
@@ -190,39 +179,39 @@ public abstract class BaseRemoteProxy {
         });
     }
 
-    private <V> RBlockingQueue<V> getBlockingQueue(String name, Codec codec) {
-        return new RedissonBlockingQueue<V>(codec, commandExecutor, name, null);
-    }
-    
-    private void pollResponse(ResponseEntry ent) {
-        if (!ent.getStarted().compareAndSet(false, true)) {
-            return;
-        }
-        
-        RBlockingQueue<RRemoteServiceResponse> queue = getBlockingQueue(responseQueueName, codec);
-        RFuture<RRemoteServiceResponse> future = queue.takeAsync();
-        future.onComplete(createResponseListener());
+    private void pollResponse() {
+        RBlockingQueue<RRemoteServiceResponse> queue = new RedissonBlockingQueue<>(codec, commandExecutor, responseQueueName);
+        RFuture<RRemoteServiceResponse> future = queue.pollAsync(60, TimeUnit.SECONDS);
+        future.whenComplete(createResponseListener());
     }
 
     private BiConsumer<RRemoteServiceResponse, Throwable> createResponseListener() {
         return (response, e) -> {
             if (e != null) {
-                log.error("Can't get response from " + responseQueueName, e);
+                if (e instanceof RedissonShutdownException) {
+                    return;
+                }
+
+                log.error("Can't get response from {}", responseQueueName, e);
                 return;
             }
-            
-            RPromise<RRemoteServiceResponse> promise;
+
+            CompletableFuture<RRemoteServiceResponse> promise;
             synchronized (responses) {
                 ResponseEntry entry = responses.get(responseQueueName);
                 if (entry == null) {
                     return;
                 }
-                
-                RequestId key = new RequestId(response.getId());
+
+                if (response == null) {
+                    pollResponse();
+                    return;
+                }
+
+                String key = response.getId();
                 List<Result> list = entry.getResponses().get(key);
                 if (list == null) {
-                    RBlockingQueue<RRemoteServiceResponse> responseQueue = getBlockingQueue(responseQueueName, codec);
-                    responseQueue.takeAsync().onComplete(createResponseListener());
+                    pollResponse();
                     return;
                 }
                 
@@ -237,13 +226,12 @@ public abstract class BaseRemoteProxy {
                 if (entry.getResponses().isEmpty()) {
                     responses.remove(responseQueueName, entry);
                 } else {
-                    RBlockingQueue<RRemoteServiceResponse> responseQueue = getBlockingQueue(responseQueueName, codec);
-                    responseQueue.takeAsync().onComplete(createResponseListener());
+                    pollResponse();
                 }
             }
 
             if (promise != null) {
-                promise.trySuccess(response);
+                promise.complete(response);
             }
         };
     }

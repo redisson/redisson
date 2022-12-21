@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.redisson.config;
 
 import org.redisson.api.NameMapper;
+import org.redisson.client.DefaultCredentialsResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,6 +65,8 @@ public class BaseConfig<T extends BaseConfig<T>> {
     private String password;
 
     private String username;
+
+    private CredentialsResolver credentialsResolver = new DefaultCredentialsResolver();
 
     /**
      * Subscriptions per Redis connection limit
@@ -122,6 +125,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
         setKeepAlive(config.isKeepAlive());
         setTcpNoDelay(config.isTcpNoDelay());
         setNameMapper(config.getNameMapper());
+        setCredentialsResolver(config.getCredentialsResolver());
     }
 
     /**
@@ -341,7 +345,8 @@ public class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * Defines password for SSL truststore
+     * Defines password for SSL truststore.
+     * SSL truststore is read on each new connection creation and can be dynamically reloaded.
      * <p>
      * Default is <code>null</code>
      *
@@ -358,7 +363,8 @@ public class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * Defines path to SSL keystore
+     * Defines path to SSL keystore.
+     * SSL keystore is read on each new connection creation and can be dynamically reloaded.
      * <p>
      * Default is <code>null</code>
      *
@@ -471,6 +477,22 @@ public class BaseConfig<T extends BaseConfig<T>> {
      */
     public T setNameMapper(NameMapper nameMapper) {
         this.nameMapper = nameMapper;
+        return (T) this;
+    }
+
+    public CredentialsResolver getCredentialsResolver() {
+        return credentialsResolver;
+    }
+
+    /**
+     * Defines Credentials resolver which is invoked during connection for Redis server authentication.
+     * It makes possible to specify dynamically changing Redis credentials.
+     *
+     * @param credentialsResolver Credentials resolver object
+     * @return config
+     */
+    public T setCredentialsResolver(CredentialsResolver credentialsResolver) {
+        this.credentialsResolver = credentialsResolver;
         return (T) this;
     }
 }

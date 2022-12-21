@@ -3,6 +3,7 @@ package org.redisson;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RMultimapCache;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
@@ -133,7 +134,7 @@ public abstract class RedissonBaseMultimapCacheTest extends BaseTest {
         map.put("1", "2");
         map.put("2", "3");
 
-        map.expire(100, TimeUnit.MILLISECONDS);
+        map.expire(Duration.ofMillis(100));
 
         Thread.sleep(500);
 

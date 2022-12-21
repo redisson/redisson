@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Test;
 import org.redisson.api.RReliableTopic;
 
 import java.time.Duration;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,6 +38,34 @@ public class RedissonReliableTopicTest extends BaseTest {
 
         Awaitility.waitAtMost(Duration.ofSeconds(1)).until(() -> counter.get() == 20);
         assertThat(rt.size()).isEqualTo(0);
+    }
+
+    @Test
+    public void testListenerOldMessages() throws InterruptedException {
+        RReliableTopic rt = redisson.getReliableTopic("test2");
+
+        rt.publish("1");
+
+        Queue<String> messages = new LinkedList<>();
+        String id = rt.addListener(String.class, (ch, m) -> {
+            messages.add(m);
+        });
+
+        assertThat(messages).containsOnly("1");
+        rt.publish("2");
+        Thread.sleep(50);
+        assertThat(messages).containsOnly("1", "2");
+
+        messages.clear();
+        rt.removeListener(id);
+
+        String id2 = rt.addListener(String.class, (ch, m) -> {
+            messages.add(m);
+        });
+
+        Thread.sleep(50);
+        assertThat(messages).isEmpty();
+
     }
 
     @Test

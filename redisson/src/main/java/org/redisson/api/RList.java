@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.RandomAccess;
 
@@ -35,8 +36,27 @@ public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RSortable<
      * @param indexes of elements
      * @return list of elements
      */
-    List<V> get(int...indexes);
-    
+    List<V> get(int... indexes);
+
+    /**
+     * Returns element iterator that can be shared across multiple applications.
+     * Creating multiple iterators on the same object with this method will result in a single shared iterator.
+     * See {@linkplain RList#distributedIterator(String, int)} for creating different iterators.
+     * @param count batch size
+     * @return shared elements iterator
+     */
+    Iterator<V> distributedIterator(int count);
+
+    /**
+     * Returns iterator over elements that match specified pattern. Iterator can be shared across multiple applications.
+     * Creating multiple iterators on the same object with this method will result in a single shared iterator.
+     * Iterator name must be resolved to the same hash slot as list name.
+     * @param count batch size
+     * @param iteratorName redis object name to which cursor will be saved
+     * @return shared elements iterator
+     */
+    Iterator<V> distributedIterator(String iteratorName, int count);
+
     /**
      * Returns <code>RMapReduce</code> object associated with this map
      * 
@@ -143,5 +163,4 @@ public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RSortable<
      * @return listener id
      */
     int addListener(ObjectListener listener);
-
 }

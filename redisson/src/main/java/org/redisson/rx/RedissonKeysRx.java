@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,7 +79,7 @@ public class RedissonKeysRx {
             }
             
             protected void nextValues() {
-                instance.scanIteratorAsync(client, entry, nextIterPos, pattern, count).onComplete((res, e) -> {
+                instance.scanIteratorAsync(client, entry, nextIterPos, pattern, count).whenComplete((res, e) -> {
                     if (e != null) {
                         p.onError(e);
                         return;

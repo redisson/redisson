@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,21 +16,21 @@
 package org.redisson.connection;
 
 import org.redisson.api.NodeType;
-import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.config.ReadMode;
-import org.redisson.pubsub.AsyncSemaphore;
+import org.redisson.misc.AsyncSemaphore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Deque;
 import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 
@@ -56,8 +56,6 @@ public class ClientConnectionsEntry {
 
     private volatile NodeType nodeType;
     private final ConnectionManager connectionManager;
-
-    private final AtomicLong firstFailTime = new AtomicLong(0);
 
     private volatile boolean initialized = false;
 
@@ -104,23 +102,23 @@ public class ClientConnectionsEntry {
     }
 
     public void resetFirstFail() {
-        firstFailTime.set(0);
+        client.resetFirstFail();
     }
 
     public boolean isFailed() {
-        if (firstFailTime.get() != 0) {
-            return System.currentTimeMillis() - firstFailTime.get() > connectionManager.getConfig().getFailedSlaveCheckInterval(); 
+        if (client.getFirstFailTime() != 0) {
+            return System.currentTimeMillis() - client.getFirstFailTime() > connectionManager.getConfig().getFailedSlaveCheckInterval();
         }
         return false;
     }
     
     public void trySetupFistFail() {
-        firstFailTime.compareAndSet(0, System.currentTimeMillis());
+        client.trySetupFirstFail();
     }
 
-    public RFuture<Void> shutdownAsync() {
+    public CompletableFuture<Void> shutdownAsync() {
         connectionManager.getConnectionWatcher().remove(this);
-        return client.shutdownAsync();
+        return client.shutdownAsync().toCompletableFuture();
     }
 
     public RedisClient getClient() {
@@ -147,8 +145,8 @@ public class ClientConnectionsEntry {
         freeSubscribeConnectionsCounter.removeListeners();
     }
 
-    public void acquireConnection(Runnable runnable, RedisCommand<?> command) {
-        freeConnectionsCounter.acquire(runnable);
+    public CompletableFuture<Void> acquireConnection(RedisCommand<?> command) {
+        return freeConnectionsCounter.acquire();
     }
     
     public void releaseConnection() {
@@ -182,24 +180,23 @@ public class ClientConnectionsEntry {
             return;
         }
 
-        connection.decUsage();
         connection.setLastUsageTime(System.nanoTime());
         freeConnections.add(connection);
+        connection.decUsage();
     }
 
-    public RFuture<RedisConnection> connect() {
-        RFuture<RedisConnection> future = client.connectAsync();
-        future.onComplete((conn, e) -> {
+    public CompletionStage<RedisConnection> connect() {
+        CompletionStage<RedisConnection> future = client.connectAsync();
+        return future.whenComplete((conn, e) -> {
             if (e != null) {
                 return;
             }
-            
+
             onConnect(conn);
             log.debug("new connection created: {}", conn);
             
             allConnections.add(conn);
         });
-        return future;
     }
     
     private void onConnect(final RedisConnection conn) {
@@ -223,20 +220,18 @@ public class ClientConnectionsEntry {
         connectionManager.getConnectionEventsHub().fireConnect(conn.getRedisClient().getAddr());
     }
 
-    public RFuture<RedisPubSubConnection> connectPubSub() {
-        RFuture<RedisPubSubConnection> future = client.connectPubSubAsync();
-        future.onComplete((res, e) -> {
+    public CompletionStage<RedisPubSubConnection> connectPubSub() {
+        CompletionStage<RedisPubSubConnection> future = client.connectPubSubAsync();
+        return future.whenComplete((conn, e) -> {
             if (e != null) {
                 return;
             }
             
-            RedisPubSubConnection conn = future.getNow();
             onConnect(conn);
             log.debug("new pubsub connection created: {}", conn);
 
             allSubscribeConnections.add(conn);
         });
-        return future;
     }
     
     public Queue<RedisConnection> getAllConnections() {
@@ -265,8 +260,8 @@ public class ClientConnectionsEntry {
         freeSubscribeConnections.add(connection);
     }
 
-    public void acquireSubscribeConnection(Runnable runnable) {
-        freeSubscribeConnectionsCounter.acquire(runnable);
+    public CompletableFuture<Void> acquireSubscribeConnection() {
+        return freeSubscribeConnectionsCounter.acquire();
     }
 
     public void releaseSubscribeConnection() {
@@ -279,7 +274,7 @@ public class ClientConnectionsEntry {
                 + ", freeSubscribeConnectionsCounter=" + freeSubscribeConnectionsCounter
                 + ", freeConnectionsAmount=" + freeConnections.size() + ", freeConnectionsCounter="
                 + freeConnectionsCounter + ", freezeReason=" + freezeReason
-                + ", client=" + client + ", nodeType=" + nodeType + ", firstFail=" + firstFailTime
+                + ", client=" + client + ", nodeType=" + nodeType + ", firstFail=" + client.getFirstFailTime()
                 + "]";
     }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.eviction.EvictionScheduler;
 import org.redisson.iterator.RedissonBaseIterator;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -265,7 +265,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         List<Object> params = new ArrayList<>();
         params.add(System.currentTimeMillis());
         params.add(timeoutDate);
-        params.addAll(encode(values));
+        params.addAll(encode(Arrays.asList(values)));
 
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
                   "for i, v in ipairs(ARGV) do " +
@@ -306,7 +306,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     @Override
     public RFuture<Boolean> containsAllAsync(Collection<?> c) {
         if (c.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(true);
+            return new CompletableFutureWrapper<>(true);
         }
         
         List<Object> params = new ArrayList<Object>(c.size() + 1);
@@ -336,7 +336,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     @Override
     public RFuture<Boolean> addAllAsync(Collection<? extends V> c) {
         if (c.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(false);
+            return new CompletableFutureWrapper<>(false);
         }
 
         long score = 92233720368547758L - System.currentTimeMillis();
@@ -363,10 +363,10 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         }
         
         long score = 92233720368547758L - System.currentTimeMillis();
-        List<Object> params = new ArrayList<Object>(c.size()*2);
+        List<Object> params = new ArrayList<>(c.size() * 2);
         for (Object object : c) {
             params.add(score);
-            params.add(encode((V) object));
+            encode(params, object);
         }
         
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
@@ -381,7 +381,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     @Override
     public RFuture<Boolean> removeAllAsync(Collection<?> c) {
         if (c.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(false);
+            return new CompletableFutureWrapper<>(false);
         }
         
         List<Object> params = new ArrayList<Object>(c.size()+1);

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,11 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.MapEntriesDecoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -95,16 +96,8 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
 
     @Override
     public RFuture<Void> acquireAsync(long permits) {
-        RPromise<Void> promise = new RedissonPromise<Void>();
-        tryAcquireAsync(permits, -1, null).onComplete((res, e) -> {
-            if (e != null) {
-                promise.tryFailure(e);
-                return;
-            }
-            
-            promise.trySuccess(null);
-        });
-        return promise;
+        CompletionStage<Void> f = tryAcquireAsync(permits, -1, null).thenApply(res -> null);
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
@@ -124,59 +117,57 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
     
     @Override
     public RFuture<Boolean> tryAcquireAsync(long permits, long timeout, TimeUnit unit) {
-        RPromise<Boolean> promise = new RedissonPromise<Boolean>();
         long timeoutInMillis = -1;
         if (timeout >= 0) {
             timeoutInMillis = unit.toMillis(timeout);
         }
-        tryAcquireAsync(permits, promise, timeoutInMillis);
-        return promise;
+        CompletableFuture<Boolean> f = tryAcquireAsync(permits, timeoutInMillis);
+        return new CompletableFutureWrapper<>(f);
     }
     
-    private void tryAcquireAsync(long permits, RPromise<Boolean> promise, long timeoutInMillis) {
+    private CompletableFuture<Boolean> tryAcquireAsync(long permits, long timeoutInMillis) {
         long s = System.currentTimeMillis();
         RFuture<Long> future = tryAcquireAsync(RedisCommands.EVAL_LONG, permits);
-        future.onComplete((delay, e) -> {
-            if (e != null) {
-                promise.tryFailure(e);
-                return;
-            }
-            
+        return future.thenCompose(delay -> {
             if (delay == null) {
-                promise.trySuccess(true);
-                return;
+                return CompletableFuture.completedFuture(true);
             }
             
             if (timeoutInMillis == -1) {
+                CompletableFuture<Boolean> f = new CompletableFuture<>();
                 commandExecutor.getConnectionManager().getGroup().schedule(() -> {
-                    tryAcquireAsync(permits, promise, timeoutInMillis);
+                    CompletableFuture<Boolean> r = tryAcquireAsync(permits, timeoutInMillis);
+                    commandExecutor.transfer(r, f);
                 }, delay, TimeUnit.MILLISECONDS);
-                return;
+                return f;
             }
             
             long el = System.currentTimeMillis() - s;
             long remains = timeoutInMillis - el;
             if (remains <= 0) {
-                promise.trySuccess(false);
-                return;
+                return CompletableFuture.completedFuture(false);
             }
+
+            CompletableFuture<Boolean> f = new CompletableFuture<>();
             if (remains < delay) {
                 commandExecutor.getConnectionManager().getGroup().schedule(() -> {
-                    promise.trySuccess(false);
+                    f.complete(false);
                 }, remains, TimeUnit.MILLISECONDS);
             } else {
                 long start = System.currentTimeMillis();
                 commandExecutor.getConnectionManager().getGroup().schedule(() -> {
                     long elapsed = System.currentTimeMillis() - start;
                     if (remains <= elapsed) {
-                        promise.trySuccess(false);
+                        f.complete(false);
                         return;
                     }
-                    
-                    tryAcquireAsync(permits, promise, remains - elapsed);
+
+                    CompletableFuture<Boolean> r = tryAcquireAsync(permits, remains - elapsed);
+                    commandExecutor.transfer(r, f);
                 }, delay, TimeUnit.MILLISECONDS);
             }
-        });
+            return f;
+        }).toCompletableFuture();
     }
     
     private <T> RFuture<T> tryAcquireAsync(RedisCommand<T> command, Long value) {
@@ -199,11 +190,12 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
               + "assert(tonumber(rate) >= tonumber(ARGV[1]), 'Requested permits amount could not exceed defined rate'); "
 
               + "local currentValue = redis.call('get', valueName); "
+              + "local res;"
               + "if currentValue ~= false then "
                      + "local expiredValues = redis.call('zrangebyscore', permitsName, 0, tonumber(ARGV[2]) - interval); "
                      + "local released = 0; "
                      + "for i, v in ipairs(expiredValues) do "
-                          + "local random, permits = struct.unpack('Lc0I', v);"
+                          + "local random, permits = struct.unpack('Bc0I', v);"
                           + "released = released + permits;"
                      + "end; "
 
@@ -219,18 +211,25 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
 
                      + "if tonumber(currentValue) < tonumber(ARGV[1]) then "
                          + "local firstValue = redis.call('zrange', permitsName, 0, 0, 'withscores'); "
-                         + "return 3 + interval - (tonumber(ARGV[2]) - tonumber(firstValue[2]));"
+                         + "res = 3 + interval - (tonumber(ARGV[2]) - tonumber(firstValue[2]));"
                      + "else "
-                         + "redis.call('zadd', permitsName, ARGV[2], struct.pack('Lc0I', string.len(ARGV[3]), ARGV[3], ARGV[1])); "
+                         + "redis.call('zadd', permitsName, ARGV[2], struct.pack('Bc0I', string.len(ARGV[3]), ARGV[3], ARGV[1])); "
                          + "redis.call('decrby', valueName, ARGV[1]); "
-                         + "return nil; "
+                         + "res = nil; "
                      + "end; "
               + "else "
                      + "redis.call('set', valueName, rate); "
-                     + "redis.call('zadd', permitsName, ARGV[2], struct.pack('Lc0I', string.len(ARGV[3]), ARGV[3], ARGV[1])); "
+                     + "redis.call('zadd', permitsName, ARGV[2], struct.pack('Bc0I', string.len(ARGV[3]), ARGV[3], ARGV[1])); "
                      + "redis.call('decrby', valueName, ARGV[1]); "
-                     + "return nil; "
-              + "end;",
+                     + "res = nil; "
+              + "end;"
+
+              + "local ttl = redis.call('pttl', KEYS[1]); "
+              + "if ttl > 0 then "
+                  + "redis.call('pexpire', valueName, ttl); "
+                  + "redis.call('pexpire', permitsName, ttl); "
+              + "end; "
+              + "return res;",
                 Arrays.asList(getRawName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName()),
                 value, System.currentTimeMillis(), random);
     }
@@ -275,7 +274,10 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
                 }
             }
 
-            RateType type = RateType.values()[Integer.valueOf(map.get("type"))];
+            if (map.size()==0){
+                return new RateLimiterConfig(RateType.OVERALL, 0L, 0L);
+            }
+            RateType type = RateType.values()[Integer.parseInt(map.get("type"))];
             Long rateInterval = Long.valueOf(map.get("interval"));
             Long rate = Long.valueOf(map.get("rate"));
             return new RateLimiterConfig(type, rateInterval, rate);
@@ -321,7 +323,7 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
                      + "local expiredValues = redis.call('zrangebyscore', permitsName, 0, tonumber(ARGV[1]) - interval); "
                      + "local released = 0; "
                      + "for i, v in ipairs(expiredValues) do "
-                          + "local random, permits = struct.unpack('Lc0I', v);"
+                          + "local random, permits = struct.unpack('Bc0I', v);"
                           + "released = released + permits;"
                      + "end; "
 
@@ -338,13 +340,14 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
     }
 
     @Override
-    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
-        return expireAsync(timeToLive, timeUnit, getRawName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName());
+    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
+        return super.expireAsync(timeToLive, timeUnit, param,
+                                    getRawName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName());
     }
 
     @Override
-    protected RFuture<Boolean> expireAtAsync(long timestamp, String... keys) {
-        return super.expireAtAsync(timestamp, getRawName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName());
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
+        return super.expireAtAsync(timestamp, param, getRawName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName());
     }
 
     @Override

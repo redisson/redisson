@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +15,7 @@
  */
 package org.redisson;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
-
+import io.netty.buffer.ByteBuf;
 import org.redisson.api.RFuture;
 import org.redisson.api.RList;
 import org.redisson.api.RListMultimap;
@@ -34,9 +24,11 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.BooleanAmountReplayConvertor;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 
-import io.netty.buffer.ByteBuf;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Nikita Koksharov
@@ -205,7 +197,7 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
             @Override
             public RFuture<Boolean> removeAllAsync(Collection<?> c) {
                 if (c.isEmpty()) {
-                    return RedissonPromise.newSucceededFuture(false);
+                    return new CompletableFutureWrapper<>(false);
                 }
 
                 List<Object> args = new ArrayList<Object>(c.size() + 1);
@@ -237,17 +229,12 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
             }
             
             @Override
-            public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
+            public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
                 throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
             }
 
             @Override
-            public RFuture<Boolean> expireAsync(Instant instant) {
-                throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
-            }
-
-            @Override
-            public RFuture<Boolean> expireAtAsync(long timestamp) {
+            protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
                 throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
             }
             
@@ -323,7 +310,9 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
                 "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); " +
                 "local members = redis.call('lrange', KEYS[2], 0, -1); " +
                 "redis.call('del', KEYS[2]); " +
-                "redis.call('rpush', KEYS[2], unpack(ARGV, 3, #ARGV)); " +
+                "if #ARGV > 2 then " +
+                    "redis.call('rpush', KEYS[2], unpack(ARGV, 3, #ARGV)); " +
+                "end; " +
                 "return members; ",
             Arrays.<Object>asList(getRawName(), setName), params.toArray());
     }

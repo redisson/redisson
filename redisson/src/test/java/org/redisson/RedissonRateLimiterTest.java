@@ -19,6 +19,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class RedissonRateLimiterTest extends BaseTest {
 
     @Test
+    public void testExpire2() throws InterruptedException {
+        RRateLimiter rateLimiter = redisson.getRateLimiter("test1");
+        rateLimiter.trySetRate(RateType.OVERALL, 5, 5, RateIntervalUnit.SECONDS);
+        rateLimiter.expire(Duration.ofSeconds(10));
+        rateLimiter.acquire();
+        Thread.sleep(12000);
+        assertThat(redisson.getKeys().count()).isZero();
+    }
+
+    @Test
     public void testRateValue() throws InterruptedException {
         RRateLimiter rateLimiter = redisson.getRateLimiter("test1");
         int rate = 10_000;
@@ -50,7 +60,7 @@ public class RedissonRateLimiterTest extends BaseTest {
         rr.trySetRate(RateType.OVERALL, 2, 5, RateIntervalUnit.SECONDS);
         rr.tryAcquire();
 
-        rr.expire(1, TimeUnit.SECONDS);
+        rr.expire(Duration.ofSeconds(1));
         Thread.sleep(1100);
         assertThat(redisson.getKeys().count()).isZero();
     }

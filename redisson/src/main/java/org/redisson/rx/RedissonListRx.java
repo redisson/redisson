@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ public class RedissonListRx<V> {
             
             @Override
             public void accept(long n) throws Exception {
-                instance.getAsync(currentIndex).onComplete((value, e) -> {
+                instance.getAsync(currentIndex).whenComplete((value, e) -> {
                     if (e != null) {
                         p.onError(e);
                         return;

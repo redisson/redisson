@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,8 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class RedissonClientRecorder {
 
-    public void configureRedisson(String config) {
-        RedissonClientProducer producer = Arc.container().instance(RedissonClientProducer.class).get();
-        producer.setConfig(config);
+    public void createProducer() {
+        Arc.container().instance(RedissonClientProducer.class).get();
     }
 
 }

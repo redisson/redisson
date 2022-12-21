@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import java.util.Set;
  * @param <K> map key
  * @param <V> map value
  */
-public interface RLocalCachedMap<K, V> extends RMap<K, V>, RDestroyable {
+public interface RLocalCachedMap<K, V> extends RMap<K, V> {
     
     /**
      * Pre-warm the cached entries. Not guaranteed to load ALL values, but statistically

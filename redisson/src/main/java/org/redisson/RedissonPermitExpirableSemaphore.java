@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,25 +15,23 @@
  */
 package org.redisson;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.redisson.api.RFuture;
-import org.redisson.api.RPermitExpirableSemaphore;
-import org.redisson.client.codec.LongCodec;
-import org.redisson.client.protocol.RedisCommands;
-import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
-import org.redisson.pubsub.SemaphorePubSub;
-
 import io.netty.buffer.ByteBufUtil;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
+import org.redisson.api.RFuture;
+import org.redisson.api.RPermitExpirableSemaphore;
+import org.redisson.client.codec.ByteArrayCodec;
+import org.redisson.client.codec.LongCodec;
+import org.redisson.client.protocol.RedisCommands;
+import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.misc.CompletableFutureWrapper;
+import org.redisson.pubsub.SemaphorePubSub;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 
@@ -42,6 +40,7 @@ import io.netty.util.TimerTask;
  */
 public class RedissonPermitExpirableSemaphore extends RedissonExpirable implements RPermitExpirableSemaphore {
 
+    private final String channelName;
     private final SemaphorePubSub semaphorePubSub;
 
     final CommandAsyncExecutor commandExecutor;
@@ -52,20 +51,10 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
 
     public RedissonPermitExpirableSemaphore(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
-        this.timeoutName = suffixName(name, "timeout");
+        this.timeoutName = suffixName(getRawName(), "timeout");
         this.commandExecutor = commandExecutor;
         this.semaphorePubSub = commandExecutor.getConnectionManager().getSubscribeService().getSemaphorePubSub();
-    }
-
-    String getChannelName() {
-        return getChannelName(getRawName());
-    }
-    
-    public static String getChannelName(String name) {
-        if (name.contains("{")) {
-            return "redisson_sc:" + name;
-        }
-        return "redisson_sc:{" + name + "}";
+        this.channelName = prefixName("redisson_sc", getRawName());
     }
 
     @Override
@@ -89,8 +78,9 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             return permitId;
         }
 
-        RFuture<RedissonLockEntry> future = subscribe();
-        commandExecutor.syncSubscriptionInterrupted(future);
+        CompletableFuture<RedissonLockEntry> future = subscribe();
+        semaphorePubSub.timeout(future);
+        RedissonLockEntry entry = commandExecutor.getInterrupted(future);
         try {
             while (true) {
                 Long nearestTimeout;
@@ -106,13 +96,13 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 }
                 
                 if (nearestTimeout != null) {
-                    future.getNow().getLatch().tryAcquire(permits, nearestTimeout, TimeUnit.MILLISECONDS);
+                    entry.getLatch().tryAcquire(permits, nearestTimeout, TimeUnit.MILLISECONDS);
                 } else {
-                    future.getNow().getLatch().acquire(permits);
+                    entry.getLatch().acquire(permits);
                 }
             }
         } finally {
-            unsubscribe(future);
+            unsubscribe(entry);
         }
 //        return get(acquireAsync(permits, ttl, timeUnit));
     }
@@ -122,62 +112,58 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     }
     
     private RFuture<String> acquireAsync(int permits, long ttl, TimeUnit timeUnit) {
-        RPromise<String> result = new RedissonPromise<String>();
         long timeoutDate = calcTimeout(ttl, timeUnit);
         RFuture<String> tryAcquireFuture = tryAcquireAsync(permits, timeoutDate);
-        tryAcquireFuture.onComplete((permitId, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
-            }
-
+        CompletionStage<String> f = tryAcquireFuture.thenCompose(permitId -> {
             if (permitId != null && !permitId.startsWith(":")) {
-                if (!result.trySuccess(permitId)) {
-                    releaseAsync(permitId);
-                }
-                return;
+                return CompletableFuture.completedFuture(permitId);
             }
 
-            RFuture<RedissonLockEntry> subscribeFuture = subscribe();
-            subscribeFuture.onComplete((res, ex) -> {
-                if (ex != null) {
-                    result.tryFailure(ex);
-                    return;
-                }
-                
-                acquireAsync(permits, subscribeFuture, result, ttl, timeUnit);
+            CompletableFuture<RedissonLockEntry> subscribeFuture = subscribe();
+            semaphorePubSub.timeout(subscribeFuture);
+            return subscribeFuture.thenCompose(res -> {
+                return acquireAsync(permits, res, ttl, timeUnit);
             });
         });
-        return result;
+        f.whenComplete((r, e) -> {
+            if (f.toCompletableFuture().isCancelled()) {
+                tryAcquireFuture.whenComplete((permitId, ex) -> {
+                    if (permitId != null && !permitId.startsWith(":")) {
+                        releaseAsync(permitId);
+                    }
+                });
+            }
+        });
+        return new CompletableFutureWrapper<>(f);
     }
     
-    private void tryAcquireAsync(AtomicLong time, int permits, RFuture<RedissonLockEntry> subscribeFuture, RPromise<String> result, long ttl, TimeUnit timeUnit) {
+    private void tryAcquireAsync(AtomicLong time, int permits, RedissonLockEntry entry, CompletableFuture<String> result, long ttl, TimeUnit timeUnit) {
         if (result.isDone()) {
-            unsubscribe(subscribeFuture);
+            unsubscribe(entry);
             return;
         }
         
         if (time.get() <= 0) {
-            unsubscribe(subscribeFuture);
-            result.trySuccess(null);
+            unsubscribe(entry);
+            result.complete(null);
             return;
         }
         
         long timeoutDate = calcTimeout(ttl, timeUnit);
         long curr = System.currentTimeMillis();
         RFuture<String> tryAcquireFuture = tryAcquireAsync(permits, timeoutDate);
-        tryAcquireFuture.onComplete((permitId, e) -> {
+        tryAcquireFuture.whenComplete((permitId, e) -> {
             if (e != null) {
-                unsubscribe(subscribeFuture);
-                result.tryFailure(e);
+                unsubscribe(entry);
+                result.completeExceptionally(e);
                 return;
             }
 
             Long nearestTimeout;
             if (permitId != null) {
                 if (!permitId.startsWith(":")) {
-                    unsubscribe(subscribeFuture);
-                    if (!result.trySuccess(permitId)) {
+                    unsubscribe(entry);
+                    if (!result.complete(permitId)) {
                         releaseAsync(permitId);
                     }
                     return;
@@ -192,16 +178,15 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             time.addAndGet(-el);
             
             if (time.get() <= 0) {
-                unsubscribe(subscribeFuture);
-                result.trySuccess(null);
+                unsubscribe(entry);
+                result.complete(null);
                 return;
             }
 
             // waiting for message
             long current = System.currentTimeMillis();
-            RedissonLockEntry entry = subscribeFuture.getNow();
             if (entry.getLatch().tryAcquire()) {
-                tryAcquireAsync(time, permits, subscribeFuture, result, ttl, timeUnit);
+                tryAcquireAsync(time, permits, entry, result, ttl, timeUnit);
             } else {
                 AtomicReference<Timeout> waitTimeoutFutureRef = new AtomicReference<Timeout>();
 
@@ -217,7 +202,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                             long elapsed = System.currentTimeMillis() - current;
                             time.addAndGet(-elapsed);
 
-                            tryAcquireAsync(time, permits, subscribeFuture, result, ttl, timeUnit);
+                            tryAcquireAsync(time, permits, entry, result, ttl, timeUnit);
                         }
                     }, nearestTimeout, TimeUnit.MILLISECONDS);
                 } else {
@@ -237,7 +222,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                     long elapsed = System.currentTimeMillis() - current;
                     time.addAndGet(-elapsed);
 
-                    tryAcquireAsync(time, permits, subscribeFuture, result, ttl, timeUnit);
+                    tryAcquireAsync(time, permits, entry, result, ttl, timeUnit);
                 };
                 entry.addListener(listener);
 
@@ -253,7 +238,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                             long elapsed = System.currentTimeMillis() - current;
                             time.addAndGet(-elapsed);
                             
-                            tryAcquireAsync(time, permits, subscribeFuture, result, ttl, timeUnit);
+                            tryAcquireAsync(time, permits, entry, result, ttl, timeUnit);
                         }
                     }
                 }, t, TimeUnit.MILLISECONDS);
@@ -262,30 +247,20 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         });
         
     }
-    
-    private void acquireAsync(int permits, RFuture<RedissonLockEntry> subscribeFuture, RPromise<String> result, long ttl, TimeUnit timeUnit) {
-        if (result.isDone()) {
-            unsubscribe(subscribeFuture);
-            return;
-        }
-        
-        long timeoutDate = calcTimeout(ttl, timeUnit);
-        RFuture<String> tryAcquireFuture = tryAcquireAsync(permits, timeoutDate);
-        tryAcquireFuture.onComplete((permitId, e) -> {
-            if (e != null) {
-                unsubscribe(subscribeFuture);
-                result.tryFailure(e);
-                return;
-            }
 
+    private CompletableFuture<String> acquireAsync(int permits, RedissonLockEntry entry, long ttl, TimeUnit timeUnit) {
+        long timeoutDate = calcTimeout(ttl, timeUnit);
+        CompletableFuture<String> tryAcquireFuture = tryAcquireAsync(permits, timeoutDate).toCompletableFuture();
+        return tryAcquireFuture.whenComplete((p, e) -> {
+            if (e != null) {
+                unsubscribe(entry);
+            }
+        }).thenCompose(permitId -> {
             Long nearestTimeout;
             if (permitId != null) {
                 if (!permitId.startsWith(":")) {
-                    unsubscribe(subscribeFuture);
-                    if (!result.trySuccess(permitId)) {
-                        releaseAsync(permitId);
-                    }
-                    return;
+                    unsubscribe(entry);
+                    return CompletableFuture.completedFuture(permitId);
                 } else {
                     nearestTimeout = Long.valueOf(permitId.substring(1)) - System.currentTimeMillis();
                 }
@@ -293,31 +268,31 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 nearestTimeout = null;
             }
 
-            RedissonLockEntry entry = subscribeFuture.getNow();
             if (entry.getLatch().tryAcquire(permits)) {
-                acquireAsync(permits, subscribeFuture, result, ttl, timeUnit);
-            } else {
-                Timeout scheduledFuture;
-                if (nearestTimeout != null) {
-                    scheduledFuture = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
-                        @Override
-                        public void run(Timeout timeout) throws Exception {
-                            acquireAsync(permits, subscribeFuture, result, ttl, timeUnit);
-                        }
-                    }, nearestTimeout, TimeUnit.MILLISECONDS);
-                } else {
-                    scheduledFuture = null;
-                }
-                
-                Runnable listener = () -> {
-                    if (scheduledFuture != null && !scheduledFuture.cancel()) {
-                        entry.getLatch().release();
-                        return;
-                    }
-                    acquireAsync(permits, subscribeFuture, result, ttl, timeUnit);
-                };
-                entry.addListener(listener);
+                return acquireAsync(permits, entry, ttl, timeUnit);
             }
+
+            CompletableFuture<String> res = new CompletableFuture<>();
+            Timeout scheduledFuture;
+            if (nearestTimeout != null) {
+                scheduledFuture = commandExecutor.getConnectionManager().newTimeout(timeout -> {
+                    CompletableFuture<String> r = acquireAsync(permits, entry, ttl, timeUnit);
+                    commandExecutor.transfer(r, res);
+                }, nearestTimeout, TimeUnit.MILLISECONDS);
+            } else {
+                scheduledFuture = null;
+            }
+
+            Runnable listener = () -> {
+                if (scheduledFuture != null && !scheduledFuture.cancel()) {
+                    entry.getLatch().release();
+                    return;
+                }
+                CompletableFuture<String> r = acquireAsync(permits, entry, ttl, timeUnit);
+                commandExecutor.transfer(r, res);
+            };
+            entry.addListener(listener);
+            return res;
         });
     }
 
@@ -341,44 +316,43 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         }
         return nonExpirableTimeout;
     }
-    
+
+    @Override
     public RFuture<String> tryAcquireAsync() {
-        RPromise<String> result = new RedissonPromise<String>();
-        RFuture<String> future = tryAcquireAsync(1, nonExpirableTimeout);
-        future.onComplete((permitId, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
-            }
-            
+        CompletableFuture<String> future = tryAcquireAsync(1, nonExpirableTimeout).toCompletableFuture();
+        CompletableFuture<String> f = future.thenApply(permitId -> {
             if (permitId != null && !permitId.startsWith(":")) {
-                if (!result.trySuccess(permitId)) {
-                    releaseAsync(permitId);
-                }
-            } else {
-                result.trySuccess(null);
+                return permitId;
+            }
+            return null;
+        });
+
+        future.whenComplete((permitId, e) -> {
+            if (f.isCancelled() && permitId != null && !permitId.startsWith(":")) {
+                releaseAsync(permitId);
             }
         });
-        return result;
+
+        return new CompletableFutureWrapper<>(f);
     }
 
-    protected String generateId() {
+    protected byte[] generateId() {
         byte[] id = new byte[16];
         ThreadLocalRandom.current().nextBytes(id);
-        return ByteBufUtil.hexDump(id);
+        return id;
     }
     
-    public RFuture<String> tryAcquireAsync(int permits, long timeoutDate) {
+    private RFuture<String> tryAcquireAsync(int permits, long timeoutDate) {
         if (permits < 0) {
             throw new IllegalArgumentException("Permits amount can't be negative");
         }
 
-        String id = generateId();
-        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_STRING_DATA,
+        byte[] id = generateId();
+        return commandExecutor.evalWriteAsync(getRawName(), ByteArrayCodec.INSTANCE, RedisCommands.EVAL_PERMIT_DATA,
                   "local expiredIds = redis.call('zrangebyscore', KEYS[2], 0, ARGV[4], 'limit', 0, ARGV[1]); " +
                   "if #expiredIds > 0 then " +
                       "redis.call('zrem', KEYS[2], unpack(expiredIds)); " +
-                      "local value = redis.call('incrby', KEYS[1], #expiredIds); " + 
+                      "local value = redis.call('incrby', KEYS[1], #expiredIds); " +
                       "if tonumber(value) > 0 then " +
                           "redis.call('publish', KEYS[3], value); " +
                       "end;" +
@@ -395,14 +369,16 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
 
                       "return ARGV[3]; " +
                   "end; " +
-                  "local v = redis.call('zrange', KEYS[2], 0, 0, 'WITHSCORES'); " + 
-                  "if v[1] ~= nil and v[2] ~= ARGV[5] then " + 
-                      "return ':' .. tostring(v[2]); " + 
+                  "local v = redis.call('zrange', KEYS[2], 0, 0, 'WITHSCORES'); " +
+                  "if v[1] ~= nil and v[2] ~= ARGV[5] then " +
+                      "return ':' .. tostring(v[2]); " +
                   "end " +
                   "return nil;",
-                  Arrays.<Object>asList(getRawName(), timeoutName, getChannelName()), permits, timeoutDate, id, System.currentTimeMillis(), nonExpirableTimeout);
+                  Arrays.asList(getRawName(), timeoutName, channelName),
+                permits, timeoutDate, id, System.currentTimeMillis(), nonExpirableTimeout);
     }
 
+    @Override
     public RFuture<String> tryAcquireAsync(long waitTime, TimeUnit unit) {
         return tryAcquireAsync(1, waitTime, -1, unit);
     }
@@ -432,8 +408,11 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         }
         
         current = System.currentTimeMillis();
-        RFuture<RedissonLockEntry> future = subscribe();
-        if (!future.await(time, TimeUnit.MILLISECONDS)) {
+        CompletableFuture<RedissonLockEntry> future = subscribe();
+        RedissonLockEntry entry;
+        try {
+            entry = future.get(time, TimeUnit.MILLISECONDS);
+        } catch (ExecutionException | TimeoutException e) {
             return null;
         }
 
@@ -466,9 +445,9 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 current = System.currentTimeMillis();
 
                 if (nearestTimeout != null) {
-                    future.getNow().getLatch().tryAcquire(permits, Math.min(time, nearestTimeout), TimeUnit.MILLISECONDS);
+                    entry.getLatch().tryAcquire(permits, Math.min(time, nearestTimeout), TimeUnit.MILLISECONDS);
                 } else {
-                    future.getNow().getLatch().tryAcquire(permits, time, TimeUnit.MILLISECONDS);
+                    entry.getLatch().tryAcquire(permits, time, TimeUnit.MILLISECONDS);
                 }
                 
                 long elapsed = System.currentTimeMillis() - current;
@@ -478,25 +457,25 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 }
             }
         } finally {
-            unsubscribe(future);
+            unsubscribe(entry);
         }
 //        return get(tryAcquireAsync(permits, waitTime, ttl, unit));
     }
 
     private RFuture<String> tryAcquireAsync(int permits, long waitTime, long ttl, TimeUnit timeUnit) {
-        RPromise<String> result = new RedissonPromise<String>();
+        CompletableFuture<String> result = new CompletableFuture<>();
         AtomicLong time = new AtomicLong(timeUnit.toMillis(waitTime));
         long curr = System.currentTimeMillis();
         long timeoutDate = calcTimeout(ttl, timeUnit);
         RFuture<String> tryAcquireFuture = tryAcquireAsync(permits, timeoutDate);
-        tryAcquireFuture.onComplete((permitId, e) -> {
+        tryAcquireFuture.whenComplete((permitId, e) -> {
             if (e != null) {
-                result.tryFailure(e);
+                result.completeExceptionally(e);
                 return;
             }
 
             if (permitId != null && !permitId.startsWith(":")) {
-                if (!result.trySuccess(permitId)) {
+                if (!result.complete(permitId)) {
                     releaseAsync(permitId);
                 }
                 return;
@@ -506,16 +485,16 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             time.addAndGet(-el);
             
             if (time.get() <= 0) {
-                result.trySuccess(null);
+                result.complete(null);
                 return;
             }
             
             long current = System.currentTimeMillis();
             AtomicReference<Timeout> futureRef = new AtomicReference<Timeout>();
-            RFuture<RedissonLockEntry> subscribeFuture = subscribe();
-            subscribeFuture.onComplete((r, ex) -> {
+            CompletableFuture<RedissonLockEntry> subscribeFuture = subscribe();
+            subscribeFuture.whenComplete((r, ex) -> {
                 if (ex != null) {
-                    result.tryFailure(ex);
+                    result.completeExceptionally(ex);
                     return;
                 }
                 
@@ -526,7 +505,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 long elapsed = System.currentTimeMillis() - current;
                 time.addAndGet(-elapsed);
                 
-                tryAcquireAsync(time, permits, subscribeFuture, result, ttl, timeUnit);
+                tryAcquireAsync(time, permits, r, result, ttl, timeUnit);
             });
             
             if (!subscribeFuture.isDone()) {
@@ -534,7 +513,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                     @Override
                     public void run(Timeout timeout) throws Exception {
                         if (!subscribeFuture.isDone()) {
-                            result.trySuccess(null);
+                            result.complete(null);
                         }
                     }
                 }, time.get(), TimeUnit.MILLISECONDS);
@@ -542,15 +521,15 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             }
         });
         
-        return result;
+        return new CompletableFutureWrapper<>(result);
     }
 
-    private RFuture<RedissonLockEntry> subscribe() {
-        return semaphorePubSub.subscribe(getRawName(), getChannelName());
+    private CompletableFuture<RedissonLockEntry> subscribe() {
+        return semaphorePubSub.subscribe(getRawName(), channelName);
     }
 
-    private void unsubscribe(RFuture<RedissonLockEntry> future) {
-        semaphorePubSub.unsubscribe(future.getNow(), getRawName(), getChannelName());
+    private void unsubscribe(RedissonLockEntry entry) {
+        semaphorePubSub.unsubscribe(entry, getRawName(), channelName);
     }
 
     @Override
@@ -571,22 +550,27 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     public boolean tryRelease(String permitId) {
         return get(tryReleaseAsync(permitId));
     }
-    
-    @Override
+
     public RFuture<Boolean> tryReleaseAsync(String permitId) {
         if (permitId == null) {
             throw new IllegalArgumentException("permitId can't be null");
         }
 
+        byte[] id = ByteBufUtil.decodeHexDump(permitId);
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                "local removed = redis.call('zrem', KEYS[3], ARGV[1]);" + 
-                "if tonumber(removed) ~= 1 then " + 
-                    "return 0;" + 
-                "end;" +
-                "local value = redis.call('incrby', KEYS[1], ARGV[2]); " +
-                "redis.call('publish', KEYS[2], value); " + 
-                "return 1;",
-                Arrays.<Object>asList(getRawName(), getChannelName(), timeoutName), permitId, 1);
+                  "local expire = redis.call('zscore', KEYS[3], ARGV[1]);" +
+                        "local removed = redis.call('zrem', KEYS[3], ARGV[1]);" +
+                        "if tonumber(removed) ~= 1 then " +
+                            "return 0;" +
+                        "end;" +
+                        "local value = redis.call('incrby', KEYS[1], ARGV[2]); " +
+                        "redis.call('publish', KEYS[2], value); " +
+                        "if tonumber(expire) <= tonumber(ARGV[3]) then " +
+                            "return 0;" +
+                        "end;" +
+                        "return 1;",
+                Arrays.asList(getRawName(), channelName, timeoutName),
+                id, 1, System.currentTimeMillis());
     }
     
     @Override
@@ -601,13 +585,13 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     }
 
     @Override
-    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
-        return expireAsync(timeToLive, timeUnit, getRawName(), timeoutName);
+    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
+        return super.expireAsync(timeToLive, timeUnit, param, getRawName(), timeoutName);
     }
 
     @Override
-    protected RFuture<Boolean> expireAtAsync(long timestamp, String... keys) {
-        return super.expireAtAsync(timestamp, getRawName(), timeoutName);
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
+        return super.expireAtAsync(timestamp, param, getRawName(), timeoutName);
     }
 
     @Override
@@ -617,20 +601,17 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
 
     @Override
     public RFuture<Void> releaseAsync(String permitId) {
-        RPromise<Void> result = new RedissonPromise<Void>();
-        tryReleaseAsync(permitId).onComplete((res, e) -> {
+        CompletionStage<Void> f = tryReleaseAsync(permitId).handle((res, e) -> {
             if (e != null) {
-                result.tryFailure(e);
-                return;
+                throw new CompletionException(e);
             }
-            
+
             if (res) {
-                result.trySuccess(null);
-            } else {
-                result.tryFailure(new IllegalArgumentException("Permit with id " + permitId + " has already been released or doesn't exist"));
+                return null;
             }
+            throw new CompletionException(new IllegalArgumentException("Permit with id " + permitId + " has already been released or doesn't exist"));
         });
-        return result;
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
@@ -652,7 +633,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 "end; " +
                 "local ret = redis.call('get', KEYS[1]); " + 
                 "return ret == false and 0 or ret;",
-                Arrays.<Object>asList(getRawName(), timeoutName, getChannelName()), System.currentTimeMillis());
+                Arrays.<Object>asList(getRawName(), timeoutName, channelName), System.currentTimeMillis());
     }
 
     @Override
@@ -664,13 +645,13 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     public RFuture<Boolean> trySetPermitsAsync(int permits) {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local value = redis.call('get', KEYS[1]); " +
-                "if (value == false or value == 0) then "
+                "if (value == false) then "
                     + "redis.call('set', KEYS[1], ARGV[1]); "
                     + "redis.call('publish', KEYS[2], ARGV[1]); "
                     + "return 1;"
                 + "end;"
                 + "return 0;",
-                Arrays.<Object>asList(getRawName(), getChannelName()), permits);
+                Arrays.<Object>asList(getRawName(), channelName), permits);
     }
 
     @Override
@@ -689,12 +670,13 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
               + "if tonumber(ARGV[1]) > 0 then "
                   + "redis.call('publish', KEYS[2], ARGV[1]); "
               + "end;",
-                Arrays.<Object>asList(getRawName(), getChannelName()), permits);
+                Arrays.<Object>asList(getRawName(), channelName), permits);
     }
 
     @Override
     public RFuture<Boolean> updateLeaseTimeAsync(String permitId, long leaseTime, TimeUnit unit) {
         long timeoutDate = calcTimeout(leaseTime, unit);
+        byte[] id = ByteBufUtil.decodeHexDump(permitId);
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local expiredIds = redis.call('zrangebyscore', KEYS[2], 0, ARGV[3], 'limit', 0, -1); " +
                 "if #expiredIds > 0 then " +
@@ -711,8 +693,8 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                     + "return 1;"
                 + "end;"
                 + "return 0;",
-                Arrays.<Object>asList(getRawName(), timeoutName, getChannelName()),
-                permitId, timeoutDate, System.currentTimeMillis());
+                Arrays.asList(getRawName(), timeoutName, channelName),
+                id, timeoutDate, System.currentTimeMillis());
     }
 
     @Override

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import io.netty.util.NetUtil;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Objects;
 
 /**
  * 
@@ -31,6 +32,8 @@ public class RedisURI {
     private final boolean ssl;
     private final String host;
     private final int port;
+    private String username;
+    private String password;
 
     public RedisURI(String scheme, String host, int port) {
         this.ssl = "rediss".equals(scheme);
@@ -43,7 +46,29 @@ public class RedisURI {
                 && !uri.startsWith("rediss://")) {
             throw new IllegalArgumentException("Redis url should start with redis:// or rediss:// (for SSL connection)");
         }
-        
+
+        String urlHost = parseUrl(uri);
+
+        try {
+            URL url = new URL(urlHost);
+            if (url.getUserInfo() != null) {
+                String[] details = url.getUserInfo().split(":", 2);
+                if (details.length == 2) {
+                    if (!details[0].isEmpty()) {
+                        username = details[0];
+                    }
+                    password = details[1];
+                }
+            }
+            host = url.getHost();
+            port = url.getPort();
+            ssl = uri.startsWith("rediss://");
+        } catch (MalformedURLException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
+    private String parseUrl(String uri) {
         String urlHost = uri.replaceFirst("redis://", "http://").replaceFirst("rediss://", "http://");
         String ipV6Host = uri.substring(uri.indexOf("://")+3, uri.lastIndexOf(":"));
         if (ipV6Host.contains("@")) {
@@ -52,24 +77,24 @@ public class RedisURI {
         if (ipV6Host.contains(":")) {
             urlHost = urlHost.replace(ipV6Host, "[" + ipV6Host + "]");
         }
-
-        try {
-            URL url = new URL(urlHost);
-            host = url.getHost();
-            port = url.getPort();
-            ssl = uri.startsWith("rediss://");
-        } catch (MalformedURLException e) {
-            throw new IllegalArgumentException(e);
-        }
+        return urlHost;
     }
-    
+
     public String getScheme() {
         if (ssl) {
             return "rediss";
         }
         return "redis";
     }
-    
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
     public boolean isSsl() {
         return ssl;
     }
@@ -86,52 +111,33 @@ public class RedisURI {
         return NetUtil.createByteArrayFromIpAddressString(host) != null;
     }
 
-    private static String trimIpv6Brackets(String host) {
+    private String trimIpv6Brackets(String host) {
         if (host.startsWith("[") && host.endsWith("]")) {
             return host.substring(1, host.length() - 1);
         }
         return host;
     }
     
-    public static boolean compare(InetSocketAddress entryAddr, RedisURI addr) {
-        if (((entryAddr.getHostName() != null && entryAddr.getHostName().equals(trimIpv6Brackets(addr.getHost())))
-                || entryAddr.getAddress().getHostAddress().equals(trimIpv6Brackets(addr.getHost())))
-                && entryAddr.getPort() == addr.getPort()) {
+    public boolean equals(InetSocketAddress entryAddr) {
+        if (((entryAddr.getHostName() != null && entryAddr.getHostName().equals(trimIpv6Brackets(getHost())))
+                || entryAddr.getAddress().getHostAddress().equals(trimIpv6Brackets(getHost())))
+                && entryAddr.getPort() == getPort()) {
             return true;
         }
         return false;
     }
 
     @Override
-    @SuppressWarnings("AvoidInlineConditionals")
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((host == null) ? 0 : host.hashCode());
-        result = prime * result + port;
-        result = prime * result + (ssl ? 1231 : 1237);
-        return result;
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        RedisURI redisURI = (RedisURI) o;
+        return ssl == redisURI.ssl && port == redisURI.port && Objects.equals(host, redisURI.host);
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        RedisURI other = (RedisURI) obj;
-        if (host == null) {
-            if (other.host != null)
-                return false;
-        } else if (!host.equals(other.host))
-            return false;
-        if (port != other.port)
-            return false;
-        if (ssl != other.ssl)
-            return false;
-        return true;
+    public int hashCode() {
+        return Objects.hash(ssl, host, port);
     }
 
     @Override

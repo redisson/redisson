@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -128,7 +128,7 @@ public class LiveObjectInterceptor {
             RFuture<Long> deleteFuture = service.delete(idd, me.getClass().getSuperclass(), namingScheme, ce);
             ce.execute();
             
-            return deleteFuture.getNow() > 0;
+            return commandExecutor.get(deleteFuture.toCompletableFuture()) > 0;
         }
 
         try {

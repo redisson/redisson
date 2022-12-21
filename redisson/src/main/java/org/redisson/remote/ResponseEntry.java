@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,9 @@ package org.redisson.remote;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.redisson.misc.RPromise;
 
 /**
  * 
@@ -31,18 +30,18 @@ import org.redisson.misc.RPromise;
 public class ResponseEntry {
 
     public static class Result {
-        
-        private final RPromise<? extends RRemoteServiceResponse> promise;
+
+        private final CompletableFuture<? extends RRemoteServiceResponse> promise;
         private final ScheduledFuture<?> responseTimeoutFuture;
         
-        public Result(RPromise<? extends RRemoteServiceResponse> promise, ScheduledFuture<?> responseTimeoutFuture) {
+        public Result(CompletableFuture<? extends RRemoteServiceResponse> promise, ScheduledFuture<?> responseTimeoutFuture) {
             super();
             this.promise = promise;
             this.responseTimeoutFuture = responseTimeoutFuture;
         }
         
-        public <T extends RRemoteServiceResponse> RPromise<T> getPromise() {
-            return (RPromise<T>) promise;
+        public <T extends RRemoteServiceResponse> CompletableFuture<T> getPromise() {
+            return (CompletableFuture<T>) promise;
         }
         
         public ScheduledFuture<?> getResponseTimeoutFuture() {
@@ -51,10 +50,10 @@ public class ResponseEntry {
         
     }
     
-    private final Map<RequestId, List<Result>> responses = new HashMap<RequestId, List<Result>>();
+    private final Map<String, List<Result>> responses = new HashMap<String, List<Result>>();
     private final AtomicBoolean started = new AtomicBoolean(); 
     
-    public Map<RequestId, List<Result>> getResponses() {
+    public Map<String, List<Result>> getResponses() {
         return responses;
     }
     

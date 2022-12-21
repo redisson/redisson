@@ -15,8 +15,11 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RedissonListTest extends BaseTest {
 
@@ -906,6 +909,22 @@ public class RedissonListTest extends BaseTest {
     }
 
     @Test
+    public void testRemoveWithCount() {
+        RList<Integer> list = redisson.getList("list");
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(3);
+        list.add(4);
+
+        assertThat(list.remove(1, 5)).isTrue();
+        assertThat(list).containsExactly(2, 3, 3, 4);
+
+        assertThat(list.remove(3, 5)).isTrue();
+        assertThat(list).containsExactly(2, 4);
+    }
+
+    @Test
     public void testSubListRemove() {
         List<Integer> list = redisson.getList("list");
         list.add(1);
@@ -1318,5 +1337,37 @@ public class RedissonListTest extends BaseTest {
         list.add("e");
 
         assertThat(list).containsExactly(1, 2L, "3", "e");
+    }
+
+    @Test
+    public void testDistributedIterator() {
+        RList<String> list = redisson.getList("list", StringCodec.INSTANCE);
+
+        // populate list with elements
+        List<String> strings = IntStream.range(0, 128).mapToObj(i -> i + "").collect(Collectors.toList());
+        list.addAll(strings);
+
+        Iterator<String> stringIterator = list.distributedIterator("iterator_{list}", 10);
+
+        // read some elements using iterator
+        List<String> actual = new ArrayList<>();
+        for (int i = 0; i < 64; i++) {
+            if (stringIterator.hasNext()) {
+                actual.add(stringIterator.next());
+            }
+        }
+
+        // create another iterator instance using the same name
+        RList<String> set2 = redisson.getList("list", StringCodec.INSTANCE);
+        Iterator<String> stringIterator2 = set2.distributedIterator("iterator_{list}", 10);
+
+        assertTrue(stringIterator2.hasNext());
+
+        // read all remaining elements
+        stringIterator2.forEachRemaining(actual::add);
+        stringIterator.forEachRemaining(actual::add);
+
+        assertThat(actual).containsAll(strings);
+        assertThat(actual).hasSize(strings.size());
     }
 }

@@ -9,5 +9,8 @@ public class HttpInitializer extends AbstractHttpSessionApplicationInitializer {
     public HttpInitializer() {
         super(CONFIG_CLASS);
     }
-    
+
+    @Override
+    public void onStartup(jakarta.servlet.ServletContext servletContext) {
+    }
 }

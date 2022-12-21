@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ public class RedissonTransferQueueReactive<V> {
                     }
 
                     protected void onRequest(boolean forward, FluxSink<V> emitter, long n) {
-                        queue.getValueAsync(currentIndex).onComplete((value, e) -> {
+                        queue.getValueAsync(currentIndex).whenComplete((value, e) -> {
                                 if (e != null) {
                                     emitter.error(e);
                                     return;

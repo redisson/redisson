@@ -2,6 +2,7 @@ package org.redisson;
 
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RBlockingDeque;
 import org.redisson.api.queue.DequeMoveArgs;
@@ -17,6 +18,8 @@ public class RedissonBlockingDequeTest extends BaseTest {
 
     @Test
     public void testMove() {
+        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
+
         RBlockingDeque<Integer> deque1 = redisson.getBlockingDeque("deque1");
         RBlockingDeque<Integer> deque2 = redisson.getBlockingDeque("deque2");
 

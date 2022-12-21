@@ -84,7 +84,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
                     new IncrementRunnableTask("myCounter"), new IncrementRunnableTask("myCounter"));
         
         future.get(5, TimeUnit.SECONDS);
-        future.getTaskFutures().stream().forEach(x -> x.syncUninterruptibly());
+        future.getTaskFutures().stream().forEach(x -> x.toCompletableFuture().join());
         
         redisson.getKeys().delete("myCounter");
         assertThat(redisson.getKeys().count()).isZero();
@@ -97,7 +97,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
                     new IncrementCallableTask("myCounter"), new IncrementCallableTask("myCounter"));
         
         future.get(5, TimeUnit.SECONDS);
-        future.getTaskFutures().stream().forEach(x -> assertThat(x.getNow()).isEqualTo("1234"));
+        future.getTaskFutures().stream().forEach(x -> assertThat(x.toCompletableFuture().getNow(null)).isEqualTo("1234"));
         
         redisson.getKeys().delete("myCounter");
         assertThat(redisson.getKeys().count()).isZero();
@@ -318,7 +318,30 @@ public class RedissonExecutorServiceTest extends BaseTest {
         RExecutorFuture<?> future = executor.submit(new TestClass());
         future.get();
         String id = redisson.<String>getBucket("id").get();
-        assertThat(id).hasSize(34);
+        assertThat(future.getTaskId()).isEqualTo(id);
+    }
+
+    @Test
+    public void testNameMapper() throws ExecutionException, InterruptedException, TimeoutException {
+        Config c = createConfig();
+        c.useSingleServer().setNameMapper(new NameMapper() {
+            @Override
+            public String map(String name) {
+                return name + ":mysuffix";
+            }
+
+            @Override
+            public String unmap(String name) {
+                return name.replace(":mysuffix", "");
+            }
+        });
+        RedissonClient redisson = Redisson.create(c);
+
+        RScheduledExecutorService e = redisson.getExecutorService("test");
+        e.registerWorkers(WorkerOptions.defaults());
+
+        RExecutorFuture<?> future = e.submit(new RunnableTask());
+        future.toCompletableFuture().get(1, TimeUnit.SECONDS);
     }
 
     @Test
@@ -371,6 +394,14 @@ public class RedissonExecutorServiceTest extends BaseTest {
         assertThat(future.isCancelled()).isTrue();
 
         executor.shutdown();
+    }
+
+    @Test
+    public void testSetTaskId() {
+        RExecutorService executor = redisson.getExecutorService("test");
+        RExecutorFuture<?> future = executor.submit("1234", new ScheduledRunnableTask("executed1"));
+        assertThat(future.getTaskId()).isEqualTo("1234");
+        future.cancel(true);
     }
 
     @Test

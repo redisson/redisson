@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,10 @@ package org.redisson;
 
 import org.redisson.api.RFuture;
 import org.redisson.connection.ConnectionManager;
-import org.redisson.misc.RedissonPromise;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -30,7 +30,7 @@ import java.util.function.Supplier;
  */
 public class ElementsSubscribeService {
     
-    private final Map<Integer, RFuture<?>> subscribeListeners = new HashMap<>();
+    private final Map<Integer, CompletableFuture<?>> subscribeListeners = new ConcurrentHashMap<>();
     private final ConnectionManager connectionManager;
 
     public ElementsSubscribeService(ConnectionManager connectionManager) {
@@ -39,21 +39,16 @@ public class ElementsSubscribeService {
 
     public <V> int subscribeOnElements(Supplier<RFuture<V>> func, Consumer<V> consumer) {
         int id = System.identityHashCode(consumer);
-        synchronized (subscribeListeners) {
-            RFuture<?> currentFuture = subscribeListeners.putIfAbsent(id, RedissonPromise.newSucceededFuture(null));
-            if (currentFuture != null) {
-                throw new IllegalArgumentException("Consumer object with listener id " + id + " already registered");
-            }
+        CompletableFuture<?> currentFuture = subscribeListeners.putIfAbsent(id, CompletableFuture.completedFuture(null));
+        if (currentFuture != null) {
+            throw new IllegalArgumentException("Consumer object with listener id " + id + " already registered");
         }
         resubscribe(func, consumer);
         return id;
     }
 
     public void unsubscribe(int listenerId) {
-        RFuture<?> f;
-        synchronized (subscribeListeners) {
-            f = subscribeListeners.remove(listenerId);
-        }
+        CompletableFuture<?> f = subscribeListeners.remove(listenerId);
         if (f != null) {
             f.cancel(false);
         }
@@ -61,21 +56,14 @@ public class ElementsSubscribeService {
 
     private <V> void resubscribe(Supplier<RFuture<V>> func, Consumer<V> consumer) {
         int listenerId = System.identityHashCode(consumer);
-        if (!subscribeListeners.containsKey(listenerId)) {
+        CompletableFuture<V> f = (CompletableFuture<V>) subscribeListeners.computeIfPresent(listenerId, (k, v) -> {
+            return func.get().toCompletableFuture();
+        });
+        if (f == null) {
             return;
         }
 
-        RFuture<V> f;
-        synchronized (subscribeListeners) {
-            if (!subscribeListeners.containsKey(listenerId)) {
-                return;
-            }
-
-            f = func.get();
-            subscribeListeners.put(listenerId, f);
-        }
-
-        f.onComplete((r, e) -> {
+        f.whenComplete((r, e) -> {
             if (e != null) {
                 connectionManager.newTimeout(t -> {
                     resubscribe(func, consumer);

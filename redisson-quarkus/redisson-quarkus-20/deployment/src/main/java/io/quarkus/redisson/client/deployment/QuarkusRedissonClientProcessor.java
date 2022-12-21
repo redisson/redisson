@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,13 +28,8 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.redisson.client.runtime.RedissonClientProducer;
 import io.quarkus.redisson.client.runtime.RedissonClientRecorder;
-import io.quarkus.runtime.Quarkus;
-import org.eclipse.microprofile.config.ConfigProvider;
-import org.redisson.config.PropertiesConvertor;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 
 /**
  *
@@ -69,8 +64,7 @@ class QuarkusRedissonClientProcessor {
         nativeResources.produce(new NativeImageResourceBuildItem("META-INF/services/org.jboss.marshalling.ProviderDescriptor"));
         watchedFiles.produce(new HotDeploymentWatchedFileBuildItem("redisson.yaml"));
 
-        reflectiveItems.produce(new ReflectiveClassBuildItem(false, false, "org.redisson.codec.MarshallingCodec"));
-        reflectiveItems.produce(new ReflectiveClassBuildItem(false, false, "org.jboss.marshalling.river.RiverProviderDescriptor"));
+        reflectiveItems.produce(new ReflectiveClassBuildItem(false, false, "org.redisson.codec.Kryo5Codec"));
 
         reflectiveItems.produce(new ReflectiveClassBuildItem(true, false, "org.redisson.executor.RemoteExecutorService"));
         reflectiveItems.produce(new ReflectiveClassBuildItem(true, false, "org.redisson.executor.RemoteExecutorServiceAsync"));
@@ -87,18 +81,7 @@ class QuarkusRedissonClientProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     RedissonClientItemBuild build(RedissonClientRecorder recorder) throws IOException {
-        InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream("redisson.yaml");
-        if (stream != null) {
-            byte[] array = new byte[stream.available()];
-            stream.read(array);
-            recorder.configureRedisson(new String(array, StandardCharsets.UTF_8));
-        } else {
-            String yaml = PropertiesConvertor.toYaml("quarkus.redisson.", ConfigProvider.getConfig().getPropertyNames(), prop -> {
-                return ConfigProvider.getConfig().getValue(prop, String.class);
-            });
-            recorder.configureRedisson(yaml);
-        }
-
+        recorder.createProducer();
         return new RedissonClientItemBuild();
     }
 

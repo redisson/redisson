@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import org.redisson.client.codec.Codec;
+import org.redisson.codec.JsonCodec;
 import org.redisson.config.Config;
 
 import java.util.List;
@@ -35,22 +36,24 @@ public interface RedissonReactiveClient {
     /**
      * Returns time-series instance by <code>name</code>
      *
-     * @param <V> type of value
+     * @param <V> value type
+     * @param <L> label type
      * @param name - name of instance
      * @return RTimeSeries object
      */
-    <V> RTimeSeriesReactive<V> getTimeSeries(String name);
+    <V, L> RTimeSeriesReactive<V, L> getTimeSeries(String name);
 
     /**
      * Returns time-series instance by <code>name</code>
      * using provided <code>codec</code> for values.
      *
-     * @param <V> type of value
+     * @param <V> value type
+     * @param <L> label type
      * @param name - name of instance
      * @param codec - codec for values
      * @return RTimeSeries object
      */
-    <V> RTimeSeriesReactive<V> getTimeSeries(String name, Codec codec);
+    <V, L> RTimeSeriesReactive<V, L> getTimeSeries(String name, Codec codec);
 
     /**
      * Returns stream instance by <code>name</code>
@@ -188,17 +191,33 @@ public interface RedissonReactiveClient {
      * @return Lock object
      */
     RLockReactive getSpinLock(String name, LockOptions.BackOff backOff);
-    
+
+    /**
+     * Returns Fenced Lock by name.
+     * <p>
+     * Implements a <b>non-fair</b> locking so doesn't guarantee an acquire order by threads.
+     *
+     * @param name name of object
+     * @return Lock object
+     */
+    RFencedLockReactive getFencedLock(String name);
+
     /**
      * Returns MultiLock instance associated with specified <code>locks</code>
      *
      * @param locks - collection of locks
      * @return MultiLock object
      */
+    RLockReactive getMultiLock(RLockReactive... locks);
+
+    /*
+     * Use getMultiLock(RLockReactive) method instead
+     */
+    @Deprecated
     RLockReactive getMultiLock(RLock... locks);
     
     /*
-     * Use getLock method instead. Returned instance uses Redis Slave synchronization
+     * Use getMultiLock method instead. Returned instance uses Redis Slave synchronization
      */
     @Deprecated
     RLockReactive getRedLock(RLock... locks);
@@ -340,6 +359,16 @@ public interface RedissonReactiveClient {
     <V> List<RBucketReactive<V>> findBuckets(String pattern);
 
     /**
+     * Returns JSON data holder instance by name using provided codec.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @param codec codec for values
+     * @return JsonBucket object
+     */
+    <V> RJsonBucketReactive<V> getJsonBucket(String name, JsonCodec<V> codec);
+
+    /**
      * Returns HyperLogLog instance by name.
      * 
      * @param <V> type of values
@@ -410,6 +439,31 @@ public interface RedissonReactiveClient {
     <K, V> RListMultimapReactive<K, V> getListMultimap(String name, Codec codec);
 
     /**
+     * Returns List based Multimap cache instance by name.
+     * Supports key eviction by specifying a time to live.
+     * If eviction is not required then it's better to use regular list multimap {@link #getListMultimap(String)}.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @return RListMultimapCacheReactive object
+     */
+    <K, V> RListMultimapCacheReactive<K, V> getListMultimapCache(String name);
+
+    /**
+     * Returns List based Multimap cache instance by name using provided codec for both map keys and values.
+     * Supports key eviction by specifying a time to live.
+     * If eviction is not required then it's better to use regular list multimap {@link #getListMultimap(String, Codec)}.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for keys and values
+     * @return RListMultimapCacheReactive object
+     */
+    <K, V> RListMultimapCacheReactive<K, V> getListMultimapCache(String name, Codec codec);
+
+    /**
      * Returns Set based Multimap instance by name.
      * 
      * @param <K> type of key
@@ -431,7 +485,31 @@ public interface RedissonReactiveClient {
      */
     <K, V> RSetMultimapReactive<K, V> getSetMultimap(String name, Codec codec);
 
-    
+    /**
+     * Returns Set based Multimap cache instance by name.
+     * Supports key eviction by specifying a time to live.
+     * If eviction is not required then it's better to use regular set multimap {@link #getSetMultimap(String)}.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @return RSetMultimapCacheReactive object
+     */
+    <K, V> RSetMultimapCacheReactive<K, V> getSetMultimapCache(String name);
+
+    /**
+     * Returns Set based Multimap cache instance by name using provided codec for both map keys and values.
+     * Supports key eviction by specifying a time to live.
+     * If eviction is not required then it's better to use regular set multimap {@link #getSetMultimap(String, Codec)}.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for keys and values
+     * @return RSetMultimapCacheReactive object
+     */
+    <K, V> RSetMultimapCacheReactive<K, V> getSetMultimapCache(String name, Codec codec);
+
     /**
      * Returns map instance by name.
      *
@@ -477,6 +555,31 @@ public interface RedissonReactiveClient {
      * @return Map object
      */
     <K, V> RMapReactive<K, V> getMap(String name, Codec codec, MapOptions<K, V> options);
+
+    /**
+     * Returns local cached map instance by name.
+     * Configured by parameters of options-object.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param options - local map options
+     * @return LocalCachedMap object
+     */
+    <K, V> RLocalCachedMapReactive<K, V> getLocalCachedMap(String name, LocalCachedMapOptions<K, V> options);
+
+    /**
+     * Returns local cached map instance by name
+     * using provided codec. Configured by parameters of options-object.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for keys and values
+     * @param options - local map options
+     * @return LocalCachedMap object
+     */
+    <K, V> RLocalCachedMapReactive<K, V> getLocalCachedMap(String name, Codec codec, LocalCachedMapOptions<K, V> options);
 
     /**
      * Returns set instance by name.
@@ -529,6 +632,29 @@ public interface RedissonReactiveClient {
      * @return LexSortedSet object
      */
     RLexSortedSetReactive getLexSortedSet(String name);
+
+    /**
+     * Returns Sharded Topic instance by name.
+     * <p>
+     * Messages are delivered to message listeners connected to the same Topic.
+     * <p>
+     *
+     * @param name - name of object
+     * @return Topic object
+     */
+    RShardedTopicReactive getShardedTopic(String name);
+
+    /**
+     * Returns Sharded Topic instance by name using provided codec for messages.
+     * <p>
+     * Messages are delivered to message listeners connected to the same Topic.
+     * <p>
+     *
+     * @param name - name of object
+     * @param codec - codec for message
+     * @return Topic object
+     */
+    RShardedTopicReactive getShardedTopic(String name, Codec codec);
 
     /**
      * Returns topic instance by name.
@@ -780,6 +906,21 @@ public interface RedissonReactiveClient {
      * @return BitSet object
      */
     RBitSetReactive getBitSet(String name);
+
+    /**
+     * Returns interface for Redis Function feature
+     *
+     * @return function object
+     */
+    RFunctionReactive getFunction();
+
+    /**
+     * Returns interface for Redis Function feature using provided codec
+     *
+     * @param codec - codec for params and result
+     * @return function interface
+     */
+    RFunctionReactive getFunction(Codec codec);
 
     /**
      * Returns script operations object

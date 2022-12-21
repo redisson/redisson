@@ -4,14 +4,14 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-micronaut</artifactId>
-        <version>3.16.4-SNAPSHOT</version>
+        <version>3.19.1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
     <artifactId>redisson-micronaut-30</artifactId>
     <packaging>jar</packaging>
 
-    <name>Redisson/Micronaut v3.0.x integration</name>
+    <name>Redisson/Micronaut v3.x.x integration</name>
 
     <build>
         <plugins>
@@ -60,12 +60,12 @@
                   <path>
                     <groupId>io.micronaut</groupId>
                     <artifactId>micronaut-inject-java</artifactId>
-                    <version>3.0.0</version>
+                    <version>3.4.1</version>
                   </path>
                   <path>
                     <groupId>io.micronaut</groupId>
                     <artifactId>micronaut-validation</artifactId>
-                    <version>3.0.0</version>
+                    <version>3.4.1</version>
                   </path>
             </annotationProcessorPaths>
           </configuration>
@@ -83,12 +83,12 @@
                   <path>
                     <groupId>io.micronaut</groupId>
                     <artifactId>micronaut-inject-java</artifactId>
-                    <version>3.0.0</version>
+                    <version>3.4.1</version>
                   </path>
                   <path>
                     <groupId>io.micronaut</groupId>
                     <artifactId>micronaut-validation</artifactId>
-                    <version>3.0.0</version>
+                    <version>3.4.1</version>
                   </path>
                 </annotationProcessorPaths>
               </configuration>
@@ -101,30 +101,37 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.micronaut</groupId>
+            <artifactId>micronaut-inject</artifactId>
+            <version>3.7.4</version>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
             <groupId>io.micronaut.cache</groupId>
             <artifactId>micronaut-cache-core</artifactId>
-            <version>3.0.0</version>
+            <version>3.5.0</version>
             <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>io.micronaut</groupId>
             <artifactId>micronaut-session</artifactId>
-            <version>3.0.0</version>
+            <version>3.7.4</version>
             <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>io.micronaut</groupId>
             <artifactId>micronaut-management</artifactId>
-            <version>3.0.0</version>
+            <version>3.7.4</version>
             <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>io.micronaut</groupId>
             <artifactId>micronaut-inject-java</artifactId>
-            <version>3.0.0</version>
+            <version>3.7.4</version>
             <scope>test</scope>
         </dependency>
 
@@ -153,7 +160,7 @@
         <dependency>
           <groupId>io.micronaut.test</groupId>
           <artifactId>micronaut-test-junit5</artifactId>
-          <version>3.0.0</version>
+          <version>3.8.0</version>
           <scope>test</scope>
         </dependency>
         <dependency>

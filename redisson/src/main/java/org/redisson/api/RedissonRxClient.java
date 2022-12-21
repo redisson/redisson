@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import org.redisson.client.codec.Codec;
+import org.redisson.codec.JsonCodec;
 import org.redisson.config.Config;
 
 /**
@@ -34,22 +35,24 @@ public interface RedissonRxClient {
     /**
      * Returns time-series instance by <code>name</code>
      *
-     * @param <V> type of value
+     * @param <V> value type
+     * @param <L> label type
      * @param name - name of instance
      * @return RTimeSeries object
      */
-    <V> RTimeSeriesRx<V> getTimeSeries(String name);
+    <V, L> RTimeSeriesRx<V, L> getTimeSeries(String name);
 
     /**
      * Returns time-series instance by <code>name</code>
      * using provided <code>codec</code> for values.
      *
-     * @param <V> type of value
+     * @param <V> value type
+     * @param <L> label type
      * @param name - name of instance
      * @param codec - codec for values
      * @return RTimeSeries object
      */
-    <V> RTimeSeriesRx<V> getTimeSeries(String name, Codec codec);
+    <V, L> RTimeSeriesRx<V, L> getTimeSeries(String name, Codec codec);
 
     /**
      * Returns stream instance by <code>name</code>
@@ -187,17 +190,33 @@ public interface RedissonRxClient {
      * @return Lock object
      */
     RLockRx getSpinLock(String name, LockOptions.BackOff backOff);
-    
+
+    /**
+     * Returns Fenced Lock by name.
+     * <p>
+     * Implements a <b>non-fair</b> locking so doesn't guarantee an acquire order by threads.
+     *
+     * @param name name of object
+     * @return Lock object
+     */
+    RFencedLockRx getFencedLock(String name);
+
     /**
      * Returns MultiLock instance associated with specified <code>locks</code>
-     * 
+     *
      * @param locks - collection of locks
      * @return MultiLock object
      */
-    RLockRx getMultiLock(RLock... locks);
-    
+    RLockRx getMultiLock(RLockRx... locks);
+
     /*
-     * Use getLock method instead. Returned instance uses Redis Slave synchronization
+     * Use getMultiLock(RLockReactive) method instead
+     */
+    @Deprecated
+    RLockRx getMultiLock(RLock... locks);
+
+    /*
+     * Use getMultiLock method instead. Returned instance uses Redis Slave synchronization
      */
     @Deprecated
     RLockRx getRedLock(RLock... locks);
@@ -328,6 +347,16 @@ public interface RedissonRxClient {
      * @return Buckets
      */
     RBucketsRx getBuckets(Codec codec);
+
+    /**
+     * Returns JSON data holder instance by name using provided codec.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @param codec codec for values
+     * @return JsonBucket object
+     */
+    <V> RJsonBucketRx<V> getJsonBucket(String name, JsonCodec<V> codec);
 
     /**
      * Returns HyperLogLog instance by name.
@@ -518,6 +547,31 @@ public interface RedissonRxClient {
     <K, V> RMapRx<K, V> getMap(String name, Codec codec, MapOptions<K, V> options);
 
     /**
+     * Returns local cached map instance by name.
+     * Configured by parameters of options-object.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param options - local map options
+     * @return LocalCachedMap object
+     */
+    <K, V> RLocalCachedMapRx<K, V> getLocalCachedMap(String name, LocalCachedMapOptions<K, V> options);
+
+    /**
+     * Returns local cached map instance by name
+     * using provided codec. Configured by parameters of options-object.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for keys and values
+     * @param options - local map options
+     * @return LocalCachedMap object
+     */
+    <K, V> RLocalCachedMapRx<K, V> getLocalCachedMap(String name, Codec codec, LocalCachedMapOptions<K, V> options);
+
+    /**
      * Returns set instance by name.
      *
      * @param <V> type of values
@@ -568,6 +622,29 @@ public interface RedissonRxClient {
      * @return LexSortedSet object
      */
     RLexSortedSetRx getLexSortedSet(String name);
+
+    /**
+     * Returns Sharded Topic instance by name.
+     * <p>
+     * Messages are delivered to message listeners connected to the same Topic.
+     * <p>
+     *
+     * @param name - name of object
+     * @return Topic object
+     */
+    RShardedTopicRx getShardedTopic(String name);
+
+    /**
+     * Returns Sharded Topic instance by name using provided codec for messages.
+     * <p>
+     * Messages are delivered to message listeners connected to the same Topic.
+     * <p>
+     *
+     * @param name - name of object
+     * @param codec - codec for message
+     * @return Topic object
+     */
+    RShardedTopicRx getShardedTopic(String name, Codec codec);
 
     /**
      * Returns topic instance by name.
@@ -819,6 +896,21 @@ public interface RedissonRxClient {
      * @return BitSet object
      */
     RBitSetRx getBitSet(String name);
+
+    /**
+     * Returns interface for Redis Function feature
+     *
+     * @return function object
+     */
+    RFunctionRx getFunction();
+
+    /**
+     * Returns interface for Redis Function feature using provided codec
+     *
+     * @param codec - codec for params and result
+     * @return function interface
+     */
+    RFunctionRx getFunction(Codec codec);
 
     /**
      * Returns script operations object

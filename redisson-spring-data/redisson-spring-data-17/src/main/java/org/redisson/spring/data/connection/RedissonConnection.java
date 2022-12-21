@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,31 +20,18 @@ import static org.redisson.client.protocol.RedisCommands.LRANGE;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import org.redisson.Redisson;
-import org.redisson.SlotCallback;
 import org.redisson.api.BatchOptions;
 import org.redisson.api.BatchOptions.ExecutionMode;
 import org.redisson.api.BatchResult;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisClient;
-import org.redisson.client.RedisException;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.DoubleCodec;
@@ -57,11 +44,11 @@ import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.convertor.DoubleReplayConvertor;
 import org.redisson.client.protocol.convertor.VoidReplayConvertor;
 import org.redisson.client.protocol.decoder.*;
+import org.redisson.command.BatchPromise;
 import org.redisson.command.CommandAsyncService;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.MasterSlaveEntry;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.redis.RedisSystemException;
@@ -83,9 +70,6 @@ import org.springframework.data.redis.core.types.Expiration;
 import org.springframework.data.redis.core.types.RedisClientInfo;
 import org.springframework.util.Assert;
 import org.springframework.util.ReflectionUtils;
-
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 
 /**
  * Redisson connection
@@ -186,7 +170,9 @@ public class RedissonConnection extends AbstractRedisConnection {
     @Override
     public Object execute(String command, byte[]... args) {
         for (Method method : this.getClass().getDeclaredMethods()) {
-            if (method.getName().equalsIgnoreCase(command) && Modifier.isPublic(method.getModifiers())) {
+            if (method.getName().equalsIgnoreCase(command)
+                    && Modifier.isPublic(method.getModifiers())
+                        && (method.getParameterTypes().length == args.length)) {
                 try {
                     Object t = execute(method, args);
                     if (t instanceof String) {
@@ -256,9 +242,12 @@ public class RedissonConnection extends AbstractRedisConnection {
             return read(null, ByteArrayCodec.INSTANCE, KEYS, pattern);
         }
 
-        Set<byte[]> results = new HashSet<byte[]>();
-        RFuture<Set<byte[]>> f = (RFuture<Set<byte[]>>)(Object)(executorService.readAllAsync(results, ByteArrayCodec.INSTANCE, KEYS, pattern));
-        return sync(f);
+        List<CompletableFuture<Set<byte[]>>> futures = executorService.readAllAsync(ByteArrayCodec.INSTANCE, KEYS, pattern);
+        CompletableFuture<Void> ff = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        CompletableFuture<Set<byte[]>> future = ff.thenApply(r -> {
+            return futures.stream().flatMap(f -> f.getNow(new HashSet<>()).stream()).collect(Collectors.toSet());
+        }).toCompletableFuture();
+        return sync(new CompletableFutureWrapper<>(future));
     }
 
     @Override
@@ -300,6 +289,7 @@ public class RedissonConnection extends AbstractRedisConnection {
                     if (entries.hasNext()) {
                         pos = -1;
                         entry = entries.next();
+                        client = null;
                     } else {
                         entry = null;
                     }
@@ -376,7 +366,7 @@ public class RedissonConnection extends AbstractRedisConnection {
             return null;
         }
         if (isQueueing()) {
-            f.syncUninterruptibly();
+            ((BatchPromise)f.toCompletableFuture()).getSentPromise().join();
             return null;
         }
 
@@ -1654,20 +1644,12 @@ public class RedissonConnection extends AbstractRedisConnection {
         if (isQueueing()) {
             return read(null, StringCodec.INSTANCE, RedisCommands.DBSIZE);
         }
-        
-        RFuture<Long> f = executorService.readAllAsync(RedisCommands.DBSIZE, new SlotCallback<Long, Long>() {
-            AtomicLong results = new AtomicLong();
-            @Override
-            public void onSlotResult(Long result) {
-                results.addAndGet(result);
-            }
 
-            @Override
-            public Long onFinish() {
-                return results.get();
-            }
-        });
-        return sync(f);
+        List<CompletableFuture<Long>> futures = executorService.readAllAsync(RedisCommands.DBSIZE);
+        CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        CompletableFuture<Long> s = f.thenApply(r -> futures.stream().mapToLong(v -> v.getNow(0L)).sum());
+        CompletableFutureWrapper<Long> ff = new CompletableFutureWrapper<>(s);
+        return sync(ff);
     }
 
     @Override
@@ -1677,13 +1659,13 @@ public class RedissonConnection extends AbstractRedisConnection {
             return;
         }
         
-        RFuture<Void> f = executorService.writeAllAsync(RedisCommands.FLUSHDB);
+        RFuture<Void> f = executorService.writeAllVoidAsync(RedisCommands.FLUSHDB);
         sync(f);
     }
 
     @Override
     public void flushAll() {
-        RFuture<Void> f = executorService.writeAllAsync(RedisCommands.FLUSHALL);
+        RFuture<Void> f = executorService.writeAllVoidAsync(RedisCommands.FLUSHALL);
         sync(f);
     }
 
@@ -1778,7 +1760,7 @@ public class RedissonConnection extends AbstractRedisConnection {
             throw new UnsupportedOperationException();
         }
 
-        RFuture<Void> f = executorService.writeAllAsync(RedisCommands.SCRIPT_FLUSH);
+        RFuture<Void> f = executorService.writeAllVoidAsync(RedisCommands.SCRIPT_FLUSH);
         sync(f);
     }
 
@@ -1796,19 +1778,10 @@ public class RedissonConnection extends AbstractRedisConnection {
             throw new UnsupportedOperationException();
         }
 
-        RFuture<String> f = executorService.writeAllAsync(StringCodec.INSTANCE, RedisCommands.SCRIPT_LOAD, new SlotCallback<String, String>() {
-            volatile String result;
-            @Override
-            public void onSlotResult(String result) {
-                this.result = result;
-            }
-
-            @Override
-            public String onFinish() {
-                return result;
-            }
-        }, script);
-        return sync(f);
+        List<CompletableFuture<String>> futures = executorService.executeAllAsync(RedisCommands.SCRIPT_LOAD, (Object)script);
+        CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        CompletableFuture<String> s = f.thenApply(r -> futures.get(0).getNow(null));
+        return sync(new CompletableFutureWrapper<>(s));
     }
 
     @Override
@@ -1817,26 +1790,19 @@ public class RedissonConnection extends AbstractRedisConnection {
             throw new UnsupportedOperationException();
         }
 
-        RFuture<List<Boolean>> f = executorService.writeAllAsync(RedisCommands.SCRIPT_EXISTS, new SlotCallback<List<Boolean>, List<Boolean>>() {
-            
-            List<Boolean> result = new ArrayList<Boolean>(scriptShas.length);
-            
-            @Override
-            public synchronized void onSlotResult(List<Boolean> result) {
-                for (int i = 0; i < result.size(); i++) {
-                    if (this.result.size() == i) {
-                        this.result.add(false);
-                    }
-                    this.result.set(i, this.result.get(i) | result.get(i));
+        List<CompletableFuture<List<Boolean>>> futures = executorService.writeAllAsync(RedisCommands.SCRIPT_EXISTS, (Object[]) scriptShas);
+        CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        CompletableFuture<List<Boolean>> s = f.thenApply(r -> {
+            List<Boolean> result = futures.get(0).getNow(new ArrayList<>());
+            for (CompletableFuture<List<Boolean>> future : futures.subList(1, futures.size())) {
+                List<Boolean> l = future.getNow(new ArrayList<>());
+                for (int i = 0; i < l.size(); i++) {
+                    result.set(i, result.get(i) | l.get(i));
                 }
             }
-
-            @Override
-            public List<Boolean> onFinish() {
-                return result;
-            }
-        }, (Object[])scriptShas);
-        return sync(f);
+            return result;
+        });
+        return sync(new CompletableFutureWrapper<>(s));
     }
 
     @Override
@@ -1853,11 +1819,13 @@ public class RedissonConnection extends AbstractRedisConnection {
         params.add(script);
         params.add(numKeys);
         params.addAll(Arrays.asList(keysAndArgs));
-        return write(null, StringCodec.INSTANCE, c, params.toArray());
+
+        byte[] key = getKey(numKeys, keysAndArgs);
+        return write(key, ByteArrayCodec.INSTANCE, c, params.toArray());
     }
 
     protected RedisCommand<?> toCommand(ReturnType returnType, String name) {
-        RedisCommand<?> c = null; 
+        RedisCommand<?> c = null;
         if (returnType == ReturnType.BOOLEAN) {
             c = org.redisson.api.RScript.ReturnType.BOOLEAN.getCommand();
         } else if (returnType == ReturnType.INTEGER) {
@@ -1888,7 +1856,9 @@ public class RedissonConnection extends AbstractRedisConnection {
         params.add(scriptSha);
         params.add(numKeys);
         params.addAll(Arrays.asList(keysAndArgs));
-        return write(null, ByteArrayCodec.INSTANCE, c, params.toArray());
+
+        byte[] key = getKey(numKeys, keysAndArgs);
+        return write(key, ByteArrayCodec.INSTANCE, c, params.toArray());
     }
 
     @Override
@@ -1898,7 +1868,16 @@ public class RedissonConnection extends AbstractRedisConnection {
         params.add(scriptSha);
         params.add(numKeys);
         params.addAll(Arrays.asList(keysAndArgs));
-        return write(null, ByteArrayCodec.INSTANCE, c, params.toArray());
+
+        byte[] key = getKey(numKeys, keysAndArgs);
+        return write(key, ByteArrayCodec.INSTANCE, c, params.toArray());
+    }
+
+    private static byte[] getKey(int numKeys, byte[][] keysAndArgs) {
+        if (numKeys > 0 && keysAndArgs.length > 0) {
+            return keysAndArgs[0];
+        }
+        return null;
     }
 
     private static final RedisCommand<Long> PFADD = new RedisCommand<Long>("PFADD");

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.redisson.api;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
 import org.redisson.client.codec.Codec;
+import org.redisson.codec.JsonCodec;
 
 /**
  * RxJava2 interface for Redis pipeline feature.
@@ -193,6 +194,18 @@ public interface RBatchRx {
     <V> RBucketRx<V> getBucket(String name, Codec codec);
 
     /**
+     * Returns JSON data holder instance by name using provided codec.
+     *
+     * @see org.redisson.codec.JacksonCodec
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @param codec codec for values
+     * @return JsonBucket object
+     */
+    <V> RJsonBucketRx<V> getJsonBucket(String name, JsonCodec<V> codec);
+
+    /**
      * Returns HyperLogLog object by name
      *
      * @param <V> type of value
@@ -294,6 +307,29 @@ public interface RBatchRx {
     RTopicRx getTopic(String name);
 
     RTopicRx getTopic(String name, Codec codec);
+
+    /**
+     * Returns Sharded Topic instance by name.
+     * <p>
+     * Messages are delivered to message listeners connected to the same Topic.
+     * <p>
+     *
+     * @param name - name of object
+     * @return Topic object
+     */
+    RShardedTopicRx getShardedTopic(String name);
+
+    /**
+     * Returns Sharded Topic instance by name using provided codec for messages.
+     * <p>
+     * Messages are delivered to message listeners connected to the same Topic.
+     * <p>
+     *
+     * @param name - name of object
+     * @param codec - codec for message
+     * @return Topic object
+     */
+    RShardedTopicRx getShardedTopic(String name, Codec codec);
 
     /**
      * Returns queue instance by name.
@@ -398,7 +434,22 @@ public interface RBatchRx {
      * @return Script object
      */
     RScriptRx getScript(Codec codec);
-    
+
+    /**
+     * Returns interface for Redis Function feature
+     *
+     * @return function object
+     */
+    RFunctionRx getFunction();
+
+    /**
+     * Returns interface for Redis Function feature using provided codec
+     *
+     * @param codec - codec for params and result
+     * @return function interface
+     */
+    RFunctionRx getFunction(Codec codec);
+
     /**
      * Returns keys operations.
      * Each of Redis/Redisson object associated with own key

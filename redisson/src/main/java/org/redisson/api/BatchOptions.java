@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -128,8 +128,8 @@ public final class BatchOptions {
      * <p>
      * Default is <code>1500 milliseconds</code>
      * 
-     * @param retryInterval - time interval
-     * @param retryIntervalUnit - time interval unit
+     * @param retryInterval time interval
+     * @param retryIntervalUnit time interval unit
      * @return self instance
      */
     public BatchOptions retryInterval(long retryInterval, TimeUnit retryIntervalUnit) {
@@ -144,9 +144,9 @@ public final class BatchOptions {
      * <p>
      * NOTE: Redis 3.0+ required
      * 
-     * @param slaves - synchronization timeout
-     * @param timeout - synchronization timeout
-     * @param unit - synchronization timeout time unit
+     * @param slaves slaves amount for synchronization
+     * @param timeout synchronization timeout
+     * @param unit synchronization timeout time unit
      * @return self instance
      */
     public BatchOptions syncSlaves(int slaves, long timeout, TimeUnit unit) {
@@ -181,7 +181,7 @@ public final class BatchOptions {
      * 
      * @see ExecutionMode
      * 
-     * @param executionMode - batch execution mode
+     * @param executionMode batch execution mode
      * @return self instance
      */
     public BatchOptions executionMode(ExecutionMode executionMode) {

@@ -1,23 +1,70 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.redisson.api.NameMapper;
+import org.redisson.api.RFuture;
+import org.redisson.api.RPermitExpirableSemaphore;
+import org.redisson.api.RedissonClient;
+import org.redisson.client.RedisException;
+import org.redisson.config.Config;
 
+import java.io.IOException;
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-import org.redisson.api.RPermitExpirableSemaphore;
-import org.redisson.client.RedisException;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
+
+    @Test
+    public void testGetInClusterNameMapper() throws RedisRunner.FailedToStartRedisException, IOException, InterruptedException {
+        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave1 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave2 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave3 = new RedisRunner().randomPort().randomDir().nosave();
+
+        ClusterRunner clusterRunner = new ClusterRunner()
+                .addNode(master1, slave1)
+                .addNode(master2, slave2)
+                .addNode(master3, slave3);
+        ClusterRunner.ClusterProcesses process = clusterRunner.run();
+
+        Config config = new Config();
+        config.useClusterServers()
+                .setNameMapper(new NameMapper() {
+                    @Override
+                    public String map(String name) {
+                        return "test::" + name;
+                    }
+
+                    @Override
+                    public String unmap(String name) {
+                        return name.replace("test::", "");
+                    }
+                })
+                .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+
+        RPermitExpirableSemaphore s = redisson.getPermitExpirableSemaphore("semaphore");
+        s.trySetPermits(1);
+        String v = s.acquire();
+        s.release(v);
+
+        redisson.shutdown();
+        process.shutdown();
+    }
 
     @Test
     public void testUpdateLeaseTime() throws InterruptedException {
         RPermitExpirableSemaphore semaphore = redisson.getPermitExpirableSemaphore("test");
         semaphore.trySetPermits(1);
-        assertThat(semaphore.updateLeaseTime("123", 1, TimeUnit.SECONDS)).isFalse();
+        assertThat(semaphore.updateLeaseTime("1234", 1, TimeUnit.SECONDS)).isFalse();
         String id = semaphore.acquire();
         assertThat(semaphore.updateLeaseTime(id, 1, TimeUnit.SECONDS)).isTrue();
         Thread.sleep(1200);
@@ -60,7 +107,7 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
     public void testExpiration() throws InterruptedException {
         RPermitExpirableSemaphore semaphore = redisson.getPermitExpirableSemaphore("some-key");
         semaphore.trySetPermits(1);
-        semaphore.expire(3, TimeUnit.SECONDS);
+        semaphore.expire(Duration.ofSeconds(3));
         semaphore.tryAcquire(1, 1, TimeUnit.SECONDS);
         Thread.sleep(4100);
         assertThat(redisson.getKeys().count()).isZero();
@@ -221,6 +268,16 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
     }
 
     @Test
+    public void testReleaseExpired() throws InterruptedException {
+        RPermitExpirableSemaphore s = redisson.getPermitExpirableSemaphore("test");
+        s.trySetPermits(1);
+        String permitId = s.tryAcquire(100, 100, TimeUnit.MILLISECONDS);
+        Thread.sleep(200);
+        boolean released = s.tryRelease(permitId);
+        assertThat(released).isFalse();
+    }
+
+    @Test
     public void testConcurrency_SingleInstance() throws InterruptedException {
         final AtomicInteger lockedCounter = new AtomicInteger();
 
@@ -272,6 +329,16 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
         });
 
         assertThat(lockedCounter.get()).isEqualTo(16 * iterations);
+    }
+
+    @Test
+    public void test1() throws InterruptedException {
+        RPermitExpirableSemaphore semaphore = redisson.getPermitExpirableSemaphore("test.sync_semaphore");
+        semaphore.trySetPermits(1);
+        Awaitility.await().atMost(Duration.ofMillis(100)).pollDelay(Duration.ofMillis(10)).untilAsserted(() -> {
+            RFuture<String> permit = semaphore.acquireAsync(5000L, TimeUnit.MILLISECONDS);
+            assertThat(permit.get()).isNotNull();
+        });
     }
 
 }

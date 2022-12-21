@@ -16,8 +16,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisClientConfig;
@@ -894,9 +896,11 @@ public class RedisRunner {
                 RedisConnection connection = c.connect();
                 try {
                     connection.async(new RedisStrictCommand<Void>("SHUTDOWN", "NOSAVE", new VoidReplayConvertor()))
-                            .await(3, TimeUnit.SECONDS);
+                            .toCompletableFuture().get(3, TimeUnit.SECONDS);
                 } catch (InterruptedException interruptedException) {
                     //shutdown via command failed, lets wait and kill it later.
+                } catch (ExecutionException | TimeoutException e) {
+                    // skip
                 }
                 c.shutdown();
                 connection.closeAsync().syncUninterruptibly();
@@ -928,9 +932,11 @@ public class RedisRunner {
                 RedisConnection connection = c.connect();
                 try {
                     connection.async(new RedisStrictCommand<Void>("SHUTDOWN", "NOSAVE", new VoidReplayConvertor()))
-                            .await(3, TimeUnit.SECONDS);
+                            .get(3, TimeUnit.SECONDS);
                 } catch (InterruptedException interruptedException) {
                     //shutdown via command failed, lets wait and kill it later.
+                } catch (ExecutionException | TimeoutException e) {
+                    // skip
                 }
                 c.shutdown();
                 connection.closeAsync().syncUninterruptibly();

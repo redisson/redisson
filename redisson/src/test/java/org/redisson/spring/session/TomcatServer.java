@@ -3,9 +3,8 @@ package org.redisson.spring.session;
 import java.io.File;
 import java.net.MalformedURLException;
 
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.core.StandardContext;
 import org.apache.catalina.startup.Tomcat;

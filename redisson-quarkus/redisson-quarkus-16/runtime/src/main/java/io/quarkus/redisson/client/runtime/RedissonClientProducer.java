@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,26 @@
  */
 package io.quarkus.redisson.client.runtime;
 
+import com.fasterxml.jackson.databind.MapperFeature;
 import io.quarkus.arc.DefaultBean;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
+import org.redisson.config.ConfigSupport;
+import org.redisson.config.PropertiesConvertor;
 
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  *
@@ -34,24 +44,44 @@ import java.io.IOException;
 @ApplicationScoped
 public class RedissonClientProducer {
 
-    private String config;
     private RedissonClient redisson;
 
     @Produces
     @Singleton
     @DefaultBean
     public RedissonClient create() throws IOException {
-        if (config != null){
-            Config c = Config.fromYAML(config);
-            redisson = Redisson.create(c);
+        InputStream configStream;
+        Optional<String> configFile = ConfigProvider.getConfig().getOptionalValue("quarkus.redisson.file", String.class);
+        if (configFile.isPresent()) {
+            configStream = getClass().getResourceAsStream(configFile.get());
         } else {
-            redisson = Redisson.create();
+            configStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("redisson.yaml");
         }
+        String config;
+        if (configStream != null) {
+            byte[] array = new byte[configStream.available()];
+            configStream.read(array);
+            config = new String(array, StandardCharsets.UTF_8);
+        } else {
+            Stream<String> s = StreamSupport.stream(ConfigProvider.getConfig().getPropertyNames().spliterator(), false);
+            String yaml = PropertiesConvertor.toYaml("quarkus.redisson.", s.sorted().collect(Collectors.toList()), prop -> {
+                return ConfigProvider.getConfig().getValue(prop, String.class);
+            }, false);
+            config = yaml;
+        }
+
+        ConfigSupport support = new ConfigSupport() {
+            {
+                yamlMapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+            }
+        };
+        Config c = support.fromYAML(config, Config.class);
+        redisson = Redisson.create(c);
         return redisson;
     }
 
-    public void setConfig(String config) {
-        this.config = config;
+    public void setConfig(org.eclipse.microprofile.config.Config config) {
+
     }
 
     @PreDestroy

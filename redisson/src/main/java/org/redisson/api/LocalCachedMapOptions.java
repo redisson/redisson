@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,9 @@ package org.redisson.api;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.map.MapLoader;
+import org.redisson.api.map.MapLoaderAsync;
 import org.redisson.api.map.MapWriter;
+ import org.redisson.api.map.MapWriterAsync;
 
 /**
  * Configuration for LocalCachedMap object.
@@ -385,7 +387,12 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     public LocalCachedMapOptions<K, V> writer(MapWriter<K, V> writer) {
         return (LocalCachedMapOptions<K, V>) super.writer(writer);
     }
-    
+
+    @Override
+    public LocalCachedMapOptions<K, V> writerAsync(MapWriterAsync<K, V> writer) {
+        return (LocalCachedMapOptions<K, V>) super.writerAsync(writer);
+    }
+
     @Override
     public LocalCachedMapOptions<K, V> writeMode(org.redisson.api.MapOptions.WriteMode writeMode) {
         return (LocalCachedMapOptions<K, V>) super.writeMode(writeMode);
@@ -396,4 +403,8 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
         return (LocalCachedMapOptions<K, V>) super.loader(loader);
     }
 
+    @Override
+    public LocalCachedMapOptions<K, V> loaderAsync(MapLoaderAsync<K, V> loaderAsync) {
+        return (LocalCachedMapOptions<K, V>) super.loaderAsync(loaderAsync);
+    }
 }

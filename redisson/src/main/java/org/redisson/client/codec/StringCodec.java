@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,13 +25,14 @@ import org.redisson.client.protocol.Encoder;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.util.CharsetUtil;
+import org.redisson.codec.JsonCodec;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class StringCodec extends BaseCodec {
+public class StringCodec extends BaseCodec implements JsonCodec<String > {
 
     public static final StringCodec INSTANCE = new StringCodec();
 

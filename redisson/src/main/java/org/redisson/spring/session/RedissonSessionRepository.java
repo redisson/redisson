@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,7 +77,7 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
         private void updateExpiration() {
             if (delegate.getMaxInactiveInterval().getSeconds() > 0) {
                 redisson.getBucket(getExpiredKey(delegate.getId())).set("", delegate.getMaxInactiveInterval().getSeconds(), TimeUnit.SECONDS);
-                map.expire(delegate.getMaxInactiveInterval().getSeconds() + 60, TimeUnit.SECONDS);
+                map.expire(Duration.ofSeconds(delegate.getMaxInactiveInterval().getSeconds() + 60));
             }
         }
         

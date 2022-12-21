@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.redisson.reactive;
 import org.redisson.*;
 import org.redisson.api.*;
 import org.redisson.client.codec.Codec;
+import org.redisson.codec.JsonCodec;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
 import reactor.core.publisher.Mono;
@@ -57,6 +58,11 @@ public class RedissonBatchReactive implements RBatchReactive {
     @Override
     public <V> RBucketReactive<V> getBucket(String name, Codec codec) {
         return ReactiveProxyBuilder.create(executorService, new RedissonBucket<V>(codec, executorService, name), RBucketReactive.class);
+    }
+
+    @Override
+    public <V> RJsonBucketReactive<V> getJsonBucket(String name, JsonCodec<V> codec) {
+        return ReactiveProxyBuilder.create(executorService, new RedissonJsonBucket<>(codec, executorService, name), RJsonBucketReactive.class);
     }
 
     @Override
@@ -131,6 +137,16 @@ public class RedissonBatchReactive implements RBatchReactive {
     @Override
     public RTopicReactive getTopic(String name, Codec codec) {
         return ReactiveProxyBuilder.create(executorService, new RedissonTopic(codec, executorService, name), RTopicReactive.class);
+    }
+
+    @Override
+    public RShardedTopicReactive getShardedTopic(String name) {
+        return ReactiveProxyBuilder.create(executorService, new RedissonShardedTopic(executorService, name), RShardedTopicReactive.class);
+    }
+
+    @Override
+    public RShardedTopicReactive getShardedTopic(String name, Codec codec) {
+        return ReactiveProxyBuilder.create(executorService, new RedissonShardedTopic(codec, executorService, name), RShardedTopicReactive.class);
     }
 
     @Override
@@ -221,6 +237,16 @@ public class RedissonBatchReactive implements RBatchReactive {
     @Override
     public RScriptReactive getScript(Codec codec) {
         return ReactiveProxyBuilder.create(executorService, new RedissonScript(executorService, codec), RScriptReactive.class);
+    }
+
+    @Override
+    public RFunctionReactive getFunction() {
+        return ReactiveProxyBuilder.create(executorService, new RedissonFuction(executorService), RFunctionReactive.class);
+    }
+
+    @Override
+    public RFunctionReactive getFunction(Codec codec) {
+        return ReactiveProxyBuilder.create(executorService, new RedissonFuction(executorService, codec), RFunctionReactive.class);
     }
 
     @Override

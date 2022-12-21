@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,19 +15,10 @@
  */
 package org.redisson;
 
-import java.math.BigDecimal;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-
+import io.netty.buffer.ByteBuf;
 import org.redisson.api.*;
 import org.redisson.api.listener.MessageListener;
-import org.redisson.api.map.event.EntryCreatedListener;
-import org.redisson.api.map.event.EntryEvent;
-import org.redisson.api.map.event.EntryExpiredListener;
-import org.redisson.api.map.event.EntryRemovedListener;
-import org.redisson.api.map.event.EntryUpdatedListener;
-import org.redisson.api.map.event.MapEntryListener;
+import org.redisson.api.map.event.*;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
@@ -41,10 +32,14 @@ import org.redisson.codec.MapCacheEventCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.eviction.EvictionScheduler;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 
-import io.netty.buffer.ByteBuf;
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 /**
  * <p>Map-based cache with ability to set TTL for each entry via
@@ -142,10 +137,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-    public RFuture<Boolean> containsKeyAsync(Object key) {
-        checkKey(key);
-
-        String name = getRawName(key);
+    protected RFuture<Boolean> containsKeyOperationAsync(String name, Object key) {
         return commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_BOOLEAN,
         "local value = redis.call('hget', KEYS[1], ARGV[2]); " +
                 "local expireDate = 92233720368547758; " +
@@ -235,14 +227,11 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     @Override
     public RFuture<Map<K, V>> getAllOperationAsync(Set<K> keys) {
-        List<Object> args = new ArrayList<Object>(keys.size() + 1);
-        List<Object> plainKeys = new ArrayList<Object>(keys.size());
+        List<Object> args = new ArrayList<>(keys.size() + 1);
+        List<Object> plainKeys = new ArrayList<>(keys);
         
         args.add(System.currentTimeMillis());
-        for (K key : keys) {
-            plainKeys.add(key);
-            args.add(encodeMapKey(key));
-        }
+        encodeMapKeys(args, keys);
 
         return commandExecutor.evalWriteAsync(getRawName(), codec, new RedisCommand<Map<Object, Object>>("EVAL",
                         new MapValueDecoder(new MapGetAllDecoder(plainKeys, 0))),
@@ -780,7 +769,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     @Override
     public RFuture<Void> putAllAsync(Map<? extends K, ? extends V> map, long ttl, TimeUnit ttlUnit) {
         if (map.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(null);
+            return new CompletableFutureWrapper<>((Void) null);
         }
 
         RFuture<Void> future = putAllOperationAsync(map, ttl, ttlUnit);
@@ -1293,20 +1282,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             return future;
         }
 
-        RPromise<V> result = new RedissonPromise<>();
-        future.onComplete((res, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
-            }
-
+        CompletionStage<V> f = future.thenCompose(res -> {
             if (res == null) {
-                loadValue(key, result, false);
-            } else {
-                result.trySuccess(res);
+                return loadValue(key, false);
             }
+            return CompletableFuture.completedFuture(res);
         });
-        return result;
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
@@ -1456,10 +1438,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     @Override
     protected RFuture<List<Long>> fastRemoveOperationBatchAsync(K... keys) {
-        List<Object> args = new ArrayList<Object>(keys.length);
-        for (K key : keys) {
-            args.add(encodeMapKey(key));
-        }
+        List<Object> args = new ArrayList<>(keys.length);
+        encodeMapKeys(args, Arrays.asList(keys));
 
         RFuture<List<Long>> future = commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_LIST,
                 "local maxSize = tonumber(redis.call('hget', KEYS[6], 'max-size')); "
@@ -1490,10 +1470,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     @Override
     protected RFuture<Long> fastRemoveOperationAsync(K... keys) {
-        List<Object> params = new ArrayList<Object>(keys.length);
-        for (K key : keys) {
-            params.add(encodeMapKey(key));
-        }
+        List<Object> params = new ArrayList<>(keys.length);
+        encodeMapKeys(params, Arrays.asList(keys));
 
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_LONG,
                 "local maxSize = tonumber(redis.call('hget', KEYS[6], 'max-size')); "
@@ -1546,7 +1524,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         }
         params.add(count);
 
-        RFuture<MapCacheScanResult<Object, Object>> f = commandExecutor.evalReadAsync(client, name, codec, SCAN,
+        RFuture<MapCacheScanResult<Object, Object>> future = commandExecutor.evalReadAsync(client, name, codec, SCAN,
                 "local result = {}; "
                 + "local idleKeys = {}; "
                 + "local res; "
@@ -1586,41 +1564,40 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 Arrays.asList(name, getTimeoutSetName(name), getIdleSetName(name)),
                 params.toArray());
 
-        f.onComplete((res, e) -> {
-            if (res != null) {
-                if (res.getIdleKeys().isEmpty()) {
-                    return;
-                }
-
-                List<Object> args = new ArrayList<Object>(res.getIdleKeys().size() + 1);
-                args.add(System.currentTimeMillis());
-                encodeMapKeys(args, res.getIdleKeys());
-
-                commandExecutor.evalWriteAsync(name, codec, new RedisCommand<Map<Object, Object>>("EVAL",
-                                new MapValueDecoder(new MapGetAllDecoder(args, 1))),
-                                "local currentTime = tonumber(table.remove(ARGV, 1)); " // index is the first parameter
-                              + "local map = redis.call('hmget', KEYS[1], unpack(ARGV)); "
-                              + "for i = #map, 1, -1 do "
-                                  + "local value = map[i]; "
-                                  + "if value ~= false then "
-                                      + "local key = ARGV[i]; "
-                                      + "local t, val = struct.unpack('dLc0', value); "
-
-                                      + "if t ~= 0 then "
-                                          + "local expireIdle = redis.call('zscore', KEYS[2], key); "
-                                          + "if expireIdle ~= false then "
-                                              + "if tonumber(expireIdle) > currentTime then "
-                                                  + "redis.call('zadd', KEYS[2], t + currentTime, key); "
-                                              + "end; "
-                                          + "end; "
-                                      + "end; "
-                                  + "end; "
-                              + "end; ",
-                        Arrays.asList(name, getIdleSetName(name)), args.toArray());
+        CompletionStage<MapCacheScanResult<Object, Object>> f = future.thenApply(res -> {
+            if (res.getIdleKeys().isEmpty()) {
+                return res;
             }
+
+            List<Object> args = new ArrayList<Object>(res.getIdleKeys().size() + 1);
+            args.add(System.currentTimeMillis());
+            encodeMapKeys(args, res.getIdleKeys());
+
+            commandExecutor.evalWriteAsync(name, codec, new RedisCommand<Map<Object, Object>>("EVAL",
+                            new MapValueDecoder(new MapGetAllDecoder(args, 1))),
+                    "local currentTime = tonumber(table.remove(ARGV, 1)); " // index is the first parameter
+                            + "local map = redis.call('hmget', KEYS[1], unpack(ARGV)); "
+                            + "for i = #map, 1, -1 do "
+                            + "local value = map[i]; "
+                            + "if value ~= false then "
+                            + "local key = ARGV[i]; "
+                            + "local t, val = struct.unpack('dLc0', value); "
+
+                            + "if t ~= 0 then "
+                            + "local expireIdle = redis.call('zscore', KEYS[2], key); "
+                            + "if expireIdle ~= false then "
+                            + "if tonumber(expireIdle) > currentTime then "
+                            + "redis.call('zadd', KEYS[2], t + currentTime, key); "
+                            + "end; "
+                            + "end; "
+                            + "end; "
+                            + "end; "
+                            + "end; ",
+                    Arrays.asList(name, getIdleSetName(name)), args.toArray());
+            return res;
         });
 
-        return (RFuture<ScanResult<Map.Entry<Object, Object>>>) (Object) f;
+        return new CompletableFutureWrapper<>((CompletionStage<ScanResult<Map.Entry<Object, Object>>>) (Object) f);
     }
 
     @Override
@@ -2098,17 +2075,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     protected RFuture<Void> putAllOperationAsync(Map<? extends K, ? extends V> map) {
         List<Object> params = new ArrayList<Object>(map.size()*2 + 1);
         params.add(System.currentTimeMillis());
-        for (java.util.Map.Entry<? extends K, ? extends V> t : map.entrySet()) {
-            if (t.getKey() == null) {
-                throw new NullPointerException("map key can't be null");
-            }
-            if (t.getValue() == null) {
-                throw new NullPointerException("map value can't be null");
-            }
-
-            params.add(encodeMapKey(t.getKey()));
-            params.add(encodeMapValue(t.getValue()));
-        }
+        encodeMapKeys(params, map);
 
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
                   "local currentTime = tonumber(table.remove(ARGV, 1)); " + // index is the first parameter
@@ -2203,17 +2170,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             ttlTimeout = System.currentTimeMillis() + ttlUnit.toMillis(ttl);
         }
         params.add(ttlTimeout);
-        for (java.util.Map.Entry<? extends K, ? extends V> t : map.entrySet()) {
-            if (t.getKey() == null) {
-                throw new NullPointerException("map key can't be null");
-            }
-            if (t.getValue() == null) {
-                throw new NullPointerException("map value can't be null");
-            }
-
-            params.add(encodeMapKey(t.getKey()));
-            params.add(encodeMapValue(t.getValue()));
-        }
+        encodeMapKeys(params, map);
 
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
                   "local currentTime = tonumber(table.remove(ARGV, 1)); " + // index is the first parameter
@@ -2308,86 +2265,99 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             params.toArray());
     }
 
-    private MapCacheEventCodec.OSType osType;
+    private volatile MapCacheEventCodec.OSType osType;
+    private volatile Codec topicCodec;
     
     @Override
     public int addListener(MapEntryListener listener) {
-        if (listener == null) {
-            throw new NullPointerException();
-        }
-        
+        return get(addListenerAsync(listener));
+    }
+
+    @Override
+    public RFuture<Integer> addListenerAsync(MapEntryListener listener) {
+        Objects.requireNonNull(listener);
+
+        CompletionStage<MapCacheEventCodec.OSType> osTypeFuture = CompletableFuture.completedFuture(osType);
         if (osType == null) {
             RFuture<Map<String, String>> serverFuture = commandExecutor.readAsync((String) null, StringCodec.INSTANCE, RedisCommands.INFO_SERVER);
-            serverFuture.syncUninterruptibly();
-            String os = serverFuture.getNow().get("os");
-            if (os == null || os.contains("Windows")) {
-                osType = BaseEventCodec.OSType.WINDOWS;
-            } else if (os.contains("NONSTOP")) {
-                osType = BaseEventCodec.OSType.HPNONSTOP;
+            osTypeFuture = serverFuture.thenApply(res -> {
+                String os = res.get("os");
+                if (os == null || os.contains("Windows")) {
+                    osType = BaseEventCodec.OSType.WINDOWS;
+                } else if (os.contains("NONSTOP")) {
+                    osType = BaseEventCodec.OSType.HPNONSTOP;
+                }
+                topicCodec = new MapCacheEventCodec(codec, osType);
+                return osType;
+            });
+        }
+
+        CompletionStage<Integer> f = osTypeFuture.thenCompose(osType -> {
+            if (listener instanceof EntryRemovedListener) {
+                RTopic topic = RedissonTopic.createRaw(topicCodec, commandExecutor, getRemovedChannelName());
+                return topic.addListenerAsync(List.class, new MessageListener<List<Object>>() {
+                    @Override
+                    public void onMessage(CharSequence channel, List<Object> msg) {
+                        EntryEvent<K, V> event = new EntryEvent<K, V>(RedissonMapCache.this, EntryEvent.Type.REMOVED, (K) msg.get(0), (V) msg.get(1), null);
+                        ((EntryRemovedListener<K, V>) listener).onRemoved(event);
+                    }
+                });
             }
-        }
 
-        if (listener instanceof EntryRemovedListener) {
-            RTopic topic = redisson.getTopic(getRemovedChannelName(), new MapCacheEventCodec(codec, osType));
-            return topic.addListener(List.class, new MessageListener<List<Object>>() {
-                @Override
-                public void onMessage(CharSequence channel, List<Object> msg) {
-                    EntryEvent<K, V> event = new EntryEvent<K, V>(RedissonMapCache.this, EntryEvent.Type.REMOVED, (K) msg.get(0), (V) msg.get(1), null);
-                    ((EntryRemovedListener<K, V>) listener).onRemoved(event);
-                }
-            });
-        }
+            if (listener instanceof EntryCreatedListener) {
+                RTopic topic = RedissonTopic.createRaw(topicCodec, commandExecutor, getCreatedChannelName());
+                return topic.addListenerAsync(List.class, new MessageListener<List<Object>>() {
+                    @Override
+                    public void onMessage(CharSequence channel, List<Object> msg) {
+                        EntryEvent<K, V> event = new EntryEvent<K, V>(RedissonMapCache.this, EntryEvent.Type.CREATED, (K) msg.get(0), (V) msg.get(1), null);
+                        ((EntryCreatedListener<K, V>) listener).onCreated(event);
+                    }
+                });
+            }
 
-        if (listener instanceof EntryCreatedListener) {
-            RTopic topic = redisson.getTopic(getCreatedChannelName(), new MapCacheEventCodec(codec, osType));
-            return topic.addListener(List.class, new MessageListener<List<Object>>() {
-                @Override
-                public void onMessage(CharSequence channel, List<Object> msg) {
-                    EntryEvent<K, V> event = new EntryEvent<K, V>(RedissonMapCache.this, EntryEvent.Type.CREATED, (K) msg.get(0), (V) msg.get(1), null);
-                    ((EntryCreatedListener<K, V>) listener).onCreated(event);
-                }
-            });
-        }
+            if (listener instanceof EntryUpdatedListener) {
+                RTopic topic = RedissonTopic.createRaw(topicCodec, commandExecutor, getUpdatedChannelName());
+                return topic.addListenerAsync(List.class, new MessageListener<List<Object>>() {
+                    @Override
+                    public void onMessage(CharSequence channel, List<Object> msg) {
+                        EntryEvent<K, V> event = new EntryEvent<K, V>(RedissonMapCache.this, EntryEvent.Type.UPDATED, (K) msg.get(0), (V) msg.get(1), (V) msg.get(2));
+                        ((EntryUpdatedListener<K, V>) listener).onUpdated(event);
+                    }
+                });
+            }
 
-        if (listener instanceof EntryUpdatedListener) {
-            RTopic topic = redisson.getTopic(getUpdatedChannelName(), new MapCacheEventCodec(codec, osType));
-            return topic.addListener(List.class, new MessageListener<List<Object>>() {
-                @Override
-                public void onMessage(CharSequence channel, List<Object> msg) {
-                    EntryEvent<K, V> event = new EntryEvent<K, V>(RedissonMapCache.this, EntryEvent.Type.UPDATED, (K) msg.get(0), (V) msg.get(1), (V) msg.get(2));
-                    ((EntryUpdatedListener<K, V>) listener).onUpdated(event);
-                }
-            });
-        }
+            if (listener instanceof EntryExpiredListener) {
+                RTopic topic = RedissonTopic.createRaw(topicCodec, commandExecutor, getExpiredChannelName());
+                return topic.addListenerAsync(List.class, new MessageListener<List<Object>>() {
+                    @Override
+                    public void onMessage(CharSequence channel, List<Object> msg) {
+                        EntryEvent<K, V> event = new EntryEvent<K, V>(RedissonMapCache.this, EntryEvent.Type.EXPIRED, (K) msg.get(0), (V) msg.get(1), null);
+                        ((EntryExpiredListener<K, V>) listener).onExpired(event);
+                    }
+                });
+            }
 
-        if (listener instanceof EntryExpiredListener) {
-            RTopic topic = redisson.getTopic(getExpiredChannelName(), new MapCacheEventCodec(codec, osType));
-            return topic.addListener(List.class, new MessageListener<List<Object>>() {
-                @Override
-                public void onMessage(CharSequence channel, List<Object> msg) {
-                    EntryEvent<K, V> event = new EntryEvent<K, V>(RedissonMapCache.this, EntryEvent.Type.EXPIRED, (K) msg.get(0), (V) msg.get(1), null);
-                    ((EntryExpiredListener<K, V>) listener).onExpired(event);
-                }
-            });
-        }
-
-        throw new IllegalArgumentException("Wrong listener type " + listener.getClass());
+            CompletableFuture<Integer> res = new CompletableFuture<>();
+            res.completeExceptionally(new IllegalArgumentException("Wrong listener type " + listener.getClass()));
+            return res;
+        });
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
     public void removeListener(int listenerId) {
         super.removeListener(listenerId);
-        
-        RTopic removedTopic = redisson.getTopic(getRemovedChannelName());
+
+        RTopic removedTopic = RedissonTopic.createRaw(topicCodec, commandExecutor, getRemovedChannelName());
         removedTopic.removeListener(listenerId);
 
-        RTopic createdTopic = redisson.getTopic(getCreatedChannelName());
+        RTopic createdTopic = RedissonTopic.createRaw(topicCodec, commandExecutor, getCreatedChannelName());
         createdTopic.removeListener(listenerId);
 
-        RTopic updatedTopic = redisson.getTopic(getUpdatedChannelName());
+        RTopic updatedTopic = RedissonTopic.createRaw(topicCodec, commandExecutor, getUpdatedChannelName());
         updatedTopic.removeListener(listenerId);
 
-        RTopic expiredTopic = redisson.getTopic(getExpiredChannelName());
+        RTopic expiredTopic = RedissonTopic.createRaw(topicCodec, commandExecutor, getExpiredChannelName());
         expiredTopic.removeListener(listenerId);
     }
 
@@ -2409,39 +2379,59 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
+    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local maxSize = tonumber(redis.call('hget', KEYS[5], 'max-size')); " +
-                        "if maxSize ~= nil and maxSize ~= 0 then " +
-                        "    redis.call('pexpire', KEYS[5], ARGV[1]); " +
-                        "    redis.call('zadd', KEYS[4], 92233720368547758, 'redisson__expiretag'); " +
-                        "    redis.call('pexpire', KEYS[4], ARGV[1]); " +
-                        "end; " +
+                        "if maxSize ~= nil and maxSize ~= 0 then "
+                            + "redis.call('zadd', KEYS[4], 92233720368547758, 'redisson__expiretag'); "
+                            + "if ARGV[2] ~= '' then "
+                                + "redis.call('pexpire', KEYS[5], ARGV[1], ARGV[2]); "
+                                + "redis.call('pexpire', KEYS[4], ARGV[1], ARGV[2]); "
+                            + "else "
+                                + "redis.call('pexpire', KEYS[5], ARGV[1]); "
+                                + "redis.call('pexpire', KEYS[4], ARGV[1]); "
+                            + "end; "
+                      + "end; " +
                         "redis.call('zadd', KEYS[2], 92233720368547758, 'redisson__expiretag'); " +
-                        "redis.call('pexpire', KEYS[2], ARGV[1]); " +
                         "redis.call('zadd', KEYS[3], 92233720368547758, 'redisson__expiretag'); " +
-                        "redis.call('pexpire', KEYS[3], ARGV[1]); " +
-                        "return redis.call('pexpire', KEYS[1], ARGV[1]); ",
+                        "if ARGV[2] ~= '' then "
+                            + "redis.call('pexpire', KEYS[2], ARGV[1], ARGV[2]); "
+                            + "redis.call('pexpire', KEYS[3], ARGV[1], ARGV[2]); "
+                            + "return redis.call('pexpireat', KEYS[1], ARGV[1], ARGV[2]); "
+                       + "end; "
+                       + "redis.call('pexpire', KEYS[2], ARGV[1]); "
+                       + "redis.call('pexpire', KEYS[3], ARGV[1]); "
+                       + "return redis.call('pexpire', KEYS[1], ARGV[1]); ",
                 Arrays.<Object>asList(getRawName(), getTimeoutSetName(), getIdleSetName(), getLastAccessTimeSetName(), getOptionsName()),
-                timeUnit.toMillis(timeToLive));
+                timeUnit.toMillis(timeToLive), param);
     }
 
     @Override
-    protected RFuture<Boolean> expireAtAsync(long timestamp, String... keys) {
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                         "local maxSize = tonumber(redis.call('hget', KEYS[5], 'max-size')); " +
-                        "if maxSize ~= nil and maxSize ~= 0 then " +
-                        "    redis.call('pexpire', KEYS[5], ARGV[1]); " +
-                        "    redis.call('zadd', KEYS[4], 92233720368547758, 'redisson__expiretag'); " +
-                        "    redis.call('pexpire', KEYS[4], ARGV[1]); " +
-                        "end; " +
-                        "redis.call('zadd', KEYS[2], 92233720368547758, 'redisson__expiretag'); " +
-                        "redis.call('pexpireat', KEYS[2], ARGV[1]); " +
-                        "redis.call('zadd', KEYS[3], 92233720368547758, 'redisson__expiretag'); " +
-                        "redis.call('pexpire', KEYS[3], ARGV[1]); " +
-                        "return redis.call('pexpireat', KEYS[1], ARGV[1]); ",
-                Arrays.<Object>asList(getRawName(), getTimeoutSetName(), getIdleSetName(), getLastAccessTimeSetName(), getOptionsName()),
-                timestamp);
+                        "if maxSize ~= nil and maxSize ~= 0 then "
+                                + "redis.call('zadd', KEYS[4], 92233720368547758, 'redisson__expiretag'); "
+                                + "if ARGV[2] ~= '' then "
+                                    + "redis.call('pexpireat', KEYS[5], ARGV[1], ARGV[2]); "
+                                    + "redis.call('pexpireat', KEYS[4], ARGV[1], ARGV[2]); "
+                                + "else "
+                                    + "redis.call('pexpireat', KEYS[5], ARGV[1]); "
+                                    + "redis.call('pexpireat', KEYS[4], ARGV[1]); "
+                                + "end; "
+                       + "end; "
+                       + "redis.call('zadd', KEYS[2], 92233720368547758, 'redisson__expiretag'); "
+                       + "redis.call('zadd', KEYS[3], 92233720368547758, 'redisson__expiretag'); "
+                       + "if ARGV[2] ~= '' then "
+                            + "redis.call('pexpireat', KEYS[2], ARGV[1], ARGV[2]); "
+                            + "redis.call('pexpireat', KEYS[3], ARGV[1], ARGV[2]); "
+                            + "return redis.call('pexpireat', KEYS[1], ARGV[1], ARGV[2]); "
+                       + "end; "
+                       + "redis.call('pexpireat', KEYS[2], ARGV[1]); "
+                       + "redis.call('pexpireat', KEYS[3], ARGV[1]); "
+                       + "return redis.call('pexpireat', KEYS[1], ARGV[1]); ",
+                Arrays.asList(getRawName(), getTimeoutSetName(), getIdleSetName(), getLastAccessTimeSetName(), getOptionsName()),
+                timestamp, param);
     }
 
     @Override
@@ -2695,8 +2685,6 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         if (evictionScheduler != null) {
             evictionScheduler.remove(getRawName());
         }
-        if (writeBehindService != null) {
-            writeBehindService.stop(getRawName());
-        }
+        super.destroy();
     }
 }

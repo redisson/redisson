@@ -2,16 +2,42 @@ package org.redisson.transaction;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.BaseTest;
-import org.redisson.api.RBucket;
-import org.redisson.api.RTransaction;
-import org.redisson.api.TransactionOptions;
+import org.redisson.Redisson;
+import org.redisson.api.*;
+import org.redisson.config.Config;
 
 public class RedissonTransactionalBucketTest extends BaseTest {
+
+    @Test
+    public void testNameMapper() {
+        Config c = createConfig();
+        c.useSingleServer().setNameMapper(new NameMapper() {
+            @Override
+            public String map(String name) {
+                return name + ":mysuffix";
+            }
+
+            @Override
+            public String unmap(String name) {
+                return name.replace(":mysuffix", "");
+            }
+        });
+        RedissonClient redisson = Redisson.create(c);
+
+        RTransaction t = redisson.createTransaction(TransactionOptions.defaults());
+        t.getBucket("test").set("1");
+        t.commit();
+
+        assertThat(redisson.getBucket("test").get()).isEqualTo("1");
+
+        redisson.shutdown();
+    }
 
     @Test
     public void testTimeout() throws InterruptedException {
@@ -51,7 +77,32 @@ public class RedissonTransactionalBucketTest extends BaseTest {
         assertThat(redisson.getKeys().count()).isEqualTo(1);
         assertThat(b.get()).isEqualTo("234");
     }
-    
+
+    @Test
+    public void testExpire() throws InterruptedException {
+        RBucket<String> b = redisson.getBucket("test");
+        b.set("123");
+
+        RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+        RBucket<String> bucket = transaction.getBucket("test");
+        assertThat(bucket.clearExpire()).isFalse();
+        assertThat(bucket.expire(Duration.ofSeconds(2))).isTrue();
+        assertThat(bucket.clearExpire()).isTrue();
+        transaction.commit();
+
+        Thread.sleep(2200);
+
+        assertThat(b.get()).isEqualTo("123");
+
+        RTransaction transaction2 = redisson.createTransaction(TransactionOptions.defaults());
+        RBucket<String> bucket2 = transaction2.getBucket("test");
+        assertThat(bucket2.expire(Duration.ofSeconds(1))).isTrue();
+        transaction2.commit();
+
+        Thread.sleep(1100);
+        assertThat(b.get()).isNull();
+    }
+
     @Test
     public void testGetAndSet() {
         RBucket<String> b = redisson.getBucket("test");

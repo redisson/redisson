@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.redisson;
 
 import java.util.Arrays;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
@@ -36,7 +37,7 @@ import org.redisson.pubsub.LockPubSub;
  */
 public class RedissonReadLock extends RedissonLock implements RLock {
 
-    public RedissonReadLock(CommandAsyncExecutor commandExecutor, String name) {
+    protected RedissonReadLock(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
     }
 
@@ -136,7 +137,7 @@ public class RedissonReadLock extends RedissonLock implements RLock {
     }
     
     @Override
-    protected RFuture<Boolean> renewExpirationAsync(long threadId) {
+    protected CompletionStage<Boolean> renewExpirationAsync(long threadId) {
         String timeoutPrefix = getReadWriteTimeoutNamePrefix(threadId);
         String keyPrefix = getKeyPrefix(threadId, timeoutPrefix);
         

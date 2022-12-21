@@ -3,9 +3,12 @@ package org.redisson;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RListReactive;
+import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.RedisException;
+import org.redisson.client.codec.StringCodec;
 import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -17,6 +20,16 @@ import java.util.function.Predicate;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonListReactiveTest extends BaseReactiveTest {
+
+    @Test
+    public void test1() throws InterruptedException {
+        RListReactive<String> testQueue = redisson.getList("list");
+        Mono<Boolean> s = testQueue.addAll(Flux.just("a", "b", "c"));
+        Thread.sleep(400);
+        assertThat(testQueue.iterator().collectList().block()).isEmpty();
+        assertThat(s.block()).isTrue();
+        assertThat(testQueue.iterator().collectList().block()).containsExactly("a", "b", "c");
+    }
 
     @Test
     public void testIteratorFilter() {

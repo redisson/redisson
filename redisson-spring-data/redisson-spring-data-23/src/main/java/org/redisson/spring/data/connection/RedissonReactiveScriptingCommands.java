@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,24 +15,23 @@
  */
 package org.redisson.spring.data.connection;
 
+import org.redisson.api.RFuture;
+import org.redisson.client.codec.ByteArrayCodec;
+import org.redisson.client.protocol.RedisCommand;
+import org.redisson.client.protocol.RedisCommands;
+import org.redisson.misc.CompletableFutureWrapper;
+import org.redisson.reactive.CommandReactiveExecutor;
+import org.springframework.data.redis.connection.ReactiveScriptingCommands;
+import org.springframework.data.redis.connection.ReturnType;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-
-import org.redisson.SlotCallback;
-import org.redisson.api.RFuture;
-import org.redisson.client.codec.ByteArrayCodec;
-import org.redisson.client.codec.StringCodec;
-import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommands;
-import org.redisson.reactive.CommandReactiveExecutor;
-import org.springframework.data.redis.connection.ReactiveScriptingCommands;
-import org.springframework.data.redis.connection.ReturnType;
-
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 /**
  * 
@@ -48,7 +47,7 @@ public class RedissonReactiveScriptingCommands extends RedissonBaseReactive impl
     @Override
     public Mono<String> scriptFlush() {
         return executorService.reactive(() -> {
-            RFuture<Void> f = executorService.writeAllAsync(RedisCommands.SCRIPT_FLUSH);
+            RFuture<Void> f = executorService.writeAllVoidAsync(RedisCommands.SCRIPT_FLUSH);
             return toStringFuture(f);
         });
     }
@@ -61,43 +60,29 @@ public class RedissonReactiveScriptingCommands extends RedissonBaseReactive impl
     @Override
     public Mono<String> scriptLoad(ByteBuffer script) {
         return executorService.reactive(() -> {
-            return executorService.writeAllAsync(StringCodec.INSTANCE, RedisCommands.SCRIPT_LOAD, new SlotCallback<String, String>() {
-                volatile String result;
-                @Override
-                public void onSlotResult(String result) {
-                    this.result = result;
-                }
-                
-                @Override
-                public String onFinish() {
-                    return result;
-                }
-            }, toByteArray(script));
+            List<CompletableFuture<String>> futures = executorService.executeAllAsync(RedisCommands.SCRIPT_LOAD, (Object)toByteArray(script));
+            CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+            CompletableFuture<String> s = f.thenApply(r -> futures.get(0).getNow(null));
+            return new CompletableFutureWrapper<>(s);
         });
     }
 
     @Override
     public Flux<Boolean> scriptExists(List<String> scriptShas) {
         Mono<List<Boolean>> m = executorService.reactive(() -> {
-                return executorService.writeAllAsync(RedisCommands.SCRIPT_EXISTS, new SlotCallback<List<Boolean>, List<Boolean>>() {
-                
-                List<Boolean> result = new ArrayList<Boolean>(scriptShas.size());
-                
-                @Override
-                public synchronized void onSlotResult(List<Boolean> result) {
-                    for (int i = 0; i < result.size(); i++) {
-                        if (this.result.size() == i) {
-                            this.result.add(false);
-                        }
-                        this.result.set(i, this.result.get(i) | result.get(i));
+            List<CompletableFuture<List<Boolean>>> futures = executorService.writeAllAsync(RedisCommands.SCRIPT_EXISTS, scriptShas.toArray());
+            CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+            CompletableFuture<List<Boolean>> s = f.thenApply(r -> {
+                List<Boolean> result = futures.get(0).getNow(new ArrayList<>());
+                for (CompletableFuture<List<Boolean>> future : futures.subList(1, futures.size())) {
+                    List<Boolean> l = future.getNow(new ArrayList<>());
+                    for (int i = 0; i < l.size(); i++) {
+                        result.set(i, result.get(i) | l.get(i));
                     }
                 }
-    
-                @Override
-                public List<Boolean> onFinish() {
-                    return result;
-                }
-            }, scriptShas.toArray());
+                return result;
+            });
+            return new CompletableFutureWrapper<>(s);
         });
         return m.flatMapMany(v -> Flux.fromIterable(v));
     }
@@ -137,8 +122,14 @@ public class RedissonReactiveScriptingCommands extends RedissonBaseReactive impl
                 return ByteBuffer.wrap((byte[])e);
             }
             if (e instanceof List) {
-                if (((List) e).get(0).getClass().isArray()) {
-                    return ((List<byte[]>)e).stream().map(v -> ByteBuffer.wrap(v)).collect(Collectors.toList());
+                List l = (List) e;
+                if (!l.isEmpty()) {
+                    for (int i = 0; i < l.size(); i++) {
+                        if (l.get(i).getClass().isArray()) {
+                            l.set(i, ByteBuffer.wrap((byte[])l.get(i)));
+                        }
+                    }
+                    return l;
                 }
             }
             return e;

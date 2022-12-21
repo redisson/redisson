@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,11 +24,12 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.CountableListener;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Collections;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -97,6 +98,36 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         }
 
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.GETSET, getRawName(), encode(newValue));
+    }
+
+    @Override
+    public V getAndExpire(Instant time) {
+        return get(getAndExpireAsync(time));
+    }
+
+    @Override
+    public RFuture<V> getAndExpireAsync(Instant time) {
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.GETEX, getRawName(), "PXAT", time.toEpochMilli());
+    }
+
+    @Override
+    public V getAndExpire(Duration duration) {
+        return get(getAndExpireAsync(duration));
+    }
+
+    @Override
+    public RFuture<V> getAndExpireAsync(Duration duration) {
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.GETEX, getRawName(), "PX", duration.toMillis());
+    }
+
+    @Override
+    public V getAndClearExpire() {
+        return get(getAndClearExpireAsync());
+    }
+
+    @Override
+    public RFuture<V> getAndClearExpireAsync() {
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.GETEX, getRawName(), "PERSIST");
     }
 
     @Override
@@ -189,6 +220,33 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
     }
 
     @Override
+    public boolean setIfAbsent(V value) {
+        return get(setIfAbsentAsync(value));
+    }
+
+    @Override
+    public boolean setIfAbsent(V value, Duration duration) {
+        return get(setIfAbsentAsync(value, duration));
+    }
+
+    @Override
+    public RFuture<Boolean> setIfAbsentAsync(V value) {
+        if (value == null) {
+            return commandExecutor.readAsync(getRawName(), codec, RedisCommands.NOT_EXISTS, getRawName());
+        }
+
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SETNX, getRawName(), encode(value));
+    }
+
+    @Override
+    public RFuture<Boolean> setIfAbsentAsync(V value, Duration duration) {
+        if (value == null) {
+            throw new IllegalArgumentException("Value can't be null");
+        }
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SET_BOOLEAN, getRawName(), encode(value), "PX", duration.toMillis(), "NX");
+    }
+
+    @Override
     public boolean setIfExists(V value) {
         return get(setIfExistsAsync(value));
     }
@@ -278,13 +336,11 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
 
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
-        RPromise<Void> result = new RedissonPromise<>();
-        CountableListener<Void> listener = new CountableListener<>(result, null, 3);
-
         RPatternTopic setTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:set");
-        setTopic.removeListenerAsync(listenerId).onComplete(listener);
-        removeListenersAsync(listenerId, listener);
-        return result;
+        RFuture<Void> f1 = setTopic.removeListenerAsync(listenerId);
+        RFuture<Void> f2 = super.removeListenerAsync(listenerId);
+        CompletableFuture<Void> f = CompletableFuture.allOf(f1.toCompletableFuture(), f2.toCompletableFuture());
+        return new CompletableFutureWrapper<>(f);
     }
 
 }

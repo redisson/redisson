@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,19 @@
 package org.redisson;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.util.ReferenceCountUtil;
 import org.redisson.api.*;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.CountableListener;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.Hash;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
@@ -141,13 +142,9 @@ public abstract class RedissonObject implements RObject {
 
     @Override
     public RFuture<Void> renameAsync(String newName) {
-        RFuture<Void> f = commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.RENAME, getRawName(), newName);
-        f.onComplete((r, e) -> {
-            if (e == null) {
-                setName(newName);
-            }
-        });
-        return f;
+        RFuture<Void> future = commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.RENAME, getRawName(), newName);
+        CompletionStage<Void> f = future.thenAccept(r -> setName(newName));
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
@@ -187,13 +184,14 @@ public abstract class RedissonObject implements RObject {
 
     @Override
     public RFuture<Boolean> renamenxAsync(String newName) {
-        RFuture<Boolean> f = commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.RENAMENX, getRawName(), newName);
-        f.onComplete((value, e) -> {
-            if (e == null && value) {
+        RFuture<Boolean> future = commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.RENAMENX, getRawName(), newName);
+        CompletionStage<Boolean> f = future.thenApply(value -> {
+            if (value) {
                 setName(newName);
             }
+            return value;
         });
-        return f;
+        return new CompletableFutureWrapper<>(f);
 
     }
 
@@ -246,25 +244,24 @@ public abstract class RedissonObject implements RObject {
         return codec;
     }
 
-    protected List<ByteBuf> encode(Object... values) {
-        List<ByteBuf> result = new ArrayList<>(values.length);
-        for (Object object : values) {
-            result.add(encode(object));
-        }
-        return result;
-    }
-
     protected List<ByteBuf> encode(Collection<?> values) {
         List<ByteBuf> result = new ArrayList<>(values.size());
         for (Object object : values) {
-            result.add(encode(object));
+            encode(result, object);
         }
         return result;
     }
     
     public void encode(Collection<Object> params, Collection<?> values) {
-        for (Object object : values) {
-            params.add(encode(object));
+        try {
+            for (Object object : values) {
+                params.add(encode(object));
+            }
+        } catch (Exception e) {
+            params.forEach(v -> {
+                ReferenceCountUtil.safeRelease(v);
+            });
+            throw e;
         }
     }
     
@@ -285,25 +282,62 @@ public abstract class RedissonObject implements RObject {
             keyState.release();
         }
     }
-    
+
     protected void encodeMapKeys(Collection<Object> params, Collection<?> values) {
-        for (Object object : values) {
-            params.add(encodeMapKey(object));
+        try {
+            for (Object object : values) {
+                params.add(encodeMapKey(object));
+            }
+        } catch (Exception e) {
+            params.forEach(v -> {
+                ReferenceCountUtil.safeRelease(v);
+            });
+            throw e;
         }
     }
 
     protected void encodeMapValues(Collection<Object> params, Collection<?> values) {
-        for (Object object : values) {
-            params.add(encodeMapValue(object));
+        try {
+            for (Object object : values) {
+                params.add(encodeMapValue(object));
+            }
+        } catch (Exception e) {
+            params.forEach(v -> {
+                ReferenceCountUtil.safeRelease(v);
+            });
+            throw e;
         }
     }
     
     public ByteBuf encode(Object value) {
         return commandExecutor.encode(codec, value);
     }
-    
+
+    public void encode(Collection<?> params, Object value) {
+        try {
+            Object v = commandExecutor.encode(codec, value);
+            ((Collection<Object>) params).add(v);
+        } catch (Exception e) {
+            params.forEach(v -> {
+                ReferenceCountUtil.safeRelease(v);
+            });
+            throw e;
+        }
+    }
+
     public ByteBuf encodeMapKey(Object value) {
         return commandExecutor.encodeMapKey(codec, value);
+    }
+
+    public ByteBuf encodeMapKey(Object value, Collection<Object> params) {
+        try {
+            return encodeMapKey(value);
+        } catch (Exception e) {
+            params.forEach(v -> {
+                ReferenceCountUtil.safeRelease(v);
+            });
+            throw e;
+        }
     }
 
     public ByteBuf encodeMapValue(Object value) {
@@ -406,7 +440,7 @@ public abstract class RedissonObject implements RObject {
             return addListener("__keyevent@*:del", (DeletedObjectListener) listener, DeletedObjectListener::onDeleted);
         }
         throw new IllegalArgumentException();
-    };
+    }
     
     @Override
     public RFuture<Integer> addListenerAsync(ObjectListener listener) {
@@ -430,18 +464,13 @@ public abstract class RedissonObject implements RObject {
     
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
-        RPromise<Void> result = new RedissonPromise<>();
-        CountableListener<Void> listener = new CountableListener<>(result, null, 2);
-        removeListenersAsync(listenerId, listener);
-        return result;
-    }
-
-    protected final void removeListenersAsync(int listenerId, CountableListener<Void> listener) {
         RPatternTopic expiredTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:expired");
-        expiredTopic.removeListenerAsync(listenerId).onComplete(listener);
+        RFuture<Void> f1 = expiredTopic.removeListenerAsync(listenerId);
 
         RPatternTopic deletedTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:del");
-        deletedTopic.removeListenerAsync(listenerId).onComplete(listener);
+        RFuture<Void> f2 = deletedTopic.removeListenerAsync(listenerId);
+        CompletableFuture<Void> f = CompletableFuture.allOf(f1.toCompletableFuture(), f2.toCompletableFuture());
+        return new CompletableFutureWrapper<>(f);
     }
 
 }

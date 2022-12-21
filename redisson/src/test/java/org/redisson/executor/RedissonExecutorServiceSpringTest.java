@@ -117,7 +117,7 @@ public class RedissonExecutorServiceSpringTest extends BaseTest {
         
         Thread.sleep(500);
 
-        assertThat(future.sync().getNow()).isEqualTo("hello callable");
+        assertThat(future.toCompletableFuture().join()).isEqualTo("hello callable");
     }
     
 }

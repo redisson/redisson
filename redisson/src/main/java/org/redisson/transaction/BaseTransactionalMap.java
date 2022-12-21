@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,22 +15,8 @@
  */
 package org.redisson.transaction;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
+import io.netty.buffer.ByteBuf;
 import org.redisson.RedissonMap;
-import org.redisson.RedissonMultiLock;
 import org.redisson.RedissonObject;
 import org.redisson.ScanResult;
 import org.redisson.api.RFuture;
@@ -40,17 +26,21 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.convertor.NumberConvertor;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.Hash;
 import org.redisson.misc.HashValue;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
-import org.redisson.transaction.operation.DeleteOperation;
-import org.redisson.transaction.operation.TouchOperation;
-import org.redisson.transaction.operation.TransactionalOperation;
-import org.redisson.transaction.operation.UnlinkOperation;
+import org.redisson.transaction.operation.*;
 import org.redisson.transaction.operation.map.*;
 
-import io.netty.buffer.ByteBuf;
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * 
@@ -59,7 +49,7 @@ import io.netty.buffer.ByteBuf;
  * @param <K> key type
  * @param <V> value type
  */
-public class BaseTransactionalMap<K, V> {
+public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
 
     public static class MapEntry {
         
@@ -86,19 +76,16 @@ public class BaseTransactionalMap<K, V> {
     
     private final long timeout;
     final List<TransactionalOperation> operations;
-    final Map<HashValue, MapEntry> state = new HashMap<HashValue, MapEntry>();
+    final Map<HashValue, MapEntry> state = new HashMap<>();
     final RMap<K, V> map;
-    final CommandAsyncExecutor commandExecutor;
-    final String transactionId;
     Boolean deleted;
-    
+    boolean hasExpiration;
+
     public BaseTransactionalMap(CommandAsyncExecutor commandExecutor, long timeout, List<TransactionalOperation> operations, RMap<K, V> map, String transactionId) {
-        super();
+        super(transactionId, getLockName(map.getName()), commandExecutor);
         this.timeout = timeout;
         this.operations = operations;
         this.map = map;
-        this.commandExecutor = commandExecutor;
-        this.transactionId = transactionId;
     }
 
     HashValue toKeyHash(Object key) {
@@ -112,7 +99,7 @@ public class BaseTransactionalMap<K, V> {
     
     public RFuture<Boolean> isExistsAsync() {
         if (deleted != null) {
-            return RedissonPromise.newSucceededFuture(!deleted);
+            return new CompletableFutureWrapper<>(!deleted);
         }
         
         return map.isExistsAsync();
@@ -123,31 +110,19 @@ public class BaseTransactionalMap<K, V> {
     }
     
     public RFuture<Boolean> touchAsync(CommandAsyncExecutor commandExecutor) {
-        RPromise<Boolean> result = new RedissonPromise<Boolean>();
         if (deleted != null && deleted) {
             operations.add(new TouchOperation(map.getName()));
-            result.trySuccess(false);
-            return result;
+            return new CompletableFutureWrapper<>(false);
         }
-        
-        map.isExistsAsync().onComplete((exists, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
-            }
-            
+
+        CompletionStage<Boolean> f = map.isExistsAsync().thenApply(exists -> {
             operations.add(new TouchOperation(map.getName()));
             if (!exists) {
-                for (MapEntry entry : state.values()) {
-                    if (entry != MapEntry.NULL) {
-                        exists = true;
-                        break;
-                    }
-                }
+                return isExists();
             }
-            result.trySuccess(exists);
+            return true;
         });
-        return result;
+        return new CompletableFutureWrapper<>(f);
     }
 
     public RFuture<Boolean> deleteAsync(CommandAsyncExecutor commandExecutor) {
@@ -155,33 +130,27 @@ public class BaseTransactionalMap<K, V> {
     }
 
     protected RFuture<Boolean> deleteAsync(CommandAsyncExecutor commandExecutor, TransactionalOperation operation) {
-        RPromise<Boolean> result = new RedissonPromise<Boolean>();
         if (deleted != null) {
             operations.add(operation);
-            result.trySuccess(!deleted);
+            CompletableFuture<Boolean> result = new CompletableFuture<>();
+            result.complete(!deleted);
             deleted = true;
-            return result;
+            return new CompletableFutureWrapper<>(result);
         }
-        
-        map.isExistsAsync().onComplete((res, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
-            }
-            
+
+        CompletionStage<Boolean> f = map.isExistsAsync().thenApply(res -> {
             operations.add(operation);
             state.replaceAll((k, v) -> MapEntry.NULL);
             deleted = true;
-            result.trySuccess(res);
+            return res;
         });
-        
-        return result;
+        return new CompletableFutureWrapper<>(f);
     }
     
     protected ScanResult<Map.Entry<Object, Object>> scanIterator(String name, RedisClient client,
             long startPos, String pattern, int count) {
         ScanResult<Map.Entry<Object, Object>> res = ((RedissonMap<?, ?>) map).scanIterator(name, client, startPos, pattern, count);
-        Map<HashValue, MapEntry> newstate = new HashMap<HashValue, MapEntry>(state);
+        Map<HashValue, MapEntry> newstate = new HashMap<>(state);
         Map<Object, Object> newres = null;
         for (Iterator<Map.Entry<Object, Object>> iterator = res.getValues().iterator(); iterator.hasNext();) {
             Map.Entry<Object, Object> entry = iterator.next();
@@ -232,9 +201,9 @@ public class BaseTransactionalMap<K, V> {
         MapEntry currentValue = state.get(keyHash);
         if (currentValue != null) {
             if (currentValue == MapEntry.NULL) {
-                return RedissonPromise.newSucceededFuture(false);
+                return new CompletableFutureWrapper<>(false);
             } else {
-                return RedissonPromise.newSucceededFuture(true);
+                return new CompletableFutureWrapper<>(true);
             }
         }
         
@@ -244,7 +213,7 @@ public class BaseTransactionalMap<K, V> {
     public RFuture<Boolean> containsValueAsync(Object value) {
         for (MapEntry entry : state.values()) {
             if (entry != MapEntry.NULL && isEqual(entry.getValue(), value)) {
-                return RedissonPromise.newSucceededFuture(true);
+                return new CompletableFutureWrapper<>(true);
             }
         }
 
@@ -252,51 +221,41 @@ public class BaseTransactionalMap<K, V> {
     }
     
     protected RFuture<V> addAndGetOperationAsync(K key, Number value) {
-        RPromise<V> result = new RedissonPromise<V>();
         long threadId = Thread.currentThread().getId();
-        executeLocked(result, key, new Runnable() {
-            @Override
-            public void run() {
-                HashValue keyHash = toKeyHash(key);
-                MapEntry entry = state.get(keyHash);
-                if (entry != null) {
-                    BigDecimal currentValue = BigDecimal.ZERO;
-                    if (entry != MapEntry.NULL) {
-                        currentValue = (BigDecimal) entry.getValue();
-                    }
-                    BigDecimal res = currentValue.add(new BigDecimal(value.toString()));
-
-                    operations.add(new MapAddAndGetOperation(map, key, value, transactionId, threadId));
-                    state.put(keyHash, new MapEntry(key, res));
-                    if (deleted != null) {
-                        deleted = false;
-                    }
-
-                    NumberConvertor convertor = new NumberConvertor(value.getClass());
-                    result.trySuccess((V) convertor.convert(res.toPlainString()));
-                    return;
+        return executeLocked(key, () -> {
+            HashValue keyHash = toKeyHash(key);
+            MapEntry entry = state.get(keyHash);
+            if (entry != null) {
+                BigDecimal currentValue = BigDecimal.ZERO;
+                if (entry != MapEntry.NULL) {
+                    currentValue = (BigDecimal) entry.getValue();
                 }
-                
-                map.getAsync(key).onComplete((r, e) -> {
-                    if (e != null) {
-                        result.tryFailure(e);
-                        return;
-                    }
-                    BigDecimal currentValue = new BigDecimal(r.toString());
-                    BigDecimal res = currentValue.add(new BigDecimal(value.toString()));
-                    
-                    operations.add(new MapAddAndGetOperation(map, key, value, transactionId, threadId));
-                    state.put(keyHash, new MapEntry(key, res));
-                    if (deleted != null) {
-                        deleted = false;
-                    }
-                    
-                    NumberConvertor convertor = new NumberConvertor(value.getClass());
-                    result.trySuccess((V) convertor.convert(res.toPlainString()));
-                });
+                BigDecimal res = currentValue.add(new BigDecimal(value.toString()));
+
+                operations.add(new MapAddAndGetOperation(map, key, value, transactionId, threadId));
+                state.put(keyHash, new MapEntry(key, res));
+                if (deleted != null) {
+                    deleted = false;
+                }
+
+                NumberConvertor convertor = new NumberConvertor(value.getClass());
+                return CompletableFuture.completedFuture((V) convertor.convert(res.toPlainString()));
             }
+
+            return map.getAsync(key).thenApply(r -> {
+                BigDecimal currentValue = new BigDecimal(r.toString());
+                BigDecimal res = currentValue.add(new BigDecimal(value.toString()));
+
+                operations.add(new MapAddAndGetOperation(map, key, value, transactionId, threadId));
+                state.put(keyHash, new MapEntry(key, res));
+                if (deleted != null) {
+                    deleted = false;
+                }
+
+                NumberConvertor convertor = new NumberConvertor(value.getClass());
+                return (V) convertor.convert(res.toPlainString());
+            });
         });
-        return result;
     }
 
     protected RFuture<V> putIfExistsOperationAsync(K key, V value) {
@@ -305,45 +264,33 @@ public class BaseTransactionalMap<K, V> {
     }
 
     protected RFuture<V> putIfExistsOperationAsync(K key, V value, MapOperation mapOperation) {
-        RPromise<V> result = new RedissonPromise<V>();
-        executeLocked(result, key, new Runnable() {
-            @Override
-            public void run() {
-                HashValue keyHash = toKeyHash(key);
-                MapEntry entry = state.get(keyHash);
-                if (entry != null) {
-                    operations.add(mapOperation);
-                    if (entry != MapEntry.NULL) {
-                        state.put(keyHash, new MapEntry(key, value));
-                        if (deleted != null) {
-                            deleted = false;
-                        }
-
-                        result.trySuccess((V) entry.getValue());
-                    } else {
-                        result.trySuccess(null);
+        return executeLocked(key, () -> {
+            HashValue keyHash = toKeyHash(key);
+            MapEntry entry = state.get(keyHash);
+            if (entry != null) {
+                operations.add(mapOperation);
+                if (entry != MapEntry.NULL) {
+                    state.put(keyHash, new MapEntry(key, value));
+                    if (deleted != null) {
+                        deleted = false;
                     }
-                    return;
+
+                    return CompletableFuture.completedFuture((V) entry.getValue());
                 }
-
-                map.getAsync(key).onComplete((res, e) -> {
-                    if (e != null) {
-                        result.tryFailure(e);
-                        return;
-                    }
-
-                    operations.add(mapOperation);
-                    if (res != null) {
-                        state.put(keyHash, new MapEntry(key, value));
-                        if (deleted != null) {
-                            deleted = false;
-                        }
-                    }
-                    result.trySuccess(res);
-                });
+                return CompletableFuture.completedFuture(null);
             }
+
+            return map.getAsync(key).thenApply(res -> {
+                operations.add(mapOperation);
+                if (res != null) {
+                    state.put(keyHash, new MapEntry(key, value));
+                    if (deleted != null) {
+                        deleted = false;
+                    }
+                }
+                return res;
+            });
         });
-        return result;
     }
 
     protected RFuture<V> putIfAbsentOperationAsync(K key, V value) {
@@ -352,45 +299,33 @@ public class BaseTransactionalMap<K, V> {
     }
 
     protected RFuture<V> putIfAbsentOperationAsync(K key, V value, MapOperation mapOperation) {
-        RPromise<V> result = new RedissonPromise<V>();
-        executeLocked(result, key, new Runnable() {
-            @Override
-            public void run() {
-                HashValue keyHash = toKeyHash(key);
-                MapEntry entry = state.get(keyHash);
-                if (entry != null) {
-                    operations.add(mapOperation);
-                    if (entry == MapEntry.NULL) {
-                        state.put(keyHash, new MapEntry(key, value));
-                        if (deleted != null) {
-                            deleted = false;
-                        }
-
-                        result.trySuccess(null);
-                    } else {
-                        result.trySuccess((V) entry.getValue());
+        return executeLocked(key, () -> {
+            HashValue keyHash = toKeyHash(key);
+            MapEntry entry = state.get(keyHash);
+            if (entry != null) {
+                operations.add(mapOperation);
+                if (entry == MapEntry.NULL) {
+                    state.put(keyHash, new MapEntry(key, value));
+                    if (deleted != null) {
+                        deleted = false;
                     }
-                    return;
+
+                    return CompletableFuture.completedFuture(null);
                 }
-
-                map.getAsync(key).onComplete((res, e) -> {
-                    if (e != null) {
-                        result.tryFailure(e);
-                        return;
-                    }
-                    
-                    operations.add(mapOperation);
-                    if (res == null) {
-                        state.put(keyHash, new MapEntry(key, value));
-                        if (deleted != null) {
-                            deleted = false;
-                        }
-                    }
-                    result.trySuccess(res);
-                });
+                return CompletableFuture.completedFuture((V) entry.getValue());
             }
+
+            return map.getAsync(key).thenApply(res -> {
+                operations.add(mapOperation);
+                if (res == null) {
+                    state.put(keyHash, new MapEntry(key, value));
+                    if (deleted != null) {
+                        deleted = false;
+                    }
+                }
+                return res;
+            });
         });
-        return result;
     }
     
     protected final RFuture<V> putOperationAsync(K key, V value) {
@@ -399,43 +334,31 @@ public class BaseTransactionalMap<K, V> {
     }
 
     protected RFuture<V> putOperationAsync(K key, V value, MapOperation operation) {
-        RPromise<V> result = new RedissonPromise<V>();
-        executeLocked(result, key, new Runnable() {
-            @Override
-            public void run() {
-                HashValue keyHash = toKeyHash(key);
-                MapEntry entry = state.get(keyHash);
-                if (entry != null) {
-                    operations.add(operation);
-                    state.put(keyHash, new MapEntry(key, value));
-                    if (deleted != null) {
-                        deleted = false;
-                    }
-                    
-                    if (entry == MapEntry.NULL) {
-                        result.trySuccess(null);
-                    } else {
-                        result.trySuccess((V) entry.getValue());
-                    }
-                    return;
+        return executeLocked(key, () -> {
+            HashValue keyHash = toKeyHash(key);
+            MapEntry entry = state.get(keyHash);
+            if (entry != null) {
+                operations.add(operation);
+                state.put(keyHash, new MapEntry(key, value));
+                if (deleted != null) {
+                    deleted = false;
                 }
-                
-                map.getAsync(key).onComplete((res, e) -> {
-                    if (e != null) {
-                        result.tryFailure(e);
-                        return;
-                    }
-                    
-                    operations.add(operation);
-                    state.put(keyHash, new MapEntry(key, value));
-                    if (deleted != null) {
-                        deleted = false;
-                    }
-                    result.trySuccess(res);
-                });
+
+                if (entry == MapEntry.NULL) {
+                    return CompletableFuture.completedFuture(null);
+                }
+                return CompletableFuture.completedFuture((V) entry.getValue());
             }
+
+            return map.getAsync(key).thenApply(res -> {
+                operations.add(operation);
+                state.put(keyHash, new MapEntry(key, value));
+                if (deleted != null) {
+                    deleted = false;
+                }
+                return res;
+            });
         });
-        return result;
     }
 
     protected RFuture<Boolean> fastPutIfExistsOperationAsync(K key, V value) {
@@ -444,45 +367,33 @@ public class BaseTransactionalMap<K, V> {
     }
 
     protected RFuture<Boolean> fastPutIfExistsOperationAsync(K key, V value, MapOperation mapOperation) {
-        RPromise<Boolean> result = new RedissonPromise<>();
-        executeLocked(result, key, new Runnable() {
-            @Override
-            public void run() {
-                HashValue keyHash = toKeyHash(key);
-                MapEntry entry = state.get(keyHash);
-                if (entry != null) {
-                    operations.add(mapOperation);
-                    if (entry != MapEntry.NULL) {
-                        state.put(keyHash, new MapEntry(key, value));
-                        if (deleted != null) {
-                            deleted = false;
-                        }
-
-                        result.trySuccess(true);
-                    } else {
-                        result.trySuccess(false);
+        return executeLocked(key, () -> {
+            HashValue keyHash = toKeyHash(key);
+            MapEntry entry = state.get(keyHash);
+            if (entry != null) {
+                operations.add(mapOperation);
+                if (entry != MapEntry.NULL) {
+                    state.put(keyHash, new MapEntry(key, value));
+                    if (deleted != null) {
+                        deleted = false;
                     }
-                    return;
+
+                    return CompletableFuture.completedFuture(true);
                 }
-
-                map.getAsync(key).onComplete((res, e) -> {
-                    if (e != null) {
-                        result.tryFailure(e);
-                        return;
-                    }
-
-                    operations.add(mapOperation);
-                    if (res != null) {
-                        state.put(keyHash, new MapEntry(key, value));
-                        if (deleted != null) {
-                            deleted = false;
-                        }
-                    }
-                    result.trySuccess(true);
-                });
+                return CompletableFuture.completedFuture(false);
             }
+
+            return map.getAsync(key).thenApply(res -> {
+                operations.add(mapOperation);
+                if (res != null) {
+                    state.put(keyHash, new MapEntry(key, value));
+                    if (deleted != null) {
+                        deleted = false;
+                    }
+                }
+                return true;
+            });
         });
-        return result;
     }
 
     protected RFuture<Boolean> fastPutIfAbsentOperationAsync(K key, V value) {
@@ -491,45 +402,33 @@ public class BaseTransactionalMap<K, V> {
     }
 
     protected RFuture<Boolean> fastPutIfAbsentOperationAsync(K key, V value, MapOperation mapOperation) {
-        RPromise<Boolean> result = new RedissonPromise<Boolean>();
-        executeLocked(result, key, new Runnable() {
-            @Override
-            public void run() {
-                HashValue keyHash = toKeyHash(key);
-                MapEntry entry = state.get(keyHash);
-                if (entry != null) {
-                    operations.add(mapOperation);
-                    if (entry == MapEntry.NULL) {
-                        state.put(keyHash, new MapEntry(key, value));
-                        if (deleted != null) {
-                            deleted = false;
-                        }
-                        result.trySuccess(true);
-                    } else {
-                        result.trySuccess(false);
+        return executeLocked(key, () -> {
+            HashValue keyHash = toKeyHash(key);
+            MapEntry entry = state.get(keyHash);
+            if (entry != null) {
+                operations.add(mapOperation);
+                if (entry == MapEntry.NULL) {
+                    state.put(keyHash, new MapEntry(key, value));
+                    if (deleted != null) {
+                        deleted = false;
                     }
-                    return;
+                    return CompletableFuture.completedFuture(true);
                 }
-
-                map.getAsync(key).onComplete((res, e) -> {
-                    if (e != null) {
-                        result.tryFailure(e);
-                        return;
-                    }
-                    
-                    operations.add(mapOperation);
-                    boolean isUpdated = res == null;
-                    if (isUpdated) {
-                        state.put(keyHash, new MapEntry(key, value));
-                        if (deleted != null) {
-                            deleted = false;
-                        }
-                    }
-                    result.trySuccess(isUpdated);
-                });
+                return CompletableFuture.completedFuture(false);
             }
+
+            return map.getAsync(key).thenApply(res -> {
+                operations.add(mapOperation);
+                boolean isUpdated = res == null;
+                if (isUpdated) {
+                    state.put(keyHash, new MapEntry(key, value));
+                    if (deleted != null) {
+                        deleted = false;
+                    }
+                }
+                return isUpdated;
+            });
         });
-        return result;
     }
     
     protected RFuture<Boolean> fastPutOperationAsync(K key, V value) {
@@ -538,88 +437,63 @@ public class BaseTransactionalMap<K, V> {
     }
 
     protected RFuture<Boolean> fastPutOperationAsync(K key, V value, MapOperation operation) {
-        RPromise<Boolean> result = new RedissonPromise<Boolean>();
-        executeLocked(result, key, new Runnable() {
-            @Override
-            public void run() {
-                HashValue keyHash = toKeyHash(key);
-                MapEntry entry = state.get(keyHash);
-                if (entry != null) {
-                    operations.add(operation);
-                    state.put(keyHash, new MapEntry(key, value));
-                    if (deleted != null) {
-                        deleted = false;
-                    }
-                    
-                    if (entry == MapEntry.NULL) {
-                        result.trySuccess(true);
-                    } else {
-                        result.trySuccess(false);
-                    }
-                    return;
+        return executeLocked(key, () -> {
+            HashValue keyHash = toKeyHash(key);
+            MapEntry entry = state.get(keyHash);
+            if (entry != null) {
+                operations.add(operation);
+                state.put(keyHash, new MapEntry(key, value));
+                if (deleted != null) {
+                    deleted = false;
                 }
-                
-                map.getAsync(key).onComplete((res, e) -> {
-                    if (e != null) {
-                        result.tryFailure(e);
-                        return;
-                    }
-                    
-                    operations.add(operation);
-                    state.put(keyHash, new MapEntry(key, value));
-                    if (deleted != null) {
-                        deleted = false;
-                    }
 
-                    boolean isNew = res == null;
-                    result.trySuccess(isNew);
-                });
+                return CompletableFuture.completedFuture(entry == MapEntry.NULL);
             }
+
+            return map.getAsync(key).thenApply(res -> {
+                operations.add(operation);
+                state.put(keyHash, new MapEntry(key, value));
+                if (deleted != null) {
+                    deleted = false;
+                }
+
+                boolean isNew = res == null;
+                return isNew;
+            });
         });
-        return result;
     }
     
     @SuppressWarnings("unchecked")
     protected RFuture<Long> fastRemoveOperationAsync(K... keys) {
-        RPromise<Long> result = new RedissonPromise<Long>();
         long threadId = Thread.currentThread().getId();
-        executeLocked(result, new Runnable() {
-            @Override
-            public void run() {
-                AtomicLong counter = new AtomicLong();
-                List<K> keyList = Arrays.asList(keys);
-                for (Iterator<K> iterator = keyList.iterator(); iterator.hasNext();) {
-                    K key = iterator.next();
-                    HashValue keyHash = toKeyHash(key);
-                    MapEntry currentValue = state.get(keyHash);
-                    if (currentValue != null && currentValue != MapEntry.NULL) {
-                        operations.add(new MapFastRemoveOperation(map, key, transactionId, threadId));
-                        state.put(keyHash, MapEntry.NULL);
+        List<RLock> locks = Arrays.stream(keys).map(k -> getLock(k)).collect(Collectors.toList());
+        return executeLocked(timeout, () -> {
+            AtomicLong counter = new AtomicLong();
+            List<K> keyList = Arrays.asList(keys);
+            for (Iterator<K> iterator = keyList.iterator(); iterator.hasNext();) {
+                K key = iterator.next();
+                HashValue keyHash = toKeyHash(key);
+                MapEntry currentValue = state.get(keyHash);
+                if (currentValue != null && currentValue != MapEntry.NULL) {
+                    operations.add(new MapFastRemoveOperation(map, key, transactionId, threadId));
+                    state.put(keyHash, MapEntry.NULL);
 
-                        counter.incrementAndGet();
-                        iterator.remove();
-                    }
+                    counter.incrementAndGet();
+                    iterator.remove();
                 }
-                
-                // TODO optimize
-                map.getAllAsync(new HashSet<K>(keyList)).onComplete((res, e) -> {
-                    if (e != null) {
-                        result.tryFailure(e);
-                        return;
-                    }
-                    
-                    for (K key : res.keySet()) {
-                        HashValue keyHash = toKeyHash(key);
-                        operations.add(new MapFastRemoveOperation(map, key, transactionId, threadId));
-                        counter.incrementAndGet();
-                        state.put(keyHash, MapEntry.NULL);
-                    }
-
-                    result.trySuccess(counter.get());
-                });
             }
-        }, Arrays.asList(keys));
-        return result;
+
+            // TODO optimize
+            return map.getAllAsync(new HashSet<>(keyList)).thenApply(res -> {
+                for (K key : res.keySet()) {
+                    HashValue keyHash = toKeyHash(key);
+                    operations.add(new MapFastRemoveOperation(map, key, transactionId, threadId));
+                    counter.incrementAndGet();
+                    state.put(keyHash, MapEntry.NULL);
+                }
+                return counter.get();
+            });
+        }, locks);
     }
     
     public RFuture<Integer> valueSizeAsync(K key) {
@@ -627,11 +501,11 @@ public class BaseTransactionalMap<K, V> {
         MapEntry entry = state.get(keyHash);
         if (entry != null) {
             if (entry == MapEntry.NULL) {
-                return RedissonPromise.newSucceededFuture(null);
+                return new CompletableFutureWrapper<>((Integer) null);
             } else {
                 ByteBuf valueState = ((RedissonObject) map).encodeMapValue(entry.getValue());
                 try {
-                    return RedissonPromise.newSucceededFuture(valueState.readableBytes());
+                    return new CompletableFutureWrapper<>(valueState.readableBytes());
                 } finally {
                     valueState.release();
                 }
@@ -646,85 +520,52 @@ public class BaseTransactionalMap<K, V> {
         MapEntry entry = state.get(keyHash);
         if (entry != null) {
             if (entry == MapEntry.NULL) {
-                return RedissonPromise.newSucceededFuture(null);
+                return new CompletableFutureWrapper<>((V) null);
             } else {
-                return RedissonPromise.newSucceededFuture((V) entry.getValue());
+                return new CompletableFutureWrapper<>((V) entry.getValue());
             }
         }
         return ((RedissonMap<K, V>) map).getOperationAsync(key);
     }
 
     public RFuture<Set<K>> readAllKeySetAsync() {
-        RPromise<Set<K>> result = new RedissonPromise<Set<K>>();
         RFuture<Set<K>> future = map.readAllKeySetAsync();
-        future.onComplete((res, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
-            }
-            
-            Set<K> set = future.getNow();
-            Map<HashValue, MapEntry> newstate = new HashMap<HashValue, MapEntry>(state);
-            for (Iterator<K> iterator = set.iterator(); iterator.hasNext();) {
+        CompletionStage<Set<K>> f = future.thenApply(res -> {
+            Map<HashValue, MapEntry> newstate = new HashMap<>(state);
+            for (Iterator<K> iterator = res.iterator(); iterator.hasNext();) {
                 K key = iterator.next();
                 MapEntry value = newstate.remove(toKeyHash(key));
                 if (value == MapEntry.NULL) {
                     iterator.remove();
                 }
             }
-            
+
             for (MapEntry entry : newstate.values()) {
                 if (entry == MapEntry.NULL) {
                     continue;
                 }
-                set.add((K) entry.getKey());
+                res.add((K) entry.getKey());
             }
-            
-            result.trySuccess(set);
+            return res;
         });
-        
-        return result;
+        return new CompletableFutureWrapper<>(f);
     }
     
     public RFuture<Set<Entry<K, V>>> readAllEntrySetAsync() {
-        RPromise<Set<Entry<K, V>>> result = new RedissonPromise<Set<Entry<K, V>>>();
         RFuture<Map<K, V>> future = readAllMapAsync();
-        future.onComplete((res, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
-            }
-            
-            result.trySuccess(res.entrySet());
-        });
-        
-        return result;
+        CompletionStage<Set<Entry<K, V>>> f = future.thenApply(res -> res.entrySet());
+        return new CompletableFutureWrapper<>(f);
     }
     
     public RFuture<Collection<V>> readAllValuesAsync() {
-        RPromise<Collection<V>> result = new RedissonPromise<Collection<V>>();
         RFuture<Map<K, V>> future = readAllMapAsync();
-        future.onComplete((res, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
-            }
-            
-            result.trySuccess(res.values());
-        });
-        
-        return result;
+        CompletionStage<Collection<V>> f = future.thenApply(res -> res.values());
+        return new CompletableFutureWrapper<>(f);
     }
     
     public RFuture<Map<K, V>> readAllMapAsync() {
-        RPromise<Map<K, V>> result = new RedissonPromise<>();
         RFuture<Map<K, V>> future = map.readAllMapAsync();
-        future.onComplete((map, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
-            }
-            
+        CompletionStage<Map<K, V>> f = future.thenApply(map -> {
             Map<HashValue, MapEntry> newstate = new HashMap<>(state);
             for (Iterator<K> iterator = map.keySet().iterator(); iterator.hasNext();) {
                 K key = iterator.next();
@@ -742,17 +583,14 @@ public class BaseTransactionalMap<K, V> {
                 }
                 map.put((K) entry.getKey(), (V) entry.getValue());
             }
-            
-            result.trySuccess(map);
+            return map;
         });
-
-        return result;
+        return new CompletableFutureWrapper<>(f);
     }
     
     protected RFuture<Map<K, V>> getAllOperationAsync(Set<K> keys) {
-        RPromise<Map<K, V>> result = new RedissonPromise<>();
-        Set<K> keysToLoad = new HashSet<K>();
-        Map<K, V> map = new HashMap<K, V>();
+        Set<K> keysToLoad = new HashSet<>();
+        Map<K, V> map = new HashMap<>();
         for (K key : keys) {
             HashValue keyHash = toKeyHash(key);
             
@@ -767,99 +605,69 @@ public class BaseTransactionalMap<K, V> {
         }
 
         if (keysToLoad.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(map);
+            return new CompletableFutureWrapper<>(map);
         }
         
         RFuture<Map<K, V>> future = ((RedissonMap<K, V>) this.map).getAllOperationAsync(keysToLoad);
-        future.onComplete((res, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-                return;
-            }
-            
-            map.putAll(future.getNow());
-            result.trySuccess(map);
+        CompletionStage<Map<K, V>> f = future.thenApply(res -> {
+            map.putAll(res);
+            return map;
         });
-        
-        return result;
+        return new CompletableFutureWrapper<>(f);
     }
     
     protected RFuture<V> removeOperationAsync(K key) {
-        RPromise<V> result = new RedissonPromise<>();
         long threadId = Thread.currentThread().getId();
-        executeLocked(result, key, new Runnable() {
-            @Override
-            public void run() {
-                HashValue keyHash = toKeyHash(key);
-                MapEntry entry = state.get(keyHash);
-                if (entry != null) {
-                    operations.add(new MapRemoveOperation(map, key, transactionId, threadId));
-                    if (entry == MapEntry.NULL) {
-                        result.trySuccess(null);
-                    } else {
-                        state.put(keyHash, MapEntry.NULL);
-                        result.trySuccess((V) entry.getValue());
-                    }
-                    return;
+        return executeLocked(key, () -> {
+            HashValue keyHash = toKeyHash(key);
+            MapEntry entry = state.get(keyHash);
+            if (entry != null) {
+                operations.add(new MapRemoveOperation(map, key, transactionId, threadId));
+                if (entry == MapEntry.NULL) {
+                    return CompletableFuture.completedFuture(null);
                 }
-
-                map.getAsync(key).onComplete((res, e) -> {
-                    if (e != null) {
-                        result.tryFailure(e);
-                        return;
-                    }
-                    operations.add(new MapRemoveOperation(map, key, transactionId, threadId));
-                    if (res != null) {
-                        state.put(keyHash, MapEntry.NULL);
-                    }
-
-                    result.trySuccess(res);
-                });
+                state.put(keyHash, MapEntry.NULL);
+                return CompletableFuture.completedFuture((V) entry.getValue());
             }
+
+            return map.getAsync(key).thenApply(res -> {
+                operations.add(new MapRemoveOperation(map, key, transactionId, threadId));
+                if (res != null) {
+                    state.put(keyHash, MapEntry.NULL);
+                }
+                return res;
+            });
         });
-        return result;
     }
     
     protected RFuture<Boolean> removeOperationAsync(Object key, Object value) {
-        RPromise<Boolean> result = new RedissonPromise<>();
         long threadId = Thread.currentThread().getId();
-        executeLocked(result, (K) key, new Runnable() {
-            @Override
-            public void run() {
-                HashValue keyHash = toKeyHash(key);
-                MapEntry entry = state.get(keyHash);
-                if (entry != null) {
-                    if (entry == MapEntry.NULL) {
-                        result.trySuccess(false);
-                        return;
-                    }
-                    
-                    operations.add(new MapRemoveOperation(map, key, value, transactionId, threadId));
-                    if (isEqual(entry.getValue(), value)) {
-                        state.put(keyHash, MapEntry.NULL);
-                        result.trySuccess(true);
-                        return;
-                    }
-                    
-                    result.trySuccess(false);
-                    return;
+        return executeLocked((K) key, () -> {
+            HashValue keyHash = toKeyHash(key);
+            MapEntry entry = state.get(keyHash);
+            if (entry != null) {
+                if (entry == MapEntry.NULL) {
+                    return CompletableFuture.completedFuture(false);
                 }
-                
-                map.getAsync((K) key).onComplete((r, e) -> {
-                    if (e != null) {
-                        result.tryFailure(e);
-                        return;
-                    }
-                    operations.add(new MapRemoveOperation(map, key, value, transactionId, threadId));
-                    boolean res = isEqual(r, value);
-                    if (res) {
-                        state.put(keyHash, MapEntry.NULL);
-                    }
-                    result.trySuccess(res);
-                });
+
+                operations.add(new MapRemoveOperation(map, key, value, transactionId, threadId));
+                if (isEqual(entry.getValue(), value)) {
+                    state.put(keyHash, MapEntry.NULL);
+                    return CompletableFuture.completedFuture(true);
+                }
+
+                return CompletableFuture.completedFuture(false);
             }
+
+            return map.getAsync((K) key).thenApply(r -> {
+                operations.add(new MapRemoveOperation(map, key, value, transactionId, threadId));
+                boolean res = isEqual(r, value);
+                if (res) {
+                    state.put(keyHash, MapEntry.NULL);
+                }
+                return res;
+            });
         });
-        return result;
     }
     
     private boolean isEqual(Object value, Object oldValue) {
@@ -875,110 +683,81 @@ public class BaseTransactionalMap<K, V> {
     }
 
     protected RFuture<Void> putAllOperationAsync(Map<? extends K, ? extends V> entries) {
-        RPromise<Void> result = new RedissonPromise<>();
         long threadId = Thread.currentThread().getId();
-        executeLocked(result, new Runnable() {
-            @Override
-            public void run() {
-                for (Entry<? extends K, ? extends V> entry : entries.entrySet()) {
-                    operations.add(new MapPutOperation(map, entry.getKey(), entry.getValue(), transactionId, threadId));
-                    HashValue keyHash = toKeyHash(entry.getKey());
-                    state.put(keyHash, new MapEntry(entry.getKey(), entry.getValue()));
-                }
-                
-                if (deleted != null) {
-                    deleted = false;
-                }
-
-                result.trySuccess(null);
+        List<RLock> list = entries.keySet().stream().map(k -> getLock(k)).collect(Collectors.toList());
+        return executeLocked(timeout, () -> {
+            for (Entry<? extends K, ? extends V> entry : entries.entrySet()) {
+                operations.add(new MapPutOperation(map, entry.getKey(), entry.getValue(), transactionId, threadId));
+                HashValue keyHash = toKeyHash(entry.getKey());
+                state.put(keyHash, new MapEntry(entry.getKey(), entry.getValue()));
             }
-        }, (Collection<K>) entries.keySet());
-        return result;
+
+            if (deleted != null) {
+                deleted = false;
+            }
+
+            return CompletableFuture.completedFuture(null);
+        }, list);
     }
     
     protected RFuture<Boolean> replaceOperationAsync(K key, V oldValue, V newValue) {
-        RPromise<Boolean> result = new RedissonPromise<>();
         long threadId = Thread.currentThread().getId();
-        executeLocked(result, key, new Runnable() {
-            @Override
-            public void run() {
-                HashValue keyHash = toKeyHash(key);
-                MapEntry entry = state.get(keyHash);
-                if (entry != null) {
-                    if (entry == MapEntry.NULL) {
-                        result.trySuccess(false);
-                        return;
-                    }
-                    
-                    operations.add(new MapReplaceOperation(map, key, newValue, oldValue, transactionId, threadId));
-                    if (isEqual(entry.getValue(), oldValue)) {
-                        state.put(keyHash, new MapEntry(key, newValue));
-                        result.trySuccess(true);
-                        return;
-                    }
-                    
-                    result.trySuccess(false);
-                    return;
+        return executeLocked(key, () -> {
+            HashValue keyHash = toKeyHash(key);
+            MapEntry entry = state.get(keyHash);
+            if (entry != null) {
+                if (entry == MapEntry.NULL) {
+                    return CompletableFuture.completedFuture(false);
                 }
 
-                map.getAsync(key).onComplete((r, e) -> {
-                    if (e != null) {
-                        result.tryFailure(e);
-                        return;
-                    }
-                    
-                    operations.add(new MapReplaceOperation(map, key, newValue, oldValue, transactionId, threadId));
-                    boolean res = isEqual(r, oldValue);
-                    if (res) {
-                        state.put(keyHash, new MapEntry(key, newValue));
-                    }
-                    result.trySuccess(res);
-                });
+                operations.add(new MapReplaceOperation(map, key, newValue, oldValue, transactionId, threadId));
+                if (isEqual(entry.getValue(), oldValue)) {
+                    state.put(keyHash, new MapEntry(key, newValue));
+                    return CompletableFuture.completedFuture(true);
+                }
+
+                return CompletableFuture.completedFuture(false);
             }
+
+            return map.getAsync(key).thenApply(r -> {
+                operations.add(new MapReplaceOperation(map, key, newValue, oldValue, transactionId, threadId));
+                boolean res = isEqual(r, oldValue);
+                if (res) {
+                    state.put(keyHash, new MapEntry(key, newValue));
+                }
+                return res;
+            });
         });
-        return result;
     }
 
     protected RFuture<V> replaceOperationAsync(K key, V value) {
-        RPromise<V> result = new RedissonPromise<>();
         long threadId = Thread.currentThread().getId();
-        executeLocked(result, key, new Runnable() {
-            @Override
-            public void run() {
-                HashValue keyHash = toKeyHash(key);
-                MapEntry entry = state.get(keyHash);
-                operations.add(new MapReplaceOperation(map, key, value, transactionId, threadId));
-                if (entry != null) {
-                    if (entry == MapEntry.NULL) {
-                        result.trySuccess(null);
-                        return;
-                    }
-                    
-                    state.put(keyHash, new MapEntry(key, value));
-                    result.trySuccess((V) entry.getValue());
-                    return;
+        return executeLocked(key, () -> {
+            HashValue keyHash = toKeyHash(key);
+            MapEntry entry = state.get(keyHash);
+            operations.add(new MapReplaceOperation(map, key, value, transactionId, threadId));
+            if (entry != null) {
+                if (entry == MapEntry.NULL) {
+                    return CompletableFuture.completedFuture(null);
                 }
 
-                map.getAsync(key).onComplete((res, e) -> {
-                    if (e != null) {
-                        result.tryFailure(e);
-                        return;
-                    }
-                    
-                    operations.add(new MapReplaceOperation(map, key, value, transactionId, threadId));
-                    if (res != null) {
-                        state.put(keyHash, new MapEntry(key, value));
-                    }
-                    result.trySuccess(res);
-                });
+                state.put(keyHash, new MapEntry(key, value));
+                return CompletableFuture.completedFuture((V) entry.getValue());
             }
+
+            return map.getAsync(key).thenApply(res -> {
+                operations.add(new MapReplaceOperation(map, key, value, transactionId, threadId));
+                if (res != null) {
+                    state.put(keyHash, new MapEntry(key, value));
+                }
+                return res;
+            });
         });
-        return result;
     }
-    
-    protected <R> void executeLocked(RPromise<R> promise, K key, Runnable runnable) {
+
+    protected <R> RFuture<R> executeLocked(K key, Supplier<CompletionStage<R>> runnable) {
         RLock lock = getLock(key);
-        executeLocked(promise, runnable, lock);
+        return executeLocked(timeout, runnable, lock);
     }
 
     protected RLock getLock(K key) {
@@ -986,32 +765,60 @@ public class BaseTransactionalMap<K, V> {
         return new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
     }
 
-    protected <R> void executeLocked(RPromise<R> promise, Runnable runnable, RLock lock) {
-        lock.lockAsync(timeout, TimeUnit.MILLISECONDS).onComplete((res, e) -> {
-            if (e == null) {
-                runnable.run();
-            } else {
-                promise.tryFailure(e);
-            }
-        });
+    private boolean isExists() {
+        boolean notExists = state.values().stream().noneMatch(v -> v != MapEntry.NULL);
+        return !notExists;
     }
-    
-    protected <R> void executeLocked(RPromise<R> promise, Runnable runnable, Collection<K> keys) {
-        List<RLock> locks = new ArrayList<>(keys.size());
-        for (K key : keys) {
-            RLock lock = getLock(key);
-            locks.add(lock);
-        }
-        RedissonMultiLock multiLock = new RedissonMultiLock(locks.toArray(new RLock[locks.size()]));
-        long threadId = Thread.currentThread().getId();
-        multiLock.lockAsync(timeout, TimeUnit.MILLISECONDS).onComplete((res, e) -> {
-            if (e == null) {
-                runnable.run();
-            } else {
-                multiLock.unlockAsync(threadId);
-                promise.tryFailure(e);
+
+    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
+        long currentThreadId = Thread.currentThread().getId();
+        return executeLocked(timeout, () -> {
+            if (isExists()) {
+                operations.add(new ExpireOperation(map.getName(), null, lockName, currentThreadId, transactionId, timeToLive, timeUnit, param, keys));
+                hasExpiration = true;
+                return CompletableFuture.completedFuture(true);
             }
-        });
+
+            return isExistsAsync().thenApply(res -> {
+                operations.add(new ExpireOperation(map.getName(), null, lockName, currentThreadId, transactionId, timeToLive, timeUnit, param, keys));
+                hasExpiration = res;
+                return res;
+            });
+        }, getWriteLock());
+    }
+
+    public RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
+        long currentThreadId = Thread.currentThread().getId();
+        return executeLocked(timeout, () -> {
+            if (isExists()) {
+                operations.add(new ExpireAtOperation(map.getName(), null, lockName, currentThreadId, transactionId, timestamp, param, keys));
+                hasExpiration = true;
+                return CompletableFuture.completedFuture(true);
+            }
+
+            return isExistsAsync().thenApply(res -> {
+                operations.add(new ExpireAtOperation(map.getName(), null, lockName, currentThreadId, transactionId, timestamp, param, keys));
+                hasExpiration = res;
+                return res;
+            });
+        }, getWriteLock());
+    }
+
+    public RFuture<Boolean> clearExpireAsync() {
+        long currentThreadId = Thread.currentThread().getId();
+        return executeLocked(timeout, () -> {
+            if (hasExpiration) {
+                operations.add(new ClearExpireOperation(map.getName(), null, lockName, currentThreadId, transactionId));
+                hasExpiration = false;
+                return CompletableFuture.completedFuture(true);
+            }
+
+            return map.remainTimeToLiveAsync().thenApply(res -> {
+                operations.add(new ClearExpireOperation(map.getName(), null, lockName, currentThreadId, transactionId));
+                hasExpiration = false;
+                return res > 0;
+            });
+        }, getWriteLock());
     }
 
 }

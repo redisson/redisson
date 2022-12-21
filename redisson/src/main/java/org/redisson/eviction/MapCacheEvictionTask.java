@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,13 +72,13 @@ public class MapCacheEvictionTask extends EvictionTask {
                             + "break;"
                         + "end; "
                     + "end;"  
-                + "end;" 
-              + "if #expiredKeys1 > 0 then "
-                  + "redis.call('zrem', KEYS[5], unpack(expiredKeys1)); "
-                  + "redis.call('zrem', KEYS[3], unpack(expiredKeys1)); "
-                  + "redis.call('zrem', KEYS[2], unpack(expiredKeys1)); "
-                  + "redis.call('hdel', KEYS[1], unpack(expiredKeys1)); "
-              + "end; "
+                + "end;"
+                + "for i=1, #expiredKeys1, 5000 do "
+                    + "redis.call('zrem', KEYS[5], unpack(expiredKeys1, i, math.min(i+4999, table.getn(expiredKeys1)))); "
+                    + "redis.call('zrem', KEYS[3], unpack(expiredKeys1, i, math.min(i+4999, table.getn(expiredKeys1)))); "
+                    + "redis.call('zrem', KEYS[2], unpack(expiredKeys1, i, math.min(i+4999, table.getn(expiredKeys1)))); "
+                    + "redis.call('hdel', KEYS[1], unpack(expiredKeys1, i, math.min(i+4999, table.getn(expiredKeys1)))); "
+                + "end; "
               + "local expiredKeys2 = redis.call('zrangebyscore', KEYS[3], 0, ARGV[1], 'limit', 0, ARGV[2]); "
               + "for i, key in ipairs(expiredKeys2) do "
                   + "local v = redis.call('hget', KEYS[1], key); "
@@ -90,12 +90,12 @@ public class MapCacheEvictionTask extends EvictionTask {
                           + "break;"
                       + "end; "
                   + "end;"  
-              + "end;" 
-              + "if #expiredKeys2 > 0 then "
-                  + "redis.call('zrem', KEYS[5], unpack(expiredKeys2)); "
-                  + "redis.call('zrem', KEYS[3], unpack(expiredKeys2)); "
-                  + "redis.call('zrem', KEYS[2], unpack(expiredKeys2)); "
-                  + "redis.call('hdel', KEYS[1], unpack(expiredKeys2)); "
+              + "end;"
+              + "for i=1, #expiredKeys2, 5000 do "
+                  + "redis.call('zrem', KEYS[5], unpack(expiredKeys2, i, math.min(i+4999, table.getn(expiredKeys2)))); "
+                  + "redis.call('zrem', KEYS[3], unpack(expiredKeys2, i, math.min(i+4999, table.getn(expiredKeys2)))); "
+                  + "redis.call('zrem', KEYS[2], unpack(expiredKeys2, i, math.min(i+4999, table.getn(expiredKeys2)))); "
+                  + "redis.call('hdel', KEYS[1], unpack(expiredKeys2, i, math.min(i+4999, table.getn(expiredKeys2)))); "
               + "end; "
               + "return #expiredKeys1 + #expiredKeys2;",
               Arrays.<Object>asList(name, timeoutSetName, maxIdleSetName, expiredChannelName, lastAccessTimeSetName, executeTaskOnceLatchName), 

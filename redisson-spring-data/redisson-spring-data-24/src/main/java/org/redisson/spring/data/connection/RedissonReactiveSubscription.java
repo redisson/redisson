@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,12 @@
  */
 package org.redisson.spring.data.connection;
 
-import org.redisson.api.RFuture;
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.ChannelName;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.connection.ConnectionManager;
-import org.redisson.misc.CountableListener;
-import org.redisson.misc.RedissonPromise;
 import org.redisson.pubsub.PubSubConnectionEntry;
 import org.redisson.pubsub.PublishSubscribeService;
 import org.springframework.data.redis.connection.ReactiveSubscription;
@@ -32,10 +29,9 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.nio.ByteBuffer;
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -98,19 +94,19 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
     public Mono<Void> subscribe(ByteBuffer... channels) {
         monosListener.acquire();
         return Mono.defer(() -> {
-            RedissonPromise<Void> result = new RedissonPromise<>();
-            result.onComplete((r, ex) -> {
-                monosListener.release();
-            });
-            CountableListener<Void> listener = new CountableListener<>(result, null, channels.length);
+            List<CompletableFuture<?>> futures = new ArrayList<>();
             for (ByteBuffer channel : channels) {
                 ChannelName cn = toChannelName(channel);
-                RFuture<PubSubConnectionEntry> f = subscribeService.subscribe(ByteArrayCodec.INSTANCE, cn);
-                f.onComplete((res, e) -> RedissonReactiveSubscription.this.channels.put(cn, res));
-                f.onComplete(listener);
+                CompletableFuture<PubSubConnectionEntry> f = subscribeService.subscribe(ByteArrayCodec.INSTANCE, cn);
+                f = f.whenComplete((res, e) -> RedissonReactiveSubscription.this.channels.put(cn, res));
+                futures.add(f);
             }
 
-            return Mono.fromFuture(result);
+            CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+            future = future.whenComplete((r, e) -> {
+                monosListener.release();
+            });
+            return Mono.fromFuture(future);
         });
     }
 
@@ -122,18 +118,19 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
     public Mono<Void> pSubscribe(ByteBuffer... patterns) {
         monosListener.acquire();
         return Mono.defer(() -> {
-            RedissonPromise<Void> result = new RedissonPromise<>();
-            result.onComplete((r, ex) -> {
-                monosListener.release();
-            });
-            CountableListener<Void> listener = new CountableListener<>(result, null, patterns.length);
+            List<CompletableFuture<?>> futures = new ArrayList<>();
             for (ByteBuffer channel : patterns) {
                 ChannelName cn = toChannelName(channel);
-                RFuture<Collection<PubSubConnectionEntry>> f = subscribeService.psubscribe(cn, ByteArrayCodec.INSTANCE);
-                f.onComplete((res, e) -> RedissonReactiveSubscription.this.patterns.put(cn, res));
-                f.onComplete(listener);
+                CompletableFuture<Collection<PubSubConnectionEntry>> f = subscribeService.psubscribe(cn, ByteArrayCodec.INSTANCE);
+                f = f.whenComplete((res, e) -> RedissonReactiveSubscription.this.patterns.put(cn, res));
+                futures.add(f);
             }
-            return Mono.fromFuture(result);
+
+            CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+            future = future.whenComplete((r, e) -> {
+                monosListener.release();
+            });
+            return Mono.fromFuture(future);
         });
     }
 
@@ -146,15 +143,11 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
     public Mono<Void> unsubscribe(ByteBuffer... channels) {
         monosListener.acquire();
         return Mono.defer(() -> {
-            RedissonPromise<Void> result = new RedissonPromise<>();
-            result.onComplete((r, ex) -> {
-                monosListener.release();
-            });
-            CountableListener<Void> listener = new CountableListener<>(result, null, channels.length);
+            List<CompletableFuture<?>> futures = new ArrayList<>(channels.length);
             for (ByteBuffer channel : channels) {
                 ChannelName cn = toChannelName(channel);
-                RFuture<Codec> f = subscribeService.unsubscribe(cn, PubSubType.UNSUBSCRIBE);
-                f.onComplete((res, e) -> {
+                CompletableFuture<Codec> f = subscribeService.unsubscribe(cn, PubSubType.UNSUBSCRIBE);
+                f = f.whenComplete((res, e) -> {
                     synchronized (RedissonReactiveSubscription.this.channels) {
                         PubSubConnectionEntry entry = RedissonReactiveSubscription.this.channels.get(cn);
                         if (!entry.hasListeners(cn)) {
@@ -162,9 +155,14 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
                         }
                     }
                 });
-                f.onComplete(listener);
+                futures.add(f);
             }
-            return Mono.fromFuture(result);
+
+            CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+            future = future.whenComplete((r, e) -> {
+                monosListener.release();
+            });
+            return Mono.fromFuture(future);
         });
     }
 
@@ -177,15 +175,11 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
     public Mono<Void> pUnsubscribe(ByteBuffer... patterns) {
         monosListener.acquire();
         return Mono.defer(() -> {
-            RedissonPromise<Void> result = new RedissonPromise<>();
-            result.onComplete((r, ex) -> {
-                monosListener.release();
-            });
-            CountableListener<Void> listener = new CountableListener<>(result, null, patterns.length);
+            List<CompletableFuture<?>> futures = new ArrayList<>(patterns.length);
             for (ByteBuffer channel : patterns) {
                 ChannelName cn = toChannelName(channel);
-                RFuture<Codec> f = subscribeService.unsubscribe(cn, PubSubType.PUNSUBSCRIBE);
-                f.onComplete((res, e) -> {
+                CompletableFuture<Codec> f = subscribeService.unsubscribe(cn, PubSubType.PUNSUBSCRIBE);
+                f = f.whenComplete((res, e) -> {
                     synchronized (RedissonReactiveSubscription.this.patterns) {
                         Collection<PubSubConnectionEntry> entries = RedissonReactiveSubscription.this.patterns.get(cn);
                         entries.stream()
@@ -193,9 +187,14 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
                                 .forEach(ee -> RedissonReactiveSubscription.this.patterns.remove(cn));
                     }
                 });
-                f.onComplete(listener);
+                futures.add(f);
             }
-            return Mono.fromFuture(result);
+
+            CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+            future = future.whenComplete((r, e) -> {
+                monosListener.release();
+            });
+            return Mono.fromFuture(future);
         });
     }
 

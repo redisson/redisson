@@ -57,13 +57,31 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         }
 
     }
-    
+
+    public static class MyClass {
+
+        private String value;
+
+        public MyClass(String value) {
+            this.value = value;
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public void setValue(String value) {
+            this.value = value;
+        }
+    }
+
     @REntity
     public static class TestREntity implements Comparable<TestREntity>, Serializable {
 
         @RId
         private String name;
         private String value;
+        private transient MyClass myClass;
 
         protected TestREntity() {
         }
@@ -76,6 +94,14 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
             super();
             this.name = name;
             this.value = value;
+        }
+
+        public MyClass getMyClass() {
+            return myClass;
+        }
+
+        public void setMyClass(MyClass myClass) {
+            this.myClass = myClass;
         }
 
         public String getName() {
@@ -372,8 +398,6 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         List<TestIndexed> s = liveObjectService.persist(item1, item2);
         assertThat(s.get(0).getId()).isEqualTo(item1.getId());
         assertThat(s.get(1).getId()).isEqualTo(item2.getId());
-
-        redisson.shutdown();
     }
 
     @Test
@@ -830,6 +854,20 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         Collection<TestIndexed> objects8 = s.find(TestIndexed.class, Conditions.and(Conditions.in("name1", "test31", "test30"),
                 Conditions.eq("bool1", true)));
         assertThat(objects8).isEmpty();
+    }
+
+    @Test
+    public void testTransient() {
+        RLiveObjectService s = redisson.getLiveObjectService();
+        TestREntity t = new TestREntity("1");
+        t = s.persist(t);
+
+        DefaultNamingScheme scheme = new DefaultNamingScheme(redisson.getConfig().getCodec());
+
+        t.setMyClass(new MyClass("111"));
+        assertEquals("111", t.getMyClass().getValue());
+
+        assertThat(redisson.getMap(scheme.getName(TestREntity.class, "3333")).get("myClass")).isNull();
     }
 
     @Test
@@ -1665,7 +1703,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         myObject = service.persist(myObject);
         myObject.setValue("123345");
         assertTrue(service.asLiveObject(myObject).isExists());
-        service.asRMap(myObject).expire(1, TimeUnit.SECONDS);
+        service.asRMap(myObject).expire(Duration.ofSeconds(1));
         Thread.sleep(2000);
         assertFalse(service.asLiveObject(myObject).isExists());
     }

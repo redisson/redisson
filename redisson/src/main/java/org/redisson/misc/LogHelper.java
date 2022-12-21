@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,13 @@
  */
 package org.redisson.misc;
 
-import java.lang.reflect.Array;
-import java.util.Collection;
-
+import io.netty.buffer.ByteBuf;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 
-import io.netty.buffer.ByteBuf;
+import java.lang.reflect.Array;
+import java.util.Collection;
 
 /**
  * @author Philipp Marx
@@ -30,7 +29,7 @@ import io.netty.buffer.ByteBuf;
 public final class LogHelper {
 
     private static final int MAX_COLLECTION_LOG_SIZE = Integer.valueOf(System.getProperty("redisson.maxCollectionLogSize", "10"));
-    private static final int MAX_STRING_LOG_SIZE = Integer.valueOf(System.getProperty("redisson.maxStringLogSize", "100"));
+    private static final int MAX_STRING_LOG_SIZE = Integer.valueOf(System.getProperty("redisson.maxStringLogSize", "1000"));
 //    private static final int MAX_BYTEBUF_LOG_SIZE = Integer.valueOf(System.getProperty("redisson.maxByteBufLogSize", "1000"));
 
     private LogHelper() {

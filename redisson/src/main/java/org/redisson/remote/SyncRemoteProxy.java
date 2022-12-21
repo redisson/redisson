@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +15,18 @@
  */
 package org.redisson.remote;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentMap;
-
 import org.redisson.RedissonBucket;
-import org.redisson.api.RFuture;
 import org.redisson.api.RemoteInvocationOptions;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.executor.RemotePromise;
-import org.redisson.misc.RPromise;
+
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.util.Optional;
+import java.util.concurrent.*;
 
 /**
  * 
@@ -45,37 +43,35 @@ public class SyncRemoteProxy extends BaseRemoteProxy {
     public <T> T create(Class<T> remoteInterface, RemoteInvocationOptions options) {
         // local copy of the options, to prevent mutation
         RemoteInvocationOptions optionsCopy = new RemoteInvocationOptions(options);
-        String toString = getClass().getSimpleName() + "-" + remoteInterface.getSimpleName() + "-proxy-"
-                + remoteService.generateRequestId();
         InvocationHandler handler = new InvocationHandler() {
             @Override
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
                 if (method.getName().equals("toString")) {
-                    return toString;
+                    return proxy.getClass().getName() + "-" + remoteInterface.getName();
                 } else if (method.getName().equals("equals")) {
                     return proxy == args[0];
                 } else if (method.getName().equals("hashCode")) {
-                    return toString.hashCode();
+                    return (proxy.getClass().getName() + "-" + remoteInterface.getName()).hashCode();
                 }
 
                 if (!optionsCopy.isResultExpected()
-                        && !(method.getReturnType().equals(Void.class) || method.getReturnType().equals(Void.TYPE)))
+                        && !(method.getReturnType().equals(Void.class) || method.getReturnType().equals(Void.TYPE))) {
                     throw new IllegalArgumentException("The noResult option only supports void return value");
+                }
 
-                RequestId requestId = remoteService.generateRequestId();
-
+                String requestId = remoteService.generateRequestId(args);
                 String requestQueueName = getRequestQueueName(remoteInterface);
-                RemoteServiceRequest request = new RemoteServiceRequest(executorId, requestId.toString(), method.getName(), 
+                RemoteServiceRequest request = new RemoteServiceRequest(executorId, requestId, method.getName(),
                                                         remoteService.getMethodSignature(method), args, optionsCopy, System.currentTimeMillis());
                 
-                final RFuture<RemoteServiceAck> ackFuture;
+                CompletableFuture<RemoteServiceAck> ackFuture;
                 if (optionsCopy.isAckExpected()) {
                     ackFuture = pollResponse(optionsCopy.getAckTimeoutInMillis(), requestId, false);
                 } else {
                     ackFuture = null;
                 }
-                
-                final RPromise<RRemoteServiceResponse> responseFuture;
+
+                CompletableFuture<RRemoteServiceResponse> responseFuture;
                 if (optionsCopy.isResultExpected()) {
                     long timeout = remoteService.getTimeout(optionsCopy.getExecutionTimeoutInMillis(), request);
                     responseFuture = pollResponse(timeout, requestId, false);
@@ -84,19 +80,21 @@ public class SyncRemoteProxy extends BaseRemoteProxy {
                 }
                 
                 RemotePromise<Object> addPromise = new RemotePromise<Object>(requestId);
-                RFuture<Boolean> futureAdd = remoteService.addAsync(requestQueueName, request, addPromise);
-                futureAdd.await();
-                if (!futureAdd.isSuccess()) {
+                CompletableFuture<Boolean> futureAdd = remoteService.addAsync(requestQueueName, request, addPromise);
+                Boolean res;
+                try {
+                    res = futureAdd.join();
+                } catch (Exception e) {
                     if (responseFuture != null) {
                         responseFuture.cancel(false);
                     }
                     if (ackFuture != null) {
                         ackFuture.cancel(false);
                     }
-                    throw futureAdd.cause();
+                    throw e.getCause();
                 }
-                
-                if (!futureAdd.get()) {
+
+                if (!res) {
                     if (responseFuture != null) {
                         responseFuture.cancel(false);
                     }
@@ -109,13 +107,20 @@ public class SyncRemoteProxy extends BaseRemoteProxy {
                 // poll for the ack only if expected
                 if (ackFuture != null) {
                     String ackName = remoteService.getAckName(requestId);
-                    ackFuture.await(optionsCopy.getAckTimeoutInMillis());
-                    RemoteServiceAck ack = ackFuture.getNow();
+                    RemoteServiceAck ack = null;
+                    try {
+                        ack = ackFuture.toCompletableFuture().get(optionsCopy.getAckTimeoutInMillis(), TimeUnit.MILLISECONDS);
+                    } catch (ExecutionException | TimeoutException e) {
+                        // skip
+                    }
                     if (ack == null) {
-                        RFuture<RemoteServiceAck> ackFutureAttempt = 
+                        CompletionStage<RemoteServiceAck> ackFutureAttempt =
                                 tryPollAckAgainAsync(optionsCopy, ackName, requestId);
-                        ackFutureAttempt.await(optionsCopy.getAckTimeoutInMillis());
-                        ack = ackFutureAttempt.getNow();
+                        try {
+                            ack = ackFutureAttempt.toCompletableFuture().get(optionsCopy.getAckTimeoutInMillis(), TimeUnit.MILLISECONDS);
+                        } catch (ExecutionException | TimeoutException e) {
+                            // skip
+                        }
                         if (ack == null) {
                             throw new RemoteServiceAckTimeoutException("No ACK response after "
                                     + optionsCopy.getAckTimeoutInMillis() + "ms for request: " + request);
@@ -126,8 +131,12 @@ public class SyncRemoteProxy extends BaseRemoteProxy {
 
                 // poll for the response only if expected
                 if (responseFuture != null) {
-                    responseFuture.awaitUninterruptibly();
-                    RemoteServiceResponse response = (RemoteServiceResponse) responseFuture.getNow();
+                    RemoteServiceResponse response = null;
+                    try {
+                        response = (RemoteServiceResponse) responseFuture.toCompletableFuture().join();
+                    } catch (Exception e) {
+                        // skip
+                    }
                     if (response == null) {
                         throw new RemoteServiceTimeoutException("No response after "
                                 + optionsCopy.getExecutionTimeoutInMillis() + "ms for request: " + request);

@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-parent</artifactId>
-        <version>3.16.4-SNAPSHOT</version>
+        <version>3.19.1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
@@ -73,22 +73,22 @@
         <dependency>
             <groupId>javax.cache</groupId>
             <artifactId>cache-api</artifactId>
-            <version>1.0.0</version>
+            <version>1.1.1</version>
         </dependency>
         <dependency>
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-core</artifactId>
-            <version>3.4.4</version>
+            <version>3.4.24</version>
         </dependency>
         <dependency>
             <groupId>org.reactivestreams</groupId>
             <artifactId>reactive-streams</artifactId>
-            <version>1.0.3</version>
+            <version>1.0.4</version>
         </dependency>
         <dependency>
             <groupId>io.reactivex.rxjava3</groupId>
             <artifactId>rxjava</artifactId>
-            <version>3.0.12</version>
+            <version>3.1.5</version>
         </dependency>
 
         <dependency>
@@ -130,25 +130,25 @@
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-core</artifactId>
-            <version>8.5.63</version>
+            <version>10.1.2</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-jasper</artifactId>
-            <version>8.5.51</version>
+            <version>10.1.2</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat</groupId>
             <artifactId>tomcat-jasper</artifactId>
-            <version>8.5.51</version>
+            <version>10.1.2</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>fluent-hc</artifactId>
-            <version>4.5.11</version>
+            <version>4.5.13</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -187,23 +187,31 @@
             <groupId>org.jboss.marshalling</groupId>
             <artifactId>jboss-marshalling</artifactId>
             <version>2.0.11.Final</version>
+<!--
+            <scope>provided</scope>
+            <optional>true</optional>
+-->
         </dependency>
         <dependency>
             <groupId>org.jboss.marshalling</groupId>
             <artifactId>jboss-marshalling-river</artifactId>
             <version>2.0.11.Final</version>
+<!--
+            <scope>provided</scope>
+            <optional>true</optional>
+-->
         </dependency>
         <dependency>
             <groupId>org.msgpack</groupId>
             <artifactId>jackson-dataformat-msgpack</artifactId>
-            <version>0.8.16</version>
+            <version>0.9.1</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.xerial.snappy</groupId>
             <artifactId>snappy-java</artifactId>
-            <version>1.1.7.7</version>
+            <version>1.1.8.4</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
@@ -213,18 +221,22 @@
             <version>2.57</version>
             <scope>provided</scope>
             <optional>true</optional>
+            <exclusions>
+              <exclusion>
+                 <groupId>org.objenesis</groupId>
+                 <artifactId>objenesis</artifactId>
+              </exclusion>
+            </exclusions> 
         </dependency>
         <dependency>
             <groupId>com.esotericsoftware</groupId>
             <artifactId>kryo</artifactId>
-            <version>5.0.3</version>
-            <scope>provided</scope>
-            <optional>true</optional>
+            <version>5.3.0</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>1.7.30</version>
+            <version>1.7.36</version>
         </dependency>
 
         <dependency>
@@ -246,7 +258,7 @@
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
-            <version>2.9.0</version>
+            <version>3.1.1</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
@@ -282,7 +294,12 @@
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
-            <version>1.11.0</version>
+            <version>1.12.18</version>
+        </dependency>
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>1.33</version>
         </dependency>
         <dependency>
             <groupId>org.jodd</groupId>
@@ -358,18 +375,18 @@
         <dependency>
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-test</artifactId>
-            <version>3.2.3.RELEASE</version>
+            <version>3.4.13</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
-
+<!--
             <plugin>
               <groupId>com.github.spotbugs</groupId>
               <artifactId>spotbugs-maven-plugin</artifactId>
-              <version>3.1.12.2</version>
+              <version>4.5.0.0</version>
                 <executions>
                     <execution>
                         <phase>verify</phase>
@@ -378,16 +395,8 @@
                         </goals>
                     </execution>
                 </executions>
-              <dependencies>
-                <!-- overwrite dependency on spotbugs if you want to specify the version of spotbugs -->
-                <dependency>
-                  <groupId>com.github.spotbugs</groupId>
-                  <artifactId>spotbugs</artifactId>
-                  <version>4.1.1</version>
-                </dependency>
-              </dependencies>
             </plugin>
-
+-->
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
             </plugin>
@@ -439,7 +448,7 @@
                     <dependency>
                        <groupId>com.puppycrawl.tools</groupId>
                        <artifactId>checkstyle</artifactId>
-                       <version>[8.18,)</version>
+                       <version>10.3</version>
                   </dependency>
                 </dependencies>
             </plugin>

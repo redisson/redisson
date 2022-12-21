@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,9 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class CommandPubSubDecoder extends CommandDecoder {
 
-    private static final Set<String> MESSAGES = new HashSet<String>(Arrays.asList("subscribe", "psubscribe", "punsubscribe", "unsubscribe"));
+    private static final Set<String> UNSUBSCRIBE_COMMANDS = new HashSet<>(Arrays.asList(RedisCommands.PUNSUBSCRIBE.getName(), RedisCommands.UNSUBSCRIBE.getName(), RedisCommands.SUNSUBSCRIBE.getName()));
+    private static final Set<String> SUBSCRIBE_COMMANDS = new HashSet<>(Arrays.asList(RedisCommands.PSUBSCRIBE.getName(), RedisCommands.SUBSCRIBE.getName(), RedisCommands.SSUBSCRIBE.getName()));
+    private static final Set<String> MESSAGES = new HashSet<String>(Arrays.asList("subscribe", "psubscribe", "punsubscribe", "unsubscribe", "ssubscribe", "sunsubscribe"));
     // It is not needed to use concurrent map because responses are coming consecutive
     private final Map<ChannelName, PubSubEntry> entries = new HashMap<>();
     private final Map<PubSubKey, CommandData<Object, Object>> commands = new ConcurrentHashMap<>();
@@ -63,7 +65,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
     }
 
     @Override
-    protected QueueCommand getCommand(ChannelHandlerContext ctx) {
+    protected QueueCommandHolder getCommand(ChannelHandlerContext ctx) {
         return ctx.channel().attr(CommandsQueuePubSub.CURRENT_COMMAND).get();
     }
 
@@ -85,7 +87,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
                 }
                 sendNext(channel);
             } catch (Exception e) {
-                log.error("Unable to decode data. channel: " + channel + ", reply: " + LogHelper.toString(in), e);
+                log.error("Unable to decode data. channel: {}, reply: {}", channel, LogHelper.toString(in), e);
                 sendNext(channel);
                 throw e;
             }
@@ -97,7 +99,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
                 }
                 sendNext(channel, data);
             } catch (Exception e) {
-                log.error("Unable to decode data. channel: " + channel + ", reply: " + LogHelper.toString(in), e);
+                log.error("Unable to decode data. channel: {}, reply: {}", channel, LogHelper.toString(in), e);
                 cmd.tryFailure(e);
                 sendNext(channel);
                 throw e;
@@ -125,12 +127,12 @@ public class CommandPubSubDecoder extends CommandDecoder {
                 String operation = ((PubSubStatusMessage) result).getType().name().toLowerCase();
                 PubSubKey key = new PubSubKey(channelName, operation);
                 CommandData<Object, Object> d = commands.get(key);
-                if (Arrays.asList(RedisCommands.PSUBSCRIBE.getName(), RedisCommands.SUBSCRIBE.getName()).contains(d.getCommand().getName())) {
+                if (SUBSCRIBE_COMMANDS.contains(d.getCommand().getName())) {
                     commands.remove(key);
                     entries.put(channelName, new PubSubEntry(d.getMessageDecoder()));
                 }
                 
-                if (Arrays.asList(RedisCommands.PUNSUBSCRIBE.getName(), RedisCommands.UNSUBSCRIBE.getName()).contains(d.getCommand().getName())) {
+                if (UNSUBSCRIBE_COMMANDS.contains(d.getCommand().getName())) {
                     commands.remove(key);
                     if (result instanceof PubSubPatternMessage) {
                         channelName = ((PubSubPatternMessage) result).getPattern();

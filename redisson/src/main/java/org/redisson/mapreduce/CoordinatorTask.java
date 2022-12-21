@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,6 @@
  */
 package org.redisson.mapreduce;
 
-import java.io.Serializable;
-import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 import org.redisson.Redisson;
 import org.redisson.api.RExecutorService;
 import org.redisson.api.RFuture;
@@ -32,6 +24,10 @@ import org.redisson.api.annotation.RInject;
 import org.redisson.api.mapreduce.RCollator;
 import org.redisson.api.mapreduce.RReducer;
 import org.redisson.client.codec.Codec;
+
+import java.io.Serializable;
+import java.util.UUID;
+import java.util.concurrent.*;
 
 /**
  * 
@@ -105,22 +101,30 @@ public class CoordinatorTask<KOut, VOut> implements Callable<Object>, Serializab
         mapperTask.addObjectName(objectName);
         RFuture<?> mapperFuture = executor.submitAsync(mapperTask);
         try {
-            if (timeout > 0 && !mapperFuture.await(timeout - timeSpent)) {
-                mapperFuture.cancel(true);
-                throw new MapReduceTimeoutException();
+            if (timeout > 0) {
+                try {
+                    mapperFuture.toCompletableFuture().get(timeout - timeSpent, TimeUnit.MILLISECONDS);
+                } catch (ExecutionException | CancellationException | TimeoutException e) {
+                    mapperFuture.cancel(true);
+                    throw new MapReduceTimeoutException();
+                }
             }
             if (timeout == 0) {
-                mapperFuture.await();
+                try {
+                    mapperFuture.toCompletableFuture().join();
+                } catch (CompletionException | CancellationException e) {
+                    // skip
+                }
             }
         } catch (InterruptedException e) {
             mapperFuture.cancel(true);
             return null;
         }
 
-        SubTasksExecutor reduceExecutor = new SubTasksExecutor(executor, workersAmount, startTime, timeout);
+        SubTasksExecutor reduceExecutor = new SubTasksExecutor(executor, startTime, timeout);
         for (int i = 0; i < workersAmount; i++) {
             String name = collectorMapName + ":" + i;
-            Runnable runnable = new ReducerTask<KOut, VOut>(name, reducer, objectCodecClass, resultMapName, timeout - timeSpent);
+            Runnable runnable = new ReducerTask<>(name, reducer, objectCodecClass, resultMapName, timeout - timeSpent);
             reduceExecutor.submit(runnable);
         }
 

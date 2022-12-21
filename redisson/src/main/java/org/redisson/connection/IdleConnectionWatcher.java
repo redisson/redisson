@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,9 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.redisson.client.RedisConnection;
+import org.redisson.client.RedisPubSubConnection;
 import org.redisson.config.MasterSlaveServersConfig;
-import org.redisson.pubsub.AsyncSemaphore;
+import org.redisson.misc.AsyncSemaphore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,6 +72,14 @@ public class IdleConnectionWatcher {
 
                 for (RedisConnection c : entry.connections) {
                     long timeInPool = TimeUnit.NANOSECONDS.toMillis(currTime - c.getLastUsageTime());
+
+                    if (c instanceof RedisPubSubConnection
+                            && (!((RedisPubSubConnection) c).getChannels().isEmpty()
+                                    || !((RedisPubSubConnection) c).getPatternChannels().isEmpty()
+                                        || !((RedisPubSubConnection) c).getShardedChannels().isEmpty())) {
+                        continue;
+                    }
+
                     if (timeInPool > config.getIdleConnectionTimeout()
                             && validateAmount(entry)
                                 && entry.deleteHandler.apply(c)) {

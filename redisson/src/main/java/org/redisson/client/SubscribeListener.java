@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,9 @@
  */
 package org.redisson.client;
 
-import org.redisson.api.RFuture;
 import org.redisson.client.protocol.pubsub.PubSubType;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
+
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 
@@ -27,7 +26,7 @@ import org.redisson.misc.RedissonPromise;
  */
 public class SubscribeListener extends BaseRedisPubSubListener {
 
-    private final RPromise<Void> promise = new RedissonPromise<>();
+    private final CompletableFuture<Void> promise = new CompletableFuture<>();
     private final ChannelName name;
     private final PubSubType type;
 
@@ -40,12 +39,12 @@ public class SubscribeListener extends BaseRedisPubSubListener {
     @Override
     public boolean onStatus(PubSubType type, CharSequence channel) {
         if (name.equals(channel) && this.type.equals(type)) {
-            promise.trySuccess(null);
+            promise.complete(null);
         }
         return true;
     }
 
-    public RFuture<Void> getSuccessFuture() {
+    public CompletableFuture<Void> getSuccessFuture() {
         return promise;
     }
     

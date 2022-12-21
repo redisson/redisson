@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -114,8 +114,9 @@ public class RedissonAutoConfiguration {
     @Bean(destroyMethod = "shutdown")
     @ConditionalOnMissingBean(RedissonClient.class)
     public RedissonClient redisson() throws IOException {
-        Config config = null;
+        Config config;
         Method clusterMethod = ReflectionUtils.findMethod(RedisProperties.class, "getCluster");
+        Method usernameMethod = ReflectionUtils.findMethod(RedisProperties.class, "getUsername");
         Method timeoutMethod = ReflectionUtils.findMethod(RedisProperties.class, "getTimeout");
         Object timeoutValue = ReflectionUtils.invokeMethod(timeoutMethod, redisProperties);
         int timeout;
@@ -128,6 +129,11 @@ public class RedissonAutoConfiguration {
             timeout = (Integer)timeoutValue;
         }
 
+        String username = null;
+        if (usernameMethod != null) {
+            username = (String) ReflectionUtils.invokeMethod(usernameMethod, redisProperties);
+        }
+
         if (redissonProperties.getConfig() != null) {
             try {
                 config = Config.fromYAML(redissonProperties.getConfig());
@@ -135,6 +141,7 @@ public class RedissonAutoConfiguration {
                 try {
                     config = Config.fromJSON(redissonProperties.getConfig());
                 } catch (IOException e1) {
+                    e1.addSuppressed(e);
                     throw new IllegalArgumentException("Can't parse config", e1);
                 }
             }
@@ -148,6 +155,7 @@ public class RedissonAutoConfiguration {
                     InputStream is = getConfigStream();
                     config = Config.fromJSON(is);
                 } catch (IOException e1) {
+                    e1.addSuppressed(e);
                     throw new IllegalArgumentException("Can't parse config", e1);
                 }
             }
@@ -168,6 +176,7 @@ public class RedissonAutoConfiguration {
                 .addSentinelAddress(nodes)
                 .setDatabase(redisProperties.getDatabase())
                 .setConnectTimeout(timeout)
+                .setUsername(username)
                 .setPassword(redisProperties.getPassword());
         } else if (clusterMethod != null && ReflectionUtils.invokeMethod(clusterMethod, redisProperties) != null) {
             Object clusterObject = ReflectionUtils.invokeMethod(clusterMethod, redisProperties);
@@ -180,6 +189,7 @@ public class RedissonAutoConfiguration {
             config.useClusterServers()
                 .addNodeAddress(nodes)
                 .setConnectTimeout(timeout)
+                .setUsername(username)
                 .setPassword(redisProperties.getPassword());
         } else {
             config = new Config();
@@ -193,6 +203,7 @@ public class RedissonAutoConfiguration {
                 .setAddress(prefix + redisProperties.getHost() + ":" + redisProperties.getPort())
                 .setConnectTimeout(timeout)
                 .setDatabase(redisProperties.getDatabase())
+                .setUsername(username)
                 .setPassword(redisProperties.getPassword());
         }
         if (redissonAutoConfigurationCustomizers != null) {

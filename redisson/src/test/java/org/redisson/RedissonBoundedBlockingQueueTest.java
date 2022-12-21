@@ -10,6 +10,7 @@ import org.redisson.client.RedisException;
 import org.redisson.config.Config;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -227,8 +228,13 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         final RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("bounded-queue:pollTimeout");
         assertThat(queue1.trySetCapacity(5)).isTrue();
         RFuture<Integer> f = queue1.pollAsync(5, TimeUnit.SECONDS);
-        
-        Assertions.assertFalse(f.await(1, TimeUnit.SECONDS));
+
+        try {
+            f.toCompletableFuture().get(1, TimeUnit.SECONDS);
+            Assertions.fail();
+        } catch (TimeoutException e) {
+            // skip
+        }
         runner.stop();
 
         long start = System.currentTimeMillis();
@@ -308,7 +314,11 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         
         RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("queue:pollany");
         RFuture<Integer> f = queue1.pollAsync(10, TimeUnit.SECONDS);
-        f.await(1, TimeUnit.SECONDS);
+        try {
+            f.toCompletableFuture().get(1, TimeUnit.SECONDS);
+        } catch (ExecutionException | TimeoutException e) {
+            // skip
+        }
         runner.stop();
 
         runner = new RedisRunner()
@@ -349,7 +359,11 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("testTakeReattach");
         assertThat(queue1.trySetCapacity(15)).isTrue();
         RFuture<Integer> f = queue1.takeAsync();
-        f.await(1, TimeUnit.SECONDS);
+        try {
+            f.toCompletableFuture().get(1, TimeUnit.SECONDS);
+        } catch (ExecutionException | TimeoutException e) {
+            // skip
+        }
         runner.stop();
 
         runner = new RedisRunner()
@@ -702,7 +716,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
                 q.trySetCapacity(10);
                 q.add(value);
                 System.out.println("Message added to [" + i + "]");
-                q.expire(1, TimeUnit.MINUTES);
+                q.expire(Duration.ofSeconds(1));
                 System.out.println("Expiry set to [" + i + "]");
                 String poll = q.poll(1, TimeUnit.SECONDS);
                 System.out.println("Message polled from [" + i + "]" + poll);
@@ -720,7 +734,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         queue.add(1);
         queue.add(2);
 
-        queue.expire(100, TimeUnit.MILLISECONDS);
+        queue.expire(Duration.ofMillis(100));
 
         Thread.sleep(500);
 

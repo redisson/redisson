@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package org.redisson;
 
 import org.redisson.api.*;
 import org.redisson.client.codec.Codec;
+import org.redisson.codec.JsonCodec;
 import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
@@ -26,6 +27,7 @@ import org.redisson.reactive.*;
 import org.redisson.remote.ResponseEntry;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -155,6 +157,20 @@ public class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
+    public RFencedLockReactive getFencedLock(String name) {
+        RedissonFencedLock lock = new RedissonFencedLock(commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, lock, RFencedLockReactive.class);
+    }
+
+    @Override
+    public RLockReactive getMultiLock(RLockReactive... locks) {
+        RLock[] ls = Arrays.stream(locks)
+                            .map(l -> new RedissonLock(commandExecutor, l.getName()))
+                            .toArray(RLock[]::new);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonMultiLock(ls), RLockReactive.class);
+    }
+
+    @Override
     public RLockReactive getMultiLock(RLock... locks) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonMultiLock(locks), RLockReactive.class);
     }
@@ -218,6 +234,11 @@ public class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
+    public <V> RJsonBucketReactive<V> getJsonBucket(String name, JsonCodec<V> codec) {
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonJsonBucket<V>(codec, commandExecutor, name), RJsonBucketReactive.class);
+    }
+
+    @Override
     public <V> RHyperLogLogReactive<V> getHyperLogLog(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonHyperLogLog<V>(commandExecutor, name), RHyperLogLogReactive.class);
     }
@@ -269,6 +290,34 @@ public class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
+    public <K, V> RListMultimapCacheReactive<K, V> getListMultimapCache(String name) {
+        RedissonListMultimapCache<K, V> listMultimap = new RedissonListMultimapCache<>(evictionScheduler, commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, listMultimap,
+                new RedissonListMultimapCacheReactive<K, V>(listMultimap, commandExecutor), RListMultimapCacheReactive.class);
+    }
+
+    @Override
+    public <K, V> RListMultimapCacheReactive<K, V> getListMultimapCache(String name, Codec codec) {
+        RedissonListMultimapCache<K, V> listMultimap = new RedissonListMultimapCache<>(evictionScheduler, codec, commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, listMultimap,
+                new RedissonListMultimapCacheReactive<>(listMultimap, commandExecutor), RListMultimapCacheReactive.class);
+    }
+
+    @Override
+    public <K, V> RSetMultimapCacheReactive<K, V> getSetMultimapCache(String name) {
+        RedissonSetMultimapCache<K, V> setMultimap = new RedissonSetMultimapCache<>(evictionScheduler, commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, setMultimap,
+                new RedissonSetMultimapCacheReactive<K, V>(setMultimap, commandExecutor, this), RSetMultimapCacheReactive.class);
+    }
+
+    @Override
+    public <K, V> RSetMultimapCacheReactive<K, V> getSetMultimapCache(String name, Codec codec) {
+        RedissonSetMultimapCache<K, V> setMultimap = new RedissonSetMultimapCache<>(evictionScheduler, codec, commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, setMultimap,
+                new RedissonSetMultimapCacheReactive<K, V>(setMultimap, commandExecutor, this), RSetMultimapCacheReactive.class);
+    }
+
+    @Override
     public <K, V> RMapReactive<K, V> getMap(String name) {
         RedissonMap<K, V> map = new RedissonMap<K, V>(commandExecutor, name, null, null, null);
         return ReactiveProxyBuilder.create(commandExecutor, map, 
@@ -314,6 +363,20 @@ public class RedissonReactive implements RedissonReactiveClient {
         return ReactiveProxyBuilder.create(commandExecutor, set, 
                 new RedissonLexSortedSetReactive(set), 
                 RLexSortedSetReactive.class);
+    }
+
+    @Override
+    public RShardedTopicReactive getShardedTopic(String name) {
+        RedissonShardedTopic topic = new RedissonShardedTopic(commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, topic,
+                new RedissonTopicReactive(topic), RShardedTopicReactive.class);
+    }
+
+    @Override
+    public RShardedTopicReactive getShardedTopic(String name, Codec codec) {
+        RedissonShardedTopic topic = new RedissonShardedTopic(codec, commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, topic,
+                new RedissonTopicReactive(topic), RShardedTopicReactive.class);
     }
 
     @Override
@@ -403,17 +466,17 @@ public class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
-    public <V> RTimeSeriesReactive<V> getTimeSeries(String name) {
-        RTimeSeries<V> timeSeries = new RedissonTimeSeries<V>(evictionScheduler, commandExecutor, name);
+    public <V, L> RTimeSeriesReactive<V, L> getTimeSeries(String name) {
+        RTimeSeries<V, L> timeSeries = new RedissonTimeSeries<V, L>(evictionScheduler, commandExecutor, name);
         return ReactiveProxyBuilder.create(commandExecutor, timeSeries,
-                new RedissonTimeSeriesReactive<V>(timeSeries, this), RTimeSeriesReactive.class);
+                new RedissonTimeSeriesReactive<V, L>(timeSeries, this), RTimeSeriesReactive.class);
     }
 
     @Override
-    public <V> RTimeSeriesReactive<V> getTimeSeries(String name, Codec codec) {
-        RTimeSeries<V> timeSeries = new RedissonTimeSeries<V>(codec, evictionScheduler, commandExecutor, name);
+    public <V, L> RTimeSeriesReactive<V, L> getTimeSeries(String name, Codec codec) {
+        RTimeSeries<V, L> timeSeries = new RedissonTimeSeries<V, L>(codec, evictionScheduler, commandExecutor, name);
         return ReactiveProxyBuilder.create(commandExecutor, timeSeries,
-                new RedissonTimeSeriesReactive<V>(timeSeries, this), RTimeSeriesReactive.class);
+                new RedissonTimeSeriesReactive<V, L>(timeSeries, this), RTimeSeriesReactive.class);
     }
 
     @Override
@@ -467,6 +530,16 @@ public class RedissonReactive implements RedissonReactiveClient {
     @Override
     public RBitSetReactive getBitSet(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonBitSet(commandExecutor, name), RBitSetReactive.class);
+    }
+
+    @Override
+    public RFunctionReactive getFunction() {
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonFuction(commandExecutor), RFunctionReactive.class);
+    }
+
+    @Override
+    public RFunctionReactive getFunction(Codec codec) {
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonFuction(commandExecutor, codec), RFunctionReactive.class);
     }
 
     @Override
@@ -555,6 +628,22 @@ public class RedissonReactive implements RedissonReactiveClient {
         RMap<K, V> map = new RedissonMap<>(codec, commandExecutor, name, null, options, writeBehindService);
         return ReactiveProxyBuilder.create(commandExecutor, map,
                 new RedissonMapReactive<>(map, commandExecutor), RMapReactive.class);
+    }
+
+    @Override
+    public <K, V> RLocalCachedMapReactive<K, V> getLocalCachedMap(String name, LocalCachedMapOptions<K, V> options) {
+        RMap<K, V> map = new RedissonLocalCachedMap<>(commandExecutor, name,
+                                                        options, evictionScheduler, null, writeBehindService);
+        return ReactiveProxyBuilder.create(commandExecutor, map,
+                new RedissonMapReactive<>(map, commandExecutor), RLocalCachedMapReactive.class);
+    }
+
+    @Override
+    public <K, V> RLocalCachedMapReactive<K, V> getLocalCachedMap(String name, Codec codec, LocalCachedMapOptions<K, V> options) {
+        RMap<K, V> map = new RedissonLocalCachedMap<>(codec, commandExecutor, name,
+                                                        options, evictionScheduler, null, writeBehindService);
+        return ReactiveProxyBuilder.create(commandExecutor, map,
+                new RedissonMapReactive<>(map, commandExecutor), RLocalCachedMapReactive.class);
     }
 
     @Override

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Date;
@@ -45,12 +46,12 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
 
     @Override
     public boolean expire(long timeToLive, TimeUnit timeUnit) {
-        return commandExecutor.get(expireAsync(timeToLive, timeUnit));
+        return get(expireAsync(timeToLive, timeUnit));
     }
 
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
-        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.PEXPIRE, getRawName(), timeUnit.toMillis(timeToLive));
+        return expireAsync(timeToLive, timeUnit, "", getRawName());
     }
 
     @Override
@@ -60,7 +61,7 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
 
     @Override
     public RFuture<Boolean> expireAtAsync(long timestamp) {
-        return expireAsync(Instant.ofEpochMilli(timestamp));
+        return expireAtAsync(timestamp, "", getRawName());
     }
 
     @Override
@@ -69,8 +70,58 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
     }
 
     @Override
+    public boolean expireIfSet(Instant time) {
+        return get(expireIfSetAsync(time));
+    }
+
+    @Override
+    public RFuture<Boolean> expireIfSetAsync(Instant time) {
+        return expireAtAsync(time.toEpochMilli(), "XX", getRawName());
+    }
+
+    @Override
+    public boolean expireIfNotSet(Instant time) {
+        return get(expireIfNotSetAsync(time));
+    }
+
+    @Override
+    public RFuture<Boolean> expireIfNotSetAsync(Instant time) {
+        return expireAtAsync(time.toEpochMilli(), "NX", getRawName());
+    }
+
+    @Override
+    public boolean expireIfGreater(Instant time) {
+        return get(expireIfGreaterAsync(time));
+    }
+
+    @Override
+    public RFuture<Boolean> expireIfGreaterAsync(Instant time) {
+        return expireAtAsync(time.toEpochMilli(), "GT", getRawName());
+    }
+
+    @Override
+    public boolean expireIfLess(Instant time) {
+        return get(expireIfLessAsync(time));
+    }
+
+    @Override
+    public RFuture<Boolean> expireIfLessAsync(Instant time) {
+        return expireAtAsync(time.toEpochMilli(), "LT", getRawName());
+    }
+
+    @Override
     public RFuture<Boolean> expireAsync(Instant instant) {
-        return expireAtAsync(instant.toEpochMilli(), getRawName());
+        return expireAtAsync(instant.toEpochMilli(), "", getRawName());
+    }
+
+    @Override
+    public boolean expire(Duration duration) {
+        return get(expireAsync(duration));
+    }
+
+    @Override
+    public RFuture<Boolean> expireAsync(Duration duration) {
+        return expireAsync(duration.toMillis(), TimeUnit.MILLISECONDS, "", getRawName());
     }
 
     @Override
@@ -81,6 +132,46 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
     @Override
     public RFuture<Boolean> expireAtAsync(Date timestamp) {
         return expireAtAsync(timestamp.getTime());
+    }
+
+    @Override
+    public boolean expireIfSet(Duration duration) {
+        return get(expireIfSetAsync(duration));
+    }
+
+    @Override
+    public RFuture<Boolean> expireIfSetAsync(Duration duration) {
+        return expireAsync(duration.toMillis(), TimeUnit.MILLISECONDS, "XX", getRawName());
+    }
+
+    @Override
+    public boolean expireIfNotSet(Duration duration) {
+        return get(expireIfNotSetAsync(duration));
+    }
+
+    @Override
+    public RFuture<Boolean> expireIfNotSetAsync(Duration duration) {
+        return expireAsync(duration.toMillis(), TimeUnit.MILLISECONDS, "NX", getRawName());
+    }
+
+    @Override
+    public boolean expireIfGreater(Duration duration) {
+        return get(expireIfGreaterAsync(duration));
+    }
+
+    @Override
+    public RFuture<Boolean> expireIfGreaterAsync(Duration duration) {
+        return expireAsync(duration.toMillis(), TimeUnit.MILLISECONDS, "GT", getRawName());
+    }
+
+    @Override
+    public boolean expireIfLess(Duration duration) {
+        return get(expireIfLessAsync(duration));
+    }
+
+    @Override
+    public RFuture<Boolean> expireIfLessAsync(Duration duration) {
+        return expireAsync(duration.toMillis(), TimeUnit.MILLISECONDS, "LT", getRawName());
     }
 
     @Override
@@ -103,28 +194,48 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.PTTL, getRawName());
     }
 
-    protected RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String... keys) {
-        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                  "local result = 0;"
-                + "for j = 1, #KEYS, 1 do "
-                    + "local expireSet = redis.call('pexpire', KEYS[j], ARGV[1]); "
-                    + "if expireSet == 1 then "
-                        + "result = expireSet;"
-                    + "end; "
-                + "end; "
-                + "return result; ", Arrays.asList(keys), timeUnit.toMillis(timeToLive));
+    @Override
+    public long getExpireTime() {
+        return get(getExpireTimeAsync());
     }
 
-    protected RFuture<Boolean> expireAtAsync(long timestamp, String... keys) {
+    @Override
+    public RFuture<Long> getExpireTimeAsync() {
+        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.PEXPIRETIME, getRawName());
+    }
+
+    protected RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                   "local result = 0;"
                 + "for j = 1, #KEYS, 1 do "
-                    + "local expireSet = redis.call('pexpireat', KEYS[j], ARGV[1]); "
+                    + "local expireSet; "
+                    + "if ARGV[2] ~= '' then "
+                        + "expireSet = redis.call('pexpire', KEYS[j], ARGV[1], ARGV[2]); "
+                    + "else "
+                        + "expireSet = redis.call('pexpire', KEYS[j], ARGV[1]); "
+                    + "end; "
                     + "if expireSet == 1 then "
                         + "result = expireSet;"
                     + "end; "
                 + "end; "
-                + "return result; ", Arrays.asList(keys), timestamp);
+                + "return result; ", Arrays.asList(keys), timeUnit.toMillis(timeToLive), param);
+    }
+
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
+        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                  "local result = 0;"
+                + "for j = 1, #KEYS, 1 do "
+                    + "local expireSet; "
+                    + "if ARGV[2] ~= '' then "
+                        + "expireSet = redis.call('pexpireat', KEYS[j], ARGV[1], ARGV[2]); "
+                    + "else "
+                        + "expireSet = redis.call('pexpireat', KEYS[j], ARGV[1]); "
+                    + "end; "
+                    + "if expireSet == 1 then "
+                        + "result = expireSet;"
+                    + "end; "
+                + "end; "
+                + "return result; ", Arrays.asList(keys), timestamp, param);
     }
 
     protected RFuture<Boolean> clearExpireAsync(String... keys) {

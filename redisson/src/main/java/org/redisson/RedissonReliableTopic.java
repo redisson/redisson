@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,13 +26,13 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -154,15 +154,14 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
         listeners.put(id, new Entry(type, listener));
 
         if (subscriberId.get() != null) {
-            return RedissonPromise.newSucceededFuture(id);
+            return new CompletableFutureWrapper<>(id);
         }
 
         if (subscriberId.compareAndSet(null, id)) {
             renewExpiration();
 
-            StreamMessageId startId = new StreamMessageId(System.currentTimeMillis(), 0);
+            StreamMessageId startId = StreamMessageId.ALL;
 
-            RPromise<String> promise = new RedissonPromise<>();
             RFuture<Void> addFuture = commandExecutor.evalWriteNoRetryAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
                     "local value = redis.call('incr', KEYS[3]); "
                             + "redis.call('zadd', KEYS[4], ARGV[3], ARGV[2]); "
@@ -170,26 +169,21 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
                             + "redis.call('hset', KEYS[2], ARGV[2], ARGV[1]); ",
                     Arrays.asList(getSubscribersName(), getMapName(), getCounter(), getTimeout()),
                     startId, id, System.currentTimeMillis() + commandExecutor.getConnectionManager().getCfg().getReliableTopicWatchdogTimeout());
-            addFuture.onComplete((r, e) -> {
-                if (e != null) {
-                    promise.tryFailure(e);
-                    return;
-                }
-
+            CompletionStage<String> f = addFuture.thenApply(r -> {
                 poll(id, startId);
-                promise.trySuccess(id);
+                return id;
             });
 
-            return promise;
+            return new CompletableFutureWrapper<>(f);
         }
 
-        return RedissonPromise.newSucceededFuture(id);
+        return new CompletableFutureWrapper<>(id);
     }
 
     private void poll(String id, StreamMessageId startId) {
         readFuture = commandExecutor.readAsync(getRawName(), new CompositeCodec(StringCodec.INSTANCE, codec),
                 RedisCommands.XREAD_BLOCKING_SINGLE, "BLOCK", 0, "STREAMS", getRawName(), startId);
-        readFuture.onComplete((res, ex) -> {
+        readFuture.whenComplete((res, ex) -> {
             if (readFuture.isCancelled()) {
                 return;
             }
@@ -198,7 +192,11 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
                     return;
                 }
 
-                poll(id, startId);
+                log.error(ex.getMessage(), ex);
+
+                commandExecutor.getConnectionManager().newTimeout(task -> {
+                    poll(id, startId);
+                }, 1, TimeUnit.SECONDS);
                 return;
             }
 
@@ -228,7 +226,7 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
                             + "end; "
 
                             + "local t = redis.call('zrange', KEYS[5], 0, 0, 'WITHSCORES'); "
-                            + "if tonumber(t[2]) < tonumber(ARGV[3]) then "
+                            + "if #t == 2 and tonumber(t[2]) < tonumber(ARGV[3]) then "
                                 + "redis.call('hdel', KEYS[3], t[1]); "
                                 + "redis.call('zrem', KEYS[2], t[1]); "
                                 + "redis.call('zrem', KEYS[5], t[1]); "
@@ -247,7 +245,7 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
                             + "return r ~= false; ",
                     Arrays.asList(getRawName(), getSubscribersName(), getMapName(), getCounter(), getTimeout()),
                     lastId, id, time);
-            updateFuture.onComplete((re, exc) -> {
+            updateFuture.whenComplete((re, exc) -> {
                 if (exc != null) {
                     if (exc instanceof RedissonShutdownException) {
                         return;
@@ -277,13 +275,14 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
     }
 
     @Override
-    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
-        return expireAsync(timeToLive, timeUnit, getRawName(), getSubscribersName(), getMapName(), getCounter(), getTimeout());
+    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
+        return super.expireAsync(timeToLive, timeUnit, param,
+                                    getRawName(), getSubscribersName(), getMapName(), getCounter(), getTimeout());
     }
 
     @Override
-    protected RFuture<Boolean> expireAtAsync(long timestamp, String... keys) {
-        return super.expireAtAsync(timestamp, getRawName(), getSubscribersName(), getMapName(), getCounter(), getTimeout());
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
+        return super.expireAtAsync(timestamp, param, getRawName(), getSubscribersName(), getMapName(), getCounter(), getTimeout());
     }
 
     @Override
@@ -298,7 +297,7 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
         if (listeners.isEmpty()) {
             return removeSubscriber();
         }
-        return RedissonPromise.newSucceededFuture(null);
+        return new CompletableFutureWrapper<>((Void) null);
     }
 
     private RFuture<Void> removeSubscriber() {
@@ -334,9 +333,9 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
                       + "return 1; ",
                 Arrays.asList(getTimeout()),
                 System.currentTimeMillis() + commandExecutor.getConnectionManager().getCfg().getReliableTopicWatchdogTimeout(), subscriberId.get());
-            future.onComplete((res, e) -> {
+            future.whenComplete((res, e) -> {
                 if (e != null) {
-                    log.error("Can't update reliable topic " + getRawName() + " expiration time", e);
+                    log.error("Can't update reliable topic {} expiration time", getRawName(), e);
                     return;
                 }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,15 @@ import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.redisson.api.RFuture;
-import org.redisson.client.RedisClientConfig;
-import org.redisson.client.RedisConnection;
+import org.redisson.client.*;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.RedisCommands;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -47,7 +49,7 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         RedisConnection connection = RedisConnection.getFrom(ctx.channel());
-        connection.getConnectionPromise().onComplete((res, e) -> {
+        connection.getConnectionPromise().whenComplete((res, e) -> {
             if (e == null) {
                 sendPing(ctx);
             }
@@ -58,7 +60,8 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
     private void sendPing(ChannelHandlerContext ctx) {
         RedisConnection connection = RedisConnection.getFrom(ctx.channel());
         RFuture<String> future;
-        if (connection.getUsage() == 0) {
+        CommandData<?, ?> currentCommand = connection.getCurrentCommand();
+        if (connection.getUsage() == 0 && (currentCommand == null || !currentCommand.isBlockingCommand())) {
             future = connection.async(StringCodec.INSTANCE, RedisCommands.PING);
         } else {
             future = null;
@@ -69,19 +72,49 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
                 return;
             }
 
+            CommandData<?, ?> cd = connection.getCurrentCommand();
+            if (cd != null && cd.isBlockingCommand()) {
+                sendPing(ctx);
+                return;
+            }
+
             if (connection.getUsage() == 0
                     && future != null
-                        && (future.cancel(false) || !future.isSuccess())) {
-                ctx.channel().close();
-                if (future.cause() != null && !future.isCancelled()) {
-                    log.error("Unable to send PING command over channel: " + ctx.channel(), future.cause());
+                        && (future.cancel(false) || cause(future) != null)) {
+
+                Throwable cause = cause(future);
+
+                if (!(cause instanceof RedisLoadingException
+                        || cause instanceof RedisTryAgainException
+                            || cause instanceof RedisClusterDownException
+                                || cause instanceof RedisBusyException)) {
+                    if (!future.isCancelled()) {
+                        log.error("Unable to send PING command over channel: {}", ctx.channel(), cause);
+                    }
+
+                    log.debug("channel: {} closed due to PING response timeout set in {} ms", ctx.channel(), config.getPingConnectionInterval());
+                    ctx.channel().close();
+                    connection.getRedisClient().trySetupFirstFail();
+                } else {
+                    connection.getRedisClient().resetFirstFail();
+                    sendPing(ctx);
                 }
-                log.debug("channel: {} closed due to PING response timeout set in {} ms", ctx.channel(), config.getPingConnectionInterval());
             } else {
+                connection.getRedisClient().resetFirstFail();
                 sendPing(ctx);
             }
         }, config.getPingConnectionInterval(), TimeUnit.MILLISECONDS);
     }
 
+    protected Throwable cause(RFuture<?> future) {
+        try {
+            future.toCompletableFuture().getNow(null);
+            return null;
+        } catch (CompletionException ex2) {
+            return ex2.getCause();
+        } catch (CancellationException ex1) {
+            return ex1;
+        }
+    }
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,10 +22,11 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 
 import java.util.Collections;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -100,16 +101,12 @@ public class RedissonSpinLock extends RedissonBaseLock {
     }
 
     private <T> RFuture<Long> tryAcquireAsync(long leaseTime, TimeUnit unit, long threadId) {
-        if (leaseTime != -1) {
+        if (leaseTime > 0) {
             return tryLockInnerAsync(leaseTime, unit, threadId, RedisCommands.EVAL_LONG);
         }
         RFuture<Long> ttlRemainingFuture = tryLockInnerAsync(internalLockLeaseTime,
                 TimeUnit.MILLISECONDS, threadId, RedisCommands.EVAL_LONG);
-        ttlRemainingFuture.onComplete((ttlRemaining, e) -> {
-            if (e != null) {
-                return;
-            }
-
+        ttlRemainingFuture.thenAccept(ttlRemaining -> {
             // lock acquired
             if (ttlRemaining == null) {
                 scheduleExpirationRenewal(threadId);
@@ -159,17 +156,19 @@ public class RedissonSpinLock extends RedissonBaseLock {
         }
 
         LockOptions.BackOffPolicy backOffPolicy = backOff.create();
-        while (ttl != null) {
+        while (true) {
             current = System.currentTimeMillis();
             Thread.sleep(backOffPolicy.getNextSleepPeriod());
             ttl = tryAcquire(leaseTime, unit, threadId);
+            if (ttl == null) {
+                return true;
+            }
             time -= System.currentTimeMillis() - current;
             if (time <= 0) {
                 acquireFailed(waitTime, unit, threadId);
                 return false;
             }
         }
-        return true;
     }
 
     @Override
@@ -243,25 +242,25 @@ public class RedissonSpinLock extends RedissonBaseLock {
 
     @Override
     public RFuture<Void> lockAsync(long leaseTime, TimeUnit unit, long currentThreadId) {
-        RPromise<Void> result = new RedissonPromise<>();
+        CompletableFuture<Void> result = new CompletableFuture<>();
         LockOptions.BackOffPolicy backOffPolicy = backOff.create();
 
         lockAsync(leaseTime, unit, currentThreadId, result, backOffPolicy);
-        return result;
+        return new CompletableFutureWrapper<>(result);
     }
 
-    private void lockAsync(long leaseTime, TimeUnit unit, long currentThreadId, RPromise<Void> result,
+    private void lockAsync(long leaseTime, TimeUnit unit, long currentThreadId, CompletableFuture<Void> result,
                            LockOptions.BackOffPolicy backOffPolicy) {
         RFuture<Long> ttlFuture = tryAcquireAsync(leaseTime, unit, currentThreadId);
-        ttlFuture.onComplete((ttl, e) -> {
+        ttlFuture.whenComplete((ttl, e) -> {
             if (e != null) {
-                result.tryFailure(e);
+                result.completeExceptionally(e);
                 return;
             }
 
             // lock acquired
             if (ttl == null) {
-                if (!result.trySuccess(null)) {
+                if (!result.complete(null)) {
                     unlockAsync(currentThreadId);
                 }
                 return;
@@ -281,19 +280,9 @@ public class RedissonSpinLock extends RedissonBaseLock {
 
     @Override
     public RFuture<Boolean> tryLockAsync(long threadId) {
-        RPromise<Boolean> result = new RedissonPromise<>();
         RFuture<Long> longRFuture = tryAcquireAsync(-1, null, threadId);
-
-        longRFuture.onComplete((res, e) -> {
-            if (e != null) {
-                result.tryFailure(e);
-            }
-
-            // lock acquired
-            result.trySuccess(res == null);
-        });
-
-        return result;
+        CompletionStage<Boolean> f = longRFuture.thenApply(res -> res == null);
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
@@ -310,28 +299,28 @@ public class RedissonSpinLock extends RedissonBaseLock {
     @Override
     public RFuture<Boolean> tryLockAsync(long waitTime, long leaseTime, TimeUnit unit,
                                          long currentThreadId) {
-        RPromise<Boolean> result = new RedissonPromise<>();
+        CompletableFuture<Boolean> result = new CompletableFuture<>();
 
         AtomicLong time = new AtomicLong(unit.toMillis(waitTime));
         LockOptions.BackOffPolicy backOffPolicy = backOff.create();
 
         tryLock(leaseTime, unit, currentThreadId, result, time, backOffPolicy);
-        return result;
+        return new CompletableFutureWrapper<>(result);
     }
 
-    private void tryLock(long leaseTime, TimeUnit unit, long currentThreadId, RPromise<Boolean> result,
+    private void tryLock(long leaseTime, TimeUnit unit, long currentThreadId, CompletableFuture<Boolean> result,
                          AtomicLong time, LockOptions.BackOffPolicy backOffPolicy) {
         long startTime = System.currentTimeMillis();
         RFuture<Long> ttlFuture = tryAcquireAsync(leaseTime, unit, currentThreadId);
-        ttlFuture.onComplete((ttl, e) -> {
+        ttlFuture.whenComplete((ttl, e) -> {
             if (e != null) {
-                result.tryFailure(e);
+                result.completeExceptionally(e);
                 return;
             }
 
             // lock acquired
             if (ttl == null) {
-                if (!result.trySuccess(true)) {
+                if (!result.complete(true)) {
                     unlockAsync(currentThreadId);
                 }
                 return;
@@ -352,13 +341,4 @@ public class RedissonSpinLock extends RedissonBaseLock {
         });
     }
 
-    private void trySuccessFalse(long currentThreadId, RPromise<Boolean> result) {
-        acquireFailedAsync(-1, null, currentThreadId).onComplete((res, e) -> {
-            if (e == null) {
-                result.trySuccess(false);
-            } else {
-                result.tryFailure(e);
-            }
-        });
-    }
 }

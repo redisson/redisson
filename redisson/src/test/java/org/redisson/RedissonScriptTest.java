@@ -46,7 +46,14 @@ public class RedissonScriptTest extends BaseTest {
         assertThat(objs.get(1)).hasSize(15);
         assertThat(objs.get(2)).hasSize(25);
     }
-    
+
+    @Test
+    public void testString() {
+        RScript script = redisson.getScript(StringCodec.INSTANCE);
+        String res = script.eval(RScript.Mode.READ_ONLY, "return 'hello'", RScript.ReturnType.STATUS);
+        assertThat(res).isEqualTo("hello");
+    }
+
     @Test
     public void testEval() {
         RScript script = redisson.getScript(StringCodec.INSTANCE);
@@ -58,7 +65,7 @@ public class RedissonScriptTest extends BaseTest {
     public void testEvalAsync() {
         RScript script = redisson.getScript(StringCodec.INSTANCE);
         RFuture<List<Object>> res = script.evalAsync(RScript.Mode.READ_ONLY, "return {'1','2','3.3333','foo',nil,'bar'}", RScript.ReturnType.MULTI, Collections.emptyList());
-        assertThat(res.awaitUninterruptibly().getNow()).containsExactly("1", "2", "3.3333", "foo");
+        assertThat(res.toCompletableFuture().join()).containsExactly("1", "2", "3.3333", "foo");
     }
     
     @Test
@@ -117,7 +124,7 @@ public class RedissonScriptTest extends BaseTest {
     public void testScriptLoadAsync() {
         redisson.getBucket("foo").set("bar");
         RFuture<String> r = redisson.getScript().scriptLoadAsync("return redis.call('get', 'foo')");
-        Assertions.assertEquals("282297a0228f48cd3fc6a55de6316f31422f5d17", r.awaitUninterruptibly().getNow());
+        Assertions.assertEquals("282297a0228f48cd3fc6a55de6316f31422f5d17", r.toCompletableFuture().join());
         String r1 = redisson.getScript().evalSha(Mode.READ_ONLY, "282297a0228f48cd3fc6a55de6316f31422f5d17", RScript.ReturnType.VALUE, Collections.emptyList());
         Assertions.assertEquals("bar", r1);
     }
@@ -143,7 +150,7 @@ public class RedissonScriptTest extends BaseTest {
         String r = redisson.getScript().eval(Mode.READ_ONLY, "return redis.call('get', 'foo')", RScript.ReturnType.VALUE);
         Assertions.assertEquals("bar", r);
         RFuture<Object> r1 = redisson.getScript().evalShaAsync(Mode.READ_ONLY, "282297a0228f48cd3fc6a55de6316f31422f5d17", RScript.ReturnType.VALUE, Collections.emptyList());
-        Assertions.assertEquals("bar", r1.awaitUninterruptibly().getNow());
+        Assertions.assertEquals("bar", r1.toCompletableFuture().join());
     }
 
 

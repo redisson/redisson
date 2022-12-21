@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,14 +28,15 @@ import org.redisson.client.RedisClient;
  *
  * @author Nikita Koksharov
  *
- * @param <V> value
+ * @param <V> value type
+ * @param <L> label type
  */
-public class RedissonTimeSeriesRx<V> {
+public class RedissonTimeSeriesRx<V, L> {
 
-    private final RTimeSeries<V> instance;
+    private final RTimeSeries<V, L> instance;
     private final RedissonRxClient redisson;
 
-    public RedissonTimeSeriesRx(RTimeSeries<V> instance, RedissonRxClient redisson) {
+    public RedissonTimeSeriesRx(RTimeSeries<V, L> instance, RedissonRxClient redisson) {
         this.instance = instance;
         this.redisson = redisson;
     }

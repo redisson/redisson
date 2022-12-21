@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package org.redisson;
 
 import org.redisson.api.*;
 import org.redisson.client.codec.Codec;
+import org.redisson.codec.JsonCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
 import org.redisson.eviction.EvictionScheduler;
@@ -45,6 +46,11 @@ public class RedissonBatch implements RBatch {
     @Override
     public <V> RBucketAsync<V> getBucket(String name, Codec codec) {
         return new RedissonBucket<V>(codec, executorService, name);
+    }
+
+    @Override
+    public <V> RJsonBucketAsync<V> getJsonBucket(String name, JsonCodec<V> codec) {
+        return new RedissonJsonBucket<>(codec, executorService, name);
     }
 
     @Override
@@ -95,6 +101,16 @@ public class RedissonBatch implements RBatch {
     @Override
     public RTopicAsync getTopic(String name, Codec codec) {
         return new RedissonTopic(codec, executorService, name);
+    }
+
+    @Override
+    public RShardedTopicAsync getShardedTopic(String name) {
+        return new RedissonShardedTopic(executorService, name);
+    }
+
+    @Override
+    public RShardedTopicAsync getShardedTopic(String name, Codec codec) {
+        return new RedissonShardedTopic(codec, executorService, name);
     }
 
     @Override
@@ -183,8 +199,18 @@ public class RedissonBatch implements RBatch {
     }
     
     @Override
-    public RScript getScript(Codec codec) {
+    public RScriptAsync getScript(Codec codec) {
         return new RedissonScript(executorService, codec);
+    }
+
+    @Override
+    public RFunctionAsync getFunction() {
+        return new RedissonFuction(executorService);
+    }
+
+    @Override
+    public RFunctionAsync getFunction(Codec codec) {
+        return new RedissonFuction(executorService, codec);
     }
 
     @Override

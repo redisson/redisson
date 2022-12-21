@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,13 +41,13 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.*;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.misc.LogHelper;
-import org.redisson.misc.RPromise;
 import org.redisson.misc.RedisURI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Redis protocol command decoder
@@ -69,18 +69,18 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         this.scheme = scheme;
     }
 
-    protected QueueCommand getCommand(ChannelHandlerContext ctx) {
+    protected QueueCommandHolder getCommand(ChannelHandlerContext ctx) {
         Queue<QueueCommandHolder> queue = ctx.channel().attr(CommandsQueue.COMMANDS_QUEUE).get();
-        QueueCommandHolder holder = queue.peek();
-        if (holder != null) {
-            return holder.getCommand();
-        }
-        return null;
+        return queue.peek();
     }
 
     @Override
     protected final void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
-        QueueCommand data = getCommand(ctx);
+        QueueCommandHolder holder = getCommand(ctx);
+        QueueCommand data = null;
+        if (holder != null) {
+            data = holder.getCommand();
+        }
 
         if (state() == null) {
             state(new State());
@@ -91,13 +91,20 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 int endIndex = skipCommand(in);
 
                 try {
-                    decode(ctx, in, data, 0);
+                    decode(ctx, in, null, 0);
                 } catch (Exception e) {
                     in.readerIndex(endIndex);
                     throw e;
                 }
             }
         } else {
+            if (holder.getChannelPromise().isDone() && !holder.getChannelPromise().isSuccess()) {
+                sendNext(ctx.channel());
+                // throw REPLAY error
+                in.indexOf(Integer.MAX_VALUE/2, Integer.MAX_VALUE, (byte) 0);
+                return;
+            }
+
             int endIndex = 0;
             if (!(data instanceof CommandsData)) {
                 endIndex = skipCommand(in);
@@ -198,7 +205,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 decode(in, cmd, null, channel, false, null);
                 sendNext(channel, data);
             } catch (Exception e) {
-                log.error("Unable to decode data. channel: " + channel + ", reply: " + LogHelper.toString(in) + ", command: " + LogHelper.toString(data), e);
+                log.error("Unable to decode data. channel: {}, reply: {}, command: {}", channel, LogHelper.toString(in), LogHelper.toString(data), e);
                 in.readerIndex(endIndex);
                 sendNext(channel);
                 cmd.tryFailure(e);
@@ -211,7 +218,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             } catch (Exception e) {
                 in.readerIndex(endIndex);
                 sendNext(channel);
-                commands.getPromise().tryFailure(e);
+                commands.getPromise().completeExceptionally(e);
                 throw e;
             }
         } else {
@@ -221,7 +228,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 }
                 sendNext(channel);
             } catch (Exception e) {
-                log.error("Unable to decode data. channel: " + channel + ", reply: " + LogHelper.toString(in), e);
+                log.error("Unable to decode data. channel: {}, reply: {}", channel, LogHelper.toString(in), e);
                 sendNext(channel);
                 throw e;
             }
@@ -267,13 +274,13 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                         }
                     }
                 }
-                
+
                 decode(in, commandData, null, channel, skipConvertor, commandsData);
                 
                 if (commandData != null
                         && RedisCommands.EXEC.getName().equals(commandData.getCommand().getName())
-                            && commandData.getPromise().isSuccess()) {
-                    List<Object> objects = (List<Object>) commandData.getPromise().getNow();
+                            && (commandData.getPromise().isDone() && !commandData.getPromise().isCompletedExceptionally())) {
+                    List<Object> objects = (List<Object>) commandData.getPromise().getNow(null);
                     Iterator<Object> iter = objects.iterator();
                     boolean multiFound = false; 
                     for (CommandData<?, ?> command : commandBatch.getCommands()) {
@@ -311,11 +318,11 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         }
 
         if (commandBatch.isSkipResult() || i == commandBatch.getCommands().size()) {
-            RPromise<Void> promise = commandBatch.getPromise();
+            CompletableFuture<Void> promise = commandBatch.getPromise();
             if (error != null) {
-                promise.tryFailure(error);
+                promise.completeExceptionally(error);
             } else {
-                promise.trySuccess(null);
+                promise.complete(null);
             }
             
             sendNext(channel);
@@ -418,7 +425,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 }
                 CommandData<Object, Object> commandData = (CommandData<Object, Object>) commandsData.get(i+suffix);
                 decode(in, commandData, respParts, channel, skipConvertor, commandsData);
-                if (commandData.getPromise().isDone() && !commandData.getPromise().isSuccess()) {
+                if (commandData.getPromise().isDone() && commandData.getPromise().isCompletedExceptionally()) {
                     data.tryFailure(commandData.cause());
                 }
             }
@@ -457,7 +464,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
     protected void completeResponse(CommandData<Object, Object> data, Object result) {
         if (data != null) {
-            data.getPromise().trySuccess(result);
+            data.getPromise().complete(result);
         }
     }
 

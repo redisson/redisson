@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,38 +70,34 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
 
             byte[] key = toByteArray(command.getKey());
             byte[] value = toByteArray(command.getValue());
+
+            Mono<Boolean> m = Mono.empty();
             
             if (!command.getExpiration().isPresent()) {
-                Mono<Boolean> m = write(key, StringCodec.INSTANCE, SET, key, value);
-                return m.map(v -> new BooleanResponse<>(command, v));
+                m = write(key, StringCodec.INSTANCE, SET, key, value);
             } else if (command.getExpiration().get().isPersistent()) {
                 if (!command.getOption().isPresent() || command.getOption().get() == SetOption.UPSERT) {
-                    Mono<Boolean> m = write(key, StringCodec.INSTANCE, SET, key, value);
-                    return m.map(v -> new BooleanResponse<>(command, v));
+                    m = write(key, StringCodec.INSTANCE, SET, key, value);
                 }
                 if (command.getOption().get() == SetOption.SET_IF_ABSENT) {
-                    Mono<Boolean> m = write(key, StringCodec.INSTANCE, SET, key, value, "NX");
-                    return m.map(v -> new BooleanResponse<>(command, v));
+                    m = write(key, StringCodec.INSTANCE, SET, key, value, "NX");
                 }
                 if (command.getOption().get() == SetOption.SET_IF_PRESENT) {
-                    Mono<Boolean> m = write(key, StringCodec.INSTANCE, SET, key, value, "XX");
-                    return m.map(v -> new BooleanResponse<>(command, v));
+                    m = write(key, StringCodec.INSTANCE, SET, key, value, "XX");
                 }
             } else {
                 if (!command.getOption().isPresent() || command.getOption().get() == SetOption.UPSERT) {
-                    Mono<Boolean> m = write(key, StringCodec.INSTANCE, SET, key, value, "PX", command.getExpiration().get().getExpirationTimeInMilliseconds());
-                    return m.map(v -> new BooleanResponse<>(command, v));
+                    m = write(key, StringCodec.INSTANCE, SET, key, value, "PX", command.getExpiration().get().getExpirationTimeInMilliseconds());
                 }
                 if (command.getOption().get() == SetOption.SET_IF_ABSENT) {
-                    Mono<Boolean> m = write(key, StringCodec.INSTANCE, SET, key, value, "PX", command.getExpiration().get().getExpirationTimeInMilliseconds(), "NX");
-                    return m.map(v -> new BooleanResponse<>(command, v));
+                    m = write(key, StringCodec.INSTANCE, SET, key, value, "PX", command.getExpiration().get().getExpirationTimeInMilliseconds(), "NX");
                 }
                 if (command.getOption().get() == SetOption.SET_IF_PRESENT) {
-                    Mono<Boolean> m = write(key, StringCodec.INSTANCE, SET, key, value, "PX", command.getExpiration().get().getExpirationTimeInMilliseconds(), "XX");
-                    return m.map(v -> new BooleanResponse<>(command, v));
+                    m = write(key, StringCodec.INSTANCE, SET, key, value, "PX", command.getExpiration().get().getExpirationTimeInMilliseconds(), "XX");
                 }
             }
-            throw new IllegalArgumentException();
+            return m.map(v -> new BooleanResponse<>(command, v))
+                    .switchIfEmpty(Mono.just(new BooleanResponse<>(command, Boolean.FALSE)));
         });
     }
 

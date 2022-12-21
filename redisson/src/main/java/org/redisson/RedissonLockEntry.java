@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,9 @@
  */
 package org.redisson;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
-
-import org.redisson.misc.RPromise;
 
 /**
  *
@@ -30,10 +29,10 @@ public class RedissonLockEntry implements PubSubEntry<RedissonLockEntry> {
     private volatile int counter;
 
     private final Semaphore latch;
-    private final RPromise<RedissonLockEntry> promise;
+    private final CompletableFuture<RedissonLockEntry> promise;
     private final ConcurrentLinkedQueue<Runnable> listeners = new ConcurrentLinkedQueue<Runnable>();
 
-    public RedissonLockEntry(RPromise<RedissonLockEntry> promise) {
+    public RedissonLockEntry(CompletableFuture<RedissonLockEntry> promise) {
         super();
         this.latch = new Semaphore(0);
         this.promise = promise;
@@ -51,7 +50,7 @@ public class RedissonLockEntry implements PubSubEntry<RedissonLockEntry> {
         return --counter;
     }
 
-    public RPromise<RedissonLockEntry> getPromise() {
+    public CompletableFuture<RedissonLockEntry> getPromise() {
         return promise;
     }
 
@@ -71,4 +70,10 @@ public class RedissonLockEntry implements PubSubEntry<RedissonLockEntry> {
         return latch;
     }
 
+    @Override
+    public String toString() {
+        return "RedissonLockEntry{" +
+                "counter=" + counter +
+                '}';
+    }
 }

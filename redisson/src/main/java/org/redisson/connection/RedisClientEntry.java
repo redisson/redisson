@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,11 +25,11 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.Time;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.CompletableFutureWrapper;
 
 import java.net.InetSocketAddress;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -71,21 +71,20 @@ public class RedisClientEntry implements ClusterNode {
     
     @Override
     public RFuture<Boolean> pingAsync(long timeout, TimeUnit timeUnit) {
-        RPromise<Boolean> result = new RedissonPromise<>();
         RFuture<Boolean> f = commandExecutor.readAsync(client, null, RedisCommands.PING_BOOL);
-        f.onComplete((res, e) -> {
+        CompletableFuture<Boolean> s = f.toCompletableFuture().handle((res, e) -> {
             if (e != null) {
-                result.trySuccess(false);
-                return;
+                return false;
             }
-            
-            result.trySuccess(res);
+
+            return res;
         });
+
         commandExecutor.getConnectionManager().newTimeout(t -> {
             RedisTimeoutException ex = new RedisTimeoutException("Command execution timeout for command: PING, Redis client: " + client);
-            result.tryFailure(ex);
+            s.completeExceptionally(ex);
         }, timeout, timeUnit);
-        return result;
+        return new CompletableFutureWrapper<>(s);
     }
     
     @Override

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,15 +54,15 @@ public class RedissonQueueSemaphore extends RedissonSemaphore {
     public RFuture<Boolean> tryAcquireAsync(int permits) {
         List<Object> params;
         if (values != null) {
-            params = new ArrayList<Object>(values.size() + 1);
+            params = new ArrayList<>(values.size() + 1);
             params.add(values.size());
             for (Object value : values) {
-                params.add(encode(value));
+                encode(params, value);
             }
         } else {
-            params = new ArrayList<Object>(2);
+            params = new ArrayList<>(2);
             params.add(1);
-            params.add(encode(value));
+            encode(params, value);
         }
         return commandExecutor.evalWriteNoRetryAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "local value = redis.call('get', KEYS[1]); " +

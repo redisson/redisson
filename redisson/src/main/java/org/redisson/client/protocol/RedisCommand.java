@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,7 +87,7 @@ public class RedisCommand<R> {
         if (replayMultiDecoder != null) {
             this.replayMultiDecoder = replayMultiDecoder;
         } else {
-            this.replayMultiDecoder = (parts, state) -> null;
+            this.replayMultiDecoder = (parts, state) -> (R) parts;
         }
     }
 
@@ -105,6 +105,11 @@ public class RedisCommand<R> {
 
     public Convertor<R> getConvertor() {
         return convertor;
+    }
+
+    public boolean isNoRetry() {
+        return RedisCommands.NO_RETRY.contains(getName())
+                || RedisCommands.NO_RETRY_COMMANDS.contains(this);
     }
 
     public boolean isBlockingCommand() {

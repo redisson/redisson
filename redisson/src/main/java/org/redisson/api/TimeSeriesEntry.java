@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,15 +22,25 @@ import java.util.Objects;
  *
  * @author Nikita Koksharov
  *
+ * @param <V> value type
+ * @param <L> label type
  */
-public class TimeSeriesEntry<V> {
+public class TimeSeriesEntry<V, L> {
 
     private long timestamp;
     private V value;
 
+    private L label;
+
     public TimeSeriesEntry(long timestamp, V value) {
         this.timestamp = timestamp;
         this.value = value;
+    }
+
+    public TimeSeriesEntry(long timestamp, V value, L label) {
+        this.timestamp = timestamp;
+        this.value = value;
+        this.label = label;
     }
 
     public long getTimestamp() {
@@ -41,18 +51,21 @@ public class TimeSeriesEntry<V> {
         return value;
     }
 
+    public L getLabel() {
+        return label;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        TimeSeriesEntry<?> entry = (TimeSeriesEntry<?>) o;
-        return timestamp == entry.timestamp
-                && Objects.equals(value, entry.value);
+        TimeSeriesEntry<?, ?> that = (TimeSeriesEntry<?, ?>) o;
+        return timestamp == that.timestamp && value.equals(that.value) && Objects.equals(label, that.label);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(timestamp, value);
+        return Objects.hash(timestamp, value, label);
     }
 
     @Override

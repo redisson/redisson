@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ public class Version {
                     }
                     String name = attrs.getValue("Bundle-Name");
                     if ("Redisson".equals(name)) {
-                        log.info("Redisson " + attrs.getValue("Bundle-Version"));
+                        log.info("Redisson {}", attrs.getValue("Bundle-Version"));
                         break;
                     }
             }

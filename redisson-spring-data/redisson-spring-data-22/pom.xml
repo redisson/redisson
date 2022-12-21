@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-spring-data</artifactId>
-        <version>3.16.4-SNAPSHOT</version>
+        <version>3.19.1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
@@ -17,7 +17,7 @@
         <dependency>
             <groupId>org.springframework.data</groupId>
             <artifactId>spring-data-redis</artifactId>
-            <version>2.2.9.RELEASE</version>
+            <version>2.2.13.RELEASE</version>
         </dependency>
     </dependencies>
 

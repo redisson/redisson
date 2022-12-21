@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -190,7 +190,7 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
             
             @Override
             public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-                if (!sslInitDone && (evt instanceof SslHandshakeCompletionEvent)) {
+                if (!sslInitDone && evt instanceof SslHandshakeCompletionEvent) {
                     SslHandshakeCompletionEvent e = (SslHandshakeCompletionEvent) evt;
                     if (e.isSuccess()) {
                         sslInitDone = true;
@@ -198,7 +198,7 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
                     } else {
                         RedisConnection connection = RedisConnection.getFrom(ctx.channel());
                         connection.closeAsync();
-                        connection.getConnectionPromise().tryFailure(e.cause());
+                        connection.getConnectionPromise().completeExceptionally(e.cause());
                     }
                 }
 

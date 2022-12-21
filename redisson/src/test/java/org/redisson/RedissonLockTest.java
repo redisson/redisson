@@ -4,11 +4,13 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
-import org.redisson.client.WriteRedisConnectionException;
+import org.redisson.client.*;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.Config;
 import org.redisson.connection.balancer.RandomLoadBalancer;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -76,6 +78,61 @@ public class RedissonLockTest extends BaseConcurrentTest {
                 hasFails.set(true);
             }
         }
+    }
+
+    @Test
+    public void testSubscriptionsPerConnection() throws InterruptedException, IOException {
+        RedisRunner.RedisProcess runner = new RedisRunner()
+                .port(RedisRunner.findFreePort())
+                .nosave()
+                .randomDir()
+                .run();
+
+        Config config = new Config();
+        config.useSingleServer()
+                .setSubscriptionConnectionPoolSize(1)
+                .setSubscriptionConnectionMinimumIdleSize(1)
+                .setSubscriptionsPerConnection(1)
+                .setAddress(runner.getRedisServerAddressAndPort());
+
+        RedissonClient redisson  = Redisson.create(config);
+        ExecutorService e = Executors.newFixedThreadPool(32);
+        AtomicInteger errors = new AtomicInteger();
+        AtomicInteger ops = new AtomicInteger();
+        for (int i = 0; i < 5000; i++) {
+            int j = i;
+            e.submit(() -> {
+                try {
+                    String lockKey = "lock-" + ThreadLocalRandom.current().nextInt(5);
+                    RLock lock = redisson.getLock(lockKey);
+                    lock.lock();
+                    Thread.sleep(ThreadLocalRandom.current().nextInt(20));
+                    lock.unlock();
+                    ops.incrementAndGet();
+                } catch (Exception exception) {
+                    exception.printStackTrace();
+                    if(exception instanceof RedisTimeoutException){
+                        return;
+                    }
+                    errors.incrementAndGet();
+                }
+            });
+        }
+
+        e.shutdown();
+        assertThat(e.awaitTermination(150, TimeUnit.SECONDS)).isTrue();
+        assertThat(errors.get()).isZero();
+
+        RedisClientConfig cc = new RedisClientConfig();
+        cc.setAddress(runner.getRedisServerAddressAndPort());
+        RedisClient c = RedisClient.create(cc);
+        RedisConnection ccc = c.connect();
+        List<String> channels = ccc.sync(RedisCommands.PUBSUB_CHANNELS);
+        assertThat(channels).isEmpty();
+        c.shutdown();
+
+        redisson.shutdown();
+        runner.stop();
     }
 
     @Test

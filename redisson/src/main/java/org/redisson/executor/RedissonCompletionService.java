@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,7 @@
  */
 package org.redisson.executor;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RScheduledExecutorService;
@@ -67,7 +61,7 @@ public class RedissonCompletionService<V> implements CompletionService<V> {
         }
         
         RFuture<V> f = executorService.submit(task);
-        f.onComplete((res, e) -> {
+        f.whenComplete((res, e) -> {
             completionQueue.add(f);
         });
         return f;
@@ -80,7 +74,7 @@ public class RedissonCompletionService<V> implements CompletionService<V> {
         }
         
         RFuture<V> f = executorService.submit(task, result);
-        f.onComplete((res, e) -> {
+        f.whenComplete((res, e) -> {
             completionQueue.add(f);
         });
         return f;

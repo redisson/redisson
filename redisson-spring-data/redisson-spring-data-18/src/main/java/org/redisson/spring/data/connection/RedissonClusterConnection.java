@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -147,10 +147,10 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
     @Override
     public ClusterInfo clusterGetClusterInfo() {
         RFuture<Map<String, String>> f = executorService.readAsync((String)null, StringCodec.INSTANCE, RedisCommands.CLUSTER_INFO);
-        syncFuture(f);
+        Map<String, String> entries = syncFuture(f);
 
         Properties props = new Properties();
-        for (Entry<String, String> entry : f.getNow().entrySet()) {
+        for (Entry<String, String> entry : entries.entrySet()) {
             props.setProperty(entry.getKey(), entry.getValue());
         }
         return new ClusterInfo(props);
@@ -309,15 +309,14 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         return result;
     }
 
+    private final RedisStrictCommand<List<byte[]>> KEYS = new RedisStrictCommand<>("KEYS");
+
     @Override
     public Set<byte[]> keys(RedisClusterNode node, byte[] pattern) {
-        RFuture<Collection<String>> f = executorService.readAllAsync(RedisCommands.KEYS, pattern);
-        Collection<String> keys = syncFuture(f);
-        Set<byte[]> result = new HashSet<byte[]>();
-        for (String key : keys) {
-            result.add(key.getBytes(CharsetUtil.UTF_8));
-        }
-        return result;
+        MasterSlaveEntry entry = getEntry(node);
+        RFuture<Collection<byte[]>> f = executorService.readAsync(entry, ByteArrayCodec.INSTANCE, KEYS, pattern);
+        Collection<byte[]> keys = syncFuture(f);
+        return new HashSet<>(keys);
     }
 
     @Override

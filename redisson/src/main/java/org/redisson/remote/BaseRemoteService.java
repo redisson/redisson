@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +15,12 @@
  */
 package org.redisson.remote;
 
-import java.io.IOException;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
+import io.netty.buffer.Unpooled;
+import io.netty.util.CharsetUtil;
+import io.netty.util.Timeout;
+import io.netty.util.TimerTask;
 import org.redisson.RedissonMap;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
@@ -39,13 +34,14 @@ import org.redisson.codec.CompositeCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.executor.RemotePromise;
 import org.redisson.misc.Hash;
-import org.redisson.misc.RPromise;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.util.CharsetUtil;
-import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
+import java.io.IOException;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 /**
  * 
@@ -82,15 +78,10 @@ public abstract class BaseRemoteService {
         return "{remote_response}:" + executorId;
     }
     
-    protected String getAckName(RequestId requestId) {
-        return "{" + name + ":remote" + "}:" + requestId + ":ack";
-    }
-    
     protected String getAckName(String requestId) {
         return "{" + name + ":remote" + "}:" + requestId + ":ack";
     }
-
-
+    
     public String getRequestQueueName(Class<?> remoteInterface) {
         return requestQueueNameCache.computeIfAbsent(remoteInterface, k -> "{" + name + ":" + k.getName() + "}");
     }
@@ -148,10 +139,10 @@ public abstract class BaseRemoteService {
     }
 
     protected <K, V> RMap<K, V> getMap(String name) {
-        return new RedissonMap<>(new CompositeCodec(StringCodec.INSTANCE, codec, codec), commandExecutor, name, null, null, null);
+        return new RedissonMap<>(new CompositeCodec(StringCodec.INSTANCE, codec, codec), commandExecutor, name);
     }
     
-    protected <T> void scheduleCheck(String mapName, RequestId requestId, RPromise<T> cancelRequest) {
+    protected <T> void scheduleCheck(String mapName, String requestId, CompletableFuture<T> cancelRequest) {
         commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
@@ -160,8 +151,8 @@ public abstract class BaseRemoteService {
                 }
 
                 RMap<String, T> canceledRequests = getMap(mapName);
-                RFuture<T> future = canceledRequests.removeAsync(requestId.toString());
-                future.onComplete((request, ex) -> {
+                RFuture<T> future = canceledRequests.removeAsync(requestId);
+                future.whenComplete((request, ex) -> {
                     if (cancelRequest.isDone()) {
                         return;
                     }
@@ -173,23 +164,23 @@ public abstract class BaseRemoteService {
                     if (request == null) {
                         scheduleCheck(mapName, requestId, cancelRequest);
                     } else {
-                        cancelRequest.trySuccess(request);
+                        cancelRequest.complete(request);
                     }
                 });
             }
         }, 3000, TimeUnit.MILLISECONDS);
     }
 
-    protected RequestId generateRequestId() {
+    protected String generateRequestId(Object[] args) {
         byte[] id = new byte[16];
         ThreadLocalRandom.current().nextBytes(id);
-        return new RequestId(id);
+        return ByteBufUtil.hexDump(id);
     }
 
-    protected abstract RFuture<Boolean> addAsync(String requestQueueName, RemoteServiceRequest request,
-            RemotePromise<Object> result);
+    protected abstract CompletableFuture<Boolean> addAsync(String requestQueueName, RemoteServiceRequest request,
+                                                           RemotePromise<Object> result);
 
-    protected abstract RFuture<Boolean> removeAsync(String requestQueueName, RequestId taskId);
+    protected abstract CompletableFuture<Boolean> removeAsync(String requestQueueName, String taskId);
 
     protected long[] getMethodSignature(Method method) {
         long[] result = methodSignaturesCache.get(method);

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ public interface RListRx<V> extends RCollectionRx<V>, RSortableRx<List<V>> {
      * @param indexes of elements
      * @return elements
      */
-    Single<List<V>> get(int...indexes);
+    Single<List<V>> get(int... indexes);
     
     /**
      * Add <code>element</code> after <code>elementToFind</code>

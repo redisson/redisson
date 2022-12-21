@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,9 @@ import org.redisson.command.CommandBatchService;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.NodeSource;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
-import org.redisson.misc.RPromise;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 
@@ -45,11 +45,11 @@ public class CommandRxBatchService extends CommandRxService {
     }
     
     @Override
-    public <R> Flowable<R> flowable(Callable<RFuture<R>> supplier) {
-        Flowable<R> flowable = super.flowable(new Callable<RFuture<R>>() {
-            volatile RFuture<R> future;
+    public <R> Flowable<R> flowable(Callable<CompletableFuture<R>> supplier) {
+        Flowable<R> flowable = super.flowable(new Callable<CompletableFuture<R>>() {
+            volatile CompletableFuture<R> future;
             @Override
-            public  RFuture<R> call() throws Exception {
+            public CompletableFuture<R> call() throws Exception {
                 if (future == null) {
                     synchronized (this) {
                         if (future == null) {
@@ -65,21 +65,21 @@ public class CommandRxBatchService extends CommandRxService {
     }
     
     @Override
-    protected <R> RPromise<R> createPromise() {
+    protected <R> CompletableFuture<R> createPromise() {
         return batchService.createPromise();
     }
     
     @Override
-    public <V, R> void async(boolean readOnlyMode, NodeSource nodeSource,
-            Codec codec, RedisCommand<V> command, Object[] params, RPromise<R> mainPromise, boolean ignoreRedirect, boolean noRetry) {
-        batchService.async(readOnlyMode, nodeSource, codec, command, params, mainPromise, ignoreRedirect, noRetry);
+    public <V, R> RFuture<R> async(boolean readOnlyMode, NodeSource nodeSource,
+            Codec codec, RedisCommand<V> command, Object[] params, boolean ignoreRedirect, boolean noRetry) {
+        return batchService.async(readOnlyMode, nodeSource, codec, command, params, ignoreRedirect, noRetry);
     }
 
-    public RFuture<BatchResult<?>> executeAsync() {
-        return batchService.executeAsync();
+    public CompletableFuture<BatchResult<?>> executeAsync() {
+        return batchService.executeAsync().toCompletableFuture();
     }
 
-    public RFuture<Void> discardAsync() {
-        return batchService.discardAsync();
+    public CompletableFuture<Void> discardAsync() {
+        return batchService.discardAsync().toCompletableFuture();
     }
 }

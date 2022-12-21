@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,8 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
 
     private String masterName;
 
+    private String sentinelUsername;
+
     private String sentinelPassword;
 
     /**
@@ -66,6 +68,7 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
         setScanInterval(config.getScanInterval());
         setNatMapper(config.getNatMapper());
         setCheckSentinelsList(config.isCheckSentinelsList());
+        setSentinelUsername(config.getSentinelUsername());
         setSentinelPassword(config.getSentinelPassword());
         setCheckSlaveStatusWithSyncing(config.isCheckSlaveStatusWithSyncing());
         setSentinelsDiscovery(config.isSentinelsDiscovery());
@@ -83,6 +86,21 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
     }
     public String getMasterName() {
         return masterName;
+    }
+
+    /**
+     * Username required by the Redis Sentinel servers for authentication.
+     *
+     * @param sentinelUsername of Redis
+     * @return config
+     */
+    public SentinelServersConfig setSentinelUsername(String sentinelUsername) {
+        this.sentinelUsername = sentinelUsername;
+        return this;
+    }
+
+    public String getSentinelUsername() {
+        return sentinelUsername;
     }
 
     /**

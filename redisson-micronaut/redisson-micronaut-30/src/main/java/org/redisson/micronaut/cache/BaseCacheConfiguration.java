@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,10 +57,10 @@ public class BaseCacheConfiguration implements Named {
 
     /**
      * Redis data codec applied to cache entries.
-     * Default is MarshallingCodec codec
+     * Default is Kryo5Codec codec
      *
      * @see Codec
-     * @see org.redisson.codec.MarshallingCodec
+     * @see org.redisson.codec.Kryo5Codec
      *
      * @param codec - data codec
      * @return config

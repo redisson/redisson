@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,8 @@
  */
 package org.redisson;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.Map.Entry;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-
+import io.netty.buffer.ByteBufUtil;
 import org.redisson.api.RExecutorService;
-import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.WorkerOptions;
 import org.redisson.client.RedisConnection;
@@ -34,7 +27,13 @@ import org.redisson.connection.MasterSlaveEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.buffer.ByteBufUtil;
+import java.io.File;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.Map.Entry;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 
@@ -95,7 +94,7 @@ public final class RedissonNode {
             try {
                 config = RedissonNodeFileConfig.fromYAML(new File(configPath));
             } catch (IOException e1) {
-                log.error("Can't parse json config " + configPath, e);
+                log.error("Can't parse json config {}", configPath, e);
                 throw new IllegalArgumentException("Can't parse yaml config " + configPath, e1);
             }
         }
@@ -168,22 +167,35 @@ public final class RedissonNode {
     private void retrieveAddresses() {
         ConnectionManager connectionManager = ((Redisson) redisson).getConnectionManager();
         for (MasterSlaveEntry entry : connectionManager.getEntrySet()) {
-            RFuture<RedisConnection> readFuture = entry.connectionReadOp(null);
-            if (readFuture.awaitUninterruptibly((long) connectionManager.getConfig().getConnectTimeout()) 
-                    && readFuture.isSuccess()) {
-                RedisConnection connection = readFuture.getNow();
-                entry.releaseRead(connection);
-                remoteAddress = (InetSocketAddress) connection.getChannel().remoteAddress();
-                localAddress = (InetSocketAddress) connection.getChannel().localAddress();
+            CompletionStage<RedisConnection> readFuture = entry.connectionReadOp(null);
+            RedisConnection readConnection = null;
+            try {
+                readConnection = readFuture.toCompletableFuture().get(connectionManager.getConfig().getConnectTimeout(), TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } catch (Exception e) {
+                // skip
+            }
+            if (readConnection != null) {
+                entry.releaseRead(readConnection);
+                remoteAddress = (InetSocketAddress) readConnection.getChannel().remoteAddress();
+                localAddress = (InetSocketAddress) readConnection.getChannel().localAddress();
                 return;
             }
-            RFuture<RedisConnection> writeFuture = entry.connectionWriteOp(null);
-            if (writeFuture.awaitUninterruptibly((long) connectionManager.getConfig().getConnectTimeout())
-                    && writeFuture.isSuccess()) {
-                RedisConnection connection = writeFuture.getNow();
-                entry.releaseWrite(connection);
-                remoteAddress = (InetSocketAddress) connection.getChannel().remoteAddress();
-                localAddress = (InetSocketAddress) connection.getChannel().localAddress();
+
+            CompletionStage<RedisConnection> writeFuture = entry.connectionWriteOp(null);
+            RedisConnection writeConnection = null;
+            try {
+                writeConnection = writeFuture.toCompletableFuture().get(connectionManager.getConfig().getConnectTimeout(), TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } catch (Exception e) {
+                // skip
+            }
+            if (writeConnection != null) {
+                entry.releaseWrite(writeConnection);
+                remoteAddress = (InetSocketAddress) writeConnection.getChannel().remoteAddress();
+                localAddress = (InetSocketAddress) writeConnection.getChannel().localAddress();
                 return;
             }
         }

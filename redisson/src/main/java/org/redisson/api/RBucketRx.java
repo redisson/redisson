@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 
@@ -37,18 +39,38 @@ public interface RBucketRx<V> extends RExpirableRx {
      * @return object size
      */
     Single<Long> size();
-    
+
     /**
-     * Tries to set element atomically into empty holder.
+     * Sets value only if object holder doesn't exist.
+     *
+     * @param value - value to set
+     * @return {@code true} if successful, or {@code false} if
+     *         element was already set
+     */
+    Single<Boolean> setIfAbsent(V value);
+
+    /**
+     * Sets value with defined duration only if object holder doesn't exist.
+     *
+     * @param value value to set
+     * @param duration expiration duration
+     * @return {@code true} if successful, or {@code false} if
+     *         element was already set
+     */
+    Single<Boolean> setIfAbsent(V value, Duration duration);
+
+    /**
+     * Use {@link #setIfAbsent(Object)} instead
      * 
      * @param value - value to set
      * @return {@code true} if successful, or {@code false} if
      *         element was already set
      */
+    @Deprecated
     Single<Boolean> trySet(V value);
 
     /**
-     * Tries to set element atomically into empty holder with defined <code>timeToLive</code> interval.
+     * Use {@link #setIfAbsent(Object, Duration)} instead
      * 
      * @param value - value to set
      * @param timeToLive - time to live interval
@@ -56,6 +78,7 @@ public interface RBucketRx<V> extends RExpirableRx {
      * @return {@code true} if successful, or {@code false} if
      *         element was already set
      */
+    @Deprecated
     Single<Boolean> trySet(V value, long timeToLive, TimeUnit timeUnit);
 
     /**
@@ -107,6 +130,35 @@ public interface RBucketRx<V> extends RExpirableRx {
      * @return previous value
      */
     Maybe<V> getAndSet(V value, long timeToLive, TimeUnit timeUnit);
+
+    /**
+     * Retrieves current element in the holder and sets an expiration duration for it.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param duration of object time to live interval
+     * @return element
+     */
+    Maybe<V> getAndExpire(Duration duration);
+
+    /**
+     * Retrieves current element in the holder and sets an expiration date for it.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param time of exact object expiration moment
+     * @return element
+     */
+    Maybe<V> getAndExpire(Instant time);
+
+    /**
+     * Retrieves current element in the holder and clears expiration date set before.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @return element
+     */
+    Maybe<V> getAndClearExpire();
 
     /**
      * Retrieves element stored in the holder.

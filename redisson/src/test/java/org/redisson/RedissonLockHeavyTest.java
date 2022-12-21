@@ -23,7 +23,7 @@ public class RedissonLockHeavyTest extends BaseTest {
     }
 
     @ParameterizedTest
-    @MethodSource("mapClasses")
+    @MethodSource("data")
     public void lockUnlockRLock(int threads, int loops) throws Exception {
         ExecutorService executor = Executors.newFixedThreadPool(threads);
         for (int i = 0; i < threads; i++) {
@@ -57,9 +57,9 @@ public class RedissonLockHeavyTest extends BaseTest {
         executor.awaitTermination(threads * loops, TimeUnit.SECONDS);
 
     }
-    
+
     @ParameterizedTest
-    @MethodSource("mapClasses")
+    @MethodSource("data")
     public void tryLockUnlockRLock(int threads, int loops) throws Exception {
         ExecutorService executor = Executors.newFixedThreadPool(threads);
 

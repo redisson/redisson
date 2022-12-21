@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,10 @@
  */
 package org.redisson.api;
 
+import java.time.Duration;
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -41,6 +44,36 @@ public interface RBlockingQueueAsync<V> extends RQueueAsync<V> {
      *         specified waiting time elapses before an element is available
      */
     RFuture<V> pollFromAnyAsync(long timeout, TimeUnit unit, String... queueNames);
+
+    /**
+     * Retrieves and removes first available head elements of <b>any</b> queue,
+     * waiting up to the specified wait time if necessary for an element to become available
+     * in any of defined queues <b>including</b> queue itself.
+     *
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count elements amount
+     * @param queueNames name of queues
+     * @return the head elements
+     */
+    RFuture<Map<String, List<V>>> pollFirstFromAnyAsync(Duration duration, int count, String... queueNames);
+
+    /**
+     * Retrieves and removes first available tail elements of <b>any</b> queue,
+     * waiting up to the specified wait time if necessary for an element to become available
+     * in any of defined queues <b>including</b> queue itself.
+     *
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count elements amount
+     * @param queueNames name of queues
+     * @return the tail elements
+     */
+    RFuture<Map<String, List<V>>> pollLastFromAnyAsync(Duration duration, int count, String... queueNames);
 
     /**
      * Removes at most the given number of available elements from

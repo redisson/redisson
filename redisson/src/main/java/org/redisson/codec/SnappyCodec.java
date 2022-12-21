@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,17 +28,9 @@ import org.redisson.client.protocol.Encoder;
 import java.io.IOException;
 
 /**
- * Snappy compression codec.
- * Uses inner <code>Codec</code> to convert object to binary stream.
- * <code>MarshallingCodec</code> used by default.
- *
- * Fully thread-safe.
- *
- * @see org.redisson.codec.MarshallingCodec
- *
- * @author Nikita Koksharov
- *
+ * Use SnappyCodecV2 instead
  */
+@Deprecated
 public class SnappyCodec extends BaseCodec {
 
     private static final FastThreadLocal<Snappy> SNAPPY_DECODER = new FastThreadLocal<Snappy>() {
@@ -56,7 +48,7 @@ public class SnappyCodec extends BaseCodec {
     private final Codec innerCodec;
 
     public SnappyCodec() {
-        this(new MarshallingCodec());
+        this(new Kryo5Codec());
     }
 
     public SnappyCodec(Codec innerCodec) {
@@ -64,7 +56,7 @@ public class SnappyCodec extends BaseCodec {
     }
 
     public SnappyCodec(ClassLoader classLoader) {
-        this(new MarshallingCodec(classLoader));
+        this(new Kryo5Codec(classLoader));
     }
     
     public SnappyCodec(ClassLoader classLoader, SnappyCodec codec) throws ReflectiveOperationException {

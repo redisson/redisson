@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import org.redisson.liveobject.resolver.NamingScheme;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
@@ -79,6 +80,10 @@ public class AccessorInterceptor {
         Class<?> fieldType = field.getType();
         
         if (isGetter(method, fieldName)) {
+            if (Modifier.isTransient(field.getModifiers())) {
+                return field.get(me);
+            }
+
             Object result = liveMap.get(fieldName);
             if (result == null) {
                 RObject ar = commandExecutor.getObjectBuilder().createObject(((RLiveObject) me).getLiveObjectId(), me.getClass().getSuperclass(), fieldType, fieldName);
@@ -101,6 +106,10 @@ public class AccessorInterceptor {
         }
         if (isSetter(method, fieldName)) {
             Object arg = args[0];
+            if (Modifier.isTransient(field.getModifiers())) {
+                field.set(me, arg);
+                return me;
+            }
             if (arg != null && ClassUtils.isAnnotationPresent(arg.getClass(), REntity.class)) {
                 throw new IllegalStateException("REntity object should be attached to Redisson first");
             }

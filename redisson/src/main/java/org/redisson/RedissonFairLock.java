@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package org.redisson;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
@@ -58,50 +59,51 @@ public class RedissonFairLock extends RedissonLock implements RLock {
     }
 
     @Override
-    protected RFuture<RedissonLockEntry> subscribe(long threadId) {
+    protected CompletableFuture<RedissonLockEntry> subscribe(long threadId) {
         return pubSub.subscribe(getEntryName() + ":" + threadId,
                 getChannelName() + ":" + getLockName(threadId));
     }
 
     @Override
-    protected void unsubscribe(RFuture<RedissonLockEntry> future, long threadId) {
-        pubSub.unsubscribe(future.getNow(), getEntryName() + ":" + threadId,
+    protected void unsubscribe(RedissonLockEntry entry, long threadId) {
+        pubSub.unsubscribe(entry, getEntryName() + ":" + threadId,
                 getChannelName() + ":" + getLockName(threadId));
     }
 
     @Override
-    protected RFuture<Void> acquireFailedAsync(long waitTime, TimeUnit unit, long threadId) {
+    protected CompletableFuture<Void> acquireFailedAsync(long waitTime, TimeUnit unit, long threadId) {
         long wait = threadWaitTime;
-        if (waitTime != -1) {
+        if (waitTime > 0) {
             wait = unit.toMillis(waitTime);
         }
 
-        return evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
+        RFuture<Void> f = evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 // get the existing timeout for the thread to remove
                 "local queue = redis.call('lrange', KEYS[1], 0, -1);" +
-                // find the location in the queue where the thread is
-                "local i = 1;" +
-                "while i <= #queue and queue[i] ~= ARGV[1] do " +
-                    "i = i + 1;" +
-                "end;" +
-                // go to the next index which will exist after the current thread is removed
-                "i = i + 1;" +
-                // decrement the timeout for the rest of the queue after the thread being removed
-                "while i <= #queue do " +
-                    "redis.call('zincrby', KEYS[2], -tonumber(ARGV[2]), queue[i]);" +
-                    "i = i + 1;" +
-                "end;" +
-                // remove the thread from the queue and timeouts set
-                "redis.call('zrem', KEYS[2], ARGV[1]);" +
-                "redis.call('lrem', KEYS[1], 0, ARGV[1]);",
-                Arrays.<Object>asList(threadsQueueName, timeoutSetName),
+                        // find the location in the queue where the thread is
+                        "local i = 1;" +
+                        "while i <= #queue and queue[i] ~= ARGV[1] do " +
+                        "i = i + 1;" +
+                        "end;" +
+                        // go to the next index which will exist after the current thread is removed
+                        "i = i + 1;" +
+                        // decrement the timeout for the rest of the queue after the thread being removed
+                        "while i <= #queue do " +
+                        "redis.call('zincrby', KEYS[2], -tonumber(ARGV[2]), queue[i]);" +
+                        "i = i + 1;" +
+                        "end;" +
+                        // remove the thread from the queue and timeouts set
+                        "redis.call('zrem', KEYS[2], ARGV[1]);" +
+                        "redis.call('lrem', KEYS[1], 0, ARGV[1]);",
+                Arrays.asList(threadsQueueName, timeoutSetName),
                 getLockName(threadId), wait);
+        return f.toCompletableFuture();
     }
 
     @Override
     <T> RFuture<T> tryLockInnerAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
         long wait = threadWaitTime;
-        if (waitTime != -1) {
+        if (waitTime > 0) {
             wait = unit.toMillis(waitTime);
         }
 
@@ -292,13 +294,13 @@ public class RedissonFairLock extends RedissonLock implements RLock {
     }
 
     @Override
-    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
-        return expireAsync(timeToLive, timeUnit, getRawName(), threadsQueueName, timeoutSetName);
+    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
+        return super.expireAsync(timeToLive, timeUnit, param, getRawName(), threadsQueueName, timeoutSetName);
     }
 
     @Override
-    protected RFuture<Boolean> expireAtAsync(long timestamp, String... keys) {
-        return super.expireAtAsync(timestamp, getRawName(), threadsQueueName, timeoutSetName);
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
+        return super.expireAtAsync(timestamp, param, getRawName(), threadsQueueName, timeoutSetName);
     }
 
     @Override
@@ -335,7 +337,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                     "return 1; " + 
                 "end; " + 
                 "return 0;",
-                Arrays.<Object>asList(getRawName(), threadsQueueName, timeoutSetName, getChannelName()),
+                Arrays.asList(getRawName(), threadsQueueName, timeoutSetName, getChannelName()),
                 LockPubSub.UNLOCK_MESSAGE, System.currentTimeMillis());
     }
 

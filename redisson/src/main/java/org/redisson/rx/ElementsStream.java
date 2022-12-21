@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@ public class ElementsStream {
     private static <V> void take(Supplier<RFuture<V>> factory, ReplayProcessor<V> p, AtomicLong counter, AtomicReference<RFuture<V>> futureRef) {
         RFuture<V> future = factory.get();
         futureRef.set(future);
-        future.onComplete((res, e) -> {
+        future.whenComplete((res, e) -> {
             if (e != null) {
                 p.onError(e);
                 return;

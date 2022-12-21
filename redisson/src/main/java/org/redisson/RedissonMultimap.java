@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,11 +27,12 @@ import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.iterator.RedissonBaseMapIterator;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.Hash;
-import org.redisson.misc.RedissonPromise;
 
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -219,7 +220,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     @Override
     public RFuture<Long> fastRemoveAsync(K... keys) {
         if (keys == null || keys.length == 0) {
-            return RedissonPromise.newSucceededFuture(0L);
+            return new CompletableFutureWrapper<>(0L);
         }
 
         List<Object> mapKeys = new ArrayList<Object>(keys.length);
@@ -269,7 +270,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     @Override
     public RFuture<Void> renameAsync(String newName) {
         String newPrefix = suffixName(newName, "");
-        RFuture<Void> f = commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
+        RFuture<Void> future = commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 "local entries = redis.call('hgetall', KEYS[1]); " +
                 "local keys = {}; " +
                 "for i, v in ipairs(entries) do " +
@@ -283,18 +284,14 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
                   + "redis.call('rename', ARGV[1] .. keys[i], ARGV[2] .. keys[i]); "
               + "end; ",
                 Arrays.asList(getRawName()), prefix, newPrefix, newName);
-        f.onComplete((r, e) -> {
-            if (e == null) {
-                setName(newName);
-            }
-        });
-        return f;
+        CompletionStage<Void> f = future.thenAccept(r -> setName(newName));
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
     public RFuture<Boolean> renamenxAsync(String newName) {
         String newPrefix = suffixName(newName, "");
-        RFuture<Boolean> f = commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        RFuture<Boolean> future = commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local entries = redis.call('hgetall', KEYS[1]); " +
                 "local keys = {}; " +
                 "for i, v in ipairs(entries) do " +
@@ -320,42 +317,57 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
               + "end; " +
                 "return 1; ",
                 Arrays.asList(getRawName()), prefix, newPrefix, newName);
-        f.onComplete((value, e) -> {
-            if (e == null && value) {
+        CompletionStage<Boolean> f = future.thenApply(value -> {
+            if (value) {
                 setName(newName);
             }
+            return value;
         });
-        return f;
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
-    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
+    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local entries = redis.call('hgetall', KEYS[1]); " +
                 "for i, v in ipairs(entries) do " +
                     "if i % 2 == 0 then " +
-                        "local name = ARGV[2] .. v; " + 
-                        "redis.call('pexpire', name, ARGV[1]); " +
-                    "end;" +
-                "end; " +
-                "return redis.call('pexpire', KEYS[1], ARGV[1]); ",
-                Arrays.<Object>asList(getRawName()),
-                timeUnit.toMillis(timeToLive), prefix);
+                        "local name = ARGV[2] .. v; "
+                      + "if ARGV[3] ~= '' then "
+                          + "redis.call('pexpire', name, ARGV[1], ARGV[3]); "
+                      + "else "
+                          + "redis.call('pexpire', name, ARGV[1]); "
+                      + "end; "
+                  + "end;" +
+                "end; "
+              + "if ARGV[3] ~= '' then "
+                  + "return redis.call('pexpire', KEYS[1], ARGV[1], ARGV[3]); "
+              + "end; "
+              + "return redis.call('pexpire', KEYS[1], ARGV[1]); ",
+                Arrays.asList(getRawName()),
+                timeUnit.toMillis(timeToLive), prefix, param);
     }
 
     @Override
-    protected RFuture<Boolean> expireAtAsync(long timestamp, String... keys) {
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                "local entries = redis.call('hgetall', KEYS[1]); " +
+          "local entries = redis.call('hgetall', KEYS[1]); " +
                 "for i, v in ipairs(entries) do " +
                     "if i % 2 == 0 then " +
-                        "local name = ARGV[2] .. v; " + 
-                        "redis.call('pexpireat', name, ARGV[1]); " +
-                    "end;" +
-                "end; " +
-                "return redis.call('pexpireat', KEYS[1], ARGV[1]); ",
-                Arrays.<Object>asList(getRawName()),
-                timestamp, prefix);
+                        "local name = ARGV[2] .. v; "
+                      + "if ARGV[3] ~= '' then "
+                          + "redis.call('pexpireat', name, ARGV[1], ARGV[3]); "
+                      + "else "
+                          + "redis.call('pexpireat', name, ARGV[1]); "
+                      + "end; "
+                  + "end;"
+              + "end; "
+              + "if ARGV[3] ~= '' then "
+                  + "return redis.call('pexpireat', KEYS[1], ARGV[1], ARGV[3]); "
+              + "end; "
+              + "return redis.call('pexpireat', KEYS[1], ARGV[1]); ",
+                Arrays.asList(getRawName()),
+                timestamp, prefix, param);
     }
 
     @Override

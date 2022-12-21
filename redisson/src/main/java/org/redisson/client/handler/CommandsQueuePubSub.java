@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class CommandsQueuePubSub extends ChannelDuplexHandler {
 
-    public static final AttributeKey<QueueCommand> CURRENT_COMMAND = AttributeKey.valueOf("promise");
+    public static final AttributeKey<QueueCommandHolder> CURRENT_COMMAND = AttributeKey.valueOf("promise");
 
     private final Queue<QueueCommandHolder> queue = new ConcurrentLinkedQueue<>();
 
@@ -47,8 +47,8 @@ public class CommandsQueuePubSub extends ChannelDuplexHandler {
     };
 
     public void sendNextCommand(Channel channel) {
-        QueueCommand command = channel.attr(CommandsQueuePubSub.CURRENT_COMMAND).getAndSet(null);
-        if (command != null) {
+        QueueCommandHolder holder = channel.attr(CommandsQueuePubSub.CURRENT_COMMAND).getAndSet(null);
+        if (holder != null) {
             queue.poll();
         } else {
             QueueCommandHolder c = queue.peek();
@@ -96,9 +96,9 @@ public class CommandsQueuePubSub extends ChannelDuplexHandler {
     }
 
     private void sendData(Channel ch) {
-        QueueCommandHolder command = queue.peek();
-        if (command != null && command.trySend()) {
-            QueueCommand data = command.getCommand();
+        QueueCommandHolder holder = queue.peek();
+        if (holder != null && holder.trySend()) {
+            QueueCommand data = holder.getCommand();
             List<CommandData<Object, Object>> pubSubOps = data.getPubSubOperations();
             if (!pubSubOps.isEmpty()) {
                 for (CommandData<Object, Object> cd : pubSubOps) {
@@ -107,11 +107,11 @@ public class CommandsQueuePubSub extends ChannelDuplexHandler {
                     }
                 }
             } else {
-                ch.attr(CURRENT_COMMAND).set(data);
+                ch.attr(CURRENT_COMMAND).set(holder);
             }
 
-            command.getChannelPromise().addListener(listener);
-            ch.writeAndFlush(data, command.getChannelPromise());
+            holder.getChannelPromise().addListener(listener);
+            ch.writeAndFlush(data, holder.getChannelPromise());
         }
     }
 

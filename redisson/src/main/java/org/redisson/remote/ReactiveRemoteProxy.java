@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.executor.RemotePromise;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.reactive.CommandReactiveExecutor;
 
 import reactor.core.publisher.Mono;
@@ -47,7 +48,7 @@ public class ReactiveRemoteProxy extends AsyncRemoteProxy {
 
     @Override
     protected Object convertResult(RemotePromise<Object> result, Class<?> returnType) {
-        return ((CommandReactiveExecutor) commandExecutor).reactive(() -> result);
+        return ((CommandReactiveExecutor) commandExecutor).reactive(() -> new CompletableFutureWrapper<>(result));
     }
     
 }

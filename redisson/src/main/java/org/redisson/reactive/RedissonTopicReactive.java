@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ public class RedissonTopicReactive {
     }
 
     public <M> Flux<M> getMessages(Class<M> type) {
-        return Flux.<M>create(emitter -> {
+        return Flux.create(emitter -> {
             emitter.onRequest(n -> {
                 AtomicLong counter = new AtomicLong(n);
                 RFuture<Integer> t = topic.addListenerAsync(type, new MessageListener<M>() {
@@ -50,7 +50,7 @@ public class RedissonTopicReactive {
                         }
                     }
                 });
-                t.onComplete((id, e) -> {
+                t.whenComplete((id, e) -> {
                     if (e != null) {
                         emitter.error(e);
                         return;

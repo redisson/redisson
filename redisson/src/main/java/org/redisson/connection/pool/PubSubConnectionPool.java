@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.redisson.connection.pool;
 
-import org.redisson.api.RFuture;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
@@ -23,6 +22,9 @@ import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 /**
  * Connection pool for Publish / Subscribe
@@ -36,7 +38,7 @@ public class PubSubConnectionPool extends ConnectionPool<RedisPubSubConnection> 
         super(config, connectionManager, masterSlaveEntry);
     }
 
-    public RFuture<RedisPubSubConnection> get() {
+    public CompletableFuture<RedisPubSubConnection> get() {
         return get(RedisCommands.PUBLISH);
     }
     
@@ -51,13 +53,13 @@ public class PubSubConnectionPool extends ConnectionPool<RedisPubSubConnection> 
     }
 
     @Override
-    protected RFuture<RedisPubSubConnection> connect(ClientConnectionsEntry entry) {
+    protected CompletionStage<RedisPubSubConnection> connect(ClientConnectionsEntry entry) {
         return entry.connectPubSub();
     }
 
     @Override
-    protected void acquireConnection(ClientConnectionsEntry entry, Runnable runnable, RedisCommand<?> command) {
-        entry.acquireSubscribeConnection(runnable);
+    protected CompletableFuture<Void> acquireConnection(ClientConnectionsEntry entry, RedisCommand<?> command) {
+        return entry.acquireSubscribeConnection();
     }
     
     @Override
@@ -70,4 +72,8 @@ public class PubSubConnectionPool extends ConnectionPool<RedisPubSubConnection> 
         entry.releaseSubscribeConnection(conn);
     }
 
+    @Override
+    protected boolean changeUsage() {
+        return false;
+    }
 }

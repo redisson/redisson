@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -48,16 +50,17 @@ public interface RBucketAsync<V> extends RExpirableAsync {
     RFuture<V> getAndDeleteAsync();
 
     /**
-     * Tries to set element atomically into empty holder.
+     * Use {@link #setIfAbsentAsync(Object)} instead
      * 
      * @param value - value to set
      * @return {@code true} if successful, or {@code false} if
      *         element was already set
      */
+    @Deprecated
     RFuture<Boolean> trySetAsync(V value);
 
     /**
-     * Tries to set element atomically into empty holder with defined <code>timeToLive</code> interval.
+     * Use {@link #setIfAbsentAsync(Object, Duration)} instead
      * 
      * @param value - value to set
      * @param timeToLive - time to live interval
@@ -65,7 +68,27 @@ public interface RBucketAsync<V> extends RExpirableAsync {
      * @return {@code true} if successful, or {@code false} if
      *         element was already set
      */
+    @Deprecated
     RFuture<Boolean> trySetAsync(V value, long timeToLive, TimeUnit timeUnit);
+
+    /**
+     * Sets value only if object holder doesn't exist.
+     *
+     * @param value - value to set
+     * @return {@code true} if successful, or {@code false} if
+     *         element was already set
+     */
+    RFuture<Boolean> setIfAbsentAsync(V value);
+
+    /**
+     * Sets value with defined duration only if object holder doesn't exist.
+     *
+     * @param value value to set
+     * @param duration expiration duration
+     * @return {@code true} if successful, or {@code false} if
+     *         element was already set
+     */
+    RFuture<Boolean> setIfAbsentAsync(V value, Duration duration);
 
     /**
      * Sets value only if it's already exists.
@@ -116,7 +139,36 @@ public interface RBucketAsync<V> extends RExpirableAsync {
      * @return previous value
      */
     RFuture<V> getAndSetAsync(V value, long timeToLive, TimeUnit timeUnit);
-    
+
+    /**
+     * Retrieves current element in the holder and sets an expiration duration for it.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param duration of object time to live interval
+     * @return element
+     */
+    RFuture<V> getAndExpireAsync(Duration duration);
+
+    /**
+     * Retrieves current element in the holder and sets an expiration date for it.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param time of exact object expiration moment
+     * @return element
+     */
+    RFuture<V> getAndExpireAsync(Instant time);
+
+    /**
+     * Retrieves current element in the holder and clears expiration date set before.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @return element
+     */
+    RFuture<V> getAndClearExpireAsync();
+
     /**
      * Stores element into the holder. 
      * 

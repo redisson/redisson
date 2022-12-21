@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2021 Nikita Koksharov
+ * Copyright (c) 2013-2022 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,8 +78,8 @@ public class ConfigSupport {
 
     }
 
-    private ObjectMapper jsonMapper = createMapper(null, null);
-    private ObjectMapper yamlMapper = createMapper(new YAMLFactory(), null);
+    protected final ObjectMapper jsonMapper = createMapper(null, null);
+    protected final ObjectMapper yamlMapper = createMapper(new YAMLFactory(), null);
     
     private String resolveEnvParams(Readable in) {
         Scanner s = new Scanner(in).useDelimiter("\\A");
@@ -121,7 +121,7 @@ public class ConfigSupport {
     }
     
     public <T> T fromJSON(File file, Class<T> configType, ClassLoader classLoader) throws IOException {
-        jsonMapper = createMapper(null, classLoader);
+        ObjectMapper jsonMapper = createMapper(null, classLoader);
         String content = resolveEnvParams(new FileReader(file));
         return jsonMapper.readValue(content, configType);
     }
@@ -155,7 +155,7 @@ public class ConfigSupport {
     }
     
     public <T> T fromYAML(File file, Class<T> configType, ClassLoader classLoader) throws IOException {
-        yamlMapper = createMapper(new YAMLFactory(), classLoader);
+        ObjectMapper yamlMapper = createMapper(new YAMLFactory(), classLoader);
         String content = resolveEnvParams(new FileReader(file));
         return yamlMapper.readValue(content, configType);
     }
@@ -234,6 +234,7 @@ public class ConfigSupport {
         mapper.addMixIn(NatMapper.class, ClassMixIn.class);
         mapper.addMixIn(NameMapper.class, ClassMixIn.class);
         mapper.addMixIn(NettyHook.class, ClassMixIn.class);
+        mapper.addMixIn(CredentialsResolver.class, ClassMixIn.class);
 
         FilterProvider filterProvider = new SimpleFilterProvider()
                 .addFilter("classFilter", SimpleBeanPropertyFilter.filterOutAllExcept());
