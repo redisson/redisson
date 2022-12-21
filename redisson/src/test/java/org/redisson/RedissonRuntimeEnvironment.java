@@ -24,7 +24,13 @@ public class RedissonRuntimeEnvironment {
     private static String installPathByOS(){
         final String OS = System.getProperty("os.name", "generic");
         final boolean isMacOS = OS.toLowerCase(Locale.ENGLISH).contains("mac");
-
-        return isMacOS ? MAC_PATH : WINDOW_PATH;
+        if (isMacOS) {
+          return MAC_PATH;
+        }
+        if (isWindows) {
+          return WINDOW_PATH;
+        }
+        // redis-server must be in PATH env variable
+        return "redis-server";
     }
 }

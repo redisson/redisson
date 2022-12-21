@@ -1,41 +1,58 @@
 package org.redisson;
 
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.redisson.api.HostPortNatMapper;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 import org.redisson.connection.balancer.RandomLoadBalancer;
 
+import java.io.IOException;
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonShardedTopicTest {
+    static RedissonClient redisson;
+    static ClusterRunner.ClusterProcesses process;
+
+    @BeforeAll
+    public static void before()
+            throws RedisRunner.FailedToStartRedisException, IOException, InterruptedException {
+        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave1 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave2 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave3 = new RedisRunner().randomPort().randomDir().nosave();
+
+
+        ClusterRunner clusterRunner = new ClusterRunner()
+                .addNode(master1, slave1)
+                .addNode(master2, slave2)
+                .addNode(master3, slave3);
+        process = clusterRunner.run();
+
+        Config config = new Config();
+        config.useClusterServers()
+                .setLoadBalancer(new RandomLoadBalancer())
+                .addNodeAddress(
+                        process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
+
+        redisson = Redisson.create(config);
+    }
+
+    @AfterAll
+    public static void after() {
+        process.shutdown();
+        redisson.shutdown();
+    }
 
     @Test
     public void testClusterSharding() {
-        Config config = new Config();
-        HostPortNatMapper m = new HostPortNatMapper();
-        Map<String, String> mm = new HashMap<>();
-        mm.put("172.17.0.2:6380", "127.0.0.1:5001");
-        mm.put("172.17.0.2:6382", "127.0.0.1:5003");
-        mm.put("172.17.0.2:6379", "127.0.0.1:5000");
-        mm.put("172.17.0.2:6383", "127.0.0.1:5004");
-        mm.put("172.17.0.2:6384", "127.0.0.1:5005");
-        mm.put("172.17.0.2:6381", "127.0.0.1:5002");
-        m.setHostsPortMap(mm);
-        config.useClusterServers()
-                .setPingConnectionInterval(0)
-                .setNatMapper(m)
-                .setLoadBalancer(new RandomLoadBalancer())
-                .addNodeAddress("redis://127.0.0.1:5000");
-        RedissonClient redisson = Redisson.create(config);
-
         AtomicInteger counter = new AtomicInteger();
         for (int i = 0; i < 10; i++) {
             int j = i;
@@ -58,9 +75,5 @@ public class RedissonShardedTopicTest {
             RTopic topic = redisson.getShardedTopic("test" + i);
             topic.removeAllListeners();
         }
-
-        redisson.shutdown();
     }
-
-
 }
