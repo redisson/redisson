@@ -258,6 +258,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
 
     private <T> T persist(T detachedObject, Map<Object, Object> alreadyPersisted, RCascadeType type) {
+        validateDetached(detachedObject);
         Object id = getId(detachedObject);
 
         T attachedObject = attach(detachedObject);
