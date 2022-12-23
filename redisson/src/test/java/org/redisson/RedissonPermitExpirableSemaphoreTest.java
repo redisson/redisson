@@ -183,7 +183,7 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
     @Test
     public void testSetPermits() throws InterruptedException {
         RPermitExpirableSemaphore s = redisson.getPermitExpirableSemaphore("test");
-        assertThat(s.setPermits(10)).isEqualTo(10);
+        s.setPermits(10);
         assertThat(s.getPermits()).isEqualTo(10);
         assertThat(s.availablePermits()).isEqualTo(10);
         assertThat(s.claimedPermits()).isEqualTo(0);
@@ -195,19 +195,19 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
         assertThat(s.claimedPermits()).isEqualTo(0);
 
         // attempts to set max permits succeeds
-        assertThat(s.setPermits(15)).isEqualTo(5);
+        s.setPermits(15);
         assertThat(s.getPermits()).isEqualTo(15);
         assertThat(s.availablePermits()).isEqualTo(15);
         assertThat(s.claimedPermits()).isEqualTo(0);
 
         // setting to existing value succeeds
-        assertThat(s.setPermits(15)).isEqualTo(0);
+        s.setPermits(15);
         assertThat(s.getPermits()).isEqualTo(15);
         assertThat(s.availablePermits()).isEqualTo(15);
         assertThat(s.claimedPermits()).isEqualTo(0);
 
         // decreasing max permits succeeds
-        assertThat(s.setPermits(5)).isEqualTo(-10);
+        s.setPermits(5);
         assertThat(s.getPermits()).isEqualTo(5);
         assertThat(s.availablePermits()).isEqualTo(5);
         assertThat(s.claimedPermits()).isEqualTo(0);
@@ -225,14 +225,14 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
         assertThat(s.claimedPermits()).isEqualTo(3);
 
         // decreasing the max to the number of claimed permits is allowed
-        assertThat(s.setPermits(3)).isEqualTo(-2);
+        s.setPermits(3);
         assertThat(s.getPermits()).isEqualTo(3);
         assertThat(s.availablePermits()).isEqualTo(0);
         assertThat(s.claimedPermits()).isEqualTo(3);
 
         // decreasing the max to below the number of claimed permits is allowed
         // and results in a negative number of available permits
-        assertThat(s.setPermits(2)).isEqualTo(-1);
+        s.setPermits(2);
         assertThat(s.getPermits()).isEqualTo(2);
         assertThat(s.availablePermits()).isEqualTo(-1);
         assertThat(s.claimedPermits()).isEqualTo(3);

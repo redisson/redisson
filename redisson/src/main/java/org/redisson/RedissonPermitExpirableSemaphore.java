@@ -700,13 +700,13 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     }
 
     @Override
-    public int setPermits(int permits) {
-        return get(setPermitsAsync(permits));
+    public void setPermits(int permits) {
+        get(setPermitsAsync(permits));
     }
 
     @Override
-    public RFuture<Integer> setPermitsAsync(int permits) {
-        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
+    public RFuture<Void> setPermitsAsync(int permits) {
+        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 "local available = redis.call('get', KEYS[1]); " +
                 "if (available == false) then " +
                     "redis.call('set', KEYS[1], ARGV[1]); " +
@@ -718,10 +718,8 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 "if (maximum == ARGV[1]) then " +
                     "return 0;" +
                 "end;" +
-                "local delta = tonumber(ARGV[1]) - maximum; " +
-                "redis.call('incrby', KEYS[1], delta); " +
-                "redis.call('publish', KEYS[2], ARGV[1]); " +
-                "return delta;",
+                "redis.call('incrby', KEYS[1], tonumber(ARGV[1]) - maximum); " +
+                "redis.call('publish', KEYS[2], ARGV[1]);",
                 Arrays.<Object>asList(getRawName(), getChannelName(), timeoutName), permits);
     }
 
