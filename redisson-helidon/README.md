@@ -2,7 +2,7 @@
 
 Integrates Redisson with [Helidon](https://helidon.io/) framework.  
 
-Supports Helidon 1.4.x - 3.0.x  
+Supports Helidon 1.4.x - 3.x.x  
 
 ## Usage  
 
@@ -26,7 +26,7 @@ Gradle
 ```groovy
 // for Helidon v1.4.x - v2.5.x
 compile 'org.redisson:redisson-helidon-20:3.19.0'
-// for Helidon v3.0.x
+// for Helidon v3.x.x
 compile 'org.redisson:redisson-helidon-30:3.19.0'
 ```
 
