@@ -3,12 +3,17 @@ package org.redisson;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.HostPortNatMapper;
+import org.redisson.api.NatMapper;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 import org.redisson.connection.balancer.RandomLoadBalancer;
+import org.redisson.misc.RedisURI;
 import org.testcontainers.containers.FixedHostPortGenericContainer;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.startupcheck.IsRunningStartupCheckStrategy;
 import org.testcontainers.containers.startupcheck.MinimumDurationRunningStartupCheckStrategy;
+import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -23,36 +28,29 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class RedissonShardedTopicTest {
 
     @Container
-    private final FixedHostPortGenericContainer<?> redisClusterContainer =
-            new FixedHostPortGenericContainer<>("vishnunair/docker-redis-cluster")
-                .withFixedExposedPort(5000, 6379)
-                .withFixedExposedPort(5001, 6380)
-                .withFixedExposedPort(5002, 6381)
-                .withFixedExposedPort(5003, 6382)
-                .withFixedExposedPort(5004, 6383)
-                .withFixedExposedPort(5005, 6384)
-                .withStartupCheckStrategy(
-                        new MinimumDurationRunningStartupCheckStrategy(Duration.ofSeconds(6))
-                );
+    private final GenericContainer<?> redisClusterContainer =
+            new GenericContainer<>("vishnunair/docker-redis-cluster")
+                    .withExposedPorts(6379, 6380, 6381, 6382, 6383, 6384)
+                    .withStartupCheckStrategy(
+                            new MinimumDurationRunningStartupCheckStrategy(Duration.ofSeconds(6))
+                    );
     @Test
     public void testClusterSharding() {
         Config config = new Config();
-        HostPortNatMapper m = new HostPortNatMapper();
-        Map<String, String> mm = new HashMap<>();
 
-        String ip = redisClusterContainer.getCurrentContainerInfo().getNetworkSettings().getIpAddress();
-        mm.put(ip + ":6380", "127.0.0.1:5001");
-        mm.put(ip + ":6382", "127.0.0.1:5003");
-        mm.put(ip + ":6379", "127.0.0.1:5000");
-        mm.put(ip + ":6383", "127.0.0.1:5004");
-        mm.put(ip + ":6384", "127.0.0.1:5005");
-        mm.put(ip + ":6381", "127.0.0.1:5002");
-        m.setHostsPortMap(mm);
         config.useClusterServers()
                 .setPingConnectionInterval(0)
-                .setNatMapper(m)
+                .setNatMapper(new NatMapper() {
+                    @Override
+                    public RedisURI map(RedisURI uri) {
+                        if (redisClusterContainer.getMappedPort(uri.getPort()) == null) {
+                            return uri;
+                        }
+                        return new RedisURI(uri.getScheme(), redisClusterContainer.getHost(), redisClusterContainer.getMappedPort(uri.getPort()));
+                    }
+                })
                 .setLoadBalancer(new RandomLoadBalancer())
-                .addNodeAddress("redis://127.0.0.1:5000");
+                .addNodeAddress("redis://127.0.0.1:" + redisClusterContainer.getFirstMappedPort());
         RedissonClient redisson = Redisson.create(config);
 
         AtomicInteger counter = new AtomicInteger();
