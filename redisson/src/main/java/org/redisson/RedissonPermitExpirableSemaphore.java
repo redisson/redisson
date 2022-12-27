@@ -711,12 +711,12 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 "if (available == false) then " +
                     "redis.call('set', KEYS[1], ARGV[1]); " +
                     "redis.call('publish', KEYS[2], ARGV[1]); " +
-                    "return ARGV[1];" +
+                    "return;" +
                 "end;" +
                 "local claimed = redis.call('zcount', KEYS[3], 0, '+inf'); " +
                 "local maximum = (claimed == false and 0 or claimed) + tonumber(available); " +
                 "if (maximum == ARGV[1]) then " +
-                    "return 0;" +
+                    "return;" +
                 "end;" +
                 "redis.call('incrby', KEYS[1], tonumber(ARGV[1]) - maximum); " +
                 "redis.call('publish', KEYS[2], ARGV[1]);",
