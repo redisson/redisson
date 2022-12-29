@@ -1,27 +1,10 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
-
-import java.io.IOException;
-import java.io.Serializable;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.RedisRunner.RedisProcess;
+import org.redisson.api.RBucket;
 import org.redisson.api.RPatternTopic;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
@@ -30,7 +13,20 @@ import org.redisson.api.listener.PatternMessageListener;
 import org.redisson.api.listener.PatternStatusListener;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
+import org.redisson.config.SubscriptionMode;
 import org.redisson.connection.balancer.RandomLoadBalancer;
+
+import java.io.IOException;
+import java.io.Serializable;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 public class RedissonTopicPatternTest extends BaseTest {
 
@@ -376,6 +372,88 @@ public class RedissonTopicPatternTest extends BaseTest {
         for (Future<?> future : futures) {
             future.get();
         }
+    }
+
+    @Test
+    public void testReattachInClusterMaster() throws Exception {
+        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave()
+                .notifyKeyspaceEvents(
+                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.K,
+                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.g,
+                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
+                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.$);
+        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave()
+                .notifyKeyspaceEvents(
+                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.K,
+                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.g,
+                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
+                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.$);
+        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave()
+                .notifyKeyspaceEvents(
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.K,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.g,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.$);
+        RedisRunner slave1 = new RedisRunner().randomPort().randomDir().nosave()
+                .notifyKeyspaceEvents(
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.K,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.g,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.$);
+        RedisRunner slave2 = new RedisRunner().randomPort().randomDir().nosave()
+                .notifyKeyspaceEvents(
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.K,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.g,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.$);
+        RedisRunner slave3 = new RedisRunner().randomPort().randomDir().nosave()
+                .notifyKeyspaceEvents(
+                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.K,
+                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.g,
+                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
+                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.$);
+
+
+        ClusterRunner clusterRunner = new ClusterRunner()
+                .addNode(master1, slave1)
+                .addNode(master2, slave2)
+                .addNode(master3, slave3);
+        ClusterRunner.ClusterProcesses process = clusterRunner.run();
+
+        Config config = new Config();
+        config.useClusterServers()
+                .setSubscriptionMode(SubscriptionMode.MASTER)
+                .setLoadBalancer(new RandomLoadBalancer())
+                .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+
+        AtomicInteger executions = new AtomicInteger();
+
+        RPatternTopic topic = redisson.getPatternTopic("__keyevent@*:del", StringCodec.INSTANCE);
+        topic.addListener(String.class, new PatternMessageListener<String>() {
+            @Override
+            public void onMessage(CharSequence pattern, CharSequence channel, String msg) {
+                executions.incrementAndGet();
+            }
+        });
+
+        process.getNodes().stream().filter(x -> master1.getPort() == x.getRedisServerPort())
+                .forEach(x -> {
+                        x.stop();
+                });
+
+        Thread.sleep(40000);
+
+        for (int i = 0; i < 100; i++) {
+            RBucket<Object> b = redisson.getBucket("test" + i);
+            b.set(i);
+            b.delete();
+        }
+        Thread.sleep(100);
+        assertThat(executions.get()).isEqualTo(100);
+
+        redisson.shutdown();
+        process.shutdown();
     }
 
     @Test

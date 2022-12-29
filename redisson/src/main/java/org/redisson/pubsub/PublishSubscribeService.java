@@ -622,7 +622,7 @@ public class PublishSubscribeService {
                 }
 
                 if (topicType == PubSubType.PUNSUBSCRIBE) {
-                    psubscribe(channelName, listeners, subscribeCodec);
+                    psubscribe(en, channelName, listeners, subscribeCodec);
                 } else if (topicType == PubSubType.SUNSUBSCRIBE) {
                     ssubscribe(channelName, listeners, subscribeCodec);
                 } else {
@@ -664,14 +664,29 @@ public class PublishSubscribeService {
         });
     }
 
-    private void psubscribe(ChannelName channelName, Collection<RedisPubSubListener<?>> listeners,
-            Codec subscribeCodec) {
-        CompletableFuture<Collection<PubSubConnectionEntry>> subscribeFuture =
-                            psubscribe(channelName, subscribeCodec, listeners.toArray(new RedisPubSubListener[0]));
+    private void psubscribe(MasterSlaveEntry oldEntry, ChannelName channelName, Collection<RedisPubSubListener<?>> listeners,
+                            Codec subscribeCodec) {
+        MasterSlaveEntry entry = getEntry(channelName);
+        if (isMultiEntity(channelName)) {
+            entry = connectionManager.getEntrySet()
+                                        .stream()
+                                        .filter(e -> !name2PubSubConnection.containsKey(new PubSubKey(channelName, e)) && e != oldEntry)
+                                        .findFirst()
+                                        .orElse(null);
+        }
+        if (entry == null) {
+            connectionManager.newTimeout(task -> {
+                psubscribe(oldEntry, channelName, listeners, subscribeCodec);
+            }, 1, TimeUnit.SECONDS);
+            return;
+        }
+
+        CompletableFuture<PubSubConnectionEntry> subscribeFuture =
+                subscribe(PubSubType.PSUBSCRIBE, subscribeCodec, channelName, entry, listeners.toArray(new RedisPubSubListener[0]));
         subscribeFuture.whenComplete((res, e) -> {
             if (e != null) {
                 connectionManager.newTimeout(task -> {
-                    psubscribe(channelName, listeners, subscribeCodec);
+                    psubscribe(oldEntry, channelName, listeners, subscribeCodec);
                 }, 1, TimeUnit.SECONDS);
                 return;
             }
