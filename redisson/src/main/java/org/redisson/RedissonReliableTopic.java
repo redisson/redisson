@@ -225,11 +225,11 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
                                 + "redis.call('hset', KEYS[3], ARGV[2], ARGV[1]); "
                             + "end; "
 
-                            + "local t = redis.call('zrange', KEYS[5], 0, 0, 'WITHSCORES'); "
-                            + "if #t == 2 and tonumber(t[2]) < tonumber(ARGV[3]) then "
-                                + "redis.call('hdel', KEYS[3], t[1]); "
-                                + "redis.call('zrem', KEYS[2], t[1]); "
-                                + "redis.call('zrem', KEYS[5], t[1]); "
+                            + "local expired = redis.call('zrangebyscore', KEYS[5], 0, tonumber(ARGV[3]) - 1); "
+                            + "for i, v in ipairs(expired) do "
+                                + "redis.call('hdel', KEYS[3], v); "
+                                + "redis.call('zrem', KEYS[2], v); "
+                                + "redis.call('zrem', KEYS[5], v); "
                             + "end; "
 
                             + "local v = redis.call('zrange', KEYS[2], 0, 0); "
