@@ -113,11 +113,11 @@ public interface RPermitExpirableSemaphoreAsync extends RExpirableAsync {
     RFuture<Integer> getPermitsAsync();
 
     /**
-     * Returns the number of claimed permits.
+     * Returns the number of acquired permits.
      *
-     * @return number of claimed permits
+     * @return number of acquired permits
      */
-    RFuture<Integer> claimedPermitsAsync();
+    RFuture<Integer> acquiredPermitsAsync();
 
     /**
      * Tries to set number of available permits.

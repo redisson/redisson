@@ -634,8 +634,8 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     }
 
     @Override
-    public int claimedPermits() {
-        return get(claimedPermitsAsync());
+    public int acquiredPermits() {
+        return get(acquiredPermitsAsync());
     }
     
     @Override
@@ -670,16 +670,16 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 "if available == false then " +
                     "return 0 " +
                 "end;" +
-                "local claimed = redis.call('zcount', KEYS[2], 0, '+inf'); " +
-                "if claimed == false then " +
+                "local acquired = redis.call('zcount', KEYS[2], 0, '+inf'); " +
+                "if acquired == false then " +
                     "return tonumber(available) " +
                 "end;" +
-                "return tonumber(available) + claimed;",
+                "return tonumber(available) + acquired;",
                 Arrays.<Object>asList(getRawName(), timeoutName, getChannelName()), System.currentTimeMillis());
     }
 
     @Override
-    public RFuture<Integer> claimedPermitsAsync() {
+    public RFuture<Integer> acquiredPermitsAsync() {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
                 "local expiredIds = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, -1); " +
                 "if #expiredIds > 0 then " +
@@ -689,8 +689,8 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                         "redis.call('publish', KEYS[3], value); " +
                     "end;" +
                 "end; " +
-                "local claimed = redis.call('zcount', KEYS[2], 0, '+inf'); " +
-                "return claimed == false and 0 or claimed;",
+                "local acquired = redis.call('zcount', KEYS[2], 0, '+inf'); " +
+                "return acquired == false and 0 or acquired;",
                 Arrays.<Object>asList(getRawName(), timeoutName, getChannelName()), System.currentTimeMillis());
     }
 
@@ -713,8 +713,8 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                     "redis.call('publish', KEYS[2], ARGV[1]); " +
                     "return;" +
                 "end;" +
-                "local claimed = redis.call('zcount', KEYS[3], 0, '+inf'); " +
-                "local maximum = (claimed == false and 0 or claimed) + tonumber(available); " +
+                "local acquired = redis.call('zcount', KEYS[3], 0, '+inf'); " +
+                "local maximum = (acquired == false and 0 or acquired) + tonumber(available); " +
                 "if (maximum == ARGV[1]) then " +
                     "return;" +
                 "end;" +

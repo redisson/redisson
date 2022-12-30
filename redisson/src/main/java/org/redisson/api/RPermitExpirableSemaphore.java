@@ -116,11 +116,11 @@ public interface RPermitExpirableSemaphore extends RExpirable, RPermitExpirableS
     int getPermits();
 
     /**
-     * Returns the number of claimed permits.
+     * Returns the number of acquired permits.
      *
-     * @return number of claimed permits
+     * @return number of acquired permits
      */
-    int claimedPermits();
+    int acquiredPermits();
 
     /**
      * Tries to set the initial number of available permits.
