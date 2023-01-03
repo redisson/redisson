@@ -666,7 +666,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                     "return tonumber(available) " +
                 "end;" +
                 "return tonumber(available) + acquired;",
-                Arrays.<Object>asList(getRawName(), timeoutName, getChannelName()), System.currentTimeMillis());
+                Arrays.<Object>asList(getRawName(), timeoutName, channelName), System.currentTimeMillis());
     }
 
     @Override
@@ -682,7 +682,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 "end; " +
                 "local acquired = redis.call('zcount', KEYS[2], 0, '+inf'); " +
                 "return acquired == false and 0 or acquired;",
-                Arrays.<Object>asList(getRawName(), timeoutName, getChannelName()), System.currentTimeMillis());
+                Arrays.<Object>asList(getRawName(), timeoutName, channelName), System.currentTimeMillis());
     }
 
     @Override
@@ -711,7 +711,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 "end;" +
                 "redis.call('incrby', KEYS[1], tonumber(ARGV[1]) - maximum); " +
                 "redis.call('publish', KEYS[2], ARGV[1]);",
-                Arrays.<Object>asList(getRawName(), getChannelName(), timeoutName), permits);
+                Arrays.<Object>asList(getRawName(), channelName, timeoutName), permits);
     }
 
     @Override
