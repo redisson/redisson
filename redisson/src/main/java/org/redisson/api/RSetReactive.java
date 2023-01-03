@@ -19,6 +19,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -238,5 +239,23 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
      * @return values
      */
     Mono<Set<V>> readIntersection(String... names);
+
+    /**
+     * Tries to add elements only if none of them in set.
+     *
+     * @param values - values to add
+     * @return <code>true</code> if elements successfully added,
+     *          otherwise <code>false</code>.
+     */
+    Mono<Boolean> tryAdd(V... values);
+
+    /**
+     * Check if each element is contained in the specified collection.
+     * Returns contained elements.
+     *
+     * @param c - collection to check
+     * @return contained elements
+     */
+    Mono<List<V>> containsEach(Collection<V> c);
 
 }

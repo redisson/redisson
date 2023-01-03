@@ -23,9 +23,7 @@ import org.redisson.cluster.ClusterNodeInfo;
 import org.redisson.cluster.ClusterNodeInfo.Flag;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.SerializationCodec;
-import org.redisson.config.Config;
-import org.redisson.config.ReadMode;
-import org.redisson.config.SubscriptionMode;
+import org.redisson.config.*;
 import org.redisson.connection.CRC16;
 import org.redisson.connection.ConnectionListener;
 import org.redisson.connection.MasterSlaveConnectionManager;
@@ -849,6 +847,33 @@ public class RedissonTest extends BaseTest {
         r.shutdown();
         Assertions.assertTrue(r.isShuttingDown());
         Assertions.assertTrue(r.isShutdown());
+    }
+
+    @Test
+    public void testCredentials() throws IOException, InterruptedException {
+        RedisProcess runner = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .randomPort()
+                .requirepass("1234")
+                .run();
+
+        Config config = new Config();
+        config.useSingleServer()
+                .setCredentialsResolver(new CredentialsResolver() {
+                    @Override
+                    public CompletionStage<Credentials> resolve(InetSocketAddress address) {
+                        return CompletableFuture.completedFuture(new Credentials(null, "1234"));
+                    }
+                })
+                .setAddress(runner.getRedisServerAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+        RBucket<String> b = redisson.getBucket("test");
+        b.set("123");
+
+        redisson.shutdown();
+        runner.stop();
+
     }
 
     @Test

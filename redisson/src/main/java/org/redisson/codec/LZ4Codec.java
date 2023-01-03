@@ -15,31 +15,30 @@
  */
 package org.redisson.codec;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import net.jpountz.lz4.LZ4Compressor;
+import net.jpountz.lz4.LZ4Factory;
+import net.jpountz.lz4.LZ4SafeDecompressor;
 import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
-import net.jpountz.lz4.LZ4Compressor;
-import net.jpountz.lz4.LZ4Factory;
-import net.jpountz.lz4.LZ4SafeDecompressor;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * LZ4 compression codec.
  * Uses inner <code>Codec</code> to convert object to binary stream.
- * <code>MarshallingCodec</code> used by default.
+ * <code>Kryo5Codec</code> used by default.
  *
  * Fully thread-safe.
  *
  * https://github.com/jpountz/lz4-java
  *
- * @see org.redisson.codec.MarshallingCodec
+ * @see org.redisson.codec.Kryo5Codec
  *
  * @author Nikita Koksharov
  *
@@ -52,7 +51,7 @@ public class LZ4Codec extends BaseCodec {
     private final Codec innerCodec;
 
     public LZ4Codec() {
-        this(new MarshallingCodec());
+        this(new Kryo5Codec());
     }
 
     public LZ4Codec(Codec innerCodec) {
@@ -60,7 +59,7 @@ public class LZ4Codec extends BaseCodec {
     }
     
     public LZ4Codec(ClassLoader classLoader) {
-        this(new MarshallingCodec(classLoader));
+        this(new Kryo5Codec(classLoader));
     }
 
     public LZ4Codec(ClassLoader classLoader, LZ4Codec codec) throws ReflectiveOperationException {

@@ -156,6 +156,10 @@ public class PubSubConnectionEntry {
         return subscribedChannelsAmount.incrementAndGet();
     }
 
+    public boolean isFree() {
+        return subscribedChannelsAmount.get() == connectionManager.getConfig().getSubscriptionsPerConnection();
+    }
+
     public void subscribe(Codec codec, PubSubType type, ChannelName channelName, CompletableFuture<Void> subscribeFuture) {
         ChannelFuture future;
         if (PubSubType.SUBSCRIBE == type) {
@@ -249,7 +253,11 @@ public class PubSubConnectionEntry {
 
     @Override
     public String toString() {
-        return "PubSubConnectionEntry [subscribedChannelsAmount=" + subscribedChannelsAmount + ", conn=" + conn + "]";
+        return "PubSubConnectionEntry{" +
+                "subscribedChannelsAmount=" + subscribedChannelsAmount +
+                ", conn=" + conn +
+                ", subscribeChannelListeners=" + subscribeChannelListeners +
+                ", channelListeners=" + channelListeners +
+                '}';
     }
-    
 }

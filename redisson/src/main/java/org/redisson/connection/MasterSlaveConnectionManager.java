@@ -402,6 +402,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         c.setKeepAlive(cfg.isKeepAlive());
         c.setTcpNoDelay(cfg.isTcpNoDelay());
         c.setNameMapper(cfg.getNameMapper());
+        c.setCredentialsResolver(cfg.getCredentialsResolver());
 
         return c;
     }
@@ -456,8 +457,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
               .setTcpNoDelay(config.isTcpNoDelay())
               .setUsername(config.getUsername())
               .setPassword(config.getPassword())
-              .setNettyHook(cfg.getNettyHook());
-        
+              .setNettyHook(cfg.getNettyHook())
+              .setCredentialsResolver(config.getCredentialsResolver());
+
         if (type != NodeType.SENTINEL) {
             redisConfig.setDatabase(config.getDatabase());
         }
@@ -514,8 +516,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             return f;
         }
         // fix for https://github.com/redisson/redisson/issues/1548
-        if (source.getRedirect() != null 
-                && !RedisURI.compare(entry.getClient().getAddr(), source.getAddr()) 
+        if (source.getRedirect() != null
+                && !source.getAddr().equals(entry.getClient().getAddr())
                     && entry.hasSlave(source.getAddr())) {
             return entry.redirectedConnectionWriteOp(command, source.getAddr());
         }
@@ -570,7 +572,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     public void releaseWrite(NodeSource source, RedisConnection connection) {
         MasterSlaveEntry entry = getEntry(source);
         if (entry == null) {
-            log.error("Node: " + source + " can't be found");
+            log.error("Node: {} can't be found", source);
         } else {
             entry.releaseWrite(connection);
         }
@@ -580,7 +582,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     public void releaseRead(NodeSource source, RedisConnection connection) {
         MasterSlaveEntry entry = getEntry(source);
         if (entry == null) {
-            log.error("Node: " + source + " can't be found");
+            log.error("Node: {} can't be found", source);
         } else {
             entry.releaseRead(connection);
         }
@@ -718,7 +720,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         Future<InetSocketAddress> future = resolver.resolve(addr);
         future.addListener((FutureListener<InetSocketAddress>) f -> {
             if (!f.isSuccess()) {
-                log.error("Unable to resolve " + address, f.cause());
+                log.error("Unable to resolve {}", address, f.cause());
                 result.completeExceptionally(f.cause());
                 return;
             }

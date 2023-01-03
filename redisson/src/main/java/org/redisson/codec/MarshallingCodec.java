@@ -36,6 +36,7 @@ import java.util.Locale;
  * @author Nikita Koksharov
  *
  */
+@Deprecated
 public class MarshallingCodec extends BaseCodec {
 
     private final FastThreadLocal<Unmarshaller> decoderThreadLocal = new FastThreadLocal<Unmarshaller>() {

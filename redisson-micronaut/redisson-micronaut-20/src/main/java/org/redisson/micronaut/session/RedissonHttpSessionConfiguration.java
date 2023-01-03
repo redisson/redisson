@@ -72,10 +72,10 @@ public class RedissonHttpSessionConfiguration extends HttpSessionConfiguration i
 
     /**
      * Redis data codec applied to session values.
-     * Default is MarshallingCodec codec
+     * Default is Kryo5Codec codec
      *
      * @see org.redisson.client.codec.Codec
-     * @see org.redisson.codec.MarshallingCodec
+     * @see org.redisson.codec.Kryo5Codec
      *
      * @param codec - data codec
      * @return config

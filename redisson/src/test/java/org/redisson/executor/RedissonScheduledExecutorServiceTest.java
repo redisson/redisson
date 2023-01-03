@@ -24,6 +24,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -89,6 +90,24 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
             counter.incrementAndGet();
         }
 
+    }
+
+    @Test
+    public void testTasksExecution() throws InterruptedException {
+        RScheduledExecutorService executorService = redisson.getExecutorService("test");
+
+        Map<String, RScheduledFuture<?>> futureMap = new ConcurrentHashMap<>();
+        for (int i = 0; i < 1000; i++) {
+            RScheduledFuture<?> s = executorService.schedule(new IncrementRunnableTask(),
+                                        ThreadLocalRandom.current().nextInt(500), TimeUnit.MILLISECONDS);
+            futureMap.put(s.getTaskId(), s);
+            s.whenComplete((r, e) -> {
+                futureMap.remove(s.getTaskId());
+            });
+        }
+
+        Thread.sleep(2000);
+        assertThat(futureMap).hasSize(0);
     }
 
     @Test
@@ -198,6 +217,7 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
     @Test
     public void testTaskFailover() throws Exception {
         AtomicInteger counter = new AtomicInteger();
+        // don't allow to mark task as completed
         new MockUp<TasksRunnerService>() {
             @Mock
             void finish(Invocation invocation, String requestId, boolean removeTask) {
@@ -214,7 +234,8 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         node = RedissonNode.create(nodeConfig);
         node.start();
         
-        RScheduledExecutorService executor = redisson.getExecutorService("test2", ExecutorOptions.defaults().taskRetryInterval(10, TimeUnit.SECONDS));
+        RScheduledExecutorService executor = redisson.getExecutorService("test2",
+                                                        ExecutorOptions.defaults().taskRetryInterval(10, TimeUnit.SECONDS));
         long start = System.currentTimeMillis();
         RExecutorFuture<?> f = executor.schedule(new IncrementRunnableTask("counter"), 1, TimeUnit.SECONDS);
         f.toCompletableFuture().join();

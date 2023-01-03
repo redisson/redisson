@@ -258,7 +258,7 @@ public interface RBatch {
      * @param name - name of object
      * @return ListMultimapCache object
      */
-    <K, V> RMultimapAsync<K, V> getListMultimapCache(String name);
+    <K, V> RMultimapCacheAsync<K, V> getListMultimapCache(String name);
     
     /**
      * Returns List based Multimap instance by name
@@ -273,7 +273,7 @@ public interface RBatch {
      * @param codec - codec for keys and values
      * @return ListMultimapCache object
      */
-    <K, V> RMultimapAsync<K, V> getListMultimapCache(String name, Codec codec);
+    <K, V> RMultimapCacheAsync<K, V> getListMultimapCache(String name, Codec codec);
     
     /**
      * Returns map instance by name.

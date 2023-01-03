@@ -203,7 +203,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             throw new RedisConnectionException("Can't connect to servers!", lastException);
         }
         if (this.config.getReadMode() != ReadMode.MASTER && this.config.getSlaveAddresses().isEmpty()) {
-            log.warn("ReadMode = " + this.config.getReadMode() + ", but slave nodes are not found!");
+            log.warn("ReadMode = {}, but slave nodes are not found!", this.config.getReadMode());
         }
         
         initSingleEntry();
@@ -291,7 +291,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             Future<List<InetSocketAddress>> allNodes = sentinelResolver.resolveAll(InetSocketAddress.createUnresolved(host.getHost(), host.getPort()));
             allNodes.addListener((FutureListener<List<InetSocketAddress>>) future -> {
                 if (!future.isSuccess()) {
-                    log.error("Unable to resolve " + host.getHost(), future.cause());
+                    log.error("Unable to resolve {}", host.getHost(), future.cause());
                     return;
                 }
 
@@ -369,7 +369,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
         future.whenComplete((r, e) -> {
             if (e != null) {
-                log.error("Can't execute SENTINEL commands on " + connection.getRedisClient().getAddr(), e);
+                log.error("Can't execute SENTINEL commands on {}", connection.getRedisClient().getAddr(), e);
             }
 
             getShutdownLatch().release();
@@ -460,7 +460,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 futures.add(resolvedFuture
                         .whenComplete((r, exc) -> {
                             if (exc != null) {
-                                log.error("Unable to resolve addresses " + host + " and/or " + masterHost, exc);
+                                log.error("Unable to resolve addresses {} and/or {}", host, masterHost, exc);
                             }
                         })
                         .thenCompose(res -> {
@@ -477,7 +477,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                             currentSlaves.add(slaveAddr);
                             return addSlave(slaveAddr).whenComplete((r, e) -> {
                                 if (e != null) {
-                                    log.error("Unable to add slave " + slaveAddr, e);
+                                    log.error("Unable to add slave {}", slaveAddr, e);
                                 }
                             });
                 }));

@@ -3,7 +3,7 @@
 
     <groupId>org.redisson</groupId>
     <artifactId>redisson-parent</artifactId>
-    <version>3.18.2-SNAPSHOT</version>
+    <version>3.19.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Redisson</name>
@@ -173,9 +173,16 @@
             </dependency>
 
             <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers-bom</artifactId>
+                <version>1.17.6</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-bom</artifactId>
-                <version>4.1.85.Final</version>
+                <version>4.1.86.Final</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

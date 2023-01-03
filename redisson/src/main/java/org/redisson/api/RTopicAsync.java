@@ -54,7 +54,7 @@ public interface RTopicAsync {
      * @return locally unique listener id
      * @see org.redisson.api.listener.MessageListener
      */
-    <M> RFuture<Integer> addListenerAsync(Class<M> type, MessageListener<M> listener);
+    <M> RFuture<Integer> addListenerAsync(Class<M> type, MessageListener<? extends M> listener);
     
     /**
      * Removes the listener by <code>id</code> for listening this topic

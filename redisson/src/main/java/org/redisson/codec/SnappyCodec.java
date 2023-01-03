@@ -48,7 +48,7 @@ public class SnappyCodec extends BaseCodec {
     private final Codec innerCodec;
 
     public SnappyCodec() {
-        this(new MarshallingCodec());
+        this(new Kryo5Codec());
     }
 
     public SnappyCodec(Codec innerCodec) {
@@ -56,7 +56,7 @@ public class SnappyCodec extends BaseCodec {
     }
 
     public SnappyCodec(ClassLoader classLoader) {
-        this(new MarshallingCodec(classLoader));
+        this(new Kryo5Codec(classLoader));
     }
     
     public SnappyCodec(ClassLoader classLoader, SnappyCodec codec) throws ReflectiveOperationException {

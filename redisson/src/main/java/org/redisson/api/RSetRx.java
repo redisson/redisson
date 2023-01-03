@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 import io.reactivex.rxjava3.core.Flowable;
@@ -240,5 +241,23 @@ public interface RSetRx<V> extends RCollectionRx<V>, RSortableRx<Set<V>> {
      * @return values
      */
     Single<Set<V>> readIntersection(String... names);
+
+    /**
+     * Tries to add elements only if none of them in set.
+     *
+     * @param values - values to add
+     * @return <code>true</code> if elements successfully added,
+     *          otherwise <code>false</code>.
+     */
+    Single<Boolean> tryAdd(V... values);
+
+    /**
+     * Check if each element is contained in the specified collection.
+     * Returns contained elements.
+     *
+     * @param c - collection to check
+     * @return contained elements
+     */
+    Single<List<V>> containsEach(Collection<V> c);
 
 }

@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -178,5 +179,14 @@ public interface RSetAsync<V> extends RCollectionAsync<V>, RSortableAsync<Set<V>
      * @return number of removed elements
      */
     RFuture<Integer> removeAllCountedAsync(Collection<? extends V> c);
+
+    /**
+     * Check if each element is contained in the specified collection.
+     * Returns contained elements.
+     *
+     * @param c - collection to check
+     * @return contained elements
+     */
+    RFuture<List<V>> containsEachAsync(Collection<V> c);
 
 }

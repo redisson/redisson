@@ -17,6 +17,7 @@ package org.redisson.api;
 
 import org.redisson.api.map.MapLoader;
 import org.redisson.api.map.MapWriter;
+import org.redisson.api.map.event.MapEntryListener;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -305,5 +306,18 @@ public interface RMapCacheAsync<K, V> extends RMapAsync<K, V> {
      *          -1 if the key exists but has no associated expire.
      */
     RFuture<Long> remainTimeToLiveAsync(K key);
-    
+
+    /**
+     * Adds map entry listener
+     *
+     * @see org.redisson.api.map.event.EntryCreatedListener
+     * @see org.redisson.api.map.event.EntryUpdatedListener
+     * @see org.redisson.api.map.event.EntryRemovedListener
+     * @see org.redisson.api.map.event.EntryExpiredListener
+     *
+     * @param listener - entry listener
+     * @return listener id
+     */
+    RFuture<Integer> addListenerAsync(MapEntryListener listener);
+
 }

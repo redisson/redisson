@@ -133,7 +133,7 @@ public class TasksService extends BaseRemoteService {
 
                             + "if tonumber(ARGV[1]) > 0 then "
                                 + "redis.call('set', KEYS[7], ARGV[4]);"
-                                + "redis.call('zadd', KEYS[3], ARGV[1], 'ff' .. ARGV[2]);"
+                                + "redis.call('zadd', KEYS[3], ARGV[1], 'ff:' .. ARGV[2]);"
                                 + "local v = redis.call('zrange', KEYS[3], 0, 0); "
                                 // if new task added to queue head then publish its startTime
                                 // to all scheduler workers
@@ -157,7 +157,7 @@ public class TasksService extends BaseRemoteService {
                     "return nil;" +
                 "end;" +
 
-                "redis.call('zrem', KEYS[2], 'ff' .. ARGV[1]); "
+                "redis.call('zrem', KEYS[2], 'ff:' .. ARGV[1]); "
               + "redis.call('zrem', KEYS[8], ARGV[1]); "
               + "local task = redis.call('hget', KEYS[6], ARGV[1]); "
               + "redis.call('hdel', KEYS[6], ARGV[1]); "

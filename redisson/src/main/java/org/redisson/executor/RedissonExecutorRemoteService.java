@@ -71,7 +71,7 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
                     + "redis.call('zrem', KEYS[2], ARGV[1]); "
 
                     + "redis.call('zrem', KEYS[7], ARGV[1]); "
-                    + "redis.call('zrem', KEYS[7], 'ff' .. ARGV[1]);"
+                    + "redis.call('zrem', KEYS[7], 'ff:' .. ARGV[1]);"
 
                     + "redis.call('hdel', KEYS[1], ARGV[1]); "
                     + "if redis.call('decr', KEYS[3]) == 0 then "
@@ -118,7 +118,7 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
             }
             RemoteServiceResponse response = new RemoteServiceResponse(request.getId(), e.getCause());
             responsePromise.complete(response);
-            log.error("Can't execute: " + request, e);
+            log.error("Can't execute: {}", request, e);
         }
 
         if (cancelRequestFuture != null) {

@@ -3,6 +3,29 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 16-Dec-2022 - 3.19.0 released
+
+Feature - implementation of Spring Cache methods added in Spring 5.2  
+Feature - `entriesRead` and `lag` fields added to `StreamGroup` object  
+Feature - added [RFencedLock](https://github.com/redisson/redisson/wiki/8.-distributed-locks-and-synchronizers/#810-fenced-lock) implementation  
+Feature - [credentialsResolver](https://github.com/redisson/redisson/wiki/2.-Configuration#credentialsresolver) setting added  
+
+__Breaking change - default codec changed to Kryo5Codec__  
+
+Fixed - new Redis node isn't discovered between PubSub subscription attempts  
+Fixed - `codec`,`nettyHook`,`addressResolverGroupFactory`,`connectionListener` settings can't be defined through Micronaut config  
+Fixed - evictions metrics doesn't work for RedissonCache (thanks @Nicola Dardanis)  
+Fixed - PubSub connection isn't reused if it reached subscriptions limit before unsubscribe operation  
+Fixed - PubSub connection returns to connection pool only if subscriptions limit was reached  
+Fixed - use slf4j late-binding when logging instead of string concat (thanks @vatarasov)  
+Fixed - most of pubsub subscriptions fail to resubscribe after failover  
+Fixed - `RBatch` with `executionMode = REDIS_WRITE_ATOMIC` throws NPE in case of connection starvation  
+Fixed - `CommandDecoder.messageDecoder()` method throws NPE if `RBatch` object used with `executionMode = IN_MEMORY` (regression since 3.18.1)  
+Fixed - some scheduled tasks aren't executed (regression since 3.17.5)  
+Fixed - `RFunction` doesn't pass keys to Redis correctly (thanks @@jordanrmerrick)  
+Fixed - incorrectly reset jackson type factory (thanks @noelvo)  
+Fixed - cluster partitions parsing error isn't logged  
+
 ### 30-Nov-2022 - 3.18.1 released
 
 Feature - Spring Data Redis 3.0.0 module added  

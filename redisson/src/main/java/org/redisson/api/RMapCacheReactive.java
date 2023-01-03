@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import org.redisson.api.map.MapLoader;
+import org.redisson.api.map.event.MapEntryListener;
 import reactor.core.publisher.Mono;
 
 import java.util.concurrent.TimeUnit;
@@ -290,5 +291,18 @@ public interface RMapCacheReactive<K, V> extends RMapReactive<K, V>, RDestroyabl
      *          -1 if the key exists but has no associated expire.
      */
     Mono<Long> remainTimeToLive(K key);
+
+    /**
+     * Adds map entry listener
+     *
+     * @see org.redisson.api.map.event.EntryCreatedListener
+     * @see org.redisson.api.map.event.EntryUpdatedListener
+     * @see org.redisson.api.map.event.EntryRemovedListener
+     * @see org.redisson.api.map.event.EntryExpiredListener
+     *
+     * @param listener - entry listener
+     * @return listener id
+     */
+    Mono<Integer> addListener(MapEntryListener listener);
 
 }

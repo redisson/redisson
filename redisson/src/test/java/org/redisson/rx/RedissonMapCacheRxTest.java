@@ -11,12 +11,17 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.redisson.api.ExpiredObjectListener;
 import org.redisson.api.RMapCacheRx;
 import org.redisson.api.RMapReactive;
 import org.redisson.api.RMapRx;
+import org.redisson.api.map.event.EntryEvent;
+import org.redisson.api.map.event.EntryExpiredListener;
 import org.redisson.codec.MsgPackJacksonCodec;
 
 public class RedissonMapCacheRxTest extends BaseRxTest {
@@ -172,6 +177,27 @@ public class RedissonMapCacheRxTest extends BaseRxTest {
         Thread.sleep(1000);
 
         assertThat(toIterator(cache.keyIterator())).toIterable().containsOnly("0", "2", "3");
+    }
+
+    @Test
+    public void testExpireListener() throws InterruptedException {
+        RMapCacheRx<String, String> cache = redisson.getMapCache("simple");
+        sync(cache.put("0", "8", 1, TimeUnit.SECONDS));
+
+        AtomicBoolean received = new AtomicBoolean();
+        cache.addListener(new EntryExpiredListener<String, String>() {
+            @Override
+            public void onExpired(EntryEvent<String, String> event) {
+                assertThat(event.getKey()).isEqualTo("0");
+                assertThat(event.getValue()).isEqualTo("8");
+                received.set(true);
+            }
+        }).blockingGet();
+
+        Thread.sleep(5100);
+
+        assertThat(received).isTrue();
+        assertThat(cache.size().blockingGet()).isZero();
     }
 
     @Test

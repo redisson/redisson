@@ -111,17 +111,17 @@ public class RedisURI {
         return NetUtil.createByteArrayFromIpAddressString(host) != null;
     }
 
-    private static String trimIpv6Brackets(String host) {
+    private String trimIpv6Brackets(String host) {
         if (host.startsWith("[") && host.endsWith("]")) {
             return host.substring(1, host.length() - 1);
         }
         return host;
     }
     
-    public static boolean compare(InetSocketAddress entryAddr, RedisURI addr) {
-        if (((entryAddr.getHostName() != null && entryAddr.getHostName().equals(trimIpv6Brackets(addr.getHost())))
-                || entryAddr.getAddress().getHostAddress().equals(trimIpv6Brackets(addr.getHost())))
-                && entryAddr.getPort() == addr.getPort()) {
+    public boolean equals(InetSocketAddress entryAddr) {
+        if (((entryAddr.getHostName() != null && entryAddr.getHostName().equals(trimIpv6Brackets(getHost())))
+                || entryAddr.getAddress().getHostAddress().equals(trimIpv6Brackets(getHost())))
+                && entryAddr.getPort() == getPort()) {
             return true;
         }
         return false;

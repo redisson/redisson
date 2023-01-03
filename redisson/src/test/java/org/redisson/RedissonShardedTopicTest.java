@@ -3,10 +3,19 @@ package org.redisson;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.HostPortNatMapper;
+import org.redisson.api.NatMapper;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 import org.redisson.connection.balancer.RandomLoadBalancer;
+import org.redisson.misc.RedisURI;
+import org.testcontainers.containers.FixedHostPortGenericContainer;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.startupcheck.IsRunningStartupCheckStrategy;
+import org.testcontainers.containers.startupcheck.MinimumDurationRunningStartupCheckStrategy;
+import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -15,25 +24,33 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Testcontainers
 public class RedissonShardedTopicTest {
 
+    @Container
+    private final GenericContainer<?> redisClusterContainer =
+            new GenericContainer<>("vishnunair/docker-redis-cluster")
+                    .withExposedPorts(6379, 6380, 6381, 6382, 6383, 6384)
+                    .withStartupCheckStrategy(
+                            new MinimumDurationRunningStartupCheckStrategy(Duration.ofSeconds(6))
+                    );
     @Test
     public void testClusterSharding() {
         Config config = new Config();
-        HostPortNatMapper m = new HostPortNatMapper();
-        Map<String, String> mm = new HashMap<>();
-        mm.put("172.17.0.2:6380", "127.0.0.1:5001");
-        mm.put("172.17.0.2:6382", "127.0.0.1:5003");
-        mm.put("172.17.0.2:6379", "127.0.0.1:5000");
-        mm.put("172.17.0.2:6383", "127.0.0.1:5004");
-        mm.put("172.17.0.2:6384", "127.0.0.1:5005");
-        mm.put("172.17.0.2:6381", "127.0.0.1:5002");
-        m.setHostsPortMap(mm);
+
         config.useClusterServers()
                 .setPingConnectionInterval(0)
-                .setNatMapper(m)
+                .setNatMapper(new NatMapper() {
+                    @Override
+                    public RedisURI map(RedisURI uri) {
+                        if (redisClusterContainer.getMappedPort(uri.getPort()) == null) {
+                            return uri;
+                        }
+                        return new RedisURI(uri.getScheme(), redisClusterContainer.getHost(), redisClusterContainer.getMappedPort(uri.getPort()));
+                    }
+                })
                 .setLoadBalancer(new RandomLoadBalancer())
-                .addNodeAddress("redis://127.0.0.1:5000");
+                .addNodeAddress("redis://127.0.0.1:" + redisClusterContainer.getFirstMappedPort());
         RedissonClient redisson = Redisson.create(config);
 
         AtomicInteger counter = new AtomicInteger();
@@ -60,6 +77,7 @@ public class RedissonShardedTopicTest {
         }
 
         redisson.shutdown();
+
     }
 
 

@@ -47,7 +47,7 @@ public class RedissonSentinelMasterSlaveNodes extends RedissonMasterSlaveNodes i
     public RedisSentinel getSentinel(String address) {
         RedisURI addr = new RedisURI(address);
         return ((SentinelConnectionManager) connectionManager).getSentinels().stream()
-                .filter(c -> RedisURI.compare(c.getAddr(), addr))
+                .filter(c -> addr.equals(c.getAddr()))
                 .map(c -> new SentinelRedisNode(c, commandExecutor))
                 .findFirst().orElse(null);
     }

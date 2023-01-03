@@ -1,20 +1,64 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.redisson.api.NameMapper;
+import org.redisson.api.RFuture;
+import org.redisson.api.RPermitExpirableSemaphore;
+import org.redisson.api.RedissonClient;
+import org.redisson.client.RedisException;
+import org.redisson.config.Config;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.awaitility.Awaitility;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-import org.redisson.api.RFuture;
-import org.redisson.api.RPermitExpirableSemaphore;
-import org.redisson.client.RedisException;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
+
+    @Test
+    public void testGetInClusterNameMapper() throws RedisRunner.FailedToStartRedisException, IOException, InterruptedException {
+        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave1 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave2 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave3 = new RedisRunner().randomPort().randomDir().nosave();
+
+        ClusterRunner clusterRunner = new ClusterRunner()
+                .addNode(master1, slave1)
+                .addNode(master2, slave2)
+                .addNode(master3, slave3);
+        ClusterRunner.ClusterProcesses process = clusterRunner.run();
+
+        Config config = new Config();
+        config.useClusterServers()
+                .setNameMapper(new NameMapper() {
+                    @Override
+                    public String map(String name) {
+                        return "test::" + name;
+                    }
+
+                    @Override
+                    public String unmap(String name) {
+                        return name.replace("test::", "");
+                    }
+                })
+                .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+
+        RPermitExpirableSemaphore s = redisson.getPermitExpirableSemaphore("semaphore");
+        s.trySetPermits(1);
+        String v = s.acquire();
+        s.release(v);
+
+        redisson.shutdown();
+        process.shutdown();
+    }
 
     @Test
     public void testUpdateLeaseTime() throws InterruptedException {

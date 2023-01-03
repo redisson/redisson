@@ -261,10 +261,10 @@ public class RedissonExecutorService implements RScheduledExecutorService {
                               + "for i = 1, #expiredTaskIds, 1 do "
                                   + "local name = expiredTaskIds[i];"
                                   + "local scheduledName = expiredTaskIds[i];"
-                                  + "if string.sub(scheduledName, 1, 2) ~= 'ff' then "
-                                      + "scheduledName = 'ff' .. scheduledName; "
+                                  + "if string.sub(scheduledName, 1, 3) ~= 'ff:' then "
+                                      + "scheduledName = 'ff:' .. scheduledName; "
                                   + "else "
-                                      + "name = string.sub(name, 3, string.len(name)); "
+                                      + "name = string.sub(name, 4, string.len(name)); "
                                   + "end;"
                                       
                                   + "redis.call('zadd', KEYS[2], startTime, scheduledName);"

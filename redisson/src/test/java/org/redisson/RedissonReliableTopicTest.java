@@ -3,6 +3,8 @@ package org.redisson;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RReliableTopic;
+import org.redisson.api.RedissonClient;
+import org.redisson.config.Config;
 
 import java.time.Duration;
 import java.util.LinkedList;
@@ -19,6 +21,41 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  */
 public class RedissonReliableTopicTest extends BaseTest {
+
+    @Test
+    public void testRemoveExpiredSubscribers() throws InterruptedException {
+        RReliableTopic rt = redisson.getReliableTopic("test1");
+        AtomicInteger counter = new AtomicInteger();
+        rt.addListener(Integer.class, (ch, m) -> {
+            counter.incrementAndGet();
+        });
+
+        Config config = new Config();
+        config.setReliableTopicWatchdogTimeout(1000);
+        config.useSingleServer()
+                .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+        RedissonClient secondInstance = Redisson.create(config);
+        RReliableTopic rt2 = secondInstance.getReliableTopic("test1");
+        rt2.addListener(Integer.class, (ch, m) -> {
+            counter.incrementAndGet();
+        });
+
+        assertThat(rt2.countSubscribers()).isEqualTo(2);
+
+        secondInstance.shutdown();
+
+        Thread.sleep(1500);
+
+        for (int i = 0; i < 10; i++) {
+            rt.publish(i);
+        }
+
+        Thread.sleep(100);
+
+        assertThat(rt.countSubscribers()).isEqualTo(1);
+        assertThat(counter.get()).isEqualTo(10);
+        assertThat(rt.size()).isEqualTo(0);
+    }
 
     @Test
     public void testAutoTrim() {

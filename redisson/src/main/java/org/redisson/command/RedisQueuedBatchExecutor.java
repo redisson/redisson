@@ -198,15 +198,16 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
 
         
         if (entry.getConnectionFuture() != null) {
-            return entry.getConnectionFuture();
+            connectionFuture = entry.getConnectionFuture();
+            return connectionFuture;
         }
         
         synchronized (this) {
             if (entry.getConnectionFuture() != null) {
-                return entry.getConnectionFuture();
+                connectionFuture = entry.getConnectionFuture();
+                return connectionFuture;
             }
 
-            CompletableFuture<RedisConnection> connectionFuture;
             if (this.options.getExecutionMode() == ExecutionMode.REDIS_WRITE_ATOMIC) {
                 connectionFuture = connectionManager.connectionWriteOp(source, null);
             } else {
