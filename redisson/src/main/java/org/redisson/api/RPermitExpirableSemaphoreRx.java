@@ -208,12 +208,35 @@ public interface RPermitExpirableSemaphoreRx extends RExpirableRx {
     Single<Integer> availablePermits();
 
     /**
+     * Returns the number of permits.
+     *
+     * @return number of permits
+     */
+    Single<Integer> getPermits();
+
+    /**
+     * Returns the number of acquired permits.
+     *
+     * @return number of acquired permits
+     */
+    Single<Integer> acquiredPermits();
+
+    /**
      * Sets number of permits.
      *
      * @param permits - number of permits
      * @return <code>true</code> if permits has been set successfully, otherwise <code>false</code>.  
      */
     Single<Boolean> trySetPermits(int permits);
+
+    /**
+     * Sets the number of permits to the provided value.
+     * Calculates the <code>delta</code> between the given <code>permits</code> value and the
+     * current number of permits, then increases the number of available permits by <code>delta</code>.
+     *
+     * @param permits - number of permits
+     */
+    Single<Void> setPermits(int permits);
 
     /**
      * Increases or decreases the number of available permits by defined value. 
