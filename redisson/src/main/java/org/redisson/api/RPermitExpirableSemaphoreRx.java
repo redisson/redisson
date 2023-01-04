@@ -20,7 +20,6 @@ import java.util.concurrent.TimeUnit;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
-import reactor.core.publisher.Mono;
 
 /**
  * RxJava2 interface for Semaphore object with lease time parameter support for each acquired permit.
