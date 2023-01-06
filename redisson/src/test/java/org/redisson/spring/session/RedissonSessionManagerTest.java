@@ -17,6 +17,7 @@ import org.redisson.RedissonRuntimeEnvironment;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
 
+@Deprecated
 public class RedissonSessionManagerTest {
 
     private static RedisRunner.RedisProcess defaultRedisInstance;
