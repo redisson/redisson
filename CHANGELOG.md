@@ -3,6 +3,24 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 06-Jan-2023 - 3.19.1 released
+Feature - `containsEach()` method added to RSet object (thanks to @slovvik)  
+Feature - `getPermits()`, `acquiredPermits()`, `setPermits()` methods added to `RPermitExpirableSemaphore` object (thanks to @kscaldef, @derekroller)
+
+__Breaking change - Kryo5Codec uses own serializators to serialize UUID, URI and Pattern objects__
+
+Fixed - `RReliableTopic` doesn't remove all expired subscribers at once  
+Fixed - `RPatternTopic` messages duplication after failover in cluster if channel starts with `__keyspace@` and `__keyevent@`  
+Fixed - `RBatch.getListMultimapCache()` method should return `RMultimapCacheAsync` interface  
+Fixed - SharedPubSub listener isn't being triggered (thanks to @MrChaos1993)  
+Fixed - `RSetCacheRx` and `RSetCacheReactive` miss `tryAdd()` method  
+Fixed - `RSetRx` and `RSetReactive` objects miss `tryAdd()` method  
+Fixed - `RBloomFilter` bitset can't be expired and deleted if `nameMapper` is used (thanks to @javed119)  
+Fixed - `RMapCacheRx` and `RMapCacheReactive` interfaces miss `addListener()` method  
+Fixed - `RMapCacheAsync` interface misses `addListenerAsync()` method  
+Fixed - `RTopicAsync.addListenerAsync()` method uses wrong generic pattern for MessageListener object  
+Fixed - `RPermitExpirableSemaphore` throws CROSSSLOT error in cluster if nameMapper is used  
+
 ### 16-Dec-2022 - 3.19.0 released
 
 Feature - implementation of Spring Cache methods added in Spring 5.2  
