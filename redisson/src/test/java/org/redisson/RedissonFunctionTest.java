@@ -70,16 +70,19 @@ public class RedissonFunctionTest extends BaseTest {
 
     @Test
     public void testKeysLoadAsExpected() {
-	RFunction f = redisson.getFunction();
-	f.flush();
-	f.load("lib", "redis.register_function('myfun', function(keys, args) return keys[1] end)" +
-					"redis.register_function('myfun2', function(keys, args) return args[1] end");
-	String s = f.call(FunctionMode.READ, "myfun", FunctionResult.VALUE, Arrays.asList("testKey"), "arg1");
-	assertThat(s).isEqualTo("testKey");
+        RFunction f = redisson.getFunction();
+        f.flush();
+        f.load("lib", "redis.register_function('myfun', function(keys, args) return keys[1] end)" +
+                        "redis.register_function('myfun2', function(keys, args) return args[1] end)");
+        String s = f.call(FunctionMode.READ, "myfun", FunctionResult.STRING, Arrays.asList("testKey"), "arg1");
+        assertThat(s).isEqualTo("testKey");
 
-	RFunction f2 = redisson.getFunction(StringCodec.INSTANCE);
-	String s2 = f2.call(FunctionMode.READ, "myfun2", FunctionResult.STRING, Arrays.asList("testKey1", "testKey2"), "arg1");
-	assertThat(s2).isEqualTo("arg1");
+        RFunction f2 = redisson.getFunction(StringCodec.INSTANCE);
+        String s2 = f2.call(FunctionMode.READ, "myfun2", FunctionResult.STRING, Arrays.asList("testKey1", "testKey2"), "arg1");
+        assertThat(s2).isEqualTo("arg1");
+
+        String s3 = f.call(FunctionMode.READ, "myfun2", FunctionResult.VALUE, Arrays.asList("testKey"), "argv1");
+        assertThat(s3).isEqualTo("argv1");
     }
 
     @Test

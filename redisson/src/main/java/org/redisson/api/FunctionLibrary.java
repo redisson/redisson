@@ -55,14 +55,12 @@ public class FunctionLibrary {
 
     private final String name;
     private final String engine;
-    private final String description;
     private final String code;
     private final List<Function> functions;
 
-    public FunctionLibrary(String name, String engine, String description, String code, List<Function> functions) {
+    public FunctionLibrary(String name, String engine, String code, List<Function> functions) {
         this.name = name;
         this.engine = engine;
-        this.description = description;
         this.code = code;
         this.functions = functions;
     }
@@ -73,10 +71,6 @@ public class FunctionLibrary {
 
     public String getEngine() {
         return engine;
-    }
-
-    public String getDescription() {
-        return description;
     }
 
     public String getCode() {

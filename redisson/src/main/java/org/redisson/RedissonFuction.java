@@ -116,7 +116,7 @@ public class RedissonFuction implements RFunction {
 
     @Override
     public RFuture<Void> loadAsync(String libraryName, String code) {
-        return commandExecutor.writeAllVoidAsync(RedisCommands.FUNCTION_LOAD, "Lua", libraryName, code);
+        return commandExecutor.writeAllVoidAsync(RedisCommands.FUNCTION_LOAD, "#!lua name=" + libraryName + " \n " + code);
     }
 
     @Override

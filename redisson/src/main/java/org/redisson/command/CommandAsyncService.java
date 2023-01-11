@@ -222,16 +222,20 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     @Override
     public <T> RFuture<Void> writeAllVoidAsync(RedisCommand<T> command, Object... params) {
-        List<CompletableFuture<Void>> futures = writeAllAsync(command, params);
+        List<CompletableFuture<Void>> futures = writeAllAsync(command, StringCodec.INSTANCE, params);
         CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
         return new CompletableFutureWrapper<>(f);
     }
 
     @Override
     public <R> List<CompletableFuture<R>> writeAllAsync(RedisCommand<?> command, Object... params) {
+        return writeAllAsync(command, connectionManager.getCodec(), params);
+    }
+
+    private <R> List<CompletableFuture<R>> writeAllAsync(RedisCommand<?> command, Codec codec, Object... params) {
         List<CompletableFuture<R>> futures = connectionManager.getEntrySet().stream().map(e -> {
             RFuture<R> f = async(false, new NodeSource(e),
-                    connectionManager.getCodec(), command, params, true, false);
+                    codec, command, params, true, false);
             return f.toCompletableFuture();
         }).collect(Collectors.toList());
         return futures;

@@ -342,13 +342,12 @@ public interface RedisCommands {
                         public Object decode(List parts, State state) {
                             String name = (String) parts.get(1);
                             String engine = (String) parts.get(3);
-                            String description = (String) parts.get(5);
                             String code = null;
-                            if (parts.size() > 8) {
-                                code = (String) parts.get(9);
+                            if (parts.size() > 6) {
+                                code = (String) parts.get(6);
                             }
-                            List<FunctionLibrary.Function> functions = (List<FunctionLibrary.Function>) parts.get(7);
-                            return new FunctionLibrary(name, engine, description, code, functions);
+                            List<FunctionLibrary.Function> functions = (List<FunctionLibrary.Function>) parts.get(5);
+                            return new FunctionLibrary(name, engine, code, functions);
                         }
                     },
                     new CodecDecoder(),
