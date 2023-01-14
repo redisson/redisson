@@ -58,16 +58,11 @@ public class RedissonFunctionTest extends BaseTest {
         GenericContainer<?> redisClusterContainer =
                 new GenericContainer<>("vishnunair/docker-redis-cluster")
                         .withExposedPorts(6379, 6380, 6381, 6382, 6383, 6384)
-                        .withStartupCheckStrategy(
-                                new MinimumDurationRunningStartupCheckStrategy(Duration.ofSeconds(6))
-                        );
-
+                        .withStartupCheckStrategy(new MinimumDurationRunningStartupCheckStrategy(Duration.ofSeconds(6)));
         redisClusterContainer.start();
 
         Config config = new Config();
-
         config.useClusterServers()
-                .setPingConnectionInterval(0)
                 .setNatMapper(new NatMapper() {
                     @Override
                     public RedisURI map(RedisURI uri) {
@@ -77,7 +72,6 @@ public class RedissonFunctionTest extends BaseTest {
                         return new RedisURI(uri.getScheme(), redisClusterContainer.getHost(), redisClusterContainer.getMappedPort(uri.getPort()));
                     }
                 })
-                .setLoadBalancer(new RandomLoadBalancer())
                 .addNodeAddress("redis://127.0.0.1:" + redisClusterContainer.getFirstMappedPort());
         RedissonClient redisson = Redisson.create(config);
 
