@@ -100,8 +100,8 @@ public class RedissonFunctionTest extends BaseTest {
         List<String> results = (List<String>) batch.execute().getResponses();
         assertThat(results).containsExactly("b", "d", "f", "h", "j", "l");
 
-        redisClusterContainer.stop();
         redisson.shutdown();
+        redisClusterContainer.stop();
     }
 
     @Test
