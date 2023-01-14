@@ -210,7 +210,11 @@ public class RedissonFuction implements RFunction {
 
     @Override
     public <R> RFuture<R> callAsync(FunctionMode mode, String name, FunctionResult returnType, List<Object> keys, Object... values) {
-        return callAsync(null, mode, name, returnType, keys, values);
+        String key = null;
+        if (keys.size() > 0) {
+            key = (String) keys.get(0);
+        }
+        return callAsync(key, mode, name, returnType, keys, values);
     }
 
     @Override

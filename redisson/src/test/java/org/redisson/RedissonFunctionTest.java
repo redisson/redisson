@@ -6,10 +6,14 @@ import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.config.Config;
+import org.redisson.connection.balancer.RandomLoadBalancer;
+import org.redisson.misc.RedisURI;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.startupcheck.MinimumDurationRunningStartupCheckStrategy;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.time.Duration;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -47,6 +51,63 @@ public class RedissonFunctionTest extends BaseTest {
         f.kill();
         FunctionStats stats2 = f.stats();
         assertThat(stats2.getRunningFunction()).isNull();
+    }
+
+    @Test
+    public void testCluster() {
+        GenericContainer<?> redisClusterContainer =
+                new GenericContainer<>("vishnunair/docker-redis-cluster")
+                        .withExposedPorts(6379, 6380, 6381, 6382, 6383, 6384)
+                        .withStartupCheckStrategy(
+                                new MinimumDurationRunningStartupCheckStrategy(Duration.ofSeconds(6))
+                        );
+
+        redisClusterContainer.start();
+
+        Config config = new Config();
+
+        config.useClusterServers()
+                .setPingConnectionInterval(0)
+                .setNatMapper(new NatMapper() {
+                    @Override
+                    public RedisURI map(RedisURI uri) {
+                        if (redisClusterContainer.getMappedPort(uri.getPort()) == null) {
+                            return uri;
+                        }
+                        return new RedisURI(uri.getScheme(), redisClusterContainer.getHost(), redisClusterContainer.getMappedPort(uri.getPort()));
+                    }
+                })
+                .setLoadBalancer(new RandomLoadBalancer())
+                .addNodeAddress("redis://127.0.0.1:" + redisClusterContainer.getFirstMappedPort());
+        RedissonClient redisson = Redisson.create(config);
+
+        Map<String, Object> testMap = new HashMap<>();
+        testMap.put("a", "b");
+        testMap.put("c", "d");
+        testMap.put("e", "f");
+        testMap.put("g", "h");
+        testMap.put("i", "j");
+        testMap.put("k", "l");
+
+        RFunction f = redisson.getFunction();
+        f.load("lib", "redis.register_function('myfun', function(keys, args) return args[1] end)");
+
+        RBatch batch = redisson.createBatch();
+        RFunctionAsync function = batch.getFunction();
+        for (Map.Entry<String, Object> property : testMap.entrySet()) {
+            List<Object> key = Collections.singletonList(property.getKey());
+            function.callAsync(
+                    FunctionMode.READ,
+                    "myfun",
+                    FunctionResult.VALUE,
+                    key,
+                    property.getValue());
+        }
+        List<String> results = (List<String>) batch.execute().getResponses();
+        assertThat(results).containsExactly("b", "d", "f", "h", "j", "l");
+
+        redisClusterContainer.stop();
+        redisson.shutdown();
     }
 
     @Test
