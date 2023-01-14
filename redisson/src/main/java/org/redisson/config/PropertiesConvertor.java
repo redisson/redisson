@@ -83,6 +83,10 @@ public class PropertiesConvertor {
     private static final Set<String> LIST_NODES = new HashSet<>(
                             Arrays.asList("node-addresses", "nodeaddresses", "slave-addresses", "slaveaddresses", "addresses"));
 
+    private static final Set<String> CLASS_PROPERTIES = new HashSet<>(
+            Arrays.asList("codec", "load-balancer", "loadbalancer", "address-resolver-group-factory", "addressresolvergroupfactory",
+                    "netty-hook", "nettyhook", "connection-listener", "connectionlistener"));
+
     private static void addValue(StringBuilder yaml, Map.Entry<String, Object> subEntry) {
         String value = (String) subEntry.getValue();
         if (value.contains(",") || LIST_NODES.contains(subEntry.getKey())) {
@@ -92,8 +96,7 @@ public class PropertiesConvertor {
             return;
         }
 
-        if ("codec".equals(subEntry.getKey())
-                || "load-balancer".equals(subEntry.getKey())) {
+        if (CLASS_PROPERTIES.contains(subEntry.getKey())) {
             value = "!<" + value + "> {}";
         } else {
             try {
