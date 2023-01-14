@@ -66,6 +66,15 @@ public class RedissonFunctionTest extends BaseTest {
         RFunction f3 = redisson.getFunction(LongCodec.INSTANCE);
         Long s3 = f3.call(FunctionMode.READ, "myfun3", FunctionResult.LONG, Collections.emptyList());
         assertThat(s3).isEqualTo(123L);
+
+        f.loadAndReplace("lib", "redis.register_function('myfun', function(keys, args) return args[1] end)" +
+                "redis.register_function('myfun2', function(keys, args) return 'test2' end)" +
+                "redis.register_function('myfun3', function(keys, args) return 123 end)");
+
+        RFunction f4 = redisson.getFunction(StringCodec.INSTANCE);
+        String s4 = f4.call(FunctionMode.READ, "myfun2", FunctionResult.STRING, Collections.emptyList());
+        assertThat(s4).isEqualTo("test2");
+
     }
 
     @Test
