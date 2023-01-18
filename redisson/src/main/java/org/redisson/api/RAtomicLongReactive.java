@@ -50,6 +50,14 @@ public interface RAtomicLongReactive extends RExpirableReactive {
      * @return the updated value
      */
     Mono<Long> decrementAndGet();
+    
+    /**
+     * Atomically decrements the current value by defined value.
+     * 
+     * @param delta the value to decrements
+     * @return the updated value
+     */
+    Mono<Long> decrementAndGet(long delta);
 
     /**
      * Returns current value.

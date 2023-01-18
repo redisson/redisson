@@ -3,6 +3,7 @@ package org.redisson;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RAtomicLongReactive;
+import org.redisson.api.RedissonRxClient;
 
 public class RedissonAtomicLongReactiveTest extends BaseReactiveTest {
 
@@ -36,7 +37,17 @@ public class RedissonAtomicLongReactiveTest extends BaseReactiveTest {
         Assertions.assertEquals(0, sync(al.getAndIncrement()).intValue());
         Assertions.assertEquals(1, sync(al.get()).intValue());
     }
-
+    
+    @Test
+    public void testDecrementAndGet() {
+    	RAtomicLongReactive al = redisson.getAtomicLong("test");
+    	Assertions.assertEquals(3, sync(al.addAndGet(3)).intValue());
+    	Assertions.assertEquals(9, sync(al.addAndGet(6)).intValue());
+    	Assertions.assertEquals(7, sync(al.decrementAndGet(2)).intValue());
+    	Assertions.assertEquals(4, sync(al.decrementAndGet(3)).intValue());
+    	Assertions.assertEquals(-1, sync(al.decrementAndGet(5)).intValue());
+    }
+    
     @Test
     public void test() {
         RAtomicLongReactive al = redisson.getAtomicLong("test");
