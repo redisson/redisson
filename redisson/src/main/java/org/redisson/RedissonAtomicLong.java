@@ -98,7 +98,12 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
     
     @Override
     public RFuture<Long> decrementAndGetAsync(long delta) {
-    	return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.DECRBY, getRawName());
+    	return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, new RedisStrictCommand<Long>("DECRBY", new Convertor<Long>() {
+            @Override
+            public Long convert(Object obj) {
+                return ((Long) obj);
+            }
+        }), getRawName(), delta);
     }
 
     @Override
