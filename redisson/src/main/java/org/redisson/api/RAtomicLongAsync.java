@@ -49,7 +49,7 @@ public interface RAtomicLongAsync extends RExpirableAsync {
      */
     RFuture<Long> decrementAndGetAsync();
     /**
-     * Atomically decrements the given value to the current value.
+     * Atomically decrements the current value by defined value.
      * 
      * @param delta the value to decrements
      * @return the updated value
