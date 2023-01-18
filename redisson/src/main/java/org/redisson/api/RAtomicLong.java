@@ -55,6 +55,14 @@ public interface RAtomicLong extends RExpirable, RAtomicLongAsync {
      * @return the updated value
      */
     long decrementAndGet();
+    
+    /**
+     * Atomically decrements the current value by one.
+     * 
+     * @param delta the value to add
+     * @return the updated value
+     */
+    long decrementAndGet(long delta);
 
     /**
      * Returns current value.
