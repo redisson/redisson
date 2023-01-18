@@ -418,6 +418,7 @@ public interface RedisCommands {
     RedisStrictCommand<Long> INCRBY = new RedisStrictCommand<Long>("INCRBY");
     RedisStrictCommand<Double> INCRBYFLOAT = new RedisStrictCommand<Double>("INCRBYFLOAT", new DoubleNullSafeReplayConvertor());
     RedisStrictCommand<Long> DECR = new RedisStrictCommand<Long>("DECR");
+    RedisStrictCommand<Long> DECRBY = new RedisStrictCommand<Long>("DECRBY");
 
     RedisStrictCommand<Void> AUTH = new RedisStrictCommand<Void>("AUTH", new VoidReplayConvertor());
     RedisStrictCommand<Void> SELECT = new RedisStrictCommand<Void>("SELECT", new VoidReplayConvertor());
