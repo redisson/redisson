@@ -75,6 +75,13 @@ public class RedissonAtomicLongTest extends BaseTest {
         Assertions.assertEquals(0, al.getAndIncrement());
         Assertions.assertEquals(1, al.get());
     }
+    
+    @Test
+    public void testDecrementAndGet() {
+    	RAtomicLong al = redisson.getAtomicLong("test");
+    	Assertions.assertEquals(3, al.addAndGet(3));
+    	Assertions.assertEquals(1, al.decrementAndGet(2));
+    }
 
     @Test
     public void test() {
