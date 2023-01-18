@@ -54,11 +54,11 @@ public class RedissonFunctionTest extends BaseTest {
     }
 
     @Test
-    public void testCluster() {
+    public void testCluster() throws InterruptedException {
         GenericContainer<?> redisClusterContainer =
                 new GenericContainer<>("vishnunair/docker-redis-cluster")
                         .withExposedPorts(6379, 6380, 6381, 6382, 6383, 6384)
-                        .withStartupCheckStrategy(new MinimumDurationRunningStartupCheckStrategy(Duration.ofSeconds(6)));
+                        .withStartupCheckStrategy(new MinimumDurationRunningStartupCheckStrategy(Duration.ofSeconds(7)));
         redisClusterContainer.start();
 
         Config config = new Config();
@@ -84,7 +84,11 @@ public class RedissonFunctionTest extends BaseTest {
         testMap.put("k", "l");
 
         RFunction f = redisson.getFunction();
+        f.flush();
         f.load("lib", "redis.register_function('myfun', function(keys, args) return args[1] end)");
+
+        // waiting for the function replication to all nodes
+        Thread.sleep(5000);
 
         RBatch batch = redisson.createBatch();
         RFunctionAsync function = batch.getFunction();
