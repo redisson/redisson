@@ -25,6 +25,7 @@ import org.redisson.misc.CompletableFutureWrapper;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -199,7 +200,8 @@ public class RedissonFuction implements RFunction {
         args.add(name);
         args.add(keys.size());
         if (keys.size() > 0) {
-            args.addAll(keys);
+            args.addAll(keys.stream().map(k -> commandExecutor.getConnectionManager().getConfig().getNameMapper().map((String) k))
+                    .collect(Collectors.toList()));
         }
         args.addAll(encode(Arrays.asList(values), codec));
         if (mode == FunctionMode.READ) {
@@ -212,7 +214,7 @@ public class RedissonFuction implements RFunction {
     public <R> RFuture<R> callAsync(FunctionMode mode, String name, FunctionResult returnType, List<Object> keys, Object... values) {
         String key = null;
         if (keys.size() > 0) {
-            key = (String) keys.get(0);
+            key = commandExecutor.getConnectionManager().getConfig().getNameMapper().map((String) keys.get(0));
         }
         return callAsync(key, mode, name, returnType, keys, values);
     }
