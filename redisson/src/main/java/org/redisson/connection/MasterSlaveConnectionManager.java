@@ -708,7 +708,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return resolveIP(address.getScheme(), address);
     }
 
-    protected CompletableFuture<RedisURI> resolveIP(String scheme, RedisURI address) {
+    protected final CompletableFuture<RedisURI> resolveIP(String scheme, RedisURI address) {
         if (address.isIP()) {
             RedisURI addr = toURI(scheme, address.getHost(), "" + address.getPort());
             return CompletableFuture.completedFuture(addr);
@@ -732,7 +732,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return result;
     }
 
-    protected RedisURI toURI(String scheme, String host, String port) {
+    protected final RedisURI toURI(String scheme, String host, String port) {
         // convert IPv6 address to unified compressed format
         if (NetUtil.isValidIpV6Address(host)) {
             byte[] addr = NetUtil.createByteArrayFromIpAddressString(host);
