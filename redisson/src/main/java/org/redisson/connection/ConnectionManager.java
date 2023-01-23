@@ -44,7 +44,9 @@ import java.util.concurrent.TimeUnit;
  *
  */
 public interface ConnectionManager {
-    
+
+    void connect();
+
     RedisURI applyNatMap(RedisURI address);
 
     CompletableFuture<RedisURI> resolveIP(RedisURI address);

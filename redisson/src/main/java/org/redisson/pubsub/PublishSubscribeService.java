@@ -101,10 +101,10 @@ public class PublishSubscribeService {
 
     private final LockPubSub lockPubSub = new LockPubSub(this);
 
-    public PublishSubscribeService(ConnectionManager connectionManager, MasterSlaveServersConfig config) {
+    public PublishSubscribeService(ConnectionManager connectionManager) {
         super();
         this.connectionManager = connectionManager;
-        this.config = config;
+        this.config = connectionManager.getConfig();
         for (int i = 0; i < locks.length; i++) {
             locks[i] = new AsyncSemaphore(1);
         }

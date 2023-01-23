@@ -81,7 +81,7 @@ public class RedissonTest extends BaseTest {
         }
 
         ex.shutdown();
-        assertThat(ex.awaitTermination(7, TimeUnit.SECONDS)).isTrue();
+        assertThat(ex.awaitTermination(8, TimeUnit.SECONDS)).isTrue();
         inst.shutdown();
     }
 

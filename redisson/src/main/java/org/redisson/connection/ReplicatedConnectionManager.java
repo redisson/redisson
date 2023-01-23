@@ -63,12 +63,14 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
         slave
     }
 
+    private ReplicatedServersConfig cfg;
+
     public ReplicatedConnectionManager(ReplicatedServersConfig cfg, Config config, UUID id) {
-        super(config, id);
+        super(cfg, config, id);
+    }
 
-        this.config = create(cfg);
-        initTimer(this.config);
-
+    @Override
+    public void connect() {
         for (String address : cfg.getNodeAddresses()) {
             RedisURI addr = new RedisURI(address);
             CompletionStage<RedisConnection> connectionFuture = connectToNode(cfg, addr, addr.getHost());
@@ -101,7 +103,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
             log.warn("ReadMode = {}, but slave nodes are not found! Please specify all nodes in replicated mode.", this.config.getReadMode());
         }
 
-        initSingleEntry();
+        super.connect();
 
         scheduleMasterChangeCheck(cfg);
     }
@@ -113,6 +115,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
 
     @Override
     protected MasterSlaveServersConfig create(BaseMasterSlaveServersConfig<?> cfg) {
+        this.cfg = (ReplicatedServersConfig) cfg;
         MasterSlaveServersConfig res = super.create(cfg);
         res.setDatabase(((ReplicatedServersConfig) cfg).getDatabase());
         return res;
