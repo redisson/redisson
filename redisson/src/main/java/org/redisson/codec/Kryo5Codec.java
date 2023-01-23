@@ -59,14 +59,14 @@ public class Kryo5Codec extends BaseCodec {
             try {
                 Constructor ctor;
                 try {
-                    ctor = type.getConstructor((Class[])null);
+                    ctor = type.getConstructor((Class[]) null);
                 } catch (Exception ex) {
-                    ctor = type.getDeclaredConstructor((Class[])null);
+                    ctor = type.getDeclaredConstructor((Class[]) null);
                     ctor.setAccessible(true);
                 }
                 final Constructor constructor = ctor;
                 return new ObjectInstantiator() {
-                    public Object newInstance () {
+                    public Object newInstance() {
                         try {
                             return constructor.newInstance();
                         } catch (Exception ex) {
