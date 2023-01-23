@@ -16,6 +16,7 @@
 package org.redisson.codec;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers;
@@ -25,16 +26,20 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
-import org.objenesis.strategy.StdInstantiatorStrategy;
+import org.objenesis.instantiator.ObjectInstantiator;
 import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.util.UUID;
 import java.util.regex.Pattern;
+
+import static com.esotericsoftware.kryo.util.Util.className;
 
 /**
  * Kryo 5 codec
@@ -45,6 +50,51 @@ import java.util.regex.Pattern;
  *
  */
 public class Kryo5Codec extends BaseCodec {
+
+    private static class SimpleInstantiatorStrategy implements org.objenesis.strategy.InstantiatorStrategy {
+
+        @Override
+        public <T> ObjectInstantiator<T> newInstantiatorOf(Class<T> type) {
+            // Reflection.
+            try {
+                Constructor ctor;
+                try {
+                    ctor = type.getConstructor((Class[])null);
+                } catch (Exception ex) {
+                    ctor = type.getDeclaredConstructor((Class[])null);
+                    ctor.setAccessible(true);
+                }
+                final Constructor constructor = ctor;
+                return new ObjectInstantiator() {
+                    public Object newInstance () {
+                        try {
+                            return constructor.newInstance();
+                        } catch (Exception ex) {
+                            throw new KryoException("Error constructing instance of class: " + className(type), ex);
+                        }
+                    }
+                };
+            } catch (Exception ignored) {
+            }
+
+            if (type.isMemberClass() && !Modifier.isStatic(type.getModifiers()))
+                throw new KryoException("Class cannot be created (non-static member class): " + className(type));
+            else {
+                StringBuilder message = new StringBuilder("Class cannot be created (missing no-arg constructor): " + className(type));
+                if (type.getSimpleName().equals("")) {
+                    message
+                            .append(
+                                    "\nNote: This is an anonymous class, which is not serializable by default in Kryo. Possible solutions:\n")
+                            .append("1. Remove uses of anonymous classes, including double brace initialization, from the containing\n")
+                            .append(
+                                    "class. This is the safest solution, as anonymous classes don't have predictable names for serialization.\n")
+                            .append("2. Register a FieldSerializer for the containing class and call FieldSerializer\n")
+                            .append("setIgnoreSyntheticFields(false) on it. This is not safe but may be sufficient temporarily.");
+                }
+                throw new KryoException(message.toString());
+            }
+        }
+    }
 
     private final Pool<Kryo> kryoPool;
     private final Pool<Input> inputPool;
@@ -87,7 +137,7 @@ public class Kryo5Codec extends BaseCodec {
         if (classLoader != null) {
             kryo.setClassLoader(classLoader);
         }
-        kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
+        kryo.setInstantiatorStrategy(new SimpleInstantiatorStrategy());
         kryo.setRegistrationRequired(false);
         kryo.setReferences(false);
         kryo.addDefaultSerializer(Throwable.class, new JavaSerializer());
