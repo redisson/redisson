@@ -8,6 +8,10 @@
   ]
 },
 {
+  "name": "com.esotericsoftware.kryo.serializers.TimeSerializers$OffsetDateTimeSerializer",
+  "allDeclaredConstructors":true
+},
+{
   "name":"io.netty.buffer.AbstractByteBufAllocator",
   "allDeclaredMethods":true
 },

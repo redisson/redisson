@@ -1,5 +1,9 @@
 [
 {
+  "name": "com.esotericsoftware.kryo.serializers.TimeSerializers$OffsetDateTimeSerializer",
+  "allDeclaredConstructors":true
+},
+{
   "name":"java.sql.Date"
 },
 {
