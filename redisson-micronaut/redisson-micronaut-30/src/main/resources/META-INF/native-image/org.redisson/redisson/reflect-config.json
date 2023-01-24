@@ -8,7 +8,367 @@
   ]
 },
 {
+  "name": "com.esotericsoftware.kryo.serializers.BeanSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.BlowfishSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.ClosureSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.CollectionSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultArraySerializers$BooleanArraySerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultArraySerializers$ByteArraySerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultArraySerializers$CharArraySerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultArraySerializers$DoubleArraySerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultArraySerializers$FloatArraySerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultArraySerializers$IntArraySerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultArraySerializers$LongArraySerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultArraySerializers$ObjectArraySerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultArraySerializers$ShortArraySerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultArraySerializers$StringArraySerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$ArraysAsListSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$AtomicBooleanSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$AtomicIntegerSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$AtomicLongSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$AtomicReferenceSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$BigDecimalSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$BigIntegerSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$BitSetSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$BooleanSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$ByteSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$CalendarSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$CharSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$CharsetSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$ClassSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$CollectionsEmptyListSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$CollectionsEmptyMapSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$CollectionsEmptySetSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$CollectionsSingletonListSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$CollectionsSingletonMapSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$CollectionsSingletonSetSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$ConcurrentSkipListMapSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$CurrencySerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$DateSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$DoubleSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$EnumSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$EnumSetSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$FloatSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$IntSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$KryoSerializableSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$LocaleSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$LongSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$PatternSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$PriorityQueueSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$ShortSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$StringBufferSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$StringBuilderSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$StringSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$TimeZoneSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$TimestampSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$TreeMapSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$TreeSetSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$URISerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$URLSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$UUIDSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DefaultSerializers$VoidSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.DeflateSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.EnumMapSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.EnumNameSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.ExternalizableSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.FieldSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.ImmutableCollectionsSerializers$JdkImmutableListSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.ImmutableCollectionsSerializers$JdkImmutableMapSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.ImmutableCollectionsSerializers$JdkImmutableSetSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.JavaSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.MapSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.OptionalSerializers$OptionalDoubleSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.OptionalSerializers$OptionalIntSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.OptionalSerializers$OptionalLongSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.OptionalSerializers$OptionalSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.RecordSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.TaggedFieldSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.TimeSerializers$DurationSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.TimeSerializers$InstantSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.TimeSerializers$LocalDateSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.TimeSerializers$LocalDateTimeSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.TimeSerializers$LocalTimeSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.TimeSerializers$MonthDaySerializer",
+  "allDeclaredConstructors":true
+},
+{
   "name": "com.esotericsoftware.kryo.serializers.TimeSerializers$OffsetDateTimeSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.TimeSerializers$OffsetTimeSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.TimeSerializers$PeriodSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.TimeSerializers$YearMonthSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.TimeSerializers$YearSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.TimeSerializers$ZoneIdSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.TimeSerializers$ZoneOffsetSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.TimeSerializers$ZonedDateTimeSerializer",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "com.esotericsoftware.kryo.serializers.VersionFieldSerializer",
   "allDeclaredConstructors":true
 },
 {
