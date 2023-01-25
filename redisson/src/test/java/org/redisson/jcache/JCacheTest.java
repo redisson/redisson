@@ -19,10 +19,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.cache.Cache;
 import javax.cache.Caching;
-import javax.cache.configuration.Configuration;
-import javax.cache.configuration.FactoryBuilder;
-import javax.cache.configuration.MutableCacheEntryListenerConfiguration;
-import javax.cache.configuration.MutableConfiguration;
+import javax.cache.configuration.*;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryExpiredListener;
 import javax.cache.event.CacheEntryListenerException;
@@ -30,6 +27,8 @@ import javax.cache.event.CacheEntryRemovedListener;
 import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
+import javax.cache.integration.CacheLoader;
+import javax.cache.integration.CacheLoaderException;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -294,7 +293,59 @@ public class JCacheTest extends BaseTest {
         cache.close();
         runner.stop();
     }
-    
+
+    @Test
+    public void testGetAllCacheLoader() throws Exception {
+        RedisProcess runner = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(6311)
+                .run();
+
+        URL configUrl = getClass().getResource("redisson-jcache.yaml");
+        Config cfg = Config.fromYAML(configUrl);
+
+        MutableConfiguration<String, String> jcacheConfig = new MutableConfiguration<>();
+        jcacheConfig.setReadThrough(true);
+        jcacheConfig.setCacheLoaderFactory(new Factory<CacheLoader<String, String>>() {
+            @Override
+            public CacheLoader<String, String> create() {
+                return new CacheLoader<String, String>() {
+                    @Override
+                    public String load(String key) throws CacheLoaderException {
+                        throw new CacheLoaderException("shouldn't be used");
+                    }
+
+                    @Override
+                    public Map<String, String> loadAll(Iterable<? extends String> keys) throws CacheLoaderException {
+                        Map<String, String> res = new HashMap<>();
+                        for (String key : keys) {
+                            res.put(key, key+"_loaded");
+                        }
+                        return res;
+                    }
+                };
+            }
+        });
+        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg, jcacheConfig);
+        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
+                .createCache("test", config);
+
+        cache.put("1", "2");
+        cache.put("3", "4");
+
+        Map<String, String> entries = cache.getAll(new HashSet<>(Arrays.asList("1", "3", "7", "10")));
+        Map<String, String> expected = new HashMap<String, String>();
+        expected.put("1", "2");
+        expected.put("3", "4");
+        expected.put("7", "7_loaded");
+        expected.put("10", "10_loaded");
+        assertThat(entries).isEqualTo(expected);
+
+        cache.close();
+        runner.stop();
+    }
+
     @Test
     public void testJson() throws InterruptedException, IllegalArgumentException, URISyntaxException, IOException {
         RedisProcess runner = new RedisRunner()

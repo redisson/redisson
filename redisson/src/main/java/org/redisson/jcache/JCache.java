@@ -399,6 +399,21 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return getAccessTimeout(System.currentTimeMillis());
     }
 
+    Map<K, V> loadValues(Iterable<? extends K> keys) {
+        Map<K, V> loaded;
+        try {
+            loaded = cacheLoader.loadAll(keys);
+        } catch (Exception ex) {
+            throw new CacheLoaderException(ex);
+        }
+        if (loaded != null) {
+            long startTime = currentNanoTime();
+            putAll(loaded);
+            cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
+        }
+        return loaded;
+    }
+
     V loadValue(K key) {
         V value = null;
         try {
@@ -1035,35 +1050,33 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 return;
             }
 
-            Map<K, V> map = r.entrySet().stream()
-                                .filter(e -> e.getValue() != null)
-                                .collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue()));
+            int notNullAmount = (int) r.entrySet().stream()
+                                                    .filter(e -> e.getValue() != null)
+                                                    .count();
+            cacheManager.getStatBean(this).addHits(notNullAmount);
 
-            cacheManager.getStatBean(this).addHits(map.size());
-
-            int nullValues = r.size() - map.size();
+            int nullValues = r.size() - notNullAmount;
             if (config.isReadThrough() && nullValues > 0) {
                 cacheManager.getStatBean(this).addMisses(nullValues);
                 commandExecutor.getConnectionManager().getExecutor().execute(() -> {
                     try {
-                        r.entrySet().stream()
-                            .filter(e -> e.getValue() == null)
-                            .forEach(entry -> {
-                                V value = loadValue(entry.getKey());
-                                if (value != null) {
-                                    map.put(entry.getKey(), value);
-                                }
-                            });
+                        Set<K> nullKeys = r.entrySet().stream()
+                                .filter(e -> e.getValue() == null)
+                                .map(e -> e.getKey())
+                                .collect(Collectors.toSet());
+
+                        Map<K, V> loadedMap = loadValues(nullKeys);
+                        r.putAll(loadedMap);
                     } catch (Exception exc) {
                         result.completeExceptionally(exc);
                         return;
                     }
                     cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
-                    result.complete(map);
+                    result.complete(r);
                 });
             } else {
                 cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
-                result.complete(map);
+                result.complete(r);
             }
         });
         return new CompletableFutureWrapper<>(result);
