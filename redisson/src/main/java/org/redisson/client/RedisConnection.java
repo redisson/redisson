@@ -129,6 +129,11 @@ public class RedisConnection implements RedisCommands {
         return null;
     }
 
+    public void clearCurrentCommand() {
+        Queue<QueueCommandHolder> queue = channel.attr(CommandsQueue.COMMANDS_QUEUE).get();
+        queue.poll();
+    }
+
     public CommandData<?, ?> getCurrentCommand() {
         Queue<QueueCommandHolder> queue = channel.attr(CommandsQueue.COMMANDS_QUEUE).get();
         if (queue != null) {
