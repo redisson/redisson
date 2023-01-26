@@ -223,7 +223,7 @@ public class Config {
         return clusterServersConfig;
     }
 
-    protected void setClusterServersConfig(ClusterServersConfig clusterServersConfig) {
+    public void setClusterServersConfig(ClusterServersConfig clusterServersConfig) {
         this.clusterServersConfig = clusterServersConfig;
     }
 
@@ -253,7 +253,7 @@ public class Config {
         return replicatedServersConfig;
     }
 
-    protected void setReplicatedServersConfig(ReplicatedServersConfig replicatedServersConfig) {
+    public void setReplicatedServersConfig(ReplicatedServersConfig replicatedServersConfig) {
         this.replicatedServersConfig = replicatedServersConfig;
     }
 
@@ -303,7 +303,7 @@ public class Config {
         return singleServerConfig;
     }
 
-    protected void setSingleServerConfig(SingleServerConfig singleConnectionConfig) {
+    public void setSingleServerConfig(SingleServerConfig singleConnectionConfig) {
         this.singleServerConfig = singleConnectionConfig;
     }
 
@@ -332,7 +332,7 @@ public class Config {
         return sentinelServersConfig;
     }
 
-    protected void setSentinelServersConfig(SentinelServersConfig sentinelConnectionConfig) {
+    public void setSentinelServersConfig(SentinelServersConfig sentinelConnectionConfig) {
         this.sentinelServersConfig = sentinelConnectionConfig;
     }
 
@@ -361,7 +361,7 @@ public class Config {
         return masterSlaveServersConfig;
     }
 
-    protected void setMasterSlaveServersConfig(MasterSlaveServersConfig masterSlaveConnectionConfig) {
+    public void setMasterSlaveServersConfig(MasterSlaveServersConfig masterSlaveConnectionConfig) {
         this.masterSlaveServersConfig = masterSlaveConnectionConfig;
     }
 

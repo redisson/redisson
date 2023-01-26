@@ -15,6 +15,7 @@
  */
 package org.redisson.spring.starter;
 
+import org.redisson.config.Config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -26,8 +27,23 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "spring.redis.redisson")
 public class RedissonProperties {
 
+    /**
+     * Redisson configuration as Spring Boot configuration.
+     */
+    private Config springBootConfiguration;
+    /**
+     * Flag to enable Spring Boot configuration. Default: true.
+     */
+    private boolean useSpringBootConfiguration = true;
+
+    /**
+     * Redisson configuration specified as String in either YAML or JSON format.
+     */
     private String config;
 
+    /**
+     * Path pointing to a file containing Redisson configuration.
+     */
     private String file;
 
     public String getConfig() {
@@ -44,5 +60,21 @@ public class RedissonProperties {
 
     public void setFile(String file) {
         this.file = file;
+    }
+
+    public void setSpringBootConfiguration(Config springBootConfiguration) {
+        this.springBootConfiguration = springBootConfiguration;
+    }
+
+    public Config getSpringBootConfiguration() {
+        return springBootConfiguration;
+    }
+
+    public boolean getUseSpringBootConfiguration() {
+        return useSpringBootConfiguration;
+    }
+
+    public void setUseSpringBootConfiguration(boolean useSpringBootConfiguration) {
+        this.useSpringBootConfiguration = useSpringBootConfiguration;
     }
 }

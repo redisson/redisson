@@ -47,7 +47,7 @@ public class RedissonConfiguration extends Config {
 
     @Override
     @ConfigurationBuilder("singleServerConfig")
-    protected void setSingleServerConfig(SingleServerConfig singleConnectionConfig) {
+    public void setSingleServerConfig(SingleServerConfig singleConnectionConfig) {
         super.setSingleServerConfig(singleConnectionConfig);
     }
 
@@ -61,7 +61,7 @@ public class RedissonConfiguration extends Config {
 
     @Override
     @ConfigurationBuilder(value = "clusterServersConfig", includes = {"nodeAddresses"})
-    protected void setClusterServersConfig(ClusterServersConfig clusterServersConfig) {
+    public void setClusterServersConfig(ClusterServersConfig clusterServersConfig) {
         super.setClusterServersConfig(clusterServersConfig);
     }
 
@@ -83,7 +83,7 @@ public class RedissonConfiguration extends Config {
 
     @Override
     @ConfigurationBuilder(value = "replicatedServersConfig", includes = {"nodeAddresses"})
-    protected void setReplicatedServersConfig(ReplicatedServersConfig replicatedServersConfig) {
+    public void setReplicatedServersConfig(ReplicatedServersConfig replicatedServersConfig) {
         super.setReplicatedServersConfig(replicatedServersConfig);
     }
 
@@ -97,7 +97,7 @@ public class RedissonConfiguration extends Config {
 
     @Override
     @ConfigurationBuilder(value = "sentinelServersConfig", includes = {"sentinelAddresses"})
-    protected void setSentinelServersConfig(SentinelServersConfig sentinelConnectionConfig) {
+    public void setSentinelServersConfig(SentinelServersConfig sentinelConnectionConfig) {
         super.setSentinelServersConfig(sentinelConnectionConfig);
     }
 
@@ -111,7 +111,7 @@ public class RedissonConfiguration extends Config {
 
     @Override
     @ConfigurationBuilder(value = "masterSlaveServersConfig", includes = {"slaveAddresses"})
-    protected void setMasterSlaveServersConfig(MasterSlaveServersConfig masterSlaveConnectionConfig) {
+    public void setMasterSlaveServersConfig(MasterSlaveServersConfig masterSlaveConnectionConfig) {
         super.setMasterSlaveServersConfig(masterSlaveConnectionConfig);
     }
 
