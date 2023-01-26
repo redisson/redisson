@@ -259,6 +259,9 @@ public interface RedisCommands {
                     new ObjectDecoder(StringCodec.INSTANCE.getValueDecoder()) {
                         @Override
                         public Object decode(List parts, State state) {
+                            if (parts.isEmpty()) {
+                                return null;
+                            }
                             return Collections.singletonMap(parts.get(0), parts.get(1));
                         }
                     },
