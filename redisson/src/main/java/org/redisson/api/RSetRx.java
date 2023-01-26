@@ -254,6 +254,8 @@ public interface RSetRx<V> extends RCollectionRx<V>, RSortableRx<Set<V>> {
     /**
      * Check if each element is contained in the specified collection.
      * Returns contained elements.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
      *
      * @param c - collection to check
      * @return contained elements
