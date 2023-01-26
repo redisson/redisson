@@ -18,8 +18,6 @@ public class RedissonStreamTest extends BaseTest {
 
     @Test
     public void testEmptyMap() {
-        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
-
         RStream<Object, Object> stream = redisson.getStream("stream");
         stream.createGroup("group");
         stream.add(StreamAddArgs.entry("key", "value"));
