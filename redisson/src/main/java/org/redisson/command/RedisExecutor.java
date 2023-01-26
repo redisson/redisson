@@ -424,7 +424,6 @@ public class RedisExecutor<V, R> {
             // handling cases when connection has been lost
             scheduledFuture = connectionManager.newTimeout(timeout -> {
                 if (attemptPromise.complete(null)) {
-                    connection.clearCurrentCommand();
                     connection.forceFastReconnectAsync();
                 }
             }, popTimeout + 3000, TimeUnit.MILLISECONDS);
@@ -632,13 +631,13 @@ public class RedisExecutor<V, R> {
             release(connection);
         }
 
-        if (log.isInfoEnabled()) {
+        if (log.isDebugEnabled()) {
             String connectionType = " ";
             if (connection instanceof RedisPubSubConnection) {
                 connectionType = " pubsub ";
             }
 
-            log.info("connection{}released for command {} and params {} from slot {} using connection {}",
+            log.debug("connection{}released for command {} and params {} from slot {} using connection {}",
                     connectionType, command, LogHelper.toString(params), source, connection);
         }
     }
