@@ -79,6 +79,11 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         QueueCommandHolder holder = getCommand(ctx);
         QueueCommand data = null;
         if (holder != null) {
+            if (holder.getChannelPromise().isDone() && !holder.getChannelPromise().isSuccess()) {
+                sendNext(ctx.channel());
+                decode(ctx, in, out);
+                return;
+            }
             data = holder.getCommand();
         }
 
@@ -98,12 +103,6 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 }
             }
         } else {
-            if (holder.getChannelPromise().isDone() && !holder.getChannelPromise().isSuccess()) {
-                sendNext(ctx.channel());
-                // throw REPLAY error
-                in.indexOf(Integer.MAX_VALUE/2, Integer.MAX_VALUE, (byte) 0);
-                return;
-            }
 
             int endIndex = 0;
             if (!(data instanceof CommandsData)) {

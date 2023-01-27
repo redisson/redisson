@@ -19,6 +19,8 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.AttributeKey;
+import io.netty.util.concurrent.GenericFutureListener;
+
 import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.QueueCommandHolder;
@@ -80,7 +82,19 @@ public class CommandsQueue extends ChannelDuplexHandler {
                     try {
                         queue.add(holder);
                         try {
+                            final GenericFutureListener channelWriterListener = f -> {
+                                if (!f.isSuccess()) {
+                                    queue.remove(holder);
+                                }
+                            };
+                            // io.netty.channel.AbstractChannelHandlerContext.invokeWrite0 do not propagate exception
+                            // so using the listener to catch exception
+                            holder.getChannelPromise().addListener(channelWriterListener);
+
+
                             ctx.writeAndFlush(data, holder.getChannelPromise());
+
+                            holder.getChannelPromise().removeListener(channelWriterListener);
                         } catch (Exception e) {
                             queue.remove(holder);
                             throw e;
