@@ -123,6 +123,7 @@ public class RedissonAutoConfiguration {
         Method usernameMethod = ReflectionUtils.findMethod(RedisProperties.class, "getUsername");
         Method timeoutMethod = ReflectionUtils.findMethod(RedisProperties.class, "getTimeout");
         Method connectTimeoutMethod = ReflectionUtils.findMethod(RedisProperties.class, "getConnectTimeout");
+        Method clientNameMethod = ReflectionUtils.findMethod(RedisProperties.class, "getClientName");
         Object timeoutValue = ReflectionUtils.invokeMethod(timeoutMethod, redisProperties);
 
         Integer timeout = null;
@@ -140,6 +141,11 @@ public class RedissonAutoConfiguration {
             }
         } else {
             connectTimeout = timeout;
+        }
+
+        String clientName = null;
+        if (clientNameMethod != null) {
+            clientName = (String) ReflectionUtils.invokeMethod(clientNameMethod, redisProperties);
         }
 
         String username = null;
@@ -189,7 +195,8 @@ public class RedissonAutoConfiguration {
                     .addSentinelAddress(nodes)
                     .setDatabase(redisProperties.getDatabase())
                     .setUsername(username)
-                    .setPassword(redisProperties.getPassword());
+                    .setPassword(redisProperties.getPassword())
+                    .setClientName(clientName);
             if (connectTimeout != null) {
                 c.setConnectTimeout(connectTimeout);
             }
@@ -207,7 +214,8 @@ public class RedissonAutoConfiguration {
             ClusterServersConfig c = config.useClusterServers()
                     .addNodeAddress(nodes)
                     .setUsername(username)
-                    .setPassword(redisProperties.getPassword());
+                    .setPassword(redisProperties.getPassword())
+                    .setClientName(clientName);
             if (connectTimeout != null) {
                 c.setConnectTimeout(connectTimeout);
             }
@@ -226,7 +234,8 @@ public class RedissonAutoConfiguration {
                     .setAddress(prefix + redisProperties.getHost() + ":" + redisProperties.getPort())
                     .setDatabase(redisProperties.getDatabase())
                     .setUsername(username)
-                    .setPassword(redisProperties.getPassword());
+                    .setPassword(redisProperties.getPassword())
+                    .setClientName(clientName);
             if (connectTimeout != null) {
                 c.setConnectTimeout(connectTimeout);
             }
