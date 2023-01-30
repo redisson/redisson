@@ -243,7 +243,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     }
     
     @Override
-    public RFuture<V> getAsync(Object key) {
+    protected RFuture<V> getAsync(K key, long threadId) {
         checkKey(key);
 
         CacheKey cacheKey = localCacheView.toCacheKey(key);
@@ -257,7 +257,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 return new CompletableFutureWrapper((Void) null);
             }
 
-            CompletableFuture<V> future = loadValue((K) key, false);
+            CompletableFuture<V> future = loadValue((K) key, false, threadId);
             CompletableFuture<V> f = future.thenApply(value -> {
                 if (storeCacheMiss || value != null) {
                     cachePut(cacheKey, key, value);
