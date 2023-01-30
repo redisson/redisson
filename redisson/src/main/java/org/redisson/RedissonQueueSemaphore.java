@@ -15,7 +15,9 @@
  */
 package org.redisson;
 
+import io.netty.util.ReferenceCountUtil;
 import org.redisson.api.RFuture;
+import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 
@@ -34,9 +36,11 @@ public class RedissonQueueSemaphore extends RedissonSemaphore {
     private String queueName;
     private Object value;
     private Collection<?> values;
+    private Codec codec;
     
-    public RedissonQueueSemaphore(CommandAsyncExecutor commandExecutor, String name) {
+    public RedissonQueueSemaphore(CommandAsyncExecutor commandExecutor, String name, Codec codec) {
         super(commandExecutor, name);
+        this.codec = codec;
     }
     
     public void setQueueName(String queueName) {
@@ -76,5 +80,16 @@ public class RedissonQueueSemaphore extends RedissonSemaphore {
                     Arrays.<Object>asList(getRawName(), queueName), params.toArray());
     }
 
-    
+    public void encode(Collection<?> params, Object value) {
+        try {
+            Object v = commandExecutor.encode(codec, value);
+            ((Collection<Object>) params).add(v);
+        } catch (Exception e) {
+            params.forEach(v -> {
+                ReferenceCountUtil.safeRelease(v);
+            });
+            throw e;
+        }
+    }
+
 }

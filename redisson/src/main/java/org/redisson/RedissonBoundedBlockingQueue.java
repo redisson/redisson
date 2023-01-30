@@ -47,15 +47,15 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
 
     protected RedissonBoundedBlockingQueue(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name, redisson);
-        blockingQueue = new RedissonBlockingQueue<V>(commandExecutor, name, redisson);
-        semaphore = new RedissonQueueSemaphore(commandExecutor, getSemaphoreName());
+        blockingQueue = new RedissonBlockingQueue<>(commandExecutor, name, redisson);
+        semaphore = new RedissonQueueSemaphore(commandExecutor, getSemaphoreName(), commandExecutor.getConnectionManager().getCodec());
         channelName = RedissonSemaphore.getChannelName(semaphore.getRawName());
     }
 
     protected RedissonBoundedBlockingQueue(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(codec, commandExecutor, name, redisson);
-        blockingQueue = new RedissonBlockingQueue<V>(commandExecutor, name, redisson);
-        semaphore = new RedissonQueueSemaphore(commandExecutor, getSemaphoreName());
+        blockingQueue = new RedissonBlockingQueue<>(commandExecutor, name, redisson);
+        semaphore = new RedissonQueueSemaphore(commandExecutor, getSemaphoreName(), codec);
         channelName = RedissonSemaphore.getChannelName(semaphore.getRawName());
     }
     
@@ -86,7 +86,7 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
     }
 
     private RedissonQueueSemaphore createSemaphore(V e) {
-        RedissonQueueSemaphore semaphore = new RedissonQueueSemaphore(commandExecutor, getSemaphoreName());
+        RedissonQueueSemaphore semaphore = new RedissonQueueSemaphore(commandExecutor, getSemaphoreName(), getCodec());
         semaphore.setQueueName(getRawName());
         semaphore.setValue(e);
         return semaphore;
@@ -389,7 +389,7 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
             return new CompletableFutureWrapper<>(false);
         }
 
-        RedissonQueueSemaphore semaphore = new RedissonQueueSemaphore(commandExecutor, getSemaphoreName());
+        RedissonQueueSemaphore semaphore = new RedissonQueueSemaphore(commandExecutor, getSemaphoreName(), getCodec());
         semaphore.setQueueName(getRawName());
         semaphore.setValues(c);
         return semaphore.tryAcquireAsync();
