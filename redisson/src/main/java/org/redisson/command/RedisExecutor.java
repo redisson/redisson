@@ -139,9 +139,6 @@ public class RedisExecutor<V, R> {
                 if (command.isBlockingCommand()) {
                     RedisConnection c = connectionFuture.getNow(null);
                     if (writeFuture.cancel(false)) {
-                        if (c.getCurrentCommand().getCommand() == command) {
-                            c.clearCurrentCommand();
-                        }
                         attemptPromise.cancel(false);
                     } else {
                         c.forceFastReconnectAsync().whenComplete((res, ex) -> {

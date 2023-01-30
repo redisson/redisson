@@ -80,6 +80,11 @@ public class CommandsQueue extends ChannelDuplexHandler {
                     try {
                         queue.add(holder);
                         try {
+                            holder.getChannelPromise().addListener(future -> {
+                                if (!future.isSuccess()) {
+                                    queue.remove(holder);
+                                }
+                            });
                             ctx.writeAndFlush(data, holder.getChannelPromise());
                         } catch (Exception e) {
                             queue.remove(holder);
