@@ -48,6 +48,8 @@ spring:
     password:
     ssl: 
     timeout:
+    connectTimeout:
+    clientName:
     cluster:
       nodes:
     sentinel:
