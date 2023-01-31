@@ -17,7 +17,6 @@ package org.redisson;
 
 import org.redisson.api.LockOptions;
 import org.redisson.api.RFuture;
-import org.redisson.client.RedisException;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
@@ -177,21 +176,9 @@ public class RedissonSpinLock extends RedissonBaseLock {
     }
 
     @Override
-    public void unlock() {
-        try {
-            get(unlockAsync(Thread.currentThread().getId()));
-        } catch (RedisException e) {
-            if (e.getCause() instanceof IllegalMonitorStateException) {
-                throw (IllegalMonitorStateException) e.getCause();
-            } else {
-                throw e;
-            }
-        }
-    }
-
-    @Override
-    public boolean forceUnlock() {
-        return get(forceUnlockAsync());
+    protected void cancelExpirationRenewal(Long threadId) {
+        super.cancelExpirationRenewal(threadId);
+        this.internalLockLeaseTime = commandExecutor.getConnectionManager().getCfg().getLockWatchdogTimeout();
     }
 
     @Override
@@ -222,22 +209,6 @@ public class RedissonSpinLock extends RedissonBaseLock {
                         "end; " +
                         "return nil;",
                 Collections.singletonList(getRawName()), internalLockLeaseTime, getLockName(threadId));
-    }
-
-    @Override
-    public RFuture<Void> lockAsync() {
-        return lockAsync(-1, null);
-    }
-
-    @Override
-    public RFuture<Void> lockAsync(long leaseTime, TimeUnit unit) {
-        long currentThreadId = Thread.currentThread().getId();
-        return lockAsync(leaseTime, unit, currentThreadId);
-    }
-
-    @Override
-    public RFuture<Void> lockAsync(long currentThreadId) {
-        return lockAsync(-1, null, currentThreadId);
     }
 
     @Override
@@ -274,26 +245,10 @@ public class RedissonSpinLock extends RedissonBaseLock {
     }
 
     @Override
-    public RFuture<Boolean> tryLockAsync() {
-        return tryLockAsync(Thread.currentThread().getId());
-    }
-
-    @Override
     public RFuture<Boolean> tryLockAsync(long threadId) {
         RFuture<Long> longRFuture = tryAcquireAsync(-1, null, threadId);
         CompletionStage<Boolean> f = longRFuture.thenApply(res -> res == null);
         return new CompletableFutureWrapper<>(f);
-    }
-
-    @Override
-    public RFuture<Boolean> tryLockAsync(long waitTime, TimeUnit unit) {
-        return tryLockAsync(waitTime, -1, unit);
-    }
-
-    @Override
-    public RFuture<Boolean> tryLockAsync(long waitTime, long leaseTime, TimeUnit unit) {
-        long currentThreadId = Thread.currentThread().getId();
-        return tryLockAsync(waitTime, leaseTime, unit, currentThreadId);
     }
 
     @Override

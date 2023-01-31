@@ -277,6 +277,17 @@ public class RedissonLockTest extends BaseConcurrentTest {
     }
 
     @Test
+    public void testRemainTimeToLive() {
+        RLock lock = redisson.getLock("test-lock:1");
+        lock.lock(1, TimeUnit.HOURS);
+        assertThat(lock.remainTimeToLive()).isBetween(TimeUnit.HOURS.toMillis(1) - 10, TimeUnit.HOURS.toMillis(1));
+        lock.unlock();
+        assertThat(lock.remainTimeToLive()).isEqualTo(-2);
+        lock.lock();
+        assertThat(lock.remainTimeToLive()).isBetween(redisson.getConfig().getLockWatchdogTimeout() - 10, redisson.getConfig().getLockWatchdogTimeout());
+    }
+
+    @Test
     public void testInCluster() throws Exception {
         RedisRunner master1 = new RedisRunner().port(6890).randomDir().nosave();
         RedisRunner master2 = new RedisRunner().port(6891).randomDir().nosave();
