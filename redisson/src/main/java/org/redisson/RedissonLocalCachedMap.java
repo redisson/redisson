@@ -267,7 +267,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             return new CompletableFutureWrapper<>(f);
         }
 
-        RFuture<V> future = super.getAsync((K) key);
+        RFuture<V> future = super.getAsync((K) key, threadId);
         CompletionStage<V> result = future.thenApply(value -> {
             if (storeCacheMiss || value != null) {
                 cachePut(cacheKey, key, value);
