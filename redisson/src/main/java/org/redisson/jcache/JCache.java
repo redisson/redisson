@@ -1050,12 +1050,13 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 return;
             }
 
-            int notNullAmount = (int) r.entrySet().stream()
-                                                    .filter(e -> e.getValue() != null)
-                                                    .count();
-            cacheManager.getStatBean(this).addHits(notNullAmount);
+            Map<K, V> notNullEntries = r.entrySet().stream()
+                                .filter(e -> e.getValue() != null)
+                                .collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue()));
 
-            int nullValues = r.size() - notNullAmount;
+            cacheManager.getStatBean(this).addHits(notNullEntries.size());
+
+            int nullValues = r.size() - notNullEntries.size();
             if (config.isReadThrough() && nullValues > 0) {
                 cacheManager.getStatBean(this).addMisses(nullValues);
                 commandExecutor.getConnectionManager().getExecutor().execute(() -> {
@@ -1076,7 +1077,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 });
             } else {
                 cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
-                result.complete(r);
+                result.complete(notNullEntries);
             }
         });
         return new CompletableFutureWrapper<>(result);
