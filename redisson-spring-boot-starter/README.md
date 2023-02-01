@@ -14,14 +14,14 @@ Maven
      <dependency>
          <groupId>org.redisson</groupId>
          <artifactId>redisson-spring-boot-starter</artifactId>
-         <version>3.19.1</version>
+         <version>3.19.2</version>
      </dependency>
 ```
 
 Gradle
 
 ```groovy
-     compile 'org.redisson:redisson-spring-boot-starter:3.19.1'
+     compile 'org.redisson:redisson-spring-boot-starter:3.19.2'
 ```
 
 
