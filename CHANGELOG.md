@@ -3,6 +3,27 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 01-Feb-2023 - 3.19.2 released
+
+Fixed - `RLock` instance can acquire lock with previous leaseTime if it's not specified  
+Fixed - `RMap.computeAsync()` method causes deadlock if MapLoader is defined  
+Fixed - `RBoundedBlockingQueue.offer()` methods always use global codec  
+Fixed - Spring Boot `clientName` setting isn't used  
+Fixed - `connectTimeout` setting is set incorrectly if Spring Boot 2.4.0+  
+Fixed - command replies don't match if exception is thrown in CommandEncoder  
+Fixed - empty result of BLMPOP command causes IndexOutOfBoundsException  
+Fixed - canceled blocking operation isn't interrupted immediately in some cases  
+Fixed - RStream.read() and RStream.readGroup() methods are hang forever is timeout > 0 and < 1000 milliseconds  
+Fixed - `CacheLoader.loadAll()` method isn't called by `JCache.getAll()` method if readThrough=true  
+Fixed - `Kryo5Codec` Serializers don't work in GraalVM native image mode  
+Fixed - `LinkedHashMap` and `LinkedHashSet` objects can't be decoded properly by `Kryo5Codec`  
+Fixed - `NameMapper` isn't applied to `RFunction` and `RScript` objects  
+Fixed - `RFunction.callAsync()` method called with `RBatch` object throws `MOVED` errors in Redis cluster mode  
+Fixed - `RFunction.loadAndReplace()` method uses incorrect command parameters  
+Fixed - `codec`, `nettyHook`, `addressResolverGroupFactory`, `connectionListener` settings can't be defined through Quarkus or Helidon config  
+Fixed - `RFunction.load()` method uses incorrect command parameters  
+Fixed - empty `RTopic` message handling (thanks @MooRoakee)  
+
 ### 06-Jan-2023 - 3.19.1 released
 Feature - `containsEach()` method added to RSet object (thanks to @slovvik)  
 Feature - `getPermits()`, `acquiredPermits()`, `setPermits()` methods added to `RPermitExpirableSemaphore` object (thanks to @kscaldef, @derekroller)
