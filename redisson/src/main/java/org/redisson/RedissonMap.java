@@ -662,6 +662,12 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
+    public V evict(Object key) {
+        checkKey(key);
+        return get(removeOperationAsync((K) key));
+    }
+
+    @Override
     public final void putAll(Map<? extends K, ? extends V> map) {
         get(putAllAsync(map));
     }
