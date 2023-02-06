@@ -1619,4 +1619,19 @@ public abstract class BaseMapTest extends BaseTest {
         destroy(map);
     }
 
+    @Test
+    public void testWriterEvict() {
+        Map<String, String> store = new HashMap<>();
+        RMap<String, String> map = getWriterTestMap("test", store);
+
+        map.put("1", "11");
+        map.evict("1");
+        map.put("3", "33");
+
+        Map<String, String> expected = new HashMap<>();
+        expected.put("1", "11");
+        expected.put("3", "33");
+        assertThat(store).isEqualTo(expected);
+    }
+
 }
