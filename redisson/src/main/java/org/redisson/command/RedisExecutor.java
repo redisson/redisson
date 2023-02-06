@@ -523,7 +523,8 @@ public class RedisExecutor<V, R> {
             if (cause instanceof RedisLoadingException
                     || cause instanceof RedisTryAgainException
                         || cause instanceof RedisClusterDownException
-                            || cause instanceof RedisBusyException) {
+                            || cause instanceof RedisBusyException
+                                || cause instanceof RedisWaitException) {
                 if (attempt < attempts) {
                     onException();
                     connectionManager.newTimeout(timeout -> {
