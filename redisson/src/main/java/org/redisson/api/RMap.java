@@ -272,7 +272,18 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      */
     @Override
     boolean remove(Object key, Object value);
-    
+
+    /**
+     * Evict map entry by specified <code>key</code> and returns value.
+     * <p>
+     * If {@link MapWriter} is defined then <code>key</code>is not deleted in write-through mode.
+     * Use {@link #remove} if {@link MapWriter#delete} needs to be called.
+     *
+     * @param key - map key
+     * @return deleted value, <code>null</code> if map entry doesn't exist
+     */
+    V evict(Object key);
+
     /**
      * Stores map entries specified in <code>map</code> object in batch mode.
      * <p>
