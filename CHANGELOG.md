@@ -3,7 +3,7 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
-### 06-Feb-2023 - 3.19.2 released
+### 06-Feb-2023 - 3.19.3 released
 Fixed - a new attempt should be made on WAIT error during failover  
 Fixed - Kryo5Codec fails to (de)serialize Object without no-args constructor (regression since 3.19.2)  
 
