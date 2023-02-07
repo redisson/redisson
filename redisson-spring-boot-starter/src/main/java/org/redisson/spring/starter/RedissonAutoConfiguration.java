@@ -50,6 +50,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 /**
  *
@@ -66,6 +67,8 @@ public class RedissonAutoConfiguration {
 
     private static final String REDIS_PROTOCOL_PREFIX = "redis://";
     private static final String REDISS_PROTOCOL_PREFIX = "rediss://";
+    private static final String DEFAULT_HOST = "localhost";
+    private static final int DEFAULT_PORT = 6379;
 
     @Autowired(required = false)
     private List<RedissonAutoConfigurationCustomizer> redissonAutoConfigurationCustomizers;
@@ -178,7 +181,10 @@ public class RedissonAutoConfiguration {
                     throw new IllegalArgumentException("Can't parse config", e1);
                 }
             }
-        } else if (redisProperties.getSentinel() != null) {
+        } else {
+            config = new Config();
+        }
+        if (redisProperties.getSentinel() != null) {
             Method nodesMethod = ReflectionUtils.findMethod(Sentinel.class, "getNodes");
             Object nodesValue = ReflectionUtils.invokeMethod(nodesMethod, redisProperties.getSentinel());
 
@@ -188,8 +194,6 @@ public class RedissonAutoConfiguration {
             } else {
                 nodes = convert((List<String>)nodesValue);
             }
-
-            config = new Config();
             SentinelServersConfig c = config.useSentinelServers()
                     .setMasterName(redisProperties.getSentinel().getMaster())
                     .addSentinelAddress(nodes)
@@ -210,7 +214,6 @@ public class RedissonAutoConfiguration {
 
             String[] nodes = convert(nodesObject);
 
-            config = new Config();
             ClusterServersConfig c = config.useClusterServers()
                     .addNodeAddress(nodes)
                     .setUsername(username)
@@ -222,8 +225,8 @@ public class RedissonAutoConfiguration {
             if (connectTimeoutMethod != null && timeout != null) {
                 c.setTimeout(timeout);
             }
-        } else {
-            config = new Config();
+        } else if (!Objects.equals(DEFAULT_HOST, redisProperties.getHost()) || redisProperties.getPort() != DEFAULT_PORT
+                || redisProperties.getDatabase() != 0 || redisProperties.getPassword() != null) {
             String prefix = REDIS_PROTOCOL_PREFIX;
             Method method = ReflectionUtils.findMethod(RedisProperties.class, "isSsl");
             if (method != null && (Boolean)ReflectionUtils.invokeMethod(method, redisProperties)) {
