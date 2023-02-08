@@ -39,6 +39,12 @@ public class ReplicatedServersConfig extends BaseMasterSlaveServersConfig<Replic
     private int scanInterval = 1000;
 
     /**
+     * Master node unreachable maximum time before failure in milliseconds
+     * A value of 0 indicates that the client will never fail
+     */
+    private int masterUnreachableTimeout = 0;
+
+    /**
      * Database index used for Redis connection
      */
     private int database = 0;
@@ -54,6 +60,7 @@ public class ReplicatedServersConfig extends BaseMasterSlaveServersConfig<Replic
         setScanInterval(config.getScanInterval());
         setDatabase(config.getDatabase());
         setMonitorIPChanges(config.isMonitorIPChanges());
+        setMasterUnreachableTimeout(config.getMasterUnreachableTimeout());
     }
 
     /**
@@ -121,5 +128,24 @@ public class ReplicatedServersConfig extends BaseMasterSlaveServersConfig<Replic
 
     public boolean isMonitorIPChanges() {
         return monitorIPChanges;
+    }
+
+    /**
+     * Master unreachable timeout in milliseconds. After the configured amount of time
+     * the client will throw {@link org.redisson.client.RedisConnectionException}.
+     * <p>
+     * Default is <code>0</code>, indicating that the client will never throw,
+     * but only log the error.
+     *
+     * @param masterUnreachableTimeout
+     * @return config
+     */
+    public ReplicatedServersConfig setMasterUnreachableTimeout(int masterUnreachableTimeout) {
+        this.masterUnreachableTimeout = masterUnreachableTimeout;
+        return this;
+    }
+
+    public int getMasterUnreachableTimeout() {
+        return masterUnreachableTimeout;
     }
 }

@@ -16,6 +16,8 @@
 package org.redisson.connection;
 
 import io.netty.util.concurrent.ScheduledFuture;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import org.redisson.api.NodeType;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
@@ -57,6 +59,9 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
     private final AtomicReference<InetSocketAddress> currentMaster = new AtomicReference<>();
 
     private ScheduledFuture<?> monitorFuture;
+
+    private static final long MASTER_AVAILABLE_TIMESTAMP = -1;
+    private final AtomicLong lastTimestampMasterAvailable = new AtomicLong(MASTER_AVAILABLE_TIMESTAMP);
 
     private enum Role {
         master,
@@ -138,10 +143,30 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                 scheduleMasterChangeCheck(cfg);
             }, cfg.getNodeAddresses().size());
 
-            for (String address : cfg.getNodeAddresses()) {
-                RedisURI uri = new RedisURI(address);
-                checkNode(latch, uri, cfg, slaveIPs);
+            List<CompletableFuture<Role>> roles = cfg.getNodeAddresses().stream()
+                .map(address -> {
+                    RedisURI uri = new RedisURI(address);
+                    return checkNode(latch, uri, cfg, slaveIPs);
+                })
+                .collect(Collectors.toList());
+            CompletableFuture[] completableFutures = new CompletableFuture[roles.size()];
+            CompletableFuture.allOf(roles.toArray(completableFutures));
+            long currentTimeMillis = System.currentTimeMillis();
+            if (roles.stream().noneMatch(role -> Role.master.equals(role.getNow(Role.slave)))) {
+                log.error("No master available among the configured addresses, "
+                    + "please check your configuration.");
+                if (lastTimestampMasterAvailable.get() == MASTER_AVAILABLE_TIMESTAMP) {
+                    lastTimestampMasterAvailable.set(currentTimeMillis);
+                } else if (cfg.getMasterUnreachableTimeout() > 0
+                    && currentTimeMillis - lastTimestampMasterAvailable.get() > cfg.getMasterUnreachableTimeout()) {
+                    currentMaster.set(null);
+                    stopThreads();
+                    throw new RedisConnectionException("Can't connect to servers!");
+                }
+            } else {
+                lastTimestampMasterAvailable.set(MASTER_AVAILABLE_TIMESTAMP);
             }
+
         }, cfg.getScanInterval(), TimeUnit.MILLISECONDS);
     }
 
@@ -163,15 +188,16 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
         }
     }
 
-    private void checkNode(AsyncCountDownLatch latch, RedisURI uri, ReplicatedServersConfig cfg, Set<InetSocketAddress> slaveIPs) {
+    private CompletableFuture<Role> checkNode(AsyncCountDownLatch latch, RedisURI uri, ReplicatedServersConfig cfg, Set<InetSocketAddress> slaveIPs) {
         CompletionStage<RedisConnection> connectionFuture = connectToNode(cfg, uri, uri.getHost());
-        connectionFuture
+        return connectionFuture
                 .thenCompose(c -> {
                     if (cfg.isMonitorIPChanges()) {
                         return resolveIP(uri);
                     }
                     return CompletableFuture.completedFuture(uri);
                 })
+                .thenCompose(c -> resolveIP(uri))
                 .thenCompose(ip -> {
                     if (isShuttingDown()) {
                         return CompletableFuture.completedFuture(null);
@@ -192,33 +218,33 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                     }
                     RedisConnection connection = connectionFuture.toCompletableFuture().join();
                     InetSocketAddress addr = connection.getRedisClient().getAddr();
-                    Role role = Role.valueOf(r.get(ROLE_KEY));
+                    final Role role = Role.valueOf(r.get(ROLE_KEY));
                     if (Role.master.equals(role)) {
                         InetSocketAddress master = currentMaster.get();
                         if (master.equals(addr)) {
                             log.debug("Current master {} unchanged", master);
-                            return CompletableFuture.completedFuture(null);
                         } else if (currentMaster.compareAndSet(master, addr)) {
                             CompletableFuture<RedisClient> changeFuture = changeMaster(singleSlotRange.getStartSlot(), uri);
-                            return changeFuture.exceptionally(e -> {
+                            return changeFuture.handle((ignored, e) -> {
                                     log.error("Unable to change master to {}", addr, e);
                                     currentMaster.compareAndSet(addr, master);
-                                    return null;
+                                    return role;
                             });
                         }
                     } else if (!config.checkSkipSlavesInit()) {
                         CompletableFuture<Void> f = slaveUp(addr, uri);
                         slaveIPs.add(addr);
-                        return f.thenApply(re -> null);
+                        return f.thenApply(re -> role);
                     }
-                    return CompletableFuture.completedFuture(null);
+                    return CompletableFuture.completedFuture(role);
                 })
                 .whenComplete((r, ex) -> {
                     if (ex != null) {
                         log.error(ex.getMessage(), ex);
                     }
                     latch.countDown();
-                });
+                })
+                .toCompletableFuture();
     }
 
     private CompletableFuture<Void> slaveUp(InetSocketAddress address, RedisURI uri) {
