@@ -15,7 +15,7 @@
  */
 package org.redisson.reactive;
 
-import org.redisson.RedissonListMultimap;
+import org.redisson.RedissonSetMultimap;
 import org.redisson.api.RSet;
 import org.redisson.api.RSetMultimap;
 import org.redisson.api.RSetReactive;
@@ -33,16 +33,16 @@ public class RedissonSetMultimapReactive<K, V> {
 
     private final RedissonReactiveClient redisson;
     private final CommandReactiveExecutor commandExecutor;
-    private final RedissonListMultimap<K, V> instance;
+    private final RedissonSetMultimap<K, V> instance;
     
     public RedissonSetMultimapReactive(CommandReactiveExecutor commandExecutor, String name, RedissonReactiveClient redisson) {
-        this.instance = new RedissonListMultimap<K, V>(commandExecutor, name);
+        this.instance = new RedissonSetMultimap<>(commandExecutor, name);
         this.redisson = redisson;
         this.commandExecutor = commandExecutor;
     }
 
     public RedissonSetMultimapReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name, RedissonReactiveClient redisson) {
-        this.instance = new RedissonListMultimap<K, V>(codec, commandExecutor, name);
+        this.instance = new RedissonSetMultimap<>(codec, commandExecutor, name);
         this.redisson = redisson;
         this.commandExecutor = commandExecutor;
     }
@@ -53,4 +53,4 @@ public class RedissonSetMultimapReactive<K, V> {
                 new RedissonSetReactive<V>(set, redisson), RSetReactive.class);
     }
 
-            }
+}
