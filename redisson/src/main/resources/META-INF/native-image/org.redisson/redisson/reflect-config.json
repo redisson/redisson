@@ -701,7 +701,8 @@
 {
   "name":"org.redisson.config.Config",
   "allDeclaredFields":true,
-  "allDeclaredMethods":true
+  "allDeclaredMethods":true,
+  "allDeclaredConstructors":true
 },
 {
   "name":"org.redisson.config.ConfigSupport$ClassMixIn",
@@ -748,6 +749,10 @@
 },
 {
   "name":"org.redisson.executor.RemoteExecutorServiceAsync",
+  "allPublicMethods":true
+},
+{
+  "name":"org.redisson.Redisson",
   "allPublicMethods":true
 }
 ]
