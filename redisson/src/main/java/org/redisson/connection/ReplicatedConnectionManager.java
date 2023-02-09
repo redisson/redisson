@@ -166,14 +166,19 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
     private void checkNode(AsyncCountDownLatch latch, RedisURI uri, ReplicatedServersConfig cfg, Set<InetSocketAddress> slaveIPs) {
         CompletionStage<RedisConnection> connectionFuture = connectToNode(cfg, uri, uri.getHost());
         connectionFuture
-                .thenCompose(c -> resolveIP(uri))
+                .thenCompose(c -> {
+                    if (cfg.isMonitorIPChanges()) {
+                        return resolveIP(uri);
+                    }
+                    return CompletableFuture.completedFuture(uri);
+                })
                 .thenCompose(ip -> {
                     if (isShuttingDown()) {
                         return CompletableFuture.completedFuture(null);
                     }
 
                     RedisConnection connection = connectionFuture.toCompletableFuture().join();
-                    if (!ip.equals(connection.getRedisClient().getAddr())) {
+                    if (cfg.isMonitorIPChanges() && !ip.equals(connection.getRedisClient().getAddr())) {
                         disconnectNode(uri);
                         log.info("Hostname: {} has changed IP from: {} to {}", uri, connection.getRedisClient().getAddr(), ip);
                         return CompletableFuture.<Map<String, String>>completedFuture(null);

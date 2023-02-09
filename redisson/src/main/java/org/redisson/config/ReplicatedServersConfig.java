@@ -43,6 +43,8 @@ public class ReplicatedServersConfig extends BaseMasterSlaveServersConfig<Replic
      */
     private int database = 0;
 
+    private boolean monitorIPChanges = false;
+
     public ReplicatedServersConfig() {
     }
 
@@ -51,6 +53,7 @@ public class ReplicatedServersConfig extends BaseMasterSlaveServersConfig<Replic
         setNodeAddresses(config.getNodeAddresses());
         setScanInterval(config.getScanInterval());
         setDatabase(config.getDatabase());
+        setMonitorIPChanges(config.isMonitorIPChanges());
     }
 
     /**
@@ -102,4 +105,21 @@ public class ReplicatedServersConfig extends BaseMasterSlaveServersConfig<Replic
         return database;
     }
 
+    /**
+     * Check each Redis hostname defined in configuration for
+     * IP address changes during scan process.
+     * <p>
+     * Default is <code>false</code>
+     *
+     * @param monitorIPChanges boolean value
+     * @return config
+     */
+    public ReplicatedServersConfig setMonitorIPChanges(boolean monitorIPChanges) {
+        this.monitorIPChanges = monitorIPChanges;
+        return this;
+    }
+
+    public boolean isMonitorIPChanges() {
+        return monitorIPChanges;
+    }
 }
