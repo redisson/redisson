@@ -218,7 +218,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                     }
                     RedisConnection connection = connectionFuture.toCompletableFuture().join();
                     InetSocketAddress addr = connection.getRedisClient().getAddr();
-                    final Role role = Role.valueOf(r.get(ROLE_KEY));
+                    Role role = Role.valueOf(r.get(ROLE_KEY));
                     if (Role.master.equals(role)) {
                         InetSocketAddress master = currentMaster.get();
                         if (master.equals(addr)) {
@@ -226,9 +226,11 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                         } else if (currentMaster.compareAndSet(master, addr)) {
                             CompletableFuture<RedisClient> changeFuture = changeMaster(singleSlotRange.getStartSlot(), uri);
                             return changeFuture.handle((ignored, e) -> {
+                                if (e != null) {
                                     log.error("Unable to change master to {}", addr, e);
                                     currentMaster.compareAndSet(addr, master);
-                                    return role;
+                                }
+                                return role;
                             });
                         }
                     } else if (!config.checkSkipSlavesInit()) {
