@@ -17,7 +17,6 @@ package org.redisson.connection;
 
 import io.netty.util.concurrent.ScheduledFuture;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 import org.redisson.api.NodeType;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
@@ -59,9 +58,6 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
     private final AtomicReference<InetSocketAddress> currentMaster = new AtomicReference<>();
 
     private ScheduledFuture<?> monitorFuture;
-
-    private static final long MASTER_AVAILABLE_TIMESTAMP = -1;
-    private final AtomicLong lastTimestampMasterAvailable = new AtomicLong(MASTER_AVAILABLE_TIMESTAMP);
 
     private enum Role {
         master,
@@ -151,20 +147,9 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                 .collect(Collectors.toList());
             CompletableFuture[] completableFutures = new CompletableFuture[roles.size()];
             CompletableFuture.allOf(roles.toArray(completableFutures));
-            long currentTimeMillis = System.currentTimeMillis();
             if (roles.stream().noneMatch(role -> Role.master.equals(role.getNow(Role.slave)))) {
                 log.error("No master available among the configured addresses, "
                     + "please check your configuration.");
-                if (lastTimestampMasterAvailable.get() == MASTER_AVAILABLE_TIMESTAMP) {
-                    lastTimestampMasterAvailable.set(currentTimeMillis);
-                } else if (cfg.getMasterUnreachableTimeout() > 0
-                    && currentTimeMillis - lastTimestampMasterAvailable.get() > cfg.getMasterUnreachableTimeout()) {
-                    currentMaster.set(null);
-                    stopThreads();
-                    throw new RedisConnectionException("Can't connect to servers!");
-                }
-            } else {
-                lastTimestampMasterAvailable.set(MASTER_AVAILABLE_TIMESTAMP);
             }
 
         }, cfg.getScanInterval(), TimeUnit.MILLISECONDS);
