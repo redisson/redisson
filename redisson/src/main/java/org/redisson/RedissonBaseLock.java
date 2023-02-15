@@ -402,4 +402,26 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
         return tryLockAsync(waitTime, leaseTime, unit, currentThreadId);
     }
 
+    protected <T> CompletionStage<T> handleNoSync(long threadId, RFuture<T> ttlRemainingFuture) {
+        CompletionStage<T> s = ttlRemainingFuture.handle((r, ex) -> {
+            if (ex != null) {
+                if (ex.getCause().getMessage().equals("None of slaves were synced")) {
+                    return unlockInnerAsync(threadId).handle((r1, e) -> {
+                        if (e != null) {
+                            if (e.getCause().getMessage().equals("None of slaves were synced")) {
+                                throw new CompletionException(ex.getCause());
+                            }
+                            e.getCause().addSuppressed(ex.getCause());
+                        }
+                        throw new CompletionException(ex.getCause());
+                    });
+                } else {
+                    throw new CompletionException(ex.getCause());
+                }
+            }
+            return CompletableFuture.completedFuture(r);
+        }).thenCompose(f -> (CompletionStage<T>) f);
+        return s;
+    }
+
 }

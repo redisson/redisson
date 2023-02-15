@@ -101,10 +101,16 @@ public class RedissonSpinLock extends RedissonBaseLock {
 
     private <T> RFuture<Long> tryAcquireAsync(long leaseTime, TimeUnit unit, long threadId) {
         if (leaseTime > 0) {
-            return tryLockInnerAsync(leaseTime, unit, threadId, RedisCommands.EVAL_LONG);
+            RFuture<Long> acquiredFuture = tryLockInnerAsync(leaseTime, unit, threadId, RedisCommands.EVAL_LONG);
+            CompletionStage<Long> s = handleNoSync(threadId, acquiredFuture);
+            return new CompletableFutureWrapper<>(s);
         }
         RFuture<Long> ttlRemainingFuture = tryLockInnerAsync(internalLockLeaseTime,
                 TimeUnit.MILLISECONDS, threadId, RedisCommands.EVAL_LONG);
+
+        CompletionStage<Long> s = handleNoSync(threadId, ttlRemainingFuture);
+        ttlRemainingFuture = new CompletableFutureWrapper<>(s);
+
         ttlRemainingFuture.thenAccept(ttlRemaining -> {
             // lock acquired
             if (ttlRemaining == null) {
