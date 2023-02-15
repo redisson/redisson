@@ -323,7 +323,6 @@
                     <source>${source.version}</source>
                     <target>${source.version}</target>
                     <release>${release.version}</release>
-                    <optimize>true</optimize>
                     <showDeprecation>true</showDeprecation>
                 </configuration>
             </plugin>
@@ -331,7 +330,7 @@
             <plugin>
          	<groupId>org.apache.maven.plugins</groupId>
          	<artifactId>maven-javadoc-plugin</artifactId>
-         	<version>3.4.0</version>
+         	<version>3.4.1</version>
          	<executions>
                    <execution>
                      <id>attach-javadocs</id>
