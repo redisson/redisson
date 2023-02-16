@@ -349,9 +349,6 @@ abstract class ConnectionPool<T extends RedisConnection> {
     }
 
     private void scheduleCheck(ClientConnectionsEntry entry) {
-
-        connectionManager.getConnectionEventsHub().fireDisconnect(entry.getClient().getAddr());
-
         connectionManager.newTimeout(timeout -> {
             synchronized (entry) {
                 if (entry.getFreezeReason() != FreezeReason.RECONNECT

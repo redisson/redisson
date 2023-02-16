@@ -64,8 +64,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     private String scheme;
     private SentinelServersConfig cfg;
 
-    public SentinelConnectionManager(SentinelServersConfig cfg, Config config, UUID id) {
-        super(cfg, config, id);
+    public SentinelConnectionManager(SentinelServersConfig cfg, Config config, UUID id, ConnectionEventsHub connectionEventsHub) {
+        super(cfg, config, id, connectionEventsHub);
 
         this.sentinelResolver = resolverGroup.getResolver(getGroup().next());
 

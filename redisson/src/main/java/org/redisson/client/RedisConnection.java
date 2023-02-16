@@ -80,6 +80,9 @@ public class RedisConnection implements RedisCommands {
         if (connectedListener != null) {
             connectedListener.run();
         }
+        if (redisClient.getConfig().getConnectedListener() != null) {
+            redisClient.getConfig().getConnectedListener().accept(redisClient.getAddr());
+        }
     }
 
     public int incUsage() {
@@ -101,6 +104,9 @@ public class RedisConnection implements RedisCommands {
     public void fireDisconnected() {
         if (disconnectedListener != null) {
             disconnectedListener.run();
+        }
+        if (redisClient.getConfig().getDisconnectedListener() != null) {
+            redisClient.getConfig().getDisconnectedListener().accept(redisClient.getAddr());
         }
     }
 

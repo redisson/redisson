@@ -26,8 +26,8 @@ import java.util.UUID;
  */
 public class SingleConnectionManager extends MasterSlaveConnectionManager {
 
-    public SingleConnectionManager(SingleServerConfig cfg, Config config, UUID id) {
-        super(create(cfg), config, id);
+    public SingleConnectionManager(SingleServerConfig cfg, Config config, UUID id, ConnectionEventsHub connectionEventsHub) {
+        super(create(cfg), config, id, connectionEventsHub);
     }
 
     private static MasterSlaveServersConfig create(SingleServerConfig cfg) {

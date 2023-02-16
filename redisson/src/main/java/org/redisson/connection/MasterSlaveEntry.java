@@ -30,6 +30,7 @@ import org.redisson.connection.balancer.LoadBalancerManager;
 import org.redisson.connection.pool.MasterConnectionPool;
 import org.redisson.connection.pool.MasterPubSubConnectionPool;
 import org.redisson.misc.RedisURI;
+import org.redisson.pubsub.PublishSubscribeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,10 +64,13 @@ public class MasterSlaveEntry {
     final MasterPubSubConnectionPool pubSubConnectionPool;
 
     final AtomicBoolean active = new AtomicBoolean(true);
-    
-    public MasterSlaveEntry(ConnectionManager connectionManager, MasterSlaveServersConfig config) {
+    final IdleConnectionWatcher idleConnectionWatcher;
+
+    public MasterSlaveEntry(ConnectionManager connectionManager, IdleConnectionWatcher idleConnectionWatcher,
+                            MasterSlaveServersConfig config) {
         this.connectionManager = connectionManager;
         this.config = config;
+        this.idleConnectionWatcher = idleConnectionWatcher;
 
         slaveBalancer = new LoadBalancerManager(config, connectionManager, this);
         writeConnectionPool = new MasterConnectionPool(config, connectionManager, this);
@@ -124,10 +128,9 @@ public class MasterSlaveEntry {
                     client,
                     config.getMasterConnectionMinimumIdleSize(),
                     config.getMasterConnectionPoolSize(),
-                    config.getSubscriptionConnectionMinimumIdleSize(),
-                    config.getSubscriptionConnectionPoolSize(),
-                    connectionManager,
-                    NodeType.MASTER);
+                    idleConnectionWatcher,
+                    NodeType.MASTER,
+                    config);
 
             List<CompletableFuture<Void>> futures = new ArrayList<>();
             if (!config.checkSkipSlavesInit() && !slaveBalancer.contains(client.getAddr())) {
@@ -362,8 +365,9 @@ public class MasterSlaveEntry {
             ClientConnectionsEntry entry = new ClientConnectionsEntry(client,
                     config.getSlaveConnectionMinimumIdleSize(),
                     config.getSlaveConnectionPoolSize(),
-                    config.getSubscriptionConnectionMinimumIdleSize(),
-                    config.getSubscriptionConnectionPoolSize(), connectionManager, nodeType);
+                    idleConnectionWatcher,
+                    nodeType,
+                    config);
             if (freezed) {
                 synchronized (entry) {
                     entry.setFreezeReason(FreezeReason.SYSTEM);

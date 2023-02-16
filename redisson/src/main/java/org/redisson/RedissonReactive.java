@@ -20,6 +20,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.codec.JsonCodec;
 import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
+import org.redisson.connection.ConnectionEventsHub;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
@@ -41,6 +42,8 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class RedissonReactive implements RedissonReactiveClient {
 
+    private final ConnectionEventsHub connectionEventsHub = new ConnectionEventsHub();
+
     protected final WriteBehindService writeBehindService;
     protected final EvictionScheduler evictionScheduler;
     protected final CommandReactiveExecutor commandExecutor;
@@ -50,7 +53,7 @@ public class RedissonReactive implements RedissonReactiveClient {
     protected RedissonReactive(Config config) {
         Config configCopy = new Config(config);
 
-        connectionManager = ConfigSupport.createConnectionManager(configCopy);
+        connectionManager = ConfigSupport.createConnectionManager(configCopy, connectionEventsHub);
         RedissonObjectBuilder objectBuilder = null;
         if (config.isReferenceEnabled()) {
             objectBuilder = new RedissonObjectBuilder(this);
@@ -574,7 +577,7 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public NodesGroup<Node> getNodesGroup() {
-        return new RedisNodes<Node>(connectionManager, commandExecutor);
+        return new RedisNodes<Node>(connectionManager, connectionEventsHub, commandExecutor);
     }
 
     @Override
@@ -582,7 +585,7 @@ public class RedissonReactive implements RedissonReactiveClient {
         if (!connectionManager.isClusterMode()) {
             throw new IllegalStateException("Redisson not in cluster mode!");
         }
-        return new RedisNodes<ClusterNode>(connectionManager, commandExecutor);
+        return new RedisNodes<ClusterNode>(connectionManager, connectionEventsHub, commandExecutor);
     }
 
     @Override

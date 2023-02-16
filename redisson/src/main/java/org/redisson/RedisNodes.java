@@ -45,9 +45,12 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
     final ConnectionManager connectionManager;
     final CommandAsyncExecutor commandExecutor;
 
-    public RedisNodes(ConnectionManager connectionManager, CommandAsyncExecutor commandExecutor) {
+    final ConnectionEventsHub connectionEventsHub;
+
+    public RedisNodes(ConnectionManager connectionManager, ConnectionEventsHub connectionEventsHub, CommandAsyncExecutor commandExecutor) {
         this.connectionManager = connectionManager;
         this.commandExecutor = commandExecutor;
+        this.connectionEventsHub = connectionEventsHub;
     }
 
     @Override
@@ -171,12 +174,12 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
 
     @Override
     public int addConnectionListener(ConnectionListener connectionListener) {
-        return connectionManager.getConnectionEventsHub().addListener(connectionListener);
+        return connectionEventsHub.addListener(connectionListener);
     }
 
     @Override
     public void removeConnectionListener(int listenerId) {
-        connectionManager.getConnectionEventsHub().removeListener(listenerId);
+        connectionEventsHub.removeListener(listenerId);
     }
 
 }

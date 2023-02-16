@@ -23,6 +23,7 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandSyncService;
 import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
+import org.redisson.connection.ConnectionEventsHub;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
@@ -50,6 +51,7 @@ public class Redisson implements RedissonClient {
         RedissonReference.warmUp();
     }
 
+    private final ConnectionEventsHub connectionEventsHub = new ConnectionEventsHub();
     protected final QueueTransferService queueTransferService = new QueueTransferService();
     protected final EvictionScheduler evictionScheduler;
     protected final WriteBehindService writeBehindService;
@@ -65,7 +67,7 @@ public class Redisson implements RedissonClient {
         this.config = config;
         Config configCopy = new Config(config);
 
-        connectionManager = ConfigSupport.createConnectionManager(configCopy);
+        connectionManager = ConfigSupport.createConnectionManager(configCopy, connectionEventsHub);
         RedissonObjectBuilder objectBuilder = null;
         if (config.isReferenceEnabled()) {
             objectBuilder = new RedissonObjectBuilder(this);
@@ -732,7 +734,7 @@ public class Redisson implements RedissonClient {
 
     @Override
     public NodesGroup<Node> getNodesGroup() {
-        return new RedisNodes<Node>(connectionManager, commandExecutor);
+        return new RedisNodes<Node>(connectionManager, connectionEventsHub, commandExecutor);
     }
 
     @Override
@@ -740,7 +742,7 @@ public class Redisson implements RedissonClient {
         if (!connectionManager.isClusterMode()) {
             throw new IllegalStateException("Redisson is not in cluster mode!");
         }
-        return new RedisClusterNodes(connectionManager, commandExecutor);
+        return new RedisClusterNodes(connectionManager, connectionEventsHub, commandExecutor);
     }
 
     @Override

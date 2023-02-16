@@ -65,8 +65,8 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
 
     private ReplicatedServersConfig cfg;
 
-    public ReplicatedConnectionManager(ReplicatedServersConfig cfg, Config config, UUID id) {
-        super(cfg, config, id);
+    public ReplicatedConnectionManager(ReplicatedServersConfig cfg, Config config, UUID id, ConnectionEventsHub connectionEventsHub) {
+        super(cfg, config, id, connectionEventsHub);
     }
 
     @Override

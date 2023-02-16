@@ -65,8 +65,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     private ClusterServersConfig cfg;
 
-    public ClusterConnectionManager(ClusterServersConfig cfg, Config config, UUID id) {
-        super(cfg, config, id);
+    public ClusterConnectionManager(ClusterServersConfig cfg, Config config, UUID id, ConnectionEventsHub connectionEventsHub) {
+        super(cfg, config, id, connectionEventsHub);
     }
 
     @Override
@@ -306,12 +306,12 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
             MasterSlaveEntry entry;
             if (config.checkSkipSlavesInit()) {
-                entry = new SingleEntry(ClusterConnectionManager.this, config);
+                entry = new SingleEntry(this, connectionWatcher, config);
             } else {
                 Set<String> slaveAddresses = partition.getSlaveAddresses().stream().map(r -> r.toString()).collect(Collectors.toSet());
                 config.setSlaveAddresses(slaveAddresses);
 
-                entry = new MasterSlaveEntry(ClusterConnectionManager.this, config);
+                entry = new MasterSlaveEntry(ClusterConnectionManager.this, connectionWatcher, config);
             }
 
             CompletableFuture<RedisClient> f = entry.setupMasterEntry(new RedisURI(config.getMasterAddress()), configEndpointHostName);

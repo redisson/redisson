@@ -27,6 +27,7 @@ import org.redisson.misc.RedisURI;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Consumer;
 
 /**
  * 
@@ -66,6 +67,8 @@ public class RedisClientConfig {
     private String[] sslProtocols;
     private NettyHook nettyHook = new DefaultNettyHook();
     private CredentialsResolver credentialsResolver = new DefaultCredentialsResolver();
+    private Consumer<InetSocketAddress> connectedListener;
+    private Consumer<InetSocketAddress> disconnectedListener;
 
     public RedisClientConfig() {
     }
@@ -99,6 +102,8 @@ public class RedisClientConfig {
         this.resolverGroup = config.resolverGroup;
         this.sslHostname = config.sslHostname;
         this.credentialsResolver = config.credentialsResolver;
+        this.connectedListener = config.connectedListener;
+        this.disconnectedListener = config.disconnectedListener;
     }
 
     public NettyHook getNettyHook() {
@@ -331,6 +336,22 @@ public class RedisClientConfig {
 
     public RedisClientConfig setCredentialsResolver(CredentialsResolver credentialsResolver) {
         this.credentialsResolver = credentialsResolver;
+        return this;
+    }
+
+    public Consumer<InetSocketAddress> getConnectedListener() {
+        return connectedListener;
+    }
+    public RedisClientConfig setConnectedListener(Consumer<InetSocketAddress> connectedListener) {
+        this.connectedListener = connectedListener;
+        return this;
+    }
+
+    public Consumer<InetSocketAddress> getDisconnectedListener() {
+        return disconnectedListener;
+    }
+    public RedisClientConfig setDisconnectedListener(Consumer<InetSocketAddress> disconnectedListener) {
+        this.disconnectedListener = disconnectedListener;
         return this;
     }
 }

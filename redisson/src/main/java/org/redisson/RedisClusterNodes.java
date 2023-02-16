@@ -18,13 +18,14 @@ package org.redisson;
 import org.redisson.api.ClusterNode;
 import org.redisson.api.ClusterNodesGroup;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.connection.ConnectionEventsHub;
 import org.redisson.connection.ConnectionManager;
 
 @Deprecated
 public class RedisClusterNodes extends RedisNodes<ClusterNode> implements ClusterNodesGroup {
 
-    public RedisClusterNodes(ConnectionManager connectionManager, CommandAsyncExecutor commandExecutor) {
-        super(connectionManager, commandExecutor);
+    public RedisClusterNodes(ConnectionManager connectionManager, ConnectionEventsHub connectionEventsHub, CommandAsyncExecutor commandExecutor) {
+        super(connectionManager, connectionEventsHub, commandExecutor);
     }
 
 }

@@ -20,6 +20,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.codec.JsonCodec;
 import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
+import org.redisson.connection.ConnectionEventsHub;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
@@ -39,6 +40,7 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class RedissonRx implements RedissonRxClient {
 
+    private final ConnectionEventsHub connectionEventsHub = new ConnectionEventsHub();
     protected final WriteBehindService writeBehindService;
     protected final EvictionScheduler evictionScheduler;
     protected final CommandRxExecutor commandExecutor;
@@ -48,7 +50,7 @@ public class RedissonRx implements RedissonRxClient {
     protected RedissonRx(Config config) {
         Config configCopy = new Config(config);
 
-        connectionManager = ConfigSupport.createConnectionManager(configCopy);
+        connectionManager = ConfigSupport.createConnectionManager(configCopy, connectionEventsHub);
         RedissonObjectBuilder objectBuilder = null;
         if (connectionManager.getCfg().isReferenceEnabled()) {
             objectBuilder = new RedissonObjectBuilder(this);
@@ -553,7 +555,7 @@ public class RedissonRx implements RedissonRxClient {
 
     @Override
     public NodesGroup<Node> getNodesGroup() {
-        return new RedisNodes<Node>(connectionManager, commandExecutor);
+        return new RedisNodes<Node>(connectionManager, connectionEventsHub, commandExecutor);
     }
 
     @Override
@@ -561,7 +563,7 @@ public class RedissonRx implements RedissonRxClient {
         if (!connectionManager.isClusterMode()) {
             throw new IllegalStateException("Redisson not in cluster mode!");
         }
-        return new RedisNodes<ClusterNode>(connectionManager, commandExecutor);
+        return new RedisNodes<ClusterNode>(connectionManager, connectionEventsHub, commandExecutor);
     }
 
     @Override

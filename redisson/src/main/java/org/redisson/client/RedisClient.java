@@ -73,6 +73,9 @@ public final class RedisClient {
 
     private final AtomicLong firstFailTime = new AtomicLong(0);
 
+    private Runnable connectedListener;
+    private Runnable disconnectedListener;
+
     public static RedisClient create(RedisClientConfig config) {
         return new RedisClient(config);
     }
@@ -236,6 +239,10 @@ public final class RedisClient {
                                     if (e == null) {
                                         if (!r.complete(c)) {
                                             c.closeAsync();
+                                        } else {
+                                            if (config.getConnectedListener() != null) {
+                                                config.getConnectedListener().accept(getAddr());
+                                            }
                                         }
                                     } else {
                                         r.completeExceptionally(e);

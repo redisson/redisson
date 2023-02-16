@@ -65,14 +65,10 @@ public interface ConnectionManager {
 
     boolean isClusterMode();
 
-    ConnectionEventsHub getConnectionEventsHub();
-
     boolean isShutdown();
 
     boolean isShuttingDown();
     
-    IdleConnectionWatcher getConnectionWatcher();
-
     int calcSlot(String key);
     
     int calcSlot(byte[] key);

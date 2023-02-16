@@ -110,10 +110,6 @@ public class PublishSubscribeService {
         }
     }
 
-    public ConnectionManager getConnectionManager() {
-        return connectionManager;
-    }
-
     public LockPubSub getLockPubSub() {
         return lockPubSub;
     }

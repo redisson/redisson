@@ -20,6 +20,7 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.protocol.RedisCommand;
+import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.ReadMode;
 import org.redisson.misc.AsyncSemaphore;
 import org.slf4j.Logger;
@@ -55,25 +56,31 @@ public class ClientConnectionsEntry {
     final RedisClient client;
 
     private volatile NodeType nodeType;
-    private final ConnectionManager connectionManager;
+    private final IdleConnectionWatcher idleConnectionWatcher;
+
+    private final MasterSlaveServersConfig config;
 
     private volatile boolean initialized = false;
 
-    public ClientConnectionsEntry(RedisClient client, int poolMinSize, int poolMaxSize, int subscribePoolMinSize, int subscribePoolMaxSize,
-            ConnectionManager connectionManager, NodeType nodeType) {
+    public ClientConnectionsEntry(RedisClient client, int poolMinSize, int poolMaxSize,
+                                  IdleConnectionWatcher idleConnectionWatcher, NodeType nodeType, MasterSlaveServersConfig config) {
         this.client = client;
         this.freeConnectionsCounter = new AsyncSemaphore(poolMaxSize);
-        this.connectionManager = connectionManager;
+        this.idleConnectionWatcher = idleConnectionWatcher;
         this.nodeType = nodeType;
-        this.freeSubscribeConnectionsCounter = new AsyncSemaphore(subscribePoolMaxSize);
+        this.config = config;
+        this.freeSubscribeConnectionsCounter = new AsyncSemaphore(config.getSubscriptionConnectionPoolSize());
 
-        if (subscribePoolMaxSize > 0) {
-            connectionManager.getConnectionWatcher().add(this, subscribePoolMinSize, subscribePoolMaxSize, freeSubscribeConnections, freeSubscribeConnectionsCounter, c -> {
+        if (config.getSubscriptionConnectionPoolSize() > 0) {
+            idleConnectionWatcher.add(this, config.getSubscriptionConnectionMinimumIdleSize(),
+                                                config.getSubscriptionConnectionPoolSize(),
+                                                freeSubscribeConnections,
+                                                freeSubscribeConnectionsCounter, c -> {
                 freeSubscribeConnections.remove(c);
                 return allSubscribeConnections.remove(c);
             });
         }
-        connectionManager.getConnectionWatcher().add(this, poolMinSize, poolMaxSize, freeConnections, freeConnectionsCounter, c -> {
+        idleConnectionWatcher.add(this, poolMinSize, poolMaxSize, freeConnections, freeConnectionsCounter, c -> {
                 freeConnections.remove(c);
                 return allConnections.remove(c);
             });
@@ -81,7 +88,7 @@ public class ClientConnectionsEntry {
     
     public boolean isMasterForRead() {
         return getFreezeReason() == FreezeReason.SYSTEM
-                        && connectionManager.getConfig().getReadMode() == ReadMode.MASTER_SLAVE
+                        && config.getReadMode() == ReadMode.MASTER_SLAVE
                             && getNodeType() == NodeType.MASTER;
     }
 
@@ -107,7 +114,7 @@ public class ClientConnectionsEntry {
 
     public boolean isFailed() {
         if (client.getFirstFailTime() != 0) {
-            return System.currentTimeMillis() - client.getFirstFailTime() > connectionManager.getConfig().getFailedSlaveCheckInterval();
+            return System.currentTimeMillis() - client.getFirstFailTime() > config.getFailedSlaveCheckInterval();
         }
         return false;
     }
@@ -117,7 +124,7 @@ public class ClientConnectionsEntry {
     }
 
     public CompletableFuture<Void> shutdownAsync() {
-        connectionManager.getConnectionWatcher().remove(this);
+        idleConnectionWatcher.remove(this);
         return client.shutdownAsync().toCompletableFuture();
     }
 
@@ -192,32 +199,10 @@ public class ClientConnectionsEntry {
                 return;
             }
 
-            onConnect(conn);
             log.debug("new connection created: {}", conn);
             
             allConnections.add(conn);
         });
-    }
-    
-    private void onConnect(final RedisConnection conn) {
-        conn.setConnectedListener(new Runnable() {
-            @Override
-            public void run() {
-                if (!connectionManager.isShuttingDown()) {
-                    connectionManager.getConnectionEventsHub().fireConnect(conn.getRedisClient().getAddr());
-                }
-            }
-        });
-        conn.setDisconnectedListener(new Runnable() {
-            @Override
-            public void run() {
-                if (!connectionManager.isShuttingDown()) {
-                    connectionManager.getConnectionEventsHub().fireDisconnect(conn.getRedisClient().getAddr());
-                }
-            }
-        });
-        
-        connectionManager.getConnectionEventsHub().fireConnect(conn.getRedisClient().getAddr());
     }
 
     public CompletionStage<RedisPubSubConnection> connectPubSub() {
@@ -227,7 +212,6 @@ public class ClientConnectionsEntry {
                 return;
             }
             
-            onConnect(conn);
             log.debug("new pubsub connection created: {}", conn);
 
             allSubscribeConnections.add(conn);

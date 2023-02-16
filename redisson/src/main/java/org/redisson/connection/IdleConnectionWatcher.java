@@ -16,11 +16,13 @@
 package org.redisson.connection;
 
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
+import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.misc.AsyncSemaphore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,8 +63,8 @@ public class IdleConnectionWatcher {
     private final Map<ClientConnectionsEntry, List<Entry>> entries = new ConcurrentHashMap<>();
     private final ScheduledFuture<?> monitorFuture;
 
-    public IdleConnectionWatcher(ConnectionManager manager) {
-        monitorFuture = manager.getGroup().scheduleWithFixedDelay(() -> {
+    public IdleConnectionWatcher(EventLoopGroup group, MasterSlaveServersConfig config) {
+        monitorFuture = group.scheduleWithFixedDelay(() -> {
             long currTime = System.nanoTime();
             for (Entry entry : entries.values().stream().flatMap(m -> m.stream()).collect(Collectors.toList())) {
                 if (!validateAmount(entry)) {
@@ -79,7 +81,7 @@ public class IdleConnectionWatcher {
                         continue;
                     }
 
-                    if (timeInPool > manager.getConfig().getIdleConnectionTimeout()
+                    if (timeInPool > config.getIdleConnectionTimeout()
                             && validateAmount(entry)
                                 && entry.deleteHandler.apply(c)) {
                         ChannelFuture future = c.closeAsync();
@@ -92,7 +94,7 @@ public class IdleConnectionWatcher {
                     }
                 }
             }
-        }, manager.getConfig().getIdleConnectionTimeout(), manager.getConfig().getIdleConnectionTimeout(), TimeUnit.MILLISECONDS);
+        }, config.getIdleConnectionTimeout(), config.getIdleConnectionTimeout(), TimeUnit.MILLISECONDS);
     }
 
     private boolean validateAmount(Entry entry) {
