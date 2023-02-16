@@ -16,7 +16,6 @@
 package org.redisson.connection;
 
 import io.netty.util.concurrent.ScheduledFuture;
-import java.util.List;
 import org.redisson.api.NodeType;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
@@ -24,16 +23,12 @@ import org.redisson.client.RedisConnectionException;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.*;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
-import org.redisson.misc.AsyncCountDownLatch;
 import org.redisson.misc.RedisURI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
@@ -133,24 +128,26 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
             }
 
             Set<InetSocketAddress> slaveIPs = Collections.newSetFromMap(new ConcurrentHashMap<>());
-            AsyncCountDownLatch latch = new AsyncCountDownLatch();
-            latch.latch(() -> {
-                checkFailedSlaves(slaveIPs);
-                scheduleMasterChangeCheck(cfg);
-            }, cfg.getNodeAddresses().size());
-
             List<CompletableFuture<Role>> roles = cfg.getNodeAddresses().stream()
                 .map(address -> {
                     RedisURI uri = new RedisURI(address);
-                    return checkNode(latch, uri, cfg, slaveIPs);
+                    return checkNode(uri, cfg, slaveIPs);
                 })
                 .collect(Collectors.toList());
-            CompletableFuture[] completableFutures = new CompletableFuture[roles.size()];
-            CompletableFuture.allOf(roles.toArray(completableFutures));
-            if (roles.stream().noneMatch(role -> Role.master.equals(role.getNow(Role.slave)))) {
-                log.error("No master available among the configured addresses, "
-                    + "please check your configuration.");
-            }
+
+            CompletableFuture<Void> f = CompletableFuture.allOf(roles.toArray(new CompletableFuture[0]));
+            f.whenComplete((r, e) -> {
+                if (e == null) {
+                    if (roles.stream().noneMatch(role -> Role.master.equals(role.getNow(Role.slave)))) {
+                        log.error("No master available among the configured addresses, "
+                                + "please check your configuration.");
+                    }
+
+                    checkFailedSlaves(slaveIPs);
+                }
+
+                scheduleMasterChangeCheck(cfg);
+            });
 
         }, cfg.getScanInterval(), TimeUnit.MILLISECONDS);
     }
@@ -173,7 +170,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
         }
     }
 
-    private CompletableFuture<Role> checkNode(AsyncCountDownLatch latch, RedisURI uri, ReplicatedServersConfig cfg, Set<InetSocketAddress> slaveIPs) {
+    private CompletableFuture<Role> checkNode(RedisURI uri, ReplicatedServersConfig cfg, Set<InetSocketAddress> slaveIPs) {
         CompletionStage<RedisConnection> connectionFuture = connectToNode(cfg, uri, uri.getHost());
         return connectionFuture
                 .thenCompose(c -> {
@@ -182,7 +179,6 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                     }
                     return CompletableFuture.completedFuture(uri);
                 })
-                .thenCompose(c -> resolveIP(uri))
                 .thenCompose(ip -> {
                     if (isShuttingDown()) {
                         return CompletableFuture.completedFuture(null);
@@ -229,7 +225,6 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                     if (ex != null) {
                         log.error(ex.getMessage(), ex);
                     }
-                    latch.countDown();
                 })
                 .toCompletableFuture();
     }
