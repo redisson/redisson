@@ -15,11 +15,6 @@
  */
 package org.redisson.hibernate.region;
 
-import java.util.Collections;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.TimeUnit;
-
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.CacheDataDescription;
 import org.hibernate.cache.spi.GeneralDataRegion;
@@ -28,10 +23,15 @@ import org.hibernate.cache.spi.TransactionalDataRegion;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMapCache;
-import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.ServiceManager;
 import org.redisson.hibernate.RedissonRegionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Collections;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 
@@ -45,7 +45,7 @@ public class BaseRegion implements TransactionalDataRegion, GeneralDataRegion {
     final RMapCache<Object, Object> mapCache;
     final RegionFactory regionFactory;
     final CacheDataDescription metadata;
-    final ConnectionManager connectionManager;
+    final ServiceManager serviceManager;
     
     int ttl;
     int maxIdle;
@@ -53,12 +53,12 @@ public class BaseRegion implements TransactionalDataRegion, GeneralDataRegion {
     boolean fallback;
     volatile boolean fallbackMode;
 
-    public BaseRegion(RMapCache<Object, Object> mapCache, ConnectionManager connectionManager, RegionFactory regionFactory, CacheDataDescription metadata, Properties properties, String defaultKey) {
+    public BaseRegion(RMapCache<Object, Object> mapCache, ServiceManager serviceManager, RegionFactory regionFactory, CacheDataDescription metadata, Properties properties, String defaultKey) {
         super();
         this.mapCache = mapCache;
         this.regionFactory = regionFactory;
         this.metadata = metadata;
-        this.connectionManager = connectionManager;
+        this.serviceManager = serviceManager;
         
         String maxEntries = getProperty(properties, mapCache.getName(), defaultKey, RedissonRegionFactory.MAX_ENTRIES_SUFFIX);
         if (maxEntries != null) {
@@ -92,7 +92,7 @@ public class BaseRegion implements TransactionalDataRegion, GeneralDataRegion {
 
     private void ping() {
         fallbackMode = true;
-        connectionManager.newTimeout(t -> {
+        serviceManager.newTimeout(t -> {
             RFuture<Boolean> future = mapCache.isExistsAsync();
             future.whenComplete((r, ex) -> {
                 if (ex == null) {

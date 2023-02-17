@@ -199,7 +199,7 @@ public class RedissonFencedLock extends RedissonLock implements RFencedLock {
                 tryLockAsync(time, waitTime, leaseTime, unit, r, result, currentThreadId);
             });
             if (!subscribeFuture.isDone()) {
-                Timeout scheduledFuture = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
+                Timeout scheduledFuture = commandExecutor.getServiceManager().newTimeout(new TimerTask() {
                     @Override
                     public void run(Timeout timeout) throws Exception {
                         if (!subscribeFuture.isDone()) {
@@ -282,7 +282,7 @@ public class RedissonFencedLock extends RedissonLock implements RFencedLock {
                     t = ttl;
                 }
                 if (!executed.get()) {
-                    Timeout scheduledFuture = commandExecutor.getConnectionManager().newTimeout(timeout -> {
+                    Timeout scheduledFuture = commandExecutor.getServiceManager().newTimeout(timeout -> {
                         if (entry.removeListener(listener)) {
                             long elapsed = System.currentTimeMillis() - current;
                             time.addAndGet(-elapsed);

@@ -27,6 +27,7 @@ import org.hibernate.cache.spi.access.CollectionRegionAccessStrategy;
 import org.hibernate.cfg.Settings;
 import org.redisson.api.RMapCache;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.ServiceManager;
 import org.redisson.hibernate.strategy.NonStrictReadWriteCollectionRegionAccessStrategy;
 import org.redisson.hibernate.strategy.ReadOnlyCollectionRegionAccessStrategy;
 import org.redisson.hibernate.strategy.ReadWriteCollectionRegionAccessStrategy;
@@ -42,9 +43,9 @@ public class RedissonCollectionRegion extends BaseRegion implements CollectionRe
     private final Settings settings;
     private final CacheKeysFactory cacheKeysFactory;
     
-    public RedissonCollectionRegion(RMapCache<Object, Object> mapCache, ConnectionManager connectionManager, RegionFactory regionFactory,
+    public RedissonCollectionRegion(RMapCache<Object, Object> mapCache, ServiceManager serviceManager, RegionFactory regionFactory,
                                     CacheDataDescription metadata, Settings settings, Properties properties, String defaultKey, CacheKeysFactory cacheKeysFactory) {
-        super(mapCache, connectionManager, regionFactory, metadata, properties, defaultKey);
+        super(mapCache, serviceManager, regionFactory, metadata, properties, defaultKey);
         this.settings = settings;
         this.cacheKeysFactory = cacheKeysFactory;
     }

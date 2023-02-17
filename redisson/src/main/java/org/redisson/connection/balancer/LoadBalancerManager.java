@@ -64,7 +64,7 @@ public class LoadBalancerManager {
         ClientConnectionsEntry entry = getEntry(address);
         if (entry != null) {
             if (connectionManager.isClusterMode()) {
-                entry.getClient().getConfig().setReadOnly(nodeType == NodeType.SLAVE && connectionManager.getConfig().getReadMode() != ReadMode.MASTER);
+                entry.getClient().getConfig().setReadOnly(nodeType == NodeType.SLAVE && connectionManager.getServiceManager().getConfig().getReadMode() != ReadMode.MASTER);
             }
             entry.setNodeType(nodeType);
         }
@@ -162,7 +162,7 @@ public class LoadBalancerManager {
                         if (e != null) {
                             log.error("Unable to unfreeze entry: {}", entry, e);
                             entry.setInitialized(false);
-                            connectionManager.newTimeout(t -> {
+                            connectionManager.getServiceManager().newTimeout(t -> {
                                 unfreeze(entry, freezeReason);
                             }, 1, TimeUnit.SECONDS);
                             return;

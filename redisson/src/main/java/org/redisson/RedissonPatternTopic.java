@@ -51,7 +51,7 @@ public class RedissonPatternTopic implements RPatternTopic {
     private final Codec codec;
 
     protected RedissonPatternTopic(CommandAsyncExecutor commandExecutor, String name) {
-        this(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name);
+        this(commandExecutor.getServiceManager().getCfg().getCodec(), commandExecutor, name);
     }
 
     protected RedissonPatternTopic(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
@@ -100,7 +100,7 @@ public class RedissonPatternTopic implements RPatternTopic {
     }
     
     protected void acquire(AsyncSemaphore semaphore) {
-        MasterSlaveServersConfig config = commandExecutor.getConnectionManager().getConfig();
+        MasterSlaveServersConfig config = commandExecutor.getServiceManager().getConfig();
         int timeout = config.getTimeout() + config.getRetryInterval() * config.getRetryAttempts();
         if (!semaphore.tryAcquire(timeout)) {
             throw new RedisTimeoutException("Remove listeners operation timeout: (" + timeout + "ms) for " + name + " topic");

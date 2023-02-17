@@ -48,7 +48,7 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
     }
 
     String getClientPermitsName() {
-        return suffixName(getPermitsName(), commandExecutor.getConnectionManager().getId());
+        return suffixName(getPermitsName(), commandExecutor.getServiceManager().getId());
     }
 
     String getValueName() {
@@ -56,7 +56,7 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
     }
     
     String getClientValueName() {
-        return suffixName(getValueName(), commandExecutor.getConnectionManager().getId());
+        return suffixName(getValueName(), commandExecutor.getServiceManager().getId());
     }
     
     @Override
@@ -135,7 +135,7 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
             
             if (timeoutInMillis == -1) {
                 CompletableFuture<Boolean> f = new CompletableFuture<>();
-                commandExecutor.getConnectionManager().getGroup().schedule(() -> {
+                commandExecutor.getServiceManager().getGroup().schedule(() -> {
                     CompletableFuture<Boolean> r = tryAcquireAsync(permits, timeoutInMillis);
                     commandExecutor.transfer(r, f);
                 }, delay, TimeUnit.MILLISECONDS);
@@ -150,12 +150,12 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
 
             CompletableFuture<Boolean> f = new CompletableFuture<>();
             if (remains < delay) {
-                commandExecutor.getConnectionManager().getGroup().schedule(() -> {
+                commandExecutor.getServiceManager().getGroup().schedule(() -> {
                     f.complete(false);
                 }, remains, TimeUnit.MILLISECONDS);
             } else {
                 long start = System.currentTimeMillis();
-                commandExecutor.getConnectionManager().getGroup().schedule(() -> {
+                commandExecutor.getServiceManager().getGroup().schedule(() -> {
                     long elapsed = System.currentTimeMillis() - start;
                     if (remains <= elapsed) {
                         f.complete(false);

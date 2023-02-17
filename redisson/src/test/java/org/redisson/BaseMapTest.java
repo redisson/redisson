@@ -1061,7 +1061,7 @@ public abstract class BaseMapTest extends BaseTest {
         Assumptions.assumeTrue(!(map instanceof RMapCache));
         map.put("1", "1234");
         assertThat(map.valueSize("4")).isZero();
-        assertThat(map.valueSize("1")).isEqualTo(7);
+        assertThat(map.valueSize("1")).isEqualTo(5);
         destroy(map);
     }
     

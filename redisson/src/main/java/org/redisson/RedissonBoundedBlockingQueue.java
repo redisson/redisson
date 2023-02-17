@@ -48,7 +48,7 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
     protected RedissonBoundedBlockingQueue(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name, redisson);
         blockingQueue = new RedissonBlockingQueue<>(commandExecutor, name, redisson);
-        semaphore = new RedissonQueueSemaphore(commandExecutor, getSemaphoreName(), commandExecutor.getConnectionManager().getCodec());
+        semaphore = new RedissonQueueSemaphore(commandExecutor, getSemaphoreName(), commandExecutor.getServiceManager().getCfg().getCodec());
         channelName = RedissonSemaphore.getChannelName(semaphore.getRawName());
     }
 
@@ -248,12 +248,12 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
 
     @Override
     public int subscribeOnElements(Consumer<V> consumer) {
-        return commandExecutor.getConnectionManager().getElementsSubscribeService().subscribeOnElements(this::takeAsync, consumer);
+        return commandExecutor.getServiceManager().getElementsSubscribeService().subscribeOnElements(this::takeAsync, consumer);
     }
 
     @Override
     public void unsubscribe(int listenerId) {
-        commandExecutor.getConnectionManager().getElementsSubscribeService().unsubscribe(listenerId);
+        commandExecutor.getServiceManager().getElementsSubscribeService().unsubscribe(listenerId);
     }
 
     @Override

@@ -289,7 +289,7 @@ public class MasterSlaveEntry {
 
         MasterSlaveEntry entry = connectionManager.getEntry(key);
         if (entry == null) {
-            connectionManager.newTimeout(timeout ->
+            connectionManager.getServiceManager().newTimeout(timeout ->
                     reattachBlockingQueue(commandData), 1, TimeUnit.SECONDS);
             return;
         }
@@ -297,7 +297,7 @@ public class MasterSlaveEntry {
         CompletableFuture<RedisConnection> newConnectionFuture = entry.connectionWriteOp(commandData.getCommand());
         newConnectionFuture.whenComplete((newConnection, e) -> {
             if (e != null) {
-                connectionManager.newTimeout(timeout ->
+                connectionManager.getServiceManager().newTimeout(timeout ->
                         reattachBlockingQueue(commandData), 1, TimeUnit.SECONDS);
                 return;
             }
@@ -310,7 +310,7 @@ public class MasterSlaveEntry {
             ChannelFuture channelFuture = newConnection.send(commandData);
             channelFuture.addListener(future -> {
                 if (!future.isSuccess()) {
-                    connectionManager.newTimeout(timeout ->
+                    connectionManager.getServiceManager().newTimeout(timeout ->
                             reattachBlockingQueue(commandData), 1, TimeUnit.SECONDS);
                     return;
                 }

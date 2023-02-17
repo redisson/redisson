@@ -54,7 +54,7 @@ public class RedissonLock extends RedissonBaseLock {
     public RedissonLock(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
         this.commandExecutor = commandExecutor;
-        this.internalLockLeaseTime = commandExecutor.getConnectionManager().getCfg().getLockWatchdogTimeout();
+        this.internalLockLeaseTime = commandExecutor.getServiceManager().getCfg().getLockWatchdogTimeout();
         this.pubSub = commandExecutor.getConnectionManager().getSubscribeService().getLockPubSub();
     }
 
@@ -307,7 +307,7 @@ public class RedissonLock extends RedissonBaseLock {
     @Override
     protected void cancelExpirationRenewal(Long threadId) {
         super.cancelExpirationRenewal(threadId);
-        this.internalLockLeaseTime = commandExecutor.getConnectionManager().getCfg().getLockWatchdogTimeout();
+        this.internalLockLeaseTime = commandExecutor.getServiceManager().getCfg().getLockWatchdogTimeout();
     }
 
     @Override
@@ -410,7 +410,7 @@ public class RedissonLock extends RedissonBaseLock {
                 entry.addListener(listener);
 
                 if (ttl >= 0) {
-                    Timeout scheduledFuture = commandExecutor.getConnectionManager().newTimeout(timeout -> {
+                    Timeout scheduledFuture = commandExecutor.getServiceManager().newTimeout(timeout -> {
                         if (entry.removeListener(listener)) {
                             lockAsync(leaseTime, unit, entry, result, currentThreadId);
                         }
@@ -476,7 +476,7 @@ public class RedissonLock extends RedissonBaseLock {
                 tryLockAsync(time, waitTime, leaseTime, unit, r, result, currentThreadId);
             });
             if (!subscribeFuture.isDone()) {
-                Timeout scheduledFuture = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
+                Timeout scheduledFuture = commandExecutor.getServiceManager().newTimeout(new TimerTask() {
                     @Override
                     public void run(Timeout timeout) throws Exception {
                         if (!subscribeFuture.isDone()) {
@@ -558,7 +558,7 @@ public class RedissonLock extends RedissonBaseLock {
                         t = ttl;
                     }
                     if (!executed.get()) {
-                        Timeout scheduledFuture = commandExecutor.getConnectionManager().newTimeout(timeout -> {
+                        Timeout scheduledFuture = commandExecutor.getServiceManager().newTimeout(timeout -> {
                             if (entry.removeListener(listener)) {
                                 long elapsed = System.currentTimeMillis() - current;
                                 time.addAndGet(-elapsed);

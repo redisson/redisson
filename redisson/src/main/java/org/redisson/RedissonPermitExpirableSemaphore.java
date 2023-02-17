@@ -192,7 +192,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
 
                 Timeout scheduledFuture;
                 if (nearestTimeout != null) {
-                    scheduledFuture = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
+                    scheduledFuture = commandExecutor.getServiceManager().newTimeout(new TimerTask() {
                         @Override
                         public void run(Timeout timeout) throws Exception {
                             if (waitTimeoutFutureRef.get() != null && !waitTimeoutFutureRef.get().cancel()) {
@@ -227,7 +227,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 entry.addListener(listener);
 
                 long t = time.get();
-                Timeout waitTimeoutFuture = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
+                Timeout waitTimeoutFuture = commandExecutor.getServiceManager().newTimeout(new TimerTask() {
                     @Override
                     public void run(Timeout timeout) throws Exception {
                         if (scheduledFuture != null && !scheduledFuture.cancel()) {
@@ -275,7 +275,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             CompletableFuture<String> res = new CompletableFuture<>();
             Timeout scheduledFuture;
             if (nearestTimeout != null) {
-                scheduledFuture = commandExecutor.getConnectionManager().newTimeout(timeout -> {
+                scheduledFuture = commandExecutor.getServiceManager().newTimeout(timeout -> {
                     CompletableFuture<String> r = acquireAsync(permits, entry, ttl, timeUnit);
                     commandExecutor.transfer(r, res);
                 }, nearestTimeout, TimeUnit.MILLISECONDS);
@@ -509,7 +509,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             });
             
             if (!subscribeFuture.isDone()) {
-                Timeout scheduledFuture = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
+                Timeout scheduledFuture = commandExecutor.getServiceManager().newTimeout(new TimerTask() {
                     @Override
                     public void run(Timeout timeout) throws Exception {
                         if (!subscribeFuture.isDone()) {

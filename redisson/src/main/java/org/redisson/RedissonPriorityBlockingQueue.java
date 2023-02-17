@@ -73,7 +73,7 @@ public class RedissonPriorityBlockingQueue<V> extends RedissonPriorityQueue<V> i
 
     protected <T> void takeAsync(CompletableFuture<V> result, long delay, long timeoutInMicro, RedisCommand<T> command, Object... params) {
         long start = System.currentTimeMillis();
-        commandExecutor.getConnectionManager().getGroup().schedule(() -> {
+        commandExecutor.getServiceManager().getGroup().schedule(() -> {
             RFuture<V> future = wrapLockedAsync(command, params);
             future.whenComplete((res, e) -> {
                     if (e != null && !(e instanceof RedisConnectionException)) {
@@ -169,12 +169,12 @@ public class RedissonPriorityBlockingQueue<V> extends RedissonPriorityQueue<V> i
 
     @Override
     public int subscribeOnElements(Consumer<V> consumer) {
-        return commandExecutor.getConnectionManager().getElementsSubscribeService().subscribeOnElements(this::takeAsync, consumer);
+        return commandExecutor.getServiceManager().getElementsSubscribeService().subscribeOnElements(this::takeAsync, consumer);
     }
 
     @Override
     public void unsubscribe(int listenerId) {
-        commandExecutor.getConnectionManager().getElementsSubscribeService().unsubscribe(listenerId);
+        commandExecutor.getServiceManager().getElementsSubscribeService().unsubscribe(listenerId);
     }
 
     public RFuture<V> takeLastAndOfferFirstToAsync(String queueName) {

@@ -268,12 +268,12 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
 
     @Override
     public int subscribeOnFirstElements(Consumer<V> consumer) {
-        return commandExecutor.getConnectionManager().getElementsSubscribeService().subscribeOnElements(this::takeFirstAsync, consumer);
+        return commandExecutor.getServiceManager().getElementsSubscribeService().subscribeOnElements(this::takeFirstAsync, consumer);
     }
 
     @Override
     public int subscribeOnLastElements(Consumer<V> consumer) {
-        return commandExecutor.getConnectionManager().getElementsSubscribeService().subscribeOnElements(this::takeLastAsync, consumer);
+        return commandExecutor.getServiceManager().getElementsSubscribeService().subscribeOnElements(this::takeLastAsync, consumer);
     }
 
     @Override

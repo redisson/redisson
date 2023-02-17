@@ -33,6 +33,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
+import org.redisson.connection.ServiceManager;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.slf4j.Logger;
@@ -59,6 +60,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     static final Logger log = LoggerFactory.getLogger(CommandAsyncService.class);
 
+    final Codec codec;
     final ConnectionManager connectionManager;
     final RedissonObjectBuilder objectBuilder;
     final RedissonObjectBuilder.ReferenceType referenceType;
@@ -67,6 +69,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         this.connectionManager = connectionManager;
         this.objectBuilder = objectBuilder;
         this.referenceType = referenceType;
+        this.codec = connectionManager.getServiceManager().getCfg().getCodec();
     }
 
     @Override
@@ -229,7 +232,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     @Override
     public <R> List<CompletableFuture<R>> writeAllAsync(RedisCommand<?> command, Object... params) {
-        return writeAllAsync(command, connectionManager.getCodec(), params);
+        return writeAllAsync(command, codec, params);
     }
 
     private <R> List<CompletableFuture<R>> writeAllAsync(RedisCommand<?> command, Codec codec, Object... params) {
@@ -252,7 +255,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     @Override
     public <R> List<CompletableFuture<R>> readAllAsync(RedisCommand<?> command, Object... params) {
-        return readAllAsync(connectionManager.getCodec(), command, params);
+        return readAllAsync(codec, command, params);
     }
 
     @Override
@@ -261,12 +264,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         List<CompletableFuture<R>> futures = new ArrayList<>();
         nodes.forEach(e -> {
             RFuture<R> promise = async(false, new NodeSource(e),
-                    connectionManager.getCodec(), command, params, true, false);
+                    codec, command, params, true, false);
             futures.add(promise.toCompletableFuture());
 
             e.getAllEntries().stream().filter(c -> c.getNodeType() == NodeType.SLAVE && !c.isFreezed()).forEach(c -> {
                 RFuture<R> slavePromise = async(true, new NodeSource(e, c.getClient()),
-                        connectionManager.getCodec(), command, params, true, false);
+                        codec, command, params, true, false);
                 futures.add(slavePromise.toCompletableFuture());
             });
         });
@@ -319,7 +322,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     @Override
     public <T, R> RFuture<R> readAsync(String key, RedisCommand<T> command, Object... params) {
-        return readAsync(key, connectionManager.getCodec(), command, params);
+        return readAsync(key, codec, command, params);
     }
 
     @Override
@@ -364,7 +367,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
     
     protected boolean isEvalCacheActive() {
-        return getConnectionManager().getCfg().isUseScriptCache();
+        return connectionManager.getServiceManager().getCfg().isUseScriptCache();
     }
     
     private static final Map<String, String> SHA_CACHE = new LRUCacheMap<>(500, 0, 0);
@@ -485,7 +488,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     @Override
     public <T, R> RFuture<R> writeAsync(String key, RedisCommand<T> command, Object... params) {
-        return writeAsync(key, connectionManager.getCodec(), command, params);
+        return writeAsync(key, codec, command, params);
     }
 
     @Override
@@ -613,6 +616,10 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return objectBuilder;
     }
 
+    public ServiceManager getServiceManager() {
+        return connectionManager.getServiceManager();
+    }
+
     @Override
     public ByteBuf encode(Codec codec, Object value) {
         if (isRedissonReferenceSupportEnabled()) {
@@ -663,7 +670,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     @Override
     public <V> RFuture<V> pollFromAnyAsync(String name, Codec codec, RedisCommand<?> command, long secondsTimeout, String... queueNames) {
-        List<String> mappedNames = Arrays.stream(queueNames).map(m -> connectionManager.getConfig().getNameMapper().map(m)).collect(Collectors.toList());
+        List<String> mappedNames = Arrays.stream(queueNames).map(m -> connectionManager.getServiceManager().getConfig().getNameMapper().map(m)).collect(Collectors.toList());
         if (connectionManager.isClusterMode() && queueNames.length > 0) {
             AtomicReference<Iterator<String>> ref = new AtomicReference<>();
             List<String> names = new ArrayList<>();

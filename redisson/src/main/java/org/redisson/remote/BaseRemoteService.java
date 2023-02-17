@@ -65,7 +65,7 @@ public abstract class BaseRemoteService {
 
     public BaseRemoteService(Codec codec, String name, CommandAsyncExecutor commandExecutor, String executorId, ConcurrentMap<String, ResponseEntry> responses) {
         this.codec = codec;
-        this.name = commandExecutor.getConnectionManager().getConfig().getNameMapper().map(name);
+        this.name = commandExecutor.getServiceManager().getConfig().getNameMapper().map(name);
         this.commandExecutor = commandExecutor;
         this.executorId = executorId;
         this.responses = responses;
@@ -143,7 +143,7 @@ public abstract class BaseRemoteService {
     }
     
     protected <T> void scheduleCheck(String mapName, String requestId, CompletableFuture<T> cancelRequest) {
-        commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
+        commandExecutor.getServiceManager().newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
                 if (cancelRequest.isDone()) {

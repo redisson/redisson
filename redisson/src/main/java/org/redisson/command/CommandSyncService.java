@@ -34,7 +34,7 @@ public class CommandSyncService extends CommandAsyncService implements CommandEx
 
     @Override
     public <T, R> R read(String key, RedisCommand<T> command, Object... params) {
-        return read(key, connectionManager.getCodec(), command, params);
+        return read(key, codec, command, params);
     }
 
     @Override

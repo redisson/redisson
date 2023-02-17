@@ -121,10 +121,10 @@ public class RedissonListMultimapTest extends BaseTest {
     public void testSizeInMemory() {
         RListMultimap<String, String> list = redisson.getListMultimap("test");
         list.put("1", "2");
-        assertThat(list.sizeInMemory()).isEqualTo(160);
+        assertThat(list.sizeInMemory()).isEqualTo(159);
 
         list.put("1", "3");
-        assertThat(list.sizeInMemory()).isEqualTo(166);
+        assertThat(list.sizeInMemory()).isEqualTo(164);
     }
 
     @Test

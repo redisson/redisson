@@ -193,7 +193,7 @@ public class RedissonRegionFactory implements RegionFactory {
         log.debug("Building entity cache region: " + regionName);
 
         RMapCache<Object, Object> mapCache = getCache(regionName, properties, ENTITY_DEF);
-        return new RedissonEntityRegion(mapCache, ((Redisson)redisson).getConnectionManager(),this, metadata, settings, properties, ENTITY_DEF);
+        return new RedissonEntityRegion(mapCache, ((Redisson)redisson).getServiceManager(),this, metadata, settings, properties, ENTITY_DEF);
     }
 
     @Override
@@ -202,7 +202,7 @@ public class RedissonRegionFactory implements RegionFactory {
         log.debug("Building naturalId cache region: " + regionName);
         
         RMapCache<Object, Object> mapCache = getCache(regionName, properties, NATURAL_ID_DEF);
-        return new RedissonNaturalIdRegion(mapCache, ((Redisson)redisson).getConnectionManager(),this, metadata, settings, properties, NATURAL_ID_DEF);
+        return new RedissonNaturalIdRegion(mapCache, ((Redisson)redisson).getServiceManager(),this, metadata, settings, properties, NATURAL_ID_DEF);
     }
 
     @Override
@@ -211,7 +211,7 @@ public class RedissonRegionFactory implements RegionFactory {
         log.debug("Building collection cache region: " + regionName);
         
         RMapCache<Object, Object> mapCache = getCache(regionName, properties, COLLECTION_DEF);
-        return new RedissonCollectionRegion(mapCache, ((Redisson)redisson).getConnectionManager(),this, metadata, settings, properties, COLLECTION_DEF);
+        return new RedissonCollectionRegion(mapCache, ((Redisson)redisson).getServiceManager(),this, metadata, settings, properties, COLLECTION_DEF);
     }
 
     @Override
@@ -219,7 +219,7 @@ public class RedissonRegionFactory implements RegionFactory {
         log.debug("Building query cache region: " + regionName);
         
         RMapCache<Object, Object> mapCache = getCache(regionName, properties, QUERY_DEF);
-        return new RedissonQueryRegion(mapCache, ((Redisson)redisson).getConnectionManager(),this, properties, QUERY_DEF);
+        return new RedissonQueryRegion(mapCache, ((Redisson)redisson).getServiceManager(),this, properties, QUERY_DEF);
     }
 
     @Override
@@ -227,7 +227,7 @@ public class RedissonRegionFactory implements RegionFactory {
         log.debug("Building timestamps cache region: " + regionName);
         
         RMapCache<Object, Object> mapCache = getCache(regionName, properties, TIMESTAMPS_DEF);
-        return new RedissonTimestampsRegion(mapCache, ((Redisson)redisson).getConnectionManager(),this, properties, TIMESTAMPS_DEF);
+        return new RedissonTimestampsRegion(mapCache, ((Redisson)redisson).getServiceManager(),this, properties, TIMESTAMPS_DEF);
     }
 
     protected RMapCache<Object, Object> getCache(String regionName, Properties properties, String defaultKey) {

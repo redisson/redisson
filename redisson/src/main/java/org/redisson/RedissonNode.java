@@ -170,7 +170,7 @@ public final class RedissonNode {
             CompletionStage<RedisConnection> readFuture = entry.connectionReadOp(null);
             RedisConnection readConnection = null;
             try {
-                readConnection = readFuture.toCompletableFuture().get(connectionManager.getConfig().getConnectTimeout(), TimeUnit.MILLISECONDS);
+                readConnection = readFuture.toCompletableFuture().get(connectionManager.getServiceManager().getConfig().getConnectTimeout(), TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             } catch (Exception e) {
@@ -186,7 +186,7 @@ public final class RedissonNode {
             CompletionStage<RedisConnection> writeFuture = entry.connectionWriteOp(null);
             RedisConnection writeConnection = null;
             try {
-                writeConnection = writeFuture.toCompletableFuture().get(connectionManager.getConfig().getConnectTimeout(), TimeUnit.MILLISECONDS);
+                writeConnection = writeFuture.toCompletableFuture().get(connectionManager.getServiceManager().getConfig().getConnectTimeout(), TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             } catch (Exception e) {

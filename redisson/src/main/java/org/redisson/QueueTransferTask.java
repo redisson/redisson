@@ -115,7 +115,7 @@ public abstract class QueueTransferTask {
         
         long delay = startTime - System.currentTimeMillis();
         if (delay > 10) {
-            Timeout timeout = connectionManager.newTimeout(new TimerTask() {                    
+            Timeout timeout = connectionManager.getServiceManager().newTimeout(new TimerTask() {
                 @Override
                 public void run(Timeout timeout) throws Exception {
                     pushTask();

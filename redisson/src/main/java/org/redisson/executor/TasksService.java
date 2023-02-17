@@ -217,7 +217,7 @@ public class TasksService extends BaseRemoteService {
         });
 
         removeFuture.thenAccept(r -> {
-            commandExecutor.getConnectionManager().newTimeout(timeout -> {
+            commandExecutor.getServiceManager().newTimeout(timeout -> {
                 f.complete(false);
             }, 60, TimeUnit.SECONDS);
         });
@@ -228,7 +228,7 @@ public class TasksService extends BaseRemoteService {
     private CompletableFuture<RemoteServiceCancelResponse> scheduleCancelResponseCheck(String mapName, String requestId) {
         CompletableFuture<RemoteServiceCancelResponse> cancelResponse = new CompletableFuture<>();
 
-        commandExecutor.getConnectionManager().newTimeout(timeout -> {
+        commandExecutor.getServiceManager().newTimeout(timeout -> {
             if (cancelResponse.isDone()) {
                 return;
             }

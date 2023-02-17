@@ -253,7 +253,7 @@ public class RedissonKeys implements RKeys {
         for (MasterSlaveEntry entry : commandExecutor.getConnectionManager().getEntrySet()) {
             CompletableFuture<Long> future = new CompletableFuture<>();
             futures.add(future);
-            commandExecutor.getConnectionManager().getExecutor().execute(() -> {
+            commandExecutor.getServiceManager().getExecutor().execute(() -> {
                 long count = 0;
                 try {
                     Iterator<String> keysIterator = createKeysIterator(entry, scan, pattern, batchSize);
@@ -345,22 +345,22 @@ public class RedissonKeys implements RKeys {
     }
 
     private String map(String key) {
-        return commandExecutor.getConnectionManager().getConfig().getNameMapper().map(key);
+        return commandExecutor.getServiceManager().getConfig().getNameMapper().map(key);
     }
 
     private String unmap(String key) {
-        return commandExecutor.getConnectionManager().getConfig().getNameMapper().unmap(key);
+        return commandExecutor.getServiceManager().getConfig().getNameMapper().unmap(key);
     }
 
     private List<String> unmap(List<String> keys) {
         return keys.stream()
-                .map(k -> commandExecutor.getConnectionManager().getConfig().getNameMapper().unmap(k))
+                .map(k -> commandExecutor.getServiceManager().getConfig().getNameMapper().unmap(k))
                 .collect(Collectors.toList());
     }
 
     private String[] map(String[] keys) {
         return Arrays.stream(keys)
-                .map(k -> commandExecutor.getConnectionManager().getConfig().getNameMapper().map(k))
+                .map(k -> commandExecutor.getServiceManager().getConfig().getNameMapper().map(k))
                 .toArray(String[]::new);
     }
 

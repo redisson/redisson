@@ -52,7 +52,7 @@ public class RedissonSpinLock extends RedissonBaseLock {
                             LockOptions.BackOff backOff) {
         super(commandExecutor, name);
         this.commandExecutor = commandExecutor;
-        this.internalLockLeaseTime = commandExecutor.getConnectionManager().getCfg().getLockWatchdogTimeout();
+        this.internalLockLeaseTime = commandExecutor.getServiceManager().getCfg().getLockWatchdogTimeout();
         this.backOff = backOff;
     }
 
@@ -184,7 +184,7 @@ public class RedissonSpinLock extends RedissonBaseLock {
     @Override
     protected void cancelExpirationRenewal(Long threadId) {
         super.cancelExpirationRenewal(threadId);
-        this.internalLockLeaseTime = commandExecutor.getConnectionManager().getCfg().getLockWatchdogTimeout();
+        this.internalLockLeaseTime = commandExecutor.getServiceManager().getCfg().getLockWatchdogTimeout();
     }
 
     @Override
@@ -244,7 +244,7 @@ public class RedissonSpinLock extends RedissonBaseLock {
             }
 
             long nextSleepPeriod = backOffPolicy.getNextSleepPeriod();
-            commandExecutor.getConnectionManager().newTimeout(
+            commandExecutor.getServiceManager().newTimeout(
                     timeout -> lockAsync(leaseTime, unit, currentThreadId, result, backOffPolicy),
                     nextSleepPeriod, TimeUnit.MILLISECONDS);
         });
@@ -296,7 +296,7 @@ public class RedissonSpinLock extends RedissonBaseLock {
             }
 
             long nextSleepPeriod = backOffPolicy.getNextSleepPeriod();
-            commandExecutor.getConnectionManager().newTimeout(
+            commandExecutor.getServiceManager().newTimeout(
                     timeout -> tryLock(leaseTime, unit, currentThreadId, result, time, backOffPolicy),
                     nextSleepPeriod, TimeUnit.MILLISECONDS);
         });

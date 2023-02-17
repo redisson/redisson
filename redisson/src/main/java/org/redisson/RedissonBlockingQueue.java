@@ -135,7 +135,7 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
 
     @Override
     public RFuture<Map<String, List<V>>> pollFirstFromAnyAsync(Duration duration, int count, String... queueNames) {
-        List<String> mappedNames = Arrays.stream(queueNames).map(m -> commandExecutor.getConnectionManager().getConfig().getNameMapper().map(m)).collect(Collectors.toList());
+        List<String> mappedNames = Arrays.stream(queueNames).map(m -> commandExecutor.getServiceManager().getConfig().getNameMapper().map(m)).collect(Collectors.toList());
         List<Object> params = new ArrayList<>();
         params.add(toSeconds(duration.getSeconds(), TimeUnit.SECONDS));
         params.add(queueNames.length + 1);
@@ -154,7 +154,7 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
 
     @Override
     public RFuture<Map<String, List<V>>> pollLastFromAnyAsync(Duration duration, int count, String... queueNames) {
-        List<String> mappedNames = Arrays.stream(queueNames).map(m -> commandExecutor.getConnectionManager().getConfig().getNameMapper().map(m)).collect(Collectors.toList());
+        List<String> mappedNames = Arrays.stream(queueNames).map(m -> commandExecutor.getServiceManager().getConfig().getNameMapper().map(m)).collect(Collectors.toList());
         List<Object> params = new ArrayList<>();
         params.add(toSeconds(duration.getSeconds(), TimeUnit.SECONDS));
         params.add(queueNames.length + 1);
@@ -172,7 +172,7 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
             return new CompletableFutureWrapper<>((V) null);
         }
 
-        String mappedName = commandExecutor.getConnectionManager().getConfig().getNameMapper().map(queueName);
+        String mappedName = commandExecutor.getServiceManager().getConfig().getNameMapper().map(queueName);
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.BRPOPLPUSH, getRawName(), mappedName, toSeconds(timeout, unit));
     }
 
@@ -237,12 +237,12 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
 
     @Override
     public int subscribeOnElements(Consumer<V> consumer) {
-        return commandExecutor.getConnectionManager().getElementsSubscribeService().subscribeOnElements(this::takeAsync, consumer);
+        return commandExecutor.getServiceManager().getElementsSubscribeService().subscribeOnElements(this::takeAsync, consumer);
     }
 
     @Override
     public void unsubscribe(int listenerId) {
-        commandExecutor.getConnectionManager().getElementsSubscribeService().unsubscribe(listenerId);
+        commandExecutor.getServiceManager().getElementsSubscribeService().unsubscribe(listenerId);
     }
 
 }

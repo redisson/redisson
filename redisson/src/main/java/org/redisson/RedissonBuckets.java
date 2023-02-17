@@ -44,7 +44,7 @@ public class RedissonBuckets implements RBuckets {
     protected final CommandAsyncExecutor commandExecutor;
 
     public RedissonBuckets(CommandAsyncExecutor commandExecutor) {
-        this(commandExecutor.getConnectionManager().getCodec(), commandExecutor);
+        this(commandExecutor.getServiceManager().getCfg().getCodec(), commandExecutor);
     }
     
     public RedissonBuckets(Codec codec, CommandAsyncExecutor commandExecutor) {
@@ -77,7 +77,7 @@ public class RedissonBuckets implements RBuckets {
         }
 
         List<Object> keysList = Arrays.stream(keys)
-                                        .map(k -> commandExecutor.getConnectionManager().getConfig().getNameMapper().map(k))
+                                        .map(k -> commandExecutor.getServiceManager().getConfig().getNameMapper().map(k))
                                         .collect(Collectors.toList());
 
         Codec commandCodec = new CompositeCodec(StringCodec.INSTANCE, codec, codec);
@@ -90,7 +90,7 @@ public class RedissonBuckets implements RBuckets {
             public void onSlotResult(Map<Object, Object> result) {
                 for (Map.Entry<Object, Object> entry : result.entrySet()) {
                     if (entry.getKey() != null && entry.getValue() != null) {
-                        String key = commandExecutor.getConnectionManager().getConfig().getNameMapper().unmap((String) entry.getKey());
+                        String key = commandExecutor.getServiceManager().getConfig().getNameMapper().unmap((String) entry.getKey());
                         results.put(key, (V) entry.getValue());
                     }
                 }
@@ -149,7 +149,7 @@ public class RedissonBuckets implements RBuckets {
 
     private Map<String, ?> map(Map<String, ?> buckets) {
         return buckets.entrySet().stream().collect(
-                Collectors.toMap(e -> commandExecutor.getConnectionManager().getConfig().getNameMapper().map(e.getKey()),
+                Collectors.toMap(e -> commandExecutor.getServiceManager().getConfig().getNameMapper().map(e.getKey()),
                         e -> e.getValue()));
     }
 

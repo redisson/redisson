@@ -179,25 +179,27 @@ public class ConfigSupport {
         return yamlMapper.writeValueAsString(config);
     }
 
-    public static ConnectionManager createConnectionManager(Config configCopy, ConnectionEventsHub connectionEventsHub) {
+    public static ConnectionManager createConnectionManager(Config configCopy) {
+        ServiceManager serviceManager = new ServiceManager(configCopy);
+
         UUID id = UUID.randomUUID();
 
         ConnectionManager cm = null;
         if (configCopy.getMasterSlaveServersConfig() != null) {
             validate(configCopy.getMasterSlaveServersConfig());
-            cm = new MasterSlaveConnectionManager(configCopy.getMasterSlaveServersConfig(), configCopy, id, connectionEventsHub);
+            cm = new MasterSlaveConnectionManager(configCopy.getMasterSlaveServersConfig(), serviceManager);
         } else if (configCopy.getSingleServerConfig() != null) {
             validate(configCopy.getSingleServerConfig());
-            cm = new SingleConnectionManager(configCopy.getSingleServerConfig(), configCopy, id, connectionEventsHub);
+            cm = new SingleConnectionManager(configCopy.getSingleServerConfig(), serviceManager);
         } else if (configCopy.getSentinelServersConfig() != null) {
             validate(configCopy.getSentinelServersConfig());
-            cm = new SentinelConnectionManager(configCopy.getSentinelServersConfig(), configCopy, id, connectionEventsHub);
+            cm = new SentinelConnectionManager(configCopy.getSentinelServersConfig(), serviceManager);
         } else if (configCopy.getClusterServersConfig() != null) {
             validate(configCopy.getClusterServersConfig());
-            cm = new ClusterConnectionManager(configCopy.getClusterServersConfig(), configCopy, id, connectionEventsHub);
+            cm = new ClusterConnectionManager(configCopy.getClusterServersConfig(), serviceManager);
         } else if (configCopy.getReplicatedServersConfig() != null) {
             validate(configCopy.getReplicatedServersConfig());
-            cm = new ReplicatedConnectionManager(configCopy.getReplicatedServersConfig(), configCopy, id, connectionEventsHub);
+            cm = new ReplicatedConnectionManager(configCopy.getReplicatedServersConfig(), serviceManager);
         } else if (configCopy.getConnectionManager() != null) {
             cm = configCopy.getConnectionManager();
         }

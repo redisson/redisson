@@ -21,14 +21,20 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.config.*;
+import org.redisson.config.BaseMasterSlaveServersConfig;
+import org.redisson.config.MasterSlaveServersConfig;
+import org.redisson.config.ReadMode;
+import org.redisson.config.ReplicatedServersConfig;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.RedisURI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
@@ -61,8 +67,8 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
 
     private ReplicatedServersConfig cfg;
 
-    public ReplicatedConnectionManager(ReplicatedServersConfig cfg, Config config, UUID id, ConnectionEventsHub connectionEventsHub) {
-        super(cfg, config, id, connectionEventsHub);
+    public ReplicatedConnectionManager(ReplicatedServersConfig cfg, ServiceManager serviceManager) {
+        super(cfg, serviceManager);
     }
 
     @Override
@@ -118,12 +124,12 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
     }
     
     private void scheduleMasterChangeCheck(ReplicatedServersConfig cfg) {
-        if (isShuttingDown()) {
+        if (serviceManager.isShuttingDown()) {
             return;
         }
         
-        monitorFuture = group.schedule(() -> {
-            if (isShuttingDown()) {
+        monitorFuture = serviceManager.getGroup().schedule(() -> {
+            if (serviceManager.isShuttingDown()) {
                 return;
             }
 
@@ -175,12 +181,12 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
         return connectionFuture
                 .thenCompose(c -> {
                     if (cfg.isMonitorIPChanges()) {
-                        return resolveIP(uri);
+                        return serviceManager.resolveIP(uri);
                     }
                     return CompletableFuture.completedFuture(uri);
                 })
                 .thenCompose(ip -> {
-                    if (isShuttingDown()) {
+                    if (serviceManager.isShuttingDown()) {
                         return CompletableFuture.completedFuture(null);
                     }
 

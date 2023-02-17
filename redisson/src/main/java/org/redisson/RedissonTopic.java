@@ -51,11 +51,11 @@ public class RedissonTopic implements RTopic {
     final Codec codec;
 
     public RedissonTopic(CommandAsyncExecutor commandExecutor, String name) {
-        this(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name);
+        this(commandExecutor.getServiceManager().getCfg().getCodec(), commandExecutor, name);
     }
 
     public static RedissonTopic createRaw(CommandAsyncExecutor commandExecutor, String name) {
-        return new RedissonTopic(commandExecutor.getConnectionManager().getCodec(), commandExecutor, NameMapper.direct(), name);
+        return new RedissonTopic(commandExecutor.getServiceManager().getCfg().getCodec(), commandExecutor, NameMapper.direct(), name);
     }
 
     public static RedissonTopic createRaw(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
@@ -63,7 +63,7 @@ public class RedissonTopic implements RTopic {
     }
 
     public RedissonTopic(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
-        this(codec, commandExecutor, commandExecutor.getConnectionManager().getConfig().getNameMapper(), name);
+        this(codec, commandExecutor, commandExecutor.getServiceManager().getConfig().getNameMapper(), name);
     }
 
     public RedissonTopic(Codec codec, CommandAsyncExecutor commandExecutor, NameMapper nameMapper, String name) {

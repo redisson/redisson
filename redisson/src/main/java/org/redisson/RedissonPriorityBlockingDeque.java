@@ -126,12 +126,12 @@ public class RedissonPriorityBlockingDeque<V> extends RedissonPriorityDeque<V> i
 
     @Override
     public int subscribeOnElements(Consumer<V> consumer) {
-        return commandExecutor.getConnectionManager().getElementsSubscribeService().subscribeOnElements(this::takeAsync, consumer);
+        return commandExecutor.getServiceManager().getElementsSubscribeService().subscribeOnElements(this::takeAsync, consumer);
     }
 
     @Override
     public void unsubscribe(int listenerId) {
-        commandExecutor.getConnectionManager().getElementsSubscribeService().unsubscribe(listenerId);
+        commandExecutor.getServiceManager().getElementsSubscribeService().unsubscribe(listenerId);
     }
 
     public RFuture<V> takeLastAndOfferFirstToAsync(String queueName) {
@@ -257,12 +257,12 @@ public class RedissonPriorityBlockingDeque<V> extends RedissonPriorityDeque<V> i
 
     @Override
     public int subscribeOnFirstElements(Consumer<V> consumer) {
-        return commandExecutor.getConnectionManager().getElementsSubscribeService().subscribeOnElements(this::takeFirstAsync, consumer);
+        return commandExecutor.getServiceManager().getElementsSubscribeService().subscribeOnElements(this::takeFirstAsync, consumer);
     }
 
     @Override
     public int subscribeOnLastElements(Consumer<V> consumer) {
-        return commandExecutor.getConnectionManager().getElementsSubscribeService().subscribeOnElements(this::takeLastAsync, consumer);
+        return commandExecutor.getServiceManager().getElementsSubscribeService().subscribeOnElements(this::takeLastAsync, consumer);
     }
 
     @Override

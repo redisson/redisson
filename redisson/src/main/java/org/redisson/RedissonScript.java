@@ -40,7 +40,7 @@ public class RedissonScript implements RScript {
 
     public RedissonScript(CommandAsyncExecutor commandExecutor) {
         this.commandExecutor = commandExecutor;
-        this.codec = commandExecutor.getConnectionManager().getCodec();
+        this.codec = commandExecutor.getServiceManager().getCfg().getCodec();
     }
     
     public RedissonScript(CommandAsyncExecutor commandExecutor, Codec codec) {
@@ -201,9 +201,9 @@ public class RedissonScript implements RScript {
     public <R> RFuture<R> evalShaAsync(String key, Mode mode, String shaDigest, ReturnType returnType,
             List<Object> keys, Object... values) {
         RedisCommand command = new RedisCommand(returnType.getCommand(), "EVALSHA");
-        String mappedKey = commandExecutor.getConnectionManager().getConfig().getNameMapper().map((String) key);
+        String mappedKey = commandExecutor.getServiceManager().getConfig().getNameMapper().map((String) key);
         List<Object> mappedKeys = keys.stream()
-                                        .map(k -> commandExecutor.getConnectionManager().getConfig().getNameMapper().map((String) k))
+                                        .map(k -> commandExecutor.getServiceManager().getConfig().getNameMapper().map((String) k))
                                         .collect(Collectors.toList());
         if (mode == Mode.READ_ONLY && commandExecutor.isEvalShaROSupported()) {
             RedisCommand cmd = new RedisCommand(returnType.getCommand(), "EVALSHA_RO");
@@ -226,9 +226,9 @@ public class RedissonScript implements RScript {
     @Override
     public <R> RFuture<R> evalAsync(String key, Mode mode, String luaScript, ReturnType returnType, List<Object> keys,
             Object... values) {
-        String mappedKey = commandExecutor.getConnectionManager().getConfig().getNameMapper().map((String) key);
+        String mappedKey = commandExecutor.getServiceManager().getConfig().getNameMapper().map((String) key);
         List<Object> mappedKeys = keys.stream()
-                .map(k -> commandExecutor.getConnectionManager().getConfig().getNameMapper().map((String) k))
+                .map(k -> commandExecutor.getServiceManager().getConfig().getNameMapper().map((String) k))
                 .collect(Collectors.toList());
         if (mode == Mode.READ_ONLY) {
             return commandExecutor.evalReadAsync(mappedKey, codec, returnType.getCommand(), luaScript, mappedKeys, encode(Arrays.asList(values), codec).toArray());

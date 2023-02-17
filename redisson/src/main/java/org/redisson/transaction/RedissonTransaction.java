@@ -517,7 +517,7 @@ public class RedissonTransaction implements RTransaction {
 
                         RFuture<BatchResult<?>> publishFuture = publishBatch.executeAsync();
                         publishFuture.thenAccept(res2 -> {
-                            commandExecutor.getConnectionManager().newTimeout(timeout ->
+                            commandExecutor.getServiceManager().newTimeout(timeout ->
                                     result.completeExceptionally(
                                                         new TransactionTimeoutException("Unable to execute transaction within "
                                                                 + options.getResponseTimeout() + "ms")),

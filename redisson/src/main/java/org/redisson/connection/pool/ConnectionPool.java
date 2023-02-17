@@ -251,7 +251,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
 
     private void connectTo(ClientConnectionsEntry entry, CompletableFuture<T> promise, RedisCommand<?> command) {
         if (promise.isDone()) {
-            connectionManager.getGroup().submit(() -> {
+            connectionManager.getServiceManager().getGroup().submit(() -> {
                 releaseConnection(entry);
             });
             return;
@@ -349,10 +349,10 @@ abstract class ConnectionPool<T extends RedisConnection> {
     }
 
     private void scheduleCheck(ClientConnectionsEntry entry) {
-        connectionManager.newTimeout(timeout -> {
+        connectionManager.getServiceManager().newTimeout(timeout -> {
             synchronized (entry) {
                 if (entry.getFreezeReason() != FreezeReason.RECONNECT
-                        || connectionManager.isShuttingDown()) {
+                        || connectionManager.getServiceManager().isShuttingDown()) {
                     return;
                 }
             }

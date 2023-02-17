@@ -23,8 +23,8 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandSyncService;
 import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
-import org.redisson.connection.ConnectionEventsHub;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.ServiceManager;
 import org.redisson.eviction.EvictionScheduler;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.redisnode.RedissonClusterNodes;
@@ -51,7 +51,6 @@ public class Redisson implements RedissonClient {
         RedissonReference.warmUp();
     }
 
-    private final ConnectionEventsHub connectionEventsHub = new ConnectionEventsHub();
     protected final QueueTransferService queueTransferService = new QueueTransferService();
     protected final EvictionScheduler evictionScheduler;
     protected final WriteBehindService writeBehindService;
@@ -67,7 +66,7 @@ public class Redisson implements RedissonClient {
         this.config = config;
         Config configCopy = new Config(config);
 
-        connectionManager = ConfigSupport.createConnectionManager(configCopy, connectionEventsHub);
+        connectionManager = ConfigSupport.createConnectionManager(configCopy);
         RedissonObjectBuilder objectBuilder = null;
         if (config.isReferenceEnabled()) {
             objectBuilder = new RedissonObjectBuilder(this);
@@ -87,6 +86,10 @@ public class Redisson implements RedissonClient {
 
     public ConnectionManager getConnectionManager() {
         return connectionManager;
+    }
+
+    public ServiceManager getServiceManager() {
+        return connectionManager.getServiceManager();
     }
 
     /**
@@ -416,12 +419,12 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RScheduledExecutorService getExecutorService(String name) {
-        return getExecutorService(name, connectionManager.getCodec());
+        return getExecutorService(name, connectionManager.getServiceManager().getCfg().getCodec());
     }
 
     @Override
     public RScheduledExecutorService getExecutorService(String name, ExecutorOptions options) {
-        return getExecutorService(name, connectionManager.getCodec(), options);
+        return getExecutorService(name, connectionManager.getServiceManager().getCfg().getCodec(), options);
     }
 
     @Override
@@ -436,12 +439,12 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RRemoteService getRemoteService() {
-        return getRemoteService("redisson_rs", connectionManager.getCodec());
+        return getRemoteService("redisson_rs", connectionManager.getServiceManager().getCfg().getCodec());
     }
 
     @Override
     public RRemoteService getRemoteService(String name) {
-        return getRemoteService(name, connectionManager.getCodec());
+        return getRemoteService(name, connectionManager.getServiceManager().getCfg().getCodec());
     }
 
     @Override
@@ -451,8 +454,8 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RRemoteService getRemoteService(String name, Codec codec) {
-        String executorId = connectionManager.getId();
-        if (codec != connectionManager.getCodec()) {
+        String executorId = connectionManager.getServiceManager().getId();
+        if (codec != connectionManager.getServiceManager().getCfg().getCodec()) {
             executorId = executorId + ":" + name;
         }
         return new RedissonRemoteService(codec, name, commandExecutor, executorId, responses);
@@ -734,7 +737,7 @@ public class Redisson implements RedissonClient {
 
     @Override
     public NodesGroup<Node> getNodesGroup() {
-        return new RedisNodes<Node>(connectionManager, connectionEventsHub, commandExecutor);
+        return new RedisNodes<Node>(connectionManager, connectionManager.getServiceManager(), commandExecutor);
     }
 
     @Override
@@ -742,17 +745,17 @@ public class Redisson implements RedissonClient {
         if (!connectionManager.isClusterMode()) {
             throw new IllegalStateException("Redisson is not in cluster mode!");
         }
-        return new RedisClusterNodes(connectionManager, connectionEventsHub, commandExecutor);
+        return new RedisClusterNodes(connectionManager, connectionManager.getServiceManager(), commandExecutor);
     }
 
     @Override
     public boolean isShutdown() {
-        return connectionManager.isShutdown();
+        return connectionManager.getServiceManager().isShutdown();
     }
 
     @Override
     public boolean isShuttingDown() {
-        return connectionManager.isShuttingDown();
+        return connectionManager.getServiceManager().isShuttingDown();
     }
 
     @Override
@@ -798,7 +801,7 @@ public class Redisson implements RedissonClient {
 
     @Override
     public String getId() {
-        return connectionManager.getId();
+        return connectionManager.getServiceManager().getId();
     }
 
 }

@@ -223,10 +223,10 @@ public class RedissonSetMultimapTest extends BaseTest {
     public void testSizeInMemory() {
         RSetMultimap<String, String> set = redisson.getSetMultimap("test");
         set.put("1", "2");
-        assertThat(set.sizeInMemory()).isEqualTo(229);
+        assertThat(set.sizeInMemory()).isEqualTo(228);
 
         set.put("1", "3");
-        assertThat(set.sizeInMemory()).isEqualTo(259);
+        assertThat(set.sizeInMemory()).isEqualTo(257);
     }
     
     @Test

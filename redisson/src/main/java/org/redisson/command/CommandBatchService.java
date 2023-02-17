@@ -364,10 +364,10 @@ public class CommandBatchService extends CommandAsyncService {
         if (options.getResponseTimeout() > 0) {
             responseTimeout = options.getResponseTimeout();
         } else {
-            responseTimeout = connectionManager.getConfig().getTimeout();
+            responseTimeout = connectionManager.getServiceManager().getConfig().getTimeout();
         }
 
-        Timeout timeout = connectionManager.newTimeout(new TimerTask() {
+        Timeout timeout = connectionManager.getServiceManager().newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
                 connections.values().forEach(c -> {
@@ -409,7 +409,7 @@ public class CommandBatchService extends CommandAsyncService {
                 List<CompletableFuture<Void>> futures = new ArrayList<>(commands.size());
                 for (Map.Entry<MasterSlaveEntry, Entry> entry : commands.entrySet()) {
                     RFuture<List<Object>> execPromise = async(entry.getValue().isReadOnlyMode(), new NodeSource(entry.getKey()),
-                            connectionManager.getCodec(), RedisCommands.EXEC, new Object[] {}, false, false);
+                            codec, RedisCommands.EXEC, new Object[] {}, false, false);
 
                     CompletionStage<Void> f = execPromise.thenCompose(r -> {
                         BatchCommandData<?, Integer> lastCommand = (BatchCommandData<?, Integer>) entry.getValue().getCommands().peekLast();

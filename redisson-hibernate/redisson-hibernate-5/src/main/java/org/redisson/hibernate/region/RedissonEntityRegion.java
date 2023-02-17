@@ -15,8 +15,6 @@
  */
 package org.redisson.hibernate.region;
 
-import java.util.Properties;
-
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.CacheDataDescription;
 import org.hibernate.cache.spi.CacheKeysFactory;
@@ -26,11 +24,13 @@ import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cache.spi.access.EntityRegionAccessStrategy;
 import org.hibernate.cfg.Settings;
 import org.redisson.api.RMapCache;
-import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.ServiceManager;
 import org.redisson.hibernate.strategy.NonStrictReadWriteEntityRegionAccessStrategy;
 import org.redisson.hibernate.strategy.ReadOnlyEntityRegionAccessStrategy;
 import org.redisson.hibernate.strategy.ReadWriteEntityRegionAccessStrategy;
 import org.redisson.hibernate.strategy.TransactionalEntityRegionAccessStrategy;
+
+import java.util.Properties;
 
 /**
  * 
@@ -42,9 +42,9 @@ public class RedissonEntityRegion extends BaseRegion implements EntityRegion {
     private final Settings settings;
     private final CacheKeysFactory cacheKeysFactory;
     
-    public RedissonEntityRegion(RMapCache<Object, Object> mapCache, ConnectionManager connectionManager, RegionFactory regionFactory,
+    public RedissonEntityRegion(RMapCache<Object, Object> mapCache, ServiceManager serviceManager, RegionFactory regionFactory,
                                 CacheDataDescription metadata, Settings settings, Properties properties, String defaultKey, CacheKeysFactory cacheKeysFactory) {
-        super(mapCache, connectionManager, regionFactory, metadata, properties, defaultKey);
+        super(mapCache, serviceManager, regionFactory, metadata, properties, defaultKey);
         this.settings = settings;
         this.cacheKeysFactory = cacheKeysFactory;
     }

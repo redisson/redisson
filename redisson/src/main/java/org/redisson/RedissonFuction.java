@@ -39,7 +39,7 @@ public class RedissonFuction implements RFunction {
 
     public RedissonFuction(CommandAsyncExecutor commandExecutor) {
         this.commandExecutor = commandExecutor;
-        this.codec = commandExecutor.getConnectionManager().getCodec();
+        this.codec = commandExecutor.getServiceManager().getCfg().getCodec();
     }
 
     public RedissonFuction(CommandAsyncExecutor commandExecutor, Codec codec) {
@@ -200,7 +200,7 @@ public class RedissonFuction implements RFunction {
         args.add(name);
         args.add(keys.size());
         if (keys.size() > 0) {
-            args.addAll(keys.stream().map(k -> commandExecutor.getConnectionManager().getConfig().getNameMapper().map((String) k))
+            args.addAll(keys.stream().map(k -> commandExecutor.getServiceManager().getConfig().getNameMapper().map((String) k))
                     .collect(Collectors.toList()));
         }
         args.addAll(encode(Arrays.asList(values), codec));
@@ -214,7 +214,7 @@ public class RedissonFuction implements RFunction {
     public <R> RFuture<R> callAsync(FunctionMode mode, String name, FunctionResult returnType, List<Object> keys, Object... values) {
         String key = null;
         if (keys.size() > 0) {
-            key = commandExecutor.getConnectionManager().getConfig().getNameMapper().map((String) keys.get(0));
+            key = commandExecutor.getServiceManager().getConfig().getNameMapper().map((String) keys.get(0));
         }
         return callAsync(key, mode, name, returnType, keys, values);
     }

@@ -233,7 +233,7 @@ public class TasksRunnerService implements RemoteExecutorService {
             return;
         }
 
-        commandExecutor.getConnectionManager().newTimeout(timeout -> renewRetryTime(requestId),
+        commandExecutor.getServiceManager().newTimeout(timeout -> renewRetryTime(requestId),
                                                     Math.max(1000, retryInterval / 2), TimeUnit.MILLISECONDS);
     }
 

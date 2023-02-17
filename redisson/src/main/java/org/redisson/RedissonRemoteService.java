@@ -141,7 +141,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
     
     @Override
     public <T> void register(Class<T> remoteInterface, T object, int workers) {
-        register(remoteInterface, object, workers, commandExecutor.getConnectionManager().getExecutor());
+        register(remoteInterface, object, workers, commandExecutor.getServiceManager().getExecutor());
     }
 
     private <V> RBlockingQueue<V> getBlockingQueue(String name, Codec codec) {
@@ -165,7 +165,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
 
     @Override
     public <T> boolean tryExecute(Class<T> remoteInterface, T object, long timeout, TimeUnit timeUnit) throws InterruptedException {
-        return tryExecute(remoteInterface, object, commandExecutor.getConnectionManager().getExecutor(), timeout, timeUnit);
+        return tryExecute(remoteInterface, object, commandExecutor.getServiceManager().getExecutor(), timeout, timeUnit);
     }
 
     @Override
@@ -192,7 +192,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
 
     @Override
     public <T> RFuture<Boolean> tryExecuteAsync(Class<T> remoteInterface, T object, long timeout, TimeUnit timeUnit) {
-        return tryExecuteAsync(remoteInterface, object, commandExecutor.getConnectionManager().getExecutor(), timeout, timeUnit);
+        return tryExecuteAsync(remoteInterface, object, commandExecutor.getServiceManager().getExecutor(), timeout, timeUnit);
     }
 
     @Override
@@ -427,7 +427,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
         });
 
         java.util.concurrent.Future<?> submitFuture = executor.submit(() -> {
-            if (commandExecutor.getConnectionManager().isShuttingDown()) {
+            if (commandExecutor.getServiceManager().isShuttingDown()) {
                 return;
             }
 

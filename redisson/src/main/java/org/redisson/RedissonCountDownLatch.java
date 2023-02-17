@@ -48,7 +48,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
     protected RedissonCountDownLatch(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
-        this.id = commandExecutor.getConnectionManager().getId();
+        this.id = commandExecutor.getServiceManager().getId();
         this.pubSub = commandExecutor.getConnectionManager().getSubscribeService().getCountDownLatchPubSub();
     }
 
@@ -217,7 +217,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
             entry.addListener(listener);
 
             if (!executed.get()) {
-                Timeout timeoutFuture = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
+                Timeout timeoutFuture = commandExecutor.getServiceManager().newTimeout(new TimerTask() {
                     @Override
                     public void run(Timeout timeout) throws Exception {
                         if (entry.removeListener(listener)) {

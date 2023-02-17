@@ -107,8 +107,8 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
     public RedissonBaseLock(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
         this.commandExecutor = commandExecutor;
-        this.id = commandExecutor.getConnectionManager().getId();
-        this.internalLockLeaseTime = commandExecutor.getConnectionManager().getCfg().getLockWatchdogTimeout();
+        this.id = commandExecutor.getServiceManager().getId();
+        this.internalLockLeaseTime = commandExecutor.getServiceManager().getCfg().getLockWatchdogTimeout();
         this.entryName = id + ":" + name;
     }
 
@@ -126,7 +126,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
             return;
         }
         
-        Timeout task = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
+        Timeout task = commandExecutor.getServiceManager().newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
                 ExpirationEntry ent = EXPIRATION_RENEWAL_MAP.get(getEntryName());
@@ -227,7 +227,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
                 if (ex != null) {
                     throw new CompletionException(ex);
                 }
-                if (commandExecutor.getConnectionManager().getCfg().isCheckLockSyncedSlaves()
+                if (commandExecutor.getServiceManager().getCfg().isCheckLockSyncedSlaves()
                         && res.getSyncedSlaves() == 0 && availableSlaves > 0) {
                     throw new CompletionException(
                             new IllegalStateException("None of slaves were synced"));

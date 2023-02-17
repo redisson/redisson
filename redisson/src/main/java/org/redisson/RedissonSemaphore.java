@@ -189,7 +189,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
 
                 long t = time.get();
                 if (!executed.get()) {
-                    Timeout scheduledFuture = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
+                    Timeout scheduledFuture = commandExecutor.getServiceManager().newTimeout(new TimerTask() {
                         @Override
                         public void run(Timeout timeout) throws Exception {
                             if (entry.removeListener(listener)) {

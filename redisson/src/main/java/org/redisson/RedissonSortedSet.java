@@ -231,7 +231,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     @Override
     public RFuture<Boolean> addAsync(final V value) {
         CompletableFuture<Boolean> promise = new CompletableFuture<>();
-        commandExecutor.getConnectionManager().getExecutor().execute(new Runnable() {
+        commandExecutor.getServiceManager().getExecutor().execute(new Runnable() {
             public void run() {
                 try {
                     boolean res = add(value);
@@ -247,7 +247,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     @Override
     public RFuture<Boolean> removeAsync(final Object value) {
         CompletableFuture<Boolean> promise = new CompletableFuture<>();
-        commandExecutor.getConnectionManager().getExecutor().execute(new Runnable() {
+        commandExecutor.getServiceManager().getExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 try {

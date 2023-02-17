@@ -80,7 +80,7 @@ public class RedisClientEntry implements ClusterNode {
             return res;
         });
 
-        commandExecutor.getConnectionManager().newTimeout(t -> {
+        commandExecutor.getServiceManager().newTimeout(t -> {
             RedisTimeoutException ex = new RedisTimeoutException("Command execution timeout for command: PING, Redis client: " + client);
             s.completeExceptionally(ex);
         }, timeout, timeUnit);

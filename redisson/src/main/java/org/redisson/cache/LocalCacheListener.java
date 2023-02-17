@@ -284,7 +284,7 @@ public abstract class LocalCacheListener {
             cache.remove(key);
         }
         
-        commandExecutor.getConnectionManager().getGroup().schedule(new Runnable() {
+        commandExecutor.getServiceManager().getGroup().schedule(new Runnable() {
             @Override
             public void run() {
                 for (CacheKey cacheKey : keys) {

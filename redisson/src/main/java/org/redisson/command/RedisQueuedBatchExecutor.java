@@ -79,7 +79,7 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
                 || RedisCommands.DISCARD.getName().equals(command.getName())) {
             super.releaseConnection(attemptPromise, connectionFuture);
         } else {
-            connectionManager.getShutdownLatch().release();
+            connectionManager.getServiceManager().getShutdownLatch().release();
         }
     }
     

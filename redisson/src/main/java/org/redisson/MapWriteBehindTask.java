@@ -70,7 +70,7 @@ public class MapWriteBehindTask {
                 return;
             }
 
-            commandExecutor.getConnectionManager().getExecutor().execute(() -> {
+            commandExecutor.getServiceManager().getExecutor().execute(() -> {
                 if (task != null) {
                     processTask(addedMap, deletedKeys, task);
                     pollTask(addedMap, deletedKeys);
@@ -151,7 +151,7 @@ public class MapWriteBehindTask {
             return;
         }
 
-        commandExecutor.getConnectionManager().newTimeout(t -> {
+        commandExecutor.getServiceManager().newTimeout(t -> {
             if (!isStarted.get()) {
                 return;
             }

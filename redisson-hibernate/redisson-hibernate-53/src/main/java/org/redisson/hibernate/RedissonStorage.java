@@ -21,6 +21,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMapCache;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.ServiceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +39,7 @@ public class RedissonStorage implements DomainDataStorageAccess {
 
     private final RMapCache<Object, Object> mapCache;
 
-    private final ConnectionManager connectionManager;
+    private final ServiceManager serviceManager;
 
     int ttl;
     int maxIdle;
@@ -46,10 +47,10 @@ public class RedissonStorage implements DomainDataStorageAccess {
     boolean fallback;
     volatile boolean fallbackMode;
     
-    public RedissonStorage(RMapCache<Object, Object> mapCache, ConnectionManager connectionManager, Map<String, Object> properties, String defaultKey) {
+    public RedissonStorage(RMapCache<Object, Object> mapCache, ServiceManager serviceManager, Map<String, Object> properties, String defaultKey) {
         super();
         this.mapCache = mapCache;
-        this.connectionManager = connectionManager;
+        this.serviceManager = serviceManager;
         
         String maxEntries = getProperty(properties, mapCache.getName(), defaultKey, RedissonRegionFactory.MAX_ENTRIES_SUFFIX);
         if (maxEntries != null) {
@@ -83,7 +84,7 @@ public class RedissonStorage implements DomainDataStorageAccess {
 
     private void ping() {
         fallbackMode = true;
-        connectionManager.newTimeout(t -> {
+        serviceManager.newTimeout(t -> {
             RFuture<Boolean> future = mapCache.isExistsAsync();
             future.whenComplete((r, ex) -> {
                 if (ex == null) {

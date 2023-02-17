@@ -76,7 +76,7 @@ public class RedissonIdGenerator extends RedissonExpirable implements RIdGenerat
 
     private void startIdRequestsHandle() {
         if (!isWorkerActive.compareAndSet(false, true)
-                || commandExecutor.getConnectionManager().getExecutor().isShutdown()) {
+                || commandExecutor.getServiceManager().getExecutor().isShutdown()) {
             return;
         }
 
@@ -128,7 +128,7 @@ public class RedissonIdGenerator extends RedissonExpirable implements RIdGenerat
 
                     log.error(ex.getMessage(), ex);
 
-                    commandExecutor.getConnectionManager().newTimeout(task -> {
+                    commandExecutor.getServiceManager().newTimeout(task -> {
                         handleIdRequests();
                     }, 1, TimeUnit.SECONDS);
                     return;

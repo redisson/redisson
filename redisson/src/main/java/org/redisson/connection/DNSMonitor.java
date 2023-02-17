@@ -51,7 +51,7 @@ public class DNSMonitor {
     private long dnsMonitoringInterval;
 
     public DNSMonitor(ConnectionManager connectionManager, RedisClient masterHost, Collection<RedisURI> slaveHosts, long dnsMonitoringInterval, AddressResolverGroup<InetSocketAddress> resolverGroup) {
-        this.resolver = resolverGroup.getResolver(connectionManager.getGroup().next());
+        this.resolver = resolverGroup.getResolver(connectionManager.getServiceManager().getGroup().next());
         
         masterHost.resolveAddr().join();
         masters.put(masterHost.getConfig().getAddress(), masterHost.getAddr());
@@ -77,8 +77,8 @@ public class DNSMonitor {
     }
     
     private void monitorDnsChange() {
-        dnsMonitorFuture = connectionManager.getGroup().schedule(() -> {
-            if (connectionManager.isShuttingDown()) {
+        dnsMonitorFuture = connectionManager.getServiceManager().getGroup().schedule(() -> {
+            if (connectionManager.getServiceManager().isShuttingDown()) {
                 return;
             }
 

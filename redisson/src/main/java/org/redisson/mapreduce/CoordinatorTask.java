@@ -135,7 +135,7 @@ public class CoordinatorTask<KOut, VOut> implements Callable<Object>, Serializab
         return executeCollator();
     }
 
-    private Object executeCollator() throws ExecutionException, Exception {
+    private Object executeCollator() throws Exception {
         if (collator == null) {
             if (timeout > 0) {
                 redisson.getMap(resultMapName).clearExpire();
@@ -143,14 +143,14 @@ public class CoordinatorTask<KOut, VOut> implements Callable<Object>, Serializab
             return null;
         }
         
-        Callable<Object> collatorTask = new CollatorTask<KOut, VOut, Object>(redisson, collator, resultMapName, objectCodecClass);
+        Callable<Object> collatorTask = new CollatorTask<>(redisson, collator, resultMapName, objectCodecClass);
         long timeSpent = System.currentTimeMillis() - startTime;
         if (isTimeoutExpired(timeSpent)) {
             throw new MapReduceTimeoutException();
         }
 
         if (timeout > 0) {
-            ExecutorService executor = ((Redisson) redisson).getConnectionManager().getExecutor();
+            ExecutorService executor = ((Redisson) redisson).getServiceManager().getExecutor();
             java.util.concurrent.Future<?> collatorFuture = executor.submit(collatorTask);
             try {
                 return collatorFuture.get(timeout - timeSpent, TimeUnit.MILLISECONDS);

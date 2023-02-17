@@ -108,15 +108,15 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         this.codec = codec;
         this.commandExecutor = commandExecutor;
         this.connectionManager = commandExecutor.getConnectionManager();
-        this.name = commandExecutor.getConnectionManager().getConfig().getNameMapper().map(name);
+        this.name = commandExecutor.getServiceManager().getConfig().getNameMapper().map(name);
         this.redisson = redisson;
         this.queueTransferService = queueTransferService;
         this.responses = responses;
 
-        if (codec == connectionManager.getCodec()) {
-            this.executorId = connectionManager.getId();
+        if (codec == connectionManager.getServiceManager().getCfg().getCodec()) {
+            this.executorId = connectionManager.getServiceManager().getId();
         } else {
-            this.executorId = connectionManager.getId() + ":" + RemoteExecutorServiceAsync.class.getName() + ":" + name;
+            this.executorId = connectionManager.getServiceManager().getId() + ":" + RemoteExecutorServiceAsync.class.getName() + ":" + name;
         }
         
         remoteService = new RedissonExecutorRemoteService(codec, name, commandExecutor, executorId, responses);
@@ -311,7 +311,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             service.setTasksInjector(options.getTasksInjector());
         }
 
-        ExecutorService es = commandExecutor.getConnectionManager().getExecutor();
+        ExecutorService es = commandExecutor.getServiceManager().getExecutor();
         if (options.getExecutorService() != null) {
             es = options.getExecutorService();
         }
@@ -493,7 +493,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
 
     @Override
     public String getName() {
-        return commandExecutor.getConnectionManager().getConfig().getNameMapper().unmap(name);
+        return commandExecutor.getServiceManager().getConfig().getNameMapper().unmap(name);
     }
     
     @Override

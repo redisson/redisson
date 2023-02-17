@@ -48,13 +48,13 @@ abstract class EvictionTask implements Runnable {
     EvictionTask(CommandAsyncExecutor executor) {
         super();
         this.executor = executor;
-        this.minDelay = executor.getConnectionManager().getCfg().getMinCleanUpDelay();
-        this.maxDelay = executor.getConnectionManager().getCfg().getMaxCleanUpDelay();
-        this.keysLimit = executor.getConnectionManager().getCfg().getCleanUpKeysAmount();
+        this.minDelay = executor.getServiceManager().getCfg().getMinCleanUpDelay();
+        this.maxDelay = executor.getServiceManager().getCfg().getMaxCleanUpDelay();
+        this.keysLimit = executor.getServiceManager().getCfg().getCleanUpKeysAmount();
     }
 
     public void schedule() {
-        scheduledFuture = executor.getConnectionManager().getGroup().schedule(this, delay, TimeUnit.SECONDS);
+        scheduledFuture = executor.getServiceManager().getGroup().schedule(this, delay, TimeUnit.SECONDS);
     }
 
     public ScheduledFuture<?> getScheduledFuture() {
@@ -67,7 +67,7 @@ abstract class EvictionTask implements Runnable {
     
     @Override
     public void run() {
-        if (executor.getConnectionManager().isShuttingDown()) {
+        if (executor.getServiceManager().isShuttingDown()) {
             return;
         }
         
