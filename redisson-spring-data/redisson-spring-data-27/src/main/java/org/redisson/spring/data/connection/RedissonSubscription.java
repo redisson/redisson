@@ -53,7 +53,7 @@ public class RedissonSubscription extends AbstractSubscription {
         List<CompletableFuture<?>> list = new ArrayList<>();
         Queue<byte[]> subscribed = new ConcurrentLinkedQueue<>();
         for (byte[] channel : channels) {
-            if (subscribeService.getPubSubEntry(new ChannelName(channel)) != null) {
+            if (subscribeService.hasEntry(new ChannelName(channel))) {
                 continue;
             }
 
@@ -111,7 +111,7 @@ public class RedissonSubscription extends AbstractSubscription {
         List<CompletableFuture<?>> list = new ArrayList<>();
         Queue<byte[]> subscribed = new ConcurrentLinkedQueue<>();
         for (byte[] channel : patterns) {
-            if (subscribeService.getPubSubEntry(new ChannelName(channel)) != null) {
+            if (subscribeService.hasEntry(new ChannelName(channel))) {
                 continue;
             }
 

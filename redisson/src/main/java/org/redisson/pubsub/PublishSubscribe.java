@@ -47,7 +47,7 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
         semaphore.acquire().thenAccept(c -> {
             if (entry.release() == 0) {
                 entries.remove(entryName);
-                service.unsubscribe(PubSubType.UNSUBSCRIBE, new ChannelName(channelName))
+                service.unsubscribeLocked(PubSubType.UNSUBSCRIBE, new ChannelName(channelName))
                         .whenComplete((r, e) -> {
                             semaphore.release();
                         });
