@@ -746,9 +746,7 @@ public class PublishSubscribeService {
             Collection<MasterSlaveEntry> entries = name2entry.getOrDefault(channelName, Collections.emptySet());
             if (entries.isEmpty()) {
                 semaphore.release();
-                CompletableFuture<Void> f = new CompletableFuture<>();
-                f.completeExceptionally(new IllegalStateException("Unable to find entry for channel: " + channelName));
-                return f;
+                return CompletableFuture.completedFuture(null);
             }
 
             List<CompletableFuture<?>> futures = new ArrayList<>(entries.size());
