@@ -52,7 +52,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
         queueName = prefixName("redisson_delay_queue", getRawName());
         timeoutSetName = prefixName("redisson_delay_queue_timeout", getRawName());
         
-        QueueTransferTask task = new QueueTransferTask(commandExecutor.getConnectionManager()) {
+        QueueTransferTask task = new QueueTransferTask(commandExecutor.getServiceManager()) {
             
             @Override
             protected RFuture<Long> pushTaskAsync() {

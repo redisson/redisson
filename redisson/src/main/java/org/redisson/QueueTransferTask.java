@@ -23,6 +23,7 @@ import org.redisson.api.RTopic;
 import org.redisson.api.listener.BaseStatusListener;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.ServiceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,11 +62,11 @@ public abstract class QueueTransferTask {
     
     private int usage = 1;
     private final AtomicReference<TimeoutTask> lastTimeout = new AtomicReference<TimeoutTask>();
-    private final ConnectionManager connectionManager;
+    private final ServiceManager serviceManager;
     
-    public QueueTransferTask(ConnectionManager connectionManager) {
+    public QueueTransferTask(ServiceManager serviceManager) {
         super();
-        this.connectionManager = connectionManager;
+        this.serviceManager = serviceManager;
     }
 
     public void incUsage() {
@@ -115,7 +116,7 @@ public abstract class QueueTransferTask {
         
         long delay = startTime - System.currentTimeMillis();
         if (delay > 10) {
-            Timeout timeout = connectionManager.getServiceManager().newTimeout(new TimerTask() {
+            Timeout timeout = serviceManager.newTimeout(new TimerTask() {
                 @Override
                 public void run(Timeout timeout) throws Exception {
                     pushTask();

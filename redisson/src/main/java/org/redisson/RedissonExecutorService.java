@@ -58,7 +58,6 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     public static final int TERMINATED_STATE = 2;
     
     private final CommandAsyncExecutor commandExecutor;
-    private final ConnectionManager connectionManager;
     private final Codec codec;
     private final Redisson redisson;
     
@@ -107,16 +106,15 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         super();
         this.codec = codec;
         this.commandExecutor = commandExecutor;
-        this.connectionManager = commandExecutor.getConnectionManager();
         this.name = commandExecutor.getServiceManager().getConfig().getNameMapper().map(name);
         this.redisson = redisson;
         this.queueTransferService = queueTransferService;
         this.responses = responses;
 
-        if (codec == connectionManager.getServiceManager().getCfg().getCodec()) {
-            this.executorId = connectionManager.getServiceManager().getId();
+        if (codec == commandExecutor.getServiceManager().getCfg().getCodec()) {
+            this.executorId = commandExecutor.getServiceManager().getId();
         } else {
-            this.executorId = connectionManager.getServiceManager().getId() + ":" + RemoteExecutorServiceAsync.class.getName() + ":" + name;
+            this.executorId = commandExecutor.getServiceManager().getId() + ":" + RemoteExecutorServiceAsync.class.getName() + ":" + name;
         }
         
         remoteService = new RedissonExecutorRemoteService(codec, name, commandExecutor, executorId, responses);
@@ -242,7 +240,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             throw new IllegalArgumentException("workers amount can't be zero");
         }
         
-        QueueTransferTask task = new QueueTransferTask(connectionManager) {
+        QueueTransferTask task = new QueueTransferTask(commandExecutor.getServiceManager()) {
             @Override
             protected RTopic getTopic() {
                 return RedissonTopic.createRaw(LongCodec.INSTANCE, commandExecutor, schedulerChannelName);
