@@ -731,6 +731,10 @@ public class PublishSubscribeService {
     }
 
     private CompletableFuture<Void> removeListenerAsync(PubSubType type, ChannelName channelName, Consumer<PubSubConnectionEntry> consumer) {
+        if (!name2entry.containsKey(channelName)) {
+            return CompletableFuture.completedFuture(null);
+        }
+
         AsyncSemaphore semaphore = getSemaphore(channelName);
         CompletableFuture<Void> sf = semaphore.acquire();
         int timeout = config.getTimeout() + config.getRetryInterval() * config.getRetryAttempts();
@@ -773,6 +777,10 @@ public class PublishSubscribeService {
     }
 
     public CompletableFuture<Void> removeAllListenersAsync(PubSubType type, ChannelName channelName) {
+        if (!name2entry.containsKey(channelName)) {
+            return CompletableFuture.completedFuture(null);
+        }
+
         AsyncSemaphore semaphore = getSemaphore(channelName);
 
         CompletableFuture<Void> sf = semaphore.acquire();
