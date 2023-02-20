@@ -474,8 +474,10 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     public void shutdown() {
         queueTransferService.remove(getName());
         remoteService.deregister(RemoteExecutorService.class);
-        workersTopic.removeListener(workersGroupListenerId);
-        
+        if (workersGroupListenerId > 0) {
+            workersTopic.removeListener(workersGroupListenerId);
+        }
+
         commandExecutor.get(commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 "if redis.call('exists', KEYS[2]) == 0 then "
                      + "if redis.call('get', KEYS[1]) == '0' or redis.call('exists', KEYS[1]) == 0 then "

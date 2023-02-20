@@ -524,7 +524,7 @@ public class PublishSubscribeService {
 
     public void remove(MasterSlaveEntry entry) {
         entry2PubSubConnection.remove(entry);
-        name2entry.values().remove(entry);
+        name2entry.values().forEach(v -> v.remove(entry));
     }
 
     public CompletableFuture<Codec> unsubscribe(ChannelName channelName, PubSubType topicType) {
