@@ -474,7 +474,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     public void shutdown() {
         queueTransferService.remove(getName());
         remoteService.deregister(RemoteExecutorService.class);
-        if (workersGroupListenerId > 0) {
+        if (workersGroupListenerId != 0) {
             workersTopic.removeListener(workersGroupListenerId);
         }
 
