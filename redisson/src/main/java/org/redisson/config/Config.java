@@ -263,6 +263,7 @@ public class Config {
      * 
      * @return ConnectionManager
      */
+    @Deprecated
     ConnectionManager getConnectionManager() {
         return connectionManager;
     }
@@ -274,6 +275,7 @@ public class Config {
      *      manager.
      * @param connectionManager for supply
      */
+    @Deprecated
     public void useCustomServers(ConnectionManager connectionManager) {
         this.connectionManager = connectionManager;
     }

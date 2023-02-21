@@ -32,6 +32,7 @@ import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
 import org.redisson.connection.NodeSource.Redirect;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
@@ -74,6 +75,7 @@ public class RedisExecutor<V, R> {
 
     CompletableFuture<RedisConnection> connectionFuture;
     NodeSource source;
+    MasterSlaveEntry entry;
     Codec codec;
     volatile int attempt;
     volatile Optional<Timeout> timeout = Optional.empty();
@@ -121,7 +123,7 @@ public class RedisExecutor<V, R> {
 
         codec = getCodec(codec);
 
-        CompletableFuture<RedisConnection> connectionFuture = getConnection().toCompletableFuture();
+        CompletableFuture<RedisConnection> connectionFuture = getConnection();
 
         CompletableFuture<R> attemptPromise = new CompletableFuture<>();
         mainPromiseListener = (r, e) -> {
@@ -642,9 +644,9 @@ public class RedisExecutor<V, R> {
 
     private void release(RedisConnection connection) {
         if (readOnlyMode) {
-            connectionManager.releaseRead(source, connection);
+            entry.releaseRead(connection);
         } else {
-            connectionManager.releaseWrite(source, connection);
+            entry.releaseWrite(connection);
         }
     }
 
@@ -654,9 +656,9 @@ public class RedisExecutor<V, R> {
 
     protected CompletableFuture<RedisConnection> getConnection() {
         if (readOnlyMode) {
-            connectionFuture = connectionManager.connectionReadOp(source, command);
+            connectionFuture = connectionReadOp(command);
         } else {
-            connectionFuture = connectionManager.connectionWriteOp(source, command);
+            connectionFuture = connectionWriteOp(command);
         }
         return connectionFuture;
     }
@@ -715,5 +717,57 @@ public class RedisExecutor<V, R> {
         return new RedisException("Unexpected exception while processing command", cause);
     }
 
+    final CompletableFuture<RedisConnection> connectionReadOp(RedisCommand<?> command) {
+        entry = getEntry(true);
+        if (entry == null) {
+            CompletableFuture<RedisConnection> f = new CompletableFuture<>();
+            f.completeExceptionally(connectionManager.getServiceManager().createNodeNotFoundException(source));
+            return f;
+        }
+
+        if (source.getRedirect() != null) {
+            return entry.connectionReadOp(command, source.getAddr());
+        }
+        if (source.getRedisClient() != null) {
+            return entry.connectionReadOp(command, source.getRedisClient());
+        }
+
+        return entry.connectionReadOp(command);
+    }
+
+    final CompletableFuture<RedisConnection> connectionWriteOp(RedisCommand<?> command) {
+        entry = getEntry(false);
+        if (entry == null) {
+            CompletableFuture<RedisConnection> f = new CompletableFuture<>();
+            f.completeExceptionally(connectionManager.getServiceManager().createNodeNotFoundException(source));
+            return f;
+        }
+        // fix for https://github.com/redisson/redisson/issues/1548
+        if (source.getRedirect() != null
+                && !source.getAddr().equals(entry.getClient().getAddr())
+                && entry.hasSlave(source.getAddr())) {
+            return entry.redirectedConnectionWriteOp(command, source.getAddr());
+        }
+        return entry.connectionWriteOp(command);
+    }
+
+    private MasterSlaveEntry getEntry(boolean read) {
+        if (source.getRedirect() != null) {
+            return connectionManager.getEntry(source.getAddr());
+        }
+
+        MasterSlaveEntry entry = source.getEntry();
+        if (source.getRedisClient() != null) {
+            entry = connectionManager.getEntry(source.getRedisClient());
+        }
+        if (entry == null && source.getSlot() != null) {
+            if (read) {
+                entry = connectionManager.getReadEntry(source.getSlot());
+            } else {
+                entry = connectionManager.getWriteEntry(source.getSlot());
+            }
+        }
+        return entry;
+    }
 
 }

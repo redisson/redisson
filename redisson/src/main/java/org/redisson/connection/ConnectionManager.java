@@ -17,14 +17,11 @@ package org.redisson.connection;
 
 import org.redisson.api.NodeType;
 import org.redisson.client.RedisClient;
-import org.redisson.client.RedisConnection;
-import org.redisson.client.protocol.RedisCommand;
 import org.redisson.misc.RedisURI;
 import org.redisson.pubsub.PublishSubscribeService;
 
 import java.net.InetSocketAddress;
 import java.util.Collection;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -50,17 +47,13 @@ public interface ConnectionManager {
 
     MasterSlaveEntry getEntry(String name);
 
-    MasterSlaveEntry getEntry(int slot);
+    MasterSlaveEntry getWriteEntry(int slot);
+
+    MasterSlaveEntry getReadEntry(int slot);
     
     MasterSlaveEntry getEntry(InetSocketAddress address);
-    
-    void releaseRead(NodeSource source, RedisConnection connection);
 
-    void releaseWrite(NodeSource source, RedisConnection connection);
-
-    CompletableFuture<RedisConnection> connectionReadOp(NodeSource source, RedisCommand<?> command);
-
-    CompletableFuture<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command);
+    MasterSlaveEntry getEntry(RedisURI addr);
 
     RedisClient createClient(NodeType type, InetSocketAddress address, RedisURI uri, String sslHostname);
     

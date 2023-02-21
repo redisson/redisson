@@ -74,34 +74,28 @@ public class BaseRedisBatchExecutor<V, R> extends RedisExecutor<V, R> {
         }
     }
 
-    protected final MasterSlaveEntry getEntry(NodeSource source) {
+    protected final MasterSlaveEntry getEntry() {
         if (source.getSlot() != null) {
-            MasterSlaveEntry entry = connectionManager.getEntry(source.getSlot());
+            entry = connectionManager.getWriteEntry(source.getSlot());
             if (entry == null) {
                 throw connectionManager.getServiceManager().createNodeNotFoundException(source);
             }
             return entry;
         }
-        return source.getEntry();
+        entry = source.getEntry();
+        return entry;
     }
     
     protected final void addBatchCommandData(Object[] batchParams) {
-        MasterSlaveEntry msEntry = getEntry(source);
-        Entry entry = commands.get(msEntry);
-        if (entry == null) {
-            entry = new Entry();
-            Entry oldEntry = commands.putIfAbsent(msEntry, entry);
-            if (oldEntry != null) {
-                entry = oldEntry;
-            }
-        }
+        MasterSlaveEntry msEntry = getEntry();
+        Entry entry = commands.computeIfAbsent(msEntry, k -> new Entry());
 
         if (!readOnlyMode) {
             entry.setReadOnlyMode(false);
         }
 
         Codec codecToUse = getCodec(codec);
-        BatchCommandData<V, R> commandData = new BatchCommandData<V, R>(mainPromise, codecToUse, command, batchParams, index.incrementAndGet());
+        BatchCommandData<V, R> commandData = new BatchCommandData<>(mainPromise, codecToUse, command, batchParams, index.incrementAndGet());
         entry.getCommands().add(commandData);
     }
         

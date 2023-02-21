@@ -17,7 +17,6 @@ package org.redisson.connection;
 
 import org.redisson.api.NodeType;
 import org.redisson.client.*;
-import org.redisson.client.protocol.RedisCommand;
 import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.config.BaseConfig;
 import org.redisson.config.BaseMasterSlaveServersConfig;
@@ -319,8 +318,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     public MasterSlaveEntry getEntry(InetSocketAddress address) {
         return masterSlaveEntry;
     }
-    
-    protected MasterSlaveEntry getEntry(RedisURI addr) {
+
+    @Override
+    public MasterSlaveEntry getEntry(RedisURI addr) {
         return masterSlaveEntry;
     }
 
@@ -335,9 +335,18 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return getEntry(slot);
     }
 
-    @Override
-    public MasterSlaveEntry getEntry(int slot) {
+    protected MasterSlaveEntry getEntry(int slot) {
         return masterSlaveEntry;
+    }
+
+    @Override
+    public MasterSlaveEntry getWriteEntry(int slot) {
+        return getEntry(slot);
+    }
+
+    @Override
+    public MasterSlaveEntry getReadEntry(int slot) {
+        return getEntry(slot);
     }
 
     protected CompletableFuture<RedisClient> changeMaster(int slot, RedisURI address) {
@@ -345,78 +354,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return entry.changeMaster(address);
     }
     
-    @Override
-    public CompletableFuture<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command) {
-        MasterSlaveEntry entry = getEntry(source);
-        if (entry == null) {
-            CompletableFuture<RedisConnection> f = new CompletableFuture<>();
-            f.completeExceptionally(serviceManager.createNodeNotFoundException(source));
-            return f;
-        }
-        // fix for https://github.com/redisson/redisson/issues/1548
-        if (source.getRedirect() != null
-                && !source.getAddr().equals(entry.getClient().getAddr())
-                    && entry.hasSlave(source.getAddr())) {
-            return entry.redirectedConnectionWriteOp(command, source.getAddr());
-        }
-        return entry.connectionWriteOp(command);
-    }
-
-    private MasterSlaveEntry getEntry(NodeSource source) {
-        if (source.getRedirect() != null) {
-            return getEntry(source.getAddr());
-        }
-
-        MasterSlaveEntry entry = source.getEntry();
-        if (source.getRedisClient() != null) {
-            entry = getEntry(source.getRedisClient());
-        }
-        if (entry == null && source.getSlot() != null) {
-            entry = getEntry(source.getSlot());
-        }
-        return entry;
-    }
-    
-    @Override
-    public CompletableFuture<RedisConnection> connectionReadOp(NodeSource source, RedisCommand<?> command) {
-        MasterSlaveEntry entry = getEntry(source);
-        if (entry == null) {
-            CompletableFuture<RedisConnection> f = new CompletableFuture<>();
-            f.completeExceptionally(serviceManager.createNodeNotFoundException(source));
-            return f;
-        }
-
-        if (source.getRedirect() != null) {
-            return entry.connectionReadOp(command, source.getAddr());
-        }
-        if (source.getRedisClient() != null) {
-            return entry.connectionReadOp(command, source.getRedisClient());
-        }
-        
-        return entry.connectionReadOp(command);
-    }
-
-    @Override
-    public void releaseWrite(NodeSource source, RedisConnection connection) {
-        MasterSlaveEntry entry = getEntry(source);
-        if (entry == null) {
-            log.error("Node: {} can't be found", source);
-        } else {
-            entry.releaseWrite(connection);
-        }
-    }
-
-    @Override
-    public void releaseRead(NodeSource source, RedisConnection connection) {
-        MasterSlaveEntry entry = getEntry(source);
-        if (entry == null) {
-            log.error("Node: {} can't be found", source);
-        } else {
-            entry.releaseRead(connection);
-        }
-        
-    }
-
     @Override
     public void shutdown() {
         shutdown(0, 2, TimeUnit.SECONDS); //default netty value

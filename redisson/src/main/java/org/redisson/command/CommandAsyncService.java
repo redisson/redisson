@@ -562,7 +562,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         Map<MasterSlaveEntry, Map<Integer, List<String>>> entry2keys = Arrays.stream(keys).collect(
                 Collectors.groupingBy(k -> {
                     int slot = connectionManager.calcSlot(k);
-                    return connectionManager.getEntry(slot);
+                    return connectionManager.getWriteEntry(slot);
                 }, Collectors.groupingBy(k -> {
                     return connectionManager.calcSlot(k);
                         }, Collectors.toList())));

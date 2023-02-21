@@ -177,7 +177,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return client2entry.values();
     }
 
-    protected MasterSlaveEntry getEntry(RedisURI addr) {
+    @Override
+    public MasterSlaveEntry getEntry(RedisURI addr) {
         for (MasterSlaveEntry entry : client2entry.values()) {
             if (addr.equals(entry.getClient().getAddr())) {
                 return entry;
@@ -229,7 +230,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
 
     @Override
-    public MasterSlaveEntry getEntry(int slot) {
+    protected MasterSlaveEntry getEntry(int slot) {
         return slot2entry.get(slot);
     }
 

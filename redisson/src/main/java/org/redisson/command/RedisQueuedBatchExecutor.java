@@ -104,7 +104,7 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
     protected void handleError(CompletableFuture<RedisConnection> connectionFuture, Throwable cause) {
         if (mainPromise instanceof BatchPromise) {
             BatchPromise<R> batchPromise = (BatchPromise<R>) mainPromise;
-            CompletableFuture sentPromise = batchPromise.getSentPromise();
+            CompletableFuture<?> sentPromise = batchPromise.getSentPromise();
             sentPromise.completeExceptionally(cause);
             mainPromise.completeExceptionally(cause);
             if (executed.compareAndSet(false, true)) {
@@ -120,7 +120,7 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
     
     @Override
     protected void sendCommand(CompletableFuture<R> attemptPromise, RedisConnection connection) {
-        MasterSlaveEntry msEntry = getEntry(source);
+        MasterSlaveEntry msEntry = getEntry();
         ConnectionEntry connectionEntry = connections.get(msEntry);
 
         boolean syncSlaves = options.getSyncSlaves() > 0;
@@ -165,14 +165,14 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
                         list.add(new CommandData<>(new CompletableFuture<>(), codec, RedisCommands.CLIENT_REPLY, new Object[]{"ON"}));
                     }
                     if (options.getSyncSlaves() > 0) {
-                        BatchCommandData<?, ?> waitCommand = new BatchCommandData(RedisCommands.WAIT, 
+                        BatchCommandData<?, ?> waitCommand = new BatchCommandData<>(RedisCommands.WAIT,
                                 new Object[] { this.options.getSyncSlaves(), this.options.getSyncTimeout() }, index.incrementAndGet());
                         list.add(waitCommand);
                         entry.getCommands().add(waitCommand);
                     }
 
                     CompletableFuture<Void> main = new CompletableFuture<>();
-                    writeFuture = connection.send(new CommandsData(main, list, new ArrayList(entry.getCommands()),
+                    writeFuture = connection.send(new CommandsData(main, list, new ArrayList<>(entry.getCommands()),
                                 options.isSkipResult(), false, true, syncSlaves));
                 } else {
                     CompletableFuture<Void> main = new CompletableFuture<>();
@@ -186,17 +186,9 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
     
     @Override
     protected CompletableFuture<RedisConnection> getConnection() {
-        MasterSlaveEntry msEntry = getEntry(source);
-        ConnectionEntry entry = connections.get(msEntry);
-        if (entry == null) {
-            entry = new ConnectionEntry();
-            ConnectionEntry oldEntry = connections.putIfAbsent(msEntry, entry);
-            if (oldEntry != null) {
-                entry = oldEntry;
-            }
-        }
+        MasterSlaveEntry msEntry = getEntry();
+        ConnectionEntry entry = connections.computeIfAbsent(msEntry, k -> new ConnectionEntry());
 
-        
         if (entry.getConnectionFuture() != null) {
             connectionFuture = entry.getConnectionFuture();
             return connectionFuture;
@@ -209,9 +201,9 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
             }
 
             if (this.options.getExecutionMode() == ExecutionMode.REDIS_WRITE_ATOMIC) {
-                connectionFuture = connectionManager.connectionWriteOp(source, null);
+                connectionFuture = connectionWriteOp(null);
             } else {
-                connectionFuture = connectionManager.connectionReadOp(source, null);
+                connectionFuture = connectionReadOp(null);
             }
             connectionFuture.toCompletableFuture().join();
             entry.setConnectionFuture(connectionFuture);

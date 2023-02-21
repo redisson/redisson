@@ -372,7 +372,7 @@ public class PublishSubscribeService {
 
     private MasterSlaveEntry getEntry(ChannelName channelName) {
         int slot = connectionManager.calcSlot(channelName.getName());
-        return connectionManager.getEntry(slot);
+        return connectionManager.getWriteEntry(slot);
     }
 
     private CompletableFuture<Void> addListeners(ChannelName channelName, CompletableFuture<PubSubConnectionEntry> promise,

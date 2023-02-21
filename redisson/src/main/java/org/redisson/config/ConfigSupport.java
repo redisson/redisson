@@ -182,8 +182,6 @@ public class ConfigSupport {
     public static ConnectionManager createConnectionManager(Config configCopy) {
         ServiceManager serviceManager = new ServiceManager(configCopy);
 
-        UUID id = UUID.randomUUID();
-
         ConnectionManager cm = null;
         if (configCopy.getMasterSlaveServersConfig() != null) {
             validate(configCopy.getMasterSlaveServersConfig());
