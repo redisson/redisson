@@ -41,7 +41,6 @@ import org.redisson.connection.balancer.LoadBalancer;
 import java.io.*;
 import java.net.URL;
 import java.util.Scanner;
-import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
