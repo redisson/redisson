@@ -152,7 +152,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }
 
         if (lastPartitions.isEmpty()) {
-            stopThreads();
+            shutdown();
             if (failedMasters.isEmpty()) {
                 throw new RedisConnectionException("Can't connect to servers!", lastException);
             } else {
@@ -161,7 +161,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }
 
         if (cfg.isCheckSlotsCoverage() && lastPartitions.size() != MAX_SLOT) {
-            stopThreads();
+            shutdown();
             if (failedMasters.isEmpty()) {
                 throw new RedisConnectionException("Not all slots covered! Only " + lastPartitions.size() + " slots are available. Set checkSlotsCoverage = false to avoid this check.", lastException);
             } else {

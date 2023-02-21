@@ -165,7 +165,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
             startDNSMonitoring(masterFuture.getNow(null));
         } catch (Exception e) {
-            stopThreads();
+            shutdown();
             if (e instanceof CompletionException) {
                 if (e.getCause() instanceof RuntimeException) {
                     throw (RuntimeException) e.getCause();
@@ -400,10 +400,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         serviceManager.getTimer().stop();
     }
 
-    protected void stopThreads() {
-        shutdown();
-    }
-    
     public PublishSubscribeService getSubscribeService() {
         return subscribeService;
     }

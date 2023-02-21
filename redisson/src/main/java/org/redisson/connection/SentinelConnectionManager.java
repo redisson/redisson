@@ -171,7 +171,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
                 break;
             } catch (RedisConnectionException e) {
-                stopThreads();
+                shutdown();
                 throw e;
             } catch (Exception e) {
                 if (e instanceof CompletionException) {
@@ -186,16 +186,16 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
         if (cfg.isCheckSentinelsList() && cfg.isSentinelsDiscovery()) {
             if (sentinels.isEmpty()) {
-                stopThreads();
+                shutdown();
                 throw new RedisConnectionException("SENTINEL SENTINELS command returns empty result or connection can't be established to some of them! Set checkSentinelsList = false to avoid this check.", lastException);
             } else if (sentinels.size() < 2) {
-                stopThreads();
+                shutdown();
                 throw new RedisConnectionException("SENTINEL SENTINELS command returns less than 2 nodes or connection can't be established to some of them! At least two sentinels should be defined in Redis configuration. Set checkSentinelsList = false to avoid this check.", lastException);
             }
         }
         
         if (currentMaster.get() == null) {
-            stopThreads();
+            shutdown();
             throw new RedisConnectionException("Can't connect to servers!", lastException);
         }
         if (this.config.getReadMode() != ReadMode.MASTER && this.config.getSlaveAddresses().isEmpty()) {
@@ -234,8 +234,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 client.shutdown();
             }
         }
-        
-        stopThreads();
+
+        shutdown();
         StringBuilder list = new StringBuilder();
         for (String address : cfg.getSentinelAddresses()) {
             list.append(address).append(", ");
