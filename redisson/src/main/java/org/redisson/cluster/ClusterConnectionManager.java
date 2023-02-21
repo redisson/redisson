@@ -221,11 +221,10 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         MasterSlaveEntry entry = getEntry(slot);
         RedisClient oldClient = entry.getClient();
         CompletableFuture<RedisClient> future = super.changeMaster(slot, address);
-        return future.whenComplete((res, e) -> {
-            if (e == null) {
-                client2entry.remove(oldClient);
-                client2entry.put(entry.getClient(), entry);
-            }
+        return future.thenApply(res -> {
+            client2entry.remove(oldClient);
+            client2entry.put(entry.getClient(), entry);
+            return res;
         });
     }
 
