@@ -908,13 +908,13 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
 
     @Override
-    public void shutdown() {
+    public void shutdown(long quietPeriod, long timeout, TimeUnit unit) {
         if (monitorFuture != null) {
             monitorFuture.cancel(true);
         }
         
         closeNodeConnections();
-        super.shutdown();
+        super.shutdown(quietPeriod, timeout, unit);
     }
 
     private Map<RedisURI, ClusterPartition> getLastPartitonsByURI() {

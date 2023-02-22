@@ -656,7 +656,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     @Override
-    public void shutdown() {
+    public void shutdown(long quietPeriod, long timeout, TimeUnit unit) {
         if (monitorFuture != null) {
             monitorFuture.cancel(true);
         }
@@ -665,7 +665,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 .map(s -> s.shutdownAsync())
                 .forEach(f -> f.toCompletableFuture().join());
 
-        super.shutdown();
+        super.shutdown(quietPeriod, timeout, unit);
     }
 
     private RedisURI applyNatMap(RedisURI address) {
