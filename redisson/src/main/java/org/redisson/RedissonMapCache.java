@@ -813,13 +813,16 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "end; "
                         + "end; "
 
-                        + "local newValue = tonumber(ARGV[3]); "
+                        + "local newValue; "
                         + "if value ~= false and expireDate > tonumber(ARGV[1]) then "
-                            + "newValue = tonumber(val) + newValue; "
+                            + "redis.call('hset', KEYS[1], 'temp_val__redisson', val); "
+                            + "newValue = redis.call('hincrbyfloat', KEYS[1], 'temp_val__redisson', ARGV[3]); "
+                            + "redis.call('hdel', KEYS[1], 'temp_val__redisson'); "
 
                             + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(newValue), newValue, string.len(val), val); "
                             + "redis.call('publish', KEYS[5], msg); "
                         + "else "
+                            + "newValue = ARGV[3]; "
                             + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3]); "
                             + "redis.call('publish', KEYS[4], msg); "
                         + "end; "
@@ -864,7 +867,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
                         "end; "
 
-                        + "return tostring(newValue); ",
+                      + "return newValue;",
                 Arrays.<Object>asList(name, getTimeoutSetName(name), getIdleSetName(name), getCreatedChannelName(name),
                         getUpdatedChannelName(name), getLastAccessTimeSetName(name), getRemovedChannelName(name), getOptionsName(name)),
                 System.currentTimeMillis(), keyState, new BigDecimal(value.toString()).toPlainString());

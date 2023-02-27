@@ -1251,6 +1251,8 @@ public class RedissonMapCacheTest extends BaseMapTest {
         assertThat(mapCache.putIfAbsent("4", 0L, 10000L, TimeUnit.SECONDS)).isNull();
         assertThat(mapCache.addAndGet("4", 1L)).isEqualTo(1L);
         assertThat(mapCache.putIfAbsent("4", 0L)).isEqualTo(1L);
+        assertThat(mapCache.addAndGet("key", Long.MAX_VALUE-10)).isEqualTo(Long.MAX_VALUE-10);
+        assertThat(mapCache.addAndGet("key", 10L)).isEqualTo(Long.MAX_VALUE);
         Assertions.assertEquals(1L, mapCache.get("4"));
         mapCache.destroy();
         mapCache = redisson.getMapCache("test_put_if_absent_1", LongCodec.INSTANCE);
