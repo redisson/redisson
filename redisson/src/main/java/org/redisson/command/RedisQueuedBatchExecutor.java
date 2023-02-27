@@ -31,6 +31,7 @@ import org.redisson.misc.LogHelper;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentMap;
@@ -47,24 +48,38 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R> {
 
     private final ConcurrentMap<MasterSlaveEntry, ConnectionEntry> connections;
+    private final Map<MasterSlaveEntry, Entry> aggregatedCommands;
 
     @SuppressWarnings("ParameterNumber")
     public RedisQueuedBatchExecutor(boolean readOnlyMode, NodeSource source, Codec codec, RedisCommand<V> command,
                                     Object[] params, CompletableFuture<R> mainPromise, boolean ignoreRedirect, ConnectionManager connectionManager,
-                                    RedissonObjectBuilder objectBuilder, ConcurrentMap<MasterSlaveEntry, Entry> commands,
+                                    RedissonObjectBuilder objectBuilder, ConcurrentMap<NodeSource, Entry> commands,
                                     ConcurrentMap<MasterSlaveEntry, ConnectionEntry> connections, BatchOptions options, AtomicInteger index,
                                     AtomicBoolean executed, RedissonObjectBuilder.ReferenceType referenceType,
-                                    boolean noRetry) {
+                                    boolean noRetry, Map<MasterSlaveEntry, Entry> aggregatedCommands) {
         super(readOnlyMode, source, codec, command, params, mainPromise, ignoreRedirect, connectionManager, objectBuilder,
                 commands, options, index, executed, referenceType, noRetry);
-        
+
+        this.aggregatedCommands = aggregatedCommands;
         this.connections = connections;
     }
     
     @Override
     public void execute() {
-        addBatchCommandData(null);
-        
+        if (source.getEntry() != null) {
+            Entry entry = aggregatedCommands.computeIfAbsent(source.getEntry(), k -> new Entry());
+
+            if (!readOnlyMode) {
+                entry.setReadOnlyMode(false);
+            }
+
+            Codec codecToUse = getCodec(codec);
+            BatchCommandData<V, R> commandData = new BatchCommandData<>(mainPromise, codecToUse, command, null, index.incrementAndGet());
+            entry.getCommands().add(commandData);
+        } else {
+            addBatchCommandData(null);
+        }
+
         if (!readOnlyMode && this.options.getExecutionMode() == ExecutionMode.REDIS_READ_ATOMIC) {
             throw new IllegalStateException("Data modification commands can't be used with queueStore=REDIS_READ_ATOMIC");
         }
@@ -151,7 +166,7 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
                 connectionEntry.setFirstCommand(false);
             } else {
                 if (RedisCommands.EXEC.getName().equals(command.getName())) {
-                    Entry entry = commands.get(msEntry);
+                    Entry entry = aggregatedCommands.get(msEntry);
 
                     List<CommandData<?, ?>> list = new ArrayList<>();
 

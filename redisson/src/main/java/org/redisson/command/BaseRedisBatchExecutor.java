@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class BaseRedisBatchExecutor<V, R> extends RedisExecutor<V, R> {
 
-    final ConcurrentMap<MasterSlaveEntry, Entry> commands;
+    final ConcurrentMap<NodeSource, Entry> commands;
     final BatchOptions options;
     final AtomicInteger index;
     
@@ -49,7 +49,7 @@ public class BaseRedisBatchExecutor<V, R> extends RedisExecutor<V, R> {
     public BaseRedisBatchExecutor(boolean readOnlyMode, NodeSource source, Codec codec, RedisCommand<V> command,
                                   Object[] params, CompletableFuture<R> mainPromise, boolean ignoreRedirect,
                                   ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder,
-                                  ConcurrentMap<MasterSlaveEntry, Entry> commands,
+                                  ConcurrentMap<NodeSource, Entry> commands,
                                   BatchOptions options, AtomicInteger index, AtomicBoolean executed, RedissonObjectBuilder.ReferenceType referenceType,
                                   boolean noRetry) {
         
@@ -87,8 +87,7 @@ public class BaseRedisBatchExecutor<V, R> extends RedisExecutor<V, R> {
     }
     
     protected final void addBatchCommandData(Object[] batchParams) {
-        MasterSlaveEntry msEntry = getEntry();
-        Entry entry = commands.computeIfAbsent(msEntry, k -> new Entry());
+        Entry entry = commands.computeIfAbsent(source, k -> new Entry());
 
         if (!readOnlyMode) {
             entry.setReadOnlyMode(false);
