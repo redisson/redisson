@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import io.netty.channel.EventLoopGroup;
 import org.redisson.api.NameMapper;
 import org.redisson.api.NatMapper;
 import org.redisson.api.RedissonNodeInitializer;
@@ -41,6 +42,7 @@ import org.redisson.connection.balancer.LoadBalancer;
 import java.io.*;
 import java.net.URL;
 import java.util.Scanner;
+import java.util.concurrent.ExecutorService;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -239,6 +241,9 @@ public class ConfigSupport {
         mapper.addMixIn(NameMapper.class, ClassMixIn.class);
         mapper.addMixIn(NettyHook.class, ClassMixIn.class);
         mapper.addMixIn(CredentialsResolver.class, ClassMixIn.class);
+        mapper.addMixIn(EventLoopGroup.class, ClassMixIn.class);
+        mapper.addMixIn(ConnectionListener.class, ClassMixIn.class);
+        mapper.addMixIn(ExecutorService.class, ClassMixIn.class);
 
         FilterProvider filterProvider = new SimpleFilterProvider()
                 .addFilter("classFilter", SimpleBeanPropertyFilter.filterOutAllExcept());
