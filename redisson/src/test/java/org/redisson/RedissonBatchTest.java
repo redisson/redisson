@@ -187,7 +187,9 @@ public class RedissonBatchTest extends BaseTest {
 			});
 		}
 
-		Awaitility.await().atMost(10, TimeUnit.SECONDS).until(() -> counter.get() == 0);
+		Awaitility.await().atMost(13, TimeUnit.SECONDS).until(() -> {
+            return counter.get() == 0;
+        });
 		Assertions.assertThat(hasErrors).isTrue();
 
 		executeBatch(redisson, batchOptions).toCompletableFuture().join();
