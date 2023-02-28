@@ -478,7 +478,12 @@ public class CommandBatchService extends CommandAsyncService {
                 AtomicInteger attempt = new AtomicInteger();
                 CompletableFuture<Map<MasterSlaveEntry, Entry>> resolvedEntriesFuture = new CompletableFuture<>();
                 resolveCommands(attempt, resolvedEntriesFuture);
-                resolvedEntriesFuture.thenAccept(map -> {
+                resolvedEntriesFuture.whenComplete((map, ee) -> {
+                    if (ee != null) {
+                        resultPromise.completeExceptionally(ee);
+                        return;
+                    }
+
                     List<CompletableFuture<Void>> futures = new ArrayList<>(map.size());
                     for (Map.Entry<MasterSlaveEntry, Entry> entry : aggregatedCommands.entrySet()) {
                         boolean isReadOnly = options.getExecutionMode() == ExecutionMode.REDIS_READ_ATOMIC;
