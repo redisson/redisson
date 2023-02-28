@@ -523,7 +523,7 @@ public interface RedissonClient {
     RLock getMultiLock(RLock... locks);
     
     /*
-     * Use getLock method instead. Returned instance uses Redis Slave synchronization
+     * Use getLock() or getFencedLock() method instead.
      */
     @Deprecated
     RLock getRedLock(RLock... locks);
