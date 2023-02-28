@@ -234,7 +234,7 @@ public class CommandBatchService extends CommandAsyncService {
                 executed.set(true);
 
                 if (ex != null) {
-                    for (Entry e : aggregatedCommands.values()) {
+                    for (Entry e : commands.values()) {
                         e.getCommands().forEach(t -> t.tryFailure(ex));
                     }
 
@@ -255,7 +255,7 @@ public class CommandBatchService extends CommandAsyncService {
             voidPromise.whenComplete((res, ex) -> {
                 executed.set(true);
                 if (ex != null) {
-                    for (Entry e : aggregatedCommands.values()) {
+                    for (Entry e : commands.values()) {
                         e.getCommands().forEach(t -> t.tryFailure(ex));
                     }
 
@@ -306,14 +306,20 @@ public class CommandBatchService extends CommandAsyncService {
             });
         }
 
-        return execute(promise, voidPromise);
+        execute(voidPromise);
+        return new CompletableFutureWrapper<>(promise);
     }
 
-    private CompletableFutureWrapper<BatchResult<?>> execute(CompletableFuture<BatchResult<?>> promise, CompletableFuture<Void> voidPromise) {
+    private void execute(CompletableFuture<Void> voidPromise) {
         AtomicInteger attempt = new AtomicInteger();
         CompletableFuture<Map<MasterSlaveEntry, Entry>> future = new CompletableFuture<>();
         resolveCommands(attempt, future);
-        future.thenAccept(r -> {
+        future.whenComplete((r, ex) -> {
+            if (ex != null) {
+                voidPromise.completeExceptionally(ex);
+                return;
+            }
+
             AtomicInteger slots = new AtomicInteger(r.size());
 
             for (Map.Entry<RFuture<?>, List<CommandBatchService>> entry : nestedServices.entrySet()) {
@@ -370,7 +376,6 @@ public class CommandBatchService extends CommandAsyncService {
                 executor.execute();
             }
         });
-        return new CompletableFutureWrapper<>(promise);
     }
 
     private void resolveCommands(AtomicInteger attempt, CompletableFuture<Map<MasterSlaveEntry, Entry>> future) {
