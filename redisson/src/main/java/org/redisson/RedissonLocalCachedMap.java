@@ -1260,5 +1260,29 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     public Map<K, V> getCachedMap() {
         return localCacheView.getCachedMap();
     }
-    
+
+    @Override
+    public Set<K> keySet(String pattern, int count) {
+        if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
+            return cachedKeySet();
+        }
+        return super.keySet(pattern, count);
+    }
+
+    @Override
+    public Collection<V> values(String keyPattern, int count) {
+        if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
+            return cachedValues();
+        }
+        return super.values(keyPattern, count);
+    }
+
+    @Override
+    public Set<Entry<K, V>> entrySet(String keyPattern, int count) {
+        if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
+            return cachedEntrySet();
+        }
+        return super.entrySet(keyPattern, count);
+    }
+
 }
