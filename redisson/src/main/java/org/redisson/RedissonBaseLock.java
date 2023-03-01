@@ -21,6 +21,7 @@ import org.redisson.api.BatchOptions;
 import org.redisson.api.BatchResult;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
+import org.redisson.client.RedisClusterDownException;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
@@ -405,10 +406,12 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
     protected <T> CompletionStage<T> handleNoSync(long threadId, RFuture<T> ttlRemainingFuture) {
         CompletionStage<T> s = ttlRemainingFuture.handle((r, ex) -> {
             if (ex != null) {
-                if (ex.getCause().getMessage().equals("None of slaves were synced")) {
+                if (ex.getCause().getMessage().equals("None of slaves were synced")
+                        || ex.getCause() instanceof RedisClusterDownException) {
                     return unlockInnerAsync(threadId).handle((r1, e) -> {
                         if (e != null) {
-                            if (e.getCause().getMessage().equals("None of slaves were synced")) {
+                            if (e.getCause().getMessage().equals("None of slaves were synced")
+                                    || ex.getCause() instanceof RedisClusterDownException) {
                                 throw new CompletionException(ex.getCause());
                             }
                             e.getCause().addSuppressed(ex.getCause());
