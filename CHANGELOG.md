@@ -3,6 +3,21 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 01-Mar-2023 - 3.20.0 released
+Feature - new [Multi cluster mode](https://github.com/redisson/redisson/wiki/2.-Configuration/#210-multi-cluster-mode) which supports [AWS Redis Global Datastore](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Redis-Global-Datastore.html) and [Azure Redis Cache active-passive replication](https://learn.microsoft.com/en-us/azure/azure-cache-for-redis/cache-how-to-geo-replication)  
+Feature - [Proxy mode](https://github.com/redisson/redisson/wiki/2.-Configuration/#29-proxy-mode) supports [RLEC Active-Active databases](https://docs.redis.com/latest/rs/databases/active-active/get-started/)  
+Feature - [monitorIPChanges](https://github.com/redisson/redisson/wiki/2.-Configuration#monitoripchanges) setting added for replicated servers mode  
+Feature - auto-detection of unavailable master in replicated mode (thanks @@nicdard)  
+
+Fixed - `RLock` can only be obtained by single redisson node if `None of slaves were synced` error occurred  
+Fixed - `RSetMultimapReactive.get()` method throws `ClassCastException`  
+Fixed - Redisson doesn't start in Spring Boot Native image  
+Fixed - `RedissonClient.shutdown(long, long, TimeUnit)` method isn't overridden by cluster, replicated and sentinel managers  
+Fixed - Node hasn't been discovered yet error isn't resolved by a new attempt for RBatch and RLock objects  
+Fixed - `RMapCache.addAndGet()` method doesn't handle Long type properly  
+Fixed - `eventLoopGroup`, `connectionListener` and `executor` settings can't be defined through YAML configuration  
+Fixed - `keySet()`, `values()`, `entrySet()` methods of `RLocalCachedMap` return empty result if `storeMode == LOCALCACHE`
+
 ### 06-Feb-2023 - 3.19.3 released
 Fixed - a new attempt should be made on WAIT error during failover  
 Fixed - Kryo5Codec fails to (de)serialize Object without no-args constructor (regression since 3.19.2)  
