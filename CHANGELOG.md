@@ -7,7 +7,7 @@ Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and
 Feature - new [Multi cluster mode](https://github.com/redisson/redisson/wiki/2.-Configuration/#210-multi-cluster-mode) which supports [AWS Redis Global Datastore](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Redis-Global-Datastore.html) and [Azure Redis Cache active-passive replication](https://learn.microsoft.com/en-us/azure/azure-cache-for-redis/cache-how-to-geo-replication)  
 Feature - [Proxy mode](https://github.com/redisson/redisson/wiki/2.-Configuration/#29-proxy-mode) supports [RLEC Active-Active databases](https://docs.redis.com/latest/rs/databases/active-active/get-started/)  
 Feature - [monitorIPChanges](https://github.com/redisson/redisson/wiki/2.-Configuration#monitoripchanges) setting added for replicated servers mode  
-Feature - auto-detection of unavailable master in replicated mode (thanks @@nicdard)  
+Feature - auto-detection of unavailable master in replicated mode (thanks @nicdard)  
 
 Fixed - `RLock` can only be obtained by single redisson node if `None of slaves were synced` error occurred  
 Fixed - `RSetMultimapReactive.get()` method throws `ClassCastException`  
