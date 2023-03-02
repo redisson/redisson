@@ -31,6 +31,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -471,6 +472,12 @@ public abstract class RedissonObject implements RObject {
         RFuture<Void> f2 = deletedTopic.removeListenerAsync(listenerId);
         CompletableFuture<Void> f = CompletableFuture.allOf(f1.toCompletableFuture(), f2.toCompletableFuture());
         return new CompletableFutureWrapper<>(f);
+    }
+
+    protected final List<String> map(String[] keys) {
+        return Arrays.stream(keys)
+                .map(k -> commandExecutor.getServiceManager().getConfig().getNameMapper().map(k))
+                .collect(Collectors.toList());
     }
 
 }

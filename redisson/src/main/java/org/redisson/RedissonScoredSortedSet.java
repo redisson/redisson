@@ -161,7 +161,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         params.add(duration.getSeconds());
         params.add(queueNames.length + 1);
         params.add(getRawName());
-        params.addAll(Arrays.asList(queueNames));
+        params.addAll(map(queueNames));
         params.add("MIN");
         params.add("COUNT");
         params.add(count);
@@ -178,7 +178,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         List<Object> params = new ArrayList<>();
         params.add(queueNames.length + 1);
         params.add(getRawName());
-        params.addAll(Arrays.asList(queueNames));
+        params.addAll(map(queueNames));
         params.add("MIN");
         params.add("COUNT");
         params.add(count);
@@ -195,7 +195,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         List<Object> params = new ArrayList<>();
         params.add(queueNames.length + 1);
         params.add(getRawName());
-        params.addAll(Arrays.asList(queueNames));
+        params.addAll(map(queueNames));
         params.add("MIN");
         params.add("COUNT");
         params.add(count);
@@ -213,7 +213,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         params.add(duration.getSeconds());
         params.add(queueNames.length + 1);
         params.add(getRawName());
-        params.addAll(Arrays.asList(queueNames));
+        params.addAll(map(queueNames));
         params.add("MIN");
         params.add("COUNT");
         params.add(count);
@@ -241,7 +241,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         params.add(duration.getSeconds());
         params.add(queueNames.length + 1);
         params.add(getRawName());
-        params.addAll(Arrays.asList(queueNames));
+        params.addAll(map(queueNames));
         params.add("MAX");
         params.add("COUNT");
         params.add(count);
@@ -258,7 +258,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         List<Object> params = new ArrayList<>();
         params.add(queueNames.length + 1);
         params.add(getRawName());
-        params.addAll(Arrays.asList(queueNames));
+        params.addAll(map(queueNames));
         params.add("MAX");
         params.add("COUNT");
         params.add(count);
@@ -275,7 +275,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         List<Object> params = new ArrayList<>();
         params.add(queueNames.length + 1);
         params.add(getRawName());
-        params.addAll(Arrays.asList(queueNames));
+        params.addAll(map(queueNames));
         params.add("MAX");
         params.add("COUNT");
         params.add(count);
@@ -293,7 +293,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         params.add(duration.getSeconds());
         params.add(queueNames.length + 1);
         params.add(getRawName());
-        params.addAll(Arrays.asList(queueNames));
+        params.addAll(map(queueNames));
         params.add("MAX");
         params.add("COUNT");
         params.add(count);
@@ -1197,7 +1197,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         List<Object> args = new ArrayList<>(names.length + 4);
         args.add(getRawName());
         args.add(names.length);
-        args.addAll(Arrays.asList(names));
+        args.addAll(map(names));
         args.add("AGGREGATE");
         args.add(aggregate.name());
         return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.ZINTERSTORE_INT, args.toArray());
@@ -1255,7 +1255,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         List<Object> args = new ArrayList<>(names.length + 4);
         args.add(names.length + 1);
         args.add(getRawName());
-        args.addAll(Arrays.asList(names));
+        args.addAll(map(names));
         args.add("AGGREGATE");
         args.add(aggregate.name());
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZINTER, args.toArray());
@@ -1313,7 +1313,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         List<Object> args = new ArrayList<>(names.length + 1);
         args.add(names.length + 1);
         args.add(getRawName());
-        args.addAll(Arrays.asList(names));
+        args.addAll(map(names));
         if (limit > 0) {
             args.add("LIMIT");
             args.add(limit);
@@ -1341,7 +1341,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         List<Object> args = new ArrayList<>(names.length + 4);
         args.add(getRawName());
         args.add(names.length);
-        args.addAll(Arrays.asList(names));
+        args.addAll(map(names));
         args.add("AGGREGATE");
         args.add(aggregate.name());
         return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.ZUNIONSTORE_INT, args.toArray());
@@ -1399,7 +1399,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         List<Object> args = new ArrayList<>(names.length + 4);
         args.add(names.length + 1);
         args.add(getRawName());
-        args.addAll(Arrays.asList(names));
+        args.addAll(map(names));
         args.add("AGGREGATE");
         args.add(aggregate.name());
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZUNION, args.toArray());
@@ -1682,7 +1682,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         List<Object> args = new ArrayList<>(names.length + 2);
         args.add(names.length + 1);
         args.add(getRawName());
-        args.addAll(Arrays.asList(names));
+        args.addAll(map(names));
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZDIFF, args.toArray());
     }
 
@@ -1696,7 +1696,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         List<Object> args = new ArrayList<>(names.length + 2);
         args.add(getRawName());
         args.add(names.length);
-        args.addAll(Arrays.asList(names));
+        args.addAll(map(names));
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZDIFFSTORE_INT, args.toArray());
     }
 
