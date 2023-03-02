@@ -436,10 +436,10 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
 
     @Override
     public RFuture<Set<V>> readUnionAsync(String... names) {
-        List<Object> args = new ArrayList<Object>(names.length + 1);
+        List<Object> args = new ArrayList<>(names.length + 1);
         args.add(getRawName());
         args.addAll(Arrays.asList(names));
-        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SUNION, args.toArray());
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.SUNION, args.toArray());
     }
 
     @Override
@@ -462,10 +462,10 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
 
     @Override
     public RFuture<Set<V>> readDiffAsync(String... names) {
-        List<Object> args = new ArrayList<Object>(names.length + 1);
+        List<Object> args = new ArrayList<>(names.length + 1);
         args.add(getRawName());
         args.addAll(Arrays.asList(names));
-        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SDIFF, args.toArray());
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.SDIFF, args.toArray());
     }
 
     @Override
@@ -488,10 +488,10 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
 
     @Override
     public RFuture<Set<V>> readIntersectionAsync(String... names) {
-        List<Object> args = new ArrayList<Object>(names.length + 1);
+        List<Object> args = new ArrayList<>(names.length + 1);
         args.add(getRawName());
         args.addAll(Arrays.asList(names));
-        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SINTER, args.toArray());
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.SINTER, args.toArray());
     }
     
     @Override
