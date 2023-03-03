@@ -97,7 +97,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
     private void createConnection(boolean checkFreezed, AtomicInteger requests, ClientConnectionsEntry entry,
                                   CompletableFuture<Void> initPromise, int minimumIdleSize, AtomicInteger initializedConnections) {
 
-        if ((checkFreezed && entry.isFreezed()) || !tryAcquireConnection(entry)) {
+        if (checkFreezed && (entry.isFreezed() || !isHealthy(entry))) {
             int totalInitializedConnections = minimumIdleSize - initializedConnections.get();
             Throwable cause = new RedisConnectionException(
                     "Unable to init enough connections amount! Only " + totalInitializedConnections + " of " + minimumIdleSize + " were initialized. Server: "
@@ -181,7 +181,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
         for (Iterator<ClientConnectionsEntry> iterator = entriesCopy.iterator(); iterator.hasNext();) {
             ClientConnectionsEntry entry = iterator.next();
             if (!((!entry.isFreezed() || entry.isMasterForRead()) 
-                    && tryAcquireConnection(entry))) {
+                    && isHealthy(entry))) {
                 iterator.remove();
             }
         }
@@ -233,7 +233,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
         return result;
     }
         
-    protected boolean tryAcquireConnection(ClientConnectionsEntry entry) {
+    private boolean isHealthy(ClientConnectionsEntry entry) {
         if (entry.getNodeType() == NodeType.SLAVE && entry.isFailed()) {
             checkForReconnect(entry, null);
             return false;
