@@ -20,6 +20,7 @@ Supported Redis: 3.0 ... 7.0
 * Supports Microsoft Azure
      * [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/)
      * [Azure Redis Cache active-passive replication](https://learn.microsoft.com/en-us/azure/azure-cache-for-redis/cache-how-to-geo-replication)
+     * [Azure Redis Cache active-active replication](https://learn.microsoft.com/en-us/azure/azure-cache-for-redis/cache-how-to-active-geo-replication)
 * Supports Google Cloud Memorystore
      * [Google Cloud Redis](https://cloud.google.com/memorystore/docs/redis/)
      * [Google Cloud Redis High availability](https://cloud.google.com/memorystore/docs/redis/high-availability)
