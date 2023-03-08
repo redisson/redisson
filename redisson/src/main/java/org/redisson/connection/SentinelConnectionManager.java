@@ -351,7 +351,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
     private void updateState(SentinelServersConfig cfg, RedisConnection connection, Iterator<RedisClient> iterator) {
         List<CompletableFuture<?>> futures = new ArrayList<>();
-        CompletionStage<RedisURI> masterFuture = checkMasterChange(cfg, connection);
+        CompletionStage<RedisClient> masterFuture = checkMasterChange(cfg, connection);
         futures.add(masterFuture.toCompletableFuture());
 
         if (!config.checkSkipSlavesInit()) {
@@ -491,24 +491,22 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         });
     }
 
-    private CompletionStage<RedisURI> checkMasterChange(SentinelServersConfig cfg, RedisConnection connection) {
+    private CompletionStage<RedisClient> checkMasterChange(SentinelServersConfig cfg, RedisConnection connection) {
         RFuture<RedisURI> masterFuture = connection.async(StringCodec.INSTANCE, masterHostCommand, cfg.getMasterName());
-        return masterFuture.thenCompose(u -> serviceManager.resolveIP(scheme, u))
-                .whenComplete((newMaster, e) -> {
-            if (e != null) {
-                return;
-            }
-
-            RedisURI current = currentMaster.get();
-            if (!newMaster.equals(current)
-                    && currentMaster.compareAndSet(current, newMaster)) {
-                CompletableFuture<RedisClient> changeFuture = changeMaster(singleSlotRange.getStartSlot(), newMaster);
-                changeFuture.exceptionally(ex -> {
-                    currentMaster.compareAndSet(newMaster, current);
-                    return null;
+        return masterFuture
+                .thenCompose(u -> serviceManager.resolveIP(scheme, u))
+                .thenCompose(newMaster -> {
+                    RedisURI current = currentMaster.get();
+                    if (!newMaster.equals(current)
+                            && currentMaster.compareAndSet(current, newMaster)) {
+                        CompletableFuture<RedisClient> changeFuture = changeMaster(singleSlotRange.getStartSlot(), newMaster);
+                        return changeFuture.exceptionally(ex -> {
+                            currentMaster.compareAndSet(newMaster, current);
+                            return null;
+                        });
+                    }
+                    return CompletableFuture.completedFuture(null);
                 });
-            }
-        });
     }
 
     private void updateSentinels(Collection<RedisURI> newUris) {
