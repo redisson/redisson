@@ -23,6 +23,7 @@ import io.netty.util.TimerTask;
 import io.netty.util.concurrent.FutureListener;
 import org.redisson.RedissonShutdownException;
 import org.redisson.ScanResult;
+import org.redisson.api.NodeType;
 import org.redisson.cache.LRUCacheMap;
 import org.redisson.client.*;
 import org.redisson.client.codec.BaseCodec;
@@ -31,6 +32,7 @@ import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
@@ -520,6 +522,18 @@ public class RedisExecutor<V, R> {
                     execute();
                 });
                 return;
+            }
+
+            if (cause instanceof RedisLoadingException) {
+                RedisConnection connection = connectionFuture.getNow(null);
+                if (connection != null) {
+                    ClientConnectionsEntry ce = entry.getEntry(connection.getRedisClient());
+                    if (ce.getNodeType() == NodeType.SLAVE) {
+                        source = new NodeSource(entry.getClient());
+                        execute();
+                        return;
+                    }
+                }
             }
 
             if (cause instanceof RedisRetryException) {
