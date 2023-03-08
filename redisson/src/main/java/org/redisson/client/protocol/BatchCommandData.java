@@ -15,7 +15,9 @@
  */
 package org.redisson.client.protocol;
 
+import org.redisson.client.RedisException;
 import org.redisson.client.RedisRedirectException;
+import org.redisson.client.RedisRetryException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 
@@ -32,7 +34,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class BatchCommandData<T, R> extends CommandData<T, R> implements Comparable<BatchCommandData<T, R>> {
 
     private final int index;
-    private final AtomicReference<RedisRedirectException> redirectError = new AtomicReference<RedisRedirectException>();
+    private final AtomicReference<RedisException> retryError = new AtomicReference<>();
     
     public BatchCommandData(RedisCommand<T> command, Object[] params, int index) {
         this(new CompletableFuture<>(), StringCodec.INSTANCE, command, params, index);
@@ -45,11 +47,11 @@ public class BatchCommandData<T, R> extends CommandData<T, R> implements Compara
     
     @Override
     public boolean tryFailure(Throwable cause) {
-        if (redirectError.get() != null) {
+        if (retryError.get() != null) {
             return false;
         }
-        if (cause instanceof RedisRedirectException) {
-            return redirectError.compareAndSet(null, (RedisRedirectException) cause);
+        if (cause instanceof RedisRedirectException || cause instanceof RedisRetryException) {
+            return retryError.compareAndSet(null, (RedisException) cause);
         }
 
         return super.tryFailure(cause);
@@ -57,19 +59,19 @@ public class BatchCommandData<T, R> extends CommandData<T, R> implements Compara
     
     @Override
     public boolean isSuccess() {
-        return redirectError.get() == null && super.isSuccess();
+        return retryError.get() == null && super.isSuccess();
     }
     
     @Override
     public Throwable cause() {
-        if (redirectError.get() != null) {
-            return redirectError.get();
+        if (retryError.get() != null) {
+            return retryError.get();
         }
         return super.cause();
     }
     
     public void clearError() {
-        redirectError.set(null);
+        retryError.set(null);
     }
 
     @Override

@@ -21,7 +21,7 @@ package org.redisson.client;
  * @author Nikita Koksharov
  *
  */
-public class RedisWaitException extends RedisException{
+public class RedisWaitException extends RedisRetryException {
 
     private static final long serialVersionUID = -5658453331593019251L;
 

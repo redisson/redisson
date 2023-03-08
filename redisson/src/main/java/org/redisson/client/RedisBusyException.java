@@ -21,7 +21,7 @@ package org.redisson.client;
  * @author wuqian
  *
  */
-public class RedisBusyException extends RedisException{
+public class RedisBusyException extends RedisRetryException {
 
     private static final long serialVersionUID = -5658453331593019251L;
 

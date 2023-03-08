@@ -16,17 +16,13 @@
 package org.redisson.client;
 
 /**
- * This error occurs when Redis Cluster is down.
- * 
+ *
  * @author Nikita Koksharov
  *
  */
-public class RedisClusterDownException extends RedisRetryException {
+public class RedisRetryException extends RedisException {
 
-    private static final long serialVersionUID = -2565335188503354660L;
-
-    public RedisClusterDownException(String message) {
+    public RedisRetryException(String message) {
         super(message);
     }
-
 }
