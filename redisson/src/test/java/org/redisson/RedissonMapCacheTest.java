@@ -142,6 +142,70 @@ public class RedissonMapCacheTest extends BaseMapTest {
         return redisson.getMapCache("test", options);
     }
 
+        /*
+        @Test
+    public void testMapLoaderGetWithTTL() throws InterruptedException {
+        Map<String, String> cache = new HashMap<>();
+        cache.put("1", "11");
+        cache.put("2", "22");
+        cache.put("3", "33");
+
+        LocalCachedMapOptions<String, String> options = LocalCachedMapOptions.<String, String>defaults()
+                .storeMode(LocalCachedMapOptions.StoreMode.LOCALCACHE).loader(createMapLoader(cache)).timeToLive(1000);
+        RMap<String, String> map =  redisson.getLocalCachedMap("test", options);
+
+        assertThat(map.size()).isEqualTo(0);
+        assertThat(map.get("1")).isEqualTo("11");
+        assertThat(map.size()).isEqualTo(1);
+        assertThat(map.get("0")).isNull();
+        map.put("0", "00");
+        assertThat(map.get("0")).isEqualTo("00");
+        assertThat(map.size()).isEqualTo(2);
+
+        assertThat(map.containsKey("2")).isTrue();
+        assertThat(map.size()).isEqualTo(3);
+
+        Map<String, String> s = map.getAll(new HashSet<>(Arrays.asList("1", "2", "9", "3")));
+        Map<String, String> expectedMap = new HashMap<>();
+        expectedMap.put("1", "11");
+        expectedMap.put("2", "22");
+        expectedMap.put("3", "33");
+        assertThat(s).isEqualTo(expectedMap);
+        assertThat(map.size()).isEqualTo(4);
+
+        Thread.sleep(2000);
+
+        assertThat(map.size()).isEqualTo(0);
+        destroy(map);
+    }
+     */
+
+    @Test
+    public void testMapLoaderWithTTL() throws InterruptedException {
+        Map<String, String> cache = new HashMap<>();
+        cache.put("1", "11");
+        cache.put("2", "22");
+        cache.put("3", "33");
+        MapOptions<String, String> options = MapOptions.<String, String>defaults().loader(createMapLoader(cache));
+        RMap<String, String> map = redisson.getMapCache("test", options);
+
+        assertThat(map.size()).isEqualTo(0);
+        assertThat(map.get("1")).isEqualTo("11");
+        assertThat(map.size()).isEqualTo(1);
+        assertThat(map.get("0")).isNull();
+        map.put("0", "00");
+        assertThat(map.get("0")).isEqualTo("00");
+        assertThat(map.size()).isEqualTo(2);
+
+        assertThat(map.containsKey("2")).isTrue();
+        assertThat(map.size()).isEqualTo(3);
+
+        Thread.sleep(2000);
+
+        assertThat(map.size()).isEqualTo(0);
+        destroy(map);
+    }
+
     @Test
     public void testSizeInMemory() {
         Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("4.0.0") > 0);
