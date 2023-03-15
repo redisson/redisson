@@ -39,7 +39,7 @@ public class PubSubConnectionPool extends ConnectionPool<RedisPubSubConnection> 
     }
 
     public CompletableFuture<RedisPubSubConnection> get() {
-        return get(RedisCommands.PUBLISH);
+        return get(RedisCommands.SUBSCRIBE);
     }
     
     @Override

@@ -15,9 +15,10 @@
  */
 package org.redisson.connection.balancer;
 
-import java.util.List;
-
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ClientConnectionsEntry;
+
+import java.util.List;
 
 /**
  * 
@@ -26,6 +27,14 @@ import org.redisson.connection.ClientConnectionsEntry;
  */
 public interface LoadBalancer {
 
+    /*
+     * Use getEntry(List<ClientConnectionsEntry> clientsCopy, RedisCommand<?> redisCommand) method instead
+     */
+    @Deprecated
     ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy);
+
+    default ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy, RedisCommand<?> redisCommand) {
+        return getEntry(clientsCopy);
+    }
 
 }
