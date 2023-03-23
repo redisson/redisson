@@ -17,6 +17,7 @@ package org.redisson.connection.balancer;
 
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ClientConnectionsEntry;
+import org.redisson.misc.RedisURI;
 
 import java.util.List;
 import java.util.Set;
@@ -30,13 +31,13 @@ import java.util.stream.Collectors;
 public class CommandsLoadBalancer extends RoundRobinLoadBalancer implements LoadBalancer {
 
     private Set<String> commands;
-    private String hostName;
+    private RedisURI address;
 
     @Override
     public ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy, RedisCommand<?> redisCommand) {
         if (commands.contains(redisCommand.getName().toLowerCase())) {
             return clientsCopy.stream()
-                                .filter(c -> c.getClient().getAddr().getHostName().equals(hostName))
+                                .filter(c -> address.equals(c.getClient().getAddr()))
                                 .findAny()
                                 .orElseGet(() -> {
                 return getEntry(clientsCopy);
@@ -45,8 +46,8 @@ public class CommandsLoadBalancer extends RoundRobinLoadBalancer implements Load
         return getEntry(clientsCopy);
     }
 
-    public void setHostName(String hostName) {
-        this.hostName = hostName;
+    public void setAddress(String address) {
+        this.address = new RedisURI(address);
     }
 
     public void setCommands(List<String> commands) {
