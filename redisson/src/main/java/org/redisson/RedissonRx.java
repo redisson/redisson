@@ -20,7 +20,6 @@ import org.redisson.client.codec.Codec;
 import org.redisson.codec.JsonCodec;
 import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
-import org.redisson.connection.ConnectionEventsHub;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
@@ -40,7 +39,6 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class RedissonRx implements RedissonRxClient {
 
-    private final ConnectionEventsHub connectionEventsHub = new ConnectionEventsHub();
     protected final WriteBehindService writeBehindService;
     protected final EvictionScheduler evictionScheduler;
     protected final CommandRxExecutor commandExecutor;
