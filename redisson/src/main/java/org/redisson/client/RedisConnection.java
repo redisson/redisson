@@ -53,6 +53,7 @@ public class RedisConnection implements RedisCommands {
 
     private volatile CompletableFuture<Void> fastReconnect;
     private volatile boolean closed;
+    private volatile boolean closedIdle;
     volatile Channel channel;
 
     private CompletableFuture<?> connectionPromise;
@@ -278,10 +279,6 @@ public class RedisConnection implements RedisCommands {
         return new CommandData<>(promise, encoder, command, params);
     }
 
-    private void setClosed(boolean closed) {
-        this.closed = closed;
-    }
-
     public boolean isClosed() {
         return closed;
     }
@@ -325,8 +322,17 @@ public class RedisConnection implements RedisCommands {
         return channel;
     }
 
+    public ChannelFuture closeIdleAsync() {
+        closedIdle = true;
+        return closeAsync();
+    }
+
+    public boolean isClosedIdle() {
+        return closedIdle;
+    }
+
     public ChannelFuture closeAsync() {
-        setClosed(true);
+        closed = true;
         close();
         return channel.closeFuture();
     }
