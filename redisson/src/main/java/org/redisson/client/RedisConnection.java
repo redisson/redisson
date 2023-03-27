@@ -57,7 +57,9 @@ public class RedisConnection implements RedisCommands {
 
     private CompletableFuture<?> connectionPromise;
     private long lastUsageTime;
+    @Deprecated
     private Runnable connectedListener;
+    @Deprecated
     private Runnable disconnectedListener;
 
     private final AtomicInteger usage = new AtomicInteger();
@@ -97,6 +99,7 @@ public class RedisConnection implements RedisCommands {
         return usage.decrementAndGet();
     }
 
+    @Deprecated
     public void setConnectedListener(Runnable connectedListener) {
         this.connectedListener = connectedListener;
     }
@@ -110,6 +113,7 @@ public class RedisConnection implements RedisCommands {
         }
     }
 
+    @Deprecated
     public void setDisconnectedListener(Runnable disconnectedListener) {
         this.disconnectedListener = disconnectedListener;
     }
