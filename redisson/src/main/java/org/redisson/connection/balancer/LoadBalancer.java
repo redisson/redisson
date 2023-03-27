@@ -28,7 +28,7 @@ import java.util.List;
 public interface LoadBalancer {
 
     /*
-     * Use getEntry(List<ClientConnectionsEntry> clientsCopy, RedisCommand<?> redisCommand) method instead
+     * Use getEntry(List, RedisCommand) method instead
      */
     @Deprecated
     ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy);
