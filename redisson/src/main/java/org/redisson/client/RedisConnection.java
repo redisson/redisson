@@ -46,14 +46,15 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class RedisConnection implements RedisCommands {
 
+    public enum Status {OPEN, CLOSED, CLOSED_IDLE}
+
     private static final Logger LOG = LoggerFactory.getLogger(RedisConnection.class);
     private static final AttributeKey<RedisConnection> CONNECTION = AttributeKey.valueOf("connection");
 
     final RedisClient redisClient;
 
     private volatile CompletableFuture<Void> fastReconnect;
-    private volatile boolean closed;
-    private volatile boolean closedIdle;
+    private volatile Status status = Status.OPEN;
     volatile Channel channel;
 
     private CompletableFuture<?> connectionPromise;
@@ -280,7 +281,7 @@ public class RedisConnection implements RedisCommands {
     }
 
     public boolean isClosed() {
-        return closed;
+        return status != Status.OPEN;
     }
 
     public boolean isFastReconnect() {
@@ -323,16 +324,17 @@ public class RedisConnection implements RedisCommands {
     }
 
     public ChannelFuture closeIdleAsync() {
-        closedIdle = true;
-        return closeAsync();
+        status = Status.CLOSED_IDLE;
+        close();
+        return channel.closeFuture();
     }
 
     public boolean isClosedIdle() {
-        return closedIdle;
+        return status == Status.CLOSED_IDLE;
     }
 
     public ChannelFuture closeAsync() {
-        closed = true;
+        status = Status.CLOSED;
         close();
         return channel.closeFuture();
     }
