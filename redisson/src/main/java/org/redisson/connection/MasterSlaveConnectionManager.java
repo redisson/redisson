@@ -288,12 +288,14 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 .setCredentialsResolver(config.getCredentialsResolver())
                 .setConnectedListener(addr -> {
                     if (!serviceManager.isShuttingDown()) {
-                        serviceManager.getConnectionEventsHub().fireConnect(addr);
+                        NodeType nt = getNodeType(type, addr);
+                        serviceManager.getConnectionEventsHub().fireConnect(addr, nt);
                     }
                 })
                 .setDisconnectedListener(addr -> {
                     if (!serviceManager.isShuttingDown()) {
-                        serviceManager.getConnectionEventsHub().fireDisconnect(addr);
+                        NodeType nt = getNodeType(type, addr);
+                        serviceManager.getConnectionEventsHub().fireDisconnect(addr, nt);
                     }
                 });
 
@@ -302,6 +304,21 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
         
         return redisConfig;
+    }
+
+    private NodeType getNodeType(NodeType type, InetSocketAddress address) {
+        if (type != NodeType.SENTINEL) {
+            MasterSlaveEntry entry = getEntry(address);
+            if (entry != null) {
+                InetSocketAddress addr = entry.getClient().getAddr();
+                if (addr.getAddress().equals(address.getAddress())
+                        && addr.getPort() == address.getPort()) {
+                    return NodeType.MASTER;
+                }
+            }
+            return NodeType.SLAVE;
+        }
+        return type;
     }
 
     @Override

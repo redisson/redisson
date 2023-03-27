@@ -15,6 +15,8 @@
  */
 package org.redisson.connection;
 
+import org.redisson.api.NodeType;
+
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,7 +39,7 @@ public class ConnectionEventsHub {
         listenersMap.remove(listenerId);
     }
 
-    public void fireConnect(InetSocketAddress addr) {
+    public void fireConnect(InetSocketAddress addr, NodeType nodeType) {
         if (maps.get(addr) == Status.CONNECTED) {
             return;
         }
@@ -45,19 +47,19 @@ public class ConnectionEventsHub {
         if (maps.putIfAbsent(addr, Status.CONNECTED) == null
                 || maps.replace(addr, Status.DISCONNECTED, Status.CONNECTED)) {
             for (ConnectionListener listener : listenersMap.values()) {
-                listener.onConnect(addr);
+                listener.onConnect(addr, nodeType);
             }
         }
     }
 
-    public void fireDisconnect(InetSocketAddress addr) {
+    public void fireDisconnect(InetSocketAddress addr, NodeType nodeType) {
         if (addr == null || maps.get(addr) == Status.DISCONNECTED) {
             return;
         }
 
         if (maps.replace(addr, Status.CONNECTED, Status.DISCONNECTED)) {
             for (ConnectionListener listener : listenersMap.values()) {
-                listener.onDisconnect(addr);
+                listener.onDisconnect(addr, nodeType);
             }
         }
     }

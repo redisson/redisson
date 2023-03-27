@@ -332,13 +332,23 @@ public class RedissonTest extends BaseTest {
 
             @Override
             public void onDisconnect(InetSocketAddress addr) {
+            }
+
+            @Override
+            public void onDisconnect(InetSocketAddress addr, NodeType nodeType) {
                 assertThat(addr).isEqualTo(new InetSocketAddress(p.getRedisServerBindAddress(), p.getRedisServerPort()));
+                assertThat(nodeType).isEqualTo(NodeType.MASTER);
                 disconnectCounter.incrementAndGet();
             }
 
             @Override
             public void onConnect(InetSocketAddress addr) {
+            }
+
+            @Override
+            public void onConnect(InetSocketAddress addr, NodeType nodeType) {
                 assertThat(addr).isEqualTo(new InetSocketAddress(p.getRedisServerBindAddress(), p.getRedisServerPort()));
+                assertThat(nodeType).isEqualTo(NodeType.MASTER);
                 connectCounter.incrementAndGet();
             }
         });
