@@ -28,7 +28,8 @@ import java.net.InetSocketAddress;
 public interface ConnectionListener {
 
     /*
-     * Use onConnect(InetSocketAddress, NodeType) method instead
+     * Implement onConnect(InetSocketAddress, NodeType) method instead.
+     * It can be empty.
      */
     @Deprecated
     void onConnect(InetSocketAddress addr);
@@ -45,7 +46,8 @@ public interface ConnectionListener {
     }
 
     /*
-     * Use onDisconnect(InetSocketAddress, NodeType) method instead
+     * Implement onDisconnect(InetSocketAddress, NodeType) method instead.
+     * It can be empty.
      */
     @Deprecated
     void onDisconnect(InetSocketAddress addr);
