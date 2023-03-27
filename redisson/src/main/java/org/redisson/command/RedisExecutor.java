@@ -308,8 +308,8 @@ public class RedisExecutor<V, R> {
 
                 attempt++;
                 if (log.isDebugEnabled()) {
-                    log.debug("attempt {} for command {} and params {}",
-                            attempt, command, LogHelper.toString(params));
+                    log.debug("attempt {} for command {} and params {} to {}",
+                            attempt, command, LogHelper.toString(params), source);
                 }
 
                 mainPromiseListener = null;
@@ -387,8 +387,8 @@ public class RedisExecutor<V, R> {
                 connectionManager.getServiceManager().newTimeout(t -> {
                     attempt++;
                     if (log.isDebugEnabled()) {
-                        log.debug("attempt {} for command {} and params {}",
-                                attempt, command, LogHelper.toString(params));
+                        log.debug("response timeout. new attempt {} for command {} and params {} node {}",
+                                attempt, command, LogHelper.toString(params), source);
                     }
 
                     mainPromiseListener = null;
