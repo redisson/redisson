@@ -18,7 +18,7 @@ Fixed - `READONLY You can't write against a read only replica..` is thrown after
 Fixed - continuously attempts of `INFO REPLICATION` command execution until attempts limit reached by RLock object after failover  
 Fixed - Node hasn't been discovered yet error isn't resolved by a new attempt for RBatch and RLock objects  
 Fixed - `RedisClusterDownException`, `RedisLoadingException`, `RedisBusyException`, `RedisTryAgainException`, `RedisWaitException` are thrown by RBatch and RLock objects even if these errors disappeared after new attempts  
-Fixed - "Unable to init enough connections amount! Only 0 of ... were initialized" error (thanks @alexworkgit)  
+Fixed - `Unable to init enough connections amount! Only 0 of ... were initialized` error (thanks @alexworkgit)  
 Fixed - `nameMapper` isn't applied to some methods of `RSet` and `RScoredSortedSet` objects  
 Fixed - `readUnion()`, `readDiff()` and `readIntersection()` methods of `RSet` object don't use Redis slave nodes  
 
