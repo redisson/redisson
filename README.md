@@ -6,7 +6,7 @@
 [Quick start](https://github.com/redisson/redisson#quick-start) | [Documentation](https://github.com/redisson/redisson/wiki/Table-of-Content) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [FAQs](https://github.com/redisson/redisson/wiki/16.-FAQ) | [Report an issue](https://github.com/redisson/redisson/issues/new)
 
 Based on high-performance async and lock-free Java Redis client and [Netty](http://netty.io) framework.  
-Supported JDK:   1.8 ... 19 and Android  
+Supported JDK:   1.8 ... 20 and Android  
 Supported Redis: 3.0 ... 7.0  
 
 ## Features
@@ -118,14 +118,14 @@ Used by
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>3.20.0</version>
+       <version>3.20.1</version>
     </dependency>  
 
 #### Gradle
-    compile 'org.redisson:redisson:3.20.0'  
+    compile 'org.redisson:redisson:3.20.1'  
 
 #### SBT
-    libraryDependencies += "org.redisson" % "redisson" % "3.20.0"
+    libraryDependencies += "org.redisson" % "redisson" % "3.20.1"
 
 #### Java
 
@@ -183,8 +183,8 @@ Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and
 
 ## Downloads
    
-[Redisson 3.20.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.20.0&e=jar),
-[Redisson node 3.20.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.20.0&e=jar)  
+[Redisson 3.20.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.20.1&e=jar),
+[Redisson node 3.20.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.20.1&e=jar)  
 
 ## FAQs
 
