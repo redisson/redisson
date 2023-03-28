@@ -11,6 +11,7 @@ Feature - NodeType parameter added to ConnectionListener methods
 
 Improvement - command should be redirected to a master node if slave node returns LOADING error  
 
+Fixed - `NameMapper` is called twice when acquiring a `RReadWriteLock`  
 Fixed - closing idle connections causes connection listener to fire  
 Fixed - `Unable to init enough connections amount!` error  
 Fixed - no retry attempts are made for `None of slaves were synced` error  
