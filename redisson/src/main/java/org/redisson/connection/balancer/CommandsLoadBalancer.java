@@ -50,17 +50,17 @@ public class CommandsLoadBalancer extends RoundRobinLoadBalancer implements Load
     /**
      * Defines Redis node address where the commands are redirected to
      *
-     * @param address
+     * @param address Redis node address
      */
     public void setAddress(String address) {
         this.address = new RedisURI(address);
     }
 
     /**
-     * Defines commands which redirects to the Redis node
+     * Defines command names which are redirected to the Redis node
      * specified by {@link #setAddress(String)}
      *
-     * @param commands
+     * @param commands commands list
      */
     public void setCommands(List<String> commands) {
         this.commands = commands.stream()
