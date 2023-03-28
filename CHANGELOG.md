@@ -3,6 +3,25 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 28-Mar-2023 - 3.20.1 released
+
+Feature - `LoadBalancer.getEntry(List<ClientConnectionsEntry>, RedisCommand<?>)` method added  
+Feature - [CommandsLoadBalancer](https://github.com/redisson/redisson/blob/master/redisson/src/main/java/org/redisson/connection/balancer/CommandsLoadBalancer.java) added  
+Feature - NodeType parameter added to ConnectionListener methods  
+
+Improvement - command should be redirected to a master node if slave node returns LOADING error  
+
+Fixed - closing idle connections causes connection listener to fire  
+Fixed - `Unable to init enough connections amount!` error  
+Fixed - no retry attempts are made for `None of slaves were synced` error  
+Fixed - `READONLY You can't write against a read only replica..` is thrown after failover in sentinel mode (thanks @alexworkgit)  
+Fixed - continuously attempts of `INFO REPLICATION` command execution until attempts limit reached by RLock object after failover  
+Fixed - Node hasn't been discovered yet error isn't resolved by a new attempt for RBatch and RLock objects  
+Fixed - `RedisClusterDownException`, `RedisLoadingException`, `RedisBusyException`, `RedisTryAgainException`, `RedisWaitException` are thrown by RBatch and RLock objects even if these errors disappeared after new attempts  
+Fixed - "Unable to init enough connections amount! Only 0 of ... were initialized" error (thanks @alexworkgit)  
+Fixed - `nameMapper` isn't applied to some methods of `RSet` and `RScoredSortedSet` objects  
+Fixed - `readUnion()`, `readDiff()` and `readIntersection()` methods of `RSet` object don't use Redis slave nodes  
+
 ### 01-Mar-2023 - 3.20.0 released
 Feature - new [Multi cluster mode](https://github.com/redisson/redisson/wiki/2.-Configuration/#210-multi-cluster-mode) which supports [AWS Redis Global Datastore](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Redis-Global-Datastore.html) and [Azure Redis Cache active-passive replication](https://learn.microsoft.com/en-us/azure/azure-cache-for-redis/cache-how-to-geo-replication)  
 Feature - [Proxy mode](https://github.com/redisson/redisson/wiki/2.-Configuration/#29-proxy-mode) supports [RLEC Active-Active databases](https://docs.redis.com/latest/rs/databases/active-active/get-started/)  
