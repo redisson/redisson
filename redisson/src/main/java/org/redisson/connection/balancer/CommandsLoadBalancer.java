@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
+ * Load Balancer redirects specified commands to the Redis node with specified address.
  *
  * @author Nikita Koksharov
  *
@@ -46,10 +47,21 @@ public class CommandsLoadBalancer extends RoundRobinLoadBalancer implements Load
         return getEntry(clientsCopy);
     }
 
+    /**
+     * Defines Redis node address where the commands are redirected to
+     *
+     * @param address
+     */
     public void setAddress(String address) {
         this.address = new RedisURI(address);
     }
 
+    /**
+     * Defines commands which redirects to the Redis node
+     * specified by {@link #setAddress(String)}
+     *
+     * @param commands
+     */
     public void setCommands(List<String> commands) {
         this.commands = commands.stream()
                                     .map(c -> c.toLowerCase())
