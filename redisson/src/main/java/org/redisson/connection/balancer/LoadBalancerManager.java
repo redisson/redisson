@@ -253,6 +253,10 @@ public class LoadBalancerManager {
         return pubSubConnectionPool.get();
     }
 
+    public CompletableFuture<RedisPubSubConnection> nextPubSubConnection(ClientConnectionsEntry entry) {
+        return pubSubConnectionPool.get(entry);
+    }
+
     public boolean contains(InetSocketAddress addr) {
         return getEntry(addr) != null;
     }
@@ -299,7 +303,7 @@ public class LoadBalancerManager {
         f.completeExceptionally(exception);
         return f;
     }
-    
+
     public CompletableFuture<RedisConnection> getConnection(RedisCommand<?> command, RedisClient client) {
         ClientConnectionsEntry entry = getEntry(client);
         if (entry != null) {

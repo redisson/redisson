@@ -594,7 +594,11 @@ public class MasterSlaveEntry {
         return slaveBalancer.getConnection(command, client);
     }
 
-    public CompletableFuture<RedisPubSubConnection> nextPubSubConnection() {
+    public CompletableFuture<RedisPubSubConnection> nextPubSubConnection(ClientConnectionsEntry entry) {
+        if (entry != null) {
+            return slaveBalancer.nextPubSubConnection(entry);
+        }
+
         if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
             return pubSubConnectionPool.get();
         }

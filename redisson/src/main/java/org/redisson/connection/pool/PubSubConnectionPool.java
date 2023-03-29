@@ -41,7 +41,11 @@ public class PubSubConnectionPool extends ConnectionPool<RedisPubSubConnection> 
     public CompletableFuture<RedisPubSubConnection> get() {
         return get(RedisCommands.SUBSCRIBE);
     }
-    
+
+    public CompletableFuture<RedisPubSubConnection> get(ClientConnectionsEntry entry) {
+        return get(RedisCommands.SUBSCRIBE, entry);
+    }
+
     @Override
     protected RedisPubSubConnection poll(ClientConnectionsEntry entry, RedisCommand<?> command) {
         return entry.pollSubscribeConnection();
