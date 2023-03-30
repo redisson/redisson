@@ -13,23 +13,25 @@ Supported Redis: 3.0 ... 7.0
 
 * Thread-safe implementation  
 * Supports [Redis Replicated](https://github.com/redisson/redisson/wiki/2.-Configuration/#25-replicated-mode), [Redis Cluster](https://github.com/redisson/redisson/wiki/2.-Configuration/#24-cluster-mode), [Redis Sentinel](https://github.com/redisson/redisson/wiki/2.-Configuration/#27-sentinel-mode), [Redis Master and Slaves](https://github.com/redisson/redisson/wiki/2.-Configuration/#28-master-slave-mode), [Redis Single](https://github.com/redisson/redisson/wiki/2.-Configuration/#26-single-instance-mode) setup
-* Supports Amazon Web Services
+* Amazon Web Services compatible
      * [AWS Redis Global Datastore](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Redis-Global-Datastore.html)
      * [AWS ElastiCache](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/WhatIs.html)
      * [Amazon MemoryDB](https://aws.amazon.com/memorydb)
-* Supports Microsoft Azure
+* Microsoft Azure compatible
      * [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/)
      * [Azure Redis Cache active-passive replication](https://learn.microsoft.com/en-us/azure/azure-cache-for-redis/cache-how-to-geo-replication)
      * [Azure Redis Cache active-active replication](https://learn.microsoft.com/en-us/azure/azure-cache-for-redis/cache-how-to-active-geo-replication)
-* Supports Google Cloud Memorystore
+* Google Cloud Memorystore compatible
      * [Google Cloud Redis](https://cloud.google.com/memorystore/docs/redis/)
      * [Google Cloud Redis High availability](https://cloud.google.com/memorystore/docs/redis/high-availability)
-* Supports Redis Enterprise
+* Redis Enterprise compatible
      * [Redis Enterprise](https://redis.com/redis-enterprise/)
      * [Redis Enterprise Active-Active databases](https://docs.redis.com/latest/rs/databases/active-active/get-started/)
      * [Redis Enterprise Multiple Active Proxy](https://docs.redis.com/latest/rs/databases/configure/proxy-policy/#about-multiple-active-proxy-support)
-* Supports Aiven
+* Aiven compatible
      * [Aiven for Redis](https://aiven.io/redis)
+* IBM Cloud compatible
+     * [IBM Cloud Databases for Redis](https://www.ibm.com/cloud/databases-for-redis)
 * Supports auto-reconnection  
 * Supports failed to send command auto-retry  
 * Supports OSGi  
