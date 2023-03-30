@@ -28,10 +28,10 @@ Supported Redis: 3.0 ... 7.0
      * [Redis Enterprise](https://redis.com/redis-enterprise/)
      * [Redis Enterprise Active-Active databases](https://docs.redis.com/latest/rs/databases/active-active/get-started/)
      * [Redis Enterprise Multiple Active Proxy](https://docs.redis.com/latest/rs/databases/configure/proxy-policy/#about-multiple-active-proxy-support)
-* Aiven compatible
-     * [Aiven for Redis](https://aiven.io/redis)
 * IBM Cloud compatible
      * [IBM Cloud Databases for Redis](https://www.ibm.com/cloud/databases-for-redis)
+* Aiven compatible
+     * [Aiven for Redis](https://aiven.io/redis)
 * Supports auto-reconnection  
 * Supports failed to send command auto-retry  
 * Supports OSGi  
