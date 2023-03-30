@@ -813,7 +813,12 @@ public class RedissonTest extends BaseTest {
                 .run();
 
         Config config = new Config();
-        config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
+        config.useSingleServer()
+                .setConnectionMinimumIdleSize(20)
+                .setConnectionPoolSize(20)
+                .setSubscriptionConnectionMinimumIdleSize(20)
+                .setSubscriptionConnectionPoolSize(20)
+                .setAddress(runner.getRedisServerAddressAndPort());
 
         RedissonClient r = Redisson.create(config);
         
