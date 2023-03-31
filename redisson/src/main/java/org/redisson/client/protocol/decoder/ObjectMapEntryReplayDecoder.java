@@ -19,7 +19,6 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -42,8 +41,7 @@ public class ObjectMapEntryReplayDecoder implements MultiDecoder<Set<Entry<Objec
 
     @Override
     public Set<Entry<Object, Object>> decode(List<Object> parts, State state) {
-        int size = parts.size()/2;
-        Map<Object, Object> result = new LinkedHashMap<>(size < 3 ? size + 1 : (int) Math.ceil(size/0.75));
+        Map<Object, Object> result = MultiDecoder.newLinkedHashMap(parts.size()/2);
         for (int i = 0; i < parts.size(); i++) {
             if (i % 2 != 0) {
                 result.put(parts.get(i-1), parts.get(i));

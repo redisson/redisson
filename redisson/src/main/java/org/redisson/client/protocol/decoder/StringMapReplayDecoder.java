@@ -17,7 +17,6 @@ package org.redisson.client.protocol.decoder;
 
 import org.redisson.client.handler.State;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -30,8 +29,7 @@ public class StringMapReplayDecoder implements MultiDecoder<Map<String, String>>
 
     @Override
     public Map<String, String> decode(List<Object> parts, State state) {
-        int size = parts.size()/2;
-        Map<String, String> result = new LinkedHashMap<>(size < 3 ? size + 1 : (int) Math.ceil(size/0.75));
+        Map<String, String> result = MultiDecoder.newLinkedHashMap(parts.size()/2);
         for (int i = 0; i < parts.size(); i++) {
             if (i % 2 != 0) {
                 result.put(parts.get(i-1).toString(), parts.get(i).toString());
