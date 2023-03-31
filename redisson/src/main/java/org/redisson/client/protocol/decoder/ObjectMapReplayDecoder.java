@@ -52,7 +52,8 @@ public class ObjectMapReplayDecoder<K, V> implements MultiDecoder<Map<K, V>> {
 
     @Override
     public Map<K, V> decode(List<Object> parts, State state) {
-        Map<K, V> result = new LinkedHashMap<>(parts.size()/2);
+        int size = parts.size()/2;
+        Map<K, V> result = new LinkedHashMap<>(size < 3 ? size + 1 : (int) Math.ceil(size/0.75));
         for (int i = 0; i < parts.size(); i++) {
             if (i % 2 != 0) {
                 result.put((K) parts.get(i-1), (V) parts.get(i));

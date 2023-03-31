@@ -55,7 +55,8 @@ public class ObjectMapDecoder implements MultiDecoder<Object> {
             return parts;
         }
 
-        Map<Object, Object> result = new LinkedHashMap<>(parts.size()/2);
+        int size = parts.size()/2;
+        Map<Object, Object> result = new LinkedHashMap<>(size < 3 ? size + 1 : (int) Math.ceil(size/0.75));
         for (int i = 0; i < parts.size(); i++) {
             if (i % 2 != 0) {
                 result.put(parts.get(i-1), parts.get(i));

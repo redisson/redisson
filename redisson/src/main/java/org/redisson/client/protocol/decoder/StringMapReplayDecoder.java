@@ -30,7 +30,8 @@ public class StringMapReplayDecoder implements MultiDecoder<Map<String, String>>
 
     @Override
     public Map<String, String> decode(List<Object> parts, State state) {
-        Map<String, String> result = new LinkedHashMap<>(parts.size()/2);
+        int size = parts.size()/2;
+        Map<String, String> result = new LinkedHashMap<>(size < 3 ? size + 1 : (int) Math.ceil(size/0.75));
         for (int i = 0; i < parts.size(); i++) {
             if (i % 2 != 0) {
                 result.put(parts.get(i-1).toString(), parts.get(i).toString());
