@@ -15,18 +15,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonGeoTest extends BaseTest {
 
-    @BeforeAll
-    public static void checkRedisVersion() throws IOException, InterruptedException {
-        boolean running = RedisRunner.isDefaultRedisServerInstanceRunning();
-        if (!running) {
-            RedisRunner.startDefaultRedisServerInstance();
-        }
-        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("3.1.0") > 0);
-        if (!running) {
-            RedisRunner.shutDownDefaultRedisServerInstance();
-        }
-    }
-    
     @Test
     public void testAdd() {
         RGeo<String> geo = redisson.getGeo("test");

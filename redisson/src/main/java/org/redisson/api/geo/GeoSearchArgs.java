@@ -34,7 +34,7 @@ public interface GeoSearchArgs {
      * @return search conditions object
      */
     static <V> ShapeGeoSearch from(V member) {
-        return new BaseGeoSearch(member);
+        return new GeoSearchParams(member);
     }
 
     /**
@@ -45,7 +45,7 @@ public interface GeoSearchArgs {
      * @return search conditions object
      */
     static ShapeGeoSearch from(double longitude, double latitude) {
-        return new BaseGeoSearch(longitude, latitude);
+        return new GeoSearchParams(longitude, latitude);
     }
 
 }
