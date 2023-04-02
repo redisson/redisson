@@ -34,7 +34,7 @@ public interface DequeMoveArgs {
      * @return arguments object
      */
     static DequeMoveDestination pollLast() {
-        return new DequeMoveDestinationStep(DequeMoveParams.Direction.RIGHT);
+        return new DequeMoveParams(DequeMoveParams.Direction.RIGHT);
     }
 
     /**
@@ -43,7 +43,7 @@ public interface DequeMoveArgs {
      * @return arguments object
      */
     static DequeMoveDestination pollFirst() {
-        return new DequeMoveDestinationStep(DequeMoveParams.Direction.LEFT);
+        return new DequeMoveParams(DequeMoveParams.Direction.LEFT);
     }
 
 }

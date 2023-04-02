@@ -20,7 +20,7 @@ package org.redisson.api.queue;
  * @author Nikita Koksharov
  *
  */
-public class DequeMoveParams {
+public class DequeMoveParams implements DequeMoveDestination {
 
     public enum Direction {LEFT, RIGHT};
 
@@ -28,27 +28,33 @@ public class DequeMoveParams {
     private Direction destDirection;
     private String destName;
 
-    public Direction getSourceDirection() {
-        return sourceDirection;
+    DequeMoveParams(Direction direction) {
+        sourceDirection = direction;
     }
 
-    public void setSourceDirection(Direction sourceDirection) {
-        this.sourceDirection = sourceDirection;
+    @Override
+    public DequeMoveArgs addFirstTo(String name) {
+        destDirection = Direction.LEFT;
+        destName = name;
+        return this;
+    }
+
+    @Override
+    public DequeMoveArgs addLastTo(String name) {
+        destDirection = Direction.RIGHT;
+        destName = name;
+        return this;
+    }
+
+    public Direction getSourceDirection() {
+        return sourceDirection;
     }
 
     public Direction getDestDirection() {
         return destDirection;
     }
 
-    public void setDestDirection(Direction destDirection) {
-        this.destDirection = destDirection;
-    }
-
     public String getDestName() {
         return destName;
-    }
-
-    public void setDestName(String destName) {
-        this.destName = destName;
     }
 }

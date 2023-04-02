@@ -22,7 +22,6 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.queue.DequeMoveArgs;
 import org.redisson.api.queue.DequeMoveParams;
-import org.redisson.api.queue.DequeMoveSource;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
@@ -128,8 +127,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public RFuture<V> moveAsync(DequeMoveArgs args) {
-        DequeMoveSource source = (DequeMoveSource) args;
-        DequeMoveParams pp = source.getParams();
+        DequeMoveParams pp = (DequeMoveParams) args;
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.LMOVE, getRawName(),
                                                 pp.getDestName(), pp.getSourceDirection(), pp.getDestDirection());
     }
