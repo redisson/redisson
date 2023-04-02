@@ -33,8 +33,7 @@ public interface StreamTrimArgs {
      * @return arguments object
      */
     static StreamTrimLimitArgs<StreamTrimArgs> maxLen(int threshold) {
-        BaseStreamTrimArgs<StreamTrimArgs> args = new BaseStreamTrimArgs(new StreamTrimParams());
-        return args.maxLen(threshold);
+        return new StreamTrimParams(threshold);
     }
 
     /**
@@ -45,8 +44,7 @@ public interface StreamTrimArgs {
      * @return arguments object
      */
     static StreamTrimLimitArgs<StreamTrimArgs> minId(StreamMessageId messageId) {
-        BaseStreamTrimArgs<StreamTrimArgs> args = new BaseStreamTrimArgs(new StreamTrimParams());
-        return args.minId(messageId);
+        return new StreamTrimParams(messageId);
     }
 
 }

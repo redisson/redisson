@@ -22,32 +22,55 @@ import org.redisson.api.StreamMessageId;
  * @author Nikita Koksharov
  *
  */
-public class StreamTrimParams {
+public class StreamTrimParams implements StreamTrimStrategyArgs<StreamTrimArgs>,
+                                         StreamTrimArgs,
+                                         StreamTrimLimitArgs<StreamTrimArgs> {
 
-    private int maxLen;
-    private StreamMessageId minId;
-    private int limit;
+    int maxLen;
+    StreamMessageId minId;
+    int limit;
+
+    StreamTrimParams(int threshold) {
+        this.maxLen = threshold;
+    }
+
+    StreamTrimParams(StreamMessageId minId) {
+        this.minId = minId;
+    }
+
+    @Override
+    public StreamTrimLimitArgs<StreamTrimArgs> maxLen(int threshold) {
+        this.maxLen = threshold;
+        return this;
+    }
+
+    @Override
+    public StreamTrimLimitArgs<StreamTrimArgs> minId(StreamMessageId messageId) {
+        this.minId = messageId;
+        return this;
+    }
+
+    @Override
+    public StreamTrimArgs noLimit() {
+        this.limit = 0;
+        return this;
+    }
+
+    @Override
+    public StreamTrimArgs limit(int size) {
+        this.limit = size;
+        return this;
+    }
 
     public int getMaxLen() {
         return maxLen;
-    }
-    public void setMaxLen(int maxLen) {
-        this.maxLen = maxLen;
     }
 
     public StreamMessageId getMinId() {
         return minId;
     }
-    public void setMinId(StreamMessageId minId) {
-        this.minId = minId;
-    }
 
     public int getLimit() {
         return limit;
     }
-
-    public void setLimit(int limit) {
-        this.limit = limit;
-    }
-
 }

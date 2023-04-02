@@ -181,7 +181,7 @@ public interface StreamAddArgs<K, V> {
      * @return arguments object
      */
     static <K, V> StreamAddArgs<K, V> entries(Map<K, V> entries) {
-        return new BaseStreamAddArgs<K, V>(entries);
+        return new StreamAddParams<K, V>(entries);
     }
 
 }

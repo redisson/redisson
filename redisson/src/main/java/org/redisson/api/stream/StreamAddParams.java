@@ -15,6 +15,8 @@
  */
 package org.redisson.api.stream;
 
+import org.redisson.api.StreamMessageId;
+
 import java.util.Map;
 
 /**
@@ -22,14 +24,82 @@ import java.util.Map;
  * @author Nikita Koksharov
  *
  */
-public class StreamAddParams<K, V> extends StreamTrimParams {
+public class StreamAddParams<K, V> implements StreamAddArgs<K, V>,
+                                              StreamTrimStrategyArgs<StreamAddArgs<K, V>>,
+                                              StreamTrimLimitArgs<StreamAddArgs<K, V>>  {
 
     private Map<K, V> entries;
     private boolean noMakeStream;
     private boolean trimStrict;
 
-    public StreamAddParams(Map<K, V> entries) {
+    private int maxLen;
+    private StreamMessageId minId;
+    private int limit;
+
+    StreamAddParams(Map<K, V> entries) {
         this.entries = entries;
+    }
+
+    @Override
+    public StreamAddArgs<K, V> noMakeStream() {
+        this.noMakeStream = true;
+        return this;
+    }
+
+    @Override
+    public StreamAddArgs<K, V> trim(TrimStrategy strategy, int threshold) {
+        return trim(strategy, threshold, 0);
+    }
+
+    @Override
+    public StreamAddArgs<K, V> trimStrict(TrimStrategy strategy, int threshold) {
+        this.maxLen = threshold;
+        this.trimStrict = true;
+        return this;
+    }
+
+    @Override
+    public StreamAddArgs<K, V> trim(TrimStrategy strategy, int threshold, int limit) {
+        this.maxLen = threshold;
+        this.trimStrict = false;
+        this.limit = limit;
+        return this;
+    }
+
+    @Override
+    public StreamTrimStrategyArgs<StreamAddArgs<K, V>> trim() {
+        this.trimStrict = true;
+        return this;
+    }
+
+    @Override
+    public StreamTrimStrategyArgs<StreamAddArgs<K, V>> trimNonStrict() {
+        this.trimStrict = false;
+        return this;
+    }
+
+    @Override
+    public StreamTrimLimitArgs<StreamAddArgs<K, V>> maxLen(int threshold) {
+        this.maxLen = threshold;
+        return this;
+    }
+
+    @Override
+    public StreamTrimLimitArgs<StreamAddArgs<K, V>> minId(StreamMessageId messageId) {
+        this.minId = messageId;
+        return this;
+    }
+
+    @Override
+    public StreamAddArgs<K, V> noLimit() {
+        this.limit = 0;
+        return this;
+    }
+
+    @Override
+    public StreamAddArgs<K, V> limit(int size) {
+        this.limit = size;
+        return this;
     }
 
     public Map<K, V> getEntries() {
@@ -40,16 +110,19 @@ public class StreamAddParams<K, V> extends StreamTrimParams {
         return noMakeStream;
     }
 
-    public void setNoMakeStream(boolean noMakeStream) {
-        this.noMakeStream = noMakeStream;
-    }
-
     public boolean isTrimStrict() {
         return trimStrict;
     }
 
-    public void setTrimStrict(boolean trimStrict) {
-        this.trimStrict = trimStrict;
+    public int getMaxLen() {
+        return maxLen;
     }
 
+    public StreamMessageId getMinId() {
+        return minId;
+    }
+
+    public int getLimit() {
+        return limit;
+    }
 }

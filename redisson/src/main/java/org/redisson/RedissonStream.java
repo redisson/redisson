@@ -901,8 +901,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
 
     public <R> RFuture<R> addCustomAsync(StreamMessageId id, StreamAddArgs<K, V> args) {
-        StreamAddArgsSource<K, V> source = (StreamAddArgsSource<K, V>) args;
-        StreamAddParams<K, V> pps = source.getParams();
+        StreamAddParams<K, V> pps = (StreamAddParams<K, V>) args;
 
         List<Object> params = new LinkedList<Object>();
         params.add(getRawName());
@@ -1379,8 +1378,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
 
     private RFuture<Long> trimAsync(StreamTrimArgs args, boolean trimStrict) {
-        StreamTrimArgsSource source = (StreamTrimArgsSource) args;
-        StreamTrimParams pps = source.getParams();
+        StreamTrimParams pps = (StreamTrimParams) args;
 
         List<Object> params = new LinkedList<>();
         params.add(getRawName());
