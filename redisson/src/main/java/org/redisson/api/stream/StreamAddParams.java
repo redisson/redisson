@@ -28,7 +28,7 @@ public class StreamAddParams<K, V> implements StreamAddArgs<K, V>,
                                               StreamTrimStrategyArgs<StreamAddArgs<K, V>>,
                                               StreamTrimLimitArgs<StreamAddArgs<K, V>>  {
 
-    private Map<K, V> entries;
+    private final Map<K, V> entries;
     private boolean noMakeStream;
     private boolean trimStrict;
 
