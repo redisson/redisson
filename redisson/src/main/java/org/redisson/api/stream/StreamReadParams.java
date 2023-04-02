@@ -18,46 +18,43 @@ package org.redisson.api.stream;
 import org.redisson.api.StreamMessageId;
 
 import java.time.Duration;
-import java.util.Map;
 
 /**
  *
  * @author Nikita Koksharov
  *
  */
-public class StreamReadParams {
+public class StreamReadParams implements StreamReadArgs {
 
     private final StreamMessageId id1;
-    private final Map<String, StreamMessageId> offsets;
     private int count;
     private Duration timeout;
 
-    public StreamReadParams(StreamMessageId id1, Map<String, StreamMessageId> offsets) {
+    StreamReadParams(StreamMessageId id1) {
         this.id1 = id1;
-        this.offsets = offsets;
     }
 
-    public int getCount() {
-        return count;
-    }
-
-    public void setCount(int count) {
+    @Override
+    public StreamReadArgs count(int count) {
         this.count = count;
+        return this;
     }
 
-    public Duration getTimeout() {
-        return timeout;
-    }
-
-    public void setTimeout(Duration timeout) {
+    @Override
+    public StreamReadArgs timeout(Duration timeout) {
         this.timeout = timeout;
+        return this;
     }
 
     public StreamMessageId getId1() {
         return id1;
     }
 
-    public Map<String, StreamMessageId> getOffsets() {
-        return offsets;
+    public int getCount() {
+        return count;
+    }
+
+    public Duration getTimeout() {
+        return timeout;
     }
 }

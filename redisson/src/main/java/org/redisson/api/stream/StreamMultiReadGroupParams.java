@@ -25,34 +25,53 @@ import java.util.Map;
  * @author Nikita Koksharov
  *
  */
-class BaseStreamMultiReadGroupArgs implements StreamMultiReadGroupArgs, StreamReadGroupSource {
+public class StreamMultiReadGroupParams implements StreamMultiReadGroupArgs {
 
     private final StreamReadGroupParams params;
 
-    BaseStreamMultiReadGroupArgs(StreamMessageId id1, Map<String, StreamMessageId> offsets) {
-        this.params = new StreamReadGroupParams(id1, offsets);
+    private final Map<String, StreamMessageId> offsets;
+
+    StreamMultiReadGroupParams(StreamMessageId id1, Map<String, StreamMessageId> offsets) {
+        this.params = new StreamReadGroupParams(id1);
+        this.offsets = offsets;
     }
 
     @Override
     public StreamMultiReadGroupArgs noAck() {
-        params.setNoAck(true);
+        params.noAck();
         return this;
     }
 
     @Override
     public StreamMultiReadGroupArgs count(int count) {
-        params.setCount(count);
+        params.count(count);
         return this;
     }
 
     @Override
     public StreamMultiReadGroupArgs timeout(Duration timeout) {
-        params.setTimeout(timeout);
+        params.timeout(timeout);
         return this;
     }
 
-    @Override
-    public StreamReadGroupParams getParams() {
-        return params;
+    public boolean isNoAck() {
+        return params.isNoAck();
     }
+
+    public StreamMessageId getId1() {
+        return params.getId1();
+    }
+
+    public Map<String, StreamMessageId> getOffsets() {
+        return offsets;
+    }
+
+    public int getCount() {
+        return params.getCount();
+    }
+
+    public Duration getTimeout() {
+        return params.getTimeout();
+    }
+
 }

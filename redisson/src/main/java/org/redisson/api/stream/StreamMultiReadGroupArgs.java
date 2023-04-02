@@ -148,7 +148,7 @@ public interface StreamMultiReadGroupArgs {
      * @return arguments object
      */
     static StreamMultiReadGroupArgs greaterThan(StreamMessageId id, Map<String, StreamMessageId> offsets) {
-        return new BaseStreamMultiReadGroupArgs(id, offsets);
+        return new StreamMultiReadGroupParams(id, offsets);
     }
 
 }

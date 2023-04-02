@@ -156,7 +156,7 @@ public interface StreamMultiReadArgs {
      * @return arguments object
      */
     static StreamMultiReadArgs greaterThan(StreamMessageId id1, Map<String, StreamMessageId> offsets) {
-        return new BaseStreamMultiReadArgs(id1, offsets);
+        return new StreamMultiReadParams(id1, offsets);
     }
 
 }

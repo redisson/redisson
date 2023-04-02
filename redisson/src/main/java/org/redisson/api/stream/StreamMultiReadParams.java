@@ -25,28 +25,42 @@ import java.util.Map;
  * @author Nikita Koksharov
  *
  */
-class BaseStreamReadArgs implements StreamReadArgs, StreamReadSource {
+public class StreamMultiReadParams implements StreamMultiReadArgs {
 
     private final StreamReadParams params;
 
-    BaseStreamReadArgs(StreamMessageId id1, Map<String, StreamMessageId> offsets) {
-        this.params = new StreamReadParams(id1, offsets);
+    private final Map<String, StreamMessageId> offsets;
+
+    StreamMultiReadParams(StreamMessageId id1, Map<String, StreamMessageId> offsets) {
+        this.params = new StreamReadParams(id1);
+        this.offsets = offsets;
     }
 
     @Override
-    public StreamReadArgs count(int count) {
-        params.setCount(count);
+    public StreamMultiReadArgs count(int count) {
+        params.count(count);
         return this;
     }
 
     @Override
-    public StreamReadArgs timeout(Duration timeout) {
-        params.setTimeout(timeout);
+    public StreamMultiReadArgs timeout(Duration timeout) {
+        params.timeout(timeout);
         return this;
     }
 
-    @Override
-    public StreamReadParams getParams() {
-        return params;
+    public StreamMessageId getId1() {
+        return params.getId1();
+    }
+
+    public int getCount() {
+        return params.getCount();
+    }
+
+    public Duration getTimeout() {
+        return params.getTimeout();
+    }
+
+    public Map<String, StreamMessageId> getOffsets() {
+        return offsets;
     }
 }

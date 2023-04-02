@@ -201,7 +201,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
 
     @Override
     public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName, StreamMultiReadGroupArgs args) {
-        StreamReadGroupParams rp = ((StreamReadGroupSource) args).getParams();
+        StreamMultiReadGroupParams rp = (StreamMultiReadGroupParams) args;
 
         List<Object> params = new ArrayList<>();
         params.add("GROUP");
@@ -244,7 +244,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
 
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, StreamReadGroupArgs args) {
-        StreamReadGroupParams rp = ((StreamReadGroupSource) args).getParams();
+        StreamReadGroupParams rp = (StreamReadGroupParams) args;
 
         List<Object> params = new ArrayList<>();
         params.add("GROUP");
@@ -655,7 +655,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
 
     @Override
     public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(StreamMultiReadArgs args) {
-        StreamReadParams rp = ((StreamReadSource) args).getParams();
+        StreamMultiReadParams rp = (StreamMultiReadParams) args;
 
         List<Object> params = new ArrayList<>();
         if (rp.getCount() > 0) {
@@ -690,7 +690,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
 
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> readAsync(StreamReadArgs args) {
-        StreamReadParams rp = ((StreamReadSource) args).getParams();
+        StreamReadParams rp = (StreamReadParams) args;
 
         List<Object> params = new ArrayList<Object>();
         if (rp.getCount() > 0) {

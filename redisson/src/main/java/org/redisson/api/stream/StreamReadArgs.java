@@ -18,7 +18,6 @@ package org.redisson.api.stream;
 import org.redisson.api.StreamMessageId;
 
 import java.time.Duration;
-import java.util.Collections;
 
 /**
  * Arguments object for RStream.read() methods.
@@ -52,7 +51,7 @@ public interface StreamReadArgs {
      * @return arguments object
      */
     static StreamReadArgs greaterThan(StreamMessageId id0) {
-        return new BaseStreamReadArgs(id0, Collections.emptyMap());
+        return new StreamReadParams(id0);
     }
 
 }
