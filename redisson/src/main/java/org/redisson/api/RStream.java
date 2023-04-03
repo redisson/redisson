@@ -759,6 +759,11 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
 
     /**
      * Trims stream using strict trimming.
+     * <p>
+     * Usage example:
+     * <pre>
+     * long result = stream.trim(StreamTrimArgs.maxLen(100).noLimit());
+     * </pre>
      *
      * @param args - method arguments object
      * @return number of deleted messages
@@ -767,6 +772,11 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
 
     /**
      * Trims stream using non-strict trimming.
+     * <p>
+     * Usage example:
+     * <pre>
+     * long result = stream.trimNonStrict(StreamTrimArgs.maxLen(100).noLimit());
+     * </pre>
      *
      * @param args - method arguments object
      * @return number of deleted messages
