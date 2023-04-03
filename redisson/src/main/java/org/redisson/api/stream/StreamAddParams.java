@@ -24,7 +24,7 @@ import java.util.Map;
  * @author Nikita Koksharov
  *
  */
-public class StreamAddParams<K, V> implements StreamAddArgs<K, V>,
+public final class StreamAddParams<K, V> implements StreamAddArgs<K, V>,
                                               StreamTrimStrategyArgs<StreamAddArgs<K, V>>,
                                               StreamTrimLimitArgs<StreamAddArgs<K, V>>  {
 

@@ -25,7 +25,7 @@ import java.util.Map;
  * @author Nikita Koksharov
  *
  */
-public class StreamMultiReadParams implements StreamMultiReadArgs {
+public final class StreamMultiReadParams implements StreamMultiReadArgs {
 
     private final StreamReadParams params;
 

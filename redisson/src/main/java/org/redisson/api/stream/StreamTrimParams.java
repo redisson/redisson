@@ -22,7 +22,7 @@ import org.redisson.api.StreamMessageId;
  * @author Nikita Koksharov
  *
  */
-public class StreamTrimParams implements StreamTrimStrategyArgs<StreamTrimArgs>,
+public final class StreamTrimParams implements StreamTrimStrategyArgs<StreamTrimArgs>,
                                          StreamTrimArgs,
                                          StreamTrimLimitArgs<StreamTrimArgs> {
 

@@ -21,7 +21,7 @@ import org.redisson.api.GeoUnit;
 /**
  * @author Nikita Koksharov
  */
-public class GeoSearchParams implements ShapeGeoSearch, OptionalGeoSearch {
+public final class GeoSearchParams implements ShapeGeoSearch, OptionalGeoSearch {
 
     private Object member;
     private Double longitude;

@@ -24,7 +24,7 @@ import java.time.Duration;
  * @author Nikita Koksharov
  *
  */
-public class StreamReadParams implements StreamReadArgs {
+public final class StreamReadParams implements StreamReadArgs {
 
     private final StreamMessageId id1;
     private int count;

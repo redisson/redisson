@@ -24,7 +24,7 @@ import java.time.Duration;
  * @author Nikita Koksharov
  *
  */
-public class StreamReadGroupParams implements StreamReadGroupArgs {
+public final class StreamReadGroupParams implements StreamReadGroupArgs {
 
     private boolean noAck;
     private final StreamMessageId id1;
