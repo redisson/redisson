@@ -15,7 +15,6 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -55,7 +54,7 @@ public class ObjectMapDecoder implements MultiDecoder<Object> {
             return parts;
         }
 
-        Map<Object, Object> result = new LinkedHashMap<>(parts.size()/2);
+        Map<Object, Object> result = MultiDecoder.newLinkedHashMap(parts.size()/2);
         for (int i = 0; i < parts.size(); i++) {
             if (i % 2 != 0) {
                 result.put(parts.get(i-1), parts.get(i));
