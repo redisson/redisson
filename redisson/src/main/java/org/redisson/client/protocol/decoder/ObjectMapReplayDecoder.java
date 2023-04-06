@@ -31,6 +31,7 @@ import java.util.Optional;
  */
 public class ObjectMapReplayDecoder<K, V> implements MultiDecoder<Map<K, V>> {
 
+    private boolean swapKeyValue;
     private final Codec codec;
 
     public ObjectMapReplayDecoder(Codec codec) {
@@ -39,6 +40,11 @@ public class ObjectMapReplayDecoder<K, V> implements MultiDecoder<Map<K, V>> {
 
     public ObjectMapReplayDecoder() {
         this(null);
+    }
+
+    public ObjectMapReplayDecoder(boolean swapKeyValue, Codec codec) {
+        this.swapKeyValue = swapKeyValue;
+        this.codec = codec;
     }
 
     @Override
@@ -55,7 +61,11 @@ public class ObjectMapReplayDecoder<K, V> implements MultiDecoder<Map<K, V>> {
         Map<K, V> result = new LinkedHashMap<>(parts.size()/2);
         for (int i = 0; i < parts.size(); i++) {
             if (i % 2 != 0) {
-                result.put((K) parts.get(i-1), (V) parts.get(i));
+                if (swapKeyValue) {
+                    result.put((K) parts.get(i), (V) parts.get(i-1));
+                } else {
+                    result.put((K) parts.get(i-1), (V) parts.get(i));
+                }
             }
         }
         return result;

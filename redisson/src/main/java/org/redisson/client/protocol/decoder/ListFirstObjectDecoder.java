@@ -16,6 +16,7 @@
 package org.redisson.client.protocol.decoder;
 
 import org.redisson.client.handler.State;
+import org.redisson.client.protocol.convertor.Convertor;
 
 import java.util.List;
 
@@ -26,10 +27,23 @@ import java.util.List;
  */
 public class ListFirstObjectDecoder implements MultiDecoder<Object> {
 
+    private final Convertor<?> convertor;
+
+    public ListFirstObjectDecoder() {
+        this(null);
+    }
+
+    public ListFirstObjectDecoder(Convertor<?> convertor) {
+        this.convertor = convertor;
+    }
+
     @Override
     public Object decode(List<Object> parts, State state) {
         if (!parts.isEmpty()) {
             return parts.get(0);
+        }
+        if (convertor != null) {
+            return convertor.convert(null);
         }
         return null;
     }
