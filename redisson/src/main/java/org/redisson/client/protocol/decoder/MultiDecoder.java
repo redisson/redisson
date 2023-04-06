@@ -15,6 +15,7 @@
  */
 package org.redisson.client.protocol.decoder;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 
 import org.redisson.client.codec.Codec;
@@ -38,5 +39,12 @@ public interface MultiDecoder<T> {
     }
     
     T decode(List<Object> parts, State state);
+
+    static <K, V> LinkedHashMap<K, V> newLinkedHashMap(int expectedSize) {
+        if (expectedSize < 3) {
+            return new LinkedHashMap<>(expectedSize + 1);
+        }
+        return new LinkedHashMap<>((int) Math.ceil(expectedSize / 0.75));
+    }
 
 }
