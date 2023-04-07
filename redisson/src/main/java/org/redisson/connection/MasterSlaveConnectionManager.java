@@ -310,6 +310,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (type != NodeType.SENTINEL) {
             MasterSlaveEntry entry = getEntry(address);
             if (entry != null) {
+                if (!entry.isInit()) {
+                    return type;
+                }
                 InetSocketAddress addr = entry.getClient().getAddr();
                 if (addr.getAddress().equals(address.getAddress())
                         && addr.getPort() == address.getPort()) {

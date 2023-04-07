@@ -402,6 +402,10 @@ public class MasterSlaveEntry {
         return slaveBalancer.getEntry(addr);
     }
 
+    public boolean isInit() {
+        return masterEntry != null;
+    }
+
     public RedisClient getClient() {
         return masterEntry.getClient();
     }
