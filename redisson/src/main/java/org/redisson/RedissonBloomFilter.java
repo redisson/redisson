@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.LongStream;
 
 /**
  * Bloom filter based on Highway 128-bit hash.
@@ -116,6 +117,42 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
             RBitSetAsync bs = createBitSet(executorService);
             for (int i = 0; i < indexes.length; i++) {
                 bs.setAsync(indexes[i]);
+            }
+            try {
+                List<Boolean> result = (List<Boolean>) executorService.execute().getResponses();
+
+                for (Boolean val : result.subList(1, result.size()-1)) {
+                    if (!val) {
+                        return true;
+                    }
+                }
+                return false;
+            } catch (RedisException e) {
+                if (e.getMessage() == null || !e.getMessage().contains("Bloom filter config has been changed")) {
+                    throw e;
+                }
+            }
+        }
+    }
+
+    @Override
+    public boolean add(List<T> objects) {
+        while (true) {
+            if (size == 0) {
+                readConfig();
+            }
+
+            Long[] ids = objects.parallelStream()
+                    .map(this::hash)
+                    .flatMapToLong(hashes -> LongStream.of(hash(hashes[0], hashes[1], hashIterations, size)))
+                    .distinct()
+                    .boxed().toArray(Long[]::new);
+
+            CommandBatchService executorService = new CommandBatchService(commandExecutor);
+            addConfigCheck(hashIterations, size, executorService);
+            RBitSetAsync bs = createBitSet(executorService);
+            for (int i = 0; i < ids.length; i++) {
+                bs.setAsync(ids[i]);
             }
             try {
                 List<Boolean> result = (List<Boolean>) executorService.execute().getResponses();
