@@ -80,7 +80,21 @@ public interface RedissonReactiveClient {
      * @return RStream object
      */
     <K, V> RStreamReactive<K, V> getStream(String name, Codec codec);
-    
+
+    /**
+     * Returns API for RediSearch module
+     *
+     * @return RSearch object
+     */
+    RSearchReactive getSearch();
+
+    /**
+     * Returns API for RediSearch module using defined codec for attribute values.
+     *
+     * @return RSearch object
+     */
+    RSearchReactive getSearch(Codec codec);
+
     /**
      * Returns geospatial items holder instance by <code>name</code>.
      * 

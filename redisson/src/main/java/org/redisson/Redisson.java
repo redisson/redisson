@@ -181,6 +181,16 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
+    public RSearch getSearch() {
+        return new RedissonSearch(null, commandExecutor);
+    }
+
+    @Override
+    public RSearch getSearch(Codec codec) {
+        return new RedissonSearch(codec, commandExecutor);
+    }
+
+    @Override
     public RBinaryStream getBinaryStream(String name) {
         return new RedissonBinaryStream(commandExecutor, name);
     }

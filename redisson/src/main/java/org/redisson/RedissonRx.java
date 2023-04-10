@@ -87,6 +87,16 @@ public class RedissonRx implements RedissonRxClient {
     }
 
     @Override
+    public RSearchRx getSearch() {
+        return getSearch(null);
+    }
+
+    @Override
+    public RSearchRx getSearch(Codec codec) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonSearch(codec, commandExecutor), RSearchRx.class);
+    }
+
+    @Override
     public <V> RGeoRx<V> getGeo(String name) {
         RedissonScoredSortedSet<V> set = new RedissonScoredSortedSet<V>(commandExecutor, name, null);
         return RxProxyBuilder.create(commandExecutor, new RedissonGeo<V>(commandExecutor, name, null), 

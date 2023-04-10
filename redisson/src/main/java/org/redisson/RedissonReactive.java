@@ -97,6 +97,16 @@ public class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
+    public RSearchReactive getSearch() {
+        return getSearch(null);
+    }
+
+    @Override
+    public RSearchReactive getSearch(Codec codec) {
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonSearch(codec, commandExecutor), RSearchReactive.class);
+    }
+
+    @Override
     public <V> RGeoReactive<V> getGeo(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonGeo<V>(commandExecutor, name, null), 
                 new RedissonScoredSortedSetReactive<V>(commandExecutor, name), RGeoReactive.class);

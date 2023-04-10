@@ -16,6 +16,7 @@
 package org.redisson.client.protocol;
 
 import org.redisson.api.*;
+import org.redisson.api.search.index.IndexInfo;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.codec.StringCodec;
@@ -24,6 +25,7 @@ import org.redisson.client.protocol.convertor.*;
 import org.redisson.client.protocol.decoder.*;
 import org.redisson.client.protocol.pubsub.PubSubStatusDecoder;
 import org.redisson.cluster.ClusterNodeInfo;
+import org.redisson.codec.CompositeCodec;
 import org.redisson.misc.RedisURI;
 
 import java.time.Duration;
@@ -743,4 +745,45 @@ public interface RedisCommands {
 
     RedisStrictCommand<Void> JSON_SET = new RedisStrictCommand<>("JSON.SET", new VoidReplayConvertor());
     RedisStrictCommand<Boolean> JSON_SET_BOOLEAN = new RedisStrictCommand<>("JSON.SET", new BooleanNotNullReplayConvertor());
+
+    RedisStrictCommand<Void> FT_CREATE = new RedisStrictCommand<>("FT.CREATE", new VoidReplayConvertor());
+
+    RedisStrictCommand<Void> FT_ALIASADD = new RedisStrictCommand<>("FT.ALIASADD", new VoidReplayConvertor());
+    RedisStrictCommand<Void> FT_ALIASDEL = new RedisStrictCommand<>("FT.ALIASDEL", new VoidReplayConvertor());
+
+    RedisStrictCommand<Void> FT_ALIASUPDATE = new RedisStrictCommand<>("FT.ALIASUPDATE", new VoidReplayConvertor());
+    RedisStrictCommand<Void> FT_ALTER = new RedisStrictCommand<>("FT.ALTER", new VoidReplayConvertor());
+
+    RedisCommand<Map<String, Map<String, Object>>> FT_SPELLCHECK = new RedisCommand<>("FT.SPELLCHECK",
+            new ListMultiDecoder2(
+                    new StreamObjectMapReplayDecoder(),
+                    new ObjectMapReplayDecoder() {
+                        @Override
+                        public Map decode(List parts, State state) {
+                            return super.decode(parts.subList(1, parts.size()), state);
+                        }
+                    },
+                    new ListFirstObjectDecoder(new EmptyMapConvertor()),
+                    new ObjectMapReplayDecoder(true, new CompositeCodec(DoubleCodec.INSTANCE, StringCodec.INSTANCE))));
+
+    RedisStrictCommand<Void> FT_DICTADD = new RedisStrictCommand<>("FT.DICTADD");
+    RedisStrictCommand<Void> FT_DICTDEL = new RedisStrictCommand<>("FT.DICTDEL");
+
+    RedisStrictCommand<List<String>> FT_DICTDUMP = new RedisStrictCommand<>("FT.DICTDUMP", new StringListReplayDecoder());
+
+    RedisStrictCommand<Void> FT_DROPINDEX = new RedisStrictCommand<>("FT.DROPINDEX");
+    RedisStrictCommand<Void> FT_CURSOR_DEL = new RedisStrictCommand<>("FT.CURSOR", "DEL");
+
+    RedisStrictCommand<Map<String, String>> FT_CONFIG_GET = new RedisStrictCommand<>("FT.CONFIG", "GET", new ObjectMapReplayDecoder());
+    RedisStrictCommand<Void> FT_CONFIG_SET = new RedisStrictCommand<Void>("FT.CONFIG", "SET", new VoidReplayConvertor());
+
+    RedisCommand<IndexInfo> FT_INFO = new RedisCommand("FT.INFO", new IndexInfoDecoder());
+
+    RedisCommand<Map<String, List<String>>> FT_SYNDUMP = new RedisCommand<>("FT.SYNDUMP",
+            new ListMultiDecoder2(
+                    new ObjectMapReplayDecoder(),
+                    new ObjectListReplayDecoder()));
+
+    RedisCommand<Void> FT_SYNUPDATE = new RedisCommand("FT.SYNUPDATE", new VoidReplayConvertor());
+
 }

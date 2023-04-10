@@ -82,7 +82,21 @@ public interface RedissonClient {
      * @return RStream object
      */
     <K, V> RStream<K, V> getStream(String name, Codec codec);
-    
+
+    /**
+     * Returns API for RediSearch module
+     *
+     * @return RSearch object
+     */
+    RSearch getSearch();
+
+    /**
+     * Returns API for RediSearch module using defined codec for attribute values.
+     *
+     * @return RSearch object
+     */
+    RSearch getSearch(Codec codec);
+
     /**
      * Returns rate limiter instance by <code>name</code>
      * 
