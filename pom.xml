@@ -132,7 +132,7 @@
             <dependency>
                 <groupId>org.assertj</groupId>
                 <artifactId>assertj-core</artifactId>
-                <version>3.23.1</version>
+                <version>3.24.2</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
@@ -182,7 +182,7 @@
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-bom</artifactId>
-                <version>4.1.90.Final</version>
+                <version>4.1.91.Final</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -318,7 +318,7 @@
 
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.10.1</version>
+                <version>3.11.0</version>
                 <configuration>
                     <source>${source.version}</source>
                     <target>${source.version}</target>
