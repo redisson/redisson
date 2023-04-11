@@ -78,7 +78,7 @@ By default each Region Factory creates own Redisson instance. For multiple appli
 
 ```xml
 <!-- name of Redisson instance registered in JNDI -->
-<property name="hibernate.cache.region.jndi_name" value="redisson_instance" />
+<property name="hibernate.cache.redisson.jndi_name" value="redisson_instance" />
 <!-- JNDI Redisson Region Cache factory -->
 <property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.JndiRedissonRegionFactory" />
 <!-- or -->
