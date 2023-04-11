@@ -51,7 +51,7 @@ public interface RSearch extends RSearchAsync {
      * @param options index options
      * @param fields fields
      */
-    void create(String indexName, IndexOptions options, FieldIndex... fields);
+    void createIndex(String indexName, IndexOptions options, FieldIndex... fields);
 
     /**
      * Executes search over defined index using defined query.

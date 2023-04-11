@@ -51,7 +51,7 @@ public interface RSearchAsync {
      * @param options index options
      * @param fields fields
      */
-    RFuture<Void> createAsync(String indexName, IndexOptions options, FieldIndex... fields);
+    RFuture<Void> createIndexAsync(String indexName, IndexOptions options, FieldIndex... fields);
 
     /**
      * Executes search over defined index using defined query.

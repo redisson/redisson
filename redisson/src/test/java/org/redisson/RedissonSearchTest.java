@@ -61,7 +61,7 @@ public class RedissonSearchTest extends BaseTest {
         m2.put("t2", new SimpleObject("name4"));
 
         RSearch s = redisson.getSearch();
-        s.create("idx", IndexOptions.defaults()
+        s.createIndex("idx", IndexOptions.defaults()
                                     .on(IndexType.HASH)
                                     .prefix(Arrays.asList("doc:")),
                                     FieldIndex.text("t1"),
@@ -87,7 +87,7 @@ public class RedissonSearchTest extends BaseTest {
 
 
         RSearch s = redisson.getSearch();
-        s.create("idx", IndexOptions.defaults()
+        s.createIndex("idx", IndexOptions.defaults()
                         .on(IndexType.HASH)
                         .prefix(Arrays.asList("doc:")),
                 FieldIndex.text("t1"),
@@ -108,7 +108,7 @@ public class RedissonSearchTest extends BaseTest {
         m2.put("t2", new SimpleObject("name4"));
 
         RSearch s = redisson.getSearch();
-        s.create("idx", IndexOptions.defaults()
+        s.createIndex("idx", IndexOptions.defaults()
                         .on(IndexType.HASH)
                         .prefix(Arrays.asList("doc:")),
                 FieldIndex.text("t1"),
@@ -130,7 +130,7 @@ public class RedissonSearchTest extends BaseTest {
         }
 
         RSearch s = redisson.getSearch(StringCodec.INSTANCE);
-        s.create("idx", IndexOptions.defaults()
+        s.createIndex("idx", IndexOptions.defaults()
                         .on(IndexType.HASH)
                         .prefix(Arrays.asList("doc:")),
                 FieldIndex.text("t1"));
@@ -155,7 +155,7 @@ public class RedissonSearchTest extends BaseTest {
         b.set("[{\"arr\": [1, 2, 3]}, {\"val\": \"hello\"}, {\"val\": \"world\"}]");
 
         RSearch s = redisson.getSearch(StringCodec.INSTANCE);
-        s.create("idx", IndexOptions.defaults()
+        s.createIndex("idx", IndexOptions.defaults()
                         .on(IndexType.JSON)
                         .prefix(Arrays.asList("doc:")),
                 FieldIndex.numeric("$..arr").as("arr"),
@@ -183,7 +183,7 @@ public class RedissonSearchTest extends BaseTest {
         m2.put("t2", new SimpleObject("name4"));
 
         RSearch s = redisson.getSearch();
-        s.create("idx", IndexOptions.defaults()
+        s.createIndex("idx", IndexOptions.defaults()
                                                 .on(IndexType.HASH)
                                                 .prefix(Arrays.asList("doc:")),
                                             FieldIndex.text("t1"),
@@ -204,7 +204,7 @@ public class RedissonSearchTest extends BaseTest {
         b.set("[{\"arr\": [1, 2, 3]}, {\"val\": \"hello\"}, {\"val\": \"world\"}]");
 
         RSearch s = redisson.getSearch(StringCodec.INSTANCE);
-        s.create("idx", IndexOptions.defaults()
+        s.createIndex("idx", IndexOptions.defaults()
                                                 .on(IndexType.JSON)
                                                 .prefix(Arrays.asList("doc:")),
                                     FieldIndex.numeric("$..arr").as("arr"),
@@ -239,7 +239,7 @@ public class RedissonSearchTest extends BaseTest {
     public void testSpellcheck() {
         RSearch s = redisson.getSearch();
 
-        s.create("idx", IndexOptions.defaults()
+        s.createIndex("idx", IndexOptions.defaults()
                         .on(IndexType.HASH)
                         .prefix(Arrays.asList("doc:")),
                 FieldIndex.text("t1"),
@@ -264,7 +264,7 @@ public class RedissonSearchTest extends BaseTest {
     public void testSynonyms() {
         RSearch s = redisson.getSearch();
 
-        s.create("idx", IndexOptions.defaults()
+        s.createIndex("idx", IndexOptions.defaults()
                         .on(IndexType.HASH)
                         .prefix(Arrays.asList("doc:")),
                 FieldIndex.text("t1"),

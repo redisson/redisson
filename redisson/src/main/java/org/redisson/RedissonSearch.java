@@ -56,12 +56,12 @@ public class RedissonSearch implements RSearch {
     }
 
     @Override
-    public void create(String indexName, IndexOptions options, FieldIndex... fields) {
-        commandExecutor.get(createAsync(indexName, options, fields));
+    public void createIndex(String indexName, IndexOptions options, FieldIndex... fields) {
+        commandExecutor.get(createIndexAsync(indexName, options, fields));
     }
 
     @Override
-    public RFuture<Void> createAsync(String indexName, IndexOptions options, FieldIndex... fields) {
+    public RFuture<Void> createIndexAsync(String indexName, IndexOptions options, FieldIndex... fields) {
         if (fields.length == 0) {
             throw new IllegalArgumentException("At least one field index should be defined");
         }

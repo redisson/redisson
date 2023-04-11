@@ -54,7 +54,7 @@ public interface RSearchRx {
      * @param options index options
      * @param fields fields
      */
-    Completable create(String indexName, IndexOptions options, FieldIndex... fields);
+    Completable createIndex(String indexName, IndexOptions options, FieldIndex... fields);
 
     /**
      * Executes search over defined index using defined query.

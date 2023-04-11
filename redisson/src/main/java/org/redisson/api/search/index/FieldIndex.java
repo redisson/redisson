@@ -16,7 +16,7 @@
 package org.redisson.api.search.index;
 
 /**
- * Field index for {@link org.redisson.api.RSearch#create(String, IndexOptions, FieldIndex...)} method
+ * Field index for {@link org.redisson.api.RSearch#createIndex(String, IndexOptions, FieldIndex...)} method
  *
  * @author Nikita Koksharov
  *

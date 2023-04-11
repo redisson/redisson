@@ -52,7 +52,7 @@ public interface RSearchReactive {
      * @param options index options
      * @param fields fields
      */
-    Mono<Void> create(String indexName, IndexOptions options, FieldIndex... fields);
+    Mono<Void> createIndex(String indexName, IndexOptions options, FieldIndex... fields);
 
     /**
      * Executes search over defined index using defined query.
