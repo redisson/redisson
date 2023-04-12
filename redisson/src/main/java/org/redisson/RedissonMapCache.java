@@ -2372,8 +2372,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     @Override
     public void clear() {
-        RFuture<Boolean> future = deleteAsync(getRawName(), getTimeoutSetName(), getIdleSetName(), getLastAccessTimeSetName());
-        get(future);
+        get(clearAsync());
     }
 
     @Override
