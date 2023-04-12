@@ -15,16 +15,19 @@
  */
 package org.redisson.spring.cache;
 
-import java.lang.reflect.Constructor;
-import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
+import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
+import org.redisson.client.RedisException;
 import org.springframework.cache.Cache;
 import org.springframework.cache.support.SimpleValueWrapper;
+
+import java.lang.reflect.Constructor;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  *
@@ -161,7 +164,23 @@ public class RedissonCache implements Cache {
     }
 
     public boolean invalidate() {
-        return map.delete();
+        return get(map.clearAsync());
+    }
+
+    private <V> V get(RFuture<V> future) {
+        if (Thread.currentThread().getName().startsWith("redisson-netty")) {
+            throw new IllegalStateException("Sync methods can't be invoked from async/rx/reactive listeners");
+        }
+
+        try {
+            return future.get();
+        } catch (InterruptedException e) {
+            future.cancel(true);
+            Thread.currentThread().interrupt();
+            throw new RedisException(e);
+        } catch (ExecutionException e) {
+            throw new RedisException(e.getCause());
+        }
     }
 
     private ValueWrapper toValueWrapper(Object value) {

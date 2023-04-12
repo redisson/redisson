@@ -1847,6 +1847,11 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
+    public RFuture<Boolean> clearAsync() {
+        return deleteAsync();
+    }
+
+    @Override
     public void destroy() {
         if (writeBehindService != null) {
             writeBehindService.stop(getRawName());

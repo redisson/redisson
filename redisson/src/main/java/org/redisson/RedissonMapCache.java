@@ -2377,6 +2377,11 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
+    public RFuture<Boolean> clearAsync() {
+        return deleteAsync(getRawName(), getTimeoutSetName(), getIdleSetName(), getLastAccessTimeSetName());
+    }
+
+    @Override
     public RFuture<Boolean> deleteAsync() {
         return deleteAsync(getRawName(), getTimeoutSetName(), getIdleSetName(), getLastAccessTimeSetName(), getOptionsName());
     }

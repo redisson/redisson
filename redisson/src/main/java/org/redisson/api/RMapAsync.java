@@ -411,4 +411,11 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
      */
     RFuture<V> putIfExistsAsync(K key, V value);
 
+    /**
+     * Clears map without removing options data used during map creation.
+     *
+     * @return <code>true</code> if map was cleared <code>false</code> if not
+     */
+    RFuture<Boolean> clearAsync();
+
 }
