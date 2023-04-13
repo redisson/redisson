@@ -400,7 +400,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public RFuture<List<Integer>> addAndGetRevRankAsync(Map<? extends V, Double> map) {
-        final List<Object> params = new ArrayList<>(map.size() * 2);
+        List<Object> params = new ArrayList<>(map.size() * 2);
         for (java.util.Map.Entry<? extends V, Double> t : map.entrySet()) {
             if (t.getKey() == null) {
                 throw new NullPointerException("map key can't be null");
@@ -806,26 +806,26 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
             @Override
             protected void remove(Object value) {
-                RedissonScoredSortedSet.this.remove((V) value);
+                RedissonScoredSortedSet.this.remove(value);
             }
             
         };
     }
 
     @Override
-    public Iterator<V> distributedIterator(final String pattern) {
+    public Iterator<V> distributedIterator(String pattern) {
         String iteratorName = "__redisson_scored_sorted_set_cursor_{" + getRawName() + "}";
         return distributedIterator(iteratorName, pattern, 10);
     }
 
     @Override
-    public Iterator<V> distributedIterator(final int count) {
+    public Iterator<V> distributedIterator(int count) {
         String iteratorName = "__redisson_scored_sorted_set_cursor_{" + getRawName() + "}";
         return distributedIterator(iteratorName, null, count);
     }
 
     @Override
-    public Iterator<V> distributedIterator(final String iteratorName, final String pattern, final int count) {
+    public Iterator<V> distributedIterator(String iteratorName, String pattern, int count) {
         return new RedissonBaseIterator<V>() {
 
             @Override
