@@ -94,6 +94,7 @@ public interface RedisCommands {
     RedisCommand<Boolean> ZADD_RAW = new RedisCommand<Boolean>("ZADD");
     RedisStrictCommand<Integer> ZADD_INT = new RedisStrictCommand<Integer>("ZADD", new IntegerReplayConvertor());
     RedisCommand<Long> ZADD = new RedisCommand<Long>("ZADD");
+    RedisStrictCommand<Integer> ZREM_INT = new RedisStrictCommand<>("ZREM", new IntegerReplayConvertor());
     RedisStrictCommand<Long> ZREM_LONG = new RedisStrictCommand<Long>("ZREM");
     RedisCommand<Boolean> ZREM = new RedisCommand<Boolean>("ZREM", new BooleanAmountReplayConvertor());
     RedisStrictCommand<Integer> ZCARD_INT = new RedisStrictCommand<Integer>("ZCARD", new IntegerReplayConvertor());
