@@ -15,12 +15,7 @@
  */
 package org.redisson.api;
 
-import java.util.Iterator;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
-
-import org.redisson.api.mapreduce.RCollectionMapReduce;
 
 /**
  * <p>Set-based cache with ability to set TTL for each object.
