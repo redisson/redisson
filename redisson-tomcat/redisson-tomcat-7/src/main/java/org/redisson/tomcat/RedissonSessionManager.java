@@ -315,10 +315,9 @@ public class RedissonSessionManager extends ManagerBase {
                             
                             if (msg instanceof SessionDestroyedMessage) {
                                 Session s = findSession(msg.getSessionId(), false);
-                                if (s == null) {
-                                    throw new IllegalStateException("Unable to find session: " + msg.getSessionId());
+                                if (s != null) {
+                                    s.expire();
                                 }
-                                s.expire();
                                 RSet<String> set = getNotifiedNodes(msg.getSessionId());
                                 set.add(nodeId);
                             }
