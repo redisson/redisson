@@ -181,8 +181,7 @@ RExecutorService executor = redisson.getExecutorService("myExecutorService");
 
 ```
 
-Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**
-.
+Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
 ## Downloads
    
