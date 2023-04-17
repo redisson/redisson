@@ -134,7 +134,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     /**
      * Redis Slave node failing to execute commands is excluded from the internal list of available nodes
      * when the time interval from the moment of first Redis command execution failure
-     * on this server reaches <code>slaveFailsInterval</code> value.
+     * on this server reaches <code>failedSlaveCheckInterval</code> value.
      * <p>
      * Default is <code>180000</code>
      *
