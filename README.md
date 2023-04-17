@@ -181,7 +181,7 @@ RExecutorService executor = redisson.getExecutorService("myExecutorService");
 
 ```
 
-Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
+Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
 ## Downloads
    
