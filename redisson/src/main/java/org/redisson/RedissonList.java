@@ -331,7 +331,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     }
 
     private RFuture<ScanResult<Object>> distributedScanIteratorAsync(String iteratorName, int count) {
-        return commandExecutor.evalWriteAsync(getRawName(), codec, EVAL_LIST_SCAN,
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_SCAN,
                 "local start_index = redis.call('get', KEYS[2]); "
                 + "if start_index ~= false then "
                     + "start_index = tonumber(start_index); "

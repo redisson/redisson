@@ -34,8 +34,6 @@ import java.security.MessageDigest;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
-import static org.redisson.client.protocol.RedisCommands.EVAL_LIST_SCAN;
-
 /**
  *
  * @author Nikita Koksharov
@@ -420,7 +418,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     }
 
     private RFuture<ScanResult<Object>> distributedScanIteratorAsync(String iteratorName, int count) {
-        return commandExecutor.evalWriteAsync(getRawName(), codec, EVAL_LIST_SCAN,
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_SCAN,
                 "local start_index = redis.call('get', KEYS[2]); "
                 + "if start_index ~= false then "
                     + "start_index = tonumber(start_index); "

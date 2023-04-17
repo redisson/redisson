@@ -132,7 +132,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     @Override
     public RFuture<ScanResult<Object>> scanIteratorAsync(String name, RedisClient client, long startPos, String pattern, int count) {
-        List<Object> params = new ArrayList<Object>();
+        List<Object> params = new ArrayList<>();
         params.add(startPos);
         params.add(System.currentTimeMillis());
         if (pattern != null) {
@@ -140,7 +140,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         }
         params.add(count);
         
-        return commandExecutor.evalReadAsync(client, name, codec, RedisCommands.EVAL_ZSCAN,
+        return commandExecutor.evalReadAsync(client, name, codec, RedisCommands.EVAL_SCAN,
                   "local result = {}; "
                 + "local res; "
                 + "if (#ARGV == 4) then "
@@ -519,7 +519,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         }
         args.add(count);
 
-        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_ZSCAN,
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_SCAN,
                 "local cursor = redis.call('get', KEYS[2]); "
                 + "if cursor ~= false then "
                     + "cursor = tonumber(cursor); "

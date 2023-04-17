@@ -1507,9 +1507,95 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 params.toArray());
     }
 
+    private static final RedisCommand<MapCacheKeyScanResult<Object>> KEY_SCAN = new RedisCommand<MapCacheKeyScanResult<Object>>("EVAL",
+            new ListMultiDecoder2(
+                    new MapCacheKeyScanResultDecoder(),
+                    new ObjectListReplayDecoder<>()));
+
     @Override
-    public ScanResult<Map.Entry<Object, Object>> scanIterator(String name, RedisClient client, long startPos, String pattern, int count) {
-        return get(scanIteratorAsync(name, client, startPos, pattern, count));
+    public RFuture<ScanResult<Object>> scanKeyIteratorAsync(String name, RedisClient client, long startPos, String pattern, int count) {
+        List<Object> params = new ArrayList<>();
+        params.add(System.currentTimeMillis());
+        params.add(startPos);
+        if (pattern != null) {
+            params.add(pattern);
+        }
+        params.add(count);
+
+        RFuture<MapCacheKeyScanResult<Object>> future = commandExecutor.evalReadAsync(client, name, codec, KEY_SCAN,
+                "local result = {}; "
+                + "local idleKeys = {}; "
+                + "local res; "
+                + "if (#ARGV == 4) then "
+                    + " res = redis.call('hscan', KEYS[1], ARGV[2], 'match', ARGV[3], 'count', ARGV[4]); "
+                + "else "
+                    + " res = redis.call('hscan', KEYS[1], ARGV[2], 'count', ARGV[3]); "
+                + "end;"
+                + "local currentTime = tonumber(ARGV[1]); "
+                + "for i, value in ipairs(res[2]) do "
+                    + "if i % 2 == 0 then "
+                      + "local key = res[2][i-1]; " +
+                        "local expireDate = 92233720368547758; " +
+                        "local expireDateScore = redis.call('zscore', KEYS[2], key); "
+                        + "if expireDateScore ~= false then "
+                            + "expireDate = tonumber(expireDateScore) "
+                        + "end; "
+
+                        + "local t, val = struct.unpack('dLc0', value); "
+                        + "if t ~= 0 then "
+                            + "local expireIdle = redis.call('zscore', KEYS[3], key); "
+                            + "if expireIdle ~= false then "
+                                + "if tonumber(expireIdle) > currentTime and expireDate > currentTime then "
+                                    + "table.insert(idleKeys, key); "
+                                + "end; "
+                                + "expireDate = math.min(expireDate, tonumber(expireIdle)) "
+                            + "end; "
+                        + "end; "
+
+                        + "if expireDate > currentTime then "
+                            + "table.insert(result, key); "
+                        + "end; "
+                    + "end; "
+                + "end;"
+                + "return {res[1], result, idleKeys};",
+                Arrays.asList(name, getTimeoutSetName(name), getIdleSetName(name)),
+                params.toArray());
+
+        CompletionStage<MapCacheKeyScanResult<Object>> f = future.thenApply(res -> {
+            if (res.getIdleKeys().isEmpty()) {
+                return res;
+            }
+
+            List<Object> args = new ArrayList<Object>(res.getIdleKeys().size() + 1);
+            args.add(System.currentTimeMillis());
+            encodeMapKeys(args, res.getIdleKeys());
+
+            commandExecutor.evalWriteAsync(name, codec, new RedisCommand<Map<Object, Object>>("EVAL",
+                            new MapValueDecoder(new MapGetAllDecoder(args, 1))),
+                    "local currentTime = tonumber(table.remove(ARGV, 1)); " // index is the first parameter
+                        + "local map = redis.call('hmget', KEYS[1], unpack(ARGV)); "
+                        + "for i = #map, 1, -1 do "
+                            + "local value = map[i]; "
+                            + "if value ~= false then "
+                                + "local key = ARGV[i]; "
+                                + "local t, val = struct.unpack('dLc0', value); "
+
+                                + "if t ~= 0 then "
+                                    + "local expireIdle = redis.call('zscore', KEYS[2], key); "
+                                    + "if expireIdle ~= false then "
+                                        + "if tonumber(expireIdle) > currentTime then "
+                                            + "redis.call('zadd', KEYS[2], t + currentTime, key); "
+                                        + "end; "
+                                    + "end; "
+                                + "end; "
+                            + "end; "
+                        + "end; ",
+                    Arrays.asList(name, getIdleSetName(name)), args.toArray());
+            return res;
+        });
+
+        return new CompletableFutureWrapper<>((CompletionStage<ScanResult<Object>>) (Object) f);
+
     }
 
     private static final RedisCommand<MapCacheScanResult<Object, Object>> SCAN = new RedisCommand<MapCacheScanResult<Object, Object>>("EVAL",
@@ -1578,23 +1664,23 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
             commandExecutor.evalWriteAsync(name, codec, new RedisCommand<Map<Object, Object>>("EVAL",
                             new MapValueDecoder(new MapGetAllDecoder(args, 1))),
-                    "local currentTime = tonumber(table.remove(ARGV, 1)); " // index is the first parameter
+                        "local currentTime = tonumber(table.remove(ARGV, 1)); " // index is the first parameter
                             + "local map = redis.call('hmget', KEYS[1], unpack(ARGV)); "
                             + "for i = #map, 1, -1 do "
-                            + "local value = map[i]; "
-                            + "if value ~= false then "
-                            + "local key = ARGV[i]; "
-                            + "local t, val = struct.unpack('dLc0', value); "
+                                + "local value = map[i]; "
+                                + "if value ~= false then "
+                                    + "local key = ARGV[i]; "
+                                    + "local t, val = struct.unpack('dLc0', value); "
 
-                            + "if t ~= 0 then "
-                            + "local expireIdle = redis.call('zscore', KEYS[2], key); "
-                            + "if expireIdle ~= false then "
-                            + "if tonumber(expireIdle) > currentTime then "
-                            + "redis.call('zadd', KEYS[2], t + currentTime, key); "
-                            + "end; "
-                            + "end; "
-                            + "end; "
-                            + "end; "
+                                    + "if t ~= 0 then "
+                                        + "local expireIdle = redis.call('zscore', KEYS[2], key); "
+                                        + "if expireIdle ~= false then "
+                                            + "if tonumber(expireIdle) > currentTime then "
+                                                + "redis.call('zadd', KEYS[2], t + currentTime, key); "
+                                            + "end; "
+                                        + "end; "
+                                    + "end; "
+                                + "end; "
                             + "end; ",
                     Arrays.asList(name, getIdleSetName(name)), args.toArray());
             return res;

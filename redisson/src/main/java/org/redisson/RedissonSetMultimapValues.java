@@ -258,7 +258,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         }
         args.add(count);
 
-        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_SSCAN,
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_SCAN,
                 "local cursor = redis.call('get', KEYS[3]); "
                 + "if cursor ~= false then "
                     + "cursor = tonumber(cursor); "

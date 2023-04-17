@@ -900,7 +900,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
         params.add(System.currentTimeMillis());
         params.add(count);
 
-        return commandExecutor.evalReadAsync(client, name, codec, RedisCommands.EVAL_ZSCAN,
+        return commandExecutor.evalReadAsync(client, name, codec, RedisCommands.EVAL_SCAN,
                   "local result = {}; "
                 + "local res = redis.call('zrange', KEYS[1], ARGV[1], tonumber(ARGV[1]) + tonumber(ARGV[3]) - 1); "
                 + "for i, value in ipairs(res) do "
