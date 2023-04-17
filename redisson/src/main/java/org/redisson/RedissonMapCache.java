@@ -1625,6 +1625,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                                 + "end; "
                             + "end; "
                             + "if expireDate <= tonumber(ARGV[1]) then "
+                                + "redis.call('zrem', KEYS[2], ARGV[2]); "
+                                + "redis.call('zrem', KEYS[3], ARGV[2]); "
                                 + "insertable = true; "
                             + "end; "
                         + "end; " +
