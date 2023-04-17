@@ -19,8 +19,6 @@ import org.redisson.RedissonMap;
 import org.redisson.ScanResult;
 import org.redisson.client.RedisClient;
 
-import java.util.Map.Entry;
-
 /**
  * 
  * @author Nikita Koksharov

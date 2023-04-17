@@ -21,7 +21,6 @@ import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * 
@@ -35,7 +34,7 @@ public class MapCacheKeyScanResultDecoder implements MultiDecoder<MapCacheKeySca
         Long pos = (Long) parts.get(0);
         List<Object> values = (List<Object>) parts.get(1);
         List<Object> idleKeys = (List<Object>) parts.get(2);
-        return new MapCacheKeyScanResult<Object>(pos, values, idleKeys);
+        return new MapCacheKeyScanResult<>(pos, values, idleKeys);
     }
 
     @Override
