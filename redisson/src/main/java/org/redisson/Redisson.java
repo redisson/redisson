@@ -20,7 +20,7 @@ import org.redisson.api.redisnode.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.JsonCodec;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.command.CommandSyncService;
+import org.redisson.command.CommandAsyncService;
 import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
@@ -71,7 +71,7 @@ public class Redisson implements RedissonClient {
         if (config.isReferenceEnabled()) {
             objectBuilder = new RedissonObjectBuilder(this);
         }
-        commandExecutor = new CommandSyncService(connectionManager, objectBuilder);
+        commandExecutor = new CommandAsyncService(connectionManager, objectBuilder, RedissonObjectBuilder.ReferenceType.DEFAULT);
         evictionScheduler = new EvictionScheduler(commandExecutor);
         writeBehindService = new WriteBehindService(commandExecutor);
     }
