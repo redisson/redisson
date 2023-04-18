@@ -231,5 +231,16 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
         }
     }
 
+    private MasterSlaveEntry getEntry() {
+        if (source.getSlot() != null) {
+            entry = connectionManager.getWriteEntry(source.getSlot());
+            if (entry == null) {
+                throw connectionManager.getServiceManager().createNodeNotFoundException(source);
+            }
+            return entry;
+        }
+        entry = source.getEntry();
+        return entry;
+    }
 
 }
