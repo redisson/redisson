@@ -75,7 +75,7 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
 
             Codec codecToUse = getCodec(codec);
             BatchCommandData<V, R> commandData = new BatchCommandData<>(mainPromise, codecToUse, command, null, index.incrementAndGet());
-            entry.getCommands().add(commandData);
+            entry.addCommand(commandData);
         } else {
             addBatchCommandData(null);
         }

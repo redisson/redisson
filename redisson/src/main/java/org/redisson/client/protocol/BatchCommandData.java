@@ -25,7 +25,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * 
+ *
  * @author Nikita Koksharov
  *
  * @param <T> input type
@@ -35,16 +35,16 @@ public class BatchCommandData<T, R> extends CommandData<T, R> implements Compara
 
     private final int index;
     private final AtomicReference<RedisException> retryError = new AtomicReference<>();
-    
+
     public BatchCommandData(RedisCommand<T> command, Object[] params, int index) {
         this(new CompletableFuture<>(), StringCodec.INSTANCE, command, params, index);
     }
-    
+
     public BatchCommandData(CompletableFuture<R> promise, Codec codec, RedisCommand<T> command, Object[] params, int index) {
         super(promise, codec, command, params);
         this.index = index;
     }
-    
+
     @Override
     public boolean tryFailure(Throwable cause) {
         if (retryError.get() != null) {
@@ -56,12 +56,12 @@ public class BatchCommandData<T, R> extends CommandData<T, R> implements Compara
 
         return super.tryFailure(cause);
     }
-    
+
     @Override
     public boolean isSuccess() {
         return retryError.get() == null && super.isSuccess();
     }
-    
+
     @Override
     public Throwable cause() {
         if (retryError.get() != null) {
@@ -69,7 +69,7 @@ public class BatchCommandData<T, R> extends CommandData<T, R> implements Compara
         }
         return super.cause();
     }
-    
+
     public void clearError() {
         retryError.set(null);
     }
@@ -77,6 +77,10 @@ public class BatchCommandData<T, R> extends CommandData<T, R> implements Compara
     @Override
     public int compareTo(BatchCommandData<T, R> o) {
         return index - o.index;
+    }
+
+    public void updateCommand(RedisCommand command) {
+        this.command = command;
     }
 
 }

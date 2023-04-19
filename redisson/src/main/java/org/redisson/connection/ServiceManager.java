@@ -15,6 +15,7 @@
  */
 package org.redisson.connection;
 
+import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.EpollDatagramChannel;
 import io.netty.channel.epoll.EpollEventLoopGroup;
@@ -31,11 +32,15 @@ import io.netty.resolver.AddressResolverGroup;
 import io.netty.resolver.DefaultAddressResolverGroup;
 import io.netty.resolver.dns.DnsServerAddressStreamProviders;
 import io.netty.util.*;
+import io.netty.util.Timer;
+import io.netty.util.TimerTask;
 import io.netty.util.concurrent.*;
+import io.netty.util.concurrent.Future;
 import io.netty.util.internal.PlatformDependent;
 import org.redisson.ElementsSubscribeService;
 import org.redisson.Version;
 import org.redisson.api.NatMapper;
+import org.redisson.cache.LRUCacheMap;
 import org.redisson.client.RedisNodeNotFoundException;
 import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
@@ -48,12 +53,9 @@ import org.slf4j.LoggerFactory;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.Arrays;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.security.MessageDigest;
+import java.util.*;
+import java.util.concurrent.*;
 
 /**
  *
@@ -119,6 +121,10 @@ public class ServiceManager {
 
     private NatMapper natMapper = NatMapper.direct();
 
+    private static final Map<InetSocketAddress, Set<String>> SCRIPT_SHA_CACHE = new ConcurrentHashMap<>();
+
+    private static final Map<String, String> SHA_CACHE = new LRUCacheMap<>(500, 0, 0);
+
     public ServiceManager(Config cfg) {
         Version.logVersion();
 
@@ -178,6 +184,18 @@ public class ServiceManager {
         if (cfg.getConnectionListener() != null) {
             this.connectionEventsHub.addListener(cfg.getConnectionListener());
         }
+
+        this.connectionEventsHub.addListener(new ConnectionListener() {
+            @Override
+            public void onConnect(InetSocketAddress addr) {
+                // empty
+            }
+
+            @Override
+            public void onDisconnect(InetSocketAddress addr) {
+                SCRIPT_SHA_CACHE.remove(addr);
+            }
+        });
     }
 
     public void initTimer() {
@@ -329,4 +347,30 @@ public class ServiceManager {
     public void setNatMapper(NatMapper natMapper) {
         this.natMapper = natMapper;
     }
+
+    public boolean isCached(InetSocketAddress addr, String script) {
+        Set<String> values = SCRIPT_SHA_CACHE.computeIfAbsent(addr, k -> Collections.newSetFromMap(new ConcurrentHashMap<>()));
+        String sha = calcSHA(script);
+        return values.contains(sha);
+    }
+
+    public void cacheScripts(InetSocketAddress addr, Set<String> scripts) {
+        Set<String> values = SCRIPT_SHA_CACHE.computeIfAbsent(addr, k -> Collections.newSetFromMap(new ConcurrentHashMap<>()));
+        for (String script : scripts) {
+            values.add(calcSHA(script));
+        }
+    }
+
+    public String calcSHA(String script) {
+        return SHA_CACHE.computeIfAbsent(script, k -> {
+            try {
+                MessageDigest mdigest = MessageDigest.getInstance("SHA-1");
+                byte[] s = mdigest.digest(script.getBytes());
+                return ByteBufUtil.hexDump(s);
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+        });
+    }
+
 }

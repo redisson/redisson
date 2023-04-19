@@ -73,6 +73,8 @@ public interface CommandAsyncExecutor {
     
     <T, R> RFuture<R> readAsync(RedisClient client, Codec codec, RedisCommand<T> command, Object... params);
 
+    <R> List<CompletableFuture<R>> executeAllAsync(MasterSlaveEntry entry, RedisCommand<?> command, Object... params);
+
     <R> List<CompletableFuture<R>> executeAllAsync(RedisCommand<?> command, Object... params);
 
     <R> List<CompletableFuture<R>> writeAllAsync(RedisCommand<?> command, Object... params);

@@ -35,7 +35,7 @@ import java.util.concurrent.CompletionException;
 public class CommandData<T, R> implements QueueCommand {
 
     final CompletableFuture<R> promise;
-    final RedisCommand<T> command;
+    RedisCommand<T> command;
     final Object[] params;
     final Codec codec;
     final MultiDecoder<Object> messageDecoder;
