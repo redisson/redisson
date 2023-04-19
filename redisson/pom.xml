@@ -167,7 +167,7 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
             <!-- 4.1+ -->
-            <version>6.0.7</version>
+            <version>6.0.8</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -361,7 +361,7 @@
             <groupId>org.springframework.session</groupId>
             <artifactId>spring-session-core</artifactId>
             <!-- 2.0.0+ -->
-            <version>3.0.0</version>
+            <version>3.0.1</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
