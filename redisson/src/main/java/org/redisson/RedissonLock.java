@@ -144,7 +144,7 @@ public class RedissonLock extends RedissonBaseLock {
     }
 
     private RFuture<Long> tryAcquireAsync0(long waitTime, long leaseTime, TimeUnit unit, long threadId) {
-        return execute(() -> tryAcquireAsync(waitTime, leaseTime, unit, threadId));
+        return commandExecutor.getServiceManager().execute(() -> tryAcquireAsync(waitTime, leaseTime, unit, threadId));
     }
 
     private RFuture<Boolean> tryAcquireOnceAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId) {
@@ -425,7 +425,7 @@ public class RedissonLock extends RedissonBaseLock {
 
     @Override
     public RFuture<Boolean> tryLockAsync(long threadId) {
-        return execute(() -> tryAcquireOnceAsync(-1, -1, null, threadId));
+        return commandExecutor.getServiceManager().execute(() -> tryAcquireOnceAsync(-1, -1, null, threadId));
     }
 
     @Override

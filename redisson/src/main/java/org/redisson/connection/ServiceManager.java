@@ -40,11 +40,13 @@ import io.netty.util.internal.PlatformDependent;
 import org.redisson.ElementsSubscribeService;
 import org.redisson.Version;
 import org.redisson.api.NatMapper;
+import org.redisson.api.RFuture;
 import org.redisson.cache.LRUCacheMap;
 import org.redisson.client.RedisNodeNotFoundException;
 import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.TransportMode;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.InfinitySemaphoreLatch;
 import org.redisson.misc.RedisURI;
 import org.slf4j.Logger;
@@ -56,6 +58,8 @@ import java.net.UnknownHostException;
 import java.security.MessageDigest;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 /**
  *
@@ -371,6 +375,59 @@ public class ServiceManager {
                 throw new IllegalStateException(e);
             }
         });
+    }
+
+    public <T> RFuture<T> execute(Supplier<RFuture<T>> supplier) {
+        CompletableFuture<T> result = new CompletableFuture<>();
+        int retryAttempts = config.getRetryAttempts();
+        AtomicInteger attempts = new AtomicInteger(retryAttempts);
+        execute(attempts, result, supplier);
+        return new CompletableFutureWrapper<>(result);
+    }
+
+    private <T> void execute(AtomicInteger attempts, CompletableFuture<T> result, Supplier<RFuture<T>> supplier) {
+        RFuture<T> future = supplier.get();
+        future.whenComplete((r, e) -> {
+            if (e != null) {
+                if (e.getCause().getMessage().equals("None of slaves were synced")) {
+                    if (attempts.decrementAndGet() < 0) {
+                        result.completeExceptionally(e);
+                        return;
+                    }
+
+                    newTimeout(t -> execute(attempts, result, supplier),
+                            config.getRetryInterval(), TimeUnit.MILLISECONDS);
+                    return;
+                }
+
+                result.completeExceptionally(e);
+                return;
+            }
+
+            result.complete(r);
+        });
+    }
+
+    public <T> CompletionStage<T> handleNoSync(CompletionStage<T> stage, Supplier<CompletionStage<?>> supplier) {
+        CompletionStage<T> s = stage.handle((r, ex) -> {
+            if (ex != null) {
+                if (ex.getCause().getMessage().equals("None of slaves were synced")) {
+                    return supplier.get().handle((r1, e) -> {
+                        if (e != null) {
+                            if (e.getCause().getMessage().equals("None of slaves were synced")) {
+                                throw new CompletionException(ex.getCause());
+                            }
+                            e.getCause().addSuppressed(ex.getCause());
+                        }
+                        throw new CompletionException(ex.getCause());
+                    });
+                } else {
+                    throw new CompletionException(ex.getCause());
+                }
+            }
+            return CompletableFuture.completedFuture(r);
+        }).thenCompose(f -> (CompletionStage<T>) f);
+        return s;
     }
 
 }

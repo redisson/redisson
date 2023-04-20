@@ -318,40 +318,9 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
         return unlockAsync(threadId);
     }
 
-    protected final <T> RFuture<T> execute(Supplier<RFuture<T>> supplier) {
-        CompletableFuture<T> result = new CompletableFuture<>();
-        int retryAttempts = commandExecutor.getServiceManager().getConfig().getRetryAttempts();
-        AtomicInteger attempts = new AtomicInteger(retryAttempts);
-        execute(attempts, result, supplier);
-        return new CompletableFutureWrapper<>(result);
-    }
-
-    private <T> void execute(AtomicInteger attempts, CompletableFuture<T> result, Supplier<RFuture<T>> supplier) {
-        RFuture<T> future = supplier.get();
-        future.whenComplete((r, e) -> {
-            if (e != null) {
-                if (e.getCause().getMessage().equals("None of slaves were synced")) {
-                    if (attempts.decrementAndGet() < 0) {
-                        result.completeExceptionally(e);
-                        return;
-                    }
-
-                    commandExecutor.getServiceManager().newTimeout(t -> execute(attempts, result, supplier),
-                            commandExecutor.getServiceManager().getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
-                    return;
-                }
-
-                result.completeExceptionally(e);
-                return;
-            }
-
-            result.complete(r);
-        });
-    }
-
     @Override
     public RFuture<Void> unlockAsync(long threadId) {
-        return execute(() -> unlockAsync0(threadId));
+        return commandExecutor.getServiceManager().execute(() -> unlockAsync0(threadId));
     }
 
     private RFuture<Void> unlockAsync0(long threadId) {
@@ -439,26 +408,8 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
         return tryLockAsync(waitTime, leaseTime, unit, currentThreadId);
     }
 
-    protected <T> CompletionStage<T> handleNoSync(long threadId, CompletionStage<T> ttlRemainingFuture) {
-        CompletionStage<T> s = ttlRemainingFuture.handle((r, ex) -> {
-            if (ex != null) {
-                if (ex.getCause().getMessage().equals("None of slaves were synced")) {
-                    return unlockInnerAsync(threadId).handle((r1, e) -> {
-                        if (e != null) {
-                            if (e.getCause().getMessage().equals("None of slaves were synced")) {
-                                throw new CompletionException(ex.getCause());
-                            }
-                            e.getCause().addSuppressed(ex.getCause());
-                        }
-                        throw new CompletionException(ex.getCause());
-                    });
-                } else {
-                    throw new CompletionException(ex.getCause());
-                }
-            }
-            return CompletableFuture.completedFuture(r);
-        }).thenCompose(f -> (CompletionStage<T>) f);
-        return s;
+    protected final <T> CompletionStage<T> handleNoSync(long threadId, CompletionStage<T> ttlRemainingFuture) {
+        return commandExecutor.getServiceManager().handleNoSync(ttlRemainingFuture, () -> unlockInnerAsync(threadId));
     }
 
 }
