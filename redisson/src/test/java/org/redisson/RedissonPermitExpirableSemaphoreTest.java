@@ -431,7 +431,7 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
     }
 
     @Test
-    public void test1() throws InterruptedException {
+    public void testAcquire() {
         RPermitExpirableSemaphore semaphore = redisson.getPermitExpirableSemaphore("test.sync_semaphore");
         semaphore.trySetPermits(1);
         Awaitility.await().atMost(Duration.ofMillis(100)).pollDelay(Duration.ofMillis(10)).untilAsserted(() -> {
