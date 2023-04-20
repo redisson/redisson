@@ -203,7 +203,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
     }
 
     protected final <T> RFuture<T> evalWriteAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
-        return commandExecutor.syncedEvalWriteAsync(key, codec, evalCommandType, script, keys, params);
+        return commandExecutor.syncedEval(key, codec, evalCommandType, script, keys, params);
     }
 
     protected void acquireFailed(long waitTime, TimeUnit unit, long threadId) {

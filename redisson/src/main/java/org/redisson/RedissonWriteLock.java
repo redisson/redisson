@@ -54,7 +54,7 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
     
     @Override
     <T> RFuture<T> tryLockInnerAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
-        return evalWriteAsync(getRawName(), LongCodec.INSTANCE, command,
+        return commandExecutor.syncedEval(getRawName(), LongCodec.INSTANCE, command,
                             "local mode = redis.call('hget', KEYS[1], 'mode'); " +
                             "if (mode == false) then " +
                                   "redis.call('hset', KEYS[1], 'mode', 'write'); " +
@@ -130,7 +130,7 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
     @Override
     public RFuture<Boolean> forceUnlockAsync() {
         cancelExpirationRenewal(null);
-        return evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
               "if (redis.call('hget', KEYS[1], 'mode') == 'write') then " +
                   "redis.call('del', KEYS[1]); " +
                   "redis.call('publish', KEYS[2], ARGV[1]); " +

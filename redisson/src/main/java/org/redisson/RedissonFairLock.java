@@ -109,7 +109,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
 
         long currentTime = System.currentTimeMillis();
         if (command == RedisCommands.EVAL_NULL_BOOLEAN) {
-            return evalWriteAsync(getRawName(), LongCodec.INSTANCE, command,
+            return commandExecutor.syncedEval(getRawName(), LongCodec.INSTANCE, command,
                     // remove stale threads
                     "while true do " +
                         "local firstThreadId2 = redis.call('lindex', KEYS[2], 0);" +
@@ -154,7 +154,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
         }
 
         if (command == RedisCommands.EVAL_LONG) {
-            return evalWriteAsync(getRawName(), LongCodec.INSTANCE, command,
+            return commandExecutor.syncedEval(getRawName(), LongCodec.INSTANCE, command,
                     // remove stale threads
                     "while true do " +
                         "local firstThreadId2 = redis.call('lindex', KEYS[2], 0);" +
@@ -312,7 +312,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
     @Override
     public RFuture<Boolean> forceUnlockAsync() {
         cancelExpirationRenewal(null);
-        return evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 // remove stale threads
                 "while true do "
                 + "local firstThreadId2 = redis.call('lindex', KEYS[2], 0);"

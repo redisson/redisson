@@ -734,7 +734,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
-    public <T> RFuture<T> syncedEvalWriteAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
+    public <T> RFuture<T> syncedEvalWithRetry(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
+        return getServiceManager().execute(() -> syncedEval(key, codec, evalCommandType, script, keys, params));
+    }
+
+    @Override
+    public <T> RFuture<T> syncedEval(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
         CompletionStage<Map<String, String>> replicationFuture = CompletableFuture.completedFuture(Collections.emptyMap());
         if (!getServiceManager().getConfig().checkSkipSlavesInit()) {
             replicationFuture = writeAsync(key, RedisCommands.INFO_REPLICATION);

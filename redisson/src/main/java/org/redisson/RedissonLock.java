@@ -203,7 +203,7 @@ public class RedissonLock extends RedissonBaseLock {
     }
 
     <T> RFuture<T> tryLockInnerAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
-        return evalWriteAsync(getRawName(), LongCodec.INSTANCE, command,
+        return commandExecutor.syncedEval(getRawName(), LongCodec.INSTANCE, command,
                 "if ((redis.call('exists', KEYS[1]) == 0) " +
                             "or (redis.call('hexists', KEYS[1], ARGV[2]) == 1)) then " +
                         "redis.call('hincrby', KEYS[1], ARGV[2], 1); " +
@@ -315,7 +315,7 @@ public class RedissonLock extends RedissonBaseLock {
     @Override
     public RFuture<Boolean> forceUnlockAsync() {
         cancelExpirationRenewal(null);
-        return evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if (redis.call('del', KEYS[1]) == 1) then "
                         + "redis.call('publish', KEYS[2], ARGV[1]); "
                         + "return 1 "
