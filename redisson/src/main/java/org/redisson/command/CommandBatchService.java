@@ -705,6 +705,10 @@ public class CommandBatchService extends CommandAsyncService {
     protected boolean isEvalCacheActive() {
         return false;
     }
-    
+
+    @Override
+    protected CommandBatchService createCommandBatchService(int availableSlaves) {
+        return this;
+    }
 
 }

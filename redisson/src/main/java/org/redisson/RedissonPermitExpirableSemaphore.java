@@ -21,7 +21,9 @@ import io.netty.util.TimerTask;
 import org.redisson.api.RFuture;
 import org.redisson.api.RPermitExpirableSemaphore;
 import org.redisson.client.codec.ByteArrayCodec;
+import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
@@ -188,7 +190,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             if (entry.getLatch().tryAcquire()) {
                 tryAcquireAsync(time, permits, entry, result, ttl, timeUnit);
             } else {
-                AtomicReference<Timeout> waitTimeoutFutureRef = new AtomicReference<Timeout>();
+                AtomicReference<Timeout> waitTimeoutFutureRef = new AtomicReference<>();
 
                 Timeout scheduledFuture;
                 if (nearestTimeout != null) {
@@ -341,14 +343,21 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         ThreadLocalRandom.current().nextBytes(id);
         return id;
     }
-    
+
     private RFuture<String> tryAcquireAsync(int permits, long timeoutDate) {
         if (permits < 0) {
             throw new IllegalArgumentException("Permits amount can't be negative");
         }
 
         byte[] id = generateId();
-        return commandExecutor.evalWriteAsync(getRawName(), ByteArrayCodec.INSTANCE, RedisCommands.EVAL_PERMIT_DATA,
+        return commandExecutor.getServiceManager().execute(() -> {
+            RFuture<String> future = tryAcquireAsync(id, permits, timeoutDate);
+            return commandExecutor.handleNoSync(future, () -> releaseAsync(ByteBufUtil.hexDump(id)));
+        });
+    }
+
+    private RFuture<String> tryAcquireAsync(byte[] id, int permits, long timeoutDate) {
+        return commandExecutor.syncedEvalWriteAsync(getRawName(), ByteArrayCodec.INSTANCE, RedisCommands.EVAL_PERMIT_DATA,
                   "local expiredIds = redis.call('zrangebyscore', KEYS[2], 0, ARGV[4], 'limit', 0, ARGV[1]); " +
                   "if #expiredIds > 0 then " +
                       "redis.call('zrem', KEYS[2], unpack(expiredIds)); " +
@@ -551,13 +560,14 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         return get(tryReleaseAsync(permitId));
     }
 
+    @Override
     public RFuture<Boolean> tryReleaseAsync(String permitId) {
         if (permitId == null) {
             throw new IllegalArgumentException("permitId can't be null");
         }
 
         byte[] id = ByteBufUtil.decodeHexDump(permitId);
-        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                   "local expire = redis.call('zscore', KEYS[3], ARGV[1]);" +
                         "local removed = redis.call('zrem', KEYS[3], ARGV[1]);" +
                         "if tonumber(removed) ~= 1 then " +
@@ -697,7 +707,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
 
     @Override
     public RFuture<Void> setPermitsAsync(int permits) {
-        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
+        return evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 "local available = redis.call('get', KEYS[1]); " +
                 "if (available == false) then " +
                     "redis.call('set', KEYS[1], ARGV[1]); " +
@@ -716,7 +726,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
 
     @Override
     public RFuture<Boolean> trySetPermitsAsync(int permits) {
-        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local value = redis.call('get', KEYS[1]); " +
                 "if (value == false) then "
                     + "redis.call('set', KEYS[1], ARGV[1]); "
@@ -734,7 +744,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     
     @Override
     public RFuture<Void> addPermitsAsync(int permits) {
-        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
+        return evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 "local value = redis.call('get', KEYS[1]); " +
                 "if (value == false) then "
                   + "value = 0;"
@@ -743,14 +753,14 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
               + "if tonumber(ARGV[1]) > 0 then "
                   + "redis.call('publish', KEYS[2], ARGV[1]); "
               + "end;",
-                Arrays.<Object>asList(getRawName(), channelName), permits);
+                Arrays.asList(getRawName(), channelName), permits);
     }
 
     @Override
     public RFuture<Boolean> updateLeaseTimeAsync(String permitId, long leaseTime, TimeUnit unit) {
         long timeoutDate = calcTimeout(leaseTime, unit);
         byte[] id = ByteBufUtil.decodeHexDump(permitId);
-        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local expiredIds = redis.call('zrangebyscore', KEYS[2], 0, ARGV[3], 'limit', 0, -1); " +
                 "if #expiredIds > 0 then " +
                     "redis.call('zrem', KEYS[2], unpack(expiredIds)); " +
@@ -773,6 +783,10 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     @Override
     public boolean updateLeaseTime(String permitId, long leaseTime, TimeUnit unit) {
         return get(updateLeaseTimeAsync(permitId, leaseTime, unit));
+    }
+
+    private <T> RFuture<T> evalWriteAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
+        return commandExecutor.getServiceManager().execute(() -> commandExecutor.syncedEvalWriteAsync(key, codec, evalCommandType, script, keys, params));
     }
 
 }

@@ -30,7 +30,9 @@ import org.redisson.liveobject.core.RedissonObjectBuilder;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Supplier;
 
 /**
  *
@@ -131,5 +133,9 @@ public interface CommandAsyncExecutor {
     boolean isEvalShaROSupported();
 
     void setEvalShaROSupported(boolean value);
+
+    <T> RFuture<T> syncedEvalWriteAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params);
+
+    <T> CompletionStage<T> handleNoSync(CompletionStage<T> stage, Supplier<CompletionStage<?>> supplier);
 
 }

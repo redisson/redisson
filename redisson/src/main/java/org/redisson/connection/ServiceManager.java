@@ -31,11 +31,11 @@ import io.netty.resolver.AddressResolver;
 import io.netty.resolver.AddressResolverGroup;
 import io.netty.resolver.DefaultAddressResolverGroup;
 import io.netty.resolver.dns.DnsServerAddressStreamProviders;
-import io.netty.util.*;
 import io.netty.util.Timer;
 import io.netty.util.TimerTask;
-import io.netty.util.concurrent.*;
+import io.netty.util.*;
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.*;
 import io.netty.util.internal.PlatformDependent;
 import org.redisson.ElementsSubscribeService;
 import org.redisson.Version;
@@ -377,7 +377,7 @@ public class ServiceManager {
         });
     }
 
-    public <T> RFuture<T> execute(Supplier<RFuture<T>> supplier) {
+    public <T> RFuture<T> execute(Supplier<CompletionStage<T>> supplier) {
         CompletableFuture<T> result = new CompletableFuture<>();
         int retryAttempts = config.getRetryAttempts();
         AtomicInteger attempts = new AtomicInteger(retryAttempts);
@@ -385,8 +385,8 @@ public class ServiceManager {
         return new CompletableFutureWrapper<>(result);
     }
 
-    private <T> void execute(AtomicInteger attempts, CompletableFuture<T> result, Supplier<RFuture<T>> supplier) {
-        RFuture<T> future = supplier.get();
+    private <T> void execute(AtomicInteger attempts, CompletableFuture<T> result, Supplier<CompletionStage<T>> supplier) {
+        CompletionStage<T> future = supplier.get();
         future.whenComplete((r, e) -> {
             if (e != null) {
                 if (e.getCause().getMessage().equals("None of slaves were synced")) {
@@ -406,28 +406,6 @@ public class ServiceManager {
 
             result.complete(r);
         });
-    }
-
-    public <T> CompletionStage<T> handleNoSync(CompletionStage<T> stage, Supplier<CompletionStage<?>> supplier) {
-        CompletionStage<T> s = stage.handle((r, ex) -> {
-            if (ex != null) {
-                if (ex.getCause().getMessage().equals("None of slaves were synced")) {
-                    return supplier.get().handle((r1, e) -> {
-                        if (e != null) {
-                            if (e.getCause().getMessage().equals("None of slaves were synced")) {
-                                throw new CompletionException(ex.getCause());
-                            }
-                            e.getCause().addSuppressed(ex.getCause());
-                        }
-                        throw new CompletionException(ex.getCause());
-                    });
-                } else {
-                    throw new CompletionException(ex.getCause());
-                }
-            }
-            return CompletableFuture.completedFuture(r);
-        }).thenCompose(f -> (CompletionStage<T>) f);
-        return s;
     }
 
 }

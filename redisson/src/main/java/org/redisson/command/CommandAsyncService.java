@@ -20,6 +20,8 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.util.ReferenceCountUtil;
 import org.redisson.RedissonReference;
 import org.redisson.SlotCallback;
+import org.redisson.api.BatchOptions;
+import org.redisson.api.BatchResult;
 import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
@@ -28,7 +30,10 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.connection.*;
+import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.MasterSlaveEntry;
+import org.redisson.connection.NodeSource;
+import org.redisson.connection.ServiceManager;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.slf4j.Logger;
@@ -37,12 +42,11 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -706,5 +710,66 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         ref.set(names.iterator());
         return poll(codec, ref, names, counter, command);
     }
-    
+
+    public <T> CompletionStage<T> handleNoSync(CompletionStage<T> stage, Supplier<CompletionStage<?>> supplier) {
+        CompletionStage<T> s = stage.handle((r, ex) -> {
+            if (ex != null) {
+                if (ex.getCause().getMessage().equals("None of slaves were synced")) {
+                    return supplier.get().handle((r1, e) -> {
+                        if (e != null) {
+                            if (e.getCause().getMessage().equals("None of slaves were synced")) {
+                                throw new CompletionException(ex.getCause());
+                            }
+                            e.getCause().addSuppressed(ex.getCause());
+                        }
+                        throw new CompletionException(ex.getCause());
+                    });
+                } else {
+                    throw new CompletionException(ex.getCause());
+                }
+            }
+            return CompletableFuture.completedFuture(r);
+        }).thenCompose(f -> (CompletionStage<T>) f);
+        return s;
+    }
+
+    @Override
+    public <T> RFuture<T> syncedEvalWriteAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
+        CompletionStage<Map<String, String>> replicationFuture = CompletableFuture.completedFuture(Collections.emptyMap());
+        if (!getServiceManager().getConfig().checkSkipSlavesInit()) {
+            replicationFuture = writeAsync(key, RedisCommands.INFO_REPLICATION);
+        }
+        CompletionStage<T> resFuture = replicationFuture.thenCompose(r -> {
+            int availableSlaves = Integer.parseInt(r.getOrDefault("connected_slaves", "0"));
+
+            CommandBatchService executorService = createCommandBatchService(availableSlaves);
+            RFuture<T> result = executorService.evalWriteAsync(key, codec, evalCommandType, script, keys, params);
+            if (executorService == this) {
+                return result;
+            }
+
+            RFuture<BatchResult<?>> future = executorService.executeAsync();
+            CompletionStage<T> f = future.handle((res, ex) -> {
+                if (ex != null) {
+                    throw new CompletionException(ex);
+                }
+                if (getServiceManager().getCfg().isCheckLockSyncedSlaves()
+                        && res.getSyncedSlaves() == 0 && availableSlaves > 0) {
+                    throw new CompletionException(
+                            new IllegalStateException("None of slaves were synced"));
+                }
+
+                return getNow(result.toCompletableFuture());
+            });
+            return f;
+        });
+        return new CompletableFutureWrapper<>(resFuture);
+    }
+
+    protected CommandBatchService createCommandBatchService(int availableSlaves) {
+        BatchOptions options = BatchOptions.defaults()
+                                            .syncSlaves(availableSlaves, 1, TimeUnit.SECONDS);
+        return new CommandBatchService(this, options);
+    }
+
 }

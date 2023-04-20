@@ -17,8 +17,6 @@ package org.redisson;
 
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
-import org.redisson.api.BatchOptions;
-import org.redisson.api.BatchResult;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.client.RedisException;
@@ -29,16 +27,13 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
 import org.redisson.client.protocol.decoder.MapValueDecoder;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.command.CommandBatchService;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
-import java.util.function.Supplier;
 
 /**
  * Base class for implementing distributed locks
@@ -207,48 +202,8 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
         }
     }
 
-    protected <T> RFuture<T> evalWriteAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
-        CompletionStage<Map<String, String>> replicationFuture = CompletableFuture.completedFuture(Collections.emptyMap());
-        if (!(commandExecutor instanceof CommandBatchService)
-                && !commandExecutor.getServiceManager().getConfig().checkSkipSlavesInit()) {
-            replicationFuture = commandExecutor.writeAsync(getRawName(), RedisCommands.INFO_REPLICATION);
-        }
-        CompletionStage<T> resFuture = replicationFuture.thenCompose(r -> {
-            int availableSlaves = Integer.parseInt(r.getOrDefault("connected_slaves", "0"));
-
-            CommandBatchService executorService = createCommandBatchService(availableSlaves);
-            RFuture<T> result = executorService.evalWriteAsync(key, codec, evalCommandType, script, keys, params);
-            if (commandExecutor instanceof CommandBatchService) {
-                return result;
-            }
-
-            RFuture<BatchResult<?>> future = executorService.executeAsync();
-            CompletionStage<T> f = future.handle((res, ex) -> {
-                if (ex != null) {
-                    throw new CompletionException(ex);
-                }
-                if (commandExecutor.getServiceManager().getCfg().isCheckLockSyncedSlaves()
-                        && res.getSyncedSlaves() == 0 && availableSlaves > 0) {
-                    throw new CompletionException(
-                            new IllegalStateException("None of slaves were synced"));
-                }
-
-                return commandExecutor.getNow(result.toCompletableFuture());
-            });
-            return f;
-        });
-        return new CompletableFutureWrapper<>(resFuture);
-    }
-
-    private CommandBatchService createCommandBatchService(int availableSlaves) {
-        if (commandExecutor instanceof CommandBatchService) {
-            return (CommandBatchService) commandExecutor;
-        }
-
-        BatchOptions options = BatchOptions.defaults()
-                                            .syncSlaves(availableSlaves, 1, TimeUnit.SECONDS);
-
-        return new CommandBatchService(commandExecutor, options);
+    protected final <T> RFuture<T> evalWriteAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
+        return commandExecutor.syncedEvalWriteAsync(key, codec, evalCommandType, script, keys, params);
     }
 
     protected void acquireFailed(long waitTime, TimeUnit unit, long threadId) {
@@ -409,7 +364,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
     }
 
     protected final <T> CompletionStage<T> handleNoSync(long threadId, CompletionStage<T> ttlRemainingFuture) {
-        return commandExecutor.getServiceManager().handleNoSync(ttlRemainingFuture, () -> unlockInnerAsync(threadId));
+        return commandExecutor.handleNoSync(ttlRemainingFuture, () -> unlockInnerAsync(threadId));
     }
 
 }
