@@ -46,11 +46,11 @@ public class RedissonBinaryStreamRx {
     }
 
     public Single<Integer> read(ByteBuffer buf) {
-        return commandExecutor.flowable(() -> ((RFuture<Integer>) channel.read(buf)).toCompletableFuture()).singleOrError();
+        return commandExecutor.flowable(() -> ((RFuture<Integer>) channel.read(buf))).singleOrError();
     }
 
     public Single<Integer> write(ByteBuffer buf) {
-        return commandExecutor.flowable(() -> ((RFuture<Integer>) channel.write(buf)).toCompletableFuture()).singleOrError();
+        return commandExecutor.flowable(() -> ((RFuture<Integer>) channel.write(buf))).singleOrError();
     }
 
 }

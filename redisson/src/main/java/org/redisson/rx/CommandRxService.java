@@ -19,12 +19,12 @@ import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.functions.Action;
 import io.reactivex.rxjava3.functions.LongConsumer;
 import io.reactivex.rxjava3.processors.ReplayProcessor;
+import org.redisson.api.RFuture;
 import org.redisson.command.CommandAsyncService;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
 
 import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
 /**
@@ -39,12 +39,12 @@ public class CommandRxService extends CommandAsyncService implements CommandRxEx
     }
 
     @Override
-    public <R> Flowable<R> flowable(Callable<CompletableFuture<R>> supplier) {
+    public <R> Flowable<R> flowable(Callable<RFuture<R>> supplier) {
         ReplayProcessor<R> p = ReplayProcessor.create();
         return p.doOnRequest(new LongConsumer() {
             @Override
             public void accept(long t) throws Exception {
-                CompletableFuture<R> future;
+                RFuture<R> future;
                 try {
                     future = supplier.call();
                 } catch (Exception e) {

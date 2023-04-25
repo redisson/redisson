@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.executor.RemotePromise;
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.rx.CommandRxExecutor;
 
 import io.reactivex.rxjava3.core.Completable;
@@ -50,7 +51,7 @@ public class RxRemoteProxy extends AsyncRemoteProxy {
     
     @Override
     protected Object convertResult(RemotePromise<Object> result, Class<?> returnType) {
-        Flowable<Object> flowable = ((CommandRxExecutor) commandExecutor).flowable(() -> result);
+        Flowable<Object> flowable = ((CommandRxExecutor) commandExecutor).flowable(() -> new CompletableFutureWrapper<>(result));
         
         if (returnType == Completable.class) {
             return flowable.ignoreElements();
