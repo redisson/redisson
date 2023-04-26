@@ -54,7 +54,8 @@ public class JndiRedissonFactory implements ObjectFactory {
             try {
                 config = Config.fromJSON(new File(configPath), getClass().getClassLoader());
             } catch (IOException e1) {
-                NamingException ex = new NamingException("Can't parse yaml config " + configPath);
+                NamingException ex = new NamingException("Can't parse config " + configPath);
+                e1.addSuppressed(e);
                 ex.initCause(e1);
                 throw ex;
             }

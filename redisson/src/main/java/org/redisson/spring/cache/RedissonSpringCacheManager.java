@@ -298,12 +298,13 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
 
         Resource resource = resourceLoader.getResource(configLocation);
         try {
-            this.configMap = (Map<String, CacheConfig>) CacheConfig.fromJSON(resource.getInputStream());
+            this.configMap = (Map<String, CacheConfig>) CacheConfig.fromYAML(resource.getInputStream());
         } catch (IOException e) {
             // try to read yaml
             try {
-                this.configMap = (Map<String, CacheConfig>) CacheConfig.fromYAML(resource.getInputStream());
+                this.configMap = (Map<String, CacheConfig>) CacheConfig.fromJSON(resource.getInputStream());
             } catch (IOException e1) {
+                e1.addSuppressed(e);
                 throw new BeanDefinitionStoreException(
                         "Could not parse cache configuration at [" + configLocation + "]", e1);
             }

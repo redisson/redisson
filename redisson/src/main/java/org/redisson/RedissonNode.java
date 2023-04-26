@@ -88,14 +88,14 @@ public final class RedissonNode {
         String configPath = args[0];
         RedissonNodeFileConfig config = null;
         try {
-            config = RedissonNodeFileConfig.fromJSON(new File(configPath));
+            config = RedissonNodeFileConfig.fromYAML(new File(configPath));
         } catch (IOException e) {
             // trying next format
             try {
-                config = RedissonNodeFileConfig.fromYAML(new File(configPath));
+                config = RedissonNodeFileConfig.fromJSON(new File(configPath));
             } catch (IOException e1) {
-                log.error("Can't parse json config {}", configPath, e);
-                throw new IllegalArgumentException("Can't parse yaml config " + configPath, e1);
+                e1.addSuppressed(e);
+                throw new IllegalArgumentException("Can't parse config " + configPath, e1);
             }
         }
         

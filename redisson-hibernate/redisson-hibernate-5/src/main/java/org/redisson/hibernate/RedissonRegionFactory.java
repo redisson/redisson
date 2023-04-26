@@ -123,7 +123,8 @@ import java.util.concurrent.atomic.AtomicLong;
             try {
                 return Config.fromJSON(new File(configPath));
             } catch (IOException e1) {
-                throw new CacheException("Can't parse default yaml config", e1);
+                e1.addSuppressed(e);
+                throw new CacheException("Can't parse default config", e1);
             }
         }
     }
@@ -138,7 +139,8 @@ import java.util.concurrent.atomic.AtomicLong;
                     is = classLoader.getResourceAsStream(fileName);
                     return Config.fromJSON(is);
                 } catch (IOException e1) {
-                    throw new CacheException("Can't parse yaml config", e1);
+                    e1.addSuppressed(e);
+                    throw new CacheException("Can't parse config", e1);
                 }
             }
         }
