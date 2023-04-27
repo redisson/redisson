@@ -16,11 +16,12 @@
     <modules>
         <module>redisson-quarkus-16</module>
         <module>redisson-quarkus-20</module>
+        <module>redisson-quarkus-30</module>
     </modules>
 
      <properties>
-       <compiler-plugin.version>3.8.1</compiler-plugin.version>
-       <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
+       <compiler-plugin.version>3.11.0</compiler-plugin.version>
+       <surefire-plugin.version>3.0.0</surefire-plugin.version>
        <failsafe-plugin.version>${surefire-plugin.version}</failsafe-plugin.version>
      </properties>
 
