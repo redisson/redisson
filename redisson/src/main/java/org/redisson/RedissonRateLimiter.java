@@ -171,7 +171,7 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
     }
     
     private <T> RFuture<T> tryAcquireAsync(RedisCommand<T> command, Long value) {
-        byte[] random = new byte[8];
+        byte[] random = new byte[16];
         ThreadLocalRandom.current().nextBytes(random);
 
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, command,
