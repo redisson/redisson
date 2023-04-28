@@ -260,8 +260,8 @@ public class LocalCacheView<K, V> {
         return new CacheKey(Hash.hash128toArray(encodedKey));
     }
 
-    public ConcurrentMap<CacheKey, CacheValue> getCache() {
-        return cache;
+    public <K1, V1> ConcurrentMap<K1, V1> getCache() {
+        return (ConcurrentMap<K1, V1>) cache;
     }
 
     public ConcurrentMap<CacheKey, CacheValue> createCache(LocalCachedMapOptions<?, ?> options) {

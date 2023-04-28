@@ -11,6 +11,7 @@ import org.redisson.api.LocalCachedMapOptions.EvictionPolicy;
 import org.redisson.api.LocalCachedMapOptions.ReconnectionStrategy;
 import org.redisson.api.LocalCachedMapOptions.SyncStrategy;
 import org.redisson.api.MapOptions.WriteMode;
+import org.redisson.api.listener.LocalCacheInvalidateListener;
 import org.redisson.api.map.MapLoader;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisClientConfig;
@@ -125,6 +126,22 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
     }
 
     @Test
+    public void testListeners() throws InterruptedException {
+        RLocalCachedMap<String, String> map = redisson.getLocalCachedMap("test", LocalCachedMapOptions.defaults());
+        Map<String, String> entries = new HashMap();
+        map.addListener((LocalCacheInvalidateListener<String, String>) (key, value) -> {
+            entries.put(key, value);
+        });
+        map.put("v1", "v2");
+        map.put("v3", "v4");
+
+        Thread.sleep(100);
+
+        assertThat(entries.keySet()).containsOnly("v1", "v3");
+        assertThat(entries.values()).containsOnly(null, null);
+    }
+
+    @Test
     public void testMapLoaderGet() {
         Map<String, String> cache = new HashMap<>();
         cache.put("1", "11");
@@ -158,12 +175,12 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
 
     @Override
     protected <K, V> RMap<K, V> getMap(String name) {
-        return redisson.getLocalCachedMap(name, LocalCachedMapOptions.<K, V>defaults());
+        return redisson.getLocalCachedMap(name, LocalCachedMapOptions.defaults());
     }
     
     @Override
     protected <K, V> RMap<K, V> getMap(String name, Codec codec) {
-        return redisson.getLocalCachedMap(name, codec, LocalCachedMapOptions.<K, V>defaults());
+        return redisson.getLocalCachedMap(name, codec, LocalCachedMapOptions.defaults());
     }
     
     @Override

@@ -25,6 +25,8 @@ import org.redisson.api.LocalCachedMapOptions.EvictionPolicy;
 import org.redisson.api.LocalCachedMapOptions.ReconnectionStrategy;
 import org.redisson.api.LocalCachedMapOptions.SyncStrategy;
 import org.redisson.api.listener.BaseStatusListener;
+import org.redisson.api.listener.LocalCacheInvalidateListener;
+import org.redisson.api.listener.LocalCacheUpdateListener;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.Codec;
@@ -55,7 +57,7 @@ public abstract class LocalCacheListener {
     
     private String name;
     private CommandAsyncExecutor commandExecutor;
-    private Map<?, ?> cache;
+    private Map<CacheKey, ? extends CacheValue> cache;
     private RObject object;
     private byte[] instanceId = new byte[16];
     private Codec codec;
@@ -66,7 +68,11 @@ public abstract class LocalCacheListener {
     private RTopic invalidationTopic;
     private int syncListenerId;
     private int reconnectionListenerId;
-    
+
+    private final Map<Integer, LocalCacheInvalidateListener<?, ?>> invalidateListeners = new ConcurrentHashMap<>();
+
+    private final Map<Integer, LocalCacheUpdateListener<?, ?>> updateListeners = new ConcurrentHashMap<>();
+
     public LocalCacheListener(String name, CommandAsyncExecutor commandExecutor,
             RObject object, Codec codec, LocalCachedMapOptions<?, ?> options, long cacheUpdateLogTime) {
         super();
@@ -133,7 +139,7 @@ public abstract class LocalCacheListener {
         return disabledKeys.containsKey(key);
     }
     
-    public void add(Map<?, ?> cache) {
+    public void add(Map<CacheKey, ? extends CacheValue> cache) {
         this.cache = cache;
         
         invalidationTopic = RedissonTopic.createRaw(LocalCachedMessageCodec.INSTANCE, commandExecutor, getInvalidationTopicName());
@@ -200,7 +206,8 @@ public abstract class LocalCacheListener {
                         if (!Arrays.equals(invalidateMsg.getExcludedId(), instanceId)) {
                             for (byte[] keyHash : invalidateMsg.getKeyHashes()) {
                                 CacheKey key = new CacheKey(keyHash);
-                                cache.remove(key);
+                                CacheValue value = cache.remove(key);
+                                notifyInvalidate(value);
                             }
                         }
                     }
@@ -213,7 +220,8 @@ public abstract class LocalCacheListener {
                                 ByteBuf keyBuf = Unpooled.wrappedBuffer(entry.getKey());
                                 ByteBuf valueBuf = Unpooled.wrappedBuffer(entry.getValue());
                                 try {
-                                    updateCache(keyBuf, valueBuf);
+                                    CacheValue value = updateCache(keyBuf, valueBuf);
+                                    notifyUpdate(value);
                                 } catch (IOException e) {
                                     log.error("Can't decode map entry", e);
                                 } finally {
@@ -245,7 +253,19 @@ public abstract class LocalCacheListener {
             }
         }
     }
-    
+
+    public void notifyUpdate(CacheValue value) {
+        for (LocalCacheUpdateListener listener : updateListeners.values()) {
+            listener.onUpdate(value.getKey(), value.getValue());
+        }
+    }
+
+    public void notifyInvalidate(CacheValue value) {
+        for (LocalCacheInvalidateListener listener : invalidateListeners.values()) {
+            listener.onInvalidate(value.getKey(), value.getValue());
+        }
+    }
+
     public RFuture<Void> clearLocalCacheAsync() {
         cache.clear();
         if (syncListenerId == 0) {
@@ -276,7 +296,7 @@ public abstract class LocalCacheListener {
         return RedissonObject.suffixName(name, TOPIC_SUFFIX);
     }
 
-    protected abstract void updateCache(ByteBuf keyBuf, ByteBuf valueBuf) throws IOException;
+    protected abstract CacheValue updateCache(ByteBuf keyBuf, ByteBuf valueBuf) throws IOException;
     
     private void disableKeys(final String requestId, final Set<CacheKey> keys, long timeout) {
         for (CacheKey key : keys) {
@@ -348,6 +368,18 @@ public abstract class LocalCacheListener {
         RSemaphore semaphore = new RedissonSemaphore(commandExecutor, name + ":clear:" + id);
         semaphore.expireAsync(Duration.ofSeconds(60));
         return semaphore;
+    }
+
+    public <K, V> int addListener(LocalCacheInvalidateListener<K, V> listener) {
+        int listenerId = System.identityHashCode(listener);
+        invalidateListeners.put(listenerId, listener);
+        return listenerId;
+    }
+
+    public <K, V> int addListener(LocalCacheUpdateListener<K, V> listener) {
+        int listenerId = System.identityHashCode(listener);
+        updateListeners.put(listenerId, listener);
+        return listenerId;
     }
 
 }
