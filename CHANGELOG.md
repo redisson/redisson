@@ -5,6 +5,7 @@ Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and
 
 ### 29-Apr-2023 - 3.21.0 released
 Feature - [RediSearch module support](https://github.com/redisson/redisson/wiki/9.-distributed-services/#96-redisearch-service)  
+Feature - [Tracing support](https://github.com/redisson/redisson/wiki/16.-Observability/#162-tracing)  
 Feature - `RSetCache` extends `RSet` interface  
 Feature - `RSemaphore` and `RPermitExpirableSemaphore` objects wait for sync operations completion  
 Feature - Quarkus 3 support  
