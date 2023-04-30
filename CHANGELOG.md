@@ -3,6 +3,25 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 29-Apr-2023 - 3.21.0 released
+Feature - [RediSearch module support](https://github.com/redisson/redisson/wiki/9.-distributed-services/#96-redisearch-service)  
+Feature - [Tracing support](https://github.com/redisson/redisson/wiki/16.-Observability/#162-tracing)  
+Feature - `RSetCache` extends `RSet` interface  
+Feature - `RSemaphore` and `RPermitExpirableSemaphore` objects wait for sync operations completion  
+Feature - Quarkus 3 support  
+Feature - `LocalCacheUpdateListener` and `LocalCacheInvalidateListener` listeners support added to RLocalCachedMap object  
+
+Improvement - `RRateLimiter` object uses 128-bit random  
+Improvement - EVAL script cache applied to `RBatch` executed in `IN_MEMORY` mode  
+Improvement - `RMap.keySet()` method shouldn't load map values  
+Improvement - `SequentialDnsAddressResolverFactory` default concurrencyLevel set to 6  
+
+Fixed - `RMapCache.fastPut()` method doesn't clear ttl and idleTime params if entry reinserted after expiration  
+Fixed - Unable to find session error arise if Tomcat session was deleted or expired  
+Fixed - `MasterSlaveEntry.getClient()` method may throw NPE  
+Fixed - initialize Decoders LinkedHashMap with correct initial size to avoid unnecessary resizing (thanks @theigl)  
+Fixed - failover handling may cause temporary connections spike  
+
 ### 28-Mar-2023 - 3.20.1 released
 
 Feature - `LoadBalancer.getEntry(List<ClientConnectionsEntry>, RedisCommand<?>)` method added  
