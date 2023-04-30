@@ -3,7 +3,7 @@
 Implements [Hibernate 2nd level Cache](https://docs.jboss.org/hibernate/orm/6.0/userguide/html_single/Hibernate_User_Guide.html#caching) provider based on Redis.  
 Supports all Hibernate cache strategies: `READ_ONLY`, `NONSTRICT_READ_WRITE`, `READ_WRITE` and `TRANSACTIONAL`.  
 
-Compatible with Hibernate 4.x, 5.1.x, 5.2.x, 5.3.3+ up to 5.6.x and 6.0.2+ up to 6.1.x
+Compatible with Hibernate 4.x, 5.1.x, 5.2.x, 5.3.3+ up to 5.6.x and 6.0.2+ up to 6.2.x
 
 Redisson provides various Hibernate Cache factories including those with features below:
 
@@ -38,9 +38,9 @@ Maven
          <artifactId>redisson-hibernate-52</artifactId>
          <!-- for Hibernate v5.3.3+ - v5.6.x -->
          <artifactId>redisson-hibernate-53</artifactId>
-         <!-- for Hibernate v6.0.2+ - v6.1.x -->
+         <!-- for Hibernate v6.0.2+ - v6.2.x -->
          <artifactId>redisson-hibernate-6</artifactId>
-         <version>3.20.1</version>
+         <version>3.21.0</version>
      </dependency>
 ```
 
@@ -48,15 +48,15 @@ Gradle
 
 ```groovy
      // for Hibernate v4.x
-     compile 'org.redisson:redisson-hibernate-4:3.20.1'
+     compile 'org.redisson:redisson-hibernate-4:3.21.0'
      // for Hibernate v5.0.x - v5.1.x
-     compile 'org.redisson:redisson-hibernate-5:3.20.1'
+     compile 'org.redisson:redisson-hibernate-5:3.21.0'
      // for Hibernate v5.2.x
-     compile 'org.redisson:redisson-hibernate-52:3.20.1'
+     compile 'org.redisson:redisson-hibernate-52:3.21.0'
      // for Hibernate v5.3.3+ - v5.6.x
-     compile 'org.redisson:redisson-hibernate-53:3.20.1'
-     // for Hibernate v6.0.2+ - v6.1.x
-     compile 'org.redisson:redisson-hibernate-6:3.20.1'
+     compile 'org.redisson:redisson-hibernate-53:3.21.0'
+     // for Hibernate v6.0.2+ - v6.2.x
+     compile 'org.redisson:redisson-hibernate-6:3.21.0'
 ```
 
 ### 2. Specify hibernate cache settings
