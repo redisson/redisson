@@ -1323,4 +1323,16 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         }
         return super.addListenerAsync(listener);
     }
+
+    @Override
+    public void removeListener(int listenerId) {
+        listener.removeListener(listenerId);
+        super.removeListener(listenerId);
+    }
+
+    @Override
+    public RFuture<Void> removeListenerAsync(int listenerId) {
+        listener.removeListener(listenerId);
+        return super.removeListenerAsync(listenerId);
+    }
 }

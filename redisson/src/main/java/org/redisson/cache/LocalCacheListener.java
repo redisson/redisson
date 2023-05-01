@@ -382,4 +382,9 @@ public abstract class LocalCacheListener {
         return listenerId;
     }
 
+    public void removeListener(int listenerId) {
+        updateListeners.remove(listenerId);
+        invalidateListeners.remove(listenerId);
+    }
+
 }
