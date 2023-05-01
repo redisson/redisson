@@ -87,5 +87,17 @@ public interface RLocalCachedMap<K, V> extends RMap<K, V> {
      * @return map
      */
     Map<K, V> getCachedMap();
-    
+
+    /**
+     * Adds local cache event listener
+     *
+     * @see org.redisson.api.listener.LocalCacheUpdateListener
+     * @see org.redisson.api.listener.LocalCacheInvalidateListener
+     *
+     * @param listener - local cache event listener
+     * @return listener id
+     */
+    @Override
+    int addListener(ObjectListener listener);
+
 }
