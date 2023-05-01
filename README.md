@@ -38,6 +38,7 @@ Supported Redis: 3.0 ... 7.0
 * Supports SSL  
 * Asynchronous connection pool  
 * Lua scripting  
+* [RediSearch](https://github.com/redisson/redisson/wiki/9.-distributed-services/#96-redisearch-service)
 * [JSON datatype](https://github.com/redisson/redisson/wiki/6.-distributed-objects/#615-json-object-holder)
 * [Reactive Streams](https://github.com/redisson/redisson/wiki/3.-operations-execution#32-reactive-way) API  
 * [RxJava3](https://github.com/redisson/redisson/wiki/3.-operations-execution#32-reactive-way) API  
