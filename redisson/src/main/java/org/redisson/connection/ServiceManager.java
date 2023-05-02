@@ -408,4 +408,15 @@ public class ServiceManager {
         });
     }
 
+    public <V> void transfer(CompletionStage<V> future1, CompletableFuture<V> future2) {
+        future1.whenComplete((res, e) -> {
+            if (e != null) {
+                future2.completeExceptionally(e);
+                return;
+            }
+
+            future2.complete(res);
+        });
+    }
+
 }

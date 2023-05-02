@@ -37,6 +37,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 /**
  * 
@@ -198,37 +199,31 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
             }
         }
     }
+
+    private static final AtomicReferenceFieldUpdater<ConnectionEntry, CompletableFuture> CONNECTION_LATCH =
+                                AtomicReferenceFieldUpdater.newUpdater(ConnectionEntry.class,
+                                                                        CompletableFuture.class, "connectionFuture");
     
     @Override
     protected CompletableFuture<RedisConnection> getConnection() {
         MasterSlaveEntry msEntry = getEntry();
         ConnectionEntry entry = connections.computeIfAbsent(msEntry, k -> new ConnectionEntry());
 
-        if (entry.getConnectionFuture() != null) {
+        if (CONNECTION_LATCH.compareAndSet(entry, null, new CompletableFuture<>())) {
             connectionFuture = entry.getConnectionFuture();
-            return connectionFuture;
-        }
-        
-        synchronized (this) {
-            if (entry.getConnectionFuture() != null) {
-                connectionFuture = entry.getConnectionFuture();
-                return connectionFuture;
-            }
-
+            CompletableFuture<RedisConnection> cf;
             if (this.options.getExecutionMode() == ExecutionMode.REDIS_WRITE_ATOMIC) {
-                connectionFuture = connectionWriteOp(null);
+                cf = connectionWriteOp(null);
             } else {
-                connectionFuture = connectionReadOp(null);
+                cf = connectionReadOp(null);
             }
-            connectionFuture.toCompletableFuture().join();
-            entry.setConnectionFuture(connectionFuture);
+            connectionManager.getServiceManager().transfer(cf, connectionFuture);
 
             entry.setCancelCallback(() -> {
                 handleError(connectionFuture, new CancellationException());
             });
-
-            return connectionFuture;
         }
+        return entry.getConnectionFuture();
     }
 
     private MasterSlaveEntry getEntry() {
