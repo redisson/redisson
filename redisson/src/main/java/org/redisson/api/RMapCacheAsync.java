@@ -280,7 +280,7 @@ public interface RMapCacheAsync<K, V> extends RMapAsync<K, V> {
      * If map doesn't contain value for specified key and {@link MapLoader} is defined
      * then value will be loaded in read-through mode.
      * <p>
-     * Idle time of entry is not taken into account.
+     * NOTE: Idle time of entry is not taken into account.
      * Entry last access time isn't modified if map limited by size.
      *
      * @param key the key
