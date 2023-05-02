@@ -303,7 +303,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * <p>
      * The returned map is <b>NOT</b> backed by the original map.
      *
-     * @param keys - map keys
+     * @param keys map keys
      * @return Map slice
      */
     Map<K, V> getAll(Set<K> keys);

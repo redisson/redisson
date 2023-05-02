@@ -20,6 +20,7 @@ import org.redisson.api.map.MapWriter;
 import org.redisson.api.map.event.MapEntryListener;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -287,6 +288,20 @@ public interface RMapCacheAsync<K, V> extends RMapAsync<K, V> {
      * @return the value mapped by defined <code>key</code> or {@code null} if value is absent
      */
     RFuture<V> getWithTTLOnlyAsync(K key);
+
+    /**
+     * Returns map slice contained the mappings with defined <code>keys</code>.
+     * <p>
+     * If map doesn't contain value/values for specified key/keys and {@link MapLoader} is defined
+     * then value/values will be loaded in read-through mode.
+     * <p>
+     * NOTE: Idle time of entry is not taken into account.
+     * Entry last access time isn't modified if map limited by size.
+     *
+     * @param keys map keys
+     * @return Map slice
+     */
+    RFuture<Map<K, V>> getAllWithTTLOnlyAsync(Set<K> keys);
 
     /**
      * Returns the number of entries in cache.

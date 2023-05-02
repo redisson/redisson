@@ -1295,6 +1295,72 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
+    public Map<K, V> getAllWithTTLOnly(Set<K> keys) {
+        return get(getAllWithTTLOnlyAsync(keys));
+    }
+
+    @Override
+    public RFuture<Map<K, V>> getAllWithTTLOnlyAsync(Set<K> keys) {
+        if (keys.isEmpty()) {
+            return new CompletableFutureWrapper<>(Collections.emptyMap());
+        }
+
+        RFuture<Map<K, V>> future = getAllWithTTLOnlyOperationAsync(keys);
+        if (hasNoLoader()) {
+            return future;
+        }
+
+        CompletionStage<Map<K, V>> f = future.thenCompose(res -> {
+            if (!res.keySet().containsAll(keys)) {
+                Set<K> newKeys = new HashSet<K>(keys);
+                newKeys.removeAll(res.keySet());
+
+                CompletionStage<Map<K, V>> ff = loadAllMapAsync(newKeys.spliterator(), false, 1);
+                return ff.thenApply(map -> {
+                    res.putAll(map);
+                    return res;
+                });
+            }
+            return CompletableFuture.completedFuture(res);
+        });
+        return new CompletableFutureWrapper<>(f);
+    }
+
+    protected RFuture<Map<K, V>> getAllWithTTLOnlyOperationAsync(Set<K> keys) {
+        List<Object> args = new ArrayList<>(keys.size() + 1);
+        List<Object> plainKeys = new ArrayList<>(keys);
+
+        args.add(System.currentTimeMillis());
+        encodeMapKeys(args, keys);
+
+        return commandExecutor.evalReadAsync(getRawName(), codec, new RedisCommand<Map<Object, Object>>("EVAL",
+                        new MapValueDecoder(new MapGetAllDecoder(plainKeys, 0))),
+                "local expireHead = redis.call('zrange', KEYS[2], 0, 0, 'withscores'); " +
+                        "local currentTime = tonumber(table.remove(ARGV, 1)); " + // index is the first parameter
+                        "local hasExpire = #expireHead == 2 and tonumber(expireHead[2]) <= currentTime; " +
+                        "local map = {}; " +
+                        "for i = 1, #ARGV, 1 do " +
+                        "    local value = redis.call('hget', KEYS[1], ARGV[i]); " +
+                        "    map[i] = false;" +
+                        "    if value ~= false then " +
+                        "        local key = ARGV[i]; " +
+                        "        local t, val = struct.unpack('dLc0', value); " +
+                        "        map[i] = val; " +
+                        "        if hasExpire then " +
+                        "            local expireDate = redis.call('zscore', KEYS[2], key); " +
+                        "            if expireDate ~= false and tonumber(expireDate) <= currentTime then " +
+                        "                map[i] = false; " +
+                        "            end; " +
+                        "        end; " +
+                        "    end; " +
+                        "end; " +
+                        "return map;",
+                Arrays.asList(getRawName(), getTimeoutSetName()),
+                args.toArray());
+    }
+
+
+    @Override
     public long remainTimeToLive(K key) {
         return get(remainTimeToLiveAsync(key));
     }
