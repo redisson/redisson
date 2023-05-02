@@ -61,10 +61,6 @@ public class CommandBatchService extends CommandAsyncService {
             return connectionFuture;
         }
         
-        public void setConnectionFuture(CompletableFuture<RedisConnection> connectionFuture) {
-            this.connectionFuture = connectionFuture;
-        }
-
         public boolean isFirstCommand() {
             return firstCommand;
         }
