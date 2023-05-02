@@ -82,7 +82,7 @@
         <dependency>
             <groupId>io.helidon.microprofile.config</groupId>
             <artifactId>helidon-microprofile-config</artifactId>
-            <version>3.1.0</version>
+            <version>3.2.1</version>
             <scope>runtime</scope>
             <optional>true</optional>
         </dependency>
@@ -90,14 +90,14 @@
         <dependency>
             <groupId>org.eclipse.microprofile.config</groupId>
             <artifactId>microprofile-config-api</artifactId>
-            <version>3.0.2</version>
+            <version>3.0.3</version>
             <scope>compile</scope>
         </dependency>
 
         <dependency>
             <groupId>io.helidon.microprofile.cdi</groupId>
             <artifactId>helidon-microprofile-cdi</artifactId>
-            <version>3.1.0</version>
+            <version>3.2.1</version>
             <scope>test</scope>
         </dependency>
         <dependency>
