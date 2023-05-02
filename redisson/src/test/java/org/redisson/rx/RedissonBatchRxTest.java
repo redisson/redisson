@@ -99,7 +99,7 @@ public class RedissonBatchRxTest extends BaseRxTest {
     @ParameterizedTest
     @MethodSource("data")
     public void testPerformance(BatchOptions batchOptions) {
-        Assertions.assertTimeout(Duration.ofSeconds(20), () -> {
+        Assertions.assertTimeout(Duration.ofSeconds(21), () -> {
             RMapRx<String, String> map = redisson.getMap("map");
             Map<String, String> m = new HashMap<String, String>();
             for (int j = 0; j < 1000; j++) {

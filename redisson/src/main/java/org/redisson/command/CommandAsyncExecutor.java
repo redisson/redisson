@@ -49,7 +49,7 @@ public interface CommandAsyncExecutor {
 
     RedisException convertException(ExecutionException e);
 
-    <V> void transfer(CompletableFuture<V> future1, CompletableFuture<V> future2);
+    <V> void transfer(CompletionStage<V> future1, CompletableFuture<V> future2);
 
     <V> V getNow(CompletableFuture<V> future);
 

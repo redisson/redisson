@@ -89,7 +89,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
-    public <V> void transfer(CompletableFuture<V> future1, CompletableFuture<V> future2) {
+    public <V> void transfer(CompletionStage<V> future1, CompletableFuture<V> future2) {
         future1.whenComplete((res, e) -> {
             if (e != null) {
                 future2.completeExceptionally(e);
