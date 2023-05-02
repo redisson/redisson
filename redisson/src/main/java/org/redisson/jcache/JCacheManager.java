@@ -53,7 +53,7 @@ import org.redisson.jcache.configuration.RedissonConfiguration;
 public class JCacheManager implements CacheManager {
 
     private static final EmptyStatisticsMXBean EMPTY_INSTANCE = new EmptyStatisticsMXBean();
-    private static final MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
+    private static final MBeanServer MBEAN_SERVER = ManagementFactory.getPlatformMBeanServer();
     
     private final ClassLoader classLoader;
     private final CachingProvider cacheProvider;
@@ -235,8 +235,8 @@ public class JCacheManager implements CacheManager {
             }
             try {
                 ObjectName objectName = queryNames("Configuration", cache);
-                if (mBeanServer.queryNames(objectName, null).isEmpty()) {
-                    mBeanServer.registerMBean(statBean, objectName);
+                if (MBEAN_SERVER.queryNames(objectName, null).isEmpty()) {
+                    MBEAN_SERVER.registerMBean(statBean, objectName);
                 }
             } catch (MalformedObjectNameException e) {
                 throw new CacheException(e);
@@ -263,8 +263,8 @@ public class JCacheManager implements CacheManager {
         if (statBean != null) {
             try {
                 ObjectName name = queryNames("Configuration", cache);
-                for (ObjectName objectName : mBeanServer.queryNames(name, null)) {
-                    mBeanServer.unregisterMBean(objectName);
+                for (ObjectName objectName : MBEAN_SERVER.queryNames(name, null)) {
+                    MBEAN_SERVER.unregisterMBean(objectName);
                 }
             } catch (MalformedObjectNameException e) {
                 throw new CacheException(e);
@@ -313,8 +313,8 @@ public class JCacheManager implements CacheManager {
             }
             try {
                 ObjectName objectName = queryNames("Statistics", cache);
-                if (!mBeanServer.isRegistered(objectName)) {
-                    mBeanServer.registerMBean(statBean, objectName);
+                if (!MBEAN_SERVER.isRegistered(objectName)) {
+                    MBEAN_SERVER.registerMBean(statBean, objectName);
                 }
             } catch (MalformedObjectNameException e) {
                 throw new CacheException(e);
@@ -336,8 +336,8 @@ public class JCacheManager implements CacheManager {
         if (statBean != null) {
             try {
                 ObjectName name = queryNames("Statistics", cache);
-                for (ObjectName objectName : mBeanServer.queryNames(name, null)) {
-                    mBeanServer.unregisterMBean(objectName);
+                for (ObjectName objectName : MBEAN_SERVER.queryNames(name, null)) {
+                    MBEAN_SERVER.unregisterMBean(objectName);
                 }
             } catch (MalformedObjectNameException e) {
                 throw new CacheException(e);
