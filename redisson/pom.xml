@@ -306,11 +306,6 @@
             <version>1.14.0</version>
         </dependency>
         <dependency>
-            <groupId>org.yaml</groupId>
-            <artifactId>snakeyaml</artifactId>
-            <version>2.0</version>
-        </dependency>
-        <dependency>
             <groupId>org.jodd</groupId>
             <artifactId>jodd-bean</artifactId>
             <version>5.1.6</version>
