@@ -19,6 +19,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.util.ReferenceCountUtil;
 import org.redisson.api.*;
 import org.redisson.api.MapOptions.WriteMode;
+import org.redisson.api.listener.MapPutListener;
+import org.redisson.api.listener.MapRemoveListener;
 import org.redisson.api.mapreduce.RMapReduce;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
@@ -1888,4 +1890,28 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             writeBehindService.stop(getRawName());
         }
     }
+
+    @Override
+    public int addListener(ObjectListener listener) {
+        if (listener instanceof MapPutListener) {
+            return addListener("__keyevent@*:hset", (MapPutListener) listener, MapPutListener::onPut);
+        }
+        if (listener instanceof MapRemoveListener) {
+            return addListener("__keyevent@*:hdel", (MapRemoveListener) listener, MapRemoveListener::onRemove);
+        }
+        return super.addListener(listener);
+    }
+
+    @Override
+    public RFuture<Integer> addListenerAsync(ObjectListener listener) {
+        if (listener instanceof MapPutListener) {
+            return addListenerAsync("__keyevent@*:hset", (MapPutListener) listener, MapPutListener::onPut);
+        }
+        if (listener instanceof MapRemoveListener) {
+            return addListenerAsync("__keyevent@*:hdel", (MapRemoveListener) listener, MapRemoveListener::onRemove);
+        }
+        return super.addListenerAsync(listener);
+    }
+
+
 }

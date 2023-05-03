@@ -619,4 +619,17 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      */
     RLockReactive getLock(K key);
 
+    /**
+     * Adds object event listener
+     *
+     * @see org.redisson.api.listener.MapPutListener
+     * @see org.redisson.api.listener.MapRemoveListener
+     * @see org.redisson.api.ExpiredObjectListener
+     * @see org.redisson.api.DeletedObjectListener
+     *
+     * @param listener object event listener
+     * @return listener id
+     */
+    Mono<Integer> addListener(ObjectListener listener);
+
 }

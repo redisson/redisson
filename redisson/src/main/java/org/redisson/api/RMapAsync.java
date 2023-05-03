@@ -418,4 +418,17 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
      */
     RFuture<Boolean> clearAsync();
 
+    /**
+     * Adds object event listener
+     *
+     * @see org.redisson.api.listener.MapPutListener
+     * @see org.redisson.api.listener.MapRemoveListener
+     * @see org.redisson.api.ExpiredObjectListener
+     * @see org.redisson.api.DeletedObjectListener
+     *
+     * @param listener - object event listener
+     * @return listener id
+     */
+    RFuture<Integer> addListenerAsync(ObjectListener listener);
+
 }
