@@ -136,7 +136,7 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
     }
 
     public RFuture<Void> resetAsync() {
-        String id = commandExecutor.getServiceManager().generateId();
+        String id = getServiceManager().generateId();
         RFuture<Long> future = topic.publishAsync(CLEAR_MSG + ":" + id);
         RSemaphore semaphore = getSemaphore(id);
         CompletionStage<Void> f = future.thenCompose(r -> semaphore.acquireAsync(r.intValue()))
@@ -145,7 +145,7 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
     }
     
     public RFuture<Void> resetAsync(long timeout, TimeUnit timeUnit) {
-        String id = commandExecutor.getServiceManager().generateId();
+        String id = getServiceManager().generateId();
         RFuture<Long> future = topic.publishAsync(CLEAR_MSG + ":" + id);
         RSemaphore semaphore = getSemaphore(id);
         CompletionStage<Void> f = future.thenCompose(r -> tryAcquire(semaphore, timeout, timeUnit, r.intValue()))

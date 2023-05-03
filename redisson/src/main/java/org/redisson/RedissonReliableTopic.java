@@ -160,7 +160,7 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
                             + "redis.call('zadd', KEYS[1], value, ARGV[2]); "
                             + "redis.call('hset', KEYS[2], ARGV[2], ARGV[1]); ",
                     Arrays.asList(getSubscribersName(), getMapName(), getCounter(), getTimeout()),
-                    startId, id, System.currentTimeMillis() + commandExecutor.getServiceManager().getCfg().getReliableTopicWatchdogTimeout());
+                    startId, id, System.currentTimeMillis() + getServiceManager().getCfg().getReliableTopicWatchdogTimeout());
             CompletionStage<String> f = addFuture.thenApply(r -> {
                 poll(id, startId);
                 return id;
@@ -186,13 +186,13 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
 
                 log.error(ex.getMessage(), ex);
 
-                commandExecutor.getServiceManager().newTimeout(task -> {
+                getServiceManager().newTimeout(task -> {
                     poll(id, startId);
                 }, 1, TimeUnit.SECONDS);
                 return;
             }
 
-            commandExecutor.getServiceManager().getExecutor().execute(() -> {
+            getServiceManager().getExecutor().execute(() -> {
                 res.values().forEach(entry -> {
                     Object m = entry.get("m");
                     listeners.values().forEach(e -> {
@@ -314,7 +314,7 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
     }
 
     private void renewExpiration() {
-        timeoutTask = commandExecutor.getServiceManager().newTimeout(t -> {
+        timeoutTask = getServiceManager().newTimeout(t -> {
             RFuture<Boolean> future = commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                    "if redis.call('zscore', KEYS[1], ARGV[2]) == false then "
                          + "return 0; "
@@ -322,7 +322,7 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
                       + "redis.call('zadd', KEYS[1], ARGV[1], ARGV[2]); "
                       + "return 1; ",
                 Arrays.asList(getTimeout()),
-                System.currentTimeMillis() + commandExecutor.getServiceManager().getCfg().getReliableTopicWatchdogTimeout(), subscriberId.get());
+                System.currentTimeMillis() + getServiceManager().getCfg().getReliableTopicWatchdogTimeout(), subscriberId.get());
             future.whenComplete((res, e) -> {
                 if (e != null) {
                     log.error("Can't update reliable topic {} expiration time", getRawName(), e);
@@ -334,7 +334,7 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
                     renewExpiration();
                 }
             });
-        }, commandExecutor.getServiceManager().getCfg().getReliableTopicWatchdogTimeout() / 3, TimeUnit.MILLISECONDS);
+        }, getServiceManager().getCfg().getReliableTopicWatchdogTimeout() / 3, TimeUnit.MILLISECONDS);
     }
 
 

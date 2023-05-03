@@ -47,7 +47,7 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
     }
 
     String getClientPermitsName() {
-        return suffixName(getPermitsName(), commandExecutor.getServiceManager().getId());
+        return suffixName(getPermitsName(), getServiceManager().getId());
     }
 
     String getValueName() {
@@ -55,7 +55,7 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
     }
     
     String getClientValueName() {
-        return suffixName(getValueName(), commandExecutor.getServiceManager().getId());
+        return suffixName(getValueName(), getServiceManager().getId());
     }
     
     @Override
@@ -134,7 +134,7 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
             
             if (timeoutInMillis == -1) {
                 CompletableFuture<Boolean> f = new CompletableFuture<>();
-                commandExecutor.getServiceManager().getGroup().schedule(() -> {
+                getServiceManager().getGroup().schedule(() -> {
                     CompletableFuture<Boolean> r = tryAcquireAsync(permits, timeoutInMillis);
                     commandExecutor.transfer(r, f);
                 }, delay, TimeUnit.MILLISECONDS);
@@ -149,12 +149,12 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
 
             CompletableFuture<Boolean> f = new CompletableFuture<>();
             if (remains < delay) {
-                commandExecutor.getServiceManager().getGroup().schedule(() -> {
+                getServiceManager().getGroup().schedule(() -> {
                     f.complete(false);
                 }, remains, TimeUnit.MILLISECONDS);
             } else {
                 long start = System.currentTimeMillis();
-                commandExecutor.getServiceManager().getGroup().schedule(() -> {
+                getServiceManager().getGroup().schedule(() -> {
                     long elapsed = System.currentTimeMillis() - start;
                     if (remains <= elapsed) {
                         f.complete(false);

@@ -205,7 +205,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             return oldValueFuture.thenCompose(oldValue -> {
                 CompletableFuture<V> newValuePromise = new CompletableFuture<>();
                 if (oldValue != null) {
-                    commandExecutor.getServiceManager().getExecutor().execute(() -> {
+                    getServiceManager().getExecutor().execute(() -> {
                         V newValue;
                         try {
                             newValue = remappingFunction.apply(oldValue, value);
@@ -253,7 +253,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                 RFuture<V> oldValueFuture = getAsync(key, threadId);
                 return oldValueFuture.thenCompose(oldValue -> {
                     CompletableFuture<V> result = new CompletableFuture<>();
-                    commandExecutor.getServiceManager().getExecutor().execute(() -> {
+                    getServiceManager().getExecutor().execute(() -> {
                         V newValue;
                         try {
                             newValue = remappingFunction.apply(key, oldValue);
@@ -349,7 +349,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                         }
 
                         CompletableFuture<V> result = new CompletableFuture<>();
-                        commandExecutor.getServiceManager().getExecutor().execute(() -> {
+                        getServiceManager().getExecutor().execute(() -> {
                             V newValue;
                             try {
                                 newValue = mappingFunction.apply(key);
@@ -426,7 +426,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                         }
 
                         CompletableFuture<V> result = new CompletableFuture<>();
-                        commandExecutor.getServiceManager().getExecutor().execute(() -> {
+                        getServiceManager().getExecutor().execute(() -> {
                             V newValue;
                             try {
                                 newValue = remappingFunction.apply(key, oldValue);
@@ -737,7 +737,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             if (condition.apply(res)) {
                 if (options.getWriter() != null) {
                     CompletableFuture<M> promise = new CompletableFuture<>();
-                    commandExecutor.getServiceManager().getExecutor().execute(() -> {
+                    getServiceManager().getExecutor().execute(() -> {
                         try {
                             if (task instanceof MapWriterTask.Add) {
                                 options.getWriter().write(task.getMap());
@@ -1426,7 +1426,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             } else {
                 if (options.getWriter() != null) {
                     CompletableFuture<Long> future = new CompletableFuture<>();
-                    commandExecutor.getServiceManager().getExecutor().execute(() -> {
+                    getServiceManager().getExecutor().execute(() -> {
                         try {
                             options.getWriter().delete(deletedKeys);
                         } catch (Exception ex) {
@@ -1739,7 +1739,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     private CompletableFuture<V> loadValue(K key, RLock lock, long threadId) {
         if (options.getLoader() != null) {
             CompletableFuture<V> result = new CompletableFuture<>();
-            commandExecutor.getServiceManager().getExecutor().execute(new Runnable() {
+            getServiceManager().getExecutor().execute(new Runnable() {
                 @Override
                 public void run() {
                     V value;

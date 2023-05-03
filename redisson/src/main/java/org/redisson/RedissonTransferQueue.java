@@ -193,7 +193,7 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
         long remainTime = unit.toMillis(timeout);
         long startTime = System.currentTimeMillis();
 
-        Timeout timeoutFuture = commandExecutor.getServiceManager().newTimeout(tt -> {
+        Timeout timeoutFuture = getServiceManager().newTimeout(tt -> {
             if (!future.getAddFuture().cancel(false)) {
                 future.cancelAsync(false);
             }
@@ -250,7 +250,7 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
 
             long time = remainTime - (System.currentTimeMillis() - startTime);
             if (time > 0) {
-                commandExecutor.getServiceManager().newTimeout(tt -> {
+                getServiceManager().newTimeout(tt -> {
                     task.run();
                 }, time, TimeUnit.MILLISECONDS);
             } else {
@@ -637,7 +637,7 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
 
     @Override
     public int subscribeOnElements(Consumer<V> consumer) {
-        return commandExecutor.getServiceManager().getElementsSubscribeService().subscribeOnElements(this::takeAsync, consumer);
+        return getServiceManager().getElementsSubscribeService().subscribeOnElements(this::takeAsync, consumer);
     }
 
     @Override
