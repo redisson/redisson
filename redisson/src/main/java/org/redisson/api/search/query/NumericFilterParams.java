@@ -35,27 +35,27 @@ public final class NumericFilterParams implements NumericFilter, NumericFilterMa
     @Override
     public NumericFilterMax min(double value) {
         this.min = value;
-        return null;
+        return this;
     }
 
     @Override
     public NumericFilterMax minExclusive(double value) {
         this.min = value;
         minExclusive = true;
-        return null;
+        return this;
     }
 
     @Override
     public QueryFilter max(double value) {
         this.max = value;
-        return null;
+        return this;
     }
 
     @Override
     public QueryFilter maxExclusive(double value) {
         this.max = value;
         maxExclusive = true;
-        return null;
+        return this;
     }
 
     public String getFieldName() {
