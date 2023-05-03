@@ -344,7 +344,7 @@ public class RedissonSearch implements RSearch {
                 args.add("FILTER");
                 args.add(params.getFieldName());
                 args.add(value(params.getMin(), params.isMinExclusive()));
-                args.add(value(params.getMax(), params.isMinExclusive()));
+                args.add(value(params.getMax(), params.isMaxExclusive()));
             }
         }
         for (QueryFilter filter : options.getFilters()) {
@@ -473,11 +473,8 @@ public class RedissonSearch implements RSearch {
         return commandExecutor.writeAsync(indexName, StringCodec.INSTANCE, command, args.toArray());
     }
 
-    private String value(double score, boolean inclusive) {
+    private String value(double score, boolean exclusive) {
         StringBuilder element = new StringBuilder();
-        if (!inclusive) {
-            element.append("(");
-        }
         if (Double.isInfinite(score)) {
             if (score > 0) {
                 element.append("+inf");
@@ -485,6 +482,9 @@ public class RedissonSearch implements RSearch {
                 element.append("-inf");
             }
         } else {
+            if (exclusive) {
+                element.append("(");
+            }
             element.append(BigDecimal.valueOf(score).toPlainString());
         }
         return element.toString();
