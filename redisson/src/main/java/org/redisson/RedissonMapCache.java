@@ -1573,11 +1573,6 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 params.toArray());
     }
 
-    private static final RedisCommand<MapCacheKeyScanResult<Object>> KEY_SCAN = new RedisCommand<MapCacheKeyScanResult<Object>>("EVAL",
-            new ListMultiDecoder2(
-                    new MapCacheKeyScanResultDecoder(),
-                    new ObjectListReplayDecoder<>()));
-
     @Override
     public RFuture<ScanResult<Object>> scanKeyIteratorAsync(String name, RedisClient client, long startPos, String pattern, int count) {
         List<Object> params = new ArrayList<>();
@@ -1588,7 +1583,10 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         }
         params.add(count);
 
-        RFuture<MapCacheKeyScanResult<Object>> future = commandExecutor.evalReadAsync(client, name, codec, KEY_SCAN,
+        RedisCommand<MapCacheKeyScanResult<Object>> evalScan = new RedisCommand<MapCacheKeyScanResult<Object>>("EVAL",
+                new ListMultiDecoder2(new MapCacheKeyScanResultDecoder(), new ObjectDecoder<>(codec.getMapKeyDecoder())));
+
+        RFuture<MapCacheKeyScanResult<Object>> future = commandExecutor.evalReadAsync(client, name, codec, evalScan,
                 "local result = {}; "
                 + "local idleKeys = {}; "
                 + "local res; "
