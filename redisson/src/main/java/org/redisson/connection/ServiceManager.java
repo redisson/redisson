@@ -424,7 +424,10 @@ public class ServiceManager {
     }
 
     public byte[] generateIdArray() {
-        byte[] id = new byte[16];
+        return generateIdArray(16);
+    }
+    public byte[] generateIdArray(int size) {
+        byte[] id = new byte[size];
         ThreadLocalRandom.current().nextBytes(id);
         return id;
     }
