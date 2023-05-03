@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import io.netty.buffer.ByteBufUtil;
 import io.netty.util.Timeout;
 import org.redisson.api.RFuture;
 import org.redisson.api.RReliableTopic;
@@ -34,7 +33,6 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -142,15 +140,9 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
                 Arrays.asList(getRawName(), getSubscribersName()), encode(message));
     }
 
-    protected String generateId() {
-        byte[] id = new byte[16];
-        ThreadLocalRandom.current().nextBytes(id);
-        return ByteBufUtil.hexDump(id);
-    }
-
     @Override
     public <M> RFuture<String> addListenerAsync(Class<M> type, MessageListener<M> listener) {
-        String id = generateId();
+        String id = getServiceManager().generateId();
         listeners.put(id, new Entry(type, listener));
 
         if (subscriberId.get() != null) {

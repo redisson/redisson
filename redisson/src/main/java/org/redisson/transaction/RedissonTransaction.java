@@ -61,12 +61,13 @@ public class RedissonTransaction implements RTransaction {
     private RedissonTransactionalBuckets bucketsCodecInstance;
     private final long startTime = System.currentTimeMillis();
     
-    private final String id = generateId();
+    private final String id;
     
     public RedissonTransaction(CommandAsyncExecutor commandExecutor, TransactionOptions options) {
         super();
         this.options = options;
         this.commandExecutor = commandExecutor;
+        this.id = commandExecutor.getServiceManager().generateId();
     }
     
     public RedissonTransaction(CommandAsyncExecutor commandExecutor, TransactionOptions options,
@@ -76,6 +77,7 @@ public class RedissonTransaction implements RTransaction {
         this.options = options;
         this.operations = operations;
         this.localCaches = localCaches;
+        this.id = commandExecutor.getServiceManager().generateId();
     }
 
     @Override
@@ -212,7 +214,7 @@ public class RedissonTransaction implements RTransaction {
             transactionalOperation.commit(transactionExecutor);
         }
 
-        String id = generateId();
+        String id = commandExecutor.getServiceManager().generateId();
         CompletionStage<Map<HashKey, HashValue>> future = disableLocalCacheAsync(id, localCaches, operations);
         CompletionStage<Void> ff = future
             .handle((hashes, ex) -> {
@@ -281,7 +283,7 @@ public class RedissonTransaction implements RTransaction {
             transactionalOperation.commit(transactionExecutor);
         }
 
-        String id = generateId();
+        String id = commandExecutor.getServiceManager().generateId();
         Map<HashKey, HashValue> hashes = disableLocalCache(id, localCaches, operations);
         
         try {
@@ -531,12 +533,6 @@ public class RedissonTransaction implements RTransaction {
     private RedissonBatch createBatch() {
         return new RedissonBatch(null, commandExecutor,
                                     BatchOptions.defaults().executionMode(BatchOptions.ExecutionMode.IN_MEMORY_ATOMIC));
-    }
-
-    protected static String generateId() {
-        byte[] id = new byte[16];
-        ThreadLocalRandom.current().nextBytes(id);
-        return ByteBufUtil.hexDump(id);
     }
 
     @Override

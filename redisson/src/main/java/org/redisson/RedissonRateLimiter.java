@@ -29,7 +29,6 @@ import org.redisson.misc.CompletableFutureWrapper;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -171,8 +170,7 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
     }
     
     private <T> RFuture<T> tryAcquireAsync(RedisCommand<T> command, Long value) {
-        byte[] random = new byte[16];
-        ThreadLocalRandom.current().nextBytes(random);
+        byte[] random = getServiceManager().generateIdArray();
 
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, command,
                 "local rate = redis.call('hget', KEYS[1], 'rate');"

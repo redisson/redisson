@@ -16,7 +16,6 @@
 package org.redisson;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
 import org.redisson.api.*;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.client.codec.Codec;
@@ -172,12 +171,6 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         idGenerator = options.getIdGenerator();
     }
     
-    protected String generateActiveWorkersId() {
-        byte[] id = new byte[16];
-        ThreadLocalRandom.current().nextBytes(id);
-        return ByteBufUtil.hexDump(id);
-    }
-
     @Override
     public int getTaskCount() {
         return commandExecutor.get(getTaskCountAsync());
@@ -210,7 +203,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
 
     @Override
     public int countActiveWorkers() {
-        String id = generateActiveWorkersId();
+        String id = commandExecutor.getServiceManager().generateId();
         int subscribers = (int) workersTopic.publish(id);
         if (subscribers == 0) {
             return 0;

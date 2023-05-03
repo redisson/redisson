@@ -336,18 +336,12 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         return new CompletableFutureWrapper<>(f);
     }
 
-    protected byte[] generateId() {
-        byte[] id = new byte[16];
-        ThreadLocalRandom.current().nextBytes(id);
-        return id;
-    }
-
     private RFuture<String> tryAcquireAsync(int permits, long timeoutDate) {
         if (permits < 0) {
             throw new IllegalArgumentException("Permits amount can't be negative");
         }
 
-        byte[] id = generateId();
+        byte[] id = getServiceManager().generateIdArray();
         return commandExecutor.getServiceManager().execute(() -> {
             RFuture<String> future = tryAcquireAsync(id, permits, timeoutDate);
             return commandExecutor.handleNoSync(future, () -> releaseAsync(ByteBufUtil.hexDump(id)));

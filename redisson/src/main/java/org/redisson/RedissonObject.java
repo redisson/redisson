@@ -23,6 +23,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.connection.ServiceManager;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.Hash;
 
@@ -67,7 +68,11 @@ public abstract class RedissonObject implements RObject {
         }
         return prefix + ":{" + name + "}";
     }
-    
+
+    public ServiceManager getServiceManager() {
+        return commandExecutor.getServiceManager();
+    }
+
     public static String suffixName(String name, String suffix) {
         if (name.contains("{")) {
             return name + ":" + suffix;

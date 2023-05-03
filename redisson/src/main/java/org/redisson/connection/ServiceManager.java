@@ -419,4 +419,14 @@ public class ServiceManager {
         });
     }
 
+    public String generateId() {
+        return ByteBufUtil.hexDump(generateIdArray());
+    }
+
+    public byte[] generateIdArray() {
+        byte[] id = new byte[16];
+        ThreadLocalRandom.current().nextBytes(id);
+        return id;
+    }
+
 }

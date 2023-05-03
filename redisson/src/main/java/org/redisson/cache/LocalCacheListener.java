@@ -59,7 +59,7 @@ public abstract class LocalCacheListener {
     private CommandAsyncExecutor commandExecutor;
     private Map<CacheKey, ? extends CacheValue> cache;
     private RObject object;
-    private byte[] instanceId = new byte[16];
+    private byte[] instanceId;
     private Codec codec;
     private LocalCachedMapOptions<?, ?> options;
     
@@ -82,14 +82,8 @@ public abstract class LocalCacheListener {
         this.codec = codec;
         this.options = options;
         this.cacheUpdateLogTime = cacheUpdateLogTime;
-        
-        ThreadLocalRandom.current().nextBytes(instanceId);
-    }
-    
-    public byte[] generateId() {
-        byte[] id = new byte[16];
-        ThreadLocalRandom.current().nextBytes(id);
-        return id;
+
+        instanceId = commandExecutor.getServiceManager().generateIdArray();
     }
     
     public byte[] getInstanceId() {
@@ -272,7 +266,7 @@ public abstract class LocalCacheListener {
             return new CompletableFutureWrapper<>((Void) null);
         }
 
-        byte[] id = generateId();
+        byte[] id = commandExecutor.getServiceManager().generateIdArray();
         RFuture<Long> future = invalidationTopic.publishAsync(new LocalCachedMapClear(instanceId, id, true));
         CompletionStage<Void> f = future.thenCompose(res -> {
             if (res.intValue() == 0) {
