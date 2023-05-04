@@ -262,4 +262,18 @@ public interface RSetRx<V> extends RCollectionRx<V>, RSortableRx<Set<V>> {
      */
     Single<List<V>> containsEach(Collection<V> c);
 
+    /**
+     * Adds object event listener
+     *
+     * @see org.redisson.api.listener.SetAddListener
+     * @see org.redisson.api.listener.SetRemoveListener
+     * @see org.redisson.api.listener.SetRemoveRandomListener
+     * @see org.redisson.api.ExpiredObjectListener
+     * @see org.redisson.api.DeletedObjectListener
+     *
+     * @param listener - object event listener
+     * @return listener id
+     */
+    Single<Integer> addListener(ObjectListener listener);
+
 }
