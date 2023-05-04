@@ -1286,4 +1286,17 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      */
     int diff(String... names);
 
+    /**
+     * Adds object event listener
+     *
+     * @see org.redisson.api.listener.ScoredSortedSetAddListener
+     * @see org.redisson.api.listener.ScoredSortedSetRemoveListener
+     * @see org.redisson.api.ExpiredObjectListener
+     * @see org.redisson.api.DeletedObjectListener
+     *
+     * @param listener - object event listener
+     * @return listener id
+     */
+    int addListener(ObjectListener listener);
+
 }

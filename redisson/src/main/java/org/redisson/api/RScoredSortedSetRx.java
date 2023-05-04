@@ -1178,5 +1178,19 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      * @return stream of tail elements
      */
     Flowable<V> takeLastElements();
-    
+
+    /**
+     * Adds object event listener
+     *
+     * @see org.redisson.api.listener.ScoredSortedSetAddListener
+     * @see org.redisson.api.listener.ScoredSortedSetRemoveListener
+     * @see org.redisson.api.ExpiredObjectListener
+     * @see org.redisson.api.DeletedObjectListener
+     *
+     * @param listener - object event listener
+     * @return listener id
+     */
+    Single<Integer> addListener(ObjectListener listener);
+
+
 }

@@ -17,6 +17,7 @@ package org.redisson;
 
 import org.redisson.api.*;
 import org.redisson.api.listener.ScoredSortedSetAddListener;
+import org.redisson.api.listener.ScoredSortedSetRemoveListener;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.*;
@@ -1828,6 +1829,9 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         if (listener instanceof ScoredSortedSetAddListener) {
             return addListener("__keyevent@*:zadd", (ScoredSortedSetAddListener) listener, ScoredSortedSetAddListener::onAdd);
         }
+        if (listener instanceof ScoredSortedSetRemoveListener) {
+            return addListener("__keyevent@*:zrem", (ScoredSortedSetRemoveListener) listener, ScoredSortedSetRemoveListener::onRemove);
+        }
         return super.addListener(listener);
     }
 
@@ -1835,6 +1839,9 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     public RFuture<Integer> addListenerAsync(ObjectListener listener) {
         if (listener instanceof ScoredSortedSetAddListener) {
             return addListenerAsync("__keyevent@*:zadd", (ScoredSortedSetAddListener) listener, ScoredSortedSetAddListener::onAdd);
+        }
+        if (listener instanceof ScoredSortedSetRemoveListener) {
+            return addListenerAsync("__keyevent@*:zrem", (ScoredSortedSetRemoveListener) listener, ScoredSortedSetRemoveListener::onRemove);
         }
         return super.addListenerAsync(listener);
     }

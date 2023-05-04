@@ -1176,4 +1176,17 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      */
     Flux<V> takeLastElements();
 
+    /**
+     * Adds object event listener
+     *
+     * @see org.redisson.api.listener.ScoredSortedSetAddListener
+     * @see org.redisson.api.listener.ScoredSortedSetRemoveListener
+     * @see org.redisson.api.ExpiredObjectListener
+     * @see org.redisson.api.DeletedObjectListener
+     *
+     * @param listener - object event listener
+     * @return listener id
+     */
+    Mono<Integer> addListener(ObjectListener listener);
+
 }
