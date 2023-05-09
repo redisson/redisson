@@ -59,7 +59,7 @@ public class BaseRedisBatchExecutor<V, R> extends RedisExecutor<V, R> {
         this.index = index;
         this.executed = executed;
 
-        if (options.getRetryAttempts() > 0) {
+        if (options.getRetryAttempts() >= 0) {
             this.attempts = options.getRetryAttempts();
         }
         if (options.getRetryInterval() > 0) {
