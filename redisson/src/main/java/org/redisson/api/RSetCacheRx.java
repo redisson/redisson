@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import java.time.Duration;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -108,7 +110,7 @@ public interface RSetCacheRx<V> extends RCollectionRx<V>, RDestroyable {
     Single<Boolean> tryAdd(V... values);
 
     /**
-     * Tries to add elements only if none of them in set.
+     * Use {@link #addIfAbsent(Duration, Object)} instead
      *
      * @param values - values to add
      * @param ttl - time to live for value.
@@ -117,6 +119,100 @@ public interface RSetCacheRx<V> extends RCollectionRx<V>, RDestroyable {
      * @return <code>true</code> if elements successfully added,
      *          otherwise <code>false</code>.
      */
+    @Deprecated
     Single<Boolean> tryAdd(long ttl, TimeUnit unit, V... values);
+
+    /**
+     * Adds element to this set only if has not been added before.
+     * <p>
+     * Requires <b>Redis 3.0.2 and higher.</b>
+     *
+     * @param ttl - object ttl
+     * @param object - object itself
+     * @return <code>true</code> if element added and <code>false</code> if not.
+     */
+    Single<Boolean> addIfAbsent(Duration ttl, V object);
+
+    /**
+     * Adds element to this set only if it's already exists.
+     * <p>
+     * Requires <b>Redis 3.0.2 and higher.</b>
+     *
+     * @param ttl - object ttl
+     * @param object - object itself
+     * @return <code>true</code> if element added and <code>false</code> if not.
+     */
+    Single<Boolean> addIfExists(Duration ttl, V object);
+
+    /**
+     * Adds element to this set only if new score less than current score of existed element.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param ttl - object ttl
+     * @param object - object itself
+     * @return <code>true</code> if element added and <code>false</code> if not.
+     */
+    Single<Boolean> addIfLess(Duration ttl, V object);
+
+    /**
+     * Adds element to this set only if new score greater than current score of existed element.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param ttl - object ttl
+     * @param object - object itself
+     * @return <code>true</code> if element added and <code>false</code> if not.
+     */
+    Single<Boolean> addIfGreater(Duration ttl, V object);
+
+    /**
+     * Adds all elements contained in the specified map to this sorted set.
+     * Map contains of score mapped by object.
+     *
+     * @param objects - map of elements to add
+     * @return amount of added elements, not including already existing in this sorted set
+     */
+    Single<Integer> addAll(Map<V, Duration> objects);
+
+    /**
+     * Adds elements to this set only if they haven't been added before.
+     * <p>
+     * Requires <b>Redis 3.0.2 and higher.</b>
+     *
+     * @param objects map of elements to add
+     * @return amount of added elements
+     */
+    Single<Integer> addAllIfAbsent(Map<V, Duration> objects);
+
+    /**
+     * Adds elements to this set only if they already exist.
+     * <p>
+     * Requires <b>Redis 3.0.2 and higher.</b>
+     *
+     * @param objects map of elements to add
+     * @return amount of added elements
+     */
+    Single<Integer> addAllIfExist(Map<V, Duration> objects);
+
+    /**
+     * Adds elements to this set only if new scores greater than current score of existed elements.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param objects map of elements to add
+     * @return amount of added elements
+     */
+    Single<Integer> addAllIfGreater(Map<V, Duration> objects);
+
+    /**
+     * Adds elements to this set only if new scores less than current score of existed elements.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param objects map of elements to add
+     * @return amount of added elements
+     */
+    Single<Integer> addAllIfLess(Map<V, Duration> objects);
 
 }
