@@ -67,7 +67,7 @@ public final class BatchOptions {
     private ExecutionMode executionMode = ExecutionMode.IN_MEMORY;
     
     private long responseTimeout;
-    private int retryAttempts;
+    private int retryAttempts = -1;
     private long retryInterval;
 
     private long syncTimeout;
