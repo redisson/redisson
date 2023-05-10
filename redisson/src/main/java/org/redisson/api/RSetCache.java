@@ -97,7 +97,7 @@ public interface RSetCache<V> extends RSet<V>, RExpirable, RSetCacheAsync<V>, RD
     boolean addIfExists(Duration ttl, V object);
 
     /**
-     * Adds element to this set only if new score less than current score of existed element.
+     * Adds element to this set only if new ttl less than current ttl of existed element.
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
      *
@@ -108,7 +108,7 @@ public interface RSetCache<V> extends RSet<V>, RExpirable, RSetCacheAsync<V>, RD
     boolean addIfLess(Duration ttl, V object);
 
     /**
-     * Adds element to this set only if new score greater than current score of existed element.
+     * Adds element to this set only if new ttl greater than current ttl of existed element.
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
      *
@@ -120,7 +120,7 @@ public interface RSetCache<V> extends RSet<V>, RExpirable, RSetCacheAsync<V>, RD
 
     /**
      * Adds all elements contained in the specified map to this sorted set.
-     * Map contains of score mapped by object.
+     * Map contains of ttl mapped by object.
      *
      * @param objects - map of elements to add
      * @return amount of added elements, not including already existing in this sorted set
@@ -148,7 +148,7 @@ public interface RSetCache<V> extends RSet<V>, RExpirable, RSetCacheAsync<V>, RD
     int addAllIfExist(Map<V, Duration> objects);
 
     /**
-     * Adds elements to this set only if new scores greater than current score of existed elements.
+     * Adds elements to this set only if new ttl greater than current ttl of existed elements.
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
      *
@@ -158,7 +158,7 @@ public interface RSetCache<V> extends RSet<V>, RExpirable, RSetCacheAsync<V>, RD
     int addAllIfGreater(Map<V, Duration> objects);
 
     /**
-     * Adds elements to this set only if new scores less than current score of existed elements.
+     * Adds elements to this set only if new ttl less than current ttl of existed elements.
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
      *
