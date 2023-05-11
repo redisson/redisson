@@ -258,7 +258,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return RedisClient.create(redisConfig);
     }
 
-
     protected RedisClientConfig createRedisConfig(NodeType type, RedisURI address, int timeout, int commandTimeout, String sslHostname) {
         RedisClientConfig redisConfig = new RedisClientConfig();
         redisConfig.setAddress(address)
@@ -420,10 +419,12 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         serviceManager.getTimer().stop();
     }
 
+    @Override
     public PublishSubscribeService getSubscribeService() {
         return subscribeService;
     }
 
+    @Override
     public RedisURI getLastClusterNode() {
         return null;
     }
