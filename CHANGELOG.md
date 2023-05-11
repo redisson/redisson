@@ -17,6 +17,7 @@ __Breaking change - RedissonReliableTopic internal data format changed__
 
 Improvement - `RedissonReliableTopic` internal structure optimization  
 
+Fixed - `RReliableTopic` data loss  
 Fixed - failover isn't handled correctly in some cases  
 Fixed - `BatchOptions.retryAttempts = 0` isn't applied to `RBatch` object  
 Fixed - `RMap.keySet()` throws NPE if CompositeCodec used  
@@ -37,7 +38,6 @@ Improvement - EVAL script cache applied to `RBatch` executed in `IN_MEMORY` mode
 Improvement - `RMap.keySet()` method shouldn't load map values  
 Improvement - `SequentialDnsAddressResolverFactory` default concurrencyLevel set to 6  
 
-Fixed - `RReliableTopic` data loss  
 Fixed - `RMapCache.fastPut()` method doesn't clear ttl and idleTime params if entry reinserted after expiration  
 Fixed - Unable to find session error arise if Tomcat session was deleted or expired  
 Fixed - `MasterSlaveEntry.getClient()` method may throw NPE  
