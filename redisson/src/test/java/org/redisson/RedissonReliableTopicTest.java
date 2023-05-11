@@ -143,6 +143,30 @@ public class RedissonReliableTopicTest extends BaseTest {
     }
 
     @Test
+    public void testReattach() throws InterruptedException {
+        RReliableTopic rt = redisson.getReliableTopic("test2");
+        AtomicInteger i = new AtomicInteger();
+        String id = rt.addListener(String.class, (ch, m) -> {
+            i.incrementAndGet();
+        });
+
+        rt.publish("1");
+        Thread.sleep(5);
+        assertThat(i).hasValue(1);
+        rt.removeListener(id);
+
+        assertThat(rt.publish("2")).isEqualTo(0);
+
+        String id2 = rt.addListener(String.class, (ch, m) -> {
+            i.incrementAndGet();
+        });
+
+        assertThat(rt.publish("3")).isEqualTo(1);
+        Thread.sleep(5);
+        assertThat(i).hasValue(3);
+    }
+
+    @Test
     public void testListener() throws InterruptedException {
         RReliableTopic rt = redisson.getReliableTopic("test2");
         AtomicInteger i = new AtomicInteger();
@@ -151,11 +175,11 @@ public class RedissonReliableTopicTest extends BaseTest {
         });
 
         rt.publish("1");
+        Thread.sleep(5);
         assertThat(i).hasValue(1);
         rt.removeListener(id);
 
         assertThat(rt.publish("2")).isEqualTo(0);
-        Thread.sleep(5);
         assertThat(i).hasValue(1);
     }
 
