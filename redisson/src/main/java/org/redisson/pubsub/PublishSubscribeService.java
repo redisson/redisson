@@ -71,6 +71,14 @@ public class PublishSubscribeService {
         public int hashCode() {
             return Objects.hash(channelName, entry);
         }
+
+        @Override
+        public String toString() {
+            return "PubSubKey{" +
+                    "channelName=" + channelName +
+                    ", entry=" + entry +
+                    '}';
+        }
     }
 
     public static class PubSubEntry {
@@ -639,10 +647,13 @@ public class PublishSubscribeService {
     private void reattachPubSubListeners(Set<ChannelName> channels, MasterSlaveEntry en, PubSubType topicType) {
         for (ChannelName channelName : channels) {
             PubSubConnectionEntry entry = name2PubSubConnection.get(new PubSubKey(channelName, en));
+            if (entry == null) {
+                continue;
+            }
             Collection<RedisPubSubListener<?>> listeners = entry.getListeners(channelName);
             CompletableFuture<Codec> subscribeCodecFuture = unsubscribe(channelName, en, topicType);
             if (listeners.isEmpty()) {
-                return;
+                continue;
             }
 
             subscribeCodecFuture.whenComplete((subscribeCodec, e) -> {
