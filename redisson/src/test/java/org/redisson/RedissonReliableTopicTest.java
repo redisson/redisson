@@ -89,11 +89,12 @@ public class RedissonReliableTopicTest extends BaseTest {
 
         assertThat(rt.countSubscribers()).isEqualTo(1);
         assertThat(counter.get()).isEqualTo(10);
+        Thread.sleep(1000);
         assertThat(rt.size()).isEqualTo(0);
     }
 
     @Test
-    public void testAutoTrim() {
+    public void testAutoTrim() throws InterruptedException {
         RReliableTopic rt = redisson.getReliableTopic("test1");
         AtomicInteger counter = new AtomicInteger();
         rt.addListener(Integer.class, (ch, m) -> {
@@ -109,6 +110,7 @@ public class RedissonReliableTopicTest extends BaseTest {
         }
 
         Awaitility.waitAtMost(Duration.ofSeconds(2)).until(() -> counter.get() == 20);
+        Thread.sleep(1000);
         assertThat(rt.size()).isEqualTo(0);
     }
 
@@ -170,6 +172,7 @@ public class RedissonReliableTopicTest extends BaseTest {
 
         assertThat(rt.publish("m1")).isEqualTo(1);
         assertThat(a.await(1, TimeUnit.SECONDS)).isTrue();
+        Thread.sleep(200);
         assertThat(rt.size()).isEqualTo(0);
 
         RReliableTopic rt2 = redisson.getReliableTopic("test3");
