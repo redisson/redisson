@@ -331,17 +331,18 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
     RFuture<Map<StreamMessageId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, StreamReadGroupArgs args);
 
     /**
-     * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs.
+     * * Use readGroup(String, String, StreamReadGroupArgs) method instead
      * 
      * @param groupName - name of group
      * @param consumerName - name of consumer
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
+    @Deprecated
     RFuture<Map<StreamMessageId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, StreamMessageId... ids);
     
     /**
-     * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs.
+     * Use readGroup(String, String, StreamReadGroupArgs) method instead
      * 
      * @param groupName - name of group
      * @param consumerName - name of consumer
@@ -349,12 +350,12 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
+    @Deprecated
     RFuture<Map<StreamMessageId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, int count, StreamMessageId... ids);
 
     /**
-     * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs. 
-     * Wait for stream data availability for specified <code>timeout</code> interval.
-     * 
+     * Use readGroup(String, String, StreamReadGroupArgs) method instead
+     *
      * @param groupName - name of group
      * @param consumerName - name of consumer
      * @param timeout - time interval to wait for stream data availability
@@ -362,12 +363,12 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
+    @Deprecated
     RFuture<Map<StreamMessageId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, long timeout, TimeUnit unit, StreamMessageId... ids);
     
     /**
-     * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs. 
-     * Wait for stream data availability for specified <code>timeout</code> interval.
-     * 
+     * Use readGroup(String, String, StreamReadGroupArgs) method instead
+     *
      * @param groupName - name of group
      * @param consumerName - name of consumer
      * @param count - stream data size limit
@@ -376,10 +377,11 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
+    @Deprecated
     RFuture<Map<StreamMessageId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamMessageId... ids);
 
     /**
-     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
+     * Use readGroup(String, String, StreamMultiReadGroupArgs) method instead
      * 
      * @param groupName - name of group
      * @param consumerName - name of consumer
@@ -387,10 +389,11 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param nameToId - Stream Message ID mapped by stream name
      * @return stream data mapped by key and Stream Message ID
      */
+    @Deprecated
     RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName, StreamMessageId id, Map<String, StreamMessageId> nameToId);
     
     /**
-     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
+     * Use readGroup(String, String, StreamMultiReadGroupArgs) method instead
      * 
      * @param groupName - name of group
      * @param consumerName - name of consumer
@@ -399,12 +402,12 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param nameToId - Stream Message ID mapped by stream name
      * @return stream data mapped by key and Stream Message ID
      */
+    @Deprecated
     RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName, int count, StreamMessageId id, Map<String, StreamMessageId> nameToId);
 
     /**
-     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
-     * Waits for the first stream data availability for specified <code>timeout</code> interval.
-     * 
+     * Use readGroup(String, String, StreamMultiReadGroupArgs) method instead
+     *
      * @param groupName - name of group
      * @param consumerName - name of consumer
      * @param count - stream data size limit
@@ -415,12 +418,12 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param id2 - starting message id for second stream
      * @return stream data mapped by key and Stream Message ID
      */
+    @Deprecated
     RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamMessageId id, String key2, StreamMessageId id2);
 
     /**
-     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
-     * Waits for the first stream data availability for specified <code>timeout</code> interval.
-     * 
+     * Use readGroup(String, String, StreamMultiReadGroupArgs) method instead
+     *
      * @param groupName - name of group
      * @param consumerName - name of consumer
      * @param count - stream data size limit
@@ -433,13 +436,13 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param id3 - starting message id for third stream
      * @return stream data mapped by key and Stream Message ID
      */
+    @Deprecated
     RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamMessageId id,
             String key2, StreamMessageId id2, String key3, StreamMessageId id3);
     
     /**
-     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
-     * Waits for the first stream data availability for specified <code>timeout</code> interval.
-     * 
+     * Use readGroup(String, String, StreamMultiReadGroupArgs) method instead
+     *
      * @param groupName - name of group
      * @param consumerName - name of consumer
      * @param timeout - time interval to wait for stream data availability
@@ -448,10 +451,11 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param nameToId - Stream Message ID mapped by stream name
      * @return stream data mapped by key and Stream Message ID
      */
+    @Deprecated
     RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName, long timeout, TimeUnit unit, StreamMessageId id, Map<String, StreamMessageId> nameToId);
     
     /**
-     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
+     * Use readGroup(String, String, StreamMultiReadGroupArgs) method instead
      * 
      * @param groupName - name of group
      * @param consumerName - name of consumer
@@ -460,10 +464,11 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param id2 - starting message id for second stream
      * @return stream data mapped by key and Stream Message ID
      */
+    @Deprecated
     RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName, StreamMessageId id, String key2, StreamMessageId id2);
 
     /**
-     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
+     * Use readGroup(String, String, StreamMultiReadGroupArgs) method instead
      * 
      * @param groupName - name of group
      * @param consumerName - name of consumer
@@ -474,11 +479,12 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param id3  - starting message id for third stream
      * @return stream data mapped by key and Stream Message ID
      */
+    @Deprecated
     RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName, StreamMessageId id, String key2, StreamMessageId id2, String key3,
             StreamMessageId id3);
 
     /**
-     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
+     * Use readGroup(String, String, StreamMultiReadGroupArgs) method instead
      * 
      * @param groupName - name of group
      * @param consumerName - name of consumer
@@ -488,10 +494,11 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param id2  - starting message id for second stream
      * @return stream data mapped by key and Stream Message ID
      */
+    @Deprecated
     RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName, int count, StreamMessageId id, String key2, StreamMessageId id2);
 
     /**
-     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
+     * Use readGroup(String, String, StreamMultiReadGroupArgs) method instead
      * 
      * @param groupName - name of group
      * @param consumerName - name of consumer
@@ -503,13 +510,13 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param id3 - starting message id for third stream
      * @return stream data mapped by key and Stream Message ID
      */
+    @Deprecated
     RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName, int count, StreamMessageId id, String key2, StreamMessageId id2,
             String key3, StreamMessageId id3);
 
     /**
-     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
-     * Waits for the first stream data availability for specified <code>timeout</code> interval.
-     * 
+     * Use readGroup(String, String, StreamMultiReadGroupArgs) method instead
+     *
      * @param groupName - name of group
      * @param consumerName - name of consumer
      * @param timeout - time interval to wait for stream data availability
@@ -519,13 +526,13 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param id2 - starting message id for second stream
      * @return stream data mapped by key and Stream Message ID
      */
+    @Deprecated
     RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName, long timeout, TimeUnit unit, StreamMessageId id,
             String key2, StreamMessageId id2);
 
     /**
-     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
-     * Waits for the first stream data availability for specified <code>timeout</code> interval.
-     * 
+     * Use readGroup(String, String, StreamMultiReadGroupArgs) method instead
+     *
      * @param groupName - name of group
      * @param consumerName - name of consumer
      * @param timeout - time interval to wait for stream data availability
@@ -537,6 +544,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param id3 - starting message id for third stream
      * @return stream data mapped by key and Stream Message ID
      */
+    @Deprecated
     RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName, long timeout, TimeUnit unit, StreamMessageId id,
             String key2, StreamMessageId id2, String key3, StreamMessageId id3);
 
