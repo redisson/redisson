@@ -12,8 +12,8 @@ Feature - `MapPutListener`, `MapRemoveListener` added to `RMap` object
 Feature - `IncrByListener` added to `RAtomicDouble` and `RAtomicLong` objects  
 Feature - `RMapCache.getAllWithTTLOnly()` method added  
 
-__Breaking change - RedissonDelayedQueue internal data format changed__
-__Breaking change - RedissonReliableTopic internal data format changed__
+__Breaking change - RedissonDelayedQueue internal data format changed__  
+__Breaking change - RedissonReliableTopic internal data format changed__  
 
 Improvement - `RedissonReliableTopic` internal structure optimization  
 
