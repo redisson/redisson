@@ -3,6 +3,28 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 11-May-2023 - 3.21.1 released
+
+Feature - `addIfAbsent()`, `addIfExists()`, `addIfGreater()`, `addIfLess()`, `addAll()`, `addAllIfAbsent()`, `addAllIfExist()`, `addAllIfGreater()`, `addAllIfLess()` methods added to `RSetCache` object  
+Feature - `SetAddListener`, `SetRemoveListener`, `SetRemoveRandomListener` added to `RSet` object  
+Feature - `ScoredSortedSetAddListener`, `ScoredSortedSetRemoveListener` added to `RScoredSortedSet` object  
+Feature - `MapPutListener`, `MapRemoveListener` added to `RMap` object  
+Feature - `IncrByListener` added to `RAtomicDouble` and `RAtomicLong` objects  
+Feature - `RMapCache.getAllWithTTLOnly()` method added  
+
+__Breaking change - RedissonDelayedQueue internal data format changed__  
+__Breaking change - RedissonReliableTopic internal data format changed__  
+
+Improvement - `RedissonReliableTopic` internal structure optimization  
+
+Fixed - `RReliableTopic` data loss  
+Fixed - failover isn't handled correctly in some cases  
+Fixed - `BatchOptions.retryAttempts = 0` isn't applied to `RBatch` object  
+Fixed - `RMap.keySet()` throws NPE if CompositeCodec used  
+Fixed - RediSearch NumericFilter shouldn't set exclusive range by default  
+Fixed - RediSearch NumericFilter throws NPE  
+Fixed - `RLocalCachedMap.removeListener()` method doesn't remove loca cache listeners  
+
 ### 29-Apr-2023 - 3.21.0 released
 Feature - [RediSearch module support](https://github.com/redisson/redisson/wiki/9.-distributed-services/#96-redisearch-service)  
 Feature - [Tracing support](https://github.com/redisson/redisson/wiki/16.-Observability/#162-tracing)  
