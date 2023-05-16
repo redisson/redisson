@@ -487,11 +487,12 @@ public class PublishSubscribeService {
     }
 
     private CompletableFuture<Void> unsubscribeLocked(PubSubType topicType, ChannelName channelName, MasterSlaveEntry msEntry) {
-        name2entry.remove(channelName);
         PubSubConnectionEntry entry = name2PubSubConnection.remove(new PubSubKey(channelName, msEntry));
         if (entry == null || connectionManager.getServiceManager().isShuttingDown()) {
             return CompletableFuture.completedFuture(null);
         }
+
+        remove(channelName, msEntry);
 
         CompletableFuture<Void> result = new CompletableFuture<>();
         BaseRedisPubSubListener listener = new BaseRedisPubSubListener() {
@@ -514,6 +515,18 @@ public class PublishSubscribeService {
 
         entry.unsubscribe(topicType, channelName, listener);
         return result;
+    }
+
+    private void remove(ChannelName channelName, MasterSlaveEntry entry) {
+        Collection<MasterSlaveEntry> ee = name2entry.get(channelName);
+        if (ee == null) {
+            return;
+        }
+
+        ee.remove(entry);
+        if (ee.isEmpty()) {
+            name2entry.remove(channelName);
+        }
     }
 
     private void release(PubSubConnectionEntry entry, MasterSlaveEntry msEntry) {
@@ -564,12 +577,13 @@ public class PublishSubscribeService {
         AsyncSemaphore lock = getSemaphore(channelName);
         CompletableFuture<Void> f = lock.acquire();
         return f.thenCompose(v -> {
-            name2entry.remove(channelName);
             PubSubConnectionEntry entry = name2PubSubConnection.remove(new PubSubKey(channelName, e));
             if (entry == null) {
                 lock.release();
                 return CompletableFuture.completedFuture(null);
             }
+
+            remove(channelName, e);
 
             Codec entryCodec;
             if (topicType == PubSubType.PUNSUBSCRIBE) {
