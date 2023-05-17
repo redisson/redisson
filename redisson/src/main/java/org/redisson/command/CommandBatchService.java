@@ -133,7 +133,7 @@ public class CommandBatchService extends CommandAsyncService {
     private final AtomicBoolean executed = new AtomicBoolean();
 
     private final long retryInterval;
-    private final long retryAttempts;
+    private final int retryAttempts;
 
     public CommandBatchService(CommandAsyncExecutor executor) {
         this(executor, RedissonObjectBuilder.ReferenceType.DEFAULT);
@@ -406,8 +406,8 @@ public class CommandBatchService extends CommandAsyncService {
                             .executionMode(this.options.getExecutionMode())
                             .syncSlaves(this.options.getSyncSlaves(), this.options.getSyncTimeout(), TimeUnit.MILLISECONDS)
                             .responseTimeout(this.options.getResponseTimeout(), TimeUnit.MILLISECONDS)
-                            .retryAttempts(Math.max(0, this.options.getRetryAttempts() - attempt.get()))
-                            .retryInterval(this.options.getRetryInterval(), TimeUnit.MILLISECONDS);
+                            .retryAttempts(Math.max(0, retryAttempts - attempt.get()))
+                            .retryInterval(retryInterval, TimeUnit.MILLISECONDS);
 
                     if (this.options.isSkipResult()) {
                         options.skipResult();
