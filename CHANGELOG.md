@@ -3,6 +3,13 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 17-May-2023 - 3.21.2 released
+Feature - `RBitSet.set(long[], boolean)` method added (thanks to @skasj)  
+
+Fixed - Pattern Topic messages are missed/duplicated after failover in cluster if channel starts with `__keyspace` and `__keyevent` and `subscriptionMode = SLAVE`  
+Fixed - to many pubsub topics may cause memory leak  
+Fixed - RBatches no longer respect the default number of retries (regression since 3.21.1)  
+
 ### 11-May-2023 - 3.21.1 released
 
 Feature - `addIfAbsent()`, `addIfExists()`, `addIfGreater()`, `addIfLess()`, `addAll()`, `addAllIfAbsent()`, `addAllIfExist()`, `addAllIfGreater()`, `addAllIfLess()` methods added to `RSetCache` object  
