@@ -324,8 +324,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
             paramArray[j++] = indexArray[i];
             paramArray[j++] = val;
         }
-        return commandExecutor.writeAsync(getRawName(), ByteArrayCodec.INSTANCE, RedisCommands.BITFIELD_VOID,
-            paramArray);
+        return commandExecutor.writeAsync(getRawName(), RedisCommands.BITFIELD_VOID, paramArray);
     }
 
     @Override
