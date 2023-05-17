@@ -264,6 +264,11 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
     }
 
     @Override
+    public void set(long[] indexArray, boolean value) {
+        get(setAsync(indexArray, value));
+    }
+
+    @Override
     public boolean get(long bitIndex) {
         return get(getAsync(bitIndex));
     }
@@ -301,6 +306,21 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
     protected int toInt(boolean value) {
         return Boolean.compare(value, false);
+    }
+
+    @Override
+    public RFuture<Void> setAsync(long[] indexArray, boolean value) {
+        int val = toInt(value);
+        Object[] paramArray = new Object[indexArray.length * 4 + 1];
+        int j = 0;
+        paramArray[j++] = getRawName();
+        for (int i = 0; i < indexArray.length; i++) {
+            paramArray[j++] = "set";
+            paramArray[j++] = "u1";
+            paramArray[j++] = indexArray[i];
+            paramArray[j++] = val;
+        }
+        return commandExecutor.writeAsync(getRawName(), RedisCommands.BITFIELD_VOID, paramArray);
     }
 
     @Override
