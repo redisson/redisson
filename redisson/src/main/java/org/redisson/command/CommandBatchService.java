@@ -54,13 +54,17 @@ public class CommandBatchService extends CommandAsyncService {
     public static class ConnectionEntry {
 
         boolean firstCommand = true;
-        volatile CompletableFuture<RedisConnection> connectionFuture;
+        final CompletableFuture<RedisConnection> connectionFuture;
         Runnable cancelCallback;
-        
+
+        public ConnectionEntry(CompletableFuture<RedisConnection> connectionFuture) {
+            this.connectionFuture = connectionFuture;
+        }
+
         public CompletableFuture<RedisConnection> getConnectionFuture() {
             return connectionFuture;
         }
-        
+
         public boolean isFirstCommand() {
             return firstCommand;
         }
