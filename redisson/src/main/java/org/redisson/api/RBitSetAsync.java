@@ -295,6 +295,14 @@ public interface RBitSetAsync extends RExpirableAsync {
     RFuture<Boolean> setAsync(long bitIndex, boolean value);
 
     /**
+     * Set all bits to <code>value</code> which index in indexArray
+     *
+     * @param indexArray The index array of bits that needs to be set to <code>value</code>
+     * @param value true = 1, false = 0
+     */
+    RFuture<Void> setAsync(long[] indexArray, boolean value);
+
+    /**
      * Returns the number of bits set to one.
      *
      * @return number of bits

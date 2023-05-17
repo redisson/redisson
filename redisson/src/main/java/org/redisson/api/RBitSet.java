@@ -240,6 +240,14 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
     void set(BitSet bs);
 
     /**
+     * Set all bits to <code>value</code> which index in indexArray
+     *
+     * @param indexArray The index array of bits that needs to be set to <code>value</code>
+     * @param value true = 1, false = 0
+     */
+    void set(long[] indexArray, boolean value);
+
+    /**
      * Executes NOT operation over all bits
      */
     void not();
