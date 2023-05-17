@@ -2,8 +2,10 @@ package org.redisson;
 
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RBitSet;
+import org.springframework.util.StopWatch;
 
 import java.util.BitSet;
+import java.util.Random;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -123,6 +125,15 @@ public class RedissonBitSetTest extends BaseTest {
 
         bs = redisson.getBitSet("testbitset");
         assertThat(bs.toString()).isEqualTo("{1, 10}");
+
+        RBitSet bs2 = redisson.getBitSet("testbitset2");
+        bs2.set(new long[]{1L,3L,5L,7L}, true);
+        bs2 = redisson.getBitSet("testbitset2");
+        assertThat(bs2.toString()).isEqualTo("{1, 3, 5, 7}");
+
+        bs2.set(new long[]{3L,5L}, false);
+        bs2 = redisson.getBitSet("testbitset2");
+        assertThat(bs2.toString()).isEqualTo("{1, 7}");
     }
 
     @Test
