@@ -300,11 +300,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
     }
 
     protected int toInt(boolean value) {
-        int val = 0;
-        if (value) {
-            val = 1;
-        }
-        return val;
+        return Boolean.compare(value, false);
     }
 
     @Override
