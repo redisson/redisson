@@ -3,6 +3,11 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 18-May-2023 - 3.21.3 released
+
+Fixed - default retryInterval isn't applied to RBatch object  
+Fixed - RBatches no longer respect the default number of retries (regression since 3.21.1)  
+
 ### 17-May-2023 - 3.21.2 released
 Feature - `RBitSet.set(long[], boolean)` method added (thanks to @skasj)  
 
