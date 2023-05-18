@@ -24,6 +24,8 @@ import org.redisson.config.Config;
 import org.redisson.config.SentinelServersConfig;
 import org.redisson.config.SingleServerConfig;
 import org.redisson.spring.data.connection.RedissonConnectionFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -64,6 +66,7 @@ import java.util.List;
 @EnableConfigurationProperties({RedissonProperties.class, RedisProperties.class})
 public class RedissonAutoConfiguration {
 
+    private final Logger logger = LoggerFactory.getLogger(RedissonAutoConfiguration.class);
     private static final String REDIS_PROTOCOL_PREFIX = "redis://";
     private static final String REDISS_PROTOCOL_PREFIX = "rediss://";
 
@@ -157,6 +160,7 @@ public class RedissonAutoConfiguration {
             try {
                 config = Config.fromYAML(redissonProperties.getConfig());
             } catch (IOException e) {
+                logger.info("Can't parse config as yaml, trying json - {}", e.getMessage());
                 try {
                     config = Config.fromJSON(redissonProperties.getConfig());
                 } catch (IOException e1) {
@@ -169,6 +173,7 @@ public class RedissonAutoConfiguration {
                 InputStream is = getConfigStream();
                 config = Config.fromYAML(is);
             } catch (IOException e) {
+                logger.info("Can't parse config as yaml, trying json - {}", e.getMessage());
                 // trying next format
                 try {
                     InputStream is = getConfigStream();
