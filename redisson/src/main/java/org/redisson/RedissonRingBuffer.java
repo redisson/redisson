@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RRingBuffer;
@@ -140,6 +141,27 @@ public class RedissonRingBuffer<V> extends RedissonQueue<V> implements RRingBuff
     @Override
     public int capacity() {
         return get(capacityAsync());
+    }
+
+    @Override
+    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
+        return super.expireAsync(timeToLive, timeUnit, param,
+                getRawName(), settingsName);
+    }
+
+    @Override
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
+        return super.expireAtAsync(timestamp, param, getRawName(), settingsName);
+    }
+
+    @Override
+    public RFuture<Boolean> clearExpireAsync() {
+        return clearExpireAsync(getRawName(), settingsName);
+    }
+
+    @Override
+    public RFuture<Boolean> deleteAsync() {
+        return deleteAsync(getRawName(), settingsName);
     }
     
 }
