@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import org.redisson.api.RScoredSortedSet.Aggregate;
+import org.redisson.client.protocol.RankedEntry;
 import org.redisson.client.protocol.ScoredEntry;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -373,7 +374,16 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      * @return rank or <code>null</code> if value does not exist
      */
     Mono<Integer> rank(V o);
-    
+
+    /**
+     * Returns rank and score of specified <code>value</code>,
+     * with the ranks ordered from low to high.
+     *
+     * @param value object
+     * @return ranked entry or <code>null</code> if value does not exist
+     */
+    Mono<RankedEntry<V>> rankEntry(V value);
+
     /**
      * Returns rank of value, with the scores ordered from high to low.
      * 
@@ -381,6 +391,15 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      * @return rank or <code>null</code> if value does not exist
      */
     Mono<Integer> revRank(V o);
+
+    /**
+     * Returns rank and score of specified <code>value</code>,
+     * with the ranks ordered from high to low.
+     *
+     * @param value object
+     * @return ranked entry or <code>null</code> if value does not exist
+     */
+    Mono<RankedEntry<V>> revRankEntry(V value);
 
     /**
      * Returns ranks of elements, with the scores ordered from high to low.

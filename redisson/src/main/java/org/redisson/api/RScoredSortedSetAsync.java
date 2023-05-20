@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import org.redisson.api.RScoredSortedSet.Aggregate;
+import org.redisson.client.protocol.RankedEntry;
 import org.redisson.client.protocol.ScoredEntry;
 
 import java.time.Duration;
@@ -404,7 +405,16 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @return rank or <code>null</code> if value does not exist
      */
     RFuture<Integer> rankAsync(V o);
-    
+
+    /**
+     * Returns rank and score of specified <code>value</code>,
+     * with the ranks ordered from low to high.
+     *
+     * @param value object
+     * @return ranked entry or <code>null</code> if value does not exist
+     */
+    RFuture<RankedEntry<V>> rankEntryAsync(V value);
+
     /**
      * Returns rank of value, with the scores ordered from high to low.
      * 
@@ -412,6 +422,15 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @return rank or <code>null</code> if value does not exist
      */
     RFuture<Integer> revRankAsync(V o);
+
+    /**
+     * Returns rank and score of specified <code>value</code>,
+     * with the ranks ordered from high to low.
+     *
+     * @param value object
+     * @return ranked entry or <code>null</code> if value does not exist
+     */
+    RFuture<RankedEntry<V>> revRankEntryAsync(V value);
 
     /**
      * Returns ranks of elements, with the scores ordered from high to low.

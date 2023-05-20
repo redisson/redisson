@@ -7,6 +7,7 @@ import org.redisson.api.*;
 import org.redisson.api.listener.ScoredSortedSetAddListener;
 import org.redisson.client.codec.IntegerCodec;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.RankedEntry;
 import org.redisson.client.protocol.ScoredEntry;
 import org.redisson.config.Config;
 
@@ -25,6 +26,25 @@ import static org.assertj.core.api.Assertions.entry;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RedissonScoredSortedSetTest extends BaseTest {
+
+    @Test
+    public void testRankEntry() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("test");
+        set.add(1.1, "v1");
+        set.add(1.2, "v2");
+        set.add(1.3, "v3");
+
+        RankedEntry<String> v1 = set.rankEntry("v1");
+        assertThat(v1.getRank()).isEqualTo(0);
+        assertThat(v1.getScore()).isEqualTo(1.1);
+
+        RankedEntry<String> v3 = set.rankEntry("v3");
+        assertThat(v3.getRank()).isEqualTo(2);
+        assertThat(v3.getScore()).isEqualTo(1.3);
+
+        RankedEntry<String> v4 = set.rankEntry("v4");
+        assertThat(v4).isNull();
+    }
 
     @Test
     public void testReplace() {

@@ -21,6 +21,7 @@ import org.redisson.api.listener.ScoredSortedSetRemoveListener;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.*;
+import org.redisson.client.protocol.RankedEntry;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.ScoredEntry;
@@ -767,6 +768,16 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZRANK_INT, getRawName(), encode(o));
     }
 
+    @Override
+    public RankedEntry<V> rankEntry(V o) {
+        return get(rankEntryAsync(o));
+    }
+
+    @Override
+    public RFuture<RankedEntry<V>> rankEntryAsync(V o) {
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZRANK_ENTRY, getRawName(), encode(o), "WITHSCORE");
+    }
+
     private ScanResult<Object> scanIterator(RedisClient client, long startPos, String pattern, int count) {
         RFuture<ScanResult<Object>> f = scanIteratorAsync(client, startPos, pattern, count);
         return get(f);
@@ -1146,9 +1157,20 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public RankedEntry<V> revRankEntry(V o) {
+        return get(revRankEntryAsync(o));
+    }
+
+    @Override
+    public RFuture<RankedEntry<V>> revRankEntryAsync(V o) {
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZREVRANK_ENTRY, getRawName(), encode(o), "WITHSCORE");
+    }
+
+    @Override
     public Integer revRank(V o) {
         return get(revRankAsync(o));
     }
+
 
     @Override
     public RFuture<List<Integer>> revRankAsync(Collection<V> elements) {

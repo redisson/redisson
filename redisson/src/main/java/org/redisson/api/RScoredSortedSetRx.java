@@ -19,6 +19,7 @@ import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
 import org.redisson.api.RScoredSortedSet.Aggregate;
+import org.redisson.client.protocol.RankedEntry;
 import org.redisson.client.protocol.ScoredEntry;
 
 import java.time.Duration;
@@ -375,7 +376,16 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      * @return rank or <code>null</code> if value does not exist
      */
     Maybe<Integer> rank(V o);
-    
+
+    /**
+     * Returns rank and score of specified <code>value</code>,
+     * with the ranks ordered from low to high.
+     *
+     * @param value object
+     * @return ranked entry or <code>null</code> if value does not exist
+     */
+    Maybe<RankedEntry<V>> rankEntry(V value);
+
     /**
      * Returns rank of value, with the scores ordered from high to low.
      * 
@@ -383,6 +393,15 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      * @return rank or <code>null</code> if value does not exist
      */
     Maybe<Integer> revRank(V o);
+
+    /**
+     * Returns rank and score of specified <code>value</code>,
+     * with the ranks ordered from high to low.
+     *
+     * @param value object
+     * @return ranked entry or <code>null</code> if value does not exist
+     */
+    Maybe<RankedEntry<V>> revRankEntry(V value);
 
     /**
      * Returns ranks of elements, with the scores ordered from high to low.

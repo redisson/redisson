@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import org.redisson.api.mapreduce.RCollectionMapReduce;
+import org.redisson.client.protocol.RankedEntry;
 import org.redisson.client.protocol.ScoredEntry;
 
 import java.time.Duration;
@@ -435,20 +436,38 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     int removeRangeByRank(int startIndex, int endIndex);
 
     /**
-     * Returns rank of value, with the scores ordered from low to high.
+     * Returns rank of value, with the ranks ordered from low to high.
      * 
      * @param o - object
      * @return rank or <code>null</code> if value does not exist
      */
     Integer rank(V o);
-    
+
     /**
-     * Returns rank of value, with the scores ordered from high to low.
+     * Returns rank and score of specified <code>value</code>,
+     * with the ranks ordered from low to high.
+     *
+     * @param value object
+     * @return ranked entry or <code>null</code> if value does not exist
+     */
+    RankedEntry<V> rankEntry(V value);
+
+    /**
+     * Returns rank of value, with the ranks ordered from high to low.
      * 
      * @param o - object
      * @return rank or <code>null</code> if value does not exist
      */
     Integer revRank(V o);
+
+    /**
+     * Returns rank and score of specified <code>value</code>,
+     * with the ranks ordered from high to low.
+     *
+     * @param value object
+     * @return ranked entry or <code>null</code> if value does not exist
+     */
+    RankedEntry<V> revRankEntry(V value);
 
     /**
      * Returns ranks of elements, with the scores ordered from high to low.
