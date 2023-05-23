@@ -35,11 +35,9 @@ import org.redisson.config.SslProvider;
 import javax.net.ssl.*;
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
+import java.security.*;
 import java.security.cert.CertificateException;
+import java.util.Arrays;
 
 /**
  * 
@@ -106,8 +104,7 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
         config.getNettyHook().afterChannelInitialization(ch);
     }
     
-    private void initSsl(final RedisClientConfig config, Channel ch) throws KeyStoreException, IOException,
-            NoSuchAlgorithmException, CertificateException, SSLException, UnrecoverableKeyException {
+    private void initSsl(RedisClientConfig config, Channel ch) throws GeneralSecurityException, IOException {
         if (!config.getAddress().isSsl()) {
             return;
         }
@@ -119,6 +116,10 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
         
         SslContextBuilder sslContextBuilder = SslContextBuilder.forClient().sslProvider(provided);
         sslContextBuilder.protocols(config.getSslProtocols());
+        if (config.getSslCiphers() != null) {
+            sslContextBuilder.ciphers(Arrays.asList(config.getSslCiphers()));
+        }
+
         if (config.getSslTruststore() != null) {
             KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
             
@@ -136,6 +137,9 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
             TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
             trustManagerFactory.init(keyStore);
             sslContextBuilder.trustManager(trustManagerFactory);
+        }
+        if (config.getSslTrustManagerFactory() != null) {
+            sslContextBuilder.trustManager(config.getSslTrustManagerFactory());
         }
 
         if (config.getSslKeystore() != null){
@@ -155,6 +159,9 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
             KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
             keyManagerFactory.init(keyStore, password);
             sslContextBuilder.keyManager(keyManagerFactory);
+        }
+        if (config.getSslKeyManagerFactory() != null) {
+            sslContextBuilder.keyManager(config.getSslKeyManagerFactory());
         }
         
         SSLParameters sslParams = new SSLParameters();
