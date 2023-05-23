@@ -224,11 +224,7 @@ public class RedissonAutoConfiguration {
             }
         } else {
             config = new Config();
-            String prefix = REDIS_PROTOCOL_PREFIX;
-            Method method = ReflectionUtils.findMethod(RedisProperties.class, "isSsl");
-            if (method != null && (Boolean)ReflectionUtils.invokeMethod(method, redisProperties)) {
-                prefix = REDISS_PROTOCOL_PREFIX;
-            }
+            String prefix = getPrefix();
 
             SingleServerConfig c = config.useSingleServer()
                     .setAddress(prefix + redisProperties.getHost() + ":" + redisProperties.getPort())
@@ -251,11 +247,33 @@ public class RedissonAutoConfiguration {
         return Redisson.create(config);
     }
 
+    private String getPrefix() {
+        String prefix = REDIS_PROTOCOL_PREFIX;
+        Method isSSLMethod = ReflectionUtils.findMethod(RedisProperties.class, "isSsl");
+        Method getSSLMethod = ReflectionUtils.findMethod(RedisProperties.class, "getSsl");
+        if (isSSLMethod != null) {
+            if ((Boolean) ReflectionUtils.invokeMethod(isSSLMethod, redisProperties)) {
+                prefix = REDISS_PROTOCOL_PREFIX;
+            }
+        } else if (getSSLMethod != null) {
+            Object ss = ReflectionUtils.invokeMethod(getSSLMethod, redisProperties);
+            if (ss != null) {
+                Method isEnabledMethod = ReflectionUtils.findMethod(ss.getClass(), "isEnabled");
+                Boolean enabled = (Boolean) ReflectionUtils.invokeMethod(isEnabledMethod, ss);
+                if (enabled) {
+                    prefix = REDISS_PROTOCOL_PREFIX;
+                }
+            }
+        }
+        return prefix;
+    }
+
     private String[] convert(List<String> nodesObject) {
-        List<String> nodes = new ArrayList<String>(nodesObject.size());
+        List<String> nodes = new ArrayList<>(nodesObject.size());
         for (String node : nodesObject) {
             if (!node.startsWith(REDIS_PROTOCOL_PREFIX) && !node.startsWith(REDISS_PROTOCOL_PREFIX)) {
-                nodes.add(REDIS_PROTOCOL_PREFIX + node);
+                String prefix = getPrefix();
+                nodes.add(prefix + node);
             } else {
                 nodes.add(node);
             }
