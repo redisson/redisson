@@ -125,6 +125,7 @@ public class RedissonAutoConfiguration {
         Method connectTimeoutMethod = ReflectionUtils.findMethod(RedisProperties.class, "getConnectTimeout");
         Method clientNameMethod = ReflectionUtils.findMethod(RedisProperties.class, "getClientName");
         Object timeoutValue = ReflectionUtils.invokeMethod(timeoutMethod, redisProperties);
+        String prefix = getPrefix();
 
         Integer timeout = null;
         if (timeoutValue instanceof Duration) {
@@ -184,9 +185,9 @@ public class RedissonAutoConfiguration {
 
             String[] nodes;
             if (nodesValue instanceof String) {
-                nodes = convert(Arrays.asList(((String)nodesValue).split(",")));
+                nodes = convert(prefix, Arrays.asList(((String)nodesValue).split(",")));
             } else {
-                nodes = convert((List<String>)nodesValue);
+                nodes = convert(prefix, (List<String>)nodesValue);
             }
 
             config = new Config();
@@ -208,7 +209,7 @@ public class RedissonAutoConfiguration {
             Method nodesMethod = ReflectionUtils.findMethod(clusterObject.getClass(), "getNodes");
             List<String> nodesObject = (List) ReflectionUtils.invokeMethod(nodesMethod, clusterObject);
 
-            String[] nodes = convert(nodesObject);
+            String[] nodes = convert(prefix, nodesObject);
 
             config = new Config();
             ClusterServersConfig c = config.useClusterServers()
@@ -224,7 +225,6 @@ public class RedissonAutoConfiguration {
             }
         } else {
             config = new Config();
-            String prefix = getPrefix();
 
             SingleServerConfig c = config.useSingleServer()
                     .setAddress(prefix + redisProperties.getHost() + ":" + redisProperties.getPort())
@@ -268,11 +268,10 @@ public class RedissonAutoConfiguration {
         return prefix;
     }
 
-    private String[] convert(List<String> nodesObject) {
+    private String[] convert(String prefix, List<String> nodesObject) {
         List<String> nodes = new ArrayList<>(nodesObject.size());
         for (String node : nodesObject) {
             if (!node.startsWith(REDIS_PROTOCOL_PREFIX) && !node.startsWith(REDISS_PROTOCOL_PREFIX)) {
-                String prefix = getPrefix();
                 nodes.add(prefix + node);
             } else {
                 nodes.add(node);
