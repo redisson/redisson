@@ -21,7 +21,7 @@ import java.util.List;
         properties = {
             "spring.redis.redisson.file=classpath:redisson.yaml",
             "spring.session.store-type=redis",
-            "spring.session.timeout.seconds=900",
+//            "spring.session.timeout.seconds=900",
         })
 public class RedissonSessionManagerAutoConfigurationTest {
 
