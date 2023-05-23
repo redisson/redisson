@@ -20,6 +20,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.redisson.client.ChannelName;
 import org.redisson.client.RedisClientConfig;
+import org.redisson.client.RedisException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.Codec;
@@ -107,7 +108,21 @@ public class CommandPubSubDecoder extends CommandDecoder {
             }
         }
     }
-    
+
+    @Override
+    protected void onError(Channel channel, String error) {
+        if (error.contains("unknown command") && error.contains("SSUBSCRIBE")) {
+            commands.keySet().stream()
+                                .filter(v -> v.getOperation().equalsIgnoreCase(RedisCommands.SSUBSCRIBE.getName()))
+                                .forEach(v -> {
+                                    CommandData<Object, Object> dd = commands.get(v);
+                                    dd.getPromise().completeExceptionally(new RedisException(error));
+                                });
+        } else {
+            super.onError(channel, error);
+        }
+    }
+
     @Override
     protected void decodeResult(CommandData<Object, Object> data, List<Object> parts, Channel channel,
             Object result) throws IOException {

@@ -379,7 +379,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 if (data != null) {
                     data.tryFailure(new RedisException(error + ". channel: " + channel + " command: " + LogHelper.toString(data)));
                 } else {
-                    log.error("Error message from Redis: {} channel: {}", error, channel);
+                    onError(channel, error);
                 }
             }
         } else if (code == ':') {
@@ -407,6 +407,10 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             String dataStr = in.toString(0, in.writerIndex(), CharsetUtil.UTF_8);
             throw new IllegalStateException("Can't decode replay: " + dataStr);
         }
+    }
+
+    protected void onError(Channel channel, String error) {
+        log.error("Error message from Redis: {} channel: {}", error, channel);
     }
 
     private String readString(ByteBuf in) {

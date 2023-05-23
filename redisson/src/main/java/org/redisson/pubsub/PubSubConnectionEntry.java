@@ -162,13 +162,20 @@ public class PubSubConnectionEntry {
 
     public void subscribe(Codec codec, PubSubType type, ChannelName channelName, CompletableFuture<Void> subscribeFuture) {
         ChannelFuture future;
+        CompletableFuture<Void> promise = new CompletableFuture<>();
         if (PubSubType.SUBSCRIBE == type) {
-            future = conn.subscribe(codec, channelName);
+            future = conn.subscribe(promise, codec, channelName);
         } else if (PubSubType.SSUBSCRIBE == type) {
-            future = conn.ssubscribe(codec, channelName);
+            future = conn.ssubscribe(promise, codec, channelName);
         } else {
-            future = conn.psubscribe(codec, channelName);
+            future = conn.psubscribe(promise, codec, channelName);
         }
+
+        promise.whenComplete((r, ex) -> {
+            if (ex != null) {
+                subscribeFuture.completeExceptionally(ex);
+            }
+        });
 
         future.addListener((ChannelFutureListener) future1 -> {
             if (!future1.isSuccess()) {

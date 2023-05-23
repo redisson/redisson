@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -110,6 +111,8 @@ public class PublishSubscribeService {
     private final CountDownLatchPubSub countDownLatchPubSub = new CountDownLatchPubSub(this);
 
     private final LockPubSub lockPubSub = new LockPubSub(this);
+
+    private final AtomicBoolean ssubscribeSupported = new AtomicBoolean(true);
 
     public PublishSubscribeService(ConnectionManager connectionManager) {
         super();
@@ -248,17 +251,42 @@ public class PublishSubscribeService {
 
     public CompletableFuture<PubSubConnectionEntry> subscribeNoTimeout(Codec codec, String channelName,
                                                               AsyncSemaphore semaphore, RedisPubSubListener<?>... listeners) {
-        CompletableFuture<PubSubConnectionEntry> promise = new CompletableFuture<>();
         MasterSlaveEntry entry = getEntry(new ChannelName(channelName));
         if (entry == null) {
+            CompletableFuture<PubSubConnectionEntry> promise = new CompletableFuture<>();
             RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node for name: " + channelName + " hasn't been discovered yet. Check cluster slots coverage using CLUSTER NODES command. Increase value of retryAttempts and/or retryInterval settings.");
             promise.completeExceptionally(ex);
             return promise;
         }
 
-        subscribeNoTimeout(codec, new ChannelName(channelName), entry, null, promise,
+        PubSubType type;
+        if (connectionManager.isClusterMode() && ssubscribeSupported.get()) {
+            type = PubSubType.SSUBSCRIBE;
+        } else {
+            type = PubSubType.SUBSCRIBE;
+        }
+
+        CompletableFuture<PubSubConnectionEntry> promise = new CompletableFuture<>();
+        CompletableFuture<PubSubConnectionEntry> pp = new CompletableFuture<>();
+        promise.whenComplete((r, e) -> {
+            if (e != null) {
+                if (e.getMessage().startsWith("ERR unknown command")) {
+                    ssubscribeSupported.set(false);
+                    subscribeNoTimeout(codec, new ChannelName(channelName), entry, null, pp,
                             PubSubType.SUBSCRIBE, semaphore, new AtomicInteger(), listeners);
-        return promise;
+                    return;
+                }
+
+                pp.completeExceptionally(e);
+                return;
+            }
+
+            pp.complete(r);
+        });
+
+        subscribeNoTimeout(codec, new ChannelName(channelName), entry, null, promise,
+                type, semaphore, new AtomicInteger(), listeners);
+        return pp;
     }
 
     public AsyncSemaphore getSemaphore(ChannelName channelName) {
@@ -338,17 +366,7 @@ public class PublishSubscribeService {
             PubSubConnectionEntry freeEntry = freePubSubConnections.getEntries().peek();
             if (freeEntry == null) {
                 freePubSubLock.release();
-
-                CompletableFuture<RedisPubSubConnection> connectFuture = connect(codec, channelName, entry,
-                                                                                clientEntry, promise, type, lock, listeners);
-                connectionManager.getServiceManager().newTimeout(t -> {
-                    if (!connectFuture.cancel(false)
-                            && !connectFuture.isCompletedExceptionally()) {
-                        return;
-                    }
-
-                    trySubscribe(codec, channelName, promise, type, lock, attempts, listeners);
-                }, config.getRetryInterval(), TimeUnit.MILLISECONDS);
+                connect(codec, channelName, entry, clientEntry, promise, type, lock, attempts, listeners);
                 return;
             }
 
@@ -375,13 +393,20 @@ public class PublishSubscribeService {
             }
             freePubSubLock.release();
 
-            CompletableFuture<Void> subscribeFuture = addListeners(channelName, promise, type, lock, freeEntry, listeners);
-            freeEntry.subscribe(codec, type, channelName, subscribeFuture);
-            subscribeFuture.whenComplete((r, e) -> {
+            CompletableFuture<PubSubConnectionEntry> pp = new CompletableFuture<>();
+            pp.whenComplete((r, e) -> {
                 if (e != null) {
-                    unsubscribe(channelName, type);
+                    CompletableFuture<Codec> f = unsubscribe(channelName, type);
+                    f.whenComplete((rr, ee) -> {
+                        promise.completeExceptionally(e);
+                    });
+                    return;
                 }
+
+                promise.complete(r);
             });
+            CompletableFuture<Void> subscribeFuture = addListeners(channelName, pp, type, lock, freeEntry, listeners);
+            freeEntry.subscribe(codec, type, channelName, subscribeFuture);
         });
     }
 
@@ -425,12 +450,22 @@ public class PublishSubscribeService {
         return subscribeFuture;
     }
 
-    private CompletableFuture<RedisPubSubConnection> connect(Codec codec, ChannelName channelName,
-                                                         MasterSlaveEntry msEntry, ClientConnectionsEntry clientEntry,
-                                                         CompletableFuture<PubSubConnectionEntry> promise,
-                                                         PubSubType type, AsyncSemaphore lock, RedisPubSubListener<?>... listeners) {
+    private void connect(Codec codec, ChannelName channelName,
+                                                             MasterSlaveEntry msEntry, ClientConnectionsEntry clientEntry,
+                                                             CompletableFuture<PubSubConnectionEntry> promise,
+                                                             PubSubType type, AsyncSemaphore lock, AtomicInteger attempts,
+                                                             RedisPubSubListener<?>... listeners) {
 
         CompletableFuture<RedisPubSubConnection> connFuture = msEntry.nextPubSubConnection(clientEntry);
+        connectionManager.getServiceManager().newTimeout(t -> {
+            if (!connFuture.cancel(false)
+                    && !connFuture.isCompletedExceptionally()) {
+                return;
+            }
+
+            trySubscribe(codec, channelName, promise, type, lock, attempts, listeners);
+        }, config.getRetryInterval(), TimeUnit.MILLISECONDS);
+
         promise.whenComplete((res, e) -> {
             if (e != null) {
                 connFuture.completeExceptionally(e);
@@ -462,16 +497,31 @@ public class PublishSubscribeService {
                 }
                 freePubSubLock.release();
 
-                CompletableFuture<Void> subscribeFuture = addListeners(channelName, promise, type, lock, entry, listeners);
-                entry.subscribe(codec, type, channelName, subscribeFuture);
-                subscribeFuture.whenComplete((r, e) -> {
+                CompletableFuture<PubSubConnectionEntry> pp = new CompletableFuture<>();
+                pp.whenComplete((r, e) -> {
                     if (e != null) {
-                        unsubscribe(channelName, type);
+                        CompletableFuture<Codec> f = unsubscribe(channelName, type);
+                        f.whenComplete((rr, ee) -> {
+                            promise.completeExceptionally(e);
+                        });
+                        return;
                     }
+
+                    promise.complete(r);
                 });
+                CompletableFuture<Void> subscribeFuture = addListeners(channelName, pp, type, lock, entry, listeners);
+                entry.subscribe(codec, type, channelName, subscribeFuture);
             });
         });
-        return connFuture;
+    }
+
+    public CompletableFuture<Void> unsubscribeLocked(ChannelName channelName) {
+        PubSubType type = PubSubType.UNSUBSCRIBE;
+        if (connectionManager.isClusterMode() && ssubscribeSupported.get()) {
+            type = PubSubType.SUNSUBSCRIBE;
+        }
+
+        return unsubscribeLocked(type, channelName);
     }
 
     public CompletableFuture<Void> unsubscribeLocked(PubSubType topicType, ChannelName channelName) {
