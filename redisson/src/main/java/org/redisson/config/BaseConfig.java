@@ -108,6 +108,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
 
     private NameMapper nameMapper = NameMapper.direct();
 
+    private CommandMapper commandMapper = CommandMapper.direct();
     
     BaseConfig() {
     }
@@ -137,6 +138,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
         setTcpNoDelay(config.isTcpNoDelay());
         setNameMapper(config.getNameMapper());
         setCredentialsResolver(config.getCredentialsResolver());
+        setCommandMapper(config.getCommandMapper());
     }
 
     /**
@@ -555,6 +557,22 @@ public class BaseConfig<T extends BaseConfig<T>> {
      */
     public BaseConfig<T> setSslKeyManagerFactory(KeyManagerFactory keyManagerFactory) {
         this.sslKeyManagerFactory = keyManagerFactory;
+        return this;
+    }
+
+    public CommandMapper getCommandMapper() {
+        return commandMapper;
+    }
+
+    /**
+     * Defines Command mapper which maps Redis command name.
+     * Applied to all Redis commands.
+     *
+     * @param commandMapper Redis command name mapper object
+     * @return config
+     */
+    public BaseConfig<T> setCommandMapper(CommandMapper commandMapper) {
+        this.commandMapper = commandMapper;
         return this;
     }
 }

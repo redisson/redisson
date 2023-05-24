@@ -204,7 +204,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         c.setSslKeystore(cfg.getSslKeystore());
         c.setSslKeystorePassword(cfg.getSslKeystorePassword());
         c.setSslProtocols(cfg.getSslProtocols());
-        
+        c.setSslCiphers(cfg.getSslCiphers());
+        c.setSslKeyManagerFactory(cfg.getSslKeyManagerFactory());
+        c.setSslTrustManagerFactory(cfg.getSslTrustManagerFactory());
+
         c.setRetryInterval(cfg.getRetryInterval());
         c.setRetryAttempts(cfg.getRetryAttempts());
         c.setTimeout(cfg.getTimeout());
@@ -231,6 +234,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         c.setTcpNoDelay(cfg.isTcpNoDelay());
         c.setNameMapper(cfg.getNameMapper());
         c.setCredentialsResolver(cfg.getCredentialsResolver());
+        c.setCommandMapper(cfg.getCommandMapper());
 
         return c;
     }
@@ -287,6 +291,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 .setUsername(config.getUsername())
                 .setPassword(config.getPassword())
                 .setNettyHook(serviceManager.getCfg().getNettyHook())
+                .setCommandMapper(config.getCommandMapper())
                 .setCredentialsResolver(config.getCredentialsResolver())
                 .setConnectedListener(addr -> {
                     if (!serviceManager.isShuttingDown()) {

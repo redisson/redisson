@@ -20,7 +20,9 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.resolver.AddressResolverGroup;
 import io.netty.util.Timer;
+import org.redisson.config.CommandMapper;
 import org.redisson.config.CredentialsResolver;
+import org.redisson.config.DefaultCommandMapper;
 import org.redisson.config.SslProvider;
 import org.redisson.misc.RedisURI;
 
@@ -75,6 +77,8 @@ public class RedisClientConfig {
     private Consumer<InetSocketAddress> connectedListener;
     private Consumer<InetSocketAddress> disconnectedListener;
 
+    private CommandMapper commandMapper = new DefaultCommandMapper();
+
     public RedisClientConfig() {
     }
     
@@ -113,6 +117,7 @@ public class RedisClientConfig {
         this.disconnectedListener = config.disconnectedListener;
         this.sslKeyManagerFactory = config.sslKeyManagerFactory;
         this.sslTrustManagerFactory = config.sslTrustManagerFactory;
+        this.commandMapper = config.commandMapper;
     }
 
     public NettyHook getNettyHook() {
@@ -388,6 +393,15 @@ public class RedisClientConfig {
 
     public RedisClientConfig setSslKeyManagerFactory(KeyManagerFactory sslKeyManagerFactory) {
         this.sslKeyManagerFactory = sslKeyManagerFactory;
+        return this;
+    }
+
+    public CommandMapper getCommandMapper() {
+        return commandMapper;
+    }
+
+    public RedisClientConfig setCommandMapper(CommandMapper commandMapper) {
+        this.commandMapper = commandMapper;
         return this;
     }
 }

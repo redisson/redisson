@@ -83,7 +83,7 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
 
         ch.pipeline().addLast(
             connectionWatchdog,
-            CommandEncoder.INSTANCE,
+            new CommandEncoder(config.getCommandMapper()),
             CommandBatchEncoder.INSTANCE);
 
         if (type == Type.PLAIN) {
