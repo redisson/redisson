@@ -250,6 +250,7 @@ public class ConfigSupport {
         mapper.addMixIn(ExecutorService.class, ClassMixIn.class);
         mapper.addMixIn(KeyManagerFactory.class, IgnoreMixIn.class);
         mapper.addMixIn(TrustManagerFactory.class, IgnoreMixIn.class);
+        mapper.addMixIn(CommandMapper .class, ClassMixIn.class);
 
         FilterProvider filterProvider = new SimpleFilterProvider()
                 .addFilter("classFilter", SimpleBeanPropertyFilter.filterOutAllExcept());
