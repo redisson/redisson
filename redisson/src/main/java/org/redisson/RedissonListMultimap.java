@@ -63,7 +63,31 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
                 Arrays.<Object>asList(getRawName()),
                 prefix);
     }
-    
+
+    @Override
+    public RFuture<Long> fastRemoveValueAsync(V... values) {
+        List<Object> args = new ArrayList<>(values.length + 1);
+        args.add(prefix);
+        encodeMapValues(args, Arrays.asList(values));
+
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_INTEGER,
+                "local keys = redis.call('hgetall', KEYS[1]); " +
+                "local size = 0; " +
+                "for i, v in ipairs(keys) do " +
+                    "if i % 2 == 0 then " +
+                        "local name = ARGV[1] .. v; " +
+                        "for j = 2, #ARGV, 1 do " +
+                            "size = size + redis.call('lrem', name, 1, ARGV[j]); " +
+                        "end; " +
+                    "end;" +
+                "end; " +
+                "return size; ",
+                Arrays.asList(getRawName()),
+                args.toArray());
+    }
+
+
+
     @Override
     public RFuture<Boolean> containsKeyAsync(Object key) {
         String keyHash = keyHash(key);
