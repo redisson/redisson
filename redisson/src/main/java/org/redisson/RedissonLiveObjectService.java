@@ -65,7 +65,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     private final ConcurrentMap<Class<?>, Class<?>> classCache;
     private final CommandAsyncExecutor commandExecutor;
     private final LiveObjectSearch seachEngine;
-    private final AtomicBoolean listenerLatch = new AtomicBoolean();
+    private static final AtomicBoolean LISTENER_LATCH = new AtomicBoolean();
 
     public RedissonLiveObjectService(ConcurrentMap<Class<?>, Class<?>> classCache,
                                      CommandAsyncExecutor commandExecutor) {
@@ -73,7 +73,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         this.commandExecutor = commandExecutor;
         this.seachEngine = new LiveObjectSearch(commandExecutor);
 
-        if (listenerLatch.compareAndSet(false, true)) {
+        if (LISTENER_LATCH.compareAndSet(false, true)) {
             RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:expired");
             topic.addListenerAsync(String.class, (pattern, channel, msg) -> {
                 if (msg.contains("redisson_live_object:")) {
