@@ -165,6 +165,9 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         Thread.sleep(1500);
         assertThat(m.cachedEntrySet()).hasSize(0);
         assertThat(m.get("12")).isNull();
+
+        redisson.shutdown();
+        instance.stop();
     }
 
     @Test
