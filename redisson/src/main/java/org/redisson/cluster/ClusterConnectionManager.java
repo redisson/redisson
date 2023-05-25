@@ -93,6 +93,11 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             try {
                 RedisConnection connection = connectionFuture.toCompletableFuture().join();
 
+                connection.async(RedisCommands.SPUBLISH, "", "").thenAccept(r -> {
+                    subscribeService.setShardingSupported(true);
+                });
+
+
                 if (cfg.getNodeAddresses().size() == 1 && !addr.isIP()) {
                     configEndpointHostName = addr.getHost();
                 }

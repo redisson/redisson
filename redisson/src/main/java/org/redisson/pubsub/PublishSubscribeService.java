@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -112,7 +111,7 @@ public class PublishSubscribeService {
 
     private final LockPubSub lockPubSub = new LockPubSub(this);
 
-    private final AtomicBoolean ssubscribeSupported = new AtomicBoolean(true);
+    private boolean shardingSupported = false;
 
     public PublishSubscribeService(ConnectionManager connectionManager) {
         super();
@@ -260,33 +259,16 @@ public class PublishSubscribeService {
         }
 
         PubSubType type;
-        if (connectionManager.isClusterMode() && ssubscribeSupported.get()) {
+        if (shardingSupported) {
             type = PubSubType.SSUBSCRIBE;
         } else {
             type = PubSubType.SUBSCRIBE;
         }
 
         CompletableFuture<PubSubConnectionEntry> promise = new CompletableFuture<>();
-        CompletableFuture<PubSubConnectionEntry> pp = new CompletableFuture<>();
-        promise.whenComplete((r, e) -> {
-            if (e != null) {
-                if (e.getMessage().startsWith("ERR unknown command")) {
-                    ssubscribeSupported.set(false);
-                    subscribeNoTimeout(codec, new ChannelName(channelName), entry, null, pp,
-                            PubSubType.SUBSCRIBE, semaphore, new AtomicInteger(), listeners);
-                    return;
-                }
-
-                pp.completeExceptionally(e);
-                return;
-            }
-
-            pp.complete(r);
-        });
-
         subscribeNoTimeout(codec, new ChannelName(channelName), entry, null, promise,
                 type, semaphore, new AtomicInteger(), listeners);
-        return pp;
+        return promise;
     }
 
     public AsyncSemaphore getSemaphore(ChannelName channelName) {
@@ -517,7 +499,7 @@ public class PublishSubscribeService {
 
     public CompletableFuture<Void> unsubscribeLocked(ChannelName channelName) {
         PubSubType type = PubSubType.UNSUBSCRIBE;
-        if (connectionManager.isClusterMode() && ssubscribeSupported.get()) {
+        if (shardingSupported) {
             type = PubSubType.SUNSUBSCRIBE;
         }
 
@@ -890,6 +872,10 @@ public class PublishSubscribeService {
             return CompletableFuture.completedFuture(null);
         });
         return f;
+    }
+
+    public void setShardingSupported(boolean value) {
+        this.shardingSupported = value;
     }
 
     @Override

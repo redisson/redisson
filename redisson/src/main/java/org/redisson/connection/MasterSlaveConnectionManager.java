@@ -51,7 +51,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     private MasterSlaveEntry masterSlaveEntry;
 
-    protected PublishSubscribeService subscribeService;
+    protected final PublishSubscribeService subscribeService;
 
     protected final ServiceManager serviceManager;
 
