@@ -1697,15 +1697,34 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     }
 
     @Test
-    public void testExpirable() throws InterruptedException {
+    public void testExpirable() throws InterruptedException, IOException {
+        RedisRunner.RedisProcess instance = new RedisRunner()
+                .nosave()
+                .randomPort()
+                .randomDir()
+                .notifyKeyspaceEvents(
+                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
+                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.x)
+                .run();
+
+        Config config = new Config();
+        config.useSingleServer().setAddress(instance.getRedisServerAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+
         RLiveObjectService service = redisson.getLiveObjectService();
-        TestClass myObject = new TestClass();
+        TestIndexed myObject = new TestIndexed("123");
         myObject = service.persist(myObject);
-        myObject.setValue("123345");
+        myObject.setName1("123345");
+        myObject.setNum1(455);
+        assertThat(redisson.getKeys().count()).isEqualTo(5);
         assertTrue(service.asLiveObject(myObject).isExists());
         service.asRMap(myObject).expire(Duration.ofSeconds(1));
         Thread.sleep(2000);
         assertFalse(service.asLiveObject(myObject).isExists());
+        assertThat(redisson.getKeys().count()).isEqualTo(1);
+
+        redisson.shutdown();
+        instance.stop();
     }
 
     @Test
