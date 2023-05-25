@@ -54,7 +54,7 @@ public class RedissonPatternTopic implements RPatternTopic {
         this(commandExecutor.getServiceManager().getCfg().getCodec(), commandExecutor, name);
     }
 
-    protected RedissonPatternTopic(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
+    public RedissonPatternTopic(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         this.commandExecutor = commandExecutor;
         this.name = name;
         this.channelName = new ChannelName(name);

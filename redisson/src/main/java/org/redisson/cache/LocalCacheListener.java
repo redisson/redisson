@@ -30,6 +30,7 @@ import org.redisson.api.listener.LocalCacheUpdateListener;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.slf4j.Logger;
@@ -68,6 +69,8 @@ public abstract class LocalCacheListener {
     private RTopic invalidationTopic;
     private int syncListenerId;
     private int reconnectionListenerId;
+
+    private int expireListenerId;
 
     private final Map<Integer, LocalCacheInvalidateListener<?, ?>> invalidateListeners = new ConcurrentHashMap<>();
 
@@ -137,6 +140,13 @@ public abstract class LocalCacheListener {
         this.cache = cache;
         
         invalidationTopic = RedissonTopic.createRaw(LocalCachedMessageCodec.INSTANCE, commandExecutor, getInvalidationTopicName());
+
+        RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:expired");
+        expireListenerId = topic.addListener(String.class, (pattern, channel, msg) -> {
+            if (msg.equals(name)) {
+                cache.clear();
+            }
+        });
 
         if (options.getReconnectionStrategy() != ReconnectionStrategy.NONE) {
             reconnectionListenerId = invalidationTopic.addListener(new BaseStatusListener() {
@@ -316,7 +326,10 @@ public abstract class LocalCacheListener {
         if (reconnectionListenerId != 0) {
             ids.add(reconnectionListenerId);
         }
-        invalidationTopic.removeListenerAsync(ids.toArray(new Integer[ids.size()]));
+        invalidationTopic.removeListenerAsync(ids.toArray(new Integer[0]));
+
+        RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:expired");
+        topic.removeListenerAsync(expireListenerId);
     }
 
     public String getUpdatesLogName() {
