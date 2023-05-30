@@ -26,6 +26,7 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.ServiceManager;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.Hash;
+import org.redisson.pubsub.PublishSubscribeService;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -483,6 +484,10 @@ public abstract class RedissonObject implements RObject {
         return Arrays.stream(keys)
                 .map(k -> commandExecutor.getServiceManager().getConfig().getNameMapper().map(k))
                 .collect(Collectors.toList());
+    }
+
+    protected PublishSubscribeService getSubscribeService() {
+        return commandExecutor.getConnectionManager().getSubscribeService();
     }
 
 }

@@ -19,6 +19,7 @@ import io.netty.util.Timeout;
 import org.redisson.PubSubPatternStatusListener;
 import org.redisson.client.*;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ClientConnectionsEntry;
@@ -876,6 +877,16 @@ public class PublishSubscribeService {
 
     public void setShardingSupported(boolean value) {
         this.shardingSupported = value;
+    }
+
+    public boolean isShardingSupported() {
+        return shardingSupported;
+    }
+    public String getPublishCommand() {
+        if (shardingSupported) {
+            return RedisCommands.SPUBLISH.getName();
+        }
+        return RedisCommands.PUBLISH.getName();
     }
 
     @Override

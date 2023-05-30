@@ -317,12 +317,12 @@ public class RedissonLock extends RedissonBaseLock {
         cancelExpirationRenewal(null);
         return commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if (redis.call('del', KEYS[1]) == 1) then "
-                        + "redis.call('publish', KEYS[2], ARGV[1]); "
+                        + "redis.call(ARGV[2], KEYS[2], ARGV[1]); "
                         + "return 1 "
                     + "else "
                         + "return 0 "
                     + "end",
-                Arrays.asList(getRawName(), getChannelName()), LockPubSub.UNLOCK_MESSAGE);
+                Arrays.asList(getRawName(), getChannelName()), LockPubSub.UNLOCK_MESSAGE, getSubscribeService().getPublishCommand());
     }
 
 
@@ -338,11 +338,12 @@ public class RedissonLock extends RedissonBaseLock {
                         "return 0; " +
                     "else " +
                         "redis.call('del', KEYS[1]); " +
-                        "redis.call('publish', KEYS[2], ARGV[1]); " +
+                        "redis.call(ARGV[4], KEYS[2], ARGV[1]); " +
                         "return 1; " +
                     "end; " +
                     "return nil;",
-                Arrays.asList(getRawName(), getChannelName()), LockPubSub.UNLOCK_MESSAGE, internalLockLeaseTime, getLockName(threadId));
+                Arrays.asList(getRawName(), getChannelName()),
+                LockPubSub.UNLOCK_MESSAGE, internalLockLeaseTime, getLockName(threadId), getSubscribeService().getPublishCommand());
     }
 
     @Override
