@@ -28,6 +28,39 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
+    public void testPollEntryDuration() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("test");
+        set.add(1.1, "v1");
+        set.add(1.2, "v2");
+        set.add(1.3, "v3");
+        set.add(1.4, "v4");
+        set.add(1.5, "v5");
+
+        List<ScoredEntry<String>> v1 = set.pollFirstEntries(Duration.ofSeconds(1), 2);
+        assertThat(v1).containsOnly(new ScoredEntry<>(1.1, "v1"), new ScoredEntry<>(1.2, "v2"));
+
+        List<ScoredEntry<String>> v2 = set.pollLastEntries(Duration.ofSeconds(1), 2);
+        assertThat(v2).containsOnly(new ScoredEntry<>(1.4, "v4"), new ScoredEntry<>(1.5, "v5"));
+
+        assertThat(set.size()).isEqualTo(1);
+    }
+    @Test
+    public void testPollEntry() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("test");
+        set.add(1.1, "v1");
+        set.add(1.2, "v2");
+        set.add(1.3, "v3");
+
+        ScoredEntry<String> e = set.pollFirstEntry();
+        assertThat(e).isEqualTo(new ScoredEntry<>(1.1, "v1"));
+
+        ScoredEntry<String> e2 = set.pollLastEntry();
+        assertThat(e2).isEqualTo(new ScoredEntry<>(1.3, "v3"));
+
+        assertThat(set.size()).isEqualTo(1);
+    }
+
+    @Test
     public void testEntryScanIterator() {
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("test");
         set.add(1.1, "v1");

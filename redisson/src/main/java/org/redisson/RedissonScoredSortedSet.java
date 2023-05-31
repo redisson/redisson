@@ -133,6 +133,86 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public ScoredEntry<V> pollFirstEntry() {
+        return get(pollFirstEntryAsync());
+    }
+
+    @Override
+    public ScoredEntry<V> pollLastEntry() {
+        return get(pollLastEntryAsync());
+    }
+
+    @Override
+    public RFuture<ScoredEntry<V>> pollFirstEntryAsync() {
+        return pollEntry(0, 0, RedisCommands.EVAL_FIRST_LIST_ENTRY);
+    }
+
+    @Override
+    public RFuture<ScoredEntry<V>> pollLastEntryAsync() {
+        return pollEntry(-1, -1, RedisCommands.EVAL_FIRST_LIST_ENTRY);
+    }
+
+    @Override
+    public List<ScoredEntry<V>> pollFirstEntries(int count) {
+        return get(pollFirstEntriesAsync(count));
+    }
+
+    @Override
+    public List<ScoredEntry<V>> pollLastEntries(int count) {
+        return get(pollLastEntriesAsync(count));
+    }
+
+    @Override
+    public RFuture<List<ScoredEntry<V>>> pollFirstEntriesAsync(int count) {
+        if (count <= 0) {
+            return new CompletableFutureWrapper<>(Collections.emptyList());
+        }
+
+        return poll(0, count-1, RedisCommands.EVAL_LIST_ENTRY);
+    }
+
+    @Override
+    public RFuture<List<ScoredEntry<V>>> pollLastEntriesAsync(int count) {
+        if (count <= 0) {
+            return new CompletableFutureWrapper<>(Collections.emptyList());
+        }
+        return poll(-count, -1, RedisCommands.EVAL_LIST_ENTRY);
+    }
+
+    private <T> RFuture<T> pollEntry(int from, int to, RedisCommand<?> command) {
+        return commandExecutor.evalWriteAsync(getRawName(), codec, command,
+                "local v = redis.call('zrange', KEYS[1], ARGV[1], ARGV[2], 'withscores'); "
+                    + "if #v > 0 then "
+                        + "redis.call('zremrangebyrank', KEYS[1], ARGV[1], ARGV[2]); "
+                        + "return v; "
+                    + "end "
+                    + "return v;",
+                Collections.singletonList(getRawName()), from, to);
+    }
+
+    @Override
+    public List<ScoredEntry<V>> pollFirstEntries(Duration duration, int count) {
+        return get(pollFirstEntriesAsync(duration, count));
+    }
+
+    @Override
+    public List<ScoredEntry<V>> pollLastEntries(Duration duration, int count) {
+        return get(pollLastEntriesAsync(duration, count));
+    }
+
+    @Override
+    public RFuture<List<ScoredEntry<V>>> pollFirstEntriesAsync(Duration duration, int count) {
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.BZMPOP_ENTRIES,
+                duration.getSeconds(), 1, getRawName(), "MIN", "COUNT", count);
+    }
+
+    @Override
+    public RFuture<List<ScoredEntry<V>>> pollLastEntriesAsync(Duration duration, int count) {
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.BZMPOP_ENTRIES,
+                duration.getSeconds(), 1, getRawName(), "MAX", "COUNT", count);
+    }
+
+    @Override
     public V pollFirst(long timeout, TimeUnit unit) {
         return get(pollFirstAsync(timeout, unit));
     }

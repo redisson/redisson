@@ -244,6 +244,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * Requires <b>Redis 7.0.0 and higher.</b>
      *
      * @param duration how long to wait before giving up
+     * @param count entries amount
      * @return the head elements
      */
     List<V> pollFirst(Duration duration, int count);
@@ -296,11 +297,65 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     V pollFirst();
 
     /**
+     * Removes and returns the head entry (value and its score) or {@code null} if this sorted set is empty.
+     *
+     * @return the head entry,
+     *         or {@code null} if this sorted set is empty
+     */
+    ScoredEntry<V> pollFirstEntry();
+
+    /**
+     * Removes and returns the head entries (value and its score) of this sorted set.
+     *
+     * @param count entries amount
+     * @return the head entries of this sorted set
+     */
+    List<ScoredEntry<V>> pollFirstEntries(int count);
+
+    /**
+     * Removes and returns the head entries (value and its score).
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count entries amount
+     * @return the head entries
+     */
+    List<ScoredEntry<V>> pollFirstEntries(Duration duration, int count);
+
+
+    /**
      * Removes and returns the tail element or {@code null} if this sorted set is empty.
      *
      * @return the tail element or {@code null} if this sorted set is empty
      */
     V pollLast();
+
+    /**
+     * Removes and returns the tail entry (value and its score) or {@code null} if this sorted set is empty.
+     *
+     * @return the tail entry or {@code null} if this sorted set is empty
+     */
+    ScoredEntry<V> pollLastEntry();
+
+    /**
+     * Removes and returns the tail entries (value and its score) of this sorted set.
+     *
+     * @param count entries amount
+     * @return the tail entries of this sorted set
+     */
+    List<ScoredEntry<V>> pollLastEntries(int count);
+
+    /**
+     * Removes and returns the head entries (value and its score).
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count entries amount
+     * @return the tail entries
+     */
+    List<ScoredEntry<V>> pollLastEntries(Duration duration, int count);
 
     /**
      * Returns the head element or {@code null} if this sorted set is empty.

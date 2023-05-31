@@ -259,11 +259,64 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<V> pollFirstAsync();
 
     /**
+     * Removes and returns the head entry (value and its score) or {@code null} if this sorted set is empty.
+     *
+     * @return the head entry,
+     *         or {@code null} if this sorted set is empty
+     */
+    RFuture<ScoredEntry<V>> pollFirstEntryAsync();
+
+    /**
+     * Removes and returns the head entries (value and its score) of this sorted set.
+     *
+     * @param count entries amount
+     * @return the head entries of this sorted set
+     */
+    RFuture<List<ScoredEntry<V>>> pollFirstEntriesAsync(int count);
+
+    /**
+     * Removes and returns the head entries (value and its score).
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count entries amount
+     * @return the head entries
+     */
+    RFuture<List<ScoredEntry<V>>> pollFirstEntriesAsync(Duration duration, int count);
+
+    /**
      * Removes and returns the tail element or {@code null} if this sorted set is empty.
      *
      * @return the tail element or {@code null} if this sorted set is empty
      */
     RFuture<V> pollLastAsync();
+
+    /**
+     * Removes and returns the tail entry (value and its score) or {@code null} if this sorted set is empty.
+     *
+     * @return the tail entry or {@code null} if this sorted set is empty
+     */
+    RFuture<ScoredEntry<V>> pollLastEntryAsync();
+
+    /**
+     * Removes and returns the tail entries (value and its score) of this sorted set.
+     *
+     * @param count entries amount
+     * @return the tail entries of this sorted set
+     */
+    RFuture<List<ScoredEntry<V>>> pollLastEntriesAsync(int count);
+
+    /**
+     * Removes and returns the head entries (value and its score).
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count entries amount
+     * @return the tail entries
+     */
+    RFuture<List<ScoredEntry<V>>> pollLastEntriesAsync(Duration duration, int count);
 
     /**
      * Returns the head element or {@code null} if this sorted set is empty.

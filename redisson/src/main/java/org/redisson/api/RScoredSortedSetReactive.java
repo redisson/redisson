@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import io.reactivex.rxjava3.core.Maybe;
+import io.reactivex.rxjava3.core.Single;
 import org.redisson.api.RScoredSortedSet.Aggregate;
 import org.redisson.client.protocol.RankedEntry;
 import org.redisson.client.protocol.ScoredEntry;
@@ -22,7 +24,10 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -243,11 +248,64 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
     Mono<V> pollFirst();
 
     /**
+     * Removes and returns the head entry (value and its score) or {@code null} if this sorted set is empty.
+     *
+     * @return the head entry,
+     *         or {@code null} if this sorted set is empty
+     */
+    Maybe<ScoredEntry<V>> pollFirstEntry();
+
+    /**
+     * Removes and returns the head entries (value and its score) of this sorted set.
+     *
+     * @param count entries amount
+     * @return the head entries of this sorted set
+     */
+    Single<List<ScoredEntry<V>>> pollFirstEntries(int count);
+
+    /**
+     * Removes and returns the head entries (value and its score).
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count entries amount
+     * @return the head entries
+     */
+    Single<List<ScoredEntry<V>>> pollFirstEntries(Duration duration, int count);
+
+    /**
      * Removes and returns the tail element or {@code null} if this sorted set is empty.
      *
      * @return the tail element or {@code null} if this sorted set is empty
      */
     Mono<V> pollLast();
+
+    /**
+     * Removes and returns the tail entry (value and its score) or {@code null} if this sorted set is empty.
+     *
+     * @return the tail entry or {@code null} if this sorted set is empty
+     */
+    Maybe<ScoredEntry<V>> pollLastEntry();
+
+    /**
+     * Removes and returns the tail entries (value and its score) of this sorted set.
+     *
+     * @param count entries amount
+     * @return the tail entries of this sorted set
+     */
+    Single<List<ScoredEntry<V>>> pollLastEntries(int count);
+
+    /**
+     * Removes and returns the head entries (value and its score).
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count entries amount
+     * @return the tail entries
+     */
+    Single<List<ScoredEntry<V>>> pollLastEntries(Duration duration, int count);
 
     /**
      * Returns the head element or {@code null} if this sorted set is empty.
