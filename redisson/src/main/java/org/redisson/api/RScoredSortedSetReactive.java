@@ -315,11 +315,25 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
     Mono<V> first();
 
     /**
+     * Returns the head entry (value and its score) or {@code null} if this sorted set is empty.
+     *
+     * @return the head entry or {@code null} if this sorted set is empty
+     */
+    Mono<ScoredEntry<V>> firstEntry();
+
+    /**
      * Returns the tail element or {@code null} if this sorted set is empty.
      *
      * @return the tail element or {@code null} if this sorted set is empty
      */
     Mono<V> last();
+
+    /**
+     * Returns the tail entry (value and its score) or {@code null} if this sorted set is empty.
+     *
+     * @return the tail entry or {@code null} if this sorted set is empty
+     */
+    Mono<ScoredEntry<V>> lastEntry();
 
     /**
      * Returns score of the head element or returns {@code null} if this sorted set is empty.

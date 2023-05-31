@@ -28,6 +28,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
+    public void testEntries() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("test");
+        set.add(1.1, "v1");
+        set.add(1.2, "v2");
+        set.add(1.3, "v3");
+
+        ScoredEntry<String> s = set.firstEntry();
+        assertThat(s).isEqualTo(new ScoredEntry<>(1.1, "v1"));
+        ScoredEntry<String> s2 = set.lastEntry();
+        assertThat(s2).isEqualTo(new ScoredEntry<>(1.3, "v3"));
+    }
+
+    @Test
     public void testPollEntryDuration() {
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("test");
         set.add(1.1, "v1");

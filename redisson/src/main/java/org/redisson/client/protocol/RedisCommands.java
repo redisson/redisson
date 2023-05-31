@@ -111,6 +111,7 @@ public interface RedisCommands {
     RedisCommand<Integer> ZREVRANK_INT = new RedisCommand<Integer>("ZREVRANK", new IntegerReplayConvertor());
     RedisCommand<RankedEntry<?>> ZREVRANK_ENTRY = new RedisCommand<>("ZREVRANK", new RankedEntryDecoder());
     RedisCommand<Object> ZRANGE_SINGLE = new RedisCommand<Object>("ZRANGE", new ListFirstObjectDecoder());
+    RedisCommand<Object> ZRANGE_SINGLE_ENTRY = new RedisCommand<>("ZRANGE", new ListFirstObjectDecoder(new ScoredSortedSetReplayDecoder()));
     RedisStrictCommand<Double> ZRANGE_SINGLE_SCORE = new RedisStrictCommand<Double>("ZRANGE", new ObjectFirstScoreReplayDecoder());
     RedisCommand<List<Object>> ZRANGE = new RedisCommand<List<Object>>("ZRANGE", new ObjectListReplayDecoder<Object>());
     RedisCommand<Integer> ZRANGESTORE = new RedisCommand<>("ZRANGESTORE", new IntegerReplayConvertor());

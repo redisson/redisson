@@ -326,11 +326,25 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<V> firstAsync();
 
     /**
+     * Returns the head entry (value and its score) or {@code null} if this sorted set is empty.
+     *
+     * @return the head entry or {@code null} if this sorted set is empty
+     */
+    RFuture<ScoredEntry<V>> firstEntryAsync();
+
+    /**
      * Returns the tail element or {@code null} if this sorted set is empty.
      *
      * @return the tail element or {@code null} if this sorted set is empty
      */
     RFuture<V> lastAsync();
+
+    /**
+     * Returns the tail entry (value and its score) or {@code null} if this sorted set is empty.
+     *
+     * @return the tail entry or {@code null} if this sorted set is empty
+     */
+    RFuture<ScoredEntry<V>> lastEntryAsync();
 
     /**
      * Returns score of the head element or returns {@code null} if this sorted set is empty.

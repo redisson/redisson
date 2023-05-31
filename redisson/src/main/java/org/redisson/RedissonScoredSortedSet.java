@@ -558,6 +558,16 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public ScoredEntry<V> firstEntry() {
+        return get(firstEntryAsync());
+    }
+
+    @Override
+    public RFuture<ScoredEntry<V>> firstEntryAsync() {
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZRANGE_SINGLE_ENTRY, getRawName(), 0, 0, "WITHSCORES");
+    }
+
+    @Override
     public V last() {
         return get(lastAsync());
     }
@@ -566,7 +576,17 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     public RFuture<V> lastAsync() {
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZRANGE_SINGLE, getRawName(), -1, -1);
     }
-    
+
+    @Override
+    public ScoredEntry<V> lastEntry() {
+        return get(lastEntryAsync());
+    }
+
+    @Override
+    public RFuture<ScoredEntry<V>> lastEntryAsync() {
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZRANGE_SINGLE_ENTRY, getRawName(), -1, -1, "WITHSCORES");
+    }
+
     @Override
     public Double firstScore() {
         return get(firstScoreAsync());
