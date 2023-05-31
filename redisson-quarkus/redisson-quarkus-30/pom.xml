@@ -20,8 +20,8 @@
      </modules>
 
      <properties>
-       <quarkus.version>3.0.3.Final</quarkus.version>
-       <quarkus.plugin.version>3.0.2.Final</quarkus.plugin.version>
+       <quarkus.version>3.0.4.Final</quarkus.version>
+       <quarkus.plugin.version>3.0.4.Final</quarkus.plugin.version>
      </properties>
 
      <dependencyManagement>
