@@ -23,10 +23,7 @@ import org.redisson.client.protocol.RankedEntry;
 import org.redisson.client.protocol.ScoredEntry;
 
 import java.time.Duration;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -340,8 +337,49 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      * @return iterator
      */
     Flowable<V> iterator(String pattern, int count);
-    
+
+    /**
+     * Returns an iterator over elements in this set.
+     *
+     * @return iterator
+     */
     Flowable<V> iterator();
+
+    /**
+     * Returns an iterator over entries (value and its score) in this set.
+     *
+     * @return iterator
+     */
+    Flowable<ScoredEntry<V>> entryIterator();
+
+    /**
+     * Returns an iterator over entries (value and its score) in this set.
+     * If <code>pattern</code> is not null then only entries match this pattern are loaded.
+     *
+     * @param pattern search pattern
+     * @return iterator
+     */
+    Flowable<ScoredEntry<V>> entryIterator(String pattern);
+
+    /**
+     * Returns an iterator over entries (value and its score) in this set.
+     * Entries are loaded in batch. Batch size is defined by <code>count</code> param.
+     *
+     * @param count size of elements batch
+     * @return iterator
+     */
+    Flowable<ScoredEntry<V>> entryIterator(int count);
+
+    /**
+     * Returns an iterator over entries (value and its score) in this set.
+     * Entries are loaded in batch. Batch size is defined by <code>count</code> param.
+     * If pattern is not null then only entries match this pattern are loaded.
+     *
+     * @param pattern search pattern
+     * @param count size of entries batch
+     * @return iterator
+     */
+    Flowable<ScoredEntry<V>> entryIterator(String pattern, int count);
 
     /**
      * Removes values by score range.

@@ -28,6 +28,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
+    public void testEntryScanIterator() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("test");
+        set.add(1.1, "v1");
+        set.add(1.2, "v2");
+        set.add(1.3, "v3");
+
+        Iterator<ScoredEntry<String>> entries = set.entryIterator();
+        assertThat(entries).toIterable().containsExactly(new ScoredEntry<>(1.1, "v1"),
+                                                new ScoredEntry<>(1.2, "v2"), new ScoredEntry<>(1.3, "v3"));
+    }
+
+    @Test
     public void testRankEntry() {
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("test");
         set.add(1.1, "v1");

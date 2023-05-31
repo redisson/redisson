@@ -824,6 +824,51 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         };
     }
 
+    public Iterator<ScoredEntry<V>> entryIterator() {
+        return entryIterator(null, 10);
+    }
+
+    @Override
+    public Iterator<ScoredEntry<V>> entryIterator(String pattern) {
+        return entryIterator(pattern, 10);
+    }
+
+    @Override
+    public Iterator<ScoredEntry<V>> entryIterator(int count) {
+        return entryIterator(null, count);
+    }
+
+    @Override
+    public Iterator<ScoredEntry<V>> entryIterator(String pattern, int count) {
+        return new RedissonBaseIterator<ScoredEntry<V>>() {
+
+            @Override
+            protected ScanResult<Object> iterator(RedisClient client, long nextIterPos) {
+                return entryScanIterator(client, nextIterPos, pattern, count);
+            }
+
+            @Override
+            protected void remove(Object value) {
+                RedissonScoredSortedSet.this.remove(value);
+            }
+
+        };
+    }
+
+    private ScanResult<Object> entryScanIterator(RedisClient client, long startPos, String pattern, int count) {
+        RFuture<ScanResult<Object>> f = entryScanIteratorAsync(client, startPos, pattern, count);
+        return get(f);
+    }
+
+    public RFuture<ScanResult<Object>> entryScanIteratorAsync(RedisClient client, long startPos, String pattern, int count) {
+        if (pattern == null) {
+            RFuture<ScanResult<Object>> f = commandExecutor.readAsync(client, getRawName(), codec, RedisCommands.ZSCAN_ENTRY, getRawName(), startPos, "COUNT", count);
+            return f;
+        }
+        RFuture<ScanResult<Object>> f = commandExecutor.readAsync(client, getRawName(), codec, RedisCommands.ZSCAN_ENTRY, getRawName(), startPos, "MATCH", pattern, "COUNT", count);
+        return f;
+    }
+
     @Override
     public Iterator<V> distributedIterator(String pattern) {
         String iteratorName = "__redisson_scored_sorted_set_cursor_{" + getRawName() + "}";

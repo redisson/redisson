@@ -673,6 +673,42 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Iterator<V> iterator(String pattern, int count);
 
     /**
+     * Returns an iterator over entries (value and its score) in this set.
+     *
+     * @return iterator
+     */
+    Iterator<ScoredEntry<V>> entryIterator();
+
+    /**
+     * Returns an iterator over entries (value and its score) in this set.
+     * If <code>pattern</code> is not null then only entries match this pattern are loaded.
+     *
+     * @param pattern search pattern
+     * @return iterator
+     */
+    Iterator<ScoredEntry<V>> entryIterator(String pattern);
+
+    /**
+     * Returns an iterator over entries (value and its score) in this set.
+     * Entries are loaded in batch. Batch size is defined by <code>count</code> param.
+     *
+     * @param count size of elements batch
+     * @return iterator
+     */
+    Iterator<ScoredEntry<V>> entryIterator(int count);
+
+    /**
+     * Returns an iterator over entries (value and its score) in this set.
+     * Entries are loaded in batch. Batch size is defined by <code>count</code> param.
+     * If pattern is not null then only entries match this pattern are loaded.
+     *
+     * @param pattern search pattern
+     * @param count size of entries batch
+     * @return iterator
+     */
+    Iterator<ScoredEntry<V>> entryIterator(String pattern, int count);
+
+    /**
      * Returns element iterator that can be shared across multiple applications.
      * Creating multiple iterators on the same object with this method will result in a single shared iterator.
      * See {@linkplain RSet#distributedIterator(String, String, int)} for creating different iterators.
