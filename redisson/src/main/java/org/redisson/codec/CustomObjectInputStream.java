@@ -31,7 +31,7 @@ public class CustomObjectInputStream extends ObjectInputStream {
     private final ClassLoader classLoader;
     private Set<String> allowedClasses;
 
-    public CustomObjectInputStream(ClassLoader classLoader, InputStream in,Set<String> allowedClasses) throws IOException {
+    public CustomObjectInputStream(ClassLoader classLoader, InputStream in, Set<String> allowedClasses) throws IOException {
         super(in);
         this.classLoader = classLoader;
         this.allowedClasses = allowedClasses;
