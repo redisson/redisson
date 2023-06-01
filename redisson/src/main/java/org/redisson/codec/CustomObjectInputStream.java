@@ -15,13 +15,11 @@
  */
 package org.redisson.codec;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectStreamClass;
+import java.io.*;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 
@@ -31,7 +29,14 @@ import java.util.List;
 public class CustomObjectInputStream extends ObjectInputStream {
 
     private final ClassLoader classLoader;
-    
+    private Set<String> allowedClasses;
+
+    public CustomObjectInputStream(ClassLoader classLoader, InputStream in,Set<String> allowedClasses) throws IOException {
+        super(in);
+        this.classLoader = classLoader;
+        this.allowedClasses = allowedClasses;
+    }
+
     public CustomObjectInputStream(ClassLoader classLoader, InputStream in) throws IOException {
         super(in);
         this.classLoader = classLoader;
@@ -41,6 +46,9 @@ public class CustomObjectInputStream extends ObjectInputStream {
     protected Class<?> resolveClass(ObjectStreamClass desc) throws IOException, ClassNotFoundException {
         try {
             String name = desc.getName();
+            if (allowedClasses != null && !allowedClasses.contains(name)) {
+                throw new InvalidClassException("Class " + name + " isn't allowed");
+            }
             return Class.forName(name, false, classLoader);
         } catch (ClassNotFoundException e) {
             return super.resolveClass(desc);
@@ -56,7 +64,7 @@ public class CustomObjectInputStream extends ObjectInputStream {
             loadedClasses.add(clazz);
         }
         
-        return Proxy.getProxyClass(classLoader, loadedClasses.toArray(new Class[loadedClasses.size()]));
+        return Proxy.getProxyClass(classLoader, loadedClasses.toArray(new Class[0]));
     }
     
 }

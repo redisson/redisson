@@ -15,19 +15,19 @@
  */
 package org.redisson.codec;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.ByteBufInputStream;
+import io.netty.buffer.ByteBufOutputStream;
 import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.ByteBufInputStream;
-import io.netty.buffer.ByteBufOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.Set;
 
 /**
  * JDK's serialization codec.
@@ -51,7 +51,7 @@ public class SerializationCodec extends BaseCodec {
                     ObjectInputStream inputStream;
                     if (classLoader != null) {
                         Thread.currentThread().setContextClassLoader(classLoader);
-                        inputStream = new CustomObjectInputStream(classLoader, in);
+                        inputStream = new CustomObjectInputStream(classLoader, in, allowedClasses);
                     } else {
                         inputStream = new ObjectInputStream(in);
                     }
@@ -84,7 +84,8 @@ public class SerializationCodec extends BaseCodec {
             }
         }
     };
-    
+
+    private Set<String> allowedClasses;
     private final ClassLoader classLoader;
 
     public SerializationCodec() {
@@ -97,6 +98,12 @@ public class SerializationCodec extends BaseCodec {
 
     public SerializationCodec(ClassLoader classLoader, SerializationCodec codec) {
         this.classLoader = classLoader;
+        this.allowedClasses = codec.allowedClasses;
+    }
+
+    public SerializationCodec(ClassLoader classLoader, Set<String> allowedClasses) {
+        this.classLoader = classLoader;
+        this.allowedClasses = allowedClasses;
     }
     
     @Override
