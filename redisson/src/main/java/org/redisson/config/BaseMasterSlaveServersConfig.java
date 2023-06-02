@@ -277,7 +277,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
         return readMode;
     }
     
-    public boolean checkSkipSlavesInit() {
+    public boolean isSlaveNotUsed() {
         return getReadMode() == ReadMode.MASTER && getSubscriptionMode() == SubscriptionMode.MASTER;
     }
 

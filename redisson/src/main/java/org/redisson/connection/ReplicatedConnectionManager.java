@@ -220,7 +220,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                                 return role;
                             });
                         }
-                    } else if (!config.checkSkipSlavesInit()) {
+                    } else if (!config.isSlaveNotUsed()) {
                         CompletableFuture<Void> f = slaveUp(addr, uri);
                         slaveIPs.add(addr);
                         return f.thenApply(re -> role);

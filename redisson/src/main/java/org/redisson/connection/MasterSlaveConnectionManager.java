@@ -150,7 +150,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     
     public void connect() {
         try {
-            if (config.checkSkipSlavesInit()) {
+            if (config.isSlaveNotUsed()) {
                 masterSlaveEntry = new SingleEntry(this, serviceManager.getConnectionWatcher(), config);
             } else {
                 masterSlaveEntry = new MasterSlaveEntry(this, serviceManager.getConnectionWatcher(), config);
@@ -158,7 +158,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             CompletableFuture<RedisClient> masterFuture = masterSlaveEntry.setupMasterEntry(new RedisURI(config.getMasterAddress()));
             masterFuture.join();
 
-            if (!config.checkSkipSlavesInit()) {
+            if (!config.isSlaveNotUsed()) {
                 CompletableFuture<Void> fs = masterSlaveEntry.initSlaveBalancer(getDisconnectedNodes());
                 fs.join();
             }

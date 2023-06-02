@@ -307,7 +307,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             config.setMasterAddress(partition.getMasterAddress().toString());
 
             MasterSlaveEntry entry;
-            if (config.checkSkipSlavesInit()) {
+            if (config.isSlaveNotUsed()) {
                 entry = new SingleEntry(this, serviceManager.getConnectionWatcher(), config);
             } else {
                 Set<String> slaveAddresses = partition.getSlaveAddresses().stream().map(r -> r.toString()).collect(Collectors.toSet());
@@ -323,7 +323,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     lastPartitions.put(slot, partition);
                 }
 
-                if (!config.checkSkipSlavesInit()) {
+                if (!config.isSlaveNotUsed()) {
                     CompletableFuture<Void> fs = entry.initSlaveBalancer(partition.getFailedSlaveAddresses(), configEndpointHostName);
                     return fs.thenAccept(r -> {
                         if (!partition.getSlaveAddresses().isEmpty()) {

@@ -134,7 +134,7 @@ public class MasterSlaveEntry {
                     config);
 
             List<CompletableFuture<Void>> futures = new ArrayList<>();
-            if (!config.checkSkipSlavesInit() && !slaveBalancer.contains(client.getAddr())) {
+            if (!config.isSlaveNotUsed() && !slaveBalancer.contains(client.getAddr())) {
                 CompletableFuture<Void> masterAsSlaveFuture = addSlave(client.getAddr(), client.getConfig().getAddress(),
                         true, NodeType.MASTER, client.getConfig().getSslHostname());
                 futures.add(masterAsSlaveFuture);
@@ -196,7 +196,7 @@ public class MasterSlaveEntry {
         }
 
         // add master as slave if no more slaves available
-        if (!config.checkSkipSlavesInit()
+        if (!config.isSlaveNotUsed()
                 && !masterEntry.getClient().getAddr().equals(entry.getClient().getAddr())
                     && slaveBalancer.getAvailableClients() == 0) {
             if (slaveBalancer.unfreeze(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM)) {
@@ -222,7 +222,7 @@ public class MasterSlaveEntry {
         }
 
         // add master as slave if no more slaves available
-        if (!config.checkSkipSlavesInit()
+        if (!config.isSlaveNotUsed()
                 && !masterEntry.getClient().getAddr().equals(entry.getClient().getAddr())
                     && slaveBalancer.getAvailableClients() == 0) {
             CompletableFuture<Boolean> f = slaveBalancer.unfreezeAsync(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM);
@@ -422,7 +422,7 @@ public class MasterSlaveEntry {
 
         InetSocketAddress addr = masterEntry.getClient().getAddr();
         // exclude master from slaves
-        if (!config.checkSkipSlavesInit()
+        if (!config.isSlaveNotUsed()
                 && !addr.equals(entry.getClient().getAddr())) {
             if (slaveDown(addr, FreezeReason.SYSTEM)) {
                 log.info("master {} excluded from slaves", addr);
@@ -439,7 +439,7 @@ public class MasterSlaveEntry {
 
         InetSocketAddress addr = masterEntry.getClient().getAddr();
         // exclude master from slaves
-        if (!config.checkSkipSlavesInit()
+        if (!config.isSlaveNotUsed()
                 && !address.equals(addr)) {
             if (slaveDown(addr, FreezeReason.SYSTEM)) {
                 log.info("master {} excluded from slaves", addr);
@@ -465,7 +465,7 @@ public class MasterSlaveEntry {
 
     public CompletableFuture<Boolean> excludeMasterFromSlaves(InetSocketAddress address) {
         InetSocketAddress addr = masterEntry.getClient().getAddr();
-        if (config.checkSkipSlavesInit() || addr.equals(address)) {
+        if (config.isSlaveNotUsed() || addr.equals(address)) {
             return CompletableFuture.completedFuture(false);
         }
         CompletableFuture<Boolean> downFuture = slaveDownAsync(addr, FreezeReason.SYSTEM);
@@ -500,7 +500,7 @@ public class MasterSlaveEntry {
 
         InetSocketAddress addr = masterEntry.getClient().getAddr();
         // exclude master from slaves
-        if (!config.checkSkipSlavesInit()
+        if (!config.isSlaveNotUsed()
                 && !addr.equals(address)) {
             if (slaveDown(addr, FreezeReason.SYSTEM)) {
                 log.info("master {} excluded from slaves", addr);
@@ -560,7 +560,7 @@ public class MasterSlaveEntry {
             slaveDown(oldMaster.getClient().getAddr(), FreezeReason.MANAGER);
 
             // check if at least one slave is available, use master as slave if false
-            if (!config.checkSkipSlavesInit()) {
+            if (!config.isSlaveNotUsed()) {
                 useMasterAsSlave();
             }
             oldMaster.shutdownAsync();

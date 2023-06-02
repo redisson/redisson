@@ -354,7 +354,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         CompletionStage<RedisClient> masterFuture = checkMasterChange(cfg, connection);
         futures.add(masterFuture.toCompletableFuture());
 
-        if (!config.checkSkipSlavesInit()) {
+        if (!config.isSlaveNotUsed()) {
             CompletionStage<Void> slavesFuture = checkSlavesChange(cfg, connection);
             futures.add(slavesFuture.toCompletableFuture());
         }
@@ -579,7 +579,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private CompletableFuture<Void> addSlave(RedisURI uri) {
-        if (config.checkSkipSlavesInit()) {
+        if (config.isSlaveNotUsed()) {
             log.info("slave: {} is up", uri);
             return CompletableFuture.completedFuture(null);
         }
@@ -605,7 +605,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void slaveDown(RedisURI uri) {
-        if (config.checkSkipSlavesInit()) {
+        if (config.isSlaveNotUsed()) {
             log.warn("slave: {} is down", uri);
         } else {
             MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
