@@ -145,6 +145,10 @@ public class LoadBalancerManager {
     }
 
     public boolean unfreeze(ClientConnectionsEntry entry, FreezeReason freezeReason) {
+        return unfreeze(entry, freezeReason, 0);
+    }
+
+    private boolean unfreeze(ClientConnectionsEntry entry, FreezeReason freezeReason, final int retryNum) {
         synchronized (entry) {
             if (!entry.isFreezed()) {
                 return false;
@@ -164,9 +168,11 @@ public class LoadBalancerManager {
                         if (e != null) {
                             log.error("Unable to unfreeze entry: {}", entry, e);
                             entry.setInitialized(false);
-                            connectionManager.getServiceManager().newTimeout(t -> {
-                                unfreeze(entry, freezeReason);
-                            }, 1, TimeUnit.SECONDS);
+                            if (retryNum < 3) {
+                                connectionManager.getServiceManager().newTimeout(t -> {
+                                    unfreeze(entry, freezeReason, retryNum + 1);
+                                }, 1, TimeUnit.SECONDS);
+                            }
                             return;
                         }
 
