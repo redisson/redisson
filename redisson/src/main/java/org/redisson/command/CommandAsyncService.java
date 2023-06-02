@@ -773,7 +773,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     protected CommandBatchService createCommandBatchService(int availableSlaves) {
         BatchOptions options = BatchOptions.defaults()
-                                            .syncSlaves(availableSlaves, 1, TimeUnit.SECONDS);
+                                            .syncSlaves(availableSlaves, getServiceManager().getCfg().getSlavesSyncTimeout(), TimeUnit.MILLISECONDS);
         return new CommandBatchService(this, options);
     }
 

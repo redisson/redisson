@@ -72,6 +72,8 @@ public class Config {
 
     private boolean checkLockSyncedSlaves = true;
 
+    private long slavesSyncTimeout = 1000;
+
     private long reliableTopicWatchdogTimeout = TimeUnit.MINUTES.toMillis(10);
 
     private boolean keepPubSubOrder = true;
@@ -113,6 +115,7 @@ public class Config {
         setKeepPubSubOrder(oldConf.isKeepPubSubOrder());
         setLockWatchdogTimeout(oldConf.getLockWatchdogTimeout());
         setCheckLockSyncedSlaves(oldConf.isCheckLockSyncedSlaves());
+        setSlavesSyncTimeout(oldConf.getSlavesSyncTimeout());
         setNettyThreads(oldConf.getNettyThreads());
         setThreads(oldConf.getThreads());
         setCodec(oldConf.getCodec());
@@ -836,6 +839,24 @@ public class Config {
      */
     public Config setConnectionListener(ConnectionListener connectionListener) {
         this.connectionListener = connectionListener;
+        return this;
+    }
+
+    public long getSlavesSyncTimeout() {
+        return slavesSyncTimeout;
+    }
+
+    /**
+     * Defines slaves synchronization timeout applied to each operation of {@link org.redisson.api.RLock},
+     * {@link org.redisson.api.RSemaphore}, {@link org.redisson.api.RPermitExpirableSemaphore} objects.
+     * <p>
+     * Default is <code>1000</code> milliseconds.
+     *
+     * @param timeout timeout in milliseconds
+     * @return config
+     */
+    public Config setSlavesSyncTimeout(long timeout) {
+        this.slavesSyncTimeout = timeout;
         return this;
     }
 }
