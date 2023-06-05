@@ -35,6 +35,18 @@ import reactor.core.publisher.Mono;
 public interface RStreamReactive<K, V> extends RExpirableReactive {
 
     /**
+     * Creates consumer group.
+     * <p>
+     * Usage examples:
+     * <pre>
+     * StreamMessageId id = stream.createGroup(StreamCreateGroupArgs.name("test").id(id).makeStream());
+     * </pre>
+     *
+     * @param args method arguments object
+     */
+    Mono<Void> createGroup(StreamCreateGroupArgs args);
+
+    /**
      * Creates consumer group by name.
      * 
      * @param groupName - name of group

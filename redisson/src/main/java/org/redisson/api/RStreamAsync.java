@@ -34,6 +34,18 @@ import java.util.concurrent.TimeUnit;
 public interface RStreamAsync<K, V> extends RExpirableAsync {
 
     /**
+     * Creates consumer group.
+     * <p>
+     * Usage examples:
+     * <pre>
+     * StreamMessageId id = stream.createGroup(StreamCreateGroupArgs.name("test").id(id).makeStream());
+     * </pre>
+     *
+     * @param args method arguments object
+     */
+    RFuture<Void> createGroupAsync(StreamCreateGroupArgs args);
+
+    /**
      * Creates consumer group by name.
      * 
      * @param groupName - name of group

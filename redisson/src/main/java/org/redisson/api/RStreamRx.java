@@ -36,6 +36,18 @@ import org.redisson.api.stream.*;
 public interface RStreamRx<K, V> extends RExpirableRx {
 
     /**
+     * Creates consumer group.
+     * <p>
+     * Usage examples:
+     * <pre>
+     * StreamMessageId id = stream.createGroup(StreamCreateGroupArgs.name("test").id(id).makeStream());
+     * </pre>
+     *
+     * @param args method arguments object
+     */
+    Completable createGroup(StreamCreateGroupArgs args);
+
+    /**
      * Creates consumer group by name.
      * 
      * @param groupName - name of group
