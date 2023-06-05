@@ -44,6 +44,10 @@ public interface StreamCreateGroupArgs {
      * Defines Stream Message ID.
      * Only new messages after defined stream <code>id</code> will
      * be available for consumers of this group.
+     * <p>
+     * {@link StreamMessageId#NEWEST} is used for messages arrived since the moment of group creation
+     * <p>
+     * {@link StreamMessageId#ALL} is used for all messages added before and after the moment of group creation
      *
      * @param id Stream Message ID
      * @return arguments object

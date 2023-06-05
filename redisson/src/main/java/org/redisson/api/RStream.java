@@ -46,23 +46,15 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
     void createGroup(StreamCreateGroupArgs args);
 
     /**
-     * Creates consumer group by name.
-     * Only new messages will be available for consumers of this group.
-     * 
-     * @param groupName - name of group
+     * Use createGroup(StreamCreateGroupArgs) method instead
      */
+    @Deprecated
     void createGroup(String groupName);
 
     /**
-     * Creates consumer group by name and Stream Message ID. 
-     * Only new messages after defined stream <code>id</code> will be available for consumers of this group. 
-     * <p>
-     * {@link StreamMessageId#NEWEST} is used for messages arrived since the moment of group creation
-     * {@link StreamMessageId#ALL} is used for all messages added before and after the moment of group creation
-     * 
-     * @param groupName - name of group
-     * @param id - Stream Message ID
+     * Use createGroup(StreamCreateGroupArgs) method instead
      */
+    @Deprecated
     void createGroup(String groupName, StreamMessageId id);
     
     /**
