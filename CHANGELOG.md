@@ -3,6 +3,23 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 05-Jun-2023 - 3.22.0 released
+Feature - Spring Data Redis 3.1.0 implementation  
+Feature - Spring Boot 3.1.0 support  
+Feature - firstEntry() and lastEntry()  
+Feature - `lastEntry()`, `firstEntry()`, `pollLastEntries()`, `pollFirstEntries()`, `entryIterator()`, `rankEntry()`, `revRankEntry()` methods added to `RScoredSortedSet` object  
+Feature - `RCountDownLatch`, `RLock`, `RPermitExpirableSemaphore`, `RSemaphore` objects use sharded PubSub in Redis Cluster 7.0+  
+Feature - `slavesSyncTimeout`, `commandMapper`, `sslCiphers`, `sslTrustManagerFactory`, `sslKeyManagerFactory` settings added  
+Feature - `RMultimap.fastRemoveValue()` method added  
+Feature - `allowedClasses` setting added to `SerializationCodec`  
+Feature - `entriesRead` and `makeStream` parameters added to `RStream.createGroup()` method  
+
+__Breaking change - RCountDownLatch, RLock, RPermitExpirableSemaphore, RSemaphore objects now use sharded PubSub in Redis Cluster 7.0+__  
+
+Fixed - Expired LiveObjects with RIndex annotations retain indexed data  
+Fixed - `RRingBuffer` doesn't implement `expire()`, `expireAt()`, `delete()`, `clearExpire()` methods properly  
+Fixed - `RLocalCachedMap` local cache isn't cleared after instance expiration  
+
 ### 18-May-2023 - 3.21.3 released
 
 Fixed - default retryInterval isn't applied to RBatch object  
