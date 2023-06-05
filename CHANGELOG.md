@@ -6,7 +6,6 @@ Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and
 ### 05-Jun-2023 - 3.22.0 released
 Feature - Spring Data Redis 3.1.0 implementation  
 Feature - Spring Boot 3.1.0 support  
-Feature - firstEntry() and lastEntry()  
 Feature - `lastEntry()`, `firstEntry()`, `pollLastEntries()`, `pollFirstEntries()`, `entryIterator()`, `rankEntry()`, `revRankEntry()` methods added to `RScoredSortedSet` object  
 Feature - `RCountDownLatch`, `RLock`, `RPermitExpirableSemaphore`, `RSemaphore` objects use sharded PubSub in Redis Cluster 7.0+  
 Feature - `slavesSyncTimeout`, `commandMapper`, `sslCiphers`, `sslTrustManagerFactory`, `sslKeyManagerFactory` settings added  
