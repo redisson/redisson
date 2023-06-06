@@ -1029,7 +1029,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         }
         args.add(count);
 
-        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.SCAN,
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_SCAN,
                 "local cursor = redis.call('get', KEYS[2]); "
                 + "if cursor ~= false then "
                     + "cursor = tonumber(cursor); "
