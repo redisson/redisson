@@ -120,6 +120,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             if (syncStrategy == SyncStrategy.UPDATE) {
                 ByteBuf mapValue = encodeMapValue(value);
                 msg = new LocalCachedMapUpdate(instanceId, mapKey, mapValue);
+                mapValue.release();
             } else {
                 msg = new LocalCachedMapInvalidate(instanceId, cacheKey.getKeyHash());
             }
