@@ -4,11 +4,9 @@ import org.apache.http.client.fluent.Executor;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.cookie.Cookie;
 import org.apache.http.impl.client.BasicCookieStore;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
@@ -20,10 +18,8 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
-@RunWith(Parameterized.class)
 public class RedissonSessionManagerTest {
 
-    @Parameterized.Parameters(name= "{index} - {0}")
     public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][] {
             {"context_memory.xml"},
@@ -33,18 +29,16 @@ public class RedissonSessionManagerTest {
             });
     }
 
-    @Parameterized.Parameter(0)
-    public String contextName;
-
-    @Before
-    public void before() throws IOException {
+    private void prepare(String contextName) throws IOException {
         String basePath = "src/test/webapp/META-INF/";
         Files.deleteIfExists(Paths.get(basePath + "context.xml"));
         Files.copy(Paths.get(basePath + contextName), Paths.get(basePath + "context.xml"));
     }
 
-    @Test
-    public void testUpdateTwoServers_readValue() throws Exception {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testUpdateTwoServers_readValue(String contextName) throws Exception {
+        prepare(contextName);
         TomcatServer server1 = new TomcatServer("myapp", 8080, "src/test/");
         TomcatServer server2 = new TomcatServer("myapp", 8081, "src/test/");
         try {
@@ -68,8 +62,10 @@ public class RedissonSessionManagerTest {
         }
     }
 
-    @Test
-    public void testHttpSessionListener() throws Exception {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testHttpSessionListener(String contextName) throws Exception {
+        prepare(contextName);
         TomcatServer server1 = new TomcatServer("myapp", 8080, "src/test/");
         server1.start();
 
@@ -92,8 +88,8 @@ public class RedissonSessionManagerTest {
 
         Thread.sleep(500);
 
-        Assert.assertEquals(2, TestHttpSessionListener.CREATED_INVOCATION_COUNTER);
-        Assert.assertEquals(3, TestHttpSessionListener.DESTROYED_INVOCATION_COUNTER);
+        Assertions.assertEquals(2, TestHttpSessionListener.CREATED_INVOCATION_COUNTER);
+        Assertions.assertEquals(3, TestHttpSessionListener.DESTROYED_INVOCATION_COUNTER);
 
         Executor.closeIdleConnections();
         server1.stop();
@@ -101,8 +97,10 @@ public class RedissonSessionManagerTest {
         server3.stop();
     }
 
-    @Test
-    public void testUpdateTwoServers_twoValues() throws Exception {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testUpdateTwoServers_twoValues(String contextName) throws Exception {
+        prepare(contextName);
         TomcatServer server1 = new TomcatServer("myapp", 8080, "src/test/");
         TomcatServer server2 = new TomcatServer("myapp", 8081, "src/test/");
         try {
@@ -129,8 +127,10 @@ public class RedissonSessionManagerTest {
         }
     }
 
-    @Test
-    public void testUpdateTwoServers() throws Exception {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testUpdateTwoServers(String contextName) throws Exception {
+        prepare(contextName);
         TomcatServer server1 = new TomcatServer("myapp", 8080, "src/test/");
         server1.start();
         TomcatServer server2 = new TomcatServer("myapp", 8081, "src/test/");
@@ -152,9 +152,11 @@ public class RedissonSessionManagerTest {
         server2.stop();
     }
 
-    
-    @Test
-    public void testExpiration() throws Exception {
+
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testExpiration(String contextName) throws Exception {
+        prepare(contextName);
         TomcatServer server1 = new TomcatServer("myapp", 8080, "src/test/");
         server1.start();
 
@@ -180,9 +182,11 @@ public class RedissonSessionManagerTest {
         server1.stop();
         server2.stop();
     }
-    
-    @Test
-    public void testSwitchServer() throws Exception {
+
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testSwitchServer(String contextName) throws Exception {
+        prepare(contextName);
         // start the server at http://localhost:8080/myapp
         TomcatServer server = new TomcatServer("myapp", 8080, "src/test/");
         server.start();
@@ -212,9 +216,11 @@ public class RedissonSessionManagerTest {
         server.stop();
     }
 
-    
-    @Test
-    public void testWriteReadRemove() throws Exception {
+
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testWriteReadRemove(String contextName) throws Exception {
+        prepare(contextName);
         // start the server at http://localhost:8080/myapp
         TomcatServer server = new TomcatServer("myapp", 8080, "src/test/");
         server.start();
@@ -228,9 +234,11 @@ public class RedissonSessionManagerTest {
         Executor.closeIdleConnections();
         server.stop();
     }
-    
-    @Test
-    public void testRecreate() throws Exception {
+
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testRecreate(String contextName) throws Exception {
+        prepare(contextName);
         // start the server at http://localhost:8080/myapp
         TomcatServer server = new TomcatServer("myapp", 8080, "src/test/");
         server.start();
@@ -244,9 +252,11 @@ public class RedissonSessionManagerTest {
         Executor.closeIdleConnections();
         server.stop();
     }
-    
-    @Test
-    public void testUpdate() throws Exception {
+
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testUpdate(String contextName) throws Exception {
+        prepare(contextName);
         // start the server at http://localhost:8080/myapp
         TomcatServer server = new TomcatServer("myapp", 8080, "src/test/");
         server.start();
@@ -262,9 +272,10 @@ public class RedissonSessionManagerTest {
         server.stop();
     }
 
-
-    @Test
-    public void testInvalidate() throws Exception {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testInvalidate(String contextName) throws Exception {
+        prepare(contextName);
         File f = Paths.get("").toAbsolutePath().resolve("src/test/webapp/WEB-INF/redisson.yaml").toFile();
         Config config = Config.fromYAML(f);
         RedissonClient r = Redisson.create(config);
@@ -294,38 +305,38 @@ public class RedissonSessionManagerTest {
         Executor.closeIdleConnections();
         server.stop();
 
-        TimeUnit.SECONDS.sleep(60);
-        Assert.assertEquals(0, r.getKeys().count());
+        TimeUnit.SECONDS.sleep(61);
+        Assertions.assertEquals(0, r.getKeys().count());
     }
     
     private void write(int port, Executor executor, String key, String value) throws IOException {
         String url = "http://localhost:" + port + "/myapp/write?key=" + key + "&value=" + value;
         String response = executor.execute(Request.Get(url)).returnContent().asString();
-        Assert.assertEquals("OK", response);
+        Assertions.assertEquals("OK", response);
     }
 
     private void read(int port, Executor executor, String key, String value) throws IOException {
         String url = "http://localhost:" + port + "/myapp/read?key=" + key;
         String response = executor.execute(Request.Get(url)).returnContent().asString();
-        Assert.assertEquals(value, response);
+        Assertions.assertEquals(value, response);
     }
     
     private void remove(Executor executor, String key, String value) throws IOException {
         String url = "http://localhost:8080/myapp/remove?key=" + key;
         String response = executor.execute(Request.Get(url)).returnContent().asString();
-        Assert.assertEquals(value, response);
+        Assertions.assertEquals(value, response);
     }
     
     private void invalidate(Executor executor) throws IOException {
         String url = "http://localhost:8080/myapp/invalidate";
         String response = executor.execute(Request.Get(url)).returnContent().asString();
-        Assert.assertEquals("OK", response);
+        Assertions.assertEquals("OK", response);
     }
 
     private void recreate(Executor executor, String key, String value) throws IOException {
         String url = "http://localhost:8080/myapp/recreate?key=" + key + "&value=" + value;
         String response = executor.execute(Request.Get(url)).returnContent().asString();
-        Assert.assertEquals("OK", response);
+        Assertions.assertEquals("OK", response);
     }
 
 
