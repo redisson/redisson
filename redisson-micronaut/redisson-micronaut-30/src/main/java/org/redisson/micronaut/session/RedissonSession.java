@@ -35,10 +35,6 @@ import java.util.concurrent.TimeUnit;
  * @author Nikita Koksharov
  *
  */
-/*
- Use instead the Spring session implementation with redisson-spring-data module
- */
-@Deprecated
 public class RedissonSession extends InMemorySession implements Session {
 
     private static final String MAX_INACTIVE_INTERVAL_ATTR = "session:maxInactiveInterval";
