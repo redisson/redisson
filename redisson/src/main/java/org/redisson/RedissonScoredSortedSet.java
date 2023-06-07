@@ -778,7 +778,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZREMRANGEBYSCORE, getRawName(), startValue, endValue);
     }
 
-    private String value(double score, boolean inclusive) {
+    protected final String value(double score, boolean inclusive) {
         StringBuilder element = new StringBuilder();
         if (!inclusive) {
             element.append("(");

@@ -18,12 +18,12 @@ package org.redisson.client.protocol;
 import java.util.Objects;
 
 /**
- * 
+ *
  * @author Nikita Koksharov
  *
  * @param <V> value type
  */
-public class ScoredEntry<V> {
+public class ScoredEntry<V> implements Comparable<ScoredEntry<V>> {
 
     private final Double score;
     private final V value;
@@ -53,5 +53,18 @@ public class ScoredEntry<V> {
     @Override
     public int hashCode() {
         return Objects.hash(score, value);
+    }
+
+    @Override
+    public int compareTo(ScoredEntry<V> o) {
+        return score.compareTo(o.score);
+    }
+
+    @Override
+    public String toString() {
+        return "ScoredEntry{" +
+                "score=" + score +
+                ", value=" + value +
+                '}';
     }
 }
