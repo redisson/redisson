@@ -52,6 +52,10 @@ import java.util.concurrent.CompletableFuture;
 @Primary
 @Requires(property = RedissonSessionStore.ENABLED, value = StringUtils.TRUE)
 @Replaces(InMemorySessionStore.class)
+/*
+ Use instead the Spring session implementation with redisson-spring-data module
+ */
+@Deprecated
 public class RedissonSessionStore implements SessionStore<RedissonSession>, PatternMessageListener<String>, MessageListener<String> {
 
     public static final String ENABLED = SessionSettings.HTTP + ".redisson.enabled";

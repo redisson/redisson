@@ -26,6 +26,10 @@ import org.redisson.client.codec.Codec;
  * @author Nikita Koksharov
  */
 @ConfigurationProperties("redisson")
+/*
+ Use instead the Spring session implementation with redisson-spring-data module
+ */
+@Deprecated
 public class RedissonHttpSessionConfiguration extends HttpSessionConfiguration implements Toggleable {
 
     public enum UpdateMode {WRITE_BEHIND, AFTER_REQUEST}
