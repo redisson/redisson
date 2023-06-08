@@ -19,7 +19,7 @@ import java.util.Map;
 
 /**
  * Object containing details about Stream
- * 
+ *
  * @author Nikita Koksharov
  *
  * @param <K> key type
@@ -28,18 +28,18 @@ import java.util.Map;
 public class StreamInfo<K, V> {
 
     public static class Entry<K, V> {
-        
+
         final StreamMessageId id;
         final Map<K, V> data;
-        
+
         public Entry(StreamMessageId id, Map<K, V> data) {
             this.id = id;
             this.data = data;
         }
-        
+
         /**
          * Returns StreamMessageId of this stream entry.
-         * 
+         *
          * @return StreamMessageId object
          */
         public StreamMessageId getId() {
@@ -48,15 +48,15 @@ public class StreamInfo<K, V> {
 
         /**
          * Returns data stored in this stream entry
-         * 
+         *
          * @return Map object
          */
         public Map<K, V> getData() {
             return data;
         }
-        
+
     }
-    
+
     int length;
     int radixTreeKeys;
     int radixTreeNodes;
@@ -64,10 +64,13 @@ public class StreamInfo<K, V> {
     StreamMessageId lastGeneratedId;
     Entry<K, V> firstEntry;
     Entry<K, V> lastEntry;
-    
+    StreamMessageId maxDeletedEntryId;
+    int entriesAdded;
+    StreamMessageId recordedFirstEntryId;
+
     /**
      * Returns length of the stream
-     * 
+     *
      * @return length of the stream
      */
     public int getLength() {
@@ -76,10 +79,10 @@ public class StreamInfo<K, V> {
     public void setLength(int length) {
         this.length = length;
     }
-    
+
     /**
      * Returns amount of keys allocated by Radix tree of the stream.
-     * 
+     *
      * @return amount of keys
      */
     public int getRadixTreeKeys() {
@@ -88,10 +91,10 @@ public class StreamInfo<K, V> {
     public void setRadixTreeKeys(int radixTreeKeys) {
         this.radixTreeKeys = radixTreeKeys;
     }
-    
+
     /**
      * Returns amount of nodes allocated by Radix tree of the stream.
-     * 
+     *
      * @return amount of nodes
      */
     public int getRadixTreeNodes() {
@@ -100,10 +103,10 @@ public class StreamInfo<K, V> {
     public void setRadixTreeNodes(int radixTreeNodes) {
         this.radixTreeNodes = radixTreeNodes;
     }
-    
+
     /**
      * Returns amount of groups belonging to the stream
-     * 
+     *
      * @return amount of groups
      */
     public int getGroups() {
@@ -112,10 +115,10 @@ public class StreamInfo<K, V> {
     public void setGroups(int groups) {
         this.groups = groups;
     }
-    
+
     /**
      * Returns last StreamMessageId used by the stream
-     * 
+     *
      * @return StreamMessageId object
      */
     public StreamMessageId getLastGeneratedId() {
@@ -124,10 +127,10 @@ public class StreamInfo<K, V> {
     public void setLastGeneratedId(StreamMessageId lastGeneratedId) {
         this.lastGeneratedId = lastGeneratedId;
     }
-    
+
     /**
      * Returns first stream entry
-     * 
+     *
      * @return stream entry
      */
     public Entry<K, V> getFirstEntry() {
@@ -139,7 +142,7 @@ public class StreamInfo<K, V> {
 
     /**
      * Returns last stream entry
-     * 
+     *
      * @return stream entry
      */
     public Entry<K, V> getLastEntry() {
@@ -148,5 +151,43 @@ public class StreamInfo<K, V> {
     public void setLastEntry(Entry<K, V> lastEntry) {
         this.lastEntry = lastEntry;
     }
-    
+
+    /**
+     * Returns the maximal entry ID that was deleted from the stream
+     *
+     * @return StreamMessageId object
+     */
+    public StreamMessageId getMaxDeletedEntryId() {
+        return maxDeletedEntryId;
+    }
+    public StreamInfo<K, V> setMaxDeletedEntryId(StreamMessageId maxDeletedEntryId) {
+        this.maxDeletedEntryId = maxDeletedEntryId;
+        return this;
+    }
+
+    /**
+     * Returns the count of all entries added to the stream during its lifetime
+     *
+     * @return entries count
+     */
+    public int getEntriesAdded() {
+        return entriesAdded;
+    }
+    public StreamInfo<K, V> setEntriesAdded(int entriesAdded) {
+        this.entriesAdded = entriesAdded;
+        return this;
+    }
+
+    /**
+     * Returns the first ID what was added to the stream
+     *
+     * @return StreamMessageId object
+     */
+    public StreamMessageId getRecordedFirstEntryId() {
+        return recordedFirstEntryId;
+    }
+    public StreamInfo<K, V> setRecordedFirstEntryId(StreamMessageId recordedFirstEntryId) {
+        this.recordedFirstEntryId = recordedFirstEntryId;
+        return this;
+    }
 }

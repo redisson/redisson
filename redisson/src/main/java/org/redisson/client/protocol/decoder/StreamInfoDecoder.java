@@ -38,6 +38,9 @@ public class StreamInfoDecoder implements MultiDecoder<StreamInfo<Object, Object
     private static final String LAST_GENERATED_ID_KEY = "last-generated-id";
     private static final String FIRST_ENTRY_KEY = "first-entry";
     private static final String LAST_ENTRY_KEY = "last-entry";
+    private static final String MAX_DELETED_ENTRY_ID = "max-deleted-entry-id";
+    private static final String ENTRIES_ADDED = "entries-added";
+    private static final String RECORDED_FIRST_ENTRY_ID = "recorded-first-entry-id";
 
     @Override
     public StreamInfo<Object, Object> decode(List<Object> parts, State state) {
@@ -53,6 +56,9 @@ public class StreamInfoDecoder implements MultiDecoder<StreamInfo<Object, Object
         info.setRadixTreeNodes(((Long) map.get(RADIX_TREE_NODES_KEY)).intValue());
         info.setGroups(((Long) map.get(GROUPS_KEY)).intValue());
         info.setLastGeneratedId(StreamIdConvertor.INSTANCE.convert(map.get(LAST_GENERATED_ID_KEY)));
+        info.setMaxDeletedEntryId(StreamIdConvertor.INSTANCE.convert(map.getOrDefault(MAX_DELETED_ENTRY_ID, "0-0")));
+        info.setRecordedFirstEntryId(StreamIdConvertor.INSTANCE.convert(map.getOrDefault(RECORDED_FIRST_ENTRY_ID, "0-0")));
+        info.setEntriesAdded(((Long) map.getOrDefault(ENTRIES_ADDED, -1L)).intValue());
 
         List<?> firstEntry = (List<?>) map.get(FIRST_ENTRY_KEY);
         if (firstEntry != null) {
