@@ -177,10 +177,10 @@ public class JCacheManager implements CacheManager {
         checkNotClosed();
         Cache<K, V> cache = (Cache<K, V>) getCache(cacheName, Object.class, Object.class);
         if (cache != null) {
-            if (cache.getConfiguration(CompleteConfiguration.class).getKeyType() != Object.class) {
+            if (!cache.getConfiguration(CompleteConfiguration.class).getKeyType().isAssignableFrom(Object.class)) {
                 throw new IllegalArgumentException("Wrong type of key for " + cacheName);
             }
-            if (cache.getConfiguration(CompleteConfiguration.class).getValueType() != Object.class) {
+            if (!cache.getConfiguration(CompleteConfiguration.class).getValueType().isAssignableFrom(Object.class)) {
                 throw new IllegalArgumentException("Wrong type of value for " + cacheName);
             }
         }
