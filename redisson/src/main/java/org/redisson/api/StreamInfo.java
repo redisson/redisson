@@ -154,6 +154,8 @@ public class StreamInfo<K, V> {
 
     /**
      * Returns the maximal entry ID that was deleted from the stream
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
      *
      * @return StreamMessageId object
      */
@@ -167,6 +169,8 @@ public class StreamInfo<K, V> {
 
     /**
      * Returns the count of all entries added to the stream during its lifetime
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
      *
      * @return entries count
      */
@@ -180,6 +184,8 @@ public class StreamInfo<K, V> {
 
     /**
      * Returns the first ID what was added to the stream
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
      *
      * @return StreamMessageId object
      */

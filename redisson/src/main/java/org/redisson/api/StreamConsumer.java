@@ -64,6 +64,8 @@ public class StreamConsumer {
 
     /**
      * Returns time in milliseconds since the last successful interaction of this consumer
+     * <p>
+     * Requires <b>Redis 7.2.0 and higher.</b>
      *
      * @return time in milliseconds
      */
