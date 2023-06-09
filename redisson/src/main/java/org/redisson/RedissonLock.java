@@ -172,7 +172,7 @@ public class RedissonLock extends RedissonBaseLock {
         return new CompletableFutureWrapper<>(f);
     }
 
-    private <T> RFuture<Long> tryAcquireAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId) {
+    private RFuture<Long> tryAcquireAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId) {
         RFuture<Long> ttlRemainingFuture;
         if (leaseTime > 0) {
             ttlRemainingFuture = tryLockInnerAsync(waitTime, leaseTime, unit, threadId, RedisCommands.EVAL_LONG);
