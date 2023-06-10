@@ -27,7 +27,6 @@ import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Distributed implementation of {@link java.util.concurrent.locks.Lock}
@@ -145,31 +144,28 @@ public class RedissonSpinLock extends RedissonBaseLock {
 
     @Override
     public boolean tryLock(long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException {
-        long time = unit.toMillis(waitTime);
-        long current = System.currentTimeMillis();
-        long threadId = Thread.currentThread().getId();
+        final long time = unit.toMillis(waitTime);
+        final long current = System.currentTimeMillis();
+        final long threadId = Thread.currentThread().getId();
         Long ttl = tryAcquire(leaseTime, unit, threadId);
         // lock acquired
         if (ttl == null) {
             return true;
         }
 
-        time -= System.currentTimeMillis() - current;
-        if (time <= 0) {
+        if (System.currentTimeMillis() - current >= time) {
             acquireFailed(waitTime, unit, threadId);
             return false;
         }
 
         LockOptions.BackOffPolicy backOffPolicy = backOff.create();
         while (true) {
-            current = System.currentTimeMillis();
             Thread.sleep(backOffPolicy.getNextSleepPeriod());
             ttl = tryAcquire(leaseTime, unit, threadId);
             if (ttl == null) {
                 return true;
             }
-            time -= System.currentTimeMillis() - current;
-            if (time <= 0) {
+            if (System.currentTimeMillis() - current >= time) {
                 acquireFailed(waitTime, unit, threadId);
                 return false;
             }
@@ -262,16 +258,14 @@ public class RedissonSpinLock extends RedissonBaseLock {
                                          long currentThreadId) {
         CompletableFuture<Boolean> result = new CompletableFuture<>();
 
-        AtomicLong time = new AtomicLong(unit.toMillis(waitTime));
         LockOptions.BackOffPolicy backOffPolicy = backOff.create();
 
-        tryLock(leaseTime, unit, currentThreadId, result, time, backOffPolicy);
+        tryLock(System.currentTimeMillis(), leaseTime, unit, currentThreadId, result, unit.toMillis(waitTime), backOffPolicy);
         return new CompletableFutureWrapper<>(result);
     }
 
-    private void tryLock(long leaseTime, TimeUnit unit, long currentThreadId, CompletableFuture<Boolean> result,
-                         AtomicLong time, LockOptions.BackOffPolicy backOffPolicy) {
-        long startTime = System.currentTimeMillis();
+    private void tryLock(long startTime, long leaseTime, TimeUnit unit, long currentThreadId, CompletableFuture<Boolean> result,
+                         long waitTime, LockOptions.BackOffPolicy backOffPolicy) {
         RFuture<Long> ttlFuture = tryAcquireAsync(leaseTime, unit, currentThreadId);
         ttlFuture.whenComplete((ttl, e) -> {
             if (e != null) {
@@ -287,17 +281,14 @@ public class RedissonSpinLock extends RedissonBaseLock {
                 return;
             }
 
-            long el = System.currentTimeMillis() - startTime;
-            time.addAndGet(-el);
-
-            if (time.get() <= 0) {
+            if (System.currentTimeMillis() - startTime >= waitTime) {
                 trySuccessFalse(currentThreadId, result);
                 return;
             }
 
             long nextSleepPeriod = backOffPolicy.getNextSleepPeriod();
             getServiceManager().newTimeout(
-                    timeout -> tryLock(leaseTime, unit, currentThreadId, result, time, backOffPolicy),
+                    timeout -> tryLock(startTime, leaseTime, unit, currentThreadId, result, waitTime, backOffPolicy),
                     nextSleepPeriod, TimeUnit.MILLISECONDS);
         });
     }
