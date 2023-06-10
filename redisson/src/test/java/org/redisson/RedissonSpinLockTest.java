@@ -474,6 +474,27 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
 
 
     @Test
+    public void testTryLockAsyncWaitTime() throws InterruptedException {
+        RLock lock = redisson.getSpinLock("lock");
+        lock.lock();
+
+        AtomicBoolean lockAsyncSucceed = new AtomicBoolean(true);
+        Thread thread = new Thread(() -> {
+            RFuture<Boolean> booleanRFuture = lock.tryLockAsync(1, 30, TimeUnit.SECONDS);
+            booleanRFuture.whenComplete((res, e) -> {
+                if (e != null) {
+                    Assertions.fail("Lock aquire failed for some reason");
+                }
+                lockAsyncSucceed.set(res);
+            });
+        });
+        thread.start();
+        Thread.sleep(1500);
+        assertThat(lockAsyncSucceed.get()).isFalse();
+        lock.forceUnlock();
+    }
+
+    @Test
     public void testTryLockAsyncFailed() throws InterruptedException {
         RLock lock = redisson.getSpinLock("lock");
         lock.lock();
