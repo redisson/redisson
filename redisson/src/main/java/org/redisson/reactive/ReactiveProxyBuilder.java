@@ -40,7 +40,7 @@ public class ReactiveProxyBuilder {
             @Override
             public Object execute(Callable<RFuture<Object>> callable, Method instanceMethod) {
                 Mono<Object> result = commandExecutor.reactive(callable);
-                if(instanceMethod.getReturnType().isAssignableFrom(Flux.class)){
+                if (instanceMethod.getReturnType().isAssignableFrom(Flux.class)) {
                     Mono<Iterable> monoListResult = result.cast(Iterable.class);
                     return monoListResult.flatMapMany(Flux::fromIterable);
                 }
