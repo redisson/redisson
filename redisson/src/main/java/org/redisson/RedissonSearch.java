@@ -454,7 +454,7 @@ public class RedissonSearch implements RSearch {
         }
         if (!options.getParams().isEmpty()) {
             args.add("PARAMS");
-            args.add(options.getParams().size());
+            args.add(options.getParams().size()*2);
             for (Map.Entry<String, Object> entry : options.getParams().entrySet()) {
                 args.add(entry.getKey());
                 args.add(entry.getValue());
@@ -573,7 +573,7 @@ public class RedissonSearch implements RSearch {
         }
         if (!options.getParams().isEmpty()) {
             args.add("PARAMS");
-            args.add(options.getParams().size());
+            args.add(options.getParams().size()*2);
             for (Map.Entry<String, Object> entry : options.getParams().entrySet()) {
                 args.add(entry.getKey());
                 args.add(entry.getValue());

@@ -224,6 +224,7 @@ public class RedissonSearchTest extends BaseTest {
         SearchResult r2 = s.search("idx", "*", QueryOptions.defaults()
                 .returnAttributes(new ReturnAttribute("arr"),
                         new ReturnAttribute("val"))
+                        .params(Collections.singletonMap("12", "323"))
                 .dialect(3));
 
         Map<String, Object> map2 = new LinkedHashMap<>();
