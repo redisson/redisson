@@ -207,9 +207,13 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     }
 
     /**
-     * Defines local cache size. If size is <code>0</code> then local cache is unbounded.
+     * Defines local cache size.
+     * <p>
+     * If size is <code>0</code> then local cache is unbounded.
+     * <p>
+     * If size is <code>-1</code> then local cache is always empty and doesn't store data.
      * 
-     * @param cacheSize - size of cache
+     * @param cacheSize size of cache
      * @return LocalCachedMapOptions instance
      */
     public LocalCachedMapOptions<K, V> cacheSize(int cacheSize) {

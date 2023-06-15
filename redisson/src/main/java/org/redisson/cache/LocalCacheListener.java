@@ -211,6 +211,9 @@ public abstract class LocalCacheListener {
                             for (byte[] keyHash : invalidateMsg.getKeyHashes()) {
                                 CacheKey key = new CacheKey(keyHash);
                                 CacheValue value = cache.remove(key);
+                                if (value == null) {
+                                    continue;
+                                }
                                 notifyInvalidate(value);
                             }
                         }
