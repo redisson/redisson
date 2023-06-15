@@ -253,12 +253,18 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
 
     @Override
     public RFuture<Void> setRateAsync(RateType type, long rate, long rateInterval, RateIntervalUnit unit) {
-         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                "redis.call('hset', KEYS[1], 'rate', ARGV[1]);"
+        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "local valueName = KEYS[2];"
+                    + "local permitsName = KEYS[4];"
+                    + "if ARGV[3] == '1' then "
+                    + "    valueName = KEYS[3];"
+                    + "    permitsName = KEYS[5];"
+                    + "end "
+                    +"redis.call('hset', KEYS[1], 'rate', ARGV[1]);"
                         + "redis.call('hset', KEYS[1], 'interval', ARGV[2]);"
                         + "redis.call('hset', KEYS[1], 'type', ARGV[3]);"
-                        + "redis.call('del', KEYS[2], KEYS[3]);",
-                Arrays.asList(getRawName(), getValueName(), getPermitsName()), rate, unit.toMillis(rateInterval), type.ordinal());
+                        + "redis.call('del', valueName, permitsName);",
+                Arrays.asList(getRawName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName()), rate, unit.toMillis(rateInterval), type.ordinal());
     }
     
     private static final RedisCommand HGETALL = new RedisCommand("HGETALL", new MapEntriesDecoder(new MultiDecoder<RateLimiterConfig>() {

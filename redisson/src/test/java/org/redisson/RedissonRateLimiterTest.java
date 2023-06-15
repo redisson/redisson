@@ -2,10 +2,7 @@ package org.redisson;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.redisson.api.RRateLimiter;
-import org.redisson.api.RScoredSortedSet;
-import org.redisson.api.RateIntervalUnit;
-import org.redisson.api.RateType;
+import org.redisson.api.*;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -313,6 +310,46 @@ public class RedissonRateLimiterTest extends BaseTest {
             }
             count++;
         }
+    }
+
+    @Test
+    public void testChangeRate() {
+        /* Test case -- PRE_CLIENT */
+        RRateLimiter rr = redisson.getRateLimiter("test_change_rate");
+        rr.setRate(RateType.PER_CLIENT, 10, 1, RateIntervalUnit.SECONDS);
+        assertThat(rr.getConfig().getRate()).isEqualTo(10);
+        //check value in Redis
+        rr.acquire(1);
+        String valueKey = redisson.getKeys().getKeysStream().filter(k -> k.contains("value:")).findAny().get();
+        Long value = redisson.getAtomicLong(valueKey).get();
+        assertThat(value).isEqualTo(9);
+
+        //change to 20/s
+        rr.setRate(RateType.PER_CLIENT, 20, 1, RateIntervalUnit.SECONDS);
+        assertThat(rr.getConfig().getRate()).isEqualTo(20);
+        //check value in Redis
+        rr.acquire(1);
+        value = redisson.getAtomicLong(valueKey).get();
+        assertThat(value).isEqualTo(19);
+
+        /* Test case -- OVERALL */
+        rr.setRate(RateType.OVERALL, 10, 1, RateIntervalUnit.SECONDS);
+        assertThat(rr.getConfig().getRate()).isEqualTo(10);
+        //check value in Redis
+        rr.acquire(1);
+        valueKey = redisson.getKeys().getKeysStream().filter(k -> k.endsWith("value")).findAny().get();
+        value = redisson.getAtomicLong(valueKey).get();
+        assertThat(value).isEqualTo(9);
+
+        rr.setRate(RateType.OVERALL, 20, 1, RateIntervalUnit.SECONDS);
+        assertThat(rr.getConfig().getRate()).isEqualTo(20);
+        //check value in Redis
+        rr.acquire(1);
+        value = redisson.getAtomicLong(valueKey).get();
+        assertThat(value).isEqualTo(19);
+
+        //clean all keys in test
+        redisson.getKeys().deleteByPattern("*test_change_rate*");
     }
     
 }
