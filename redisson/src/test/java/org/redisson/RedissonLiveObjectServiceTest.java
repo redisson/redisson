@@ -328,6 +328,8 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         @RIndex
         private int num2;
 
+        private List<Long> coll;
+
         protected TestIndexed() {
         }
         
@@ -339,7 +341,15 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         public String getId() {
             return id;
         }
-        
+
+        public List<Long> getColl() {
+            return coll;
+        }
+
+        public void setColl(List<Long> coll) {
+            this.coll = coll;
+        }
+
         public Boolean getBool1() {
             return bool1;
         }
@@ -1716,11 +1726,11 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         myObject = service.persist(myObject);
         myObject.setName1("123345");
         myObject.setNum1(455);
-        assertThat(redisson.getKeys().count()).isEqualTo(5);
+        myObject.setColl(Arrays.asList(1L, 2L));
+        assertThat(redisson.getKeys().count()).isEqualTo(6);
         assertTrue(service.asLiveObject(myObject).isExists());
         service.asRMap(myObject).expire(Duration.ofSeconds(1));
         Thread.sleep(2000);
-        assertFalse(service.asLiveObject(myObject).isExists());
         assertThat(redisson.getKeys().count()).isZero();
 
         redisson.shutdown();

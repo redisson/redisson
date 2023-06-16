@@ -33,6 +33,7 @@ import org.redisson.api.annotation.*;
 import org.redisson.api.condition.Condition;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.Convertor;
 import org.redisson.client.protocol.decoder.ListMultiDecoder2;
 import org.redisson.client.protocol.decoder.ListScanResult;
@@ -65,7 +66,6 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     private final ConcurrentMap<Class<?>, Class<?>> classCache;
     private final CommandAsyncExecutor commandExecutor;
     private final LiveObjectSearch seachEngine;
-    private static final AtomicBoolean LISTENER_LATCH = new AtomicBoolean();
 
     public RedissonLiveObjectService(ConcurrentMap<Class<?>, Class<?>> classCache,
                                      CommandAsyncExecutor commandExecutor) {
@@ -73,7 +73,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         this.commandExecutor = commandExecutor;
         this.seachEngine = new LiveObjectSearch(commandExecutor);
 
-        if (LISTENER_LATCH.compareAndSet(false, true)) {
+        if (commandExecutor.getServiceManager().getLiveObjectLatch().compareAndSet(false, true)) {
             RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:expired");
             topic.addListenerAsync(String.class, (pattern, channel, msg) -> {
                 if (msg.contains("redisson_live_object:")) {
@@ -617,6 +617,8 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         String mapName = namingScheme.getName(entityClass, id);
         Object liveObjectId = namingScheme.resolveId(mapName);
 
+        deleteCollections(id, entityClass, ce);
+
         RMap<String, Object> liveMap = new RedissonMap<>(namingScheme.getCodec(), commandExecutor,
                                                 mapName, null, null, null);
         Map<String, ?> values = liveMap.getAll(fieldNames);
@@ -642,6 +644,8 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         CommandBatchService ce = new CommandBatchService(commandExecutor);
         FieldList<InDefinedShape> fields = Introspectior.getFieldsWithAnnotation(entityClass, RIndex.class);
 
+        deleteCollections(id, entityClass, ce);
+
         NamingScheme namingScheme = commandExecutor.getObjectBuilder().getNamingScheme(entityClass);
         String mapName = namingScheme.getName(entityClass, id);
         Object liveObjectId = namingScheme.resolveId(mapName);
@@ -659,6 +663,21 @@ public class RedissonLiveObjectService implements RLiveObjectService {
             }
         }
         ce.execute();
+    }
+
+    private void deleteCollections(Object id, Class<?> entityClass, CommandBatchService ce) {
+        for (InDefinedShape field : Introspectior.getAllFields(entityClass)) {
+            try {
+                Field f = ClassUtils.getDeclaredField(entityClass, field.getName());
+                RObject rObject = commandExecutor.getObjectBuilder().createObject(id, entityClass, f.getType(), field.getName());
+                if (rObject != null) {
+                    RedissonObject ro = (RedissonObject) rObject;
+                    ce.writeAsync(ro.getRawName(), RedisCommands.DEL, ro.getRawName());
+                }
+            } catch (NoSuchFieldException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     public RFuture<Long> delete(Object id, Class<?> entityClass, NamingScheme namingScheme, CommandBatchService ce) {

@@ -58,6 +58,7 @@ import java.net.UnknownHostException;
 import java.security.MessageDigest;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
@@ -432,4 +433,9 @@ public class ServiceManager {
         return id;
     }
 
+    private final AtomicBoolean liveObjectLatch = new AtomicBoolean();
+
+    public AtomicBoolean getLiveObjectLatch() {
+        return liveObjectLatch;
+    }
 }
