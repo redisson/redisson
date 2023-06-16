@@ -82,6 +82,9 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
                         "for j = 2, #ARGV, 1 do " +
                             "size = size + redis.call('srem', name, ARGV[j]); " +
                         "end; " +
+                        "if redis.call('exists', name) == 0 then " +
+                            "redis.call('hdel', KEYS[1], keys[i-1]); " +
+                        "end; " +
                     "end;" +
                 "end; " +
                 "return 0; ",

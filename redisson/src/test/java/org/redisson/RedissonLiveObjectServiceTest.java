@@ -1721,7 +1721,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         service.asRMap(myObject).expire(Duration.ofSeconds(1));
         Thread.sleep(2000);
         assertFalse(service.asLiveObject(myObject).isExists());
-        assertThat(redisson.getKeys().count()).isEqualTo(1);
+        assertThat(redisson.getKeys().count()).isZero();
 
         redisson.shutdown();
         instance.stop();
