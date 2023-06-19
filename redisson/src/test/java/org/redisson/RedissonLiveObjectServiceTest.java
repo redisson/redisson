@@ -411,6 +411,20 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     }
 
     @Test
+    public void testIndexRemoval() {
+        RLiveObjectService liveObjectService = redisson.getLiveObjectService();
+        TestIndexed item1 = new TestIndexed("1");
+        item1.setName1("testnma");
+        item1.setName2("gfgfgf");
+        item1.setNum1(123);
+        liveObjectService.persist(item1);
+        assertThat(redisson.getKeys().count()).isEqualTo(7);
+
+        liveObjectService.delete(TestIndexed.class, "1");
+        assertThat(redisson.getKeys().count()).isEqualTo(0);
+    }
+
+    @Test
     public void testFindIn() {
         RLiveObjectService s = redisson.getLiveObjectService();
         TestIndexed t1 = new TestIndexed("1");

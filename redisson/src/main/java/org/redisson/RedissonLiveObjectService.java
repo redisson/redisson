@@ -598,7 +598,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     @Override
     public <T> long delete(Class<T> entityClass, Object... ids) {
         CommandBatchService ce = new CommandBatchService(commandExecutor);
-        FieldList<InDefinedShape> fields = Introspectior.getFieldsWithAnnotation(entityClass.getSuperclass(), RIndex.class);
+        FieldList<InDefinedShape> fields = Introspectior.getFieldsWithAnnotation(entityClass, RIndex.class);
         Set<String> fieldNames = fields.stream().map(f -> f.getName()).collect(Collectors.toSet());
 
         NamingScheme namingScheme = commandExecutor.getObjectBuilder().getNamingScheme(entityClass);
