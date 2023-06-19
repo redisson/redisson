@@ -2,7 +2,7 @@
 
 Integrates Redisson with Spring Boot library. Depends on [Spring Data Redis](https://github.com/redisson/redisson/tree/master/redisson-spring-data#spring-data-redis-integration) module.
 
-Supports Spring Boot 1.3.x - 3.0.x
+Supports Spring Boot 1.3.x - 3.1.x
 
 ## Usage
 
@@ -14,14 +14,14 @@ Maven
      <dependency>
          <groupId>org.redisson</groupId>
          <artifactId>redisson-spring-boot-starter</artifactId>
-         <version>3.22.0</version>
+         <version>3.22.1</version>
      </dependency>
 ```
 
 Gradle
 
 ```groovy
-     compile 'org.redisson:redisson-spring-boot-starter:3.22.0'
+     compile 'org.redisson:redisson-spring-boot-starter:3.22.1'
 ```
 
 
