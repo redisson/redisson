@@ -3,6 +3,26 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 19-Jun-2023 - 3.22.1 released
+Feature - Apache Tomcat Manager should use sharded pubsub in Redis Cluster 7.0+  
+Feature - Micronaut Session store should use sharded pubsub in Redis Cluster 7.0+  
+Feature - `maxDeletedEntryId`, `entriesAdded`, `recordedFirstEntryId` properties added to `StreamInfo` object  
+Feature - `inactive` property added to `StreamConsumer` object  
+Feature - `LocalCachedMapOptions.cacheSize = -1` should disable local cache storage  
+
+__Breaking change - Apache Tomcat Manager and Micronaut Session store now use sharded PubSub in Redis Cluster 7.0+__  
+
+Fixed - map index entry isn't deleted when `RLiveObjectService` expires  
+Fixed - `RMultimap.fastRemoveValue()` method doesn't delete entry completely if no values retain  
+Fixed - Default getCache method checks for Object class equality (thanks @agupta-hw)  
+Fixed - `RScoredSortedSet.distributedIterator()` doesn't work (regression since 3.21.0)  
+Fixed - Memory leak if `RLocalCachedMap` created with `storeMode=LOCALCACHE` and `syncStrategy=UPDATE` params  
+Fixed - wait time handling in RedissonSpinLock (thanks @vladimirkl)  
+Fixed - java.lang.ClassCastException is thrown by RDequeReactive.pollLast() and RDequeReactive.pollFirst() methods (thanks @wynn5a)  
+Fixed - `RSearch.search()` method throws "Parameters must be specified in PARAM VALUE pairs" error  
+Fixed - `RRateLimiter.setRate()` method does not behave as expected when RateType is pre_client (thanks @wynn5a)  
+Fixed - collection fields aren't deleted when `RLiveObject` expires or is deleted  
+
 ### 05-Jun-2023 - 3.22.0 released
 Feature - Spring Data Redis 3.1.0 implementation  
 Feature - Spring Boot 3.1.0 support  
