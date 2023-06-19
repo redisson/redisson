@@ -71,8 +71,6 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     private Comparator comparator = Comparator.naturalOrder();
 
-    CommandAsyncExecutor commandExecutor;
-    
     private RLock lock;
     private RedissonList<V> list;
     private RBucket<String> comparatorHolder;
@@ -80,7 +78,6 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     protected RedissonSortedSet(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name);
-        this.commandExecutor = commandExecutor;
         this.redisson = redisson;
 
         comparatorHolder = redisson.getBucket(getComparatorKeyName(), StringCodec.INSTANCE);
@@ -90,7 +87,6 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     public RedissonSortedSet(Codec codec, CommandAsyncExecutor commandExecutor, String name, Redisson redisson) {
         super(codec, commandExecutor, name);
-        this.commandExecutor = commandExecutor;
 
         comparatorHolder = redisson.getBucket(getComparatorKeyName(), StringCodec.INSTANCE);
         lock = redisson.getLock("redisson_sortedset_lock:{" + getRawName() + "}");
