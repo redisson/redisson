@@ -6,6 +6,7 @@ Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and
 ### 19-Jun-2023 - 3.22.1 released
 Feature - Apache Tomcat Manager should use sharded pubsub in Redis Cluster 7.0+  
 Feature - Micronaut Session store should use sharded pubsub in Redis Cluster 7.0+  
+Feature - RClusteredScoredSortedSet object implemented  
 Feature - `maxDeletedEntryId`, `entriesAdded`, `recordedFirstEntryId` properties added to `StreamInfo` object  
 Feature - `inactive` property added to `StreamConsumer` object  
 Feature - `LocalCachedMapOptions.cacheSize = -1` should disable local cache storage  
