@@ -339,7 +339,8 @@ public class RedisExecutor<V, R> {
 
         if (!future.isSuccess()) {
             exception = new WriteRedisConnectionException(
-                    "Unable to write command into connection! Increase connection pool size. Node source: " + source + ", connection: " + connection +
+                    "Unable to write command into connection! Increase nettyThreads setting. Node source: "
+                    + source + ", connection: " + connection +
                     ", command: " + LogHelper.toString(command, params)
                     + " after " + attempt + " retry attempts", future.cause());
             if (attempt == attempts) {
