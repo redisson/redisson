@@ -154,14 +154,13 @@ public class CommandPubSubDecoder extends CommandDecoder {
                         channelName = ((PubSubPatternMessage) result).getPattern();
                     }
                     PubSubEntry entry = entries.remove(channelName);
-                    if (config.isKeepAlive()) {
+                    if (config.isKeepPubSubOrder()) {
                         enqueueMessage(result, pubSubConnection, entry);
                     }
                 }
             }
-            
-            
-            if (config.isKeepAlive()) {
+
+            if (config.isKeepPubSubOrder()) {
                 if (result instanceof PubSubPatternMessage) {
                     channelName = ((PubSubPatternMessage) result).getPattern();
                 }
