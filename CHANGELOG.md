@@ -92,6 +92,7 @@ Fixed - Unable to find session error arise if Tomcat session was deleted or expi
 Fixed - `MasterSlaveEntry.getClient()` method may throw NPE  
 Fixed - initialize Decoders LinkedHashMap with correct initial size to avoid unnecessary resizing (thanks @theigl)  
 Fixed - failover handling may cause temporary connections spike  
+Fixed - `RedissonCache.invalidate()` method breaks cache configuration  
 
 ### 28-Mar-2023 - 3.20.1 released
 
