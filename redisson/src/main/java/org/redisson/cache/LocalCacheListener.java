@@ -76,8 +76,10 @@ public abstract class LocalCacheListener {
 
     private final Map<Integer, LocalCacheUpdateListener<?, ?>> updateListeners = new ConcurrentHashMap<>();
 
+    private boolean isSharded;
+
     public LocalCacheListener(String name, CommandAsyncExecutor commandExecutor,
-            RObject object, Codec codec, LocalCachedMapOptions<?, ?> options, long cacheUpdateLogTime) {
+            RObject object, Codec codec, LocalCachedMapOptions<?, ?> options, long cacheUpdateLogTime, boolean isSharded) {
         super();
         this.name = name;
         this.commandExecutor = commandExecutor;
@@ -85,6 +87,7 @@ public abstract class LocalCacheListener {
         this.codec = codec;
         this.options = options;
         this.cacheUpdateLogTime = cacheUpdateLogTime;
+        this.isSharded = isSharded;
 
         instanceId = commandExecutor.getServiceManager().generateIdArray();
     }
@@ -138,8 +141,12 @@ public abstract class LocalCacheListener {
     
     public void add(Map<CacheKey, ? extends CacheValue> cache) {
         this.cache = cache;
-        
-        invalidationTopic = RedissonTopic.createRaw(LocalCachedMessageCodec.INSTANCE, commandExecutor, getInvalidationTopicName());
+
+        if (isSharded) {
+            invalidationTopic = new RedissonShardedTopic(LocalCachedMessageCodec.INSTANCE, commandExecutor, getInvalidationTopicName());
+        } else {
+            invalidationTopic = RedissonTopic.createRaw(LocalCachedMessageCodec.INSTANCE, commandExecutor, getInvalidationTopicName());
+        }
 
         RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:expired");
         expireListenerId = topic.addListener(String.class, (pattern, channel, msg) -> {
