@@ -1,10 +1,13 @@
 package org.redisson;
 
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.NatMapper;
+import org.redisson.api.RShardedTopic;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
+import org.redisson.client.RedisException;
 import org.redisson.config.Config;
 import org.redisson.connection.balancer.RandomLoadBalancer;
 import org.redisson.misc.RedisURI;
@@ -13,6 +16,7 @@ import org.testcontainers.containers.startupcheck.MinimumDurationRunningStartupC
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -28,6 +32,27 @@ public class RedissonShardedTopicTest {
                     .withStartupCheckStrategy(
                             new MinimumDurationRunningStartupCheckStrategy(Duration.ofSeconds(6))
                     );
+
+    @Test
+    public void testInvalidCommand() throws IOException, InterruptedException {
+        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner.RedisProcess p = master1.run();
+
+        Config config = new Config();
+        config.useSingleServer().setAddress(p.getRedisServerAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+
+        RShardedTopic t = redisson.getShardedTopic("ttt");
+        RedisException e = Assertions.assertThrows(RedisException.class, () -> {
+            t.addListener(String.class, (channel, msg) -> {
+            });
+        });
+        assertThat(e.getMessage()).contains("ERR unknown command `SSUBSCRIBE`");
+
+        redisson.shutdown();
+        p.stop();
+    }
+
     @Test
     public void testClusterSharding() {
         Config config = new Config();

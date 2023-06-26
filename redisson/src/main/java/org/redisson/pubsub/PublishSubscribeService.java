@@ -114,6 +114,8 @@ public class PublishSubscribeService {
 
     private boolean shardingSupported = false;
 
+    private final Map<PubSubType, PubSubType> subscribe2unsubscribe = new HashMap<>();
+
     public PublishSubscribeService(ConnectionManager connectionManager) {
         super();
         this.connectionManager = connectionManager;
@@ -121,6 +123,10 @@ public class PublishSubscribeService {
         for (int i = 0; i < locks.length; i++) {
             locks[i] = new AsyncSemaphore(1);
         }
+
+        subscribe2unsubscribe.put(PubSubType.SUBSCRIBE, PubSubType.UNSUBSCRIBE);
+        subscribe2unsubscribe.put(PubSubType.SSUBSCRIBE, PubSubType.SUNSUBSCRIBE);
+        subscribe2unsubscribe.put(PubSubType.PSUBSCRIBE, PubSubType.PUNSUBSCRIBE);
     }
 
     public LockPubSub getLockPubSub() {
@@ -379,7 +385,8 @@ public class PublishSubscribeService {
             CompletableFuture<PubSubConnectionEntry> pp = new CompletableFuture<>();
             pp.whenComplete((r, e) -> {
                 if (e != null) {
-                    CompletableFuture<Codec> f = unsubscribe(channelName, type);
+                    PubSubType unsubscribeType = subscribe2unsubscribe.get(type);
+                    CompletableFuture<Codec> f = unsubscribe(channelName, unsubscribeType);
                     f.whenComplete((rr, ee) -> {
                         promise.completeExceptionally(e);
                     });
@@ -483,7 +490,8 @@ public class PublishSubscribeService {
                 CompletableFuture<PubSubConnectionEntry> pp = new CompletableFuture<>();
                 pp.whenComplete((r, e) -> {
                     if (e != null) {
-                        CompletableFuture<Codec> f = unsubscribe(channelName, type);
+                        PubSubType unsubscribeType = subscribe2unsubscribe.get(type);
+                        CompletableFuture<Codec> f = unsubscribe(channelName, unsubscribeType);
                         f.whenComplete((rr, ee) -> {
                             promise.completeExceptionally(e);
                         });

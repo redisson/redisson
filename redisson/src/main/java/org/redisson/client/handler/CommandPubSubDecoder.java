@@ -111,16 +111,38 @@ public class CommandPubSubDecoder extends CommandDecoder {
 
     @Override
     protected void onError(Channel channel, String error) {
-        if (error.contains("unknown command") && error.contains("SSUBSCRIBE")) {
-            commands.keySet().stream()
-                                .filter(v -> v.getOperation().equalsIgnoreCase(RedisCommands.SSUBSCRIBE.getName()))
-                                .forEach(v -> {
-                                    CommandData<Object, Object> dd = commands.get(v);
-                                    dd.getPromise().completeExceptionally(new RedisException(error));
-                                });
-        } else {
-            super.onError(channel, error);
+        if (error.contains("unknown command")) {
+            Set<String> cmds = new HashSet<>(RedisCommands.PUBSUB_COMMANDS);
+            cmds.remove(RedisCommands.SUBSCRIBE.getName());
+            cmds.remove(RedisCommands.UNSUBSCRIBE.getName());
+
+            String cmd = null;
+            for (String value : cmds) {
+                if (error.contains(value)) {
+                    cmd = value;
+                    break;
+                }
+            }
+            if (cmd == null) {
+                if (error.contains(RedisCommands.UNSUBSCRIBE.getName())) {
+                    cmd = RedisCommands.UNSUBSCRIBE.getName();
+                } else if (error.contains(RedisCommands.SUBSCRIBE.getName())) {
+                    cmd = RedisCommands.SUBSCRIBE.getName();
+                }
+            }
+
+            if (cmd != null) {
+                String c = cmd;
+                commands.keySet().stream()
+                        .filter(v -> v.getOperation().equalsIgnoreCase(c))
+                        .forEach(v -> {
+                            CommandData<Object, Object> dd = commands.get(v);
+                            dd.getPromise().completeExceptionally(new RedisException(error));
+                        });
+            }
+            return;
         }
+        super.onError(channel, error);
     }
 
     @Override
