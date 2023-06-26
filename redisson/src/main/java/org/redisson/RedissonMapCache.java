@@ -369,6 +369,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
                             // last access time
                             + "local maxSize = tonumber(redis.call('hget', KEYS[7], 'max-size')); " +
+                              "local hasListeners = redis.call('hget', KEYS[7], 'has-listeners'); " +
                             "if maxSize ~= nil and maxSize ~= 0 then " +
                             "    local currentTime = tonumber(ARGV[1]); " +
                             "    local lastAccessTimeSetName = KEYS[5]; " +
@@ -388,7 +389,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             "                redis.call('zrem', KEYS[2], lruItem); " +
                             "                redis.call('zrem', KEYS[3], lruItem); " +
                             "                redis.call('zrem', lastAccessTimeSetName, lruItem); " +
-                            "                if lruItemValue ~= false then " +
+                            "                if lruItemValue ~= false and hasListeners ~= false then " +
                                 "                local removedChannelName = KEYS[6]; " +
                                                 "local ttl, obj = struct.unpack('dLc0', lruItemValue);" +
                             "                    local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(obj), obj);" +
@@ -408,8 +409,10 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "local val = struct.pack('dLc0', tonumber(ARGV[4]), string.len(ARGV[6]), ARGV[6]); "
                             + "redis.call('hset', KEYS[1], ARGV[5], val); "
 
-                            + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[5]), ARGV[5], string.len(ARGV[6]), ARGV[6]); "
-                            + "redis.call('publish', KEYS[4], msg); "
+                            + "if hasListeners ~= false then "
+                                + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[5]), ARGV[5], string.len(ARGV[6]), ARGV[6]); "
+                                + "redis.call('publish', KEYS[4], msg); "
+                            + "end; "
 
                             + "return nil; "
                         + "else "
@@ -451,6 +454,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "return 0; "
                         + "end; "
 
+                        + "local hasListeners = redis.call('hget', KEYS[6], 'has-listeners'); "
                         + "if val == ARGV[3] then "
                             + "redis.call('zrem', KEYS[2], ARGV[2]); "
                             + "redis.call('zrem', KEYS[3], ARGV[2]); "
@@ -459,8 +463,11 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                                 "   redis.call('zrem', KEYS[5], ARGV[2]); " +
                                 "end; "
                             + "redis.call('hdel', KEYS[1], ARGV[2]); "
-                            + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(val), val); "
-                            + "redis.call('publish', KEYS[4], msg); "
+
+                            + "if hasListeners ~= false then "
+                                + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(val), val); "
+                                + "redis.call('publish', KEYS[4], msg); "
+                            + "end; "
                             + "return 1; "
                         + "else "
                             + "return 0; "
@@ -548,6 +555,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 "local lastAccessTimeSetName = KEYS[6];" +
                 "local maxSize = tonumber(redis.call('hget', KEYS[8], 'max-size'));" +
                 "local mode = redis.call('hget', KEYS[8], 'mode'); " +
+                "local hasListeners = redis.call('hget', KEYS[8], 'has-listeners'); " +
                 "if exists == false then" +
                 "    if maxSize ~= nil and maxSize ~= 0 then " +
                         "if mode == false or mode == 'LRU' then " +
@@ -563,7 +571,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 "                    redis.call('zrem', KEYS[2], lruItem);" +
                 "                    redis.call('zrem', KEYS[3], lruItem);" +
                 "                    redis.call('zrem', lastAccessTimeSetName, lruItem);" +
-                "                    if lruItemValue ~= false then " +
+                "                    if lruItemValue ~= false and hasListeners ~= false then " +
                     "                    local removedChannelName = KEYS[7];" +
                                         "local ttl, obj = struct.unpack('dLc0', lruItemValue);" +
                     "                    local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(obj), obj);" +
@@ -576,8 +584,10 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             "redis.call('zincrby', lastAccessTimeSetName, 1, ARGV[2]); " +
                         "end; " +
                 "    end;" +
-                "    local msg = struct.pack('Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3]);" +
-                "    redis.call('publish', KEYS[4], msg);" +
+                    "if hasListeners ~= false then " +
+                       "local msg = struct.pack('Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3]);" +
+                       "redis.call('publish', KEYS[4], msg);" +
+                    "end; " +
                 "    return nil;" +
                 "else" +
                 "    if maxSize ~= nil and maxSize ~= 0 then " +
@@ -590,8 +600,10 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 "end;" +
                 "" +
                 "local t, val = struct.unpack('dLc0', v);" +
-                "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3], string.len(val), val);" +
-                "redis.call('publish', KEYS[5], msg);" +
+                "if hasListeners ~= false then " +
+                    "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3], string.len(val), val);" +
+                    "redis.call('publish', KEYS[5], msg);" +
+                "end; " +
                 "return val;",
                 Arrays.asList(name, getTimeoutSetName(name), getIdleSetName(name), getCreatedChannelName(name),
                         getUpdatedChannelName(name), getLastAccessTimeSetName(name), getRemovedChannelName(name), getOptionsName(name)),
@@ -640,6 +652,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         + "local newValue = struct.pack('dLc0', 0, string.len(ARGV[3]), ARGV[3]); "
                         + "redis.call('hset', KEYS[1], ARGV[2], newValue); "
 
+                        + "local hasListeners = redis.call('hget', KEYS[7], 'has-listeners'); "
                         // last access time
                         + "if maxSize ~= nil and maxSize ~= 0 then " +
                             "local mode = redis.call('hget', KEYS[7], 'mode'); " +
@@ -658,7 +671,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "                redis.call('zrem', KEYS[2], lruItem); " +
                         "                redis.call('zrem', KEYS[3], lruItem); " +
                         "                redis.call('zrem', lastAccessTimeSetName, lruItem); " +
-                        "                if lruItemValue ~= false then " +
+                        "                if lruItemValue ~= false and hasListeners ~= false then " +
                             "                local removedChannelName = KEYS[6]; " +
                                             "local ttl, obj = struct.unpack('dLc0', lruItemValue);" +
                             "                local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(obj), obj);" +
@@ -674,8 +687,10 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
                         "end; "
 
-                        + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3], string.len(val), val); "
-                        + "redis.call('publish', KEYS[4], msg); "
+                        + "if hasListeners ~= false then "
+                            + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3], string.len(val), val); "
+                            + "redis.call('publish', KEYS[4], msg); "
+                        + "end; "
                         + "return val;",
                 Arrays.<Object>asList(name, getTimeoutSetName(name), getIdleSetName(name), getUpdatedChannelName(name),
                         getLastAccessTimeSetName(name), getRemovedChannelName(name), getOptionsName(name)),
@@ -719,6 +734,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         + "local value = struct.pack('dLc0', 0, string.len(ARGV[3]), ARGV[3]); "
                         + "redis.call('hset', KEYS[1], ARGV[2], value); "
 
+                        + "local hasListeners = redis.call('hget', KEYS[7], 'has-listeners'); "
                         // last access time
                         + "if maxSize ~= nil and maxSize ~= 0 then " +
                             "local mode = redis.call('hget', KEYS[7], 'mode'); " +
@@ -737,7 +753,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "                redis.call('zrem', KEYS[2], lruItem); " +
                         "                redis.call('zrem', KEYS[3], lruItem); " +
                         "                redis.call('zrem', lastAccessTimeSetName, lruItem); " +
-                        "                if lruItemValue ~= false then " +
+                        "                if lruItemValue ~= false and hasListeners ~= false then " +
                             "                local removedChannelName = KEYS[6]; " +
                                             "local ttl, obj = struct.unpack('dLc0', lruItemValue);" +
                             "                local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(obj), obj);" +
@@ -753,8 +769,10 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
                         "end; "
 
-                        + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3]); "
-                        + "redis.call('publish', KEYS[4], msg); "
+                        + "if hasListeners ~= false then "
+                            + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3]); "
+                            + "redis.call('publish', KEYS[4], msg); "
+                        + "end; "
                         + "return nil;",
                 Arrays.<Object>asList(name, getTimeoutSetName(name), getIdleSetName(name), getCreatedChannelName(name),
                         getLastAccessTimeSetName(name), getRemovedChannelName(name), getOptionsName(name)),
@@ -813,18 +831,23 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "end; "
                         + "end; "
 
+                        + "local hasListeners = redis.call('hget', KEYS[8], 'has-listeners'); "
                         + "local newValue; "
                         + "if value ~= false and expireDate > tonumber(ARGV[1]) then "
                             + "redis.call('hset', KEYS[1], 'temp_val__redisson', val); "
                             + "newValue = redis.call('hincrbyfloat', KEYS[1], 'temp_val__redisson', ARGV[3]); "
                             + "redis.call('hdel', KEYS[1], 'temp_val__redisson'); "
 
-                            + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(newValue), newValue, string.len(val), val); "
-                            + "redis.call('publish', KEYS[5], msg); "
+                            + "if hasListeners ~= false then "
+                                + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(newValue), newValue, string.len(val), val); "
+                                + "redis.call('publish', KEYS[5], msg); "
+                            + "end;"
                         + "else "
                             + "newValue = ARGV[3]; "
-                            + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3]); "
-                            + "redis.call('publish', KEYS[4], msg); "
+                            + "if hasListeners ~= false then "
+                                + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3]); "
+                                + "redis.call('publish', KEYS[4], msg); "
+                            + "end;"
                         + "end; "
                         + "local newValuePack = struct.pack('dLc0', t, string.len(newValue), newValue); "
                         + "redis.call('hset', KEYS[1], ARGV[2], newValuePack); "
@@ -851,7 +874,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "                redis.call('zrem', KEYS[2], lruItem); " +
                         "                redis.call('zrem', KEYS[3], lruItem); " +
                         "                redis.call('zrem', lastAccessTimeSetName, lruItem); " +
-                        "                if lruItemValue ~= false then " +                        
+                        "                if lruItemValue ~= false and hasListeners ~= false then " +
                             "                local removedChannelName = KEYS[7]; " +
                                             "local ttl, obj = struct.unpack('dLc0', lruItemValue);" +
                             "                local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(obj), obj);" +
@@ -970,6 +993,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "redis.call('zrem', KEYS[3], ARGV[5]); "
                         + "end; " +
 
+                        "local hasListeners = redis.call('hget', KEYS[8], 'has-listeners'); " +
+
                         // last access time
                         "local maxSize = tonumber(redis.call('hget', KEYS[8], 'max-size')); " +
                         "local mode = redis.call('hget', KEYS[8], 'mode'); " +
@@ -991,7 +1016,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "                redis.call('zrem', KEYS[2], lruItem); " +
                         "                redis.call('zrem', KEYS[3], lruItem); " +
                         "                redis.call('zrem', lastAccessTimeSetName, lruItem); " +
-                        "                if lruItemValue ~= false then " +
+                        "                if lruItemValue ~= false and hasListeners ~= false then " +
                             "                local removedChannelName = KEYS[7]; " +
                                             "local ttl, obj = struct.unpack('dLc0', lruItemValue);" +
                             "                local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(obj), obj);" +
@@ -1009,12 +1034,16 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         + "local value = struct.pack('dLc0', ARGV[4], string.len(ARGV[6]), ARGV[6]); "
                         + "redis.call('hset', KEYS[1], ARGV[5], value); "
                         + "if insertable == true then "
-                            + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[5]), ARGV[5], string.len(ARGV[6]), ARGV[6]); "
-                            + "redis.call('publish', KEYS[4], msg); "
+                            + "if hasListeners ~= false then "
+                                + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[5]), ARGV[5], string.len(ARGV[6]), ARGV[6]); "
+                                + "redis.call('publish', KEYS[4], msg); "
+                            + "end; "
                             + "return 1;"
                         + "else "
-                            + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[5]), ARGV[5], string.len(ARGV[6]), ARGV[6], string.len(val), val); "
-                            + "redis.call('publish', KEYS[5], msg); "
+                            + "if hasListeners ~= false then "
+                                + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[5]), ARGV[5], string.len(ARGV[6]), ARGV[6], string.len(val), val); "
+                                + "redis.call('publish', KEYS[5], msg); "
+                            + "end; "
                             + "return 0;"
                         + "end;",
                 Arrays.<Object>asList(name, getTimeoutSetName(name), getIdleSetName(name), getCreatedChannelName(name),
@@ -1192,6 +1221,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "redis.call('zrem', KEYS[3], ARGV[5]); "
                         + "end; "
 
+                        + "local hasListeners = redis.call('hget', KEYS[8], 'has-listeners'); "
                         // last access time
                         + "local maxSize = tonumber(redis.call('hget', KEYS[8], 'max-size')); " +
                         "if maxSize ~= nil and maxSize ~= 0 then " +
@@ -1213,7 +1243,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "                redis.call('zrem', KEYS[2], lruItem); " +
                         "                redis.call('zrem', KEYS[3], lruItem); " +
                         "                redis.call('zrem', lastAccessTimeSetName, lruItem); " +
-                                       " if lruItemValue ~= false then " +
+                                        "if lruItemValue ~= false and hasListeners ~= false then  " +
                             "                local removedChannelName = KEYS[7]; " +
                                             "local ttl, obj = struct.unpack('dLc0', lruItemValue);" +
                             "                local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(obj), obj);" +
@@ -1233,15 +1263,18 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         + "redis.call('hset', KEYS[1], ARGV[5], value); "
 
                         + "if insertable == true then "
-                            + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[5]), ARGV[5], string.len(ARGV[6]), ARGV[6]); "
-                            + "redis.call('publish', KEYS[4], msg); "
+                            + "if hasListeners ~= false then "
+                                + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[5]), ARGV[5], string.len(ARGV[6]), ARGV[6]); "
+                                + "redis.call('publish', KEYS[4], msg); "
+                            + "end;"
                             + "return nil;"
                         + "end; "
 
                         + "local t, val = struct.unpack('dLc0', v); "
-
-                        + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[5]), ARGV[5], string.len(ARGV[6]), ARGV[6], string.len(val), val); "
-                        + "redis.call('publish', KEYS[5], msg); "
+                        + "if hasListeners ~= false then "
+                            + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[5]), ARGV[5], string.len(ARGV[6]), ARGV[6], string.len(val), val); "
+                            + "redis.call('publish', KEYS[5], msg); "
+                        + "end;"
 
                         + "return val",
                 Arrays.asList(name, getTimeoutSetName(name), getIdleSetName(name), getCreatedChannelName(name),
@@ -1497,11 +1530,14 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         + "redis.call('zrem', KEYS[5], ARGV[2]); "
                         + "redis.call('hdel', KEYS[1], ARGV[2]); "
 
-                        + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(val), val); "
-                        + "redis.call('publish', KEYS[4], msg); "
+                        + "local hasListeners = redis.call('hget', KEYS[6], 'has-listeners'); "
+                        + "if hasListeners ~= false then "
+                            + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(val), val); "
+                            + "redis.call('publish', KEYS[4], msg); "
+                        + "end; "
                         + "return val; ",
                 Arrays.asList(name, getTimeoutSetName(name), getIdleSetName(name), getRemovedChannelName(name),
-                        getLastAccessTimeSetName(name)),
+                        getLastAccessTimeSetName(name), getOptionsName(name)),
                 System.currentTimeMillis(), encodeMapKey(key));
     }
 
@@ -1517,13 +1553,17 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         + "end; " +
                         "redis.call('zrem', KEYS[3], unpack(ARGV)); " +
                         "redis.call('zrem', KEYS[2], unpack(ARGV)); " +
-                        "for i, key in ipairs(ARGV) do "
-                        + "local v = redis.call('hget', KEYS[1], key); "
-                        + "if v ~= false then "
-                            + "local t, val = struct.unpack('dLc0', v); "
-                            + "local msg = struct.pack('Lc0Lc0', string.len(key), key, string.len(val), val); "
-                            + "redis.call('publish', KEYS[4], msg); "
-                        + "end; " +
+
+                        "local hasListeners = redis.call('hget', KEYS[6], 'has-listeners'); " +
+                        "if hasListeners ~= false then " +
+                            "for i, key in ipairs(ARGV) do "
+                            + "local v = redis.call('hget', KEYS[1], key); "
+                            + "if v ~= false then "
+                                + "local t, val = struct.unpack('dLc0', v); "
+                                + "local msg = struct.pack('Lc0Lc0', string.len(key), key, string.len(val), val); "
+                                + "redis.call('publish', KEYS[4], msg); "
+                            + "end; " +
+                            "end; " +
                         "end; " +
 
                         "local result = {}; " +
@@ -1532,7 +1572,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "table.insert(result, val); "
                         + "end;"
                         + "return result;",
-                Arrays.asList(getRawName(), getTimeoutSetName(), getIdleSetName(), getRemovedChannelName(), getLastAccessTimeSetName(), getOptionsName()),
+                Arrays.asList(getRawName(), getTimeoutSetName(), getIdleSetName(),
+                        getRemovedChannelName(), getLastAccessTimeSetName(), getOptionsName()),
                 args.toArray());
         return future;
     }
@@ -1554,13 +1595,16 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "redis.call('zrem', KEYS[2], unpack(ARGV, i, math.min(i+4999, table.getn(ARGV)))) "
                         + "end; "
 
-                      + "for i, key in ipairs(ARGV) do "
-                        + "local v = redis.call('hget', KEYS[1], key); "
-                        + "if v ~= false then "
-                            + "local t, val = struct.unpack('dLc0', v); "
-                            + "local msg = struct.pack('Lc0Lc0', string.len(key), key, string.len(val), val); "
-                            + "redis.call('publish', KEYS[4], msg); "
-                        + "end; " +
+                      + "local hasListeners = redis.call('hget', KEYS[6], 'has-listeners'); "
+                      + "if hasListeners ~= false then "
+                          + "for i, key in ipairs(ARGV) do "
+                            + "local v = redis.call('hget', KEYS[1], key); "
+                            + "if v ~= false then "
+                                + "local t, val = struct.unpack('dLc0', v); "
+                                + "local msg = struct.pack('Lc0Lc0', string.len(key), key, string.len(val), val); "
+                                + "redis.call('publish', KEYS[4], msg); "
+                            + "end; " +
+                            "end; " +
                         "end; " +
 
                         "local n = 0;" +
@@ -1569,7 +1613,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                       + "end; "
 
                       + "return n; ",
-                Arrays.asList(getRawName(), getTimeoutSetName(), getIdleSetName(), getRemovedChannelName(), getLastAccessTimeSetName(), getOptionsName()),
+                Arrays.asList(getRawName(), getTimeoutSetName(), getIdleSetName(),
+                        getRemovedChannelName(), getLastAccessTimeSetName(), getOptionsName()),
                 params.toArray());
     }
 
@@ -1784,6 +1829,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "local val = struct.pack('dLc0', 0, string.len(ARGV[3]), ARGV[3]); "
                         + "redis.call('hset', KEYS[1], ARGV[2], val); " +
 
+                        "local hasListeners = redis.call('hget', KEYS[8], 'has-listeners'); " +
+
                         // last access time
                         "local maxSize = tonumber(redis.call('hget', KEYS[8], 'max-size'));" +
                         "if maxSize ~= nil and maxSize ~= 0 then " +
@@ -1803,11 +1850,11 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "                redis.call('zrem', KEYS[2], lruItem); " +
                         "                redis.call('zrem', KEYS[3], lruItem); " +
                         "                redis.call('zrem', lastAccessTimeSetName, lruItem); " +
-                                       " if lruItemValue ~= false then " +
+                                       " if lruItemValue ~= false and hasListeners ~= false then " +
                             "                local removedChannelName = KEYS[7]; " +
                                             "local ttl, obj = struct.unpack('dLc0', lruItemValue);" +
                             "                local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(obj), obj);" +
-                            "                redis.call('publish', removedChannelName, msg); " + 
+                            "                redis.call('publish', removedChannelName, msg); " +
                                         "end; " +
                         "            end; " +
                         "        end; " +
@@ -1820,13 +1867,17 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "end; "
 
                         + "if insertable == true then "
-                            + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3]); "
-                            + "redis.call('publish', KEYS[4], msg); "
+                            + "if hasListeners ~= false then "
+                                + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3]); "
+                                + "redis.call('publish', KEYS[4], msg); "
+                            + "end; "
                             + "return 1;"
                         + "else "
-                            + "local t, val = struct.unpack('dLc0', v); "
-                            + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3], string.len(val), val); "
-                            + "redis.call('publish', KEYS[5], msg); "
+                            + "if hasListeners ~= false then "
+                                + "local t, val = struct.unpack('dLc0', v); "
+                                + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3], string.len(val), val); "
+                                + "redis.call('publish', KEYS[5], msg); "
+                            + "end; "
                             + "return 0;"
                         + "end;",
                 Arrays.asList(getRawName(key), getTimeoutSetName(name), getIdleSetName(name), getCreatedChannelName(name),
@@ -1841,12 +1892,16 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 "local value = redis.call('hget', KEYS[1], ARGV[2]); "
                         + "local lastAccessTimeSetName = KEYS[5]; "
                         + "local maxSize = tonumber(redis.call('hget', KEYS[7], 'max-size')); "
+                        + "local hasListeners = redis.call('hget', KEYS[7], 'has-listeners'); "
                         + "local currentTime = tonumber(ARGV[1]); "
                         + "if value ~= false then "
                             + "local val = struct.pack('dLc0', 0, string.len(ARGV[3]), ARGV[3]); "
                             + "redis.call('hset', KEYS[1], ARGV[2], val); "
-                            + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3]); "
-                            + "redis.call('publish', KEYS[4], msg); "+
+
+                            + "if hasListeners ~= false then "
+                                + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3]); "
+                                + "redis.call('publish', KEYS[4], msg); "
+                            + "end; " +
 
                             // last access time
 
@@ -1865,7 +1920,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             "                redis.call('zrem', KEYS[2], lruItem); " +
                             "                redis.call('zrem', KEYS[3], lruItem); " +
                             "                redis.call('zrem', lastAccessTimeSetName, lruItem); " +
-                                           " if lruItemValue ~= false then " +
+                                           " if lruItemValue ~= false and hasListeners ~= false then " +
                                 "                local removedChannelName = KEYS[6]; " +
                                                 "local ttl, obj = struct.unpack('dLc0', lruItemValue);" +
                                 "                local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(obj), obj);" +
@@ -1897,13 +1952,15 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 "local value = redis.call('hget', KEYS[1], ARGV[2]); "
                         + "local lastAccessTimeSetName = KEYS[5]; "
                         + "local maxSize = tonumber(redis.call('hget', KEYS[7], 'max-size')); "
+                        + "local hasListeners = redis.call('hget', KEYS[7], 'has-listeners'); "
                         + "local currentTime = tonumber(ARGV[1]); "
                         + "if value == false then "
                             + "local val = struct.pack('dLc0', 0, string.len(ARGV[3]), ARGV[3]); "
                             + "redis.call('hset', KEYS[1], ARGV[2], val); "
-                            + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3]); "
-                            + "redis.call('publish', KEYS[4], msg); "+
-
+                            + "if hasListeners ~= false then "
+                                + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3]); "
+                                + "redis.call('publish', KEYS[4], msg); "
+                            + "end; " +
                             // last access time
 
                             "if maxSize ~= nil and maxSize ~= 0 then " +
@@ -1921,7 +1978,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             "                redis.call('zrem', KEYS[2], lruItem); " +
                             "                redis.call('zrem', KEYS[3], lruItem); " +
                             "                redis.call('zrem', lastAccessTimeSetName, lruItem); " +
-                                           " if lruItemValue ~= false then " +
+                                           " if lruItemValue ~= false and hasListeners ~= false then " +
                                 "                local removedChannelName = KEYS[6]; " +
                                                 "local ttl, obj = struct.unpack('dLc0', lruItemValue);" +
                                 "                local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(obj), obj);" +
@@ -1972,8 +2029,10 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         + "local val = struct.pack('dLc0', 0, string.len(ARGV[3]), ARGV[3]); "
                         + "redis.call('hset', KEYS[1], ARGV[2], val); "
 
-                        + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3]); "
-                        + "redis.call('publish', KEYS[4], msg); "
+                        + "if hasListeners ~= false then "
+                            + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3]); "
+                            + "redis.call('publish', KEYS[4], msg); "
+                        + "end; "
                         + "return 1; ",
                 Arrays.asList(name, getTimeoutSetName(name), getIdleSetName(name), getCreatedChannelName(name),
                         getLastAccessTimeSetName(name), getRemovedChannelName(name), getOptionsName(name)),
@@ -2063,6 +2122,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "    else " +
                         "        redis.call('zrem', KEYS[3], ARGV[5]); " +
                         "    end; " +
+
+                            "local hasListeners = redis.call('hget', KEYS[7], 'has-listeners'); " +
                              // last access time
                         "    local maxSize = tonumber(redis.call('hget', KEYS[7], 'max-size')); " +
                         "    if maxSize ~= nil and maxSize ~= 0 then " +
@@ -2084,7 +2145,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "                    redis.call('zrem', KEYS[2], lruItem); " +
                         "                    redis.call('zrem', KEYS[3], lruItem); " +
                         "                    redis.call('zrem', lastAccessTimeSetName, lruItem); " +
-                                           " if lruItemValue ~= false then " +
+                                           " if lruItemValue ~= false and hasListeners ~= false then " +
                             "                    local removedChannelName = KEYS[6]; " +
                                                 "local ttl, obj = struct.unpack('dLc0', lruItemValue);" +
                             "                    local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(obj), obj);" +
@@ -2102,8 +2163,11 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                              // value
                         "    local val = struct.pack('dLc0', ARGV[4], string.len(ARGV[6]), ARGV[6]); " +
                         "    redis.call('hset', KEYS[1], ARGV[5], val); " +
-                        "    local msg = struct.pack('Lc0Lc0', string.len(ARGV[5]), ARGV[5], string.len(ARGV[6]), ARGV[6]); " +
-                        "    redis.call('publish', KEYS[4], msg); " +
+
+                            "if hasListeners ~= false then " +
+                                "local msg = struct.pack('Lc0Lc0', string.len(ARGV[5]), ARGV[5], string.len(ARGV[6]), ARGV[6]); " +
+                                "redis.call('publish', KEYS[4], msg); " +
+                            "end; " +
                         "    return 1; " +
                         "else " +
                         "    return 0; " +
@@ -2144,15 +2208,18 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             "    end; " +
             "end; " +
             "if expireDate > tonumber(ARGV[1]) and val == ARGV[3] then " +
-            "    local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[4]), ARGV[4], string.len(ARGV[3]), ARGV[3]); " +
-            "    redis.call('publish', KEYS[4], msg); " +
-            "" +
+                "local hasListeners = redis.call('hget', KEYS[5], 'has-listeners'); " +
+                "if hasListeners ~= false then " +
+                    "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[4]), ARGV[4], string.len(ARGV[3]), ARGV[3]); " +
+                    "redis.call('publish', KEYS[4], msg); " +
+                "end; " +
+
             "    local value = struct.pack('dLc0', t, string.len(ARGV[4]), ARGV[4]); " +
             "    redis.call('hset', KEYS[1], ARGV[2], value); " +
             "    return 1; " +
             "end; " +
             "return 0; ",
-            Arrays.asList(name, getTimeoutSetName(name), getIdleSetName(name), getUpdatedChannelName(name)),
+            Arrays.asList(name, getTimeoutSetName(name), getIdleSetName(name), getUpdatedChannelName(name), getOptionsName(name)),
             System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(oldValue), encodeMapValue(newValue));
     }
 
@@ -2184,10 +2251,14 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 "end; " +
                 "local value = struct.pack('dLc0', t, string.len(ARGV[3]), ARGV[3]); " +
                 "redis.call('hset', KEYS[1], ARGV[2], value); " +
-                "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3], string.len(val), val); " +
-                "redis.call('publish', KEYS[4], msg); " +
+
+                "local hasListeners = redis.call('hget', KEYS[5], 'has-listeners'); " +
+                "if hasListeners ~= false then " +
+                    "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3], string.len(val), val); " +
+                    "redis.call('publish', KEYS[4], msg); " +
+                "end; " +
                 "return 1; ",
-                Arrays.asList(name, getTimeoutSetName(name), getIdleSetName(name), getUpdatedChannelName(name)),
+                Arrays.asList(name, getTimeoutSetName(name), getIdleSetName(name), getUpdatedChannelName(name), getOptionsName(name)),
                 System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value));
     }
     
@@ -2217,12 +2288,16 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 "if expireDate <= tonumber(ARGV[1]) then " +
                 "    return nil; " +
                 "end; " +
+
+                "local hasListeners = redis.call('hget', KEYS[5], 'has-listeners'); " +
                 "local value = struct.pack('dLc0', t, string.len(ARGV[3]), ARGV[3]); " +
                 "redis.call('hset', KEYS[1], ARGV[2], value); " +
-                "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3], string.len(val), val); " +
-                "redis.call('publish', KEYS[4], msg); " +
+                "if hasListeners ~= false then " +
+                    "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3], string.len(val), val); " +
+                    "redis.call('publish', KEYS[4], msg); " +
+                "end; " +
                 "return val; ",
-                Arrays.asList(name, getTimeoutSetName(name), getIdleSetName(name), getUpdatedChannelName(name)),
+                Arrays.asList(name, getTimeoutSetName(name), getIdleSetName(name), getUpdatedChannelName(name), getOptionsName(name)),
                 System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value));
     }
 
@@ -2263,6 +2338,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "local newvalue = struct.pack('dLc0', 0, string.len(value), value);" +
                         "redis.call('hset', KEYS[1], key, newvalue);" +
 
+                        "local hasListeners = redis.call('hget', KEYS[8], 'has-listeners'); " +
                         "local lastAccessTimeSetName = KEYS[6];" +
                         "if exists == false then" +
                         "    if maxSize ~= nil and maxSize ~= 0 then " +
@@ -2280,7 +2356,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "                    redis.call('zrem', KEYS[2], lruItem);" +
                         "                    redis.call('zrem', KEYS[3], lruItem);" +
                         "                    redis.call('zrem', lastAccessTimeSetName, lruItem);" +
-                                           " if lruItemValue ~= false then " +
+                                           " if lruItemValue ~= false and hasListeners ~= false then " +
                             "                    local removedChannelName = KEYS[7];" +
                                                 "local ttl, obj = struct.unpack('dLc0', lruItemValue);" +
                             "                    local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(obj), obj);" +
@@ -2295,12 +2371,17 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                                 "end; " +
 
                         "    end;" +
-                        "    local msg = struct.pack('Lc0Lc0', string.len(key), key, string.len(value), value);" +
-                        "    redis.call('publish', KEYS[4], msg);" +
+
+                            "if hasListeners ~= false then " +
+                            "    local msg = struct.pack('Lc0Lc0', string.len(key), key, string.len(value), value);" +
+                            "    redis.call('publish', KEYS[4], msg);" +
+                            "end;" +
                         "else " +
-                            "local t, val = struct.unpack('dLc0', v);" +
-                            "local msg = struct.pack('Lc0Lc0Lc0', string.len(key), key, string.len(value), value, string.len(val), val);" +
-                            "redis.call('publish', KEYS[5], msg);" + 
+                            "if hasListeners ~= false then " +
+                                "local t, val = struct.unpack('dLc0', v);" +
+                                "local msg = struct.pack('Lc0Lc0Lc0', string.len(key), key, string.len(value), value, string.len(val), val);" +
+                                "redis.call('publish', KEYS[5], msg);" +
+                            "end; " +
                             
                         "    if maxSize ~= nil and maxSize ~= 0 then " +
                                 "if mode == false or mode == 'LRU' then " +
@@ -2366,6 +2447,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "local newvalue = struct.pack('dLc0', 0, string.len(value), value);" +
                         "redis.call('hset', KEYS[1], key, newvalue);" +
 
+                        "local hasListeners = redis.call('hget', KEYS[8], 'has-listeners'); " +
+
                         "local lastAccessTimeSetName = KEYS[6];" +
                         "if exists == false then" +
                         "    if maxSize ~= nil and maxSize ~= 0 then " +
@@ -2383,7 +2466,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "                    redis.call('zrem', KEYS[2], lruItem);" +
                         "                    redis.call('zrem', KEYS[3], lruItem);" +
                         "                    redis.call('zrem', lastAccessTimeSetName, lruItem);" +
-                                           " if lruItemValue ~= false then " +
+                                           " if lruItemValue ~= false and hasListeners ~= false then " +
                             "                    local removedChannelName = KEYS[7];" +
                                                 "local ttl, obj = struct.unpack('dLc0', lruItemValue);" +
                             "                    local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(obj), obj);" +
@@ -2398,12 +2481,17 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                                 "end; " +
 
                         "    end;" +
-                        "    local msg = struct.pack('Lc0Lc0', string.len(key), key, string.len(value), value);" +
-                        "    redis.call('publish', KEYS[4], msg);" +
+
+                            "if hasListeners ~= false then " +
+                                "local msg = struct.pack('Lc0Lc0', string.len(key), key, string.len(value), value);" +
+                                "redis.call('publish', KEYS[4], msg);" +
+                            "end; " +
                         "else " +
-                            "local t, val = struct.unpack('dLc0', v);" +
-                            "local msg = struct.pack('Lc0Lc0Lc0', string.len(key), key, string.len(value), value, string.len(val), val);" +
-                            "redis.call('publish', KEYS[5], msg);" + 
+                            "if hasListeners ~= false then " +
+                                "local t, val = struct.unpack('dLc0', v);" +
+                                "local msg = struct.pack('Lc0Lc0Lc0', string.len(key), key, string.len(value), value, string.len(val), val);" +
+                                "redis.call('publish', KEYS[5], msg);" +
+                            "end; " +
                             
                         "    if maxSize ~= nil and maxSize ~= 0 then " +
                                 "if mode == false or mode == 'LRU' then " +
@@ -2432,10 +2520,10 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     public RFuture<Integer> addListenerAsync(MapEntryListener listener) {
         Objects.requireNonNull(listener);
 
-        CompletionStage<MapCacheEventCodec.OSType> osTypeFuture = CompletableFuture.completedFuture(osType);
+        CompletionStage<Void> osTypeFuture = CompletableFuture.completedFuture(null);
         if (osType == null) {
             RFuture<Map<String, String>> serverFuture = commandExecutor.readAsync((String) null, StringCodec.INSTANCE, RedisCommands.INFO_SERVER);
-            osTypeFuture = serverFuture.thenApply(res -> {
+            osTypeFuture = serverFuture.thenAccept(res -> {
                 String os = res.get("os");
                 if (os == null || os.contains("Windows")) {
                     osType = BaseEventCodec.OSType.WINDOWS;
@@ -2443,7 +2531,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                     osType = BaseEventCodec.OSType.HPNONSTOP;
                 }
                 topicCodec = new MapCacheEventCodec(codec, osType);
-                return osType;
+            }).thenCompose(r -> {
+                return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.HSET_VOID, getOptionsName(), "has-listeners", 1);
             });
         }
 
