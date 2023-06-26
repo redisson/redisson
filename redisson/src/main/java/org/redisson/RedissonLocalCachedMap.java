@@ -62,7 +62,8 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
 
     private LocalCacheListener listener;
     private LocalCacheView<K, V> localCacheView;
-    
+    private String publishCommand;
+
     public RedissonLocalCachedMap(CommandAsyncExecutor commandExecutor, String name, LocalCachedMapOptions<K, V> options, 
             EvictionScheduler evictionScheduler, RedissonClient redisson, WriteBehindService writeBehindService) {
         super(commandExecutor, name, redisson, options, writeBehindService);
@@ -80,9 +81,10 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         storeMode = options.getStoreMode();
         storeCacheMiss = options.isStoreCacheMiss();
 
+        publishCommand = commandExecutor.getConnectionManager().getSubscribeService().getPublishCommand();
         localCacheView = new LocalCacheView<>(options, this);
         cache = localCacheView.getCache();
-        listener = new LocalCacheListener(getRawName(), commandExecutor, this, codec, options, cacheUpdateLogTime) {
+        listener = new LocalCacheListener(getRawName(), commandExecutor, this, codec, options, cacheUpdateLogTime, getSubscribeService().isShardingSupported()) {
 
             @Override
             protected CacheValue updateCache(ByteBuf keyBuf, ByteBuf valueBuf) throws IOException {
@@ -327,15 +329,15 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                   "local v = redis.call('hget', KEYS[1], ARGV[1]); "
                 + "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); "
                 + "if ARGV[4] == '1' then "
-                    + "redis.call('publish', KEYS[2], ARGV[3]); "
+                    + "redis.call(ARGV[7], KEYS[2], ARGV[3]); "
                 + "end;"
                 + "if ARGV[4] == '2' then "
                     + "redis.call('zadd', KEYS[3], ARGV[5], ARGV[6]);"
-                    + "redis.call('publish', KEYS[2], ARGV[3]); "
+                    + "redis.call(ARGV[7], KEYS[2], ARGV[3]); "
                 + "end;"
                 + "return v; ",
-                Arrays.<Object>asList(getRawName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
-                mapKey, mapValue, msg, invalidateEntryOnChange, System.currentTimeMillis(), entryId);
+                Arrays.asList(getRawName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
+                mapKey, mapValue, msg, invalidateEntryOnChange, System.currentTimeMillis(), entryId, publishCommand);
     }
 
     protected ByteBuf createSyncMessage(ByteBuf mapKey, ByteBuf mapValue, CacheKey cacheKey) {
@@ -362,18 +364,18 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
 
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
                   "if ARGV[4] == '1' then "
-                    + "redis.call('publish', KEYS[2], ARGV[3]); "
+                    + "redis.call(ARGV[7], KEYS[2], ARGV[3]); "
                 + "end;"
                 + "if ARGV[4] == '2' then "
                     + "redis.call('zadd', KEYS[3], ARGV[5], ARGV[6]);"
-                    + "redis.call('publish', KEYS[2], ARGV[3]); "
+                    + "redis.call(ARGV[7], KEYS[2], ARGV[3]); "
                 + "end;"
                 + "if redis.call('hset', KEYS[1], ARGV[1], ARGV[2]) == 0 then "
                   + "return 0; "
                 + "end; "
                 + "return 1; ",
-                Arrays.<Object>asList(getRawName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
-                encodedKey, encodedValue, msg, invalidateEntryOnChange, System.currentTimeMillis(), entryId);
+                Arrays.asList(getRawName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
+                encodedKey, encodedValue, msg, invalidateEntryOnChange, System.currentTimeMillis(), entryId, publishCommand);
     }
     
     @Override
@@ -408,16 +410,16 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 "local v = redis.call('hget', KEYS[1], ARGV[1]); "
                 + "if redis.call('hdel', KEYS[1], ARGV[1]) == 1 then "
                     + "if ARGV[3] == '1' then "
-                        + "redis.call('publish', KEYS[2], ARGV[2]); "
+                        + "redis.call(ARGV[6], KEYS[2], ARGV[2]); "
                     + "end; "
                     + "if ARGV[3] == '2' then "
                         + "redis.call('zadd', KEYS[3], ARGV[4], ARGV[5]);"
-                        + "redis.call('publish', KEYS[2], ARGV[2]); "
+                        + "redis.call(ARGV[6], KEYS[2], ARGV[2]); "
                     + "end;"
                 + "end; "
                 + "return v",
-                Arrays.<Object>asList(getRawName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
-                keyEncoded, msgEncoded, invalidateEntryOnChange, System.currentTimeMillis(), entryId);
+                Arrays.asList(getRawName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
+                keyEncoded, msgEncoded, invalidateEntryOnChange, System.currentTimeMillis(), entryId, publishCommand);
     }
 
     @Override
@@ -427,7 +429,8 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         }
 
             if (invalidateEntryOnChange == 1) {
-                List<Object> params = new ArrayList<Object>(keys.length*2);
+                List<Object> params = new ArrayList<Object>(keys.length*2+1);
+                params.add(publishCommand);
                 for (K k : keys) {
                     ByteBuf keyEncoded = encodeMapKey(k);
                     params.add(keyEncoded);
@@ -439,22 +442,23 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 }
     
                 return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_LIST,
-                                "local result = {}; " + 
-                                "for j = 1, #ARGV, 2 do "
+                                "local result = {}; " +
+                                "for j = 2, #ARGV, 2 do "
                                 + "local val = redis.call('hdel', KEYS[1], ARGV[j]);" 
                                 + "if val == 1 then "
-                                   + "redis.call('publish', KEYS[2], ARGV[j+1]); "
+                                   + "redis.call(ARGV[1], KEYS[2], ARGV[j+1]); "
                                 + "end;"
                                 + "table.insert(result, val);"
                               + "end;"
                               + "return result;",
-                                Arrays.<Object>asList(getRawName(), listener.getInvalidationTopicName()),
+                                Arrays.asList(getRawName(), listener.getInvalidationTopicName()),
                                 params.toArray());            
             }
             
             if (invalidateEntryOnChange == 2) {
                 List<Object> params = new ArrayList<Object>(keys.length*3);
                 params.add(System.currentTimeMillis());
+                params.add(publishCommand);
                 for (K k : keys) {
                     ByteBuf keyEncoded = encodeMapKey(k);
                     params.add(keyEncoded);
@@ -470,16 +474,16 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 
                 return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_LIST,
                                 "local result = {}; " + 
-                                "for j = 2, #ARGV, 3 do "
+                                "for j = 3, #ARGV, 3 do "
                                 + "local val = redis.call('hdel', KEYS[1], ARGV[j]);" 
                                 + "if val == 1 then "
                                     + "redis.call('zadd', KEYS[3], ARGV[1], ARGV[j+2]);"                                
-                                    + "redis.call('publish', KEYS[2], ARGV[j+1]); "
+                                    + "redis.call(ARGV[2], KEYS[2], ARGV[j+1]); "
                                 + "end;"
                                 + "table.insert(result, val);"
                               + "end;"
                               + "return result;",
-                                Arrays.<Object>asList(getRawName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
+                                Arrays.asList(getRawName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
                                 params.toArray());            
             }
     
@@ -522,6 +526,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
 
             if (invalidateEntryOnChange == 1) {
                 List<Object> params = new ArrayList<Object>(keys.length*2);
+                params.add(publishCommand);
                 for (K k : keys) {
                     ByteBuf keyEncoded = encodeMapKey(k);
                     params.add(keyEncoded);
@@ -534,20 +539,21 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
 
                 return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_LONG,
                         "local counter = 0; " + 
-                                "for j = 1, #ARGV, 2 do " 
+                                "for j = 2, #ARGV, 2 do "
                                 + "if redis.call('hdel', KEYS[1], ARGV[j]) == 1 then "
-                                   + "redis.call('publish', KEYS[2], ARGV[j+1]); "
+                                   + "redis.call(ARGV[1], KEYS[2], ARGV[j+1]); "
                                    + "counter = counter + 1;"
                                 + "end;"
                               + "end;"
                               + "return counter;",
-                                Arrays.<Object>asList(getRawName(), listener.getInvalidationTopicName()),
+                                Arrays.asList(getRawName(), listener.getInvalidationTopicName()),
                                 params.toArray());            
             }
             
             if (invalidateEntryOnChange == 2) {
                 List<Object> params = new ArrayList<Object>(keys.length*3);
                 params.add(System.currentTimeMillis());
+                params.add(publishCommand);
                 for (K k : keys) {
                     ByteBuf keyEncoded = encodeMapKey(k);
                     params.add(keyEncoded);
@@ -563,15 +569,15 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 
                 return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_LONG,
                                 "local counter = 0; " + 
-                                "for j = 2, #ARGV, 3 do " 
+                                "for j = 3, #ARGV, 3 do "
                                 + "if redis.call('hdel', KEYS[1], ARGV[j]) == 1 then "
                                     + "redis.call('zadd', KEYS[3], ARGV[1], ARGV[j+2]);"                                
-                                    + "redis.call('publish', KEYS[2], ARGV[j+1]); "
+                                    + "redis.call(ARGV[2], KEYS[2], ARGV[j+1]); "
                                     + "counter = counter + 1;"
                                 + "end;"
                               + "end;"
                               + "return counter;",
-                                Arrays.<Object>asList(getRawName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
+                                Arrays.asList(getRawName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
                                 params.toArray());            
             }
 
@@ -600,12 +606,12 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         ByteBuf msgEncoded = encode(new LocalCachedMapClear(instanceId, getServiceManager().generateIdArray(), false));
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('del', KEYS[1], KEYS[3]) > 0 and ARGV[2] ~= '0' then "
-                + "redis.call('publish', KEYS[2], ARGV[1]); "
+                + "redis.call(ARGV[3], KEYS[2], ARGV[1]); "
                 + "return 1;" 
               + "end; "
               + "return 0;",
-              Arrays.<Object>asList(getRawName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
-              msgEncoded, invalidateEntryOnChange);
+              Arrays.asList(getRawName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
+              msgEncoded, invalidateEntryOnChange, publishCommand);
     }
 
     @Override
@@ -686,6 +692,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         }
 
         List<Object> params = new ArrayList<Object>(map.size()*3);
+        params.add(publishCommand);
         params.add(invalidateEntryOnChange);
         params.add(map.size()*2);
         byte[][] hashes = new byte[map.size()][];
@@ -729,17 +736,18 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         }
 
         RFuture<Void> future = commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
+            "local publishCommand = table.remove(ARGV, 1); " +
                   "for i=3, tonumber(ARGV[2]) + 2, 5000 do "
                     + "redis.call('hmset', KEYS[1], unpack(ARGV, i, math.min(i+4999, tonumber(ARGV[2]) + 2))); "
                 + "end; "
                 + "if ARGV[1] == '1' then "
-                    + "redis.call('publish', KEYS[2], ARGV[#ARGV]); "
+                    + "redis.call(publishCommand, KEYS[2], ARGV[#ARGV]); "
                 + "end;"
                 + "if ARGV[1] == '2' then "
                     + "for i=tonumber(ARGV[2]) + 2 + 1, #ARGV - 1, 5000 do "
                         + "redis.call('zadd', KEYS[3], unpack(ARGV, i, math.min(i+4999, #ARGV - 1))); "
                     + "end; "
-                    + "redis.call('publish', KEYS[2], ARGV[#ARGV]); "
+                    + "redis.call(publishCommand, KEYS[2], ARGV[#ARGV]); "
                 + "end;",
                 Arrays.asList(getRawName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
                 params.toArray());
@@ -761,15 +769,15 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         RFuture<V> future = commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, new RedisCommand<Object>("EVAL", new NumberConvertor(value.getClass())),
                 "local result = redis.call('HINCRBYFLOAT', KEYS[1], ARGV[1], ARGV[2]); "
               + "if ARGV[3] == '1' then "
-                   + "redis.call('publish', KEYS[2], ARGV[4]); "
+                   + "redis.call(ARGV[7], KEYS[2], ARGV[4]); "
               + "end;"
               + "if ARGV[3] == '2' then "
                    + "redis.call('zadd', KEYS[3], ARGV[5], ARGV[6]);"
-                   + "redis.call('publish', KEYS[2], ARGV[4]); "
+                   + "redis.call(ARGV[7], KEYS[2], ARGV[4]); "
               + "end;"
               + "return result; ",
-              Arrays.<Object>asList(getRawName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
-              keyState, new BigDecimal(value.toString()).toPlainString(), invalidateEntryOnChange, msg, System.currentTimeMillis(), entryId);
+              Arrays.asList(getRawName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
+              keyState, new BigDecimal(value.toString()).toPlainString(), invalidateEntryOnChange, msg, System.currentTimeMillis(), entryId, publishCommand);
 
         CompletionStage<V> f = future.thenApply(res -> {
             if (res != null) {
@@ -1023,19 +1031,19 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                     + "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); "
                     
                     + "if ARGV[3] == '1' then "
-                        + "redis.call('publish', KEYS[2], ARGV[4]); "
+                        + "redis.call(ARGV[7], KEYS[2], ARGV[4]); "
                     + "end;"
                     + "if ARGV[3] == '2' then "
                         + "redis.call('zadd', KEYS[3], ARGV[5], ARGV[6]);"
-                        + "redis.call('publish', KEYS[2], ARGV[4]); "
+                        + "redis.call(ARGV[7], KEYS[2], ARGV[4]); "
                     + "end;"
 
                     + "return 1; "
                 + "else "
                     + "return 0; "
                 + "end",
-                Arrays.<Object>asList(name, listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
-                keyState, valueState, invalidateEntryOnChange, msg, System.currentTimeMillis(), entryId);
+                Arrays.asList(name, listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
+                keyState, valueState, invalidateEntryOnChange, msg, System.currentTimeMillis(), entryId, publishCommand);
     }
     
     @Override
@@ -1052,19 +1060,19 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                     + "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); "
                     
                     + "if ARGV[3] == '1' then "
-                        + "redis.call('publish', KEYS[2], ARGV[4]); "
+                        + "redis.call(ARGV[7], KEYS[2], ARGV[4]); "
                     + "end;"
                     + "if ARGV[3] == '2' then "
                         + "redis.call('zadd', KEYS[3], ARGV[5], ARGV[6]);"
-                        + "redis.call('publish', KEYS[2], ARGV[4]); "
+                        + "redis.call(ARGV[7], KEYS[2], ARGV[4]); "
                     + "end;"
 
                     + "return v; "
                 + "else "
                     + "return nil; "
                 + "end",
-                Arrays.<Object>asList(name, listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
-                keyState, valueState, invalidateEntryOnChange, msg, System.currentTimeMillis(), entryId);
+                Arrays.asList(name, listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
+                keyState, valueState, invalidateEntryOnChange, msg, System.currentTimeMillis(), entryId, publishCommand);
     }
     
     @Override
@@ -1106,18 +1114,18 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 "if redis.call('hget', KEYS[1], ARGV[1]) == ARGV[2] then "
                     + "redis.call('hset', KEYS[1], ARGV[1], ARGV[3]); "
                     + "if ARGV[4] == '1' then "
-                        + "redis.call('publish', KEYS[2], ARGV[5]); "
+                        + "redis.call(ARGV[8], KEYS[2], ARGV[5]); "
                     + "end;"
                     + "if ARGV[4] == '2' then "
                         + "redis.call('zadd', KEYS[3], ARGV[6], ARGV[7]);"
-                        + "redis.call('publish', KEYS[2], ARGV[5]); "
+                        + "redis.call(ARGV[8], KEYS[2], ARGV[5]); "
                     + "end;"
                     + "return 1; "
                 + "else "
                     + "return 0; "
                 + "end",
-                Arrays.<Object>asList(name, listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
-                keyState, oldValueState, newValueState, invalidateEntryOnChange, msg, System.currentTimeMillis(), entryId);
+                Arrays.asList(name, listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
+                keyState, oldValueState, newValueState, invalidateEntryOnChange, msg, System.currentTimeMillis(), entryId, publishCommand);
     }
 
     @Override
@@ -1157,18 +1165,18 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('hget', KEYS[1], ARGV[1]) == ARGV[2] then "
                     + "if ARGV[3] == '1' then "
-                        + "redis.call('publish', KEYS[2], ARGV[4]); "
+                        + "redis.call(ARGV[7], KEYS[2], ARGV[4]); "
                     + "end;"
                     + "if ARGV[3] == '2' then "
                         + "redis.call('zadd', KEYS[3], ARGV[5], ARGV[6]);"
-                        + "redis.call('publish', KEYS[2], ARGV[4]); "
+                        + "redis.call(ARGV[7], KEYS[2], ARGV[4]); "
                     + "end;"
                     + "return redis.call('hdel', KEYS[1], ARGV[1]) "
                 + "else "
                     + "return 0 "
                 + "end",
-            Arrays.<Object>asList(name, listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
-            keyState, valueState, invalidateEntryOnChange, msg, System.currentTimeMillis(), entryId);
+            Arrays.asList(name, listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
+            keyState, valueState, invalidateEntryOnChange, msg, System.currentTimeMillis(), entryId, publishCommand);
     }
     
     @Override
