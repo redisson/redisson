@@ -5,10 +5,41 @@ import org.junit.jupiter.api.Test;
 import org.redisson.api.RBloomFilter;
 
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonBloomFilterTest extends BaseTest {
+
+    @Test
+    public void testContainsAll() {
+        RBloomFilter<String> filter = redisson.getBloomFilter("filter");
+        filter.tryInit(100, 0.03);
+
+        List<String> list = Arrays.asList("1", "2", "3");
+        assertThat(filter.contains(list)).isEqualTo(0);
+        assertThat(filter.add(list)).isEqualTo(3);
+        assertThat(filter.contains(list)).isEqualTo(3);
+        assertThat(filter.contains(Arrays.asList("1", "5"))).isEqualTo(1);
+    }
+
+    @Test
+    public void testAddAll() {
+        RBloomFilter<String> filter = redisson.getBloomFilter("filter");
+        filter.tryInit(100, 0.03);
+
+        List<String> list = Arrays.asList("1", "2", "3");
+        assertThat(filter.add(list)).isEqualTo(3);
+        assertThat(filter.add(list)).isZero();
+        assertThat(filter.count()).isEqualTo(3);
+        assertThat(filter.add(Arrays.asList("1", "5"))).isEqualTo(1);
+        assertThat(filter.count()).isEqualTo(4);
+        for (String s : list) {
+            assertThat(filter.contains(s)).isTrue();
+        }
+
+    }
 
     @Test
     public void testFalseProbability1() {
