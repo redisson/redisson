@@ -106,8 +106,14 @@ public class RedissonBloomFilterTest extends BaseTest {
     @Test
     public void test() {
         RBloomFilter<String> filter = redisson.getBloomFilter("filter");
-        filter.tryInit(550000000L, 0.03);
+        filter.tryInit(550000000L, 0.5);
+        test(filter);
+        filter.delete();
+        assertThat(filter.tryInit(550000000L, 0.03)).isTrue();
+        test(filter);
+    }
 
+    private void test(RBloomFilter<String> filter) {
         assertThat(filter.contains("123")).isFalse();
         assertThat(filter.add("123")).isTrue();
         assertThat(filter.contains("123")).isTrue();
