@@ -197,40 +197,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
 
     @Override
     public boolean contains(T object) {
-        long[] hashes = hash(object);
-
-        while (true) {
-            if (size == 0) {
-                readConfig();
-            }
-
-            int hashIterations = this.hashIterations;
-            long size = this.size;
-
-            long[] indexes = hash(hashes[0], hashes[1], hashIterations, size);
-
-            CommandBatchService executorService = new CommandBatchService(commandExecutor);
-            addConfigCheck(hashIterations, size, executorService);
-            RBitSetAsync bs = createBitSet(executorService);
-            for (int i = 0; i < indexes.length; i++) {
-                bs.getAsync(indexes[i]);
-            }
-            try {
-                List<Boolean> result = (List<Boolean>) executorService.execute().getResponses();
-
-                for (Boolean val : result.subList(1, result.size())) {
-                    if (!val) {
-                        return false;
-                    }
-                }
-
-                return true;
-            } catch (RedisException e) {
-                if (e.getMessage() == null || !e.getMessage().contains("Bloom filter config has been changed")) {
-                    throw e;
-                }
-            }
-        }
+        return contains(Arrays.asList(object)) > 0;
     }
 
     protected RBitSetAsync createBitSet(CommandBatchService executorService) {
