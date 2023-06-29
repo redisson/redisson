@@ -469,7 +469,7 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
         List<RLock> locks = Arrays.stream(keys).map(k -> getLock(k)).collect(Collectors.toList());
         return executeLocked(timeout, () -> {
             AtomicLong counter = new AtomicLong();
-            List<K> keyList = Arrays.asList(keys);
+            List<K> keyList = new ArrayList<>(Arrays.asList(keys));
             for (Iterator<K> iterator = keyList.iterator(); iterator.hasNext();) {
                 K key = iterator.next();
                 HashValue keyHash = toKeyHash(key);
