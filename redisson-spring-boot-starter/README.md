@@ -41,20 +41,21 @@ Using common spring boot settings:
 
 ```yaml
 spring:
-  redis:
-    database: 
-    host:
-    port:
-    password:
-    ssl: 
-    timeout:
-    connectTimeout:
-    clientName:
-    cluster:
-      nodes:
-    sentinel:
-      master:
-      nodes:
+  data:
+    redis:
+      database: 
+      host:
+      port:
+      password:
+      ssl: 
+      timeout:
+      connectTimeout:
+      clientName:
+      cluster:
+        nodes:
+      sentinel:
+        master:
+        nodes:
 ```
 
 Using Redisson config file ([single mode](https://github.com/redisson/redisson/wiki/2.-Configuration#262-single-instance-yaml-config-format),
