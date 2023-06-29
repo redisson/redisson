@@ -37,7 +37,28 @@ Downgrade `redisson-spring-data` module if necessary to support required Spring 
 
 ### 2. Add settings into `application.settings` file
 
-Using common spring boot settings:
+Using common Spring Boot 3.x+ settings:
+
+```yaml
+spring:
+  data:
+    redis:
+      database: 
+      host:
+      port:
+      password:
+      ssl: 
+      timeout:
+      connectTimeout:
+      clientName:
+      cluster:
+        nodes:
+      sentinel:
+        master:
+        nodes:
+```
+
+Using common Spring Boot up to 2.7.x settings:
 
 ```yaml
 spring:
@@ -56,6 +77,7 @@ spring:
       master:
       nodes:
 ```
+
 
 Using Redisson config file ([single mode](https://github.com/redisson/redisson/wiki/2.-Configuration#262-single-instance-yaml-config-format),
 [replicated mode](https://github.com/redisson/redisson/wiki/2.-Configuration#252-replicated-yaml-config-format),
