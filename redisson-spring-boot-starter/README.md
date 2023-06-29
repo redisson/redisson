@@ -58,7 +58,7 @@ spring:
         nodes:
 ```
 
-Using common Spring Boot up to 2.9.x settings:
+Using common Spring Boot up to 2.7.x settings:
 
 ```yaml
 spring:
