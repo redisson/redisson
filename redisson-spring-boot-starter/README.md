@@ -62,21 +62,20 @@ Using common Spring Boot up to 2.9.x settings:
 
 ```yaml
 spring:
-  data:
-    redis:
-      database: 
-      host:
-      port:
-      password:
-      ssl: 
-      timeout:
-      connectTimeout:
-      clientName:
-      cluster:
-        nodes:
-      sentinel:
-        master:
-        nodes:
+  redis:
+    database: 
+    host:
+    port:
+    password:
+    ssl: 
+    timeout:
+    connectTimeout:
+    clientName:
+    cluster:
+      nodes:
+    sentinel:
+      master:
+      nodes:
 ```
 
 
