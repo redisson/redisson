@@ -3,17 +3,16 @@ package org.redisson.spring.data.connection;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.Test;
+import org.springframework.data.domain.Range;
 import org.springframework.data.geo.Circle;
 import org.springframework.data.geo.GeoResults;
 import org.springframework.data.geo.Point;
+import org.springframework.data.redis.connection.Limit;
 import org.springframework.data.redis.connection.RedisGeoCommands;
 import org.springframework.data.redis.connection.RedisStringCommands.SetOption;
 import org.springframework.data.redis.connection.RedisZSetCommands;
 import org.springframework.data.redis.connection.zset.Tuple;
-import org.springframework.data.redis.core.Cursor;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ScanOptions;
-import org.springframework.data.redis.core.SetOperations;
+import org.springframework.data.redis.core.*;
 import org.springframework.data.redis.core.types.Expiration;
 
 import java.util.List;
@@ -21,6 +20,50 @@ import java.util.Map;
 import java.util.Set;
 
 public class RedissonConnectionTest extends BaseConnectionTest {
+
+    @Test
+    public void testZLexCount() {
+        StringRedisTemplate redisTemplate = new StringRedisTemplate();
+        redisTemplate.setConnectionFactory(new RedissonConnectionFactory(redisson));
+        redisTemplate.afterPropertiesSet();
+
+        redisTemplate.boundZSetOps("test").add("1", 10);
+        redisTemplate.boundZSetOps("test").add("2", 20);
+        redisTemplate.boundZSetOps("test").add("3", 30);
+
+        Long size = redisTemplate.boundZSetOps("test").lexCount(Range.closed("1", "2"));
+        assertThat(size).isEqualTo(2);
+    }
+
+    @Test
+    public void testZRemLexByRange() {
+        StringRedisTemplate redisTemplate = new StringRedisTemplate();
+        redisTemplate.setConnectionFactory(new RedissonConnectionFactory(redisson));
+        redisTemplate.afterPropertiesSet();
+
+        redisTemplate.boundZSetOps("test").add("1", 10);
+        redisTemplate.boundZSetOps("test").add("2", 20);
+        redisTemplate.boundZSetOps("test").add("3", 30);
+
+        Long size = redisTemplate.boundZSetOps("test")
+                .removeRangeByLex(Range.closed("1", "2"));
+        assertThat(size).isEqualTo(2);
+    }
+
+    @Test
+    public void testReverseRangeByLex() {
+        StringRedisTemplate redisTemplate = new StringRedisTemplate();
+        redisTemplate.setConnectionFactory(new RedissonConnectionFactory(redisson));
+        redisTemplate.afterPropertiesSet();
+
+        redisTemplate.boundZSetOps("test").add("1", 10);
+        redisTemplate.boundZSetOps("test").add("2", 20);
+
+        Set<String> ops = redisTemplate.boundZSetOps("test")
+                .reverseRangeByLex(Range.closed("1", "2")
+                        , Limit.limit().count(10));
+        assertThat(ops.size()).isEqualTo(2);
+    }
 
     @Test
     public void testExecute() {
