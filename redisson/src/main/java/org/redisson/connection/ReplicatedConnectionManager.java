@@ -98,7 +98,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
         }
 
         if (currentMaster.get() == null) {
-            shutdown();
+            internalShutdown();
             throw new RedisConnectionException("Can't connect to servers!");
         }
         if (this.config.getReadMode() != ReadMode.MASTER && this.config.getSlaveAddresses().isEmpty()) {

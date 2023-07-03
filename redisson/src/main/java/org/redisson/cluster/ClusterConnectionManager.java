@@ -157,7 +157,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }
 
         if (lastPartitions.isEmpty()) {
-            shutdown();
+            internalShutdown();
             if (failedMasters.isEmpty()) {
                 throw new RedisConnectionException("Can't connect to servers!", lastException);
             } else {
@@ -166,7 +166,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }
 
         if (cfg.isCheckSlotsCoverage() && lastPartitions.size() != MAX_SLOT) {
-            shutdown();
+            internalShutdown();
             if (failedMasters.isEmpty()) {
                 throw new RedisConnectionException("Not all slots covered! Only " + lastPartitions.size() + " slots are available. Set checkSlotsCoverage = false to avoid this check.", lastException);
             } else {
@@ -179,11 +179,15 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     @Override
     public Collection<MasterSlaveEntry> getEntrySet() {
+        lazyConnect();
+
         return client2entry.values();
     }
 
     @Override
     public MasterSlaveEntry getEntry(RedisURI addr) {
+        lazyConnect();
+
         for (MasterSlaveEntry entry : client2entry.values()) {
             if (addr.equals(entry.getClient().getAddr())) {
                 return entry;
@@ -197,6 +201,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     @Override
     public MasterSlaveEntry getEntry(RedisClient redisClient) {
+        lazyConnect();
+
         MasterSlaveEntry entry = client2entry.get(redisClient);
         if (entry != null) {
             return entry;
@@ -212,6 +218,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     @Override
     public MasterSlaveEntry getEntry(InetSocketAddress address) {
+        lazyConnect();
+
         for (MasterSlaveEntry entry : client2entry.values()) {
             InetSocketAddress addr = entry.getClient().getAddr();
             if (addr.getAddress().equals(address.getAddress()) && addr.getPort() == address.getPort()) {
@@ -235,6 +243,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     @Override
     protected MasterSlaveEntry getEntry(int slot) {
+        lazyConnect();
+
         return slot2entry.get(slot);
     }
 

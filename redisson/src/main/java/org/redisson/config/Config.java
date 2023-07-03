@@ -94,6 +94,8 @@ public class Config {
 
     private AddressResolverGroupFactory addressResolverGroupFactory = new SequentialDnsAddressResolverFactory();
 
+    private boolean lazyInitialization;
+
     public Config() {
     }
 
@@ -124,6 +126,7 @@ public class Config {
         setTransportMode(oldConf.getTransportMode());
         setAddressResolverGroupFactory(oldConf.getAddressResolverGroupFactory());
         setReliableTopicWatchdogTimeout(oldConf.getReliableTopicWatchdogTimeout());
+        setLazyInitialization(oldConf.isLazyInitialization());
 
         if (oldConf.getSingleServerConfig() != null) {
             setSingleServerConfig(new SingleServerConfig(oldConf.getSingleServerConfig()));
@@ -857,6 +860,25 @@ public class Config {
      */
     public Config setSlavesSyncTimeout(long timeout) {
         this.slavesSyncTimeout = timeout;
+        return this;
+    }
+
+    public boolean isLazyInitialization() {
+        return lazyInitialization;
+    }
+
+    /**
+     * Defines whether Redisson connects to Redis only when
+     * first Redis call is made and not during Redisson instance creation.
+     * <p>
+     * Default value is <code>false</code>
+     *
+     * @param lazyInitialization <code>true</code> connects to Redis only when first Redis call is made,
+     *                           <code>false</code> connects to Redis during Redisson instance creation.
+     * @return
+     */
+    public Config setLazyInitialization(boolean lazyInitialization) {
+        this.lazyInitialization = lazyInitialization;
         return this;
     }
 }

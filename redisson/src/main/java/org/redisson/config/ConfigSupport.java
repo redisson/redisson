@@ -63,7 +63,12 @@ public class ConfigSupport {
 
     }
 
-    @JsonIgnoreProperties({"clusterConfig", "sentinelConfig"})
+    @JsonIgnoreProperties({"slaveNotUsed"})
+    public static class ConfigPropsMixIn {
+
+    }
+
+    @JsonIgnoreProperties({"clusterConfig", "sentinelConfig", "slaveNotUsed"})
     public static class ConfigMixIn {
 
         @JsonProperty
@@ -210,7 +215,9 @@ public class ConfigSupport {
         if (cm == null) {
             throw new IllegalArgumentException("server(s) address(es) not defined!");
         }
-        cm.connect();
+        if (!configCopy.isLazyInitialization()) {
+            cm.connect();
+        }
         return cm;
     }
 
@@ -236,6 +243,7 @@ public class ConfigSupport {
         ObjectMapper mapper = new ObjectMapper(mapping);
         
         mapper.addMixIn(Config.class, ConfigMixIn.class);
+        mapper.addMixIn(BaseMasterSlaveServersConfig.class, ConfigPropsMixIn.class);
         mapper.addMixIn(ReferenceCodecProvider.class, ClassMixIn.class);
         mapper.addMixIn(AddressResolverGroupFactory.class, ClassMixIn.class);
         mapper.addMixIn(Codec.class, ClassMixIn.class);
