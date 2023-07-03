@@ -47,6 +47,10 @@ public class RedisURI {
             throw new IllegalArgumentException("Redis url should start with redis:// or rediss:// (for SSL connection)");
         }
 
+        if (uri.split(":").length < 3) {
+            throw new IllegalArgumentException("Redis url doesn't contain a port");
+        }
+
         String urlHost = parseUrl(uri);
 
         try {
