@@ -11,13 +11,11 @@ import java.util.concurrent.TimeUnit;
 public class SwallowingInterruptionTask implements Runnable, Serializable {
     @RInject
     private RedissonClient redisson;
-    private final String objectName;
-    private final String cancelObjectName;
+    private String objectName;
+    private String cancelObjectName;
 
     public SwallowingInterruptionTask() {
         super();
-        objectName = null;
-        cancelObjectName = null;
     }
 
     public SwallowingInterruptionTask(String objectName, String cancelObjectName) {
