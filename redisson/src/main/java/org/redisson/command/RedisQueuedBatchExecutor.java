@@ -186,7 +186,7 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
                         BatchCommandData<?, ?> waitCommand = new BatchCommandData<>(RedisCommands.WAIT,
                                 new Object[] { this.options.getSyncSlaves(), this.options.getSyncTimeout() }, index.incrementAndGet());
                         list.add(waitCommand);
-                        entry.getCommands().add(waitCommand);
+                        entry.add(waitCommand);
                     }
 
                     CompletableFuture<Void> main = new CompletableFuture<>();
