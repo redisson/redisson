@@ -107,4 +107,16 @@ public interface RAtomicLong extends RExpirable, RAtomicLongAsync {
      */
     void set(long newValue);
 
+    /**
+     * Adds object event listener
+     *
+     * @see org.redisson.api.listener.IncrByListener
+     * @see org.redisson.api.ExpiredObjectListener
+     * @see org.redisson.api.DeletedObjectListener
+     *
+     * @param listener object event listener
+     * @return listener id
+     */
+    int addListener(ObjectListener listener);
+
 }

@@ -386,12 +386,12 @@ public class RedissonRx implements RedissonRxClient {
 
     @Override
     public RReliableTopicRx getReliableTopic(String name) {
-        return RxProxyBuilder.create(commandExecutor, new RedissonReliableTopic(commandExecutor, name), RReliableTopicRx.class);
+        return RxProxyBuilder.create(commandExecutor, new RedissonReliableTopic(commandExecutor, name, null), RReliableTopicRx.class);
     }
 
     @Override
     public RReliableTopicRx getReliableTopic(String name, Codec codec) {
-        return RxProxyBuilder.create(commandExecutor, new RedissonReliableTopic(codec, commandExecutor, name), RReliableTopicRx.class);
+        return RxProxyBuilder.create(commandExecutor, new RedissonReliableTopic(codec, commandExecutor, name, null), RReliableTopicRx.class);
     }
 
     @Override

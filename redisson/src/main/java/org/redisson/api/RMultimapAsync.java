@@ -160,6 +160,14 @@ public interface RMultimapAsync<K, V> extends RExpirableAsync {
     RFuture<Long> fastRemoveAsync(K... keys);
 
     /**
+     * Removes <code>values</code> from map by one operation
+     *
+     * @param values map values
+     * @return the number of values that were removed from the map
+     */
+    RFuture<Long> fastRemoveValueAsync(V... values);
+
+    /**
      * Read all keys at once
      *
      * @return keys

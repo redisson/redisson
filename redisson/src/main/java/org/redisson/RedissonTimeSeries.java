@@ -23,7 +23,10 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.decoder.*;
+import org.redisson.client.protocol.decoder.ListScanResult;
+import org.redisson.client.protocol.decoder.TimeSeriesEntryReplayDecoder;
+import org.redisson.client.protocol.decoder.TimeSeriesFirstEntryReplayDecoder;
+import org.redisson.client.protocol.decoder.TimeSeriesSingleEntryReplayDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.eviction.EvictionScheduler;
 import org.redisson.iterator.RedissonBaseIterator;
@@ -31,7 +34,6 @@ import org.redisson.misc.CompletableFutureWrapper;
 
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -134,8 +136,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
         params.add(expirationTime);
         for (Map.Entry<Long, V> entry : objects.entrySet()) {
             params.add(entry.getKey());
-            byte[] random = new byte[16];
-            ThreadLocalRandom.current().nextBytes(random);
+            byte[] random = getServiceManager().generateIdArray();
             params.add(random);
             encode(params, entry.getValue());
         }
@@ -193,8 +194,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
         params.add(expirationTime);
         for (TimeSeriesEntry<V, L> entry : entries) {
             params.add(entry.getTimestamp());
-            byte[] random = new byte[16];
-            ThreadLocalRandom.current().nextBytes(random);
+            byte[] random = getServiceManager().generateIdArray();
             if (entry.getLabel() == null) {
                 params.add(2);
             } else {

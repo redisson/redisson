@@ -98,13 +98,10 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
     final String id;
     final String entryName;
 
-    final CommandAsyncExecutor commandExecutor;
-
     public RedissonBaseLock(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
-        this.commandExecutor = commandExecutor;
-        this.id = commandExecutor.getServiceManager().getId();
-        this.internalLockLeaseTime = commandExecutor.getServiceManager().getCfg().getLockWatchdogTimeout();
+        this.id = getServiceManager().getId();
+        this.internalLockLeaseTime = getServiceManager().getCfg().getLockWatchdogTimeout();
         this.entryName = id + ":" + name;
     }
 
@@ -122,7 +119,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
             return;
         }
         
-        Timeout task = commandExecutor.getServiceManager().newTimeout(new TimerTask() {
+        Timeout task = getServiceManager().newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
                 ExpirationEntry ent = EXPIRATION_RENEWAL_MAP.get(getEntryName());
@@ -275,7 +272,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
 
     @Override
     public RFuture<Void> unlockAsync(long threadId) {
-        return commandExecutor.getServiceManager().execute(() -> unlockAsync0(threadId));
+        return getServiceManager().execute(() -> unlockAsync0(threadId));
     }
 
     private RFuture<Void> unlockAsync0(long threadId) {

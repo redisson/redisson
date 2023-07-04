@@ -26,6 +26,8 @@ import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.TypedJsonJacksonCodec;
 import org.redisson.config.Config;
 
+import java.io.IOException;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
@@ -139,6 +141,33 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
 
         assertThat(entries.keySet()).containsOnly("v1", "v3");
         assertThat(entries.values()).containsOnly(null, null);
+    }
+
+    @Test
+    public void testExpiration() throws IOException, InterruptedException {
+        RedisRunner.RedisProcess instance = new RedisRunner()
+                .nosave()
+                .randomPort()
+                .randomDir()
+                .notifyKeyspaceEvents(
+                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
+                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.x)
+                .run();
+
+        Config config = new Config();
+        config.useSingleServer().setAddress(instance.getRedisServerAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+
+        RLocalCachedMap<String, String> m = redisson.getLocalCachedMap("test", LocalCachedMapOptions.defaults());
+        m.put("12", "32");
+        assertThat(m.cachedEntrySet()).hasSize(1);
+        m.expire(Duration.ofSeconds(1));
+        Thread.sleep(1500);
+        assertThat(m.cachedEntrySet()).hasSize(0);
+        assertThat(m.get("12")).isNull();
+
+        redisson.shutdown();
+        instance.stop();
     }
 
     @Test

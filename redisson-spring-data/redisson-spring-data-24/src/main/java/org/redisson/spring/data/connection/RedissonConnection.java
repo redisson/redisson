@@ -1751,13 +1751,6 @@ public class RedissonConnection extends AbstractRedisConnection {
         write(null, StringCodec.INSTANCE, RedisCommands.CONFIG_RESETSTAT);
     }
 
-    private static final RedisStrictCommand<Long> TIME = new RedisStrictCommand<Long>("TIME", new TimeLongObjectDecoder());
-    
-    @Override
-    public Long time() {
-        return read(null, LongCodec.INSTANCE, TIME);
-    }
-
     @Override
     public void killClient(String host, int port) {
         throw new UnsupportedOperationException();
@@ -2258,6 +2251,37 @@ public class RedissonConnection extends AbstractRedisConnection {
             return;
         }
         restore(key, ttlInMillis, serializedValue);
+    }
+
+    private static final RedisCommand<Set<byte[]>> ZREVRANGEBYLEX = new RedisCommand<>("ZREVRANGEBYLEX", new ObjectSetReplayDecoder<byte[]>());
+
+    @Override
+    public Set<byte[]> zRevRangeByLex(byte[] key, Range range, Limit limit) {
+        String min = value(range.getMin(), "-");
+        String max = value(range.getMax(), "+");
+
+        List<Object> args = new ArrayList<Object>();
+        args.add(key);
+        args.add(max);
+        args.add(min);
+
+        if (!limit.isUnlimited()) {
+            args.add("LIMIT");
+            args.add(limit.getOffset());
+            args.add(limit.getCount());
+        }
+
+        return read(key, ByteArrayCodec.INSTANCE, ZREVRANGEBYLEX, args.toArray());
+    }
+
+    private static final RedisStrictCommand<Long> ZLEXCOUNT = new RedisStrictCommand<>("ZLEXCOUNT");
+
+    @Override
+    public Long zLexCount(byte[] key, Range range) {
+        String min = value(range.getMin(), "-");
+        String max = value(range.getMax(), "+");
+
+        return read(key, StringCodec.INSTANCE, ZLEXCOUNT, key, min, max);
     }
 
 }

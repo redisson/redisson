@@ -98,7 +98,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
         }
 
         if (currentMaster.get() == null) {
-            shutdown();
+            internalShutdown();
             throw new RedisConnectionException("Can't connect to servers!");
         }
         if (this.config.getReadMode() != ReadMode.MASTER && this.config.getSlaveAddresses().isEmpty()) {
@@ -220,7 +220,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                                 return role;
                             });
                         }
-                    } else if (!config.checkSkipSlavesInit()) {
+                    } else if (!config.isSlaveNotUsed()) {
                         CompletableFuture<Void> f = slaveUp(addr, uri);
                         slaveIPs.add(addr);
                         return f.thenApply(re -> role);

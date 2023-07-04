@@ -15,11 +15,8 @@
  */
 package org.redisson.config;
 
-import com.fasterxml.jackson.annotation.JsonFilter;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -39,6 +36,8 @@ import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.connection.*;
 import org.redisson.connection.balancer.LoadBalancer;
 
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.TrustManagerFactory;
 import java.io.*;
 import java.net.URL;
 import java.util.Scanner;
@@ -52,14 +51,24 @@ import java.util.regex.Pattern;
  *
  */
 public class ConfigSupport {
-    
+
+    @JsonIgnoreType
+    public static class IgnoreMixIn {
+
+    }
+
     @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "class")
     @JsonFilter("classFilter")
     public static class ClassMixIn {
 
     }
 
-    @JsonIgnoreProperties({"clusterConfig", "sentinelConfig"})
+    @JsonIgnoreProperties({"slaveNotUsed"})
+    public static class ConfigPropsMixIn {
+
+    }
+
+    @JsonIgnoreProperties({"clusterConfig", "sentinelConfig", "slaveNotUsed"})
     public static class ConfigMixIn {
 
         @JsonProperty
@@ -206,7 +215,9 @@ public class ConfigSupport {
         if (cm == null) {
             throw new IllegalArgumentException("server(s) address(es) not defined!");
         }
-        cm.connect();
+        if (!configCopy.isLazyInitialization()) {
+            cm.connect();
+        }
         return cm;
     }
 
@@ -232,6 +243,7 @@ public class ConfigSupport {
         ObjectMapper mapper = new ObjectMapper(mapping);
         
         mapper.addMixIn(Config.class, ConfigMixIn.class);
+        mapper.addMixIn(BaseMasterSlaveServersConfig.class, ConfigPropsMixIn.class);
         mapper.addMixIn(ReferenceCodecProvider.class, ClassMixIn.class);
         mapper.addMixIn(AddressResolverGroupFactory.class, ClassMixIn.class);
         mapper.addMixIn(Codec.class, ClassMixIn.class);
@@ -244,6 +256,9 @@ public class ConfigSupport {
         mapper.addMixIn(EventLoopGroup.class, ClassMixIn.class);
         mapper.addMixIn(ConnectionListener.class, ClassMixIn.class);
         mapper.addMixIn(ExecutorService.class, ClassMixIn.class);
+        mapper.addMixIn(KeyManagerFactory.class, IgnoreMixIn.class);
+        mapper.addMixIn(TrustManagerFactory.class, IgnoreMixIn.class);
+        mapper.addMixIn(CommandMapper .class, ClassMixIn.class);
 
         FilterProvider filterProvider = new SimpleFilterProvider()
                 .addFilter("classFilter", SimpleBeanPropertyFilter.filterOutAllExcept());

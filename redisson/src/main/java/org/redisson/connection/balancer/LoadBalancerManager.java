@@ -71,10 +71,12 @@ public class LoadBalancerManager {
     }
 
     public CompletableFuture<Void> add(ClientConnectionsEntry entry) {
-        CompletableFuture<Void> slaveFuture = slaveConnectionPool.add(entry);
-        CompletableFuture<Void> pubSubFuture = pubSubConnectionPool.add(entry);
-
-        CompletableFuture<Void> future = CompletableFuture.allOf(slaveFuture, pubSubFuture);
+        CompletableFuture<Void> future = CompletableFuture.completedFuture(null);
+        if (!entry.isFreezed()) {
+            CompletableFuture<Void> slaveFuture = slaveConnectionPool.initConnections(entry);
+            CompletableFuture<Void> pubSubFuture = pubSubConnectionPool.initConnections(entry);
+            future = CompletableFuture.allOf(slaveFuture, pubSubFuture);
+        }
         return future.thenAccept(r -> {
             slaveConnectionPool.addEntry(entry);
             pubSubConnectionPool.addEntry(entry);

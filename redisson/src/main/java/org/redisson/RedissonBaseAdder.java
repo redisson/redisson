@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import io.netty.buffer.ByteBufUtil;
 import org.redisson.api.RFuture;
 import org.redisson.api.RSemaphore;
 import org.redisson.api.RTopic;
@@ -26,7 +25,10 @@ import org.redisson.misc.CompletableFutureWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.*;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * 
@@ -83,12 +85,6 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
 
     protected abstract void doReset();
 
-    private String generateId() {
-        byte[] id = new byte[16];
-        ThreadLocalRandom.current().nextBytes(id);
-        return ByteBufUtil.hexDump(id);
-    }
-
     public void reset() {
         get(resetAsync());
     }
@@ -98,7 +94,7 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
     }
     
     public RFuture<T> sumAsync() {
-        String id = generateId();
+        String id = getServiceManager().generateId();
         RFuture<Long> future = topic.publishAsync(SUM_MSG + ":" + id);
         RSemaphore semaphore = getSemaphore(id);
 
@@ -117,7 +113,7 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
     }
 
     public RFuture<T> sumAsync(long timeout, TimeUnit timeUnit) {
-        String id = generateId();
+        String id = getServiceManager().generateId();
         RFuture<Long> future = topic.publishAsync(SUM_MSG + ":" + id);
         RSemaphore semaphore = getSemaphore(id);
         CompletionStage<T> f = future.thenCompose(r -> tryAcquire(semaphore, timeout, timeUnit, r.intValue()))
@@ -140,7 +136,7 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
     }
 
     public RFuture<Void> resetAsync() {
-        String id = generateId();
+        String id = getServiceManager().generateId();
         RFuture<Long> future = topic.publishAsync(CLEAR_MSG + ":" + id);
         RSemaphore semaphore = getSemaphore(id);
         CompletionStage<Void> f = future.thenCompose(r -> semaphore.acquireAsync(r.intValue()))
@@ -149,7 +145,7 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
     }
     
     public RFuture<Void> resetAsync(long timeout, TimeUnit timeUnit) {
-        String id = generateId();
+        String id = getServiceManager().generateId();
         RFuture<Long> future = topic.publishAsync(CLEAR_MSG + ":" + id);
         RSemaphore semaphore = getSemaphore(id);
         CompletionStage<Void> f = future.thenCompose(r -> tryAcquire(semaphore, timeout, timeUnit, r.intValue()))

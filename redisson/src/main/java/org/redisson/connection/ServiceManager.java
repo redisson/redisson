@@ -58,6 +58,7 @@ import java.net.UnknownHostException;
 import java.security.MessageDigest;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
@@ -408,4 +409,33 @@ public class ServiceManager {
         });
     }
 
+    public <V> void transfer(CompletionStage<V> future1, CompletableFuture<V> future2) {
+        future1.whenComplete((res, e) -> {
+            if (e != null) {
+                future2.completeExceptionally(e);
+                return;
+            }
+
+            future2.complete(res);
+        });
+    }
+
+    public String generateId() {
+        return ByteBufUtil.hexDump(generateIdArray());
+    }
+
+    public byte[] generateIdArray() {
+        return generateIdArray(16);
+    }
+    public byte[] generateIdArray(int size) {
+        byte[] id = new byte[size];
+        ThreadLocalRandom.current().nextBytes(id);
+        return id;
+    }
+
+    private final AtomicBoolean liveObjectLatch = new AtomicBoolean();
+
+    public AtomicBoolean getLiveObjectLatch() {
+        return liveObjectLatch;
+    }
 }

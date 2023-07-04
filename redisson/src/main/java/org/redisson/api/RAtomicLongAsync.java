@@ -108,4 +108,16 @@ public interface RAtomicLongAsync extends RExpirableAsync {
      */
     RFuture<Void> setAsync(long newValue);
 
+    /**
+     * Adds object event listener
+     *
+     * @see org.redisson.api.listener.IncrByListener
+     * @see org.redisson.api.ExpiredObjectListener
+     * @see org.redisson.api.DeletedObjectListener
+     *
+     * @param listener - object event listener
+     * @return listener id
+     */
+    RFuture<Integer> addListenerAsync(ObjectListener listener);
+
 }

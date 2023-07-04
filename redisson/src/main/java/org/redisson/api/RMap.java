@@ -303,7 +303,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * <p>
      * The returned map is <b>NOT</b> backed by the original map.
      *
-     * @param keys - map keys
+     * @param keys map keys
      * @return Map slice
      */
     Map<K, V> getAll(Set<K> keys);
@@ -622,5 +622,18 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * @return map entries collection
      */
     Set<java.util.Map.Entry<K, V>> entrySet(int count);
-    
+
+    /**
+     * Adds object event listener
+     *
+     * @see org.redisson.api.listener.MapPutListener
+     * @see org.redisson.api.listener.MapRemoveListener
+     * @see org.redisson.api.ExpiredObjectListener
+     * @see org.redisson.api.DeletedObjectListener
+     *
+     * @param listener object event listener
+     * @return listener id
+     */
+    int addListener(ObjectListener listener);
+
 }

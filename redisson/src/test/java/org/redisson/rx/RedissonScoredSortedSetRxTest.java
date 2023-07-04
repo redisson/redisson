@@ -19,6 +19,19 @@ import org.redisson.client.protocol.ScoredEntry;
 public class RedissonScoredSortedSetRxTest extends BaseRxTest {
 
     @Test
+    public void testEntryIterator() {
+        RScoredSortedSetRx<String> set = redisson.getScoredSortedSet("simple");
+        sync(set.add(1.1, "v1"));
+        sync(set.add(1.2, "v2"));
+        sync(set.add(1.3, "v3"));
+
+        Iterator<ScoredEntry<String>> iter = toIterator(set.entryIterator());
+        assertThat(iter).toIterable().containsExactly(new ScoredEntry<>(1.1, "v1"),
+                new ScoredEntry<>(1.2, "v2"), new ScoredEntry<>(1.3, "v3"));
+
+    }
+
+    @Test
     public void testFirstLast() {
         RScoredSortedSetRx<String> set = redisson.getScoredSortedSet("simple");
         sync(set.add(0.1, "a"));

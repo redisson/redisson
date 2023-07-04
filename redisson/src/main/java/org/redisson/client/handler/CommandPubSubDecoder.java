@@ -20,6 +20,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.redisson.client.ChannelName;
 import org.redisson.client.RedisClientConfig;
+import org.redisson.client.RedisException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.Codec;
@@ -107,7 +108,42 @@ public class CommandPubSubDecoder extends CommandDecoder {
             }
         }
     }
-    
+
+    @Override
+    protected void onError(Channel channel, String error) {
+        Set<String> cmds = new HashSet<>(RedisCommands.PUBSUB_COMMANDS);
+        cmds.remove(RedisCommands.SUBSCRIBE.getName());
+        cmds.remove(RedisCommands.UNSUBSCRIBE.getName());
+
+        String cmd = null;
+        String e = error.toLowerCase();
+        for (String value : cmds) {
+            if (e.contains(value.toLowerCase())) {
+                cmd = value;
+                break;
+            }
+        }
+        if (cmd == null) {
+            if (e.contains(RedisCommands.UNSUBSCRIBE.getName().toLowerCase())) {
+                cmd = RedisCommands.UNSUBSCRIBE.getName();
+            } else if (e.contains(RedisCommands.SUBSCRIBE.getName().toLowerCase())) {
+                cmd = RedisCommands.SUBSCRIBE.getName();
+            }
+        }
+
+        if (cmd != null) {
+            String c = cmd;
+            commands.keySet().stream()
+                    .filter(v -> v.getOperation().equalsIgnoreCase(c))
+                    .forEach(v -> {
+                        CommandData<Object, Object> dd = commands.get(v);
+                        dd.getPromise().completeExceptionally(new RedisException(error));
+                    });
+        } else {
+            super.onError(channel, error);
+        }
+    }
+
     @Override
     protected void decodeResult(CommandData<Object, Object> data, List<Object> parts, Channel channel,
             Object result) throws IOException {
@@ -139,14 +175,13 @@ public class CommandPubSubDecoder extends CommandDecoder {
                         channelName = ((PubSubPatternMessage) result).getPattern();
                     }
                     PubSubEntry entry = entries.remove(channelName);
-                    if (config.isKeepAlive()) {
+                    if (config.isKeepPubSubOrder()) {
                         enqueueMessage(result, pubSubConnection, entry);
                     }
                 }
             }
-            
-            
-            if (config.isKeepAlive()) {
+
+            if (config.isKeepPubSubOrder()) {
                 if (result instanceof PubSubPatternMessage) {
                     channelName = ((PubSubPatternMessage) result).getPattern();
                 }

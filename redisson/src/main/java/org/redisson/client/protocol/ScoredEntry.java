@@ -15,13 +15,15 @@
  */
 package org.redisson.client.protocol;
 
+import java.util.Objects;
+
 /**
- * 
+ *
  * @author Nikita Koksharov
  *
  * @param <V> value type
  */
-public class ScoredEntry<V> {
+public class ScoredEntry<V> implements Comparable<ScoredEntry<V>> {
 
     private final Double score;
     private final V value;
@@ -41,35 +43,28 @@ public class ScoredEntry<V> {
     }
 
     @Override
-    @SuppressWarnings("AvoidInlineConditionals")
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((score == null) ? 0 : score.hashCode());
-        result = prime * result + ((value == null) ? 0 : value.hashCode());
-        return result;
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ScoredEntry<?> that = (ScoredEntry<?>) o;
+        return Objects.equals(score, that.score) && Objects.equals(value, that.value);
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        ScoredEntry other = (ScoredEntry) obj;
-        if (score == null) {
-            if (other.score != null)
-                return false;
-        } else if (!score.equals(other.score))
-            return false;
-        if (value == null) {
-            if (other.value != null)
-                return false;
-        } else if (!value.equals(other.value))
-            return false;
-        return true;
+    public int hashCode() {
+        return Objects.hash(score, value);
     }
 
+    @Override
+    public int compareTo(ScoredEntry<V> o) {
+        return score.compareTo(o.score);
+    }
+
+    @Override
+    public String toString() {
+        return "ScoredEntry{" +
+                "score=" + score +
+                ", value=" + value +
+                '}';
+    }
 }

@@ -36,23 +36,27 @@ import org.redisson.api.stream.*;
 public interface RStreamRx<K, V> extends RExpirableRx {
 
     /**
-     * Creates consumer group by name.
-     * 
-     * @param groupName - name of group
-     * @return void
-     */
-    Completable createGroup(String groupName);
-    
-    /**
-     * Creates consumer group by name and stream id. 
-     * Only new messages after defined stream <code>id</code> will be available for consumers of this group. 
+     * Creates consumer group.
      * <p>
-     * {@link StreamMessageId#NEWEST} is used for messages arrived since the moment of group creating
-     * 
-     * @param groupName - name of group
-     * @param id - stream id
-     * @return void
+     * Usage examples:
+     * <pre>
+     * StreamMessageId id = stream.createGroup(StreamCreateGroupArgs.name("test").id(id).makeStream());
+     * </pre>
+     *
+     * @param args method arguments object
      */
+    Completable createGroup(StreamCreateGroupArgs args);
+
+    /**
+     * Use createGroup(StreamCreateGroupArgs) method instead
+     */
+    @Deprecated
+    Completable createGroup(String groupName);
+
+    /**
+     * Use createGroup(StreamCreateGroupArgs) method instead
+     */
+    @Deprecated
     Completable createGroup(String groupName, StreamMessageId id);
     
     /**

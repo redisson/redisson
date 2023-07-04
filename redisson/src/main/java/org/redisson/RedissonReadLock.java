@@ -88,7 +88,7 @@ public class RedissonReadLock extends RedissonLock implements RLock {
         return commandExecutor.syncedEval(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local mode = redis.call('hget', KEYS[1], 'mode'); " +
                 "if (mode == false) then " +
-                    "redis.call('publish', KEYS[2], ARGV[1]); " +
+                    "redis.call(ARGV[3], KEYS[2], ARGV[1]); " +
                     "return 1; " +
                 "end; " +
                 "local lockExists = redis.call('hexists', KEYS[1], ARGV[2]); " +
@@ -126,10 +126,10 @@ public class RedissonReadLock extends RedissonLock implements RLock {
                 "end; " +
                     
                 "redis.call('del', KEYS[1]); " +
-                "redis.call('publish', KEYS[2], ARGV[1]); " +
+                "redis.call(ARGV[3], KEYS[2], ARGV[1]); " +
                 "return 1; ",
                 Arrays.<Object>asList(getRawName(), getChannelName(), timeoutPrefix, keyPrefix),
-                LockPubSub.UNLOCK_MESSAGE, getLockName(threadId));
+                LockPubSub.UNLOCK_MESSAGE, getLockName(threadId), getSubscribeService().getPublishCommand());
     }
 
     protected String getKeyPrefix(long threadId, String timeoutPrefix) {
@@ -176,11 +176,12 @@ public class RedissonReadLock extends RedissonLock implements RLock {
         return commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if (redis.call('hget', KEYS[1], 'mode') == 'read') then " +
                     "redis.call('del', KEYS[1]); " +
-                    "redis.call('publish', KEYS[2], ARGV[1]); " +
+                    "redis.call(ARGV[2], KEYS[2], ARGV[1]); " +
                     "return 1; " +
                 "end; " +
                 "return 0; ",
-                Arrays.<Object>asList(getRawName(), getChannelName()), LockPubSub.UNLOCK_MESSAGE);
+                Arrays.asList(getRawName(), getChannelName()),
+                LockPubSub.UNLOCK_MESSAGE, getSubscribeService().getPublishCommand());
     }
 
     @Override

@@ -52,7 +52,6 @@ import org.springframework.data.redis.domain.geo.RadiusShape;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.ReflectionUtils;
-import org.springframework.data.domain.Range;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -1721,13 +1720,6 @@ public class RedissonConnection extends AbstractRedisConnection {
         write(null, StringCodec.INSTANCE, RedisCommands.CONFIG_RESETSTAT);
     }
 
-    private static final RedisStrictCommand<Long> TIME = new RedisStrictCommand<Long>("TIME", new TimeLongObjectDecoder());
-    
-    @Override
-    public Long time() {
-        return read(null, LongCodec.INSTANCE, TIME);
-    }
-
     @Override
     public void killClient(String host, int port) {
         throw new UnsupportedOperationException();
@@ -2682,6 +2674,172 @@ public class RedissonConnection extends AbstractRedisConnection {
         return write(key, ByteArrayCodec.INSTANCE, GETDEL, key);
     }
 
+    private static final RedisCommand<Set<byte[]>> ZREVRANGEBYLEX = new RedisCommand<>("ZREVRANGEBYLEX", new ObjectSetReplayDecoder<byte[]>());
+
+    @Override
+    public Set<byte[]> zRevRangeByLex(byte[] key, org.springframework.data.domain.Range range, org.springframework.data.redis.connection.Limit limit) {
+        String min = value(range.getLowerBound(), "-");
+        String max = value(range.getUpperBound(), "+");
+
+        List<Object> args = new ArrayList<Object>();
+        args.add(key);
+        args.add(max);
+        args.add(min);
+
+        if (!limit.isUnlimited()) {
+            args.add("LIMIT");
+            args.add(limit.getOffset());
+            args.add(limit.getCount());
+        }
+
+        return read(key, ByteArrayCodec.INSTANCE, ZREVRANGEBYLEX, args.toArray());
+    }
+
+    @Override
+    public Long time(TimeUnit timeUnit) {
+        return read(null, LongCodec.INSTANCE, new RedisStrictCommand<>("TIME", new TimeLongObjectDecoder(timeUnit)));
+    }
+
+    private static final RedisStrictCommand<Long> ZREMRANGEBYLEX = new RedisStrictCommand<>("ZREMRANGEBYLEX");
+
+    @Override
+    public Long zRemRangeByLex(byte[] key, org.springframework.data.domain.Range range) {
+        String min = value(range.getLowerBound(), "-");
+        String max = value(range.getUpperBound(), "+");
+
+        return write(key, StringCodec.INSTANCE, ZREMRANGEBYLEX, key, min, max);
+    }
+
+    private static final RedisStrictCommand<Long> ZLEXCOUNT = new RedisStrictCommand<>("ZLEXCOUNT");
+
+    @Override
+    public Long zLexCount(byte[] key, org.springframework.data.domain.Range range) {
+        String min = value(range.getLowerBound(), "-");
+        String max = value(range.getUpperBound(), "+");
+
+        return read(key, StringCodec.INSTANCE, ZLEXCOUNT, key, min, max);
+    }
+
+    @Override
+    public void rewriteConfig() {
+        write(null, StringCodec.INSTANCE, RedisCommands.CONFIG_REWRITE);
+    }
+
+    public static final RedisCommand<Long> ZRANGESTORE = new RedisCommand<>("ZRANGESTORE");
+
+    @Override
+    public Long zRangeStoreByLex(byte[] dstKey, byte[] srcKey, org.springframework.data.domain.Range<byte[]> range, org.springframework.data.redis.connection.Limit limit) {
+        String max = value(range.getUpperBound(), "+");
+        String min = value(range.getLowerBound(), "-");
+
+        List<Object> args = new LinkedList<>();
+        args.add(dstKey);
+        args.add(srcKey);
+        args.add(min);
+        args.add(max);
+
+        args.add("BYLEX");
+
+        if (!limit.isUnlimited()) {
+            args.add("LIMIT");
+            args.add(limit.getOffset());
+            args.add(limit.getCount());
+        }
+
+        return write(srcKey, LongCodec.INSTANCE, ZRANGESTORE, args.toArray());
+    }
+
+    @Override
+    public Long zRangeStoreRevByLex(byte[] dstKey, byte[] srcKey, org.springframework.data.domain.Range<byte[]> range, org.springframework.data.redis.connection.Limit limit) {
+        String max = value(range.getUpperBound(), "+");
+        String min = value(range.getLowerBound(), "-");
+
+        List<Object> args = new LinkedList<>();
+        args.add(dstKey);
+        args.add(srcKey);
+        args.add(min);
+        args.add(max);
+
+        args.add("BYLEX");
+
+        args.add("REV");
+
+        if (!limit.isUnlimited()) {
+            args.add("LIMIT");
+            args.add(limit.getOffset());
+            args.add(limit.getCount());
+        }
+
+        return write(srcKey, LongCodec.INSTANCE, ZRANGESTORE, args.toArray());
+    }
+
+    @Override
+    public Long zRangeStoreByScore(byte[] dstKey, byte[] srcKey, org.springframework.data.domain.Range<? extends Number> range, org.springframework.data.redis.connection.Limit limit) {
+        String min = value(range.getLowerBound(), "-inf");
+        String max = value(range.getUpperBound(), "+inf");
+
+        List<Object> args = new LinkedList<>();
+        args.add(dstKey);
+        args.add(srcKey);
+        args.add(min);
+        args.add(max);
+
+        args.add("BYSCORE");
+
+        if (!limit.isUnlimited()) {
+            args.add("LIMIT");
+            args.add(limit.getOffset());
+            args.add(limit.getCount());
+        }
+
+        return write(srcKey, LongCodec.INSTANCE, ZRANGESTORE, args.toArray());
+    }
+
+    @Override
+    public Long zRangeStoreRevByScore(byte[] dstKey, byte[] srcKey, org.springframework.data.domain.Range<? extends Number> range, org.springframework.data.redis.connection.Limit limit) {
+        String min = value(range.getLowerBound(), "-inf");
+        String max = value(range.getUpperBound(), "+inf");
+
+        List<Object> args = new LinkedList<>();
+        args.add(dstKey);
+        args.add(srcKey);
+        args.add(min);
+        args.add(max);
+
+        args.add("BYSCORE");
+
+        args.add("REV");
+
+        if (!limit.isUnlimited()) {
+            args.add("LIMIT");
+            args.add(limit.getOffset());
+            args.add(limit.getCount());
+        }
+
+        return write(srcKey, LongCodec.INSTANCE, ZRANGESTORE, args.toArray());
+    }
+
+    @Override
+    public void flushDb(FlushOption option) {
+        write(null, StringCodec.INSTANCE, RedisCommands.FLUSHDB, option.toString());
+    }
+
+    @Override
+    public void flushAll(FlushOption option) {
+        write(null, StringCodec.INSTANCE, RedisCommands.FLUSHALL, option.toString());
+    }
+
+    private static final RedisStrictCommand<Void> REPLICAOF = new RedisStrictCommand<>("REPLICAOF");
+
+    @Override
+    public void replicaOf(String host, int port) {
+        write(null, StringCodec.INSTANCE, REPLICAOF, host, port);
+    }
+
+    @Override
+    public void replicaOfNoOne() {
+        write(null, StringCodec.INSTANCE, REPLICAOF, "NO", "ONE");
+    }
     @Override
     public org.springframework.data.redis.connection.RedisCommands commands() {
         return this;

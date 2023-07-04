@@ -96,4 +96,16 @@ public class StreamGroup {
     public int getLag() {
         return lag;
     }
+
+    @Override
+    public String toString() {
+        return "StreamGroup{" +
+                "name='" + name + '\'' +
+                ", consumers=" + consumers +
+                ", pending=" + pending +
+                ", lastDeliveredId=" + lastDeliveredId +
+                ", entriesRead=" + entriesRead +
+                ", lag=" + lag +
+                '}';
+    }
 }

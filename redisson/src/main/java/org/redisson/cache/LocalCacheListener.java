@@ -30,6 +30,7 @@ import org.redisson.api.listener.LocalCacheUpdateListener;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.slf4j.Logger;
@@ -59,7 +60,7 @@ public abstract class LocalCacheListener {
     private CommandAsyncExecutor commandExecutor;
     private Map<CacheKey, ? extends CacheValue> cache;
     private RObject object;
-    private byte[] instanceId = new byte[16];
+    private byte[] instanceId;
     private Codec codec;
     private LocalCachedMapOptions<?, ?> options;
     
@@ -69,12 +70,16 @@ public abstract class LocalCacheListener {
     private int syncListenerId;
     private int reconnectionListenerId;
 
+    private int expireListenerId;
+
     private final Map<Integer, LocalCacheInvalidateListener<?, ?>> invalidateListeners = new ConcurrentHashMap<>();
 
     private final Map<Integer, LocalCacheUpdateListener<?, ?>> updateListeners = new ConcurrentHashMap<>();
 
+    private boolean isSharded;
+
     public LocalCacheListener(String name, CommandAsyncExecutor commandExecutor,
-            RObject object, Codec codec, LocalCachedMapOptions<?, ?> options, long cacheUpdateLogTime) {
+            RObject object, Codec codec, LocalCachedMapOptions<?, ?> options, long cacheUpdateLogTime, boolean isSharded) {
         super();
         this.name = name;
         this.commandExecutor = commandExecutor;
@@ -82,14 +87,9 @@ public abstract class LocalCacheListener {
         this.codec = codec;
         this.options = options;
         this.cacheUpdateLogTime = cacheUpdateLogTime;
-        
-        ThreadLocalRandom.current().nextBytes(instanceId);
-    }
-    
-    public byte[] generateId() {
-        byte[] id = new byte[16];
-        ThreadLocalRandom.current().nextBytes(id);
-        return id;
+        this.isSharded = isSharded;
+
+        instanceId = commandExecutor.getServiceManager().generateIdArray();
     }
     
     public byte[] getInstanceId() {
@@ -141,8 +141,19 @@ public abstract class LocalCacheListener {
     
     public void add(Map<CacheKey, ? extends CacheValue> cache) {
         this.cache = cache;
-        
-        invalidationTopic = RedissonTopic.createRaw(LocalCachedMessageCodec.INSTANCE, commandExecutor, getInvalidationTopicName());
+
+        if (isSharded) {
+            invalidationTopic = new RedissonShardedTopic(LocalCachedMessageCodec.INSTANCE, commandExecutor, getInvalidationTopicName());
+        } else {
+            invalidationTopic = RedissonTopic.createRaw(LocalCachedMessageCodec.INSTANCE, commandExecutor, getInvalidationTopicName());
+        }
+
+        RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:expired");
+        expireListenerId = topic.addListener(String.class, (pattern, channel, msg) -> {
+            if (msg.equals(name)) {
+                cache.clear();
+            }
+        });
 
         if (options.getReconnectionStrategy() != ReconnectionStrategy.NONE) {
             reconnectionListenerId = invalidationTopic.addListener(new BaseStatusListener() {
@@ -207,6 +218,9 @@ public abstract class LocalCacheListener {
                             for (byte[] keyHash : invalidateMsg.getKeyHashes()) {
                                 CacheKey key = new CacheKey(keyHash);
                                 CacheValue value = cache.remove(key);
+                                if (value == null) {
+                                    continue;
+                                }
                                 notifyInvalidate(value);
                             }
                         }
@@ -272,7 +286,7 @@ public abstract class LocalCacheListener {
             return new CompletableFutureWrapper<>((Void) null);
         }
 
-        byte[] id = generateId();
+        byte[] id = commandExecutor.getServiceManager().generateIdArray();
         RFuture<Long> future = invalidationTopic.publishAsync(new LocalCachedMapClear(instanceId, id, true));
         CompletionStage<Void> f = future.thenCompose(res -> {
             if (res.intValue() == 0) {
@@ -322,7 +336,10 @@ public abstract class LocalCacheListener {
         if (reconnectionListenerId != 0) {
             ids.add(reconnectionListenerId);
         }
-        invalidationTopic.removeListenerAsync(ids.toArray(new Integer[ids.size()]));
+        invalidationTopic.removeListenerAsync(ids.toArray(new Integer[0]));
+
+        RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:expired");
+        topic.removeListenerAsync(expireListenerId);
     }
 
     public String getUpdatesLogName() {

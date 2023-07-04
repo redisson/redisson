@@ -130,6 +130,14 @@ public interface RMultimapRx<K, V> extends RExpirableRx {
     Single<Long> fastRemove(K... keys);
 
     /**
+     * Removes <code>values</code> from map by one operation
+     *
+     * @param values map values
+     * @return the number of values that were removed from the map
+     */
+    Single<Long> fastRemoveValue(V... values);
+
+    /**
      * Read all keys at once
      *
      * @return keys

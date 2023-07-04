@@ -50,6 +50,24 @@ public class RedissonMapCacheTest extends BaseMapTest {
     }
 
     @Test
+    public void testGetAllWithTTLOnly() throws InterruptedException {
+        RMapCache<Integer, Integer> cache = redisson.getMapCache("testGetAllWithTTLOnly");
+        cache.put(1, 2, 3, TimeUnit.SECONDS);
+        cache.put(3, 4, 1, TimeUnit.SECONDS);
+        cache.put(5, 6, 1, TimeUnit.SECONDS);
+
+        Map<Integer, Integer> map = cache.getAllWithTTLOnly(new HashSet<>(Arrays.asList(1, 3, 5)));
+        assertThat(map).containsOnlyKeys(1, 3, 5);
+        assertThat(map).containsValues(2, 4, 6);
+
+        Thread.sleep(1500);
+
+        map = cache.getAllWithTTLOnly(new HashSet<>(Arrays.asList(1, 3, 5)));
+        assertThat(map).containsOnlyKeys(1);
+        assertThat(map).containsValues(2);
+    }
+
+    @Test
     public void testGetWithTTLOnly() throws InterruptedException {
         RMapCache<Integer, Integer> cache = redisson.getMapCache("testUpdateEntryExpiration");
         cache.put(1, 2, 3, TimeUnit.SECONDS);

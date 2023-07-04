@@ -30,6 +30,7 @@ import org.redisson.iterator.RedissonBaseIterator;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
 import org.redisson.misc.CompletableFutureWrapper;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -115,13 +116,12 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                      "if expireDateScore ~= false then " +
                          "if tonumber(expireDateScore) <= tonumber(ARGV[1]) then " +
                              "return 0;" + 
-                         "else " +
-                             "return 1;" +
                          "end;" +
-                     "else " +
-                         "return 0;" +
-                     "end; ",
-               Arrays.<Object>asList(name), System.currentTimeMillis(), encode(o));
+                         "return 1;" +
+                     "end; " +
+                     "return 0;",
+               Arrays.<Object>asList(name),
+                System.currentTimeMillis(), encode(o));
     }
 
     @Override
@@ -1159,5 +1159,270 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 //                        "redis.call('del', KEYS[2]); " +
 //                        "return res;",
 //                Arrays.asList(getRawName(), tempName), params.toArray());
+    }
+
+    @Override
+    public boolean addIfAbsent(Duration ttl, V object) {
+        return get(addIfAbsentAsync(ttl, object));
+    }
+
+    @Override
+    public boolean addIfExists(Duration ttl, V object) {
+        return get(addIfExistsAsync(ttl, object));
+    }
+
+    @Override
+    public boolean addIfLess(Duration ttl, V object) {
+        return get(addIfLessAsync(ttl, object));
+    }
+
+    @Override
+    public boolean addIfGreater(Duration ttl, V object) {
+        return get(addIfGreaterAsync(ttl, object));
+    }
+
+    @Override
+    public RFuture<Boolean> addIfAbsentAsync(Duration ttl, V object) {
+        long timeoutDate = System.currentTimeMillis() + ttl.toMillis();
+        if (ttl.isZero()) {
+            timeoutDate = 92233720368547758L - System.currentTimeMillis();
+        }
+
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
+                "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[3]); " +
+                        "if expireDateScore ~= false and tonumber(expireDateScore) > tonumber(ARGV[1]) then " +
+                            "return 0; " +
+                        "end; " +
+
+                        "redis.call('zadd', KEYS[1], ARGV[2], ARGV[1]); " +
+                        "return 1; ",
+                Arrays.asList(getRawName()),
+                System.currentTimeMillis(), timeoutDate, encode(object));
+    }
+
+    @Override
+    public RFuture<Boolean> addIfExistsAsync(Duration ttl, V object) {
+        long timeoutDate = System.currentTimeMillis() + ttl.toMillis();
+        if (ttl.isZero()) {
+            timeoutDate = 92233720368547758L - System.currentTimeMillis();
+        }
+
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
+                "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[3]); " +
+                      "if expireDateScore ~= false then " +
+                        "if tonumber(expireDateScore) < tonumber(ARGV[1]) then " +
+                            "return 0; " +
+                        "end; " +
+                        "redis.call('zadd', KEYS[1], ARGV[2], ARGV[3]); " +
+                        "return 1; " +
+                      "end; " +
+
+                      "return 0; ",
+                Arrays.asList(getRawName()),
+                System.currentTimeMillis(), timeoutDate, encode(object));
+    }
+
+    @Override
+    public RFuture<Boolean> addIfLessAsync(Duration ttl, V object) {
+        long timeoutDate = System.currentTimeMillis() + ttl.toMillis();
+        if (ttl.isZero()) {
+            timeoutDate = 92233720368547758L - System.currentTimeMillis();
+        }
+
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
+                "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[3]); " +
+                      "if expireDateScore ~= false then " +
+                        "if tonumber(expireDateScore) < tonumber(ARGV[1]) or tonumber(ARGV[2]) >= tonumber(expireDateScore) then " +
+                            "return 0; " +
+                        "end; " +
+                        "redis.call('zadd', KEYS[1], ARGV[2], ARGV[3]); " +
+                        "return 1; " +
+                      "end; " +
+
+                      "return 0; ",
+                Arrays.asList(getRawName()),
+                System.currentTimeMillis(), timeoutDate, encode(object));
+    }
+
+    @Override
+    public RFuture<Boolean> addIfGreaterAsync(Duration ttl, V object) {
+        long timeoutDate = System.currentTimeMillis() + ttl.toMillis();
+        if (ttl.isZero()) {
+            timeoutDate = 92233720368547758L - System.currentTimeMillis();
+        }
+
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
+                "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[3]); " +
+                      "if expireDateScore ~= false then " +
+                        "if tonumber(expireDateScore) < tonumber(ARGV[1]) or tonumber(ARGV[2]) <= tonumber(expireDateScore) then " +
+                            "return 0; " +
+                        "end; " +
+                        "redis.call('zadd', KEYS[1], ARGV[2], ARGV[3]); " +
+                        "return 1; " +
+                      "end; " +
+
+                      "return 0; ",
+                Arrays.asList(getRawName()),
+                System.currentTimeMillis(), timeoutDate, encode(object));
+    }
+
+    @Override
+    public int addAllIfAbsent(Map<V, Duration> objects) {
+        return get(addAllIfAbsentAsync(objects));
+    }
+
+    @Override
+    public int addAllIfExist(Map<V, Duration> objects) {
+        return get(addAllIfExistAsync(objects));
+    }
+
+    @Override
+    public int addAllIfGreater(Map<V, Duration> objects) {
+        return get(addAllIfGreaterAsync(objects));
+    }
+
+    @Override
+    public int addAllIfLess(Map<V, Duration> objects) {
+        return get(addAllIfLessAsync(objects));
+    }
+
+    @Override
+    public RFuture<Integer> addAllIfAbsentAsync(Map<V, Duration> objects) {
+        List<Object> params = new ArrayList<>();
+        long currentTime = System.currentTimeMillis();
+        params.add(currentTime);
+        for (Map.Entry<V, Duration> entry : objects.entrySet()) {
+            long timeoutDate = currentTime + entry.getValue().toMillis();
+            if (entry.getValue().isZero()) {
+                timeoutDate = 92233720368547758L - currentTime;
+            }
+            params.add(timeoutDate);
+            encode(params, entry.getKey());
+        }
+
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_INTEGER,
+                  "local result = 0; " +
+                        "for i=2, #ARGV, 2 do " +
+                            "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[i+1]); " +
+                            "if expireDateScore ~= false and tonumber(expireDateScore) <= tonumber(ARGV[1]) then " +
+                                "result = result + 1; " +
+                                "redis.call('zadd', KEYS[1], ARGV[i], ARGV[i+1]); " +
+                            "end; " +
+                        "end; " +
+                        "return result; ",
+                Arrays.asList(getRawName()), params.toArray());
+    }
+
+    @Override
+    public RFuture<Integer> addAllIfExistAsync(Map<V, Duration> objects) {
+        List<Object> params = new ArrayList<>();
+        long currentTime = System.currentTimeMillis();
+        params.add(currentTime);
+        for (Map.Entry<V, Duration> entry : objects.entrySet()) {
+            long timeoutDate = currentTime + entry.getValue().toMillis();
+            if (entry.getValue().isZero()) {
+                timeoutDate = 92233720368547758L - currentTime;
+            }
+            params.add(timeoutDate);
+            encode(params, entry.getKey());
+        }
+
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_INTEGER,
+                  "local result = 0; " +
+                        "for i=2, #ARGV, 2 do " +
+                            "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[i+1]); " +
+                            "if expireDateScore ~= false and tonumber(expireDateScore) > tonumber(ARGV[1]) then " +
+                                "result = result + 1; " +
+                                "redis.call('zadd', KEYS[1], ARGV[i], ARGV[i+1]); " +
+                            "end; " +
+                        "end; " +
+                        "return result; ",
+                Arrays.asList(getRawName()), params.toArray());
+    }
+
+    @Override
+    public RFuture<Integer> addAllIfGreaterAsync(Map<V, Duration> objects) {
+        List<Object> params = new ArrayList<>();
+        long currentTime = System.currentTimeMillis();
+        params.add(currentTime);
+        for (Map.Entry<V, Duration> entry : objects.entrySet()) {
+            long timeoutDate = currentTime + entry.getValue().toMillis();
+            if (entry.getValue().isZero()) {
+                timeoutDate = 92233720368547758L - currentTime;
+            }
+            params.add(timeoutDate);
+            encode(params, entry.getKey());
+        }
+
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_INTEGER,
+                  "local result = 0; " +
+                        "for i=2, #ARGV, 2 do " +
+                            "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[i+1]); " +
+                            "if expireDateScore ~= false and tonumber(expireDateScore) > tonumber(ARGV[1]) and tonumber(ARGV[i]) > tonumber(expireDateScore) then " +
+                                "result = result + 1; " +
+                                "redis.call('zadd', KEYS[1], ARGV[i], ARGV[i+1]); " +
+                            "end; " +
+                        "end; " +
+                        "return result; ",
+                Arrays.asList(getRawName()), params.toArray());
+    }
+
+    @Override
+    public RFuture<Integer> addAllIfLessAsync(Map<V, Duration> objects) {
+        List<Object> params = new ArrayList<>();
+        long currentTime = System.currentTimeMillis();
+        params.add(currentTime);
+        for (Map.Entry<V, Duration> entry : objects.entrySet()) {
+            long timeoutDate = currentTime + entry.getValue().toMillis();
+            if (entry.getValue().isZero()) {
+                timeoutDate = 92233720368547758L - currentTime;
+            }
+            params.add(timeoutDate);
+            encode(params, entry.getKey());
+        }
+
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_INTEGER,
+                  "local result = 0; " +
+                        "for i=2, #ARGV, 2 do " +
+                            "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[i+1]); " +
+                            "if expireDateScore ~= false and tonumber(expireDateScore) > tonumber(ARGV[1]) and tonumber(ARGV[i]) < tonumber(expireDateScore) then " +
+                                "result = result + 1; " +
+                                "redis.call('zadd', KEYS[1], ARGV[i], ARGV[i+1]); " +
+                            "end; " +
+                        "end; " +
+                        "return result; ",
+                Arrays.asList(getRawName()), params.toArray());
+    }
+
+    @Override
+    public int addAll(Map<V, Duration> objects) {
+        return get(addAllAsync(objects));
+    }
+
+    @Override
+    public RFuture<Integer> addAllAsync(Map<V, Duration> objects) {
+        List<Object> params = new ArrayList<>();
+        long currentTime = System.currentTimeMillis();
+        params.add(currentTime);
+        for (Map.Entry<V, Duration> entry : objects.entrySet()) {
+            long timeoutDate = currentTime + entry.getValue().toMillis();
+            if (entry.getValue().isZero()) {
+                timeoutDate = 92233720368547758L - currentTime;
+            }
+            params.add(timeoutDate);
+            encode(params, entry.getKey());
+        }
+
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_INTEGER,
+                  "local result = 0; " +
+                        "for i=2, #ARGV, 2 do " +
+                            "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[i+1]); " +
+                            "if not (expireDateScore ~= false and tonumber(expireDateScore) > tonumber(ARGV[1])) then " +
+                                "result = result + 1; " +
+                            "end; " +
+                            "redis.call('zadd', KEYS[1], ARGV[i], ARGV[i+1]); " +
+                        "end; " +
+                        "return result; ",
+                Arrays.asList(getRawName()), params.toArray());
     }
 }

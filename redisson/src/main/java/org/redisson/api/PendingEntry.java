@@ -72,5 +72,14 @@ public class PendingEntry {
     public long getLastTimeDelivered() {
         return lastTimeDelivered;
     }
-    
+
+    @Override
+    public String toString() {
+        return "PendingEntry{" +
+                "id=" + id +
+                ", consumerName='" + consumerName + '\'' +
+                ", idleTime=" + idleTime +
+                ", lastTimeDelivered=" + lastTimeDelivered +
+                '}';
+    }
 }

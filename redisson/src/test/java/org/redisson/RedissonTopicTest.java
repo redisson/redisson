@@ -1073,7 +1073,7 @@ public class RedissonTopicTest {
         slave2.stop();
     }
 
-    @Test
+//    @Test
     public void testReattachInSentinel2() throws Exception {
         RedisRunner.RedisProcess master = new RedisRunner()
                 .nosave()

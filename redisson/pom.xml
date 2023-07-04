@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-parent</artifactId>
-        <version>3.21.1-SNAPSHOT</version>
+        <version>3.22.2-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
@@ -220,7 +220,7 @@
         <dependency>
             <groupId>org.xerial.snappy</groupId>
             <artifactId>snappy-java</artifactId>
-            <version>1.1.9.1</version>
+            <version>1.1.10.1</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
@@ -306,11 +306,6 @@
             <version>1.14.0</version>
         </dependency>
         <dependency>
-            <groupId>org.yaml</groupId>
-            <artifactId>snakeyaml</artifactId>
-            <version>2.0</version>
-        </dependency>
-        <dependency>
             <groupId>org.jodd</groupId>
             <artifactId>jodd-bean</artifactId>
             <version>5.1.6</version>
@@ -378,7 +373,7 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-autoconfigure</artifactId>
             <!-- 2.0.0+ -->
-            <version>3.0.2</version>
+            <version>3.0.7</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>

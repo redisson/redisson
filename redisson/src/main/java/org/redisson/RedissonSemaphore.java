@@ -49,12 +49,9 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
 
     private final SemaphorePubSub semaphorePubSub;
 
-    final CommandAsyncExecutor commandExecutor;
-
     public RedissonSemaphore(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
-        this.commandExecutor = commandExecutor;
-        this.semaphorePubSub = commandExecutor.getConnectionManager().getSubscribeService().getSemaphorePubSub();
+        this.semaphorePubSub = getSubscribeService().getSemaphorePubSub();
     }
 
     String getChannelName() {
@@ -440,8 +437,8 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
 
         RFuture<Void> future = commandExecutor.syncedEval(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 "local value = redis.call('incrby', KEYS[1], ARGV[1]); " +
-                        "redis.call('publish', KEYS[2], value); ",
-                Arrays.asList(getRawName(), getChannelName()), permits);
+                        "redis.call(ARGV[2], KEYS[2], value); ",
+                Arrays.asList(getRawName(), getChannelName()), permits, getSubscribeService().getPublishCommand());
         if (log.isDebugEnabled()) {
             future.thenAccept(o -> {
                 log.debug("released, permits: {}, name: {}", permits, getName());
@@ -488,11 +485,12 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
                 "local value = redis.call('get', KEYS[1]); " +
                         "if (value == false) then "
                         + "redis.call('set', KEYS[1], ARGV[1]); "
-                        + "redis.call('publish', KEYS[2], ARGV[1]); "
+                        + "redis.call(ARGV[2], KEYS[2], ARGV[1]); "
                         + "return 1;"
                         + "end;"
                         + "return 0;",
-                Arrays.asList(getRawName(), getChannelName()), permits);
+                Arrays.asList(getRawName(), getChannelName()),
+                permits, getSubscribeService().getPublishCommand());
 
         if (log.isDebugEnabled()) {
             future.thenAccept(r -> {
@@ -519,8 +517,9 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
                   + "value = 0;"
               + "end;"
               + "redis.call('set', KEYS[1], value + ARGV[1]); "
-              + "redis.call('publish', KEYS[2], value + ARGV[1]); ",
-                Arrays.asList(getRawName(), getChannelName()), permits);
+              + "redis.call(ARGV[2], KEYS[2], value + ARGV[1]); ",
+                Arrays.asList(getRawName(), getChannelName()),
+                permits, getSubscribeService().getPublishCommand());
     }
 
 

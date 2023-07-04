@@ -80,7 +80,7 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
         return evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local mode = redis.call('hget', KEYS[1], 'mode'); " +
                 "if (mode == false) then " +
-                    "redis.call('publish', KEYS[2], ARGV[1]); " +
+                    "redis.call(ARGV[4], KEYS[2], ARGV[1]); " +
                     "return 1; " +
                 "end;" +
                 "if (mode == 'write') then " +
@@ -96,7 +96,7 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
                             "redis.call('hdel', KEYS[1], ARGV[3]); " +
                             "if (redis.call('hlen', KEYS[1]) == 1) then " +
                                 "redis.call('del', KEYS[1]); " +
-                                "redis.call('publish', KEYS[2], ARGV[1]); " + 
+                                "redis.call(ARGV[4], KEYS[2], ARGV[1]); " +
                             "else " +
                                 // has unlocked read-locks
                                 "redis.call('hset', KEYS[1], 'mode', 'read'); " +
@@ -107,7 +107,7 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
                 "end; "
                 + "return nil;",
         Arrays.<Object>asList(getRawName(), getChannelName()),
-        LockPubSub.READ_UNLOCK_MESSAGE, internalLockLeaseTime, getLockName(threadId));
+        LockPubSub.READ_UNLOCK_MESSAGE, internalLockLeaseTime, getLockName(threadId), getSubscribeService().getPublishCommand());
     }
     
     @Override
@@ -133,11 +133,12 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
         return commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
               "if (redis.call('hget', KEYS[1], 'mode') == 'write') then " +
                   "redis.call('del', KEYS[1]); " +
-                  "redis.call('publish', KEYS[2], ARGV[1]); " +
+                  "redis.call(ARGV[2], KEYS[2], ARGV[1]); " +
                   "return 1; " +
               "end; " +
               "return 0; ",
-              Arrays.<Object>asList(getRawName(), getChannelName()), LockPubSub.READ_UNLOCK_MESSAGE);
+              Arrays.asList(getRawName(), getChannelName()),
+                LockPubSub.READ_UNLOCK_MESSAGE, getSubscribeService().getPublishCommand());
     }
 
     @Override

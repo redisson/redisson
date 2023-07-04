@@ -13,6 +13,7 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonSetCacheTest extends BaseTest {
@@ -29,6 +30,53 @@ public class RedissonSetCacheTest extends BaseTest {
             this.lng = lng;
         }
 
+    }
+
+    @Test
+    public void testAddIfExists() throws InterruptedException {
+        RSetCache<String> cache = redisson.getSetCache("list");
+        cache.add("a", 1, TimeUnit.SECONDS);
+        assertThat(cache.addIfExists(Duration.ofSeconds(2), "a")).isTrue();
+
+        Thread.sleep(1500);
+        assertThat(cache.contains("a")).isTrue();
+        Thread.sleep(700);
+        assertThat(cache.contains("a")).isFalse();
+    }
+
+    @Test
+    public void testAddAll() {
+        RSetCache<String> cache = redisson.getSetCache("list");
+        cache.add("a", 1, TimeUnit.SECONDS);
+        Map<String, Duration> map = new HashMap<>();
+        map.put("a", Duration.ofSeconds(2));
+        map.put("b", Duration.ofSeconds(2));
+        map.put("c", Duration.ofSeconds(2));
+        assertThat(cache.addAll(map)).isEqualTo(2);
+        assertThat(cache.size()).isEqualTo(3);
+    }
+
+    @Test
+    public void testAddAllIfExists() throws InterruptedException {
+        RSetCache<String> cache = redisson.getSetCache("list");
+        Map<String, Duration> map = new HashMap<>();
+        map.put("a", Duration.ofSeconds(2));
+        map.put("b", Duration.ofSeconds(2));
+        map.put("c", Duration.ofSeconds(2));
+        assertThat(cache.addAllIfExist(map)).isZero();
+        assertThat(cache.size()).isZero();
+
+        cache.add("a", 1, TimeUnit.SECONDS);
+        cache.add("b", 1, TimeUnit.SECONDS);
+        assertThat(cache.addAllIfExist(map)).isEqualTo(2);
+        assertThat(cache.contains("c")).isFalse();
+
+        Thread.sleep(1500);
+        assertThat(cache.contains("a")).isTrue();
+        assertThat(cache.contains("b")).isTrue();
+        Thread.sleep(700);
+        assertThat(cache.contains("a")).isFalse();
+        assertThat(cache.contains("b")).isFalse();
     }
 
     @Test

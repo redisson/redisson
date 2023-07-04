@@ -21,6 +21,8 @@ import java.util.concurrent.Callable;
 import org.redisson.api.RFuture;
 import org.redisson.misc.ProxyBuilder;
 import org.redisson.misc.ProxyBuilder.Callback;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * 
@@ -37,7 +39,12 @@ public class ReactiveProxyBuilder {
         return ProxyBuilder.create(new Callback() {
             @Override
             public Object execute(Callable<RFuture<Object>> callable, Method instanceMethod) {
-                return commandExecutor.reactive(callable);
+                Mono<Object> result = commandExecutor.reactive(callable);
+                if (instanceMethod.getReturnType().isAssignableFrom(Flux.class)) {
+                    Mono<Iterable> monoListResult = result.cast(Iterable.class);
+                    return monoListResult.flatMapMany(Flux::fromIterable);
+                }
+                return result;
             }
         }, instance, implementation, clazz, commandExecutor.getServiceManager());
     }

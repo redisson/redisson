@@ -7,6 +7,7 @@ import org.redisson.api.*;
 import org.redisson.api.listener.ScoredSortedSetAddListener;
 import org.redisson.client.codec.IntegerCodec;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.RankedEntry;
 import org.redisson.client.protocol.ScoredEntry;
 import org.redisson.config.Config;
 
@@ -25,6 +26,83 @@ import static org.assertj.core.api.Assertions.entry;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RedissonScoredSortedSetTest extends BaseTest {
+
+    @Test
+    public void testEntries() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("test");
+        set.add(1.1, "v1");
+        set.add(1.2, "v2");
+        set.add(1.3, "v3");
+
+        ScoredEntry<String> s = set.firstEntry();
+        assertThat(s).isEqualTo(new ScoredEntry<>(1.1, "v1"));
+        ScoredEntry<String> s2 = set.lastEntry();
+        assertThat(s2).isEqualTo(new ScoredEntry<>(1.3, "v3"));
+    }
+
+    @Test
+    public void testPollEntryDuration() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("test");
+        set.add(1.1, "v1");
+        set.add(1.2, "v2");
+        set.add(1.3, "v3");
+        set.add(1.4, "v4");
+        set.add(1.5, "v5");
+
+        List<ScoredEntry<String>> v1 = set.pollFirstEntries(Duration.ofSeconds(1), 2);
+        assertThat(v1).containsOnly(new ScoredEntry<>(1.1, "v1"), new ScoredEntry<>(1.2, "v2"));
+
+        List<ScoredEntry<String>> v2 = set.pollLastEntries(Duration.ofSeconds(1), 2);
+        assertThat(v2).containsOnly(new ScoredEntry<>(1.4, "v4"), new ScoredEntry<>(1.5, "v5"));
+
+        assertThat(set.size()).isEqualTo(1);
+    }
+    @Test
+    public void testPollEntry() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("test");
+        set.add(1.1, "v1");
+        set.add(1.2, "v2");
+        set.add(1.3, "v3");
+
+        ScoredEntry<String> e = set.pollFirstEntry();
+        assertThat(e).isEqualTo(new ScoredEntry<>(1.1, "v1"));
+
+        ScoredEntry<String> e2 = set.pollLastEntry();
+        assertThat(e2).isEqualTo(new ScoredEntry<>(1.3, "v3"));
+
+        assertThat(set.size()).isEqualTo(1);
+    }
+
+    @Test
+    public void testEntryScanIterator() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("test");
+        set.add(1.1, "v1");
+        set.add(1.2, "v2");
+        set.add(1.3, "v3");
+
+        Iterator<ScoredEntry<String>> entries = set.entryIterator();
+        assertThat(entries).toIterable().containsExactly(new ScoredEntry<>(1.1, "v1"),
+                                                new ScoredEntry<>(1.2, "v2"), new ScoredEntry<>(1.3, "v3"));
+    }
+
+    @Test
+    public void testRankEntry() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("test");
+        set.add(1.1, "v1");
+        set.add(1.2, "v2");
+        set.add(1.3, "v3");
+
+        RankedEntry<String> v1 = set.rankEntry("v1");
+        assertThat(v1.getRank()).isEqualTo(0);
+        assertThat(v1.getScore()).isEqualTo(1.1);
+
+        RankedEntry<String> v3 = set.rankEntry("v3");
+        assertThat(v3.getRank()).isEqualTo(2);
+        assertThat(v3.getScore()).isEqualTo(1.3);
+
+        RankedEntry<String> v4 = set.rankEntry("v4");
+        assertThat(v4).isNull();
+    }
 
     @Test
     public void testReplace() {

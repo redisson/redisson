@@ -3,6 +3,77 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 19-Jun-2023 - 3.22.1 released
+Feature - Apache Tomcat Manager should use sharded pubsub in Redis Cluster 7.0+  
+Feature - Micronaut Session store should use sharded pubsub in Redis Cluster 7.0+  
+Feature - RClusteredScoredSortedSet object implemented  
+Feature - `maxDeletedEntryId`, `entriesAdded`, `recordedFirstEntryId` properties added to `StreamInfo` object  
+Feature - `inactive` property added to `StreamConsumer` object  
+Feature - `LocalCachedMapOptions.cacheSize = -1` should disable local cache storage  
+
+__Breaking change - Apache Tomcat Manager and Micronaut Session store now use sharded PubSub in Redis Cluster 7.0+__  
+
+Fixed - map index entry isn't deleted when `RLiveObjectService` expires  
+Fixed - `RMultimap.fastRemoveValue()` method doesn't delete entry completely if no values retain  
+Fixed - Default getCache method checks for Object class equality (thanks @agupta-hw)  
+Fixed - `RScoredSortedSet.distributedIterator()` doesn't work (regression since 3.21.0)  
+Fixed - Memory leak if `RLocalCachedMap` created with `storeMode=LOCALCACHE` and `syncStrategy=UPDATE` params  
+Fixed - wait time handling in RedissonSpinLock (thanks @vladimirkl)  
+Fixed - java.lang.ClassCastException is thrown by RDequeReactive.pollLast() and RDequeReactive.pollFirst() methods (thanks @wynn5a)  
+Fixed - `RSearch.search()` method throws "Parameters must be specified in PARAM VALUE pairs" error  
+Fixed - `RRateLimiter.setRate()` method does not behave as expected when RateType is pre_client (thanks @wynn5a)  
+Fixed - collection fields aren't deleted when `RLiveObject` expires or is deleted  
+
+### 05-Jun-2023 - 3.22.0 released
+Feature - Spring Data Redis 3.1.0 implementation  
+Feature - Spring Boot 3.1.0 support  
+Feature - `lastEntry()`, `firstEntry()`, `pollLastEntries()`, `pollFirstEntries()`, `entryIterator()`, `rankEntry()`, `revRankEntry()` methods added to `RScoredSortedSet` object  
+Feature - `RCountDownLatch`, `RLock`, `RPermitExpirableSemaphore`, `RSemaphore` objects use sharded PubSub in Redis Cluster 7.0+  
+Feature - `slavesSyncTimeout`, `commandMapper`, `sslCiphers`, `sslTrustManagerFactory`, `sslKeyManagerFactory` settings added  
+Feature - `RMultimap.fastRemoveValue()` method added  
+Feature - `allowedClasses` setting added to `SerializationCodec`  
+Feature - `entriesRead` and `makeStream` parameters added to `RStream.createGroup()` method  
+
+__Breaking change - RCountDownLatch, RLock, RPermitExpirableSemaphore, RSemaphore objects now use sharded PubSub in Redis Cluster 7.0+__  
+
+Fixed - Expired LiveObjects with RIndex annotations retain indexed data  
+Fixed - `RRingBuffer` doesn't implement `expire()`, `expireAt()`, `delete()`, `clearExpire()` methods properly  
+Fixed - `RLocalCachedMap` local cache isn't cleared after instance expiration  
+
+### 18-May-2023 - 3.21.3 released
+
+Fixed - default retryInterval isn't applied to RBatch object  
+Fixed - RBatches no longer respect the default number of retries (regression since 3.21.1)  
+
+### 17-May-2023 - 3.21.2 released
+Feature - `RBitSet.set(long[], boolean)` method added (thanks to @skasj)  
+
+Fixed - Pattern Topic messages are missed/duplicated after failover in cluster if channel starts with `__keyspace` and `__keyevent` and `subscriptionMode = SLAVE`  
+Fixed - to many pubsub topics may cause memory leak  
+Fixed - RBatches no longer respect the default number of retries (regression since 3.21.1)  
+
+### 11-May-2023 - 3.21.1 released
+
+Feature - `addIfAbsent()`, `addIfExists()`, `addIfGreater()`, `addIfLess()`, `addAll()`, `addAllIfAbsent()`, `addAllIfExist()`, `addAllIfGreater()`, `addAllIfLess()` methods added to `RSetCache` object  
+Feature - `SetAddListener`, `SetRemoveListener`, `SetRemoveRandomListener` added to `RSet` object  
+Feature - `ScoredSortedSetAddListener`, `ScoredSortedSetRemoveListener` added to `RScoredSortedSet` object  
+Feature - `MapPutListener`, `MapRemoveListener` added to `RMap` object  
+Feature - `IncrByListener` added to `RAtomicDouble` and `RAtomicLong` objects  
+Feature - `RMapCache.getAllWithTTLOnly()` method added  
+
+__Breaking change - RedissonDelayedQueue internal data format changed__  
+__Breaking change - RedissonReliableTopic internal data format changed__  
+
+Improvement - `RedissonReliableTopic` internal structure optimization  
+
+Fixed - `RReliableTopic` data loss  
+Fixed - failover isn't handled correctly in some cases  
+Fixed - `BatchOptions.retryAttempts = 0` isn't applied to `RBatch` object  
+Fixed - `RMap.keySet()` throws NPE if CompositeCodec used  
+Fixed - RediSearch NumericFilter shouldn't set exclusive range by default  
+Fixed - RediSearch NumericFilter throws NPE  
+Fixed - `RLocalCachedMap.removeListener()` method doesn't remove loca cache listeners  
+
 ### 29-Apr-2023 - 3.21.0 released
 Feature - [RediSearch module support](https://github.com/redisson/redisson/wiki/9.-distributed-services/#96-redisearch-service)  
 Feature - [Tracing support](https://github.com/redisson/redisson/wiki/16.-Observability/#162-tracing)  
@@ -21,6 +92,7 @@ Fixed - Unable to find session error arise if Tomcat session was deleted or expi
 Fixed - `MasterSlaveEntry.getClient()` method may throw NPE  
 Fixed - initialize Decoders LinkedHashMap with correct initial size to avoid unnecessary resizing (thanks @theigl)  
 Fixed - failover handling may cause temporary connections spike  
+Fixed - `RedissonCache.invalidate()` method breaks cache configuration  
 
 ### 28-Mar-2023 - 3.20.1 released
 

@@ -67,6 +67,18 @@ public class RedissonTest extends BaseTest {
     }
 
     @Test
+    public void testLazyInitialization() {
+        Config config = new Config();
+        config.setLazyInitialization(true);
+        config.useSingleServer()
+                .setAddress("redis://127.0.0.1:4431");
+
+        RedissonClient redisson = Redisson.create(config);
+        assertThat(redisson).isNotNull();
+        redisson.shutdown();
+    }
+
+    @Test
     public void testPerformance() throws InterruptedException {
         Config config = createConfig();
         config.useSingleServer().setConnectionPoolSize(1).setConnectionMinimumIdleSize(1);
@@ -453,7 +465,8 @@ public class RedissonTest extends BaseTest {
             };
         };
         t.start();
-        
+        t.join(1000);
+
         master.stop();
         System.out.println("master " + master.getRedisServerAddressAndPort() + " stopped!");
         
@@ -889,6 +902,25 @@ public class RedissonTest extends BaseTest {
         redisson.shutdown();
         runner.stop();
 
+    }
+
+    @Test
+    public void testCommandMapper() {
+        Config c = createConfig();
+        c.useSingleServer().setCommandMapper(n -> {
+            if (n.equals("EVAL")) {
+                return "EVAL_111";
+            }
+            return n;
+        });
+        RedissonClient redisson = Redisson.create(c);
+        RBucket<String> b = redisson.getBucket("test");
+        RedisException e = Assertions.assertThrows(RedisException.class, () -> {
+            b.compareAndSet("test", "v1");
+        });
+        assertThat(e.getMessage()).startsWith("ERR unknown command `EVAL_111`");
+
+        redisson.shutdown();
     }
 
     @Test

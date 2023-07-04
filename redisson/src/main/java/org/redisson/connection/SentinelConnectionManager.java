@@ -171,7 +171,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
                 break;
             } catch (RedisConnectionException e) {
-                shutdown();
+                internalShutdown();
                 throw e;
             } catch (Exception e) {
                 if (e instanceof CompletionException) {
@@ -186,16 +186,16 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
         if (cfg.isCheckSentinelsList() && cfg.isSentinelsDiscovery()) {
             if (sentinels.isEmpty()) {
-                shutdown();
+                internalShutdown();
                 throw new RedisConnectionException("SENTINEL SENTINELS command returns empty result or connection can't be established to some of them! Set checkSentinelsList = false to avoid this check.", lastException);
             } else if (sentinels.size() < 2) {
-                shutdown();
+                internalShutdown();
                 throw new RedisConnectionException("SENTINEL SENTINELS command returns less than 2 nodes or connection can't be established to some of them! At least two sentinels should be defined in Redis configuration. Set checkSentinelsList = false to avoid this check.", lastException);
             }
         }
         
         if (currentMaster.get() == null) {
-            shutdown();
+            internalShutdown();
             throw new RedisConnectionException("Can't connect to servers!", lastException);
         }
         if (this.config.getReadMode() != ReadMode.MASTER && this.config.getSlaveAddresses().isEmpty()) {
@@ -235,7 +235,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             }
         }
 
-        shutdown();
+        internalShutdown();
         StringBuilder list = new StringBuilder();
         for (String address : cfg.getSentinelAddresses()) {
             list.append(address).append(", ");
@@ -354,7 +354,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         CompletionStage<RedisClient> masterFuture = checkMasterChange(cfg, connection);
         futures.add(masterFuture.toCompletableFuture());
 
-        if (!config.checkSkipSlavesInit()) {
+        if (!config.isSlaveNotUsed()) {
             CompletionStage<Void> slavesFuture = checkSlavesChange(cfg, connection);
             futures.add(slavesFuture.toCompletableFuture());
         }
@@ -579,7 +579,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private CompletableFuture<Void> addSlave(RedisURI uri) {
-        if (config.checkSkipSlavesInit()) {
+        if (config.isSlaveNotUsed()) {
             log.info("slave: {} is up", uri);
             return CompletableFuture.completedFuture(null);
         }
@@ -605,7 +605,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void slaveDown(RedisURI uri) {
-        if (config.checkSkipSlavesInit()) {
+        if (config.isSlaveNotUsed()) {
             log.warn("slave: {} is down", uri);
         } else {
             MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());

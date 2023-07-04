@@ -35,23 +35,27 @@ import reactor.core.publisher.Mono;
 public interface RStreamReactive<K, V> extends RExpirableReactive {
 
     /**
-     * Creates consumer group by name.
-     * 
-     * @param groupName - name of group
-     * @return void
-     */
-    Mono<Void> createGroup(String groupName);
-    
-    /**
-     * Creates consumer group by name and stream id. 
-     * Only new messages after defined stream <code>id</code> will be available for consumers of this group. 
+     * Creates consumer group.
      * <p>
-     * {@link StreamMessageId#NEWEST} is used for messages arrived since the moment of group creating
-     * 
-     * @param groupName - name of group
-     * @param id - stream id
-     * @return void
+     * Usage examples:
+     * <pre>
+     * StreamMessageId id = stream.createGroup(StreamCreateGroupArgs.name("test").id(id).makeStream());
+     * </pre>
+     *
+     * @param args method arguments object
      */
+    Mono<Void> createGroup(StreamCreateGroupArgs args);
+
+    /**
+     * Use createGroup(StreamCreateGroupArgs) method instead
+     */
+    @Deprecated
+    Mono<Void> createGroup(String groupName);
+
+    /**
+     * Use createGroup(StreamCreateGroupArgs) method instead
+     */
+    @Deprecated
     Mono<Void> createGroup(String groupName, StreamMessageId id);
     
     /**

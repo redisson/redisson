@@ -40,6 +40,7 @@ import io.netty.util.CharsetUtil;
 import org.redisson.client.ChannelName;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.config.CommandMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,13 +53,17 @@ import org.slf4j.LoggerFactory;
 @Sharable
 public class CommandEncoder extends MessageToByteEncoder<CommandData<?, ?>> {
 
-    public static final CommandEncoder INSTANCE = new CommandEncoder();
-    
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     private static final char ARGS_PREFIX = '*';
     private static final char BYTES_PREFIX = '$';
     private static final byte[] CRLF = "\r\n".getBytes();
+
+    private CommandMapper commandMapper;
+
+    public CommandEncoder(CommandMapper commandMapper) {
+        this.commandMapper = commandMapper;
+    }
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
@@ -86,8 +91,9 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<?, ?>> {
             }
             out.writeCharSequence(Long.toString(len), CharsetUtil.US_ASCII);
             out.writeBytes(CRLF);
-            
-            writeArgument(out, msg.getCommand().getName().getBytes(CharsetUtil.UTF_8));
+
+            String name = commandMapper.map(msg.getCommand().getName());
+            writeArgument(out, name.getBytes(CharsetUtil.UTF_8));
             if (msg.getCommand().getSubName() != null) {
                 writeArgument(out, msg.getCommand().getSubName().getBytes(CharsetUtil.UTF_8));
             }

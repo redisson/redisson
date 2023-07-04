@@ -54,15 +54,15 @@ public class CommandBatchService extends CommandAsyncService {
     public static class ConnectionEntry {
 
         boolean firstCommand = true;
-        CompletableFuture<RedisConnection> connectionFuture;
+        final CompletableFuture<RedisConnection> connectionFuture;
         Runnable cancelCallback;
-        
+
+        public ConnectionEntry(CompletableFuture<RedisConnection> connectionFuture) {
+            this.connectionFuture = connectionFuture;
+        }
+
         public CompletableFuture<RedisConnection> getConnectionFuture() {
             return connectionFuture;
-        }
-        
-        public void setConnectionFuture(CompletableFuture<RedisConnection> connectionFuture) {
-            this.connectionFuture = connectionFuture;
         }
 
         public boolean isFirstCommand() {
@@ -132,6 +132,9 @@ public class CommandBatchService extends CommandAsyncService {
 
     private final AtomicBoolean executed = new AtomicBoolean();
 
+    private final long retryInterval;
+    private final int retryAttempts;
+
     public CommandBatchService(CommandAsyncExecutor executor) {
         this(executor, RedissonObjectBuilder.ReferenceType.DEFAULT);
     }
@@ -152,6 +155,18 @@ public class CommandBatchService extends CommandAsyncService {
                                     RedissonObjectBuilder objectBuilder, RedissonObjectBuilder.ReferenceType referenceType) {
         super(connectionManager, objectBuilder, referenceType);
         this.options = options;
+
+        if (options.getRetryAttempts() >= 0) {
+            this.retryAttempts = options.getRetryAttempts();
+        } else {
+            this.retryAttempts = connectionManager.getServiceManager().getConfig().getRetryAttempts();
+        }
+
+        if (options.getRetryInterval() > 0) {
+            this.retryInterval = this.options.getRetryInterval();
+        } else {
+            this.retryInterval = connectionManager.getServiceManager().getConfig().getRetryInterval();
+        }
     }
 
     public BatchOptions getOptions() {
@@ -391,8 +406,8 @@ public class CommandBatchService extends CommandAsyncService {
                             .executionMode(this.options.getExecutionMode())
                             .syncSlaves(this.options.getSyncSlaves(), this.options.getSyncTimeout(), TimeUnit.MILLISECONDS)
                             .responseTimeout(this.options.getResponseTimeout(), TimeUnit.MILLISECONDS)
-                            .retryAttempts(Math.max(0, this.options.getRetryAttempts() - attempt.get()))
-                            .retryInterval(this.options.getRetryInterval(), TimeUnit.MILLISECONDS);
+                            .retryAttempts(Math.max(0, retryAttempts - attempt.get()))
+                            .retryInterval(retryInterval, TimeUnit.MILLISECONDS);
 
                     if (this.options.isSkipResult()) {
                         options.skipResult();
@@ -455,15 +470,6 @@ public class CommandBatchService extends CommandAsyncService {
     }
 
     private void resolveCommands(AtomicInteger attempt, CompletableFuture<Map<MasterSlaveEntry, Entry>> future) {
-        long retryInterval = this.options.getRetryInterval();
-        if (retryInterval == 0) {
-            retryInterval = connectionManager.getServiceManager().getConfig().getRetryInterval();
-        }
-        long retryAttempts = this.options.getRetryInterval();
-        if (retryAttempts == 0) {
-            retryAttempts = connectionManager.getServiceManager().getConfig().getRetryAttempts();
-        }
-
         Map<MasterSlaveEntry, Entry> result = new HashMap<>();
         for (Map.Entry<NodeSource, Entry> e : commands.entrySet()) {
             MasterSlaveEntry entry = getEntry(e.getKey());
@@ -492,15 +498,6 @@ public class CommandBatchService extends CommandAsyncService {
     }
 
     private void resolveCommandsInMemory(AtomicInteger attempt, CompletableFuture<Map<NodeSource, Entry>> future) {
-        long retryInterval = this.options.getRetryInterval();
-        if (retryInterval == 0) {
-            retryInterval = connectionManager.getServiceManager().getConfig().getRetryInterval();
-        }
-        long retryAttempts = this.options.getRetryInterval();
-        if (retryAttempts == 0) {
-            retryAttempts = connectionManager.getServiceManager().getConfig().getRetryAttempts();
-        }
-
         Map<NodeSource, Entry> result = new HashMap<>();
         for (Map.Entry<NodeSource, Entry> e : commands.entrySet()) {
             MasterSlaveEntry entry = getEntry(e.getKey());

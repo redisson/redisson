@@ -44,11 +44,10 @@ import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.Hash;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * Bloom filter based on Highway 128-bit hash.
@@ -99,39 +98,42 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
 
     @Override
     public boolean add(T object) {
-        long[] hashes = hash(object);
+        return add(Arrays.asList(object)) > 0;
+    }
 
-        while (true) {
-            if (size == 0) {
-                readConfig();
+    @Override
+    public long add(Collection<T> objects) {
+        if (size == 0) {
+            readConfig();
+        }
+
+        List<Long> allIndexes = index(objects);
+
+        CommandBatchService executorService = new CommandBatchService(commandExecutor);
+        addConfigCheck(hashIterations, size, executorService);
+        RBitSetAsync bs = createBitSet(executorService);
+        for (long index : allIndexes) {
+            bs.setAsync(index);
+        }
+        List<Boolean> result = (List<Boolean>) executorService.execute().getResponses();
+        List<Boolean> res = result.subList(1, result.size());
+
+        int s = allIndexes.size() / objects.size();
+        int c = 0;
+        int k = 0;
+        for (int i = 0; i < res.size(); i++) {
+            Boolean val = res.get(i);
+            if (!val) {
+                k++;
             }
-
-            int hashIterations = this.hashIterations;
-            long size = this.size;
-
-            long[] indexes = hash(hashes[0], hashes[1], hashIterations, size);
-
-            CommandBatchService executorService = new CommandBatchService(commandExecutor);
-            addConfigCheck(hashIterations, size, executorService);
-            RBitSetAsync bs = createBitSet(executorService);
-            for (int i = 0; i < indexes.length; i++) {
-                bs.setAsync(indexes[i]);
-            }
-            try {
-                List<Boolean> result = (List<Boolean>) executorService.execute().getResponses();
-
-                for (Boolean val : result.subList(1, result.size()-1)) {
-                    if (!val) {
-                        return true;
-                    }
+            if ((i + 1) % s == 0) {
+                if (k > 0) {
+                    c++;
                 }
-                return false;
-            } catch (RedisException e) {
-                if (e.getMessage() == null || !e.getMessage().contains("Bloom filter config has been changed")) {
-                    throw e;
-                }
+                k = 0;
             }
         }
+        return c;
     }
 
     private long[] hash(long hash1, long hash2, int iterations, long size) {
@@ -149,41 +151,53 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
     }
 
     @Override
-    public boolean contains(T object) {
-        long[] hashes = hash(object);
+    public long contains(Collection<T> objects) {
+        if (size == 0) {
+            readConfig();
+        }
 
-        while (true) {
-            if (size == 0) {
-                readConfig();
+        List<Long> allIndexes = index(objects);
+
+        CommandBatchService executorService = new CommandBatchService(commandExecutor);
+        addConfigCheck(hashIterations, size, executorService);
+        RBitSetAsync bs = createBitSet(executorService);
+        for (long index : allIndexes) {
+            bs.getAsync(index);
+        }
+        List<Boolean> result = (List<Boolean>) executorService.execute().getResponses();
+        List<Boolean> res = result.subList(1, result.size());
+
+        int s = allIndexes.size() / objects.size();
+        int missed = 0;
+        int k = 0;
+        for (int i = 0; i < res.size(); i++) {
+            Boolean val = res.get(i);
+            if (!val) {
+                k++;
             }
-
-            int hashIterations = this.hashIterations;
-            long size = this.size;
-
-            long[] indexes = hash(hashes[0], hashes[1], hashIterations, size);
-
-            CommandBatchService executorService = new CommandBatchService(commandExecutor);
-            addConfigCheck(hashIterations, size, executorService);
-            RBitSetAsync bs = createBitSet(executorService);
-            for (int i = 0; i < indexes.length; i++) {
-                bs.getAsync(indexes[i]);
-            }
-            try {
-                List<Boolean> result = (List<Boolean>) executorService.execute().getResponses();
-
-                for (Boolean val : result.subList(1, result.size()-1)) {
-                    if (!val) {
-                        return false;
-                    }
+            if ((i + 1) % s == 0) {
+                if (k > 0) {
+                    missed++;
                 }
-
-                return true;
-            } catch (RedisException e) {
-                if (e.getMessage() == null || !e.getMessage().contains("Bloom filter config has been changed")) {
-                    throw e;
-                }
+                k = 0;
             }
         }
+        return objects.size() - missed;
+    }
+
+    private List<Long> index(Collection<T> objects) {
+        List<Long> allIndexes = new LinkedList<>();
+        for (T object : objects) {
+            long[] hashes = hash(object);
+            long[] indexes = hash(hashes[0], hashes[1], hashIterations, size);
+            allIndexes.addAll(Arrays.stream(indexes).boxed().collect(Collectors.toList()));
+        }
+        return allIndexes;
+    }
+
+    @Override
+    public boolean contains(T object) {
+        return contains(Arrays.asList(object)) > 0;
     }
 
     protected RBitSetAsync createBitSet(CommandBatchService executorService) {

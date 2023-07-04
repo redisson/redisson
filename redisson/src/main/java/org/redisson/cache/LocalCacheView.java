@@ -15,14 +15,8 @@
  */
 package org.redisson.cache;
 
-import java.util.AbstractCollection;
-import java.util.AbstractMap;
-import java.util.AbstractSet;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
@@ -265,6 +259,10 @@ public class LocalCacheView<K, V> {
     }
 
     public ConcurrentMap<CacheKey, CacheValue> createCache(LocalCachedMapOptions<?, ?> options) {
+        if (options.getCacheSize() == -1) {
+            return new NoOpCacheMap<CacheKey, CacheValue>();
+        }
+
         if (options.getCacheProvider() == LocalCachedMapOptions.CacheProvider.CAFFEINE) {
             Caffeine<Object, Object> caffeineBuilder = Caffeine.newBuilder();
             if (options.getTimeToLiveInMillis() > 0) {

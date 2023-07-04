@@ -93,6 +93,11 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             try {
                 RedisConnection connection = connectionFuture.toCompletableFuture().join();
 
+                connection.async(RedisCommands.SPUBLISH, "", "").thenAccept(r -> {
+                    subscribeService.setShardingSupported(true);
+                });
+
+
                 if (cfg.getNodeAddresses().size() == 1 && !addr.isIP()) {
                     configEndpointHostName = addr.getHost();
                 }
@@ -131,8 +136,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                         throw new IllegalStateException("Master node: " + partition.getNodeId() + " doesn't have address.");
                     }
 
-                    CompletableFuture<Void> masterFuture = addMasterEntry(partition, cfg);
-                    masterFutures.add(masterFuture);
+                    CompletionStage<Void> masterFuture = addMasterEntry(partition, cfg);
+                    masterFutures.add(masterFuture.toCompletableFuture());
                 }
 
                 CompletableFuture<Void> masterFuture = CompletableFuture.allOf(masterFutures.toArray(new CompletableFuture[0]));
@@ -152,7 +157,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }
 
         if (lastPartitions.isEmpty()) {
-            shutdown();
+            internalShutdown();
             if (failedMasters.isEmpty()) {
                 throw new RedisConnectionException("Can't connect to servers!", lastException);
             } else {
@@ -161,7 +166,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }
 
         if (cfg.isCheckSlotsCoverage() && lastPartitions.size() != MAX_SLOT) {
-            shutdown();
+            internalShutdown();
             if (failedMasters.isEmpty()) {
                 throw new RedisConnectionException("Not all slots covered! Only " + lastPartitions.size() + " slots are available. Set checkSlotsCoverage = false to avoid this check.", lastException);
             } else {
@@ -174,11 +179,15 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     @Override
     public Collection<MasterSlaveEntry> getEntrySet() {
+        lazyConnect();
+
         return client2entry.values();
     }
 
     @Override
     public MasterSlaveEntry getEntry(RedisURI addr) {
+        lazyConnect();
+
         for (MasterSlaveEntry entry : client2entry.values()) {
             if (addr.equals(entry.getClient().getAddr())) {
                 return entry;
@@ -192,6 +201,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     @Override
     public MasterSlaveEntry getEntry(RedisClient redisClient) {
+        lazyConnect();
+
         MasterSlaveEntry entry = client2entry.get(redisClient);
         if (entry != null) {
             return entry;
@@ -207,6 +218,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     @Override
     public MasterSlaveEntry getEntry(InetSocketAddress address) {
+        lazyConnect();
+
         for (MasterSlaveEntry entry : client2entry.values()) {
             InetSocketAddress addr = entry.getClient().getAddr();
             if (addr.getAddress().equals(address.getAddress()) && addr.getPort() == address.getPort()) {
@@ -230,6 +243,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     @Override
     protected MasterSlaveEntry getEntry(int slot) {
+        lazyConnect();
+
         return slot2entry.get(slot);
     }
 
@@ -281,9 +296,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return result;
     }
     
-    private CompletableFuture<Void> addMasterEntry(ClusterPartition partition, ClusterServersConfig cfg) {
-        CompletableFuture<Void> result = new CompletableFuture<>();
-
+    private CompletionStage<Void> addMasterEntry(ClusterPartition partition, ClusterServersConfig cfg) {
         if (partition.isMasterFail()) {
             RedisException e = new RedisException("Failed to add master: " +
                     partition.getMasterAddress() + " for slot ranges: " +
@@ -293,23 +306,18 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 e = new RedisException("Failed to add master: " +
                         partition.getMasterAddress() + ". Reason - server has FAIL flag");
             }
+            CompletableFuture<Void> result = new CompletableFuture<>();
             result.completeExceptionally(e);
             return result;
         }
 
         CompletionStage<RedisConnection> connectionFuture = connectToNode(cfg, partition.getMasterAddress(), configEndpointHostName);
-        connectionFuture.whenComplete((connection, ex1) -> {
-            if (ex1 != null) {
-                log.error("Can't connect to master: {} with slot ranges: {}", partition.getMasterAddress(), partition.getSlotRanges());
-                result.completeExceptionally(ex1);
-                return;
-            }
-
+        return connectionFuture.thenCompose(connection -> {
             MasterSlaveServersConfig config = create(cfg);
             config.setMasterAddress(partition.getMasterAddress().toString());
 
             MasterSlaveEntry entry;
-            if (config.checkSkipSlavesInit()) {
+            if (config.isSlaveNotUsed()) {
                 entry = new SingleEntry(this, serviceManager.getConnectionWatcher(), config);
             } else {
                 Set<String> slaveAddresses = partition.getSlaveAddresses().stream().map(r -> r.toString()).collect(Collectors.toSet());
@@ -319,27 +327,15 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             }
 
             CompletableFuture<RedisClient> f = entry.setupMasterEntry(new RedisURI(config.getMasterAddress()), configEndpointHostName);
-            f.whenComplete((masterClient, ex3) -> {
-                if (ex3 != null) {
-                    log.error("Can't add master: {} for slot ranges: {}", partition.getMasterAddress(), partition.getSlotRanges(), ex3);
-                    result.completeExceptionally(ex3);
-                    return;
-                }
-
+            return f.thenCompose(masterClient -> {
                 for (Integer slot : partition.getSlots()) {
                     addEntry(slot, entry);
                     lastPartitions.put(slot, partition);
                 }
 
-                if (!config.checkSkipSlavesInit()) {
+                if (!config.isSlaveNotUsed()) {
                     CompletableFuture<Void> fs = entry.initSlaveBalancer(partition.getFailedSlaveAddresses(), configEndpointHostName);
-                    fs.whenComplete((r, ex) -> {
-                        if (ex != null) {
-                            log.error("unable to add slave for: {} slot ranges: {}", partition.getMasterAddress(), partition.getSlotRanges(), ex);
-                            result.completeExceptionally(ex);
-                            return;
-                        }
-
+                    return fs.thenAccept(r -> {
                         if (!partition.getSlaveAddresses().isEmpty()) {
                             log.info("slaves: {} added for slot ranges: {}", partition.getSlaveAddresses(), partition.getSlotRanges());
                             if (!partition.getFailedSlaveAddresses().isEmpty()) {
@@ -347,24 +343,14 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                             }
                         }
 
-                        if (result.complete(null)) {
-                            log.info("master: {} added for slot ranges: {}", partition.getMasterAddress(), partition.getSlotRanges());
-                        } else {
-                            log.error("unable to add master: {} for slot ranges: {}", partition.getMasterAddress(), partition.getSlotRanges());
-                        }
-                    });
-                } else {
-                    if (result.complete(null)) {
                         log.info("master: {} added for slot ranges: {}", partition.getMasterAddress(), partition.getSlotRanges());
-                    } else {
-                        log.error("unable to add master: {} for slot ranges: {}", partition.getMasterAddress(), partition.getSlotRanges());
-                    }
+                    });
                 }
 
+                log.info("master: {} added for slot ranges: {}", partition.getMasterAddress(), partition.getSlotRanges());
+                return CompletableFuture.completedFuture(null);
             });
         });
-
-        return result;
     }
 
     private void scheduleClusterChangeCheck(ClusterServersConfig cfg) {
@@ -449,7 +435,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         });
     }
 
-    private void updateClusterState(ClusterServersConfig cfg, RedisConnection connection, 
+    private void updateClusterState(ClusterServersConfig cfg, RedisConnection connection,
             Iterator<RedisURI> iterator, RedisURI uri, AtomicReference<Throwable> lastException) {
         RFuture<List<ClusterNodeInfo>> future = connection.async(clusterNodesCommand);
         future.whenComplete((nodes, e) -> {
@@ -525,7 +511,12 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             futures.add(f);
         }
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-                                    .exceptionally(e -> null);
+                                    .exceptionally(e -> {
+                                        if (e != null) {
+                                            log.error(e.getMessage(), e);
+                                        }
+                                        return null;
+                                    });
     }
 
     private CompletableFuture<Void> upDownSlaves(MasterSlaveEntry entry, ClusterPartition currentPart, ClusterPartition newPart, Set<RedisURI> addedSlaves) {
@@ -605,17 +596,13 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             }
 
             CompletableFuture<Void> slaveUpFuture = entry.addSlave(uri, false, NodeType.SLAVE, configEndpointHostName);
-            slaveUpFuture = slaveUpFuture.whenComplete((res, ex) -> {
-                if (ex != null) {
-                    log.error("Can't add slave: {}", uri, ex);
-                }
-            }).thenCompose(res -> {
+            CompletableFuture<Void> f = slaveUpFuture.thenCompose(res -> {
                 currentPart.addSlaveAddress(uri);
                 log.info("slave: {} added for slot ranges: {}", uri, currentPart.getSlotRanges());
                 return entry.excludeMasterFromSlaves(uri)
-                            .thenApply(r -> null);
+                        .thenApply(r -> null);
             });
-            futures.add(slaveUpFuture);
+            futures.add(f);
         }
 
         CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
@@ -674,11 +661,16 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
         List<CompletableFuture<?>> futures = new ArrayList<>();
         for (ClusterPartition newPart : addedPartitions.values()) {
-            CompletableFuture<Void> future = addMasterEntry(newPart, cfg);
-            futures.add(future);
+            CompletionStage<Void> future = addMasterEntry(newPart, cfg);
+            futures.add(future.toCompletableFuture());
         }
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-                                    .exceptionally(e -> null);
+                                    .exceptionally(e -> {
+                                        if (e != null) {
+                                            log.error(e.getMessage(), e);
+                                        }
+                                        return null;
+                                    });
     }
 
     private void checkSlotsChange(Collection<ClusterPartition> newPartitions) {

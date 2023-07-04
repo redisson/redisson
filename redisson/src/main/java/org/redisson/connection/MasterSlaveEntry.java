@@ -65,6 +65,8 @@ public class MasterSlaveEntry {
     final AtomicBoolean active = new AtomicBoolean(true);
     final IdleConnectionWatcher idleConnectionWatcher;
 
+    final AtomicBoolean noPubSubSlaves = new AtomicBoolean();
+
     public MasterSlaveEntry(ConnectionManager connectionManager, IdleConnectionWatcher idleConnectionWatcher,
                             MasterSlaveServersConfig config) {
         this.connectionManager = connectionManager;
@@ -132,17 +134,21 @@ public class MasterSlaveEntry {
                     config);
 
             List<CompletableFuture<Void>> futures = new ArrayList<>();
-            if (!config.checkSkipSlavesInit() && !slaveBalancer.contains(client.getAddr())) {
+            if (!config.isSlaveNotUsed() && !slaveBalancer.contains(client.getAddr())) {
                 CompletableFuture<Void> masterAsSlaveFuture = addSlave(client.getAddr(), client.getConfig().getAddress(),
                         true, NodeType.MASTER, client.getConfig().getSslHostname());
                 futures.add(masterAsSlaveFuture);
             }
 
-            CompletableFuture<Void> writeFuture = writeConnectionPool.add(masterEntry);
+            if (masterEntry.isFreezed()) {
+                return CompletableFuture.completedFuture(null);
+            }
+
+            CompletableFuture<Void> writeFuture = writeConnectionPool.initConnections(masterEntry);
             futures.add(writeFuture);
 
             if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
-                CompletableFuture<Void> pubSubFuture = pubSubConnectionPool.add(masterEntry);
+                CompletableFuture<Void> pubSubFuture = pubSubConnectionPool.initConnections(masterEntry);
                 futures.add(pubSubFuture);
             }
             return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
@@ -152,9 +158,7 @@ public class MasterSlaveEntry {
             }
         }).thenApply(r -> {
             writeConnectionPool.addEntry(masterEntry);
-            if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
-                pubSubConnectionPool.addEntry(masterEntry);
-            }
+            pubSubConnectionPool.addEntry(masterEntry);
             return client;
         });
     }
@@ -192,7 +196,7 @@ public class MasterSlaveEntry {
         }
 
         // add master as slave if no more slaves available
-        if (!config.checkSkipSlavesInit()
+        if (!config.isSlaveNotUsed()
                 && !masterEntry.getClient().getAddr().equals(entry.getClient().getAddr())
                     && slaveBalancer.getAvailableClients() == 0) {
             if (slaveBalancer.unfreeze(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM)) {
@@ -218,7 +222,7 @@ public class MasterSlaveEntry {
         }
 
         // add master as slave if no more slaves available
-        if (!config.checkSkipSlavesInit()
+        if (!config.isSlaveNotUsed()
                 && !masterEntry.getClient().getAddr().equals(entry.getClient().getAddr())
                     && slaveBalancer.getAvailableClients() == 0) {
             CompletableFuture<Boolean> f = slaveBalancer.unfreezeAsync(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM);
@@ -359,6 +363,7 @@ public class MasterSlaveEntry {
     }
 
     private CompletableFuture<Void> addSlave(RedisClient client, boolean freezed, NodeType nodeType) {
+        noPubSubSlaves.set(false);
         CompletableFuture<InetSocketAddress> addrFuture = client.resolveAddr();
         return addrFuture.thenCompose(res -> {
             ClientConnectionsEntry entry = new ClientConnectionsEntry(client,
@@ -417,12 +422,13 @@ public class MasterSlaveEntry {
 
         InetSocketAddress addr = masterEntry.getClient().getAddr();
         // exclude master from slaves
-        if (!config.checkSkipSlavesInit()
+        if (!config.isSlaveNotUsed()
                 && !addr.equals(entry.getClient().getAddr())) {
             if (slaveDown(addr, FreezeReason.SYSTEM)) {
                 log.info("master {} excluded from slaves", addr);
             }
         }
+        noPubSubSlaves.set(false);
         return true;
     }
     
@@ -433,12 +439,13 @@ public class MasterSlaveEntry {
 
         InetSocketAddress addr = masterEntry.getClient().getAddr();
         // exclude master from slaves
-        if (!config.checkSkipSlavesInit()
+        if (!config.isSlaveNotUsed()
                 && !address.equals(addr)) {
             if (slaveDown(addr, FreezeReason.SYSTEM)) {
                 log.info("master {} excluded from slaves", addr);
             }
         }
+        noPubSubSlaves.set(false);
         return true;
     }
 
@@ -458,7 +465,7 @@ public class MasterSlaveEntry {
 
     public CompletableFuture<Boolean> excludeMasterFromSlaves(InetSocketAddress address) {
         InetSocketAddress addr = masterEntry.getClient().getAddr();
-        if (config.checkSkipSlavesInit() || addr.equals(address)) {
+        if (config.isSlaveNotUsed() || addr.equals(address)) {
             return CompletableFuture.completedFuture(false);
         }
         CompletableFuture<Boolean> downFuture = slaveDownAsync(addr, FreezeReason.SYSTEM);
@@ -471,10 +478,12 @@ public class MasterSlaveEntry {
     }
 
     public CompletableFuture<Boolean> slaveUpAsync(RedisURI address, FreezeReason freezeReason) {
+        noPubSubSlaves.set(false);
         return slaveBalancer.unfreezeAsync(address, freezeReason);
     }
 
     public CompletableFuture<Boolean> slaveUpAsync(InetSocketAddress address, FreezeReason freezeReason) {
+        noPubSubSlaves.set(false);
         CompletableFuture<Boolean> f = slaveBalancer.unfreezeAsync(address, freezeReason);
         return f.thenCompose(r -> {
             if (r) {
@@ -491,12 +500,13 @@ public class MasterSlaveEntry {
 
         InetSocketAddress addr = masterEntry.getClient().getAddr();
         // exclude master from slaves
-        if (!config.checkSkipSlavesInit()
+        if (!config.isSlaveNotUsed()
                 && !addr.equals(address)) {
             if (slaveDown(addr, FreezeReason.SYSTEM)) {
                 log.info("master {} excluded from slaves", addr);
             }
         }
+        noPubSubSlaves.set(false);
         return true;
     }
 
@@ -550,7 +560,7 @@ public class MasterSlaveEntry {
             slaveDown(oldMaster.getClient().getAddr(), FreezeReason.MANAGER);
 
             // check if at least one slave is available, use master as slave if false
-            if (!config.checkSkipSlavesInit()) {
+            if (!config.isSlaveNotUsed()) {
                 useMasterAsSlave();
             }
             oldMaster.shutdownAsync();
@@ -606,8 +616,23 @@ public class MasterSlaveEntry {
         if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
             return pubSubConnectionPool.get();
         }
-        
-        return slaveBalancer.nextPubSubConnection();
+
+        if (noPubSubSlaves.get()) {
+            return pubSubConnectionPool.get();
+        }
+
+        CompletableFuture<RedisPubSubConnection> future = slaveBalancer.nextPubSubConnection();
+        return future.handle((r, e) -> {
+            if (e != null) {
+                if (noPubSubSlaves.compareAndSet(false, true)) {
+                    log.warn("No slaves for master: {} PubSub connections established with the master node.",
+                            masterEntry.getClient().getAddr(), e);
+                }
+                return pubSubConnectionPool.get();
+            }
+
+            return CompletableFuture.completedFuture(r);
+        }).thenCompose(f -> f);
     }
 
     public void returnPubSubConnection(RedisPubSubConnection connection) {

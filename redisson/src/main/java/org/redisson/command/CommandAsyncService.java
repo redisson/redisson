@@ -89,7 +89,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
-    public <V> void transfer(CompletableFuture<V> future1, CompletableFuture<V> future2) {
+    public <V> void transfer(CompletionStage<V> future1, CompletableFuture<V> future2) {
         future1.whenComplete((res, e) -> {
             if (e != null) {
                 future2.completeExceptionally(e);
@@ -741,7 +741,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     @Override
     public <T> RFuture<T> syncedEval(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
         CompletionStage<Map<String, String>> replicationFuture = CompletableFuture.completedFuture(Collections.emptyMap());
-        if (!getServiceManager().getConfig().checkSkipSlavesInit()) {
+        if (!getServiceManager().getConfig().isSlaveNotUsed()) {
             replicationFuture = writeAsync(key, RedisCommands.INFO_REPLICATION);
         }
         CompletionStage<T> resFuture = replicationFuture.thenCompose(r -> {
@@ -773,7 +773,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     protected CommandBatchService createCommandBatchService(int availableSlaves) {
         BatchOptions options = BatchOptions.defaults()
-                                            .syncSlaves(availableSlaves, 1, TimeUnit.SECONDS);
+                                            .syncSlaves(availableSlaves, getServiceManager().getCfg().getSlavesSyncTimeout(), TimeUnit.MILLISECONDS);
         return new CommandBatchService(this, options);
     }
 

@@ -34,23 +34,27 @@ import java.util.concurrent.TimeUnit;
 public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
 
     /**
-     * Creates consumer group by name.
-     * Only new messages will be available for consumers of this group.
-     * 
-     * @param groupName - name of group
+     * Creates consumer group.
+     * <p>
+     * Usage examples:
+     * <pre>
+     * StreamMessageId id = stream.createGroup(StreamCreateGroupArgs.name("test").id(id).makeStream());
+     * </pre>
+     *
+     * @param args method arguments object
      */
+    void createGroup(StreamCreateGroupArgs args);
+
+    /**
+     * Use createGroup(StreamCreateGroupArgs) method instead
+     */
+    @Deprecated
     void createGroup(String groupName);
 
     /**
-     * Creates consumer group by name and Stream Message ID. 
-     * Only new messages after defined stream <code>id</code> will be available for consumers of this group. 
-     * <p>
-     * {@link StreamMessageId#NEWEST} is used for messages arrived since the moment of group creation
-     * {@link StreamMessageId#ALL} is used for all messages added before and after the moment of group creation
-     * 
-     * @param groupName - name of group
-     * @param id - Stream Message ID
+     * Use createGroup(StreamCreateGroupArgs) method instead
      */
+    @Deprecated
     void createGroup(String groupName, StreamMessageId id);
     
     /**

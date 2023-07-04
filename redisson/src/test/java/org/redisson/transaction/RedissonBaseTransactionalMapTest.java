@@ -216,6 +216,15 @@ public abstract class RedissonBaseTransactionalMapTest extends BaseTest {
         assertThat(m.get("5")).isEqualTo("8");
     }
 
+    @Test
+    public void testFastRemove() {
+        RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+        RMap<String, String> map = getTransactionalMap(transaction);
+        assertThat(map.fastPut("1", "2")).isTrue();
+        assertThat(map.fastRemove("1")).isEqualTo(1);
+        transaction.commit();
+        assertThat(redisson.getKeys().count()).isZero();
+    }
     
     @Test
     public void testRemove() {

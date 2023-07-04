@@ -19,6 +19,7 @@ import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
 import org.redisson.api.RScoredSortedSet.Aggregate;
+import org.redisson.client.protocol.RankedEntry;
 import org.redisson.client.protocol.ScoredEntry;
 
 import java.time.Duration;
@@ -246,12 +247,66 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      */
     Maybe<V> pollFirst();
 
+
+    /**
+     * Removes and returns the head entry (value and its score) or {@code null} if this sorted set is empty.
+     *
+     * @return the head entry,
+     * or {@code null} if this sorted set is empty
+     */
+    Maybe<ScoredEntry<V>> pollFirstEntry();
+
+    /**
+     * Removes and returns the head entries (value and its score) of this sorted set.
+     *
+     * @param count entries amount
+     * @return the head entries of this sorted set
+     */
+    Single<List<ScoredEntry<V>>> pollFirstEntries(int count);
+
+    /**
+     * Removes and returns the head entries (value and its score).
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count entries amount
+     * @return the head entries
+     */
+    Single<List<ScoredEntry<V>>> pollFirstEntries(Duration duration, int count);
+
     /**
      * Removes and returns the tail element or {@code null} if this sorted set is empty.
      *
      * @return the tail element or {@code null} if this sorted set is empty
      */
     Maybe<V> pollLast();
+
+    /**
+     * Removes and returns the tail entry (value and its score) or {@code null} if this sorted set is empty.
+     *
+     * @return the tail entry or {@code null} if this sorted set is empty
+     */
+    Maybe<ScoredEntry<V>> pollLastEntry();
+
+    /**
+     * Removes and returns the tail entries (value and its score) of this sorted set.
+     *
+     * @param count entries amount
+     * @return the tail entries of this sorted set
+     */
+    Single<List<ScoredEntry<V>>> pollLastEntries(int count);
+
+    /**
+     * Removes and returns the head entries (value and its score).
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count entries amount
+     * @return the tail entries
+     */
+    Single<List<ScoredEntry<V>>> pollLastEntries(Duration duration, int count);
 
     /**
      * Returns the head element or {@code null} if this sorted set is empty.
@@ -261,11 +316,25 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
     Maybe<V> first();
 
     /**
+     * Returns the head entry (value and its score) or {@code null} if this sorted set is empty.
+     *
+     * @return the head entry or {@code null} if this sorted set is empty
+     */
+    Maybe<ScoredEntry<V>> firstEntry();
+
+    /**
      * Returns the tail element or {@code null} if this sorted set is empty.
      *
      * @return the tail element or {@code null} if this sorted set is empty
      */
     Maybe<V> last();
+
+    /**
+     * Returns the tail entry (value and its score) or {@code null} if this sorted set is empty.
+     *
+     * @return the tail entry or {@code null} if this sorted set is empty
+     */
+    Maybe<ScoredEntry<V>> lastEntry();
 
     /**
      * Returns score of the head element or returns {@code null} if this sorted set is empty.
@@ -339,8 +408,49 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      * @return iterator
      */
     Flowable<V> iterator(String pattern, int count);
-    
+
+    /**
+     * Returns an iterator over elements in this set.
+     *
+     * @return iterator
+     */
     Flowable<V> iterator();
+
+    /**
+     * Returns an iterator over entries (value and its score) in this set.
+     *
+     * @return iterator
+     */
+    Flowable<ScoredEntry<V>> entryIterator();
+
+    /**
+     * Returns an iterator over entries (value and its score) in this set.
+     * If <code>pattern</code> is not null then only entries match this pattern are loaded.
+     *
+     * @param pattern search pattern
+     * @return iterator
+     */
+    Flowable<ScoredEntry<V>> entryIterator(String pattern);
+
+    /**
+     * Returns an iterator over entries (value and its score) in this set.
+     * Entries are loaded in batch. Batch size is defined by <code>count</code> param.
+     *
+     * @param count size of elements batch
+     * @return iterator
+     */
+    Flowable<ScoredEntry<V>> entryIterator(int count);
+
+    /**
+     * Returns an iterator over entries (value and its score) in this set.
+     * Entries are loaded in batch. Batch size is defined by <code>count</code> param.
+     * If pattern is not null then only entries match this pattern are loaded.
+     *
+     * @param pattern search pattern
+     * @param count size of entries batch
+     * @return iterator
+     */
+    Flowable<ScoredEntry<V>> entryIterator(String pattern, int count);
 
     /**
      * Removes values by score range.
@@ -375,7 +485,16 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      * @return rank or <code>null</code> if value does not exist
      */
     Maybe<Integer> rank(V o);
-    
+
+    /**
+     * Returns rank and score of specified <code>value</code>,
+     * with the ranks ordered from low to high.
+     *
+     * @param value object
+     * @return ranked entry or <code>null</code> if value does not exist
+     */
+    Maybe<RankedEntry<V>> rankEntry(V value);
+
     /**
      * Returns rank of value, with the scores ordered from high to low.
      * 
@@ -383,6 +502,15 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      * @return rank or <code>null</code> if value does not exist
      */
     Maybe<Integer> revRank(V o);
+
+    /**
+     * Returns rank and score of specified <code>value</code>,
+     * with the ranks ordered from high to low.
+     *
+     * @param value object
+     * @return ranked entry or <code>null</code> if value does not exist
+     */
+    Maybe<RankedEntry<V>> revRankEntry(V value);
 
     /**
      * Returns ranks of elements, with the scores ordered from high to low.
@@ -1178,5 +1306,19 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      * @return stream of tail elements
      */
     Flowable<V> takeLastElements();
-    
+
+    /**
+     * Adds object event listener
+     *
+     * @see org.redisson.api.listener.ScoredSortedSetAddListener
+     * @see org.redisson.api.listener.ScoredSortedSetRemoveListener
+     * @see org.redisson.api.ExpiredObjectListener
+     * @see org.redisson.api.DeletedObjectListener
+     *
+     * @param listener - object event listener
+     * @return listener id
+     */
+    Single<Integer> addListener(ObjectListener listener);
+
+
 }

@@ -72,6 +72,8 @@ public class Config {
 
     private boolean checkLockSyncedSlaves = true;
 
+    private long slavesSyncTimeout = 1000;
+
     private long reliableTopicWatchdogTimeout = TimeUnit.MINUTES.toMillis(10);
 
     private boolean keepPubSubOrder = true;
@@ -91,6 +93,8 @@ public class Config {
     private boolean useThreadClassLoader = true;
 
     private AddressResolverGroupFactory addressResolverGroupFactory = new SequentialDnsAddressResolverFactory();
+
+    private boolean lazyInitialization;
 
     public Config() {
     }
@@ -113,6 +117,7 @@ public class Config {
         setKeepPubSubOrder(oldConf.isKeepPubSubOrder());
         setLockWatchdogTimeout(oldConf.getLockWatchdogTimeout());
         setCheckLockSyncedSlaves(oldConf.isCheckLockSyncedSlaves());
+        setSlavesSyncTimeout(oldConf.getSlavesSyncTimeout());
         setNettyThreads(oldConf.getNettyThreads());
         setThreads(oldConf.getThreads());
         setCodec(oldConf.getCodec());
@@ -121,6 +126,7 @@ public class Config {
         setTransportMode(oldConf.getTransportMode());
         setAddressResolverGroupFactory(oldConf.getAddressResolverGroupFactory());
         setReliableTopicWatchdogTimeout(oldConf.getReliableTopicWatchdogTimeout());
+        setLazyInitialization(oldConf.isLazyInitialization());
 
         if (oldConf.getSingleServerConfig() != null) {
             setSingleServerConfig(new SingleServerConfig(oldConf.getSingleServerConfig()));
@@ -836,6 +842,43 @@ public class Config {
      */
     public Config setConnectionListener(ConnectionListener connectionListener) {
         this.connectionListener = connectionListener;
+        return this;
+    }
+
+    public long getSlavesSyncTimeout() {
+        return slavesSyncTimeout;
+    }
+
+    /**
+     * Defines slaves synchronization timeout applied to each operation of {@link org.redisson.api.RLock},
+     * {@link org.redisson.api.RSemaphore}, {@link org.redisson.api.RPermitExpirableSemaphore} objects.
+     * <p>
+     * Default is <code>1000</code> milliseconds.
+     *
+     * @param timeout timeout in milliseconds
+     * @return config
+     */
+    public Config setSlavesSyncTimeout(long timeout) {
+        this.slavesSyncTimeout = timeout;
+        return this;
+    }
+
+    public boolean isLazyInitialization() {
+        return lazyInitialization;
+    }
+
+    /**
+     * Defines whether Redisson connects to Redis only when
+     * first Redis call is made and not during Redisson instance creation.
+     * <p>
+     * Default value is <code>false</code>
+     *
+     * @param lazyInitialization <code>true</code> connects to Redis only when first Redis call is made,
+     *                           <code>false</code> connects to Redis during Redisson instance creation.
+     * @return
+     */
+    public Config setLazyInitialization(boolean lazyInitialization) {
+        this.lazyInitialization = lazyInitialization;
         return this;
     }
 }

@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.cache.Cache;
 import javax.cache.CacheException;
@@ -52,17 +53,17 @@ import org.redisson.jcache.configuration.RedissonConfiguration;
 public class JCacheManager implements CacheManager {
 
     private static final EmptyStatisticsMXBean EMPTY_INSTANCE = new EmptyStatisticsMXBean();
-    private static MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
+    private static final MBeanServer MBEAN_SERVER = ManagementFactory.getPlatformMBeanServer();
     
     private final ClassLoader classLoader;
     private final CachingProvider cacheProvider;
     private final Properties properties;
     private final URI uri;
-    private final ConcurrentMap<String, JCache<?, ?>> caches = new ConcurrentHashMap<String, JCache<?, ?>>();
-    private final ConcurrentMap<JCache<?, ?>, JCacheStatisticsMXBean> statBeans = new ConcurrentHashMap<JCache<?, ?>, JCacheStatisticsMXBean>();
-    private final ConcurrentMap<JCache<?, ?>, JCacheManagementMXBean> managementBeans = new ConcurrentHashMap<JCache<?, ?>, JCacheManagementMXBean>();
+    private final ConcurrentMap<String, JCache<?, ?>> caches = new ConcurrentHashMap<>();
+    private final ConcurrentMap<JCache<?, ?>, JCacheStatisticsMXBean> statBeans = new ConcurrentHashMap<>();
+    private final ConcurrentMap<JCache<?, ?>, JCacheManagementMXBean> managementBeans = new ConcurrentHashMap<>();
     
-    private volatile boolean closed;
+    private final AtomicBoolean closed = new AtomicBoolean();
     
     private final Redisson redisson;
     
@@ -96,7 +97,7 @@ public class JCacheManager implements CacheManager {
     }
 
     private void checkNotClosed() {
-        if (closed) {
+        if (closed.get()) {
             throw new IllegalStateException();
         }
     }
@@ -130,7 +131,7 @@ public class JCacheManager implements CacheManager {
         }
         
         JCacheConfiguration<K, V> cfg = new JCacheConfiguration<K, V>(configuration);
-        JCache<K, V> cache = new JCache<K, V>(this, cacheRedisson, cacheName, cfg, hasOwnRedisson);
+        JCache<K, V> cache = new JCache<>(this, cacheRedisson, cacheName, cfg, hasOwnRedisson);
         JCache<?, ?> oldCache = caches.putIfAbsent(cacheName, cache);
         if (oldCache != null) {
             throw new CacheException("Cache " + cacheName + " already exists");
@@ -176,10 +177,10 @@ public class JCacheManager implements CacheManager {
         checkNotClosed();
         Cache<K, V> cache = (Cache<K, V>) getCache(cacheName, Object.class, Object.class);
         if (cache != null) {
-            if (cache.getConfiguration(CompleteConfiguration.class).getKeyType() != Object.class) {
+            if (!cache.getConfiguration(CompleteConfiguration.class).getKeyType().isAssignableFrom(Object.class)) {
                 throw new IllegalArgumentException("Wrong type of key for " + cacheName);
             }
-            if (cache.getConfiguration(CompleteConfiguration.class).getValueType() != Object.class) {
+            if (!cache.getConfiguration(CompleteConfiguration.class).getValueType().isAssignableFrom(Object.class)) {
                 throw new IllegalArgumentException("Wrong type of value for " + cacheName);
             }
         }
@@ -188,7 +189,7 @@ public class JCacheManager implements CacheManager {
 
     @Override
     public Iterable<String> getCacheNames() {
-        return Collections.unmodifiableSet(new HashSet<String>(caches.keySet()));
+        return Collections.unmodifiableSet(new HashSet<>(caches.keySet()));
     }
 
     @Override
@@ -234,8 +235,8 @@ public class JCacheManager implements CacheManager {
             }
             try {
                 ObjectName objectName = queryNames("Configuration", cache);
-                if (mBeanServer.queryNames(objectName, null).isEmpty()) {
-                    mBeanServer.registerMBean(statBean, objectName);
+                if (MBEAN_SERVER.queryNames(objectName, null).isEmpty()) {
+                    MBEAN_SERVER.registerMBean(statBean, objectName);
                 }
             } catch (MalformedObjectNameException e) {
                 throw new CacheException(e);
@@ -262,8 +263,8 @@ public class JCacheManager implements CacheManager {
         if (statBean != null) {
             try {
                 ObjectName name = queryNames("Configuration", cache);
-                for (ObjectName objectName : mBeanServer.queryNames(name, null)) {
-                    mBeanServer.unregisterMBean(objectName);
+                for (ObjectName objectName : MBEAN_SERVER.queryNames(name, null)) {
+                    MBEAN_SERVER.unregisterMBean(objectName);
                 }
             } catch (MalformedObjectNameException e) {
                 throw new CacheException(e);
@@ -312,8 +313,8 @@ public class JCacheManager implements CacheManager {
             }
             try {
                 ObjectName objectName = queryNames("Statistics", cache);
-                if (!mBeanServer.isRegistered(objectName)) {
-                    mBeanServer.registerMBean(statBean, objectName);
+                if (!MBEAN_SERVER.isRegistered(objectName)) {
+                    MBEAN_SERVER.registerMBean(statBean, objectName);
                 }
             } catch (MalformedObjectNameException e) {
                 throw new CacheException(e);
@@ -335,8 +336,8 @@ public class JCacheManager implements CacheManager {
         if (statBean != null) {
             try {
                 ObjectName name = queryNames("Statistics", cache);
-                for (ObjectName objectName : mBeanServer.queryNames(name, null)) {
-                    mBeanServer.unregisterMBean(objectName);
+                for (ObjectName objectName : MBEAN_SERVER.queryNames(name, null)) {
+                    MBEAN_SERVER.unregisterMBean(objectName);
                 }
             } catch (MalformedObjectNameException e) {
                 throw new CacheException(e);
@@ -350,33 +351,26 @@ public class JCacheManager implements CacheManager {
 
     @Override
     public void close() {
-        if (isClosed()) {
-            return;
-        }
-
-        synchronized (this) {
-            if (!isClosed()) {
-                if (cacheProvider != null) {
-                    cacheProvider.close(uri, classLoader);
+        if (closed.compareAndSet(false, true)) {
+            if (cacheProvider != null) {
+                cacheProvider.close(uri, classLoader);
+            }
+            for (Cache<?, ?> cache : caches.values()) {
+                try {
+                    cache.close();
+                } catch (Exception e) {
+                    // skip
                 }
-                for (Cache<?, ?> cache : caches.values()) {
-                    try {
-                        cache.close();
-                    } catch (Exception e) {
-                        // skip
-                    }
-                }
-                if (redisson != null) {
-                    redisson.shutdown();
-                }
-                closed = true;
+            }
+            if (redisson != null) {
+                redisson.shutdown();
             }
         }
     }
 
     @Override
     public boolean isClosed() {
-        return closed;
+        return closed.get();
     }
 
     @Override

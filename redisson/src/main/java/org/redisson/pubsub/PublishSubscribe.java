@@ -20,7 +20,6 @@ import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.ChannelName;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.LongCodec;
-import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.misc.AsyncSemaphore;
 
 import java.util.concurrent.CompletableFuture;
@@ -43,11 +42,12 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
     }
 
     public void unsubscribe(E entry, String entryName, String channelName) {
-        AsyncSemaphore semaphore = service.getSemaphore(new ChannelName(channelName));
+        ChannelName cn = new ChannelName(channelName);
+        AsyncSemaphore semaphore = service.getSemaphore(cn);
         semaphore.acquire().thenAccept(c -> {
             if (entry.release() == 0) {
                 entries.remove(entryName);
-                service.unsubscribeLocked(PubSubType.UNSUBSCRIBE, new ChannelName(channelName))
+                service.unsubscribeLocked(cn)
                         .whenComplete((r, e) -> {
                             semaphore.release();
                         });

@@ -4,12 +4,12 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-parent</artifactId>
-        <version>3.21.1-SNAPSHOT</version>
+        <version>3.22.2-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
     <properties>
-        <spring-boot.version>3.0.6</spring-boot.version>
+        <spring-boot.version>3.1.1</spring-boot.version>
     </properties>
 
     <artifactId>redisson-spring-boot-starter</artifactId>
@@ -131,7 +131,7 @@
 
         <dependency>
             <groupId>org.redisson</groupId>
-            <artifactId>redisson-spring-data-30</artifactId>
+            <artifactId>redisson-spring-data-31</artifactId>
             <version>${project.version}</version>
         </dependency>
 

@@ -20,6 +20,8 @@ import org.redisson.client.DefaultCredentialsResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.TrustManagerFactory;
 import java.net.URL;
 
 /**
@@ -92,6 +94,12 @@ public class BaseConfig<T extends BaseConfig<T>> {
 
     private String[] sslProtocols;
 
+    private String[] sslCiphers;
+
+    private TrustManagerFactory sslTrustManagerFactory;
+
+    private KeyManagerFactory sslKeyManagerFactory;
+
     private int pingConnectionInterval = 30000;
 
     private boolean keepAlive;
@@ -100,6 +108,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
 
     private NameMapper nameMapper = NameMapper.direct();
 
+    private CommandMapper commandMapper = CommandMapper.direct();
     
     BaseConfig() {
     }
@@ -121,11 +130,15 @@ public class BaseConfig<T extends BaseConfig<T>> {
         setSslKeystore(config.getSslKeystore());
         setSslKeystorePassword(config.getSslKeystorePassword());
         setSslProtocols(config.getSslProtocols());
+        setSslCiphers(config.getSslCiphers());
+        setSslKeyManagerFactory(config.getSslKeyManagerFactory());
+        setSslTrustManagerFactory(config.getSslTrustManagerFactory());
         setPingConnectionInterval(config.getPingConnectionInterval());
         setKeepAlive(config.isKeepAlive());
         setTcpNoDelay(config.isTcpNoDelay());
         setNameMapper(config.getNameMapper());
         setCredentialsResolver(config.getCredentialsResolver());
+        setCommandMapper(config.getCommandMapper());
     }
 
     /**
@@ -188,7 +201,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * Default is <code>3</code> attempts
      *
      * @see #timeout
-     * @param retryAttempts - retry attempts
+     * @param retryAttempts retry attempts
      * @return config
      */
     public T setRetryAttempts(int retryAttempts) {
@@ -241,7 +254,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * <p>
      * Default is <code>null</code>
      *
-     * @param clientName - name of client
+     * @param clientName name of client
      * @return config
      */
     public T setClientName(String clientName) {
@@ -258,7 +271,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * <p>
      * Default is <code>10000</code> milliseconds.
      * 
-     * @param connectTimeout - timeout in milliseconds
+     * @param connectTimeout timeout in milliseconds
      * @return config
      */
     public T setConnectTimeout(int connectTimeout) {
@@ -277,7 +290,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * <p>
      * Default is <code>10000</code> milliseconds.
      *
-     * @param idleConnectionTimeout - timeout in milliseconds
+     * @param idleConnectionTimeout timeout in milliseconds
      * @return config
      */
     public T setIdleConnectionTimeout(int idleConnectionTimeout) {
@@ -298,7 +311,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * <p>
      * Default is <code>true</code>
      * 
-     * @param sslEnableEndpointIdentification - boolean value
+     * @param sslEnableEndpointIdentification boolean value
      * @return config
      */
     public T setSslEnableEndpointIdentification(boolean sslEnableEndpointIdentification) {
@@ -315,7 +328,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * <p>
      * Default is <code>JDK</code>
      * 
-     * @param sslProvider - ssl provider 
+     * @param sslProvider ssl provider
      * @return config
      */
     public T setSslProvider(SslProvider sslProvider) {
@@ -332,7 +345,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * <p>
      * Default is <code>null</code>
      *
-     * @param sslTruststore - path
+     * @param sslTruststore truststore path
      * @return config
      */
     public T setSslTruststore(URL sslTruststore) {
@@ -368,7 +381,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * <p>
      * Default is <code>null</code>
      *
-     * @param sslKeystore - path to keystore
+     * @param sslKeystore path to keystore
      * @return config
      */
     public T setSslKeystore(URL sslKeystore) {
@@ -385,7 +398,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * <p>
      * Default is <code>null</code>
      *
-     * @param sslKeystorePassword - password
+     * @param sslKeystorePassword password
      * @return config
      */
     public T setSslKeystorePassword(String sslKeystorePassword) {
@@ -403,7 +416,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * <p>
      * Default is <code>null</code>
      *
-     * @param sslProtocols - protocols
+     * @param sslProtocols protocols
      * @return config
      */
     public T setSslProtocols(String[] sslProtocols) {
@@ -421,7 +434,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * <p>
      * Default is <code>30000</code>
      * 
-     * @param pingConnectionInterval - time in milliseconds
+     * @param pingConnectionInterval time in milliseconds
      * @return config
      */
     public T setPingConnectionInterval(int pingConnectionInterval) {
@@ -438,7 +451,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * <p>
      * Default is <code>false</code>
      * 
-     * @param keepAlive - boolean value
+     * @param keepAlive boolean value
      * @return config
      */
     public T setKeepAlive(boolean keepAlive) {
@@ -455,7 +468,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * <p>
      * Default is <code>true</code>
      * 
-     * @param tcpNoDelay - boolean value
+     * @param tcpNoDelay boolean value
      * @return config
      */
     public T setTcpNoDelay(boolean tcpNoDelay) {
@@ -472,7 +485,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * Defines Name mapper which maps Redisson object name.
      * Applied to all Redisson objects.
      *
-     * @param nameMapper - name mapper object
+     * @param nameMapper name mapper object
      * @return config
      */
     public T setNameMapper(NameMapper nameMapper) {
@@ -494,5 +507,72 @@ public class BaseConfig<T extends BaseConfig<T>> {
     public T setCredentialsResolver(CredentialsResolver credentialsResolver) {
         this.credentialsResolver = credentialsResolver;
         return (T) this;
+    }
+
+    public String[] getSslCiphers() {
+        return sslCiphers;
+    }
+
+    /**
+     * Defines SSL ciphers.
+     * <p>
+     * Default is <code>null</code>
+     *
+     * @param sslCiphers ciphers
+     * @return config
+     */
+    public BaseConfig<T> setSslCiphers(String[] sslCiphers) {
+        this.sslCiphers = sslCiphers;
+        return this;
+    }
+
+    public TrustManagerFactory getSslTrustManagerFactory() {
+        return sslTrustManagerFactory;
+    }
+
+    /**
+     * Defines SSL TrustManagerFactory.
+     * <p>
+     * Default is <code>null</code>
+     *
+     * @param trustManagerFactory trust manager value
+     * @return config
+     */
+    public BaseConfig<T> setSslTrustManagerFactory(TrustManagerFactory trustManagerFactory) {
+        this.sslTrustManagerFactory = trustManagerFactory;
+        return this;
+    }
+
+    public KeyManagerFactory getSslKeyManagerFactory() {
+        return sslKeyManagerFactory;
+    }
+
+    /**
+     * Defines SSL KeyManagerFactory.
+     * <p>
+     * Default is <code>null</code>
+     *
+     * @param keyManagerFactory key manager value
+     * @return config
+     */
+    public BaseConfig<T> setSslKeyManagerFactory(KeyManagerFactory keyManagerFactory) {
+        this.sslKeyManagerFactory = keyManagerFactory;
+        return this;
+    }
+
+    public CommandMapper getCommandMapper() {
+        return commandMapper;
+    }
+
+    /**
+     * Defines Command mapper which maps Redis command name.
+     * Applied to all Redis commands.
+     *
+     * @param commandMapper Redis command name mapper object
+     * @return config
+     */
+    public BaseConfig<T> setCommandMapper(CommandMapper commandMapper) {
+        this.commandMapper = commandMapper;
+        return this;
     }
 }

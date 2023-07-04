@@ -55,7 +55,30 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
             throw new NullPointerException("value can't be null");
         }
     }
-    
+
+    @Override
+    public void createGroup(StreamCreateGroupArgs args) {
+        get(createGroupAsync(args));
+    }
+
+    @Override
+    public RFuture<Void> createGroupAsync(StreamCreateGroupArgs args) {
+        StreamCreateGroupParams pps = (StreamCreateGroupParams) args;
+        List<Object> params = new LinkedList<>();
+        params.add("CREATE");
+        params.add(getRawName());
+        params.add(pps.getName());
+        params.add(pps.getId());
+        if (pps.isMakeStream()) {
+            params.add("MKSTREAM");
+        }
+        if (pps.getEntriesRead() > 0) {
+            params.add("ENTRIESREAD");
+            params.add(pps.getEntriesRead());
+        }
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XGROUP, params.toArray());
+    }
+
     @Override
     public void createGroup(String groupName) {
         get(createGroupAsync(groupName));

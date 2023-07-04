@@ -367,7 +367,7 @@ public class RedissonTopicPatternTest extends BaseTest {
             futures.add(s);
         }
         executor.shutdown();
-        Assertions.assertTrue(executor.awaitTermination(threads * loops * 1000, TimeUnit.SECONDS));
+        Assertions.assertTrue(executor.awaitTermination(60, TimeUnit.SECONDS));
 
         for (Future<?> future : futures) {
             future.get();
@@ -375,7 +375,16 @@ public class RedissonTopicPatternTest extends BaseTest {
     }
 
     @Test
+    public void testReattachInClusterSlave() throws Exception {
+        testReattachInCluster(SubscriptionMode.SLAVE);
+    }
+
+    @Test
     public void testReattachInClusterMaster() throws Exception {
+        testReattachInCluster(SubscriptionMode.MASTER);
+    }
+
+    private void testReattachInCluster(SubscriptionMode subscriptionMode) throws Exception {
         RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave()
                 .notifyKeyspaceEvents(
                         RedisRunner.KEYSPACE_EVENTS_OPTIONS.K,
@@ -422,7 +431,7 @@ public class RedissonTopicPatternTest extends BaseTest {
 
         Config config = new Config();
         config.useClusterServers()
-                .setSubscriptionMode(SubscriptionMode.MASTER)
+                .setSubscriptionMode(subscriptionMode)
                 .setLoadBalancer(new RandomLoadBalancer())
                 .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
         RedissonClient redisson = Redisson.create(config);

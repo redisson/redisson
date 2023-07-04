@@ -191,4 +191,18 @@ public interface RSetAsync<V> extends RCollectionAsync<V>, RSortableAsync<Set<V>
      */
     RFuture<List<V>> containsEachAsync(Collection<V> c);
 
+    /**
+     * Adds object event listener
+     *
+     * @see org.redisson.api.listener.SetAddListener
+     * @see org.redisson.api.listener.SetRemoveListener
+     * @see org.redisson.api.listener.SetRemoveRandomListener
+     * @see org.redisson.api.ExpiredObjectListener
+     * @see org.redisson.api.DeletedObjectListener
+     *
+     * @param listener - object event listener
+     * @return listener id
+     */
+    RFuture<Integer> addListenerAsync(ObjectListener listener);
+
 }

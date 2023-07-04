@@ -19,6 +19,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.util.ReferenceCountUtil;
 import org.redisson.api.*;
 import org.redisson.api.MapOptions.WriteMode;
+import org.redisson.api.listener.MapPutListener;
+import org.redisson.api.listener.MapRemoveListener;
 import org.redisson.api.mapreduce.RMapReduce;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
@@ -27,7 +29,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.NumberConvertor;
-import org.redisson.client.protocol.decoder.MapValueDecoder;
+import org.redisson.client.protocol.decoder.*;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.decoder.MapGetAllDecoder;
@@ -205,7 +207,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             return oldValueFuture.thenCompose(oldValue -> {
                 CompletableFuture<V> newValuePromise = new CompletableFuture<>();
                 if (oldValue != null) {
-                    commandExecutor.getServiceManager().getExecutor().execute(() -> {
+                    getServiceManager().getExecutor().execute(() -> {
                         V newValue;
                         try {
                             newValue = remappingFunction.apply(oldValue, value);
@@ -253,7 +255,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                 RFuture<V> oldValueFuture = getAsync(key, threadId);
                 return oldValueFuture.thenCompose(oldValue -> {
                     CompletableFuture<V> result = new CompletableFuture<>();
-                    commandExecutor.getServiceManager().getExecutor().execute(() -> {
+                    getServiceManager().getExecutor().execute(() -> {
                         V newValue;
                         try {
                             newValue = remappingFunction.apply(key, oldValue);
@@ -349,7 +351,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                         }
 
                         CompletableFuture<V> result = new CompletableFuture<>();
-                        commandExecutor.getServiceManager().getExecutor().execute(() -> {
+                        getServiceManager().getExecutor().execute(() -> {
                             V newValue;
                             try {
                                 newValue = mappingFunction.apply(key);
@@ -426,7 +428,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                         }
 
                         CompletableFuture<V> result = new CompletableFuture<>();
-                        commandExecutor.getServiceManager().getExecutor().execute(() -> {
+                        getServiceManager().getExecutor().execute(() -> {
                             V newValue;
                             try {
                                 newValue = remappingFunction.apply(key, oldValue);
@@ -737,7 +739,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             if (condition.apply(res)) {
                 if (options.getWriter() != null) {
                     CompletableFuture<M> promise = new CompletableFuture<>();
-                    commandExecutor.getServiceManager().getExecutor().execute(() -> {
+                    getServiceManager().getExecutor().execute(() -> {
                         try {
                             if (task instanceof MapWriterTask.Add) {
                                 options.getWriter().write(task.getMap());
@@ -1426,7 +1428,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             } else {
                 if (options.getWriter() != null) {
                     CompletableFuture<Long> future = new CompletableFuture<>();
-                    commandExecutor.getServiceManager().getExecutor().execute(() -> {
+                    getServiceManager().getExecutor().execute(() -> {
                         try {
                             options.getWriter().delete(deletedKeys);
                         } catch (Exception ex) {
@@ -1484,14 +1486,17 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     public RFuture<ScanResult<Object>> scanKeyIteratorAsync(String name, RedisClient client, long startPos, String pattern, int count) {
-        List<Object> params = new ArrayList<Object>();
+        List<Object> params = new ArrayList<>();
         params.add(startPos);
         if (pattern != null) {
             params.add(pattern);
         }
         params.add(count);
 
-        return commandExecutor.evalReadAsync(client, name, codec, RedisCommands.EVAL_SCAN,
+        RedisCommand<ListScanResult<Object>> evalScan = new RedisCommand<ListScanResult<Object>>("EVAL",
+                new ListMultiDecoder2(new ListScanResultReplayDecoder(), new ObjectDecoder<>(codec.getMapKeyDecoder())));
+
+        return commandExecutor.evalReadAsync(client, name, codec, evalScan,
                 "local result = {}; "
                 + "local res; "
                 + "if (#ARGV == 3) then "
@@ -1736,7 +1741,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     private CompletableFuture<V> loadValue(K key, RLock lock, long threadId) {
         if (options.getLoader() != null) {
             CompletableFuture<V> result = new CompletableFuture<>();
-            commandExecutor.getServiceManager().getExecutor().execute(new Runnable() {
+            getServiceManager().getExecutor().execute(new Runnable() {
                 @Override
                 public void run() {
                     V value;
@@ -1885,4 +1890,28 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             writeBehindService.stop(getRawName());
         }
     }
+
+    @Override
+    public int addListener(ObjectListener listener) {
+        if (listener instanceof MapPutListener) {
+            return addListener("__keyevent@*:hset", (MapPutListener) listener, MapPutListener::onPut);
+        }
+        if (listener instanceof MapRemoveListener) {
+            return addListener("__keyevent@*:hdel", (MapRemoveListener) listener, MapRemoveListener::onRemove);
+        }
+        return super.addListener(listener);
+    }
+
+    @Override
+    public RFuture<Integer> addListenerAsync(ObjectListener listener) {
+        if (listener instanceof MapPutListener) {
+            return addListenerAsync("__keyevent@*:hset", (MapPutListener) listener, MapPutListener::onPut);
+        }
+        if (listener instanceof MapRemoveListener) {
+            return addListenerAsync("__keyevent@*:hdel", (MapRemoveListener) listener, MapRemoveListener::onRemove);
+        }
+        return super.addListenerAsync(listener);
+    }
+
+
 }

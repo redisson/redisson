@@ -22,6 +22,7 @@ import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.description.field.FieldDescription;
 import net.bytebuddy.description.field.FieldDescription.InDefinedShape;
 import net.bytebuddy.description.field.FieldList;
+import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
 import net.bytebuddy.implementation.MethodDelegation;
@@ -30,7 +31,9 @@ import net.bytebuddy.matcher.ElementMatchers;
 import org.redisson.api.*;
 import org.redisson.api.annotation.*;
 import org.redisson.api.condition.Condition;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.Convertor;
 import org.redisson.client.protocol.decoder.ListMultiDecoder2;
 import org.redisson.client.protocol.decoder.ListScanResult;
@@ -68,7 +71,29 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         this.classCache = classCache;
         this.commandExecutor = commandExecutor;
         this.seachEngine = new LiveObjectSearch(commandExecutor);
+
+        if (commandExecutor.getServiceManager().getLiveObjectLatch().compareAndSet(false, true)) {
+            RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:expired");
+            topic.addListenerAsync(String.class, (pattern, channel, msg) -> {
+                if (msg.contains("redisson_live_object:")) {
+                    Class<?> entity = resolveEntity(msg);
+                    NamingScheme scheme = commandExecutor.getObjectBuilder().getNamingScheme(entity);
+                    Object id = scheme.resolveId(msg);
+                    deleteExpired(id, entity);
+                }
+            });
+        }
     }
+
+    private Class<?> resolveEntity(String name) {
+        try {
+            String className = name.substring(name.lastIndexOf(":")+1);
+            return Class.forName(className);
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException("Unable to resolve entity from [" + name + "]", e);
+        }
+    }
+
 
     //TODO: Add ttl renewal functionality
 //    @Override
@@ -573,7 +598,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     @Override
     public <T> long delete(Class<T> entityClass, Object... ids) {
         CommandBatchService ce = new CommandBatchService(commandExecutor);
-        FieldList<InDefinedShape> fields = Introspectior.getFieldsWithAnnotation(entityClass.getSuperclass(), RIndex.class);
+        FieldList<InDefinedShape> fields = Introspectior.getFieldsWithAnnotation(entityClass, RIndex.class);
         Set<String> fieldNames = fields.stream().map(f -> f.getName()).collect(Collectors.toSet());
 
         NamingScheme namingScheme = commandExecutor.getObjectBuilder().getNamingScheme(entityClass);
@@ -590,6 +615,8 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     private RFuture<Long> delete(Object id, Class<?> entityClass, NamingScheme namingScheme, CommandBatchService ce, Set<String> fieldNames) {
         String mapName = namingScheme.getName(entityClass, id);
         Object liveObjectId = namingScheme.resolveId(mapName);
+
+        deleteCollections(id, entityClass, ce);
 
         RMap<String, Object> liveMap = new RedissonMap<>(namingScheme.getCodec(), commandExecutor,
                                                 mapName, null, null, null);
@@ -610,6 +637,46 @@ public class RedissonLiveObjectService implements RLiveObjectService {
             }
         }
         return new RedissonKeys(ce).deleteAsync(mapName);
+    }
+
+    private void deleteExpired(Object id, Class<?> entityClass) {
+        CommandBatchService ce = new CommandBatchService(commandExecutor);
+        FieldList<InDefinedShape> fields = Introspectior.getFieldsWithAnnotation(entityClass, RIndex.class);
+
+        deleteCollections(id, entityClass, ce);
+
+        NamingScheme namingScheme = commandExecutor.getObjectBuilder().getNamingScheme(entityClass);
+        String mapName = namingScheme.getName(entityClass, id);
+        Object liveObjectId = namingScheme.resolveId(mapName);
+        TypeDescription.Generic n1 = TypeDescription.Generic.Builder.rawType(Number.class).build();
+        for (InDefinedShape field : fields) {
+            boolean isNumber = n1.accept(TypeDescription.Generic.Visitor.Assigner.INSTANCE)
+                                    .isAssignableFrom(field.getType().asErasure().asBoxed().asGenericType());
+            String indexName = namingScheme.getIndexName(entityClass, field.getName());
+            if (isNumber) {
+                RScoredSortedSetAsync<Object> set = new RedissonScoredSortedSet<>(namingScheme.getCodec(), ce, indexName, null);
+                set.removeAsync(liveObjectId);
+            } else {
+                RMultimapAsync<Object, Object> idsMultimap = new RedissonSetMultimap<>(namingScheme.getCodec(), ce, indexName);
+                idsMultimap.fastRemoveValueAsync(liveObjectId);
+            }
+        }
+        ce.execute();
+    }
+
+    private void deleteCollections(Object id, Class<?> entityClass, CommandBatchService ce) {
+        for (InDefinedShape field : Introspectior.getAllFields(entityClass)) {
+            try {
+                Field f = ClassUtils.getDeclaredField(entityClass, field.getName());
+                RObject rObject = commandExecutor.getObjectBuilder().createObject(id, entityClass, f.getType(), field.getName());
+                if (rObject != null) {
+                    RedissonObject ro = (RedissonObject) rObject;
+                    ce.writeAsync(ro.getRawName(), RedisCommands.DEL, ro.getRawName());
+                }
+            } catch (NoSuchFieldException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     public RFuture<Long> delete(Object id, Class<?> entityClass, NamingScheme namingScheme, CommandBatchService ce) {

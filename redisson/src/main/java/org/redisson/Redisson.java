@@ -518,12 +518,12 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RReliableTopic getReliableTopic(String name) {
-        return new RedissonReliableTopic(commandExecutor, name);
+        return new RedissonReliableTopic(commandExecutor, name, null);
     }
 
     @Override
     public RReliableTopic getReliableTopic(String name, Codec codec) {
-        return new RedissonReliableTopic(codec, commandExecutor, name);
+        return new RedissonReliableTopic(codec, commandExecutor, name, null);
     }
 
     @Override

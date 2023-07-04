@@ -12,7 +12,7 @@ Supported Redis: 3.0 ... 7.0
 ## Features
 
 * Thread-safe implementation  
-* Supports [Redis Replicated](https://github.com/redisson/redisson/wiki/2.-Configuration/#25-replicated-mode), [Redis Cluster](https://github.com/redisson/redisson/wiki/2.-Configuration/#24-cluster-mode), [Redis Sentinel](https://github.com/redisson/redisson/wiki/2.-Configuration/#27-sentinel-mode), [Redis Master and Slaves](https://github.com/redisson/redisson/wiki/2.-Configuration/#28-master-slave-mode), [Redis Single](https://github.com/redisson/redisson/wiki/2.-Configuration/#26-single-instance-mode) setup
+* Supports [Redis Replicated](https://github.com/redisson/redisson/wiki/2.-Configuration/#25-replicated-mode), [Redis Cluster](https://github.com/redisson/redisson/wiki/2.-Configuration/#24-cluster-mode), [Redis Sentinel](https://github.com/redisson/redisson/wiki/2.-Configuration/#27-sentinel-mode), [Redis Master and Slaves](https://github.com/redisson/redisson/wiki/2.-Configuration/#28-master-slave-mode), [Redis Single](https://github.com/redisson/redisson/wiki/2.-Configuration/#26-single-instance-mode), [Redis proxy](https://github.com/redisson/redisson/wiki/2.-Configuration/#29-proxy-mode), [Redis multi-cluster](https://github.com/redisson/redisson/wiki/2.-Configuration/#210-multi-cluster-mode) setup
 * Amazon Web Services compatible
      * [AWS Redis Global Datastore](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Redis-Global-Datastore.html)
      * [AWS ElastiCache](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/WhatIs.html)
@@ -38,6 +38,7 @@ Supported Redis: 3.0 ... 7.0
 * Supports SSL  
 * Asynchronous connection pool  
 * Lua scripting  
+* [RediSearch](https://github.com/redisson/redisson/wiki/9.-distributed-services/#96-redisearch-service)
 * [JSON datatype](https://github.com/redisson/redisson/wiki/6.-distributed-objects/#615-json-object-holder)
 * [Reactive Streams](https://github.com/redisson/redisson/wiki/3.-operations-execution#32-reactive-way) API  
 * [RxJava3](https://github.com/redisson/redisson/wiki/3.-operations-execution#32-reactive-way) API  
@@ -120,14 +121,14 @@ Used by
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>3.21.0</version>
+       <version>3.22.1</version>
     </dependency>  
 
 #### Gradle
-    compile 'org.redisson:redisson:3.21.0'  
+    compile 'org.redisson:redisson:3.22.1'  
 
 #### SBT
-    libraryDependencies += "org.redisson" % "redisson" % "3.21.0"
+    libraryDependencies += "org.redisson" % "redisson" % "3.22.1"
 
 #### Java
 
@@ -185,8 +186,8 @@ Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
 ## Downloads
    
-[Redisson 3.21.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.21.0&e=jar),
-[Redisson node 3.21.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.21.0&e=jar)  
+[Redisson 3.22.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.22.1&e=jar),
+[Redisson node 3.22.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.22.1&e=jar)  
 
 ## FAQs
 

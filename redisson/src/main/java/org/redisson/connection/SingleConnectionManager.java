@@ -42,7 +42,10 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
         newconfig.setSslKeystore(cfg.getSslKeystore());
         newconfig.setSslKeystorePassword(cfg.getSslKeystorePassword());
         newconfig.setSslProtocols(cfg.getSslProtocols());
-        
+        newconfig.setSslCiphers(cfg.getSslCiphers());
+        newconfig.setSslKeyManagerFactory(cfg.getSslKeyManagerFactory());
+        newconfig.setSslTrustManagerFactory(cfg.getSslTrustManagerFactory());
+
         newconfig.setRetryAttempts(cfg.getRetryAttempts());
         newconfig.setRetryInterval(cfg.getRetryInterval());
         newconfig.setTimeout(cfg.getTimeout());
@@ -66,7 +69,8 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
         newconfig.setTcpNoDelay(cfg.isTcpNoDelay());
         newconfig.setNameMapper(cfg.getNameMapper());
         newconfig.setCredentialsResolver(cfg.getCredentialsResolver());
-        
+        newconfig.setCommandMapper(cfg.getCommandMapper());
+
         return newconfig;
     }
 

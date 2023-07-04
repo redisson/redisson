@@ -878,7 +878,15 @@ public abstract class BaseMapTest extends BaseTest {
         assertThat(map.size()).isEqualTo(1);
         destroy(map);
     }
-    
+
+    @Test
+    public void testKeySetByPatternCodec() {
+        RMap<String, String> map = getMap("test", new CompositeCodec(StringCodec.INSTANCE, JsonJacksonCodec.INSTANCE));
+        map.put("1-1", "test1");
+        Set<String> set = map.keySet("1-*");
+        assertThat(set).containsOnly("1-1");
+    }
+
     @Test
     public void testKeySetByPattern() {
         RMap<String, String> map = getMap("simple", StringCodec.INSTANCE);

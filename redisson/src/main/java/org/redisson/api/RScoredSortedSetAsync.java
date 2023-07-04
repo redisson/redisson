@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import org.redisson.api.RScoredSortedSet.Aggregate;
+import org.redisson.client.protocol.RankedEntry;
 import org.redisson.client.protocol.ScoredEntry;
 
 import java.time.Duration;
@@ -258,11 +259,64 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<V> pollFirstAsync();
 
     /**
+     * Removes and returns the head entry (value and its score) or {@code null} if this sorted set is empty.
+     *
+     * @return the head entry,
+     *         or {@code null} if this sorted set is empty
+     */
+    RFuture<ScoredEntry<V>> pollFirstEntryAsync();
+
+    /**
+     * Removes and returns the head entries (value and its score) of this sorted set.
+     *
+     * @param count entries amount
+     * @return the head entries of this sorted set
+     */
+    RFuture<List<ScoredEntry<V>>> pollFirstEntriesAsync(int count);
+
+    /**
+     * Removes and returns the head entries (value and its score).
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count entries amount
+     * @return the head entries
+     */
+    RFuture<List<ScoredEntry<V>>> pollFirstEntriesAsync(Duration duration, int count);
+
+    /**
      * Removes and returns the tail element or {@code null} if this sorted set is empty.
      *
      * @return the tail element or {@code null} if this sorted set is empty
      */
     RFuture<V> pollLastAsync();
+
+    /**
+     * Removes and returns the tail entry (value and its score) or {@code null} if this sorted set is empty.
+     *
+     * @return the tail entry or {@code null} if this sorted set is empty
+     */
+    RFuture<ScoredEntry<V>> pollLastEntryAsync();
+
+    /**
+     * Removes and returns the tail entries (value and its score) of this sorted set.
+     *
+     * @param count entries amount
+     * @return the tail entries of this sorted set
+     */
+    RFuture<List<ScoredEntry<V>>> pollLastEntriesAsync(int count);
+
+    /**
+     * Removes and returns the head entries (value and its score).
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count entries amount
+     * @return the tail entries
+     */
+    RFuture<List<ScoredEntry<V>>> pollLastEntriesAsync(Duration duration, int count);
 
     /**
      * Returns the head element or {@code null} if this sorted set is empty.
@@ -272,11 +326,25 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<V> firstAsync();
 
     /**
+     * Returns the head entry (value and its score) or {@code null} if this sorted set is empty.
+     *
+     * @return the head entry or {@code null} if this sorted set is empty
+     */
+    RFuture<ScoredEntry<V>> firstEntryAsync();
+
+    /**
      * Returns the tail element or {@code null} if this sorted set is empty.
      *
      * @return the tail element or {@code null} if this sorted set is empty
      */
     RFuture<V> lastAsync();
+
+    /**
+     * Returns the tail entry (value and its score) or {@code null} if this sorted set is empty.
+     *
+     * @return the tail entry or {@code null} if this sorted set is empty
+     */
+    RFuture<ScoredEntry<V>> lastEntryAsync();
 
     /**
      * Returns score of the head element or returns {@code null} if this sorted set is empty.
@@ -404,7 +472,16 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @return rank or <code>null</code> if value does not exist
      */
     RFuture<Integer> rankAsync(V o);
-    
+
+    /**
+     * Returns rank and score of specified <code>value</code>,
+     * with the ranks ordered from low to high.
+     *
+     * @param value object
+     * @return ranked entry or <code>null</code> if value does not exist
+     */
+    RFuture<RankedEntry<V>> rankEntryAsync(V value);
+
     /**
      * Returns rank of value, with the scores ordered from high to low.
      * 
@@ -412,6 +489,15 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @return rank or <code>null</code> if value does not exist
      */
     RFuture<Integer> revRankAsync(V o);
+
+    /**
+     * Returns rank and score of specified <code>value</code>,
+     * with the ranks ordered from high to low.
+     *
+     * @param value object
+     * @return ranked entry or <code>null</code> if value does not exist
+     */
+    RFuture<RankedEntry<V>> revRankEntryAsync(V value);
 
     /**
      * Returns ranks of elements, with the scores ordered from high to low.

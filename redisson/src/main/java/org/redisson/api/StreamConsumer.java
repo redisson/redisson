@@ -17,7 +17,7 @@ package org.redisson.api;
 
 /**
  * Object containing details about Stream Consumer
- * 
+ *
  * @author Nikita Koksharov
  *
  */
@@ -26,25 +26,27 @@ public class StreamConsumer {
     private final String name;
     private final int pending;
     private final long idleTime;
-    
-    public StreamConsumer(String name, int pending, long idleTime) {
+    private final long inactive;
+
+    public StreamConsumer(String name, int pending, long idleTime, long inactive) {
         this.name = name;
         this.pending = pending;
         this.idleTime = idleTime;
+        this.inactive = inactive;
     }
 
     /**
      * Returns amount of pending messages for this consumer
-     * 
-     * @return amount of pending messages 
+     *
+     * @return amount of pending messages
      */
     public int getPending() {
         return pending;
     }
-    
+
     /**
      * Returns name of this consumer
-     * 
+     *
      * @return name of consumer
      */
     public String getName() {
@@ -52,12 +54,22 @@ public class StreamConsumer {
     }
 
     /**
-     * Returns idle time in milliseconds since which this consumer hasn't consumed messages 
-     * 
+     * Returns idle time in milliseconds since which this consumer hasn't consumed messages
+     *
      * @return idle time in milliseconds
      */
     public long getIdleTime() {
         return idleTime;
     }
-    
+
+    /**
+     * Returns time in milliseconds since the last successful interaction of this consumer
+     * <p>
+     * Requires <b>Redis 7.2.0 and higher.</b>
+     *
+     * @return time in milliseconds
+     */
+    public long getInactive() {
+        return inactive;
+    }
 }
