@@ -86,7 +86,7 @@ public class CommandBatchService extends CommandAsyncService {
     public static class Entry {
 
         final List<BatchCommandData<?, ?>> evalCommands = new LinkedList<>();
-        final LinkedList<BatchCommandData<?, ?>> commands = new LinkedList<>();
+        final Deque<BatchCommandData<?, ?>> commands = new ConcurrentLinkedDeque<>();
         volatile boolean readOnlyMode = true;
 
         public void addCommand(BatchCommandData<?, ?> command) {
@@ -99,8 +99,37 @@ public class CommandBatchService extends CommandAsyncService {
             return evalCommands;
         }
 
-        public LinkedList<BatchCommandData<?, ?>> getCommands() {
+        public void addFirstCommand(BatchCommandData<?, ?> command) {
+            commands.addFirst(command);
+        }
+
+        public void add(BatchCommandData<?, ?> command) {
+            commands.add(command);
+        }
+
+        public Deque<BatchCommandData<?, ?>> getCommands() {
             return commands;
+        }
+
+        public void sortCommands() {
+            int index = 0;
+            boolean sorted = true;
+            for (BatchCommandData<?, ?> command : commands) {
+                if (command.getIndex() > index) {
+                    index = command.getIndex();
+                } else {
+                    sorted = false;
+                    break;
+                }
+            }
+            if (sorted) {
+                return;
+            }
+
+            BatchCommandData<?, ?>[] cmds = commands.toArray(new BatchCommandData[0]);
+            Arrays.sort(cmds);
+            commands.clear();
+            Collections.addAll(commands, cmds);
         }
 
         public void setReadOnlyMode(boolean readOnlyMode) {
@@ -379,18 +408,18 @@ public class CommandBatchService extends CommandAsyncService {
                     if (this.options.getExecutionMode() != ExecutionMode.IN_MEMORY) {
                         for (Entry entry : r.values()) {
                             BatchCommandData<?, ?> multiCommand = new BatchCommandData(RedisCommands.MULTI, new Object[] {}, index.incrementAndGet());
-                            entry.getCommands().addFirst(multiCommand);
+                            entry.addFirstCommand(multiCommand);
                             BatchCommandData<?, ?> execCommand = new BatchCommandData(RedisCommands.EXEC, new Object[] {}, index.incrementAndGet());
-                            entry.getCommands().add(execCommand);
+                            entry.add(execCommand);
                         }
                     }
 
                     if (this.options.isSkipResult()) {
                         for (Entry entry : r.values()) {
                             BatchCommandData<?, ?> offCommand = new BatchCommandData(RedisCommands.CLIENT_REPLY, new Object[] { "OFF" }, index.incrementAndGet());
-                            entry.getCommands().addFirst(offCommand);
+                            entry.addFirstCommand(offCommand);
                             BatchCommandData<?, ?> onCommand = new BatchCommandData(RedisCommands.CLIENT_REPLY, new Object[] { "ON" }, index.incrementAndGet());
-                            entry.getCommands().add(onCommand);
+                            entry.add(onCommand);
                         }
                     }
 
@@ -398,7 +427,7 @@ public class CommandBatchService extends CommandAsyncService {
                         for (Entry entry : r.values()) {
                             BatchCommandData<?, ?> waitCommand = new BatchCommandData(RedisCommands.WAIT,
                                     new Object[] { this.options.getSyncSlaves(), this.options.getSyncTimeout() }, index.incrementAndGet());
-                            entry.getCommands().add(waitCommand);
+                            entry.add(waitCommand);
                         }
                     }
 
@@ -492,7 +521,7 @@ public class CommandBatchService extends CommandAsyncService {
             ee.getEvalCommands().addAll(e.getValue().getEvalCommands());
         }
         for (Entry entry : result.values()) {
-            entry.getCommands().sort(null);
+            entry.sortCommands();
         }
         future.complete(result);
     }
@@ -529,7 +558,7 @@ public class CommandBatchService extends CommandAsyncService {
             ee.getEvalCommands().addAll(e.getValue().getEvalCommands());
         }
         for (Entry entry : result.values()) {
-            entry.getCommands().sort(null);
+            entry.sortCommands();
         }
         future.complete(result);
     }

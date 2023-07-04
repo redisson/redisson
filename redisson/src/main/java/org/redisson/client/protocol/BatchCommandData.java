@@ -83,4 +83,7 @@ public class BatchCommandData<T, R> extends CommandData<T, R> implements Compara
         this.command = command;
     }
 
+    public int getIndex() {
+        return index;
+    }
 }
