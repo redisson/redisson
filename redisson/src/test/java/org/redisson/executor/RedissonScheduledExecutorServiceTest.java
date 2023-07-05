@@ -493,7 +493,7 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(3);
         
         cancel(future1);
-        assertThat(redisson.<Long>getBucket("executed1").get()).isBetween(1000L, Long.MAX_VALUE);
+        assertThat(redisson.getAtomicLong("executed1").get()).isBetween(1000L, Long.MAX_VALUE);
 
         Thread.sleep(3000);
         assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(3);
@@ -504,13 +504,15 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(3);
         
         executor.cancelTask(future2.getTaskId());
-        assertThat(redisson.<Long>getBucket("executed2").get()).isBetween(1000L, Long.MAX_VALUE);
+        assertThat(redisson.getAtomicLong("executed2").get()).isBetween(1000L, Long.MAX_VALUE);
 
         Thread.sleep(3000);
         assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(3);
         
         executor.delete();
-        redisson.getKeys().delete("counter", "executed1", "executed2");
+
+        // There may be another key that exists, starting with "{remote_response}:".
+        redisson.getKeys().delete(redisson.getKeys().getKeysStream().toArray(String[]::new));
         assertThat(redisson.getKeys().count()).isZero();
     }
 

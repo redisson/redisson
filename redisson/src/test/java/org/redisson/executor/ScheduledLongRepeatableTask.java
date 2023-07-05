@@ -26,9 +26,13 @@ public class ScheduledLongRepeatableTask implements Runnable, Serializable {
     public void run() {
         if (redisson.getAtomicLong(counterName).incrementAndGet() == 3) {
             for (long i = 0; i < Long.MAX_VALUE; i++) {
-                if (Thread.currentThread().isInterrupted()) {
+                // Clear interrupted flag in order to access database
+                if (Thread.interrupted()) {
                     System.out.println("interrupted " + i);
-                    redisson.getBucket(objectName).set(i);
+                    redisson.getAtomicLong(objectName).set(i);
+
+                    // Set interrupted flag back
+                    Thread.currentThread().interrupt();
                     return;
                 }
             }
