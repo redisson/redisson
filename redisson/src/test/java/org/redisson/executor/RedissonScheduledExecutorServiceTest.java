@@ -160,7 +160,7 @@ RedissonScheduledExecutorServiceTest extends BaseTest {
         RScheduledExecutorService executorService = client.getExecutorService("JobA");
         executorService.schedule(new TestTask() , CronSchedule.of("0/1 * * * * ?"));
         
-        TimeUnit.MILLISECONDS.sleep(4900);
+        TimeUnit.MILLISECONDS.sleep(5000);
         
         assertThat(client.getAtomicLong("counter").get()).isEqualTo(4);
         
