@@ -287,8 +287,18 @@ public class RedisConnection implements RedisCommands {
         fastReconnect.complete(null);
         fastReconnect = null;
     }
-    
-    private void close() {
+
+    public void close() {
+        try {
+            closeAsync().sync();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            throw e;
+        }
+    }
+
+    private void closeInternal() {
         CommandData<?, ?> command = getCurrentCommand();
         if ((command != null && command.isBlockingCommand())
                     || !connectionPromise.isDone()) {
@@ -304,7 +314,7 @@ public class RedisConnection implements RedisCommands {
     public CompletableFuture<Void> forceFastReconnectAsync() {
         CompletableFuture<Void> promise = new CompletableFuture<Void>();
         fastReconnect = promise;
-        close();
+        closeInternal();
         return promise;
     }
 
@@ -320,7 +330,7 @@ public class RedisConnection implements RedisCommands {
 
     public ChannelFuture closeIdleAsync() {
         status = Status.CLOSED_IDLE;
-        close();
+        closeInternal();
         return channel.closeFuture();
     }
 
@@ -330,7 +340,7 @@ public class RedisConnection implements RedisCommands {
 
     public ChannelFuture closeAsync() {
         status = Status.CLOSED;
-        close();
+        closeInternal();
         return channel.closeFuture();
     }
 
