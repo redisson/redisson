@@ -420,7 +420,8 @@ RedissonScheduledExecutorServiceTest extends BaseTest {
         assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(3);
 
         cancel(future);
-        assertThat(redisson.<Long>getBucket("executed").get()).isBetween(1000L, Long.MAX_VALUE);
+        Thread.sleep(50);
+        assertThat(redisson.<Long>getBucket("executed").get()).isGreaterThan(1000L);
 
         Thread.sleep(TimeUnit.SECONDS.toMillis(3));
         assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(3);
