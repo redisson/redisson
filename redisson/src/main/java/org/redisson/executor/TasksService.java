@@ -16,6 +16,7 @@
 package org.redisson.executor;
 
 import org.redisson.RedissonExecutorService;
+import org.redisson.api.RBlockingQueueAsync;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
 import org.redisson.client.codec.Codec;
@@ -247,7 +248,9 @@ public class TasksService extends BaseRemoteService {
                         return CompletableFuture.completedFuture(resp);
                     });
                 }
-                return CompletableFuture.completedFuture(response);
+
+                RBlockingQueueAsync<RRemoteServiceResponse> queue = getBlockingQueue(responseQueueName, codec);
+                return queue.removeAsync(response).thenApply(r -> response);
             }).whenComplete((r, ex) -> {
                 if (ex != null) {
                     scheduleCancelResponseCheck(mapName, requestId);

@@ -30,7 +30,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedissonScheduledExecutorServiceTest extends BaseTest {
+public class
+
+
+RedissonScheduledExecutorServiceTest extends BaseTest {
 
     private static RedissonNode node;
     
@@ -528,7 +531,8 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(3);
         
         cancel(future1);
-        assertThat(redisson.<Long>getBucket("executed1").get()).isBetween(1000L, Long.MAX_VALUE);
+        Thread.sleep(50);
+        assertThat(redisson.<Long>getBucket("executed1").get()).isGreaterThan(1000L);
 
         Thread.sleep(3000);
         assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(3);
@@ -537,9 +541,10 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         RScheduledFuture<?> future2 = executor.scheduleWithFixedDelay(new ScheduledLongRepeatableTask("counter", "executed2"), 1, 2, TimeUnit.SECONDS);
         Thread.sleep(6000);
         assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(3);
-        
-        executor.cancelTask(future2.getTaskId());
-        assertThat(redisson.<Long>getBucket("executed2").get()).isBetween(1000L, Long.MAX_VALUE);
+
+        assertThat(executor.cancelTask(future2.getTaskId())).isTrue();
+        assertThat(redisson.<Long>getBucket("executed2").get()).isGreaterThan(1000L);
+
 
         Thread.sleep(3000);
         assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(3);
