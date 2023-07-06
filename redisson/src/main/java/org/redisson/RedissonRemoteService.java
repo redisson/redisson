@@ -144,10 +144,6 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
         register(remoteInterface, object, workers, commandExecutor.getServiceManager().getExecutor());
     }
 
-    private <V> RBlockingQueue<V> getBlockingQueue(String name, Codec codec) {
-        return new RedissonBlockingQueue<>(codec, commandExecutor, name);
-    }
-    
     @Override
     public <T> void register(Class<T> remoteInterface, T object, int workers, ExecutorService executor) {
         if (workers < 1) {
