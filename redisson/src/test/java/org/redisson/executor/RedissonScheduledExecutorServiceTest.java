@@ -30,10 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class
-
-
-RedissonScheduledExecutorServiceTest extends BaseTest {
+public class RedissonScheduledExecutorServiceTest extends BaseTest {
 
     private static RedissonNode node;
     
