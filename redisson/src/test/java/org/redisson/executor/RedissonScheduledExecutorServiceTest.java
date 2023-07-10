@@ -392,6 +392,42 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         assertThat(redisson.getAtomicLong("executed2").get()).isEqualTo(30);
     }
 
+    @Test
+    public void testCancelCronExpression() throws InterruptedException, ExecutionException {
+        RScheduledExecutorService executor = redisson.getExecutorService("test");
+        RScheduledFuture<?> future = executor.schedule(new ScheduledRunnableTask("executed"), CronSchedule.of("0/2 * * * * ?"));
+        Thread.sleep(TimeUnit.SECONDS.toMillis(10));
+        assertThat(redisson.getAtomicLong("executed").get()).isEqualTo(5);
+
+        cancel(future);
+
+        Thread.sleep(TimeUnit.SECONDS.toMillis(3));
+        assertThat(redisson.getAtomicLong("executed").get()).isEqualTo(5);
+
+        executor.delete();
+        redisson.getKeys().delete("executed");
+        assertThat(redisson.getKeys().count()).isZero();
+    }
+
+    @Test
+    public void testCancelAndInterruptCronExpression() throws InterruptedException, ExecutionException {
+        RScheduledExecutorService executor = redisson.getExecutorService("test");
+        RScheduledFuture<?> future = executor.schedule(new ScheduledLongRepeatableTask("counter", "executed"), CronSchedule.of("0/2 * * * * ?"));
+        Thread.sleep(TimeUnit.SECONDS.toMillis(6));
+        assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(3);
+
+        cancel(future);
+        Thread.sleep(50);
+        assertThat(redisson.<Long>getBucket("executed").get()).isGreaterThan(1000L);
+
+        Thread.sleep(TimeUnit.SECONDS.toMillis(3));
+        assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(3);
+
+        executor.delete();
+        redisson.getKeys().delete("counter", "executed");
+        assertThat(redisson.getKeys().count()).isZero();
+    }
+
     public static class RunnableTask2 implements Runnable, Serializable {
 
         @Override

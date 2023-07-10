@@ -139,21 +139,15 @@ public class TasksRunnerService implements RemoteExecutorService {
         CronExpression expression = new CronExpression(params.getCronExpression());
         expression.setTimeZone(TimeZone.getTimeZone(params.getTimezone()));
         Date nextStartDate = expression.getNextValidTimeAfter(new Date());
-        RFuture<Void> future = null;
-        if (nextStartDate != null) {
-            RemoteExecutorServiceAsync service = asyncScheduledServiceAtFixed(params.getExecutorId(), params.getRequestId());
-            params.setStartTime(nextStartDate.getTime());
-            future = service.schedule(params);
+
+        executeRunnable(params, nextStartDate == null);
+
+        if (nextStartDate == null || !redisson.getMap(tasksName, StringCodec.INSTANCE).containsKey(params.getRequestId())) {
+            return;
         }
-        try {
-            executeRunnable(params, nextStartDate == null);
-        } catch (Exception e) {
-            // cancel task if it throws an exception
-            if (future != null) {
-                future.cancel(true);
-            }
-            throw e;
-        }
+
+        params.setStartTime(nextStartDate.getTime());
+        asyncScheduledServiceAtFixed(params.getExecutorId(), params.getRequestId()).schedule(params);
     }
 
     /**
