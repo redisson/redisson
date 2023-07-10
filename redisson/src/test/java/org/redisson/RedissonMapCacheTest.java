@@ -78,6 +78,57 @@ public class RedissonMapCacheTest extends BaseMapTest {
     }
 
     @Test
+    public void testEntryEntryIfNotSet() throws InterruptedException {
+        RMapCache<Integer, Integer> cache = redisson.getMapCache("testUpdateEntryExpiration");
+        cache.put(1, 10);
+        cache.put(2, 20);
+        cache.put(3, 30, 1, TimeUnit.SECONDS);
+
+        assertThat(cache.expireEntryIfNotSet(2, Duration.ofSeconds(2), null)).isTrue();
+        assertThat(cache.expireEntryIfNotSet(3, Duration.ofSeconds(4), null)).isFalse();
+        long ttl2 = cache.remainTimeToLive(2);
+        assertThat(ttl2).isBetween(1900L, 2000L);
+        Thread.sleep(1200);
+        assertThat(cache.containsKey(2)).isTrue();
+        assertThat(cache.containsKey(3)).isFalse();
+        Thread.sleep(1300);
+        assertThat(cache.containsKey(2)).isFalse();
+    }
+
+    @Test
+    public void testEntryEntriesIfNotSet() throws InterruptedException {
+        RMapCache<Integer, Integer> cache = redisson.getMapCache("testUpdateEntryExpiration");
+        cache.put(1, 10);
+        cache.put(2, 20);
+        cache.put(3, 30, 1, TimeUnit.SECONDS);
+
+        assertThat(cache.expireEntriesIfNotSet(new HashSet<>(Arrays.asList(2, 3)), Duration.ofSeconds(2), null)).isEqualTo(1);
+        long ttl2 = cache.remainTimeToLive(2);
+        assertThat(ttl2).isBetween(1900L, 2000L);
+        Thread.sleep(2200);
+        assertThat(cache.expireEntriesIfNotSet(new HashSet<>(Arrays.asList(2, 3)), Duration.ofSeconds(2), null)).isZero();
+        assertThat(cache.containsKey(2)).isFalse();
+        assertThat(cache.containsKey(3)).isFalse();
+    }
+
+    @Test
+    public void testEntryEntries() throws InterruptedException {
+        RMapCache<Integer, Integer> cache = redisson.getMapCache("testUpdateEntryExpiration");
+        cache.put(1, 10, 3, TimeUnit.SECONDS);
+        cache.put(2, 20, 3, TimeUnit.SECONDS);
+        cache.put(3, 30, 3, TimeUnit.SECONDS);
+
+        Thread.sleep(2000);
+        long ttl = cache.remainTimeToLive(1);
+        assertThat(ttl).isBetween(900L, 1000L);
+        assertThat(cache.expireEntries(new HashSet<>(Arrays.asList(2, 3)), Duration.ofSeconds(2), null)).isEqualTo(2);
+        long ttl2 = cache.remainTimeToLive(2);
+        assertThat(ttl2).isBetween(1900L, 2000L);
+        Thread.sleep(2000);
+        assertThat(cache.expireEntries(new HashSet<>(Arrays.asList(2, 3)), Duration.ofSeconds(2), null)).isZero();
+    }
+
+    @Test
     public void testUpdateEntryExpiration() throws InterruptedException {
         RMapCache<Integer, Integer> cache = redisson.getMapCache("testUpdateEntryExpiration");
         cache.put(1, 2, 3, TimeUnit.SECONDS);
