@@ -21,7 +21,7 @@ import org.redisson.api.map.MapWriter;
 import org.redisson.api.map.MapWriterAsync;
 
 /**
- * Configuration for Map object.
+ * Configuration for RMap object.
  * 
  * @author Nikita Koksharov
  *

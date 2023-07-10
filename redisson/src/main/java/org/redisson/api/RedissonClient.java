@@ -187,7 +187,7 @@ public interface RedissonClient {
      * @param options - map options
      * @return MapCache object
      */
-    <K, V> RMapCache<K, V> getMapCache(String name, Codec codec, MapOptions<K, V> options);
+    <K, V> RMapCache<K, V> getMapCache(String name, Codec codec, MapCacheOptions<K, V> options);
 
     /**
      * Returns map-based cache instance by name.
@@ -214,7 +214,7 @@ public interface RedissonClient {
      * @param options - map options
      * @return MapCache object
      */
-    <K, V> RMapCache<K, V> getMapCache(String name, MapOptions<K, V> options);
+    <K, V> RMapCache<K, V> getMapCache(String name, MapCacheOptions<K, V> options);
 
     /**
      * Returns object holder instance by name.
