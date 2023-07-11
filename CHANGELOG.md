@@ -3,7 +3,7 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
-### 11-Jul-2023 - 3.23.0 released
+### 10-Jul-2023 - 3.23.0 released
 Feature - added `RBloomFilter` `contains()` and `add()` methods with element collection support  
 Feature - RMapCache and RLocalCachedMap should use sharded pubsub in Redis Cluster 7.0+  
 Feature - [lazyInitialization](https://github.com/redisson/redisson/wiki/2.-Configuration#lazyinitialization) setting added  
