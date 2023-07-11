@@ -3,6 +3,31 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 11-Jul-2023 - 3.23.0 released
+Feature - added `RBloomFilter` `contains()` and `add()` methods with element collection support  
+Feature - RMapCache and RLocalCachedMap should use sharded pubsub in Redis Cluster 7.0+  
+Feature - [lazyInitialization](https://github.com/redisson/redisson/wiki/2.-Configuration#lazyinitialization) setting added  
+Feature - `expireEntryIfNotSet()`, `expireEntries()`, `expireEntry()`, `expireEntriesIfNotSet()` methods added to `RMapCache` object  
+Feature - `MapCacheOptions` object with `removeEmptyEvictionTask()` setting introduced. Removes `RMapCache` eviction task from memory if map is empty upon entries eviction process completion  
+
+__Breaking change - RMapCache and RLocalCachedMap should use sharded pubsub in Redis Cluster 7.0+__  
+__Breaking change - RMapCache object uses MapCacheOptions object__  
+
+Improvement - `RMapCache` shouldn't emit events if no listeners added  
+
+Fixed - canceling tasks that scheduled with cron expression does not interrupt the thread (thanks to @zcxsythenew)  
+Fixed - `RExecutorService` task response should be deleted if task was canceled  
+Fixed - `RedisConnection.close()` method has private visibility  
+Fixed - `ConcurrentModificationException` occasionally thrown during batch execution  
+Fixed - `StringIndexOutOfBoundsException` is thrown if Redis port isn't defined in configuration  
+Fixed - missed methods implementation of Spring Data Redis module: `zRevRangeByLex()`, `time(TimeUnit)`, `zRemRangeByLex()`, `zLexCount()`, `rewriteConfig()`, `zRangeStoreByLex()`, `zRangeStoreRevByLex()`, `zRangeStoreByScore()`, `zRangeStoreRevByScore()`, `flushDb()`, `flushAll()`, `replicaOf()`, `replicaOfNoOne()`
+Fixed - transactional `RMap.fastRemove()` method throws `UnsupportedOperationException`  
+Fixed - `RBloomFilter` `contains()` and `add()` methods don't return accurate results if false probability is high  
+Fixed - incorrect handling "unknown command" response for `RTopic` operations  
+Fixed - `RLiveObjectService.delete(class, id)` method doesn't delete indexes  
+Fixed - `RMultimapCache` throws an exception if entry removed before expiration moment  
+Fixed - `keepPubSubOrder` setting isn't applied  
+
 ### 19-Jun-2023 - 3.22.1 released
 Feature - Apache Tomcat Manager should use sharded pubsub in Redis Cluster 7.0+  
 Feature - Micronaut Session store should use sharded pubsub in Redis Cluster 7.0+  
