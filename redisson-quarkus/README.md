@@ -78,7 +78,7 @@ quarkus.redisson.threads=16
 quarkus.redisson.netty-threads=32
 ```
 
-Use `quarkus.redisson.file` setting to specify path to config file.    
+Use `quarkus.redisson.file` setting to specify path to a config file.    
     
 ### 3. Use Redisson
 
