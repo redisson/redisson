@@ -62,6 +62,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected final AtomicReference<CompletableFuture<Void>> lazyConnectLatch = new AtomicReference<>();
 
+    private boolean lastAttempt;
+
     public MasterSlaveConnectionManager(BaseMasterSlaveServersConfig<?> cfg, ServiceManager serviceManager) {
         this.serviceManager = serviceManager;
 
@@ -170,6 +172,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         try {
             connect();
             f.complete(null);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         } catch (Exception e) {
             f.completeExceptionally(e);
             lazyConnectLatch.set(null);
@@ -177,7 +181,31 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     }
 
-    public void connect() {
+    @Override
+    public final void connect() throws InterruptedException {
+        for (int i = 0; i < config.getRetryAttempts(); i++) {
+            try {
+                if (i == config.getRetryAttempts() - 1) {
+                    lastAttempt = true;
+                }
+                doConnect();
+                return;
+            } catch (Exception e) {
+                try {
+                    Thread.sleep(config.getRetryInterval());
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+                if (i == config.getRetryAttempts() - 1) {
+                    lastAttempt = false;
+                    throw e;
+                }
+            }
+        }
+    }
+
+    protected void doConnect() {
         try {
             if (config.isSlaveNotUsed()) {
                 masterSlaveEntry = new SingleEntry(this, serviceManager.getConnectionWatcher(), config);
@@ -420,7 +448,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     protected void internalShutdown() {
-        if (lazyConnectLatch.get() == null) {
+        if (lazyConnectLatch.get() == null && lastAttempt) {
             shutdown();
         }
     }

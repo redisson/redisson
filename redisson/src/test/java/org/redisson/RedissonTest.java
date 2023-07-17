@@ -4,6 +4,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.util.CharsetUtil;
 import net.bytebuddy.utility.RandomString;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,7 @@ import org.redisson.connection.balancer.RandomLoadBalancer;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -1237,12 +1239,12 @@ public class RedissonTest extends BaseTest {
 
     @Test
     public void testClusterConnectionFail() {
-        Assertions.assertThrows(RedisConnectionException.class, () -> {
-            Config config = new Config();
-            config.useClusterServers().addNodeAddress("redis://127.99.0.1:1111");
-            Redisson.create(config);
-
-            Thread.sleep(1500);
+        Awaitility.await().atLeast(Duration.ofSeconds(3)).atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+            Assertions.assertThrows(RedisConnectionException.class, () -> {
+                Config config = new Config();
+                config.useClusterServers().addNodeAddress("redis://127.99.0.1:1111");
+                Redisson.create(config);
+            });
         });
     }
 

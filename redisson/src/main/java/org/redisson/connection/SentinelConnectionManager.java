@@ -84,7 +84,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     @Override
-    public void connect() {
+    public void doConnect() {
         checkAuth(cfg);
 
         if ("redis".equals(scheme)) {
@@ -202,7 +202,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             log.warn("ReadMode = {}, but slave nodes are not found!", this.config.getReadMode());
         }
 
-        super.connect();
+        super.doConnect();
 
         scheduleChangeCheck(cfg, null);
     }
