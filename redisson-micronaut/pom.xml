@@ -16,6 +16,7 @@
     <modules>
         <module>redisson-micronaut-20</module>
         <module>redisson-micronaut-30</module>
+        <module>redisson-micronaut-40</module>
     </modules>
 
 </project>
