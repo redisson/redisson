@@ -73,12 +73,15 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         this.seachEngine = new LiveObjectSearch(commandExecutor);
 
         if (commandExecutor.getServiceManager().getLiveObjectLatch().compareAndSet(false, true)) {
-            RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:expired");
+            String pp = "__keyspace@" + commandExecutor.getServiceManager().getConfig().getDatabase() + "__:redisson_live_object:*";
+            String prefix = pp.replace(":redisson_live_object:*", "");
+            RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, pp);
             topic.addListenerAsync(String.class, (pattern, channel, msg) -> {
-                if (msg.contains("redisson_live_object:")) {
-                    Class<?> entity = resolveEntity(msg);
+                if (msg.equals("expired")) {
+                    String name = channel.toString().replace(prefix, "");
+                    Class<?> entity = resolveEntity(name);
                     NamingScheme scheme = commandExecutor.getObjectBuilder().getNamingScheme(entity);
-                    Object id = scheme.resolveId(msg);
+                    Object id = scheme.resolveId(name);
                     deleteExpired(id, entity);
                 }
             });
