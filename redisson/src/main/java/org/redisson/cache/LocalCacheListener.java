@@ -51,7 +51,7 @@ public abstract class LocalCacheListener {
     public static final String TOPIC_SUFFIX = "topic";
     public static final String DISABLED_KEYS_SUFFIX = "disabled-keys";
     public static final String DISABLED_ACK_SUFFIX = ":topic";
-    
+
     private ConcurrentMap<CacheKey, String> disabledKeys = new ConcurrentHashMap<CacheKey, String>();
     
     private static final Logger log = LoggerFactory.getLogger(LocalCacheListener.class);
@@ -63,7 +63,8 @@ public abstract class LocalCacheListener {
     private byte[] instanceId;
     private Codec codec;
     private LocalCachedMapOptions<?, ?> options;
-    
+    private final String pattern;
+
     private long cacheUpdateLogTime;
     private volatile long lastInvalidate;
     private RTopic invalidationTopic;
@@ -88,6 +89,7 @@ public abstract class LocalCacheListener {
         this.options = options;
         this.cacheUpdateLogTime = cacheUpdateLogTime;
         this.isSharded = isSharded;
+        this.pattern = "__keyspace@" + commandExecutor.getServiceManager().getConfig().getDatabase() + "__:" + name;
 
         instanceId = commandExecutor.getServiceManager().generateIdArray();
     }
@@ -148,9 +150,9 @@ public abstract class LocalCacheListener {
             invalidationTopic = RedissonTopic.createRaw(LocalCachedMessageCodec.INSTANCE, commandExecutor, getInvalidationTopicName());
         }
 
-        RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:expired");
+        RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, pattern);
         expireListenerId = topic.addListener(String.class, (pattern, channel, msg) -> {
-            if (msg.equals(name)) {
+            if (msg.equals("expired")) {
                 cache.clear();
             }
         });
@@ -338,7 +340,7 @@ public abstract class LocalCacheListener {
         }
         invalidationTopic.removeListenerAsync(ids.toArray(new Integer[0]));
 
-        RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:expired");
+        RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, pattern);
         topic.removeListenerAsync(expireListenerId);
     }
 
