@@ -3,6 +3,16 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 18-Jul-2023 - 3.23.1 released
+Improvement - the scope of key event subscriptions reduced for `RLiveObjectService` object. Now it uses key-space channel  
+Improvement - the scope of key event subscriptions reduced for `RLocalCachedMap` object. Now it uses key-space channel  
+
+Fixed - codecs defined via Spring Native application.properties file can't be recognized during application run  
+Fixed - `retryAttempt` setting isn't applied during Redisson startup  
+Fixed - Quarkus 2/3 native image can't be built  
+Fixed - unknown property `quarkus.redisson.*` warnings in quarkus  
+Fixed - Redisson settings defined in Quarkus application.properties file can't be used in native mode  
+
 ### 10-Jul-2023 - 3.23.0 released
 Feature - added `RBloomFilter` `contains()` and `add()` methods with element collection support  
 Feature - RMapCache and RLocalCachedMap should use sharded pubsub in Redis Cluster 7.0+  
