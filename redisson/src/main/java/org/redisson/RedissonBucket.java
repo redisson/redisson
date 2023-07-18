@@ -193,6 +193,20 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
     }
 
     @Override
+    public void set(V value, Duration duration) {
+        get(setAsync(value, duration));
+    }
+
+    @Override
+    public RFuture<Void> setAsync(V value, Duration duration) {
+        if (value == null) {
+            return commandExecutor.writeAsync(getRawName(), RedisCommands.DEL_VOID, getRawName());
+        }
+
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.PSETEX, getRawName(), duration.toMillis(), encode(value));
+    }
+
+    @Override
     public RFuture<Boolean> trySetAsync(V value) {
         if (value == null) {
             return commandExecutor.readAsync(getRawName(), codec, RedisCommands.NOT_EXISTS, getRawName());
@@ -293,6 +307,35 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         }
 
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SET_BOOLEAN, getRawName(), encode(value), "PX", timeUnit.toMillis(timeToLive), "XX");
+    }
+
+    @Override
+    public boolean setIfExists(V value, Duration duration) {
+        return get(setIfExistsAsync(value, duration));
+    }
+
+    @Override
+    public RFuture<Boolean> setIfExistsAsync(V value, Duration duration) {
+        if (value == null) {
+            throw new IllegalArgumentException("Value can't be null");
+        }
+
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SET_BOOLEAN, getRawName(), encode(value), "PX", duration.toMillis(), "XX");
+    }
+
+    @Override
+    public V getAndSet(V value, Duration duration) {
+        return get(getAndSetAsync(value, duration));
+    }
+
+    @Override
+    public RFuture<V> getAndSetAsync(V value, Duration duration) {
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_OBJECT,
+                "local currValue = redis.call('get', KEYS[1]); "
+              + "redis.call('psetex', KEYS[1], ARGV[2], ARGV[1]); "
+              + "return currValue; ",
+             Collections.singletonList(getRawName()),
+             encode(value), duration.toMillis());
     }
 
     @Override

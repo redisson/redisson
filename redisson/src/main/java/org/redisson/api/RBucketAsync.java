@@ -100,7 +100,7 @@ public interface RBucketAsync<V> extends RExpirableAsync {
     RFuture<Boolean> setIfExistsAsync(V value);
 
     /**
-     * Sets value only if it's already exists.
+     * Use {@link #setIfExistsAsync(Object, Duration)} instead
      *
      * @param value - value to set
      * @param timeToLive - time to live interval
@@ -109,6 +109,16 @@ public interface RBucketAsync<V> extends RExpirableAsync {
      *         element wasn't set
      */
     RFuture<Boolean> setIfExistsAsync(V value, long timeToLive, TimeUnit timeUnit);
+
+    /**
+     * Sets <code>value</code> with expiration <code>duration</code> only if object holder already exists.
+     *
+     * @param value value to set
+     * @param duration expiration duration
+     * @return {@code true} if successful, or {@code false} if
+     *         element wasn't set
+     */
+    RFuture<Boolean> setIfExistsAsync(V value, Duration duration);
 
     /**
      * Atomically sets the value to the given updated value
@@ -131,7 +141,7 @@ public interface RBucketAsync<V> extends RExpirableAsync {
     RFuture<V> getAndSetAsync(V newValue);
 
     /**
-     * Retrieves current element in the holder and replaces it with <code>newValue</code> with defined <code>timeToLive</code> interval. 
+     * Use {@link #getAndSetAsync(Object, Duration)} instead
      * 
      * @param value - value to set
      * @param timeToLive - time to live interval
@@ -139,6 +149,16 @@ public interface RBucketAsync<V> extends RExpirableAsync {
      * @return previous value
      */
     RFuture<V> getAndSetAsync(V value, long timeToLive, TimeUnit timeUnit);
+
+    /**
+     * Retrieves current element in the holder and replaces it
+     * with <code>value</code> with defined expiration <code>duration</code>.
+     *
+     * @param value value to set
+     * @param duration expiration duration
+     * @return previous value
+     */
+    RFuture<V> getAndSetAsync(V value, Duration duration);
 
     /**
      * Retrieves current element in the holder and sets an expiration duration for it.
@@ -178,7 +198,7 @@ public interface RBucketAsync<V> extends RExpirableAsync {
     RFuture<Void> setAsync(V value);
 
     /**
-     * Stores element into the holder with defined <code>timeToLive</code> interval.
+     * Use {@link #setAsync(Object, Duration)} instead
      * 
      * @param value - value to set
      * @param timeToLive - time to live interval
@@ -186,6 +206,14 @@ public interface RBucketAsync<V> extends RExpirableAsync {
      * @return void
      */
     RFuture<Void> setAsync(V value, long timeToLive, TimeUnit timeUnit);
+
+    /**
+     * Stores <code>value</code> into the holder with defined expiration <code>duration</code>.
+     *
+     * @param value value to set
+     * @param duration expiration duration
+     */
+    RFuture<Void> setAsync(V value, Duration duration);
 
     /**
      * Set value and keep existing TTL.

@@ -30,7 +30,7 @@ public class RedissonBucketTest extends BaseTest {
         Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
 
         RBucket<Integer> al = redisson.getBucket("test");
-        al.set(1, 1, TimeUnit.SECONDS);
+        al.set(1, Duration.ofSeconds(1));
         assertThat(al.getAndClearExpire()).isEqualTo(1);
         assertThat(al.remainTimeToLive()).isEqualTo(-1);
     }
@@ -72,7 +72,7 @@ public class RedissonBucketTest extends BaseTest {
         Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.0.0") > 0);
 
         RBucket<Integer> al = redisson.getBucket("test");
-        al.set(1234, 10, TimeUnit.SECONDS);
+        al.set(1234, Duration.ofSeconds(10));
         al.setAndKeepTTL(222);
         assertThat(al.remainTimeToLive()).isGreaterThan(9900);
         assertThat(al.get()).isEqualTo(222);
@@ -167,7 +167,7 @@ public class RedissonBucketTest extends BaseTest {
         RedissonClient redisson = Redisson.create(config);
         
         RBucket<Integer> al = redisson.getBucket("test");
-        al.set(1, 3, TimeUnit.SECONDS);
+        al.set(1, Duration.ofSeconds(3));
         CountDownLatch latch = new CountDownLatch(1);
         al.addListener(new ExpiredObjectListener() {
             @Override
@@ -264,7 +264,7 @@ public class RedissonBucketTest extends BaseTest {
     public void testGetAndSetTTL() throws InterruptedException {
         RBucket<String> r1 = redisson.getBucket("getAndSetTTL");
         r1.set("value1");
-        assertThat(r1.getAndSet("value2", 500, TimeUnit.MILLISECONDS)).isEqualTo("value1");
+        assertThat(r1.getAndSet("value2", Duration.ofMillis(500))).isEqualTo("value1");
         assertThat(r1.get()).isEqualTo("value2");
 
         Thread.sleep(1000);
@@ -295,7 +295,7 @@ public class RedissonBucketTest extends BaseTest {
 
         RBucket<String> r2 = redisson.getBucket("test2");
         r2.set("1");
-        assertThat(r2.setIfExists("2", 1, TimeUnit.SECONDS)).isTrue();
+        assertThat(r2.setIfExists("2", Duration.ofSeconds(1))).isTrue();
         assertThat(r2.get()).isEqualTo("2");
         Thread.sleep(1000);
         assertThat(r2.isExists()).isFalse();
@@ -324,7 +324,7 @@ public class RedissonBucketTest extends BaseTest {
     @Test
     public void testExpire() throws InterruptedException {
         RBucket<String> bucket = redisson.getBucket("test1");
-        bucket.set("someValue", 1, TimeUnit.SECONDS);
+        bucket.set("someValue", Duration.ofSeconds(1));
 
         Thread.sleep(1100);
 
@@ -425,7 +425,7 @@ public class RedissonBucketTest extends BaseTest {
         Assertions.assertEquals(value, bucket.get());
         
         bucket.set(null);
-        bucket.set(null, 1, TimeUnit.DAYS);
+        bucket.set(null, Duration.ofDays(1));
         
         assertThat(bucket.isExists()).isFalse();
     }
