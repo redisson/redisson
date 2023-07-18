@@ -17,6 +17,8 @@ Maven
     <artifactId>redisson-micronaut-20</artifactId>
     <!-- for Micronaut v3.x.x -->
     <artifactId>redisson-micronaut-30</artifactId>
+    <!-- for Micronaut v4.x.x -->
+    <artifactId>redisson-micronaut-40</artifactId>
     <version>3.23.1</version>
 </dependency>
 ```
@@ -28,6 +30,8 @@ Gradle
 compile 'org.redisson:redisson-micronaut-20:3.23.1'
 // for Micronaut v3.x.x
 compile 'org.redisson:redisson-micronaut-30:3.23.1'
+// for Micronaut v4.x.x
+compile 'org.redisson:redisson-micronaut-40:3.23.?'
 ```
 
 ### 2. Add settings into `application.yml` file
