@@ -493,24 +493,6 @@ public class MasterSlaveEntry {
         });
     }
 
-    public boolean slaveUp(InetSocketAddress address, FreezeReason freezeReason) {
-        if (!slaveBalancer.unfreeze(address, freezeReason)) {
-            return false;
-        }
-
-        InetSocketAddress addr = masterEntry.getClient().getAddr();
-        // exclude master from slaves
-        if (!config.isSlaveNotUsed()
-                && !addr.equals(address)) {
-            if (slaveDown(addr, FreezeReason.SYSTEM)) {
-                log.info("master {} excluded from slaves", addr);
-            }
-        }
-        noPubSubSlaves.set(false);
-        return true;
-    }
-
-
     /**
      * Freeze slave with <code>redis(s)://host:port</code> from slaves list.
      * Re-attach pub/sub listeners from it to other slave.

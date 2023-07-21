@@ -247,10 +247,13 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
 
                 log.info("slave: {} added", address);
             });
-        } else if (entry.slaveUp(address, FreezeReason.MANAGER)) {
-            log.info("slave: {} is up", address);
         }
-        return CompletableFuture.completedFuture(null);
+
+        return entry.slaveUpAsync(address, FreezeReason.MANAGER).thenAccept(r -> {
+            if (r) {
+                log.info("slave: {} is up", address);
+            }
+        });
     }
 
     @Override
