@@ -57,7 +57,7 @@ public class RedissonSubscription extends AbstractSubscription {
                 continue;
             }
 
-            CompletableFuture<PubSubConnectionEntry> f = subscribeService.subscribe(ByteArrayCodec.INSTANCE, new ChannelName(channel), new BaseRedisPubSubListener() {
+            CompletableFuture<List<PubSubConnectionEntry>> f = subscribeService.subscribe(ByteArrayCodec.INSTANCE, new ChannelName(channel), new BaseRedisPubSubListener() {
                 @Override
                 public void onMessage(CharSequence ch, Object message) {
                     if (!Arrays.equals(((ChannelName) ch).getName(), channel)) {

@@ -94,7 +94,85 @@ public class RedissonTopicTest {
         }
 
     }
-    
+
+    @Test
+    public void testCluster() throws IOException, InterruptedException {
+        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave().notifyKeyspaceEvents(
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.g);
+        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave().notifyKeyspaceEvents(
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.g);
+        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave().notifyKeyspaceEvents(
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.g);
+        RedisRunner slave1 = new RedisRunner().randomPort().randomDir().nosave().notifyKeyspaceEvents(
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.g);
+        RedisRunner slave2 = new RedisRunner().randomPort().randomDir().nosave().notifyKeyspaceEvents(
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.g);
+        RedisRunner slave3 = new RedisRunner().randomPort().randomDir().nosave().notifyKeyspaceEvents(
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
+                RedisRunner.KEYSPACE_EVENTS_OPTIONS.g);
+
+        ClusterRunner clusterRunner = new ClusterRunner()
+                .addNode(master1, slave1)
+                .addNode(master2, slave2)
+                .addNode(master3, slave3);
+        ClusterRunner.ClusterProcesses process = clusterRunner.run();
+
+        Thread.sleep(3000);
+
+        Config config = new Config();
+        config.useClusterServers()
+                .setPingConnectionInterval(0)
+                .setLoadBalancer(new RandomLoadBalancer())
+                .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+
+        AtomicInteger subscribedCounter = new AtomicInteger();
+        AtomicInteger unsubscribedCounter = new AtomicInteger();
+        RTopic topic = redisson.getTopic("__keyevent@0__:del", StringCodec.INSTANCE);
+        int id1 = topic.addListener(new StatusListener() {
+            @Override
+            public void onSubscribe(String channel) {
+                subscribedCounter.incrementAndGet();
+            }
+
+            @Override
+            public void onUnsubscribe(String channel) {
+                unsubscribedCounter.incrementAndGet();
+            }
+        });
+
+        AtomicInteger counter = new AtomicInteger();
+
+        MessageListener<String> listener = (channel, msg) -> {
+            System.out.println("mes " + channel + " counter " + counter.get());
+            counter.incrementAndGet();
+        };
+        int id2 = topic.addListener(String.class, listener);
+
+        for (int i = 0; i < 10; i++) {
+            redisson.getBucket("" + i).set(i);
+            redisson.getBucket("" + i).delete();
+            Thread.sleep(7);
+        }
+
+        Awaitility.await().atMost(Duration.ofSeconds(2)).until(() -> counter.get() > 9);
+        assertThat(subscribedCounter.get()).isEqualTo(1);
+        assertThat(unsubscribedCounter.get()).isZero();
+
+        topic.removeListener(id1, id2);
+        Thread.sleep(1000);
+
+        assertThat(unsubscribedCounter.get()).isEqualTo(1);
+
+        redisson.shutdown();
+        process.shutdown();
+    }
+
     @Test
     public void testCountSubscribers() {
         RedissonClient redisson = BaseTest.createInstance();

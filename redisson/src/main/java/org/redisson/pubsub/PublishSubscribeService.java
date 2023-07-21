@@ -17,6 +17,7 @@ package org.redisson.pubsub;
 
 import io.netty.util.Timeout;
 import org.redisson.PubSubPatternStatusListener;
+import org.redisson.PubSubStatusListener;
 import org.redisson.client.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
@@ -211,15 +212,46 @@ public class PublishSubscribeService {
         return subscribe(PubSubType.SUBSCRIBE, codec, channelName, entry, clientEntry, listeners);
     }
 
-    public CompletableFuture<PubSubConnectionEntry> subscribe(Codec codec, ChannelName channelName, RedisPubSubListener<?>... listeners) {
+    public CompletableFuture<List<PubSubConnectionEntry>> subscribe(Codec codec, ChannelName channelName, RedisPubSubListener<?>... listeners) {
+        if (isMultiEntity(channelName)) {
+            Collection<MasterSlaveEntry> entrySet = connectionManager.getEntrySet();
+
+            AtomicInteger statusCounter = new AtomicInteger(entrySet.size());
+            RedisPubSubListener[] ls = Arrays.stream(listeners).map(l -> {
+                if (l instanceof PubSubStatusListener) {
+                    return new PubSubStatusListener(((PubSubStatusListener) l).getListener(), ((PubSubStatusListener) l).getName()) {
+                        @Override
+                        public boolean onStatus(PubSubType type, CharSequence channel) {
+                            if (statusCounter.decrementAndGet() == 0) {
+                                return super.onStatus(type, channel);
+                            }
+                            return true;
+                        }
+                    };
+                }
+                return l;
+            }).toArray(RedisPubSubListener[]::new);
+
+            List<CompletableFuture<PubSubConnectionEntry>> futures = new ArrayList<>();
+            for (MasterSlaveEntry entry : entrySet) {
+                CompletableFuture<PubSubConnectionEntry> future = subscribe(PubSubType.SUBSCRIBE, codec, channelName, entry, null, ls);
+                futures.add(future);
+            }
+            CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+            return future.thenApply(r -> {
+                return futures.stream().map(v -> v.getNow(null)).collect(Collectors.toList());
+            });
+        }
+
         MasterSlaveEntry entry = getEntry(channelName);
         if (entry == null) {
             RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node for name: " + channelName + " hasn't been discovered yet. Check cluster slots coverage using CLUSTER NODES command. Increase value of retryAttempts and/or retryInterval settings.");
-            CompletableFuture<PubSubConnectionEntry> promise = new CompletableFuture<>();
+            CompletableFuture<List<PubSubConnectionEntry>> promise = new CompletableFuture<>();
             promise.completeExceptionally(ex);
             return promise;
         }
-        return subscribe(PubSubType.SUBSCRIBE, codec, channelName, entry, null, listeners);
+        CompletableFuture<PubSubConnectionEntry> f = subscribe(PubSubType.SUBSCRIBE, codec, channelName, entry, null, listeners);
+        return f.thenApply(res -> Collections.singletonList(res));
     }
 
     public CompletableFuture<PubSubConnectionEntry> ssubscribe(Codec codec, ChannelName channelName, RedisPubSubListener<?>... listeners) {
@@ -731,8 +763,21 @@ public class PublishSubscribeService {
 
     private void subscribe(ChannelName channelName, Collection<RedisPubSubListener<?>> listeners,
             Codec subscribeCodec) {
-        CompletableFuture<PubSubConnectionEntry> subscribeFuture =
-                                        subscribe(subscribeCodec, channelName, listeners.toArray(new RedisPubSubListener[0]));
+        MasterSlaveEntry entry = getEntry(channelName);
+        if (isMultiEntity(channelName)) {
+            entry = connectionManager.getEntrySet()
+                    .stream()
+                    .filter(e -> !name2PubSubConnection.containsKey(new PubSubKey(channelName, e)))
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        CompletableFuture<PubSubConnectionEntry> subscribeFuture;
+        if (entry != null) {
+            subscribeFuture = subscribe(PubSubType.SUBSCRIBE, subscribeCodec, channelName, entry, null, listeners.toArray(new RedisPubSubListener[0]));
+        } else {
+            subscribeFuture = subscribe(subscribeCodec, channelName, listeners.toArray(new RedisPubSubListener[0])).thenApply(r -> r.iterator().next());
+        }
         subscribeFuture.whenComplete((res, e) -> {
             if (e != null) {
                 connectionManager.getServiceManager().newTimeout(task -> {

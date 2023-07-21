@@ -123,7 +123,7 @@ public class RedissonTopic implements RTopic {
     }
 
     protected RFuture<Integer> addListenerAsync(RedisPubSubListener<?> pubSubListener) {
-        CompletableFuture<PubSubConnectionEntry> future = subscribeService.subscribe(codec, channelName, pubSubListener);
+        CompletableFuture<List<PubSubConnectionEntry>> future = subscribeService.subscribe(codec, channelName, pubSubListener);
         CompletableFuture<Integer> f = future.thenApply(res -> {
             return System.identityHashCode(pubSubListener);
         });
