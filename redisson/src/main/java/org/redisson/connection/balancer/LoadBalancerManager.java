@@ -181,7 +181,11 @@ public class LoadBalancerManager {
         return false;
     }
 
-    public CompletableFuture<Boolean> unfreezeAsync(ClientConnectionsEntry entry, FreezeReason freezeReason) {
+    private CompletableFuture<Boolean> unfreezeAsync(ClientConnectionsEntry entry, FreezeReason freezeReason) {
+        return unfreezeAsync(entry, freezeReason, 0);
+    }
+
+    private CompletableFuture<Boolean> unfreezeAsync(ClientConnectionsEntry entry, FreezeReason freezeReason, int retry) {
         synchronized (entry) {
             if (!entry.isFreezed()) {
                 return CompletableFuture.completedFuture(false);
@@ -197,17 +201,29 @@ public class LoadBalancerManager {
                     futures.add(pubSubConnectionPool.initConnections(entry));
 
                     CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-                    return future.whenComplete((r, e) -> {
+                    CompletableFuture<Boolean> f = new CompletableFuture<>();
+                    future.whenComplete((r, e) -> {
                         if (e != null) {
-                            log.error("Unable to unfreeze entry: {}", entry, e);
+                            int maxAttempts = connectionManager.getServiceManager().getConfig().getRetryAttempts();
+                            log.error("Unable to unfreeze entry: {} attempt: {} of {}", entry, retry, maxAttempts, e);
                             entry.setInitialized(false);
+                            if (retry < maxAttempts) {
+                                connectionManager.getServiceManager().newTimeout(t -> {
+                                    CompletableFuture<Boolean> ff = unfreezeAsync(entry, freezeReason, retry + 1);
+                                    connectionManager.getServiceManager().transfer(ff, f);
+                                }, 1, TimeUnit.SECONDS);
+                            } else {
+                                f.complete(false);
+                            }
                             return;
                         }
 
                         entry.resetFirstFail();
                         entry.setFreezeReason(null);
-                        log.debug("Unfreezed entry: {}", entry);
-                    }).thenApply(e -> true);
+                        log.debug("Unfreezed entry: {} after {} attempts", entry, retry);
+                        f.complete(true);
+                    });
+                    return f;
                 }
             }
         }
