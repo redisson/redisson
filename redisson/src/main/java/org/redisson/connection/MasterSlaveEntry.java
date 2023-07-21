@@ -102,9 +102,9 @@ public class MasterSlaveEntry {
 
     private void useMasterAsSlave() {
         if (slaveBalancer.getAvailableClients() == 0) {
-            slaveUp(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM);
+            slaveUpAsync(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM);
         } else {
-            slaveDown(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM);
+            slaveDownAsync(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM);
         }
     }
 
