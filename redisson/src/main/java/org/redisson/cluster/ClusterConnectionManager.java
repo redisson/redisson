@@ -527,7 +527,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 .collect(Collectors.toList());
         nonFailedSlaves.forEach(uri -> {
             if (entry.hasSlave(uri)) {
-                CompletableFuture<Boolean> f = entry.slaveUpAsync(uri, FreezeReason.MANAGER);
+                CompletableFuture<Boolean> f = entry.slaveUpNoMasterExclusionAsync(uri, FreezeReason.MANAGER);
                 f = f.thenCompose(v -> {
                     if (v) {
                         log.info("slave: {} is up for slot ranges: {}", uri, currentPart.getSlotRanges());
@@ -582,7 +582,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         for (RedisURI uri : addedSlaves) {
             ClientConnectionsEntry slaveEntry = entry.getEntry(uri);
             if (slaveEntry != null) {
-                CompletableFuture<Boolean> slaveUpFuture = entry.slaveUpAsync(uri, FreezeReason.MANAGER);
+                CompletableFuture<Boolean> slaveUpFuture = entry.slaveUpNoMasterExclusionAsync(uri, FreezeReason.MANAGER);
                 slaveUpFuture = slaveUpFuture.thenCompose(v -> {
                     if (v) {
                         currentPart.addSlaveAddress(uri);

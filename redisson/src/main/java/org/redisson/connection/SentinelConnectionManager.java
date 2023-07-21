@@ -594,7 +594,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             });
         }
 
-        CompletableFuture<Boolean> f = entry.slaveUpAsync(uri, FreezeReason.MANAGER);
+        CompletableFuture<Boolean> f = entry.slaveUpNoMasterExclusionAsync(uri, FreezeReason.MANAGER);
         return f.thenCompose(e -> {
             if (e) {
                 log.info("slave: {} is up", uri);

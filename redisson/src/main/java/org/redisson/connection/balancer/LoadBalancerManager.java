@@ -104,16 +104,6 @@ public class LoadBalancerManager {
         return count;
     }
 
-    public boolean unfreeze(RedisURI address, FreezeReason freezeReason) {
-        ClientConnectionsEntry entry = getEntry(address);
-        if (entry == null) {
-            log.error("Can't find {} in slaves! Available slaves: {}", address, client2Entry.keySet());
-            return false;
-        }
-
-        return unfreeze(entry, freezeReason);
-    }
-
     public CompletableFuture<Boolean> unfreezeAsync(RedisURI address, FreezeReason freezeReason) {
         ClientConnectionsEntry entry = getEntry(address);
         if (entry == null) {
@@ -181,7 +171,7 @@ public class LoadBalancerManager {
         return false;
     }
 
-    private CompletableFuture<Boolean> unfreezeAsync(ClientConnectionsEntry entry, FreezeReason freezeReason) {
+    public CompletableFuture<Boolean> unfreezeAsync(ClientConnectionsEntry entry, FreezeReason freezeReason) {
         return unfreezeAsync(entry, freezeReason, 0);
     }
 

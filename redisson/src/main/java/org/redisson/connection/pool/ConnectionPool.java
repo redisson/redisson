@@ -361,9 +361,12 @@ abstract class ConnectionPool<T extends RedisConnection> {
                             }
 
                             if ("PONG".equals(t)) {
-                                if (masterSlaveEntry.slaveUp(entry, FreezeReason.RECONNECT)) {
-                                    log.info("slave {} has been successfully reconnected", entry.getClient().getAddr());
-                                }
+                                CompletableFuture<Boolean> ff = masterSlaveEntry.slaveUpAsync(entry, FreezeReason.RECONNECT);
+                                ff.thenAccept(r -> {
+                                    if (r) {
+                                        log.info("slave {} has been successfully reconnected", entry.getClient().getAddr());
+                                    }
+                                });
                             } else {
                                 scheduleCheck(entry);
                             }
