@@ -409,14 +409,14 @@ public class ServiceManager {
         });
     }
 
-    public <V> void transfer(CompletionStage<V> future1, CompletableFuture<V> future2) {
-        future1.whenComplete((res, e) -> {
+    public <V> void transfer(CompletionStage<V> source, CompletableFuture<V> dest) {
+        source.whenComplete((res, e) -> {
             if (e != null) {
-                future2.completeExceptionally(e);
+                dest.completeExceptionally(e);
                 return;
             }
 
-            future2.complete(res);
+            dest.complete(res);
         });
     }
 
