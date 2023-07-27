@@ -147,8 +147,11 @@ public class ClientConnectionsEntry {
         return freezeReason;
     }
 
-    public void reset() {
+    public void resetConnectionsSemaphore() {
         freeConnectionsCounter.removeListeners();
+    }
+
+    public void resetPubSubConnectionsSemaphore() {
         freeSubscribeConnectionsCounter.removeListeners();
     }
 

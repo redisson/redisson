@@ -245,22 +245,24 @@ public class MasterSlaveEntry {
         nodeDown(masterEntry);
     }
 
-    private void reattachPubSub() {
-        for (RedisPubSubConnection connection : masterEntry.getAllSubscribeConnections()) {
+    private void reattachPubSub(ClientConnectionsEntry entry) {
+        entry.resetPubSubConnectionsSemaphore();
+
+        for (RedisPubSubConnection connection : entry.getAllSubscribeConnections()) {
             connection.closeAsync();
             connectionManager.getSubscribeService().reattachPubSub(connection);
         }
         while (true) {
-            RedisConnection connection = masterEntry.pollSubscribeConnection();
+            RedisConnection connection = entry.pollSubscribeConnection();
             if (connection == null) {
                 break;
             }
         }
-        masterEntry.getAllSubscribeConnections().clear();
+        entry.getAllSubscribeConnections().clear();
     }
 
     public void nodeDown(ClientConnectionsEntry entry) {
-        entry.reset();
+        entry.resetConnectionsSemaphore();
         
         for (RedisConnection connection : entry.getAllConnections()) {
             connection.closeAsync();
@@ -274,17 +276,7 @@ public class MasterSlaveEntry {
         }
         entry.getAllConnections().clear();
 
-        for (RedisPubSubConnection connection : entry.getAllSubscribeConnections()) {
-            connection.closeAsync();
-            connectionManager.getSubscribeService().reattachPubSub(connection);
-        }
-        while (true) {
-            RedisConnection connection = entry.pollSubscribeConnection();
-            if (connection == null) {
-                break;
-            }
-        }
-        entry.getAllSubscribeConnections().clear();
+        reattachPubSub(entry);
     }
 
     private void reattachBlockingQueue(CommandData<?, ?> commandData) {
@@ -461,7 +453,7 @@ public class MasterSlaveEntry {
         return downFuture.thenApply(r -> {
             if (r) {
                 if (config.getSubscriptionMode() == SubscriptionMode.SLAVE) {
-                    reattachPubSub();
+                    reattachPubSub(masterEntry);
                 }
                 log.info("master {} excluded from slaves", addr);
             }
@@ -478,7 +470,7 @@ public class MasterSlaveEntry {
         return downFuture.thenApply(r -> {
             if (r) {
                 if (config.getSubscriptionMode() == SubscriptionMode.SLAVE) {
-                    reattachPubSub();
+                    reattachPubSub(masterEntry);
                 }
                 log.info("master {} excluded from slaves", addr);
             }
