@@ -461,7 +461,7 @@ public class MasterSlaveEntry {
         });
     }
 
-    private CompletableFuture<Boolean> excludeMasterFromSlaves(InetSocketAddress address) {
+    public CompletableFuture<Boolean> excludeMasterFromSlaves(InetSocketAddress address) {
         InetSocketAddress addr = masterEntry.getClient().getAddr();
         if (config.isSlaveNotUsed() || addr.equals(address)) {
             return CompletableFuture.completedFuture(false);
