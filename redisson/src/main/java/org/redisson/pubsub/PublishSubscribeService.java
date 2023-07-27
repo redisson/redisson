@@ -786,7 +786,7 @@ public class PublishSubscribeService {
                 return;
             }
 
-            log.info("listeners of '{}' channel to '{}' have been resubscribed", channelName, res.getConnection().getRedisClient());
+            log.info("listeners of '{}' channel have been resubscribed to '{}'", channelName, res);
         });
     }
 
@@ -802,7 +802,7 @@ public class PublishSubscribeService {
                 return;
             }
 
-            log.info("listeners of '{}' channel to '{}' have been resubscribed", channelName, res.getConnection().getRedisClient());
+            log.info("listeners of '{}' channel have been resubscribed to '{}'", channelName, res);
         });
     }
 
@@ -833,7 +833,7 @@ public class PublishSubscribeService {
                 return;
             }
 
-            log.info("listeners of '{}' channel-pattern to '{}' have been resubscribed", channelName, res);
+            log.info("listeners of '{}' channel-pattern have been resubscribed to '{}'", channelName, res);
         });
     }
 
