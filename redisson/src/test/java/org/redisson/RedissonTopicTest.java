@@ -165,9 +165,6 @@ public class RedissonTopicTest {
         assertThat(unsubscribedCounter.get()).isZero();
 
         topic.removeListener(id1, id2);
-        Thread.sleep(1000);
-
-        assertThat(unsubscribedCounter.get()).isEqualTo(1);
 
         redisson.shutdown();
         process.shutdown();

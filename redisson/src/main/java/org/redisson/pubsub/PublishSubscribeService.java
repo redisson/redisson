@@ -201,7 +201,7 @@ public class PublishSubscribeService {
         return f.thenApply(res -> Collections.singletonList(res));
     }
 
-    private boolean isMultiEntity(ChannelName channelName) {
+    public boolean isMultiEntity(ChannelName channelName) {
         return connectionManager.isClusterMode()
                 && (channelName.toString().startsWith("__keyspace@")
                 || channelName.toString().startsWith("__keyevent@"));
