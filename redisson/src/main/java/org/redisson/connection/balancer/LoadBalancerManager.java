@@ -124,53 +124,6 @@ public class LoadBalancerManager {
         return unfreezeAsync(entry, freezeReason);
     }
 
-    public boolean unfreeze(InetSocketAddress address, FreezeReason freezeReason) {
-        ClientConnectionsEntry entry = getEntry(address);
-        if (entry == null) {
-            log.error("Can't find {} in slaves! Available slaves: {}", address, client2Entry.keySet());
-            return false;
-        }
-
-        return unfreeze(entry, freezeReason);
-    }
-
-    public boolean unfreeze(ClientConnectionsEntry entry, FreezeReason freezeReason) {
-        synchronized (entry) {
-            if (!entry.isFreezed()) {
-                return false;
-            }
-
-            if (freezeReason != FreezeReason.RECONNECT
-                    || entry.getFreezeReason() == FreezeReason.RECONNECT) {
-                if (!entry.isInitialized()) {
-                    entry.setInitialized(true);
-
-                    List<CompletableFuture<Void>> futures = new ArrayList<>(2);
-                    futures.add(slaveConnectionPool.initConnections(entry));
-                    futures.add(pubSubConnectionPool.initConnections(entry));
-
-                    CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-                    future.whenComplete((r, e) -> {
-                        if (e != null) {
-                            log.error("Unable to unfreeze entry: {}", entry, e);
-                            entry.setInitialized(false);
-                            connectionManager.getServiceManager().newTimeout(t -> {
-                                unfreeze(entry, freezeReason);
-                            }, 1, TimeUnit.SECONDS);
-                            return;
-                        }
-
-                        entry.resetFirstFail();
-                        entry.setFreezeReason(null);
-                        log.debug("Unfreezed entry: {}", entry);
-                    });
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
     public CompletableFuture<Boolean> unfreezeAsync(ClientConnectionsEntry entry, FreezeReason freezeReason) {
         return unfreezeAsync(entry, freezeReason, 0);
     }

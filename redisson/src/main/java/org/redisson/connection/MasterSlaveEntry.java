@@ -199,9 +199,11 @@ public class MasterSlaveEntry {
         if (!config.isSlaveNotUsed()
                 && !masterEntry.getClient().getAddr().equals(entry.getClient().getAddr())
                     && slaveBalancer.getAvailableClients() == 0) {
-            if (slaveBalancer.unfreeze(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM)) {
-                log.info("master {} used as slave", masterEntry.getClient().getAddr());
-            }
+            slaveBalancer.unfreezeAsync(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM).thenAccept(r -> {
+                if (r) {
+                    log.info("master {} used as slave", masterEntry.getClient().getAddr());
+                }
+            });
         }
 
         nodeDown(entry);
