@@ -113,7 +113,7 @@ public class ClientConnectionsEntry {
     }
 
     public boolean isFailed() {
-        if (client.getFirstFailTime() != 0) {
+        if (client.getFirstFailTime() != 0 && config.getFailedSlaveCheckInterval() > 0) {
             return System.currentTimeMillis() - client.getFirstFailTime() > config.getFailedSlaveCheckInterval();
         }
         return false;
