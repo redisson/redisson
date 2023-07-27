@@ -451,6 +451,19 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
     }
 
     @Test
+    public void testPutAllSyncUpdate() {
+        RLocalCachedMap<Object, Object> rLocalCachedMap1 = redisson.getLocalCachedMap("znMapTest1", LocalCachedMapOptions.defaults()
+                .evictionPolicy(EvictionPolicy.NONE)
+                .cacheSize(0)
+                .syncStrategy(SyncStrategy.UPDATE)
+                .reconnectionStrategy(ReconnectionStrategy.NONE)
+                .writeMode(WriteMode.WRITE_BEHIND));
+        Map<String, String> map = new HashMap<>();
+        map.put("test", "123");
+        rLocalCachedMap1.putAll(map);
+    }
+
+    @Test
     public void testNoInvalidationOnUpdate() throws InterruptedException {
         LocalCachedMapOptions<String, Integer> options = LocalCachedMapOptions.<String, Integer>defaults()
                 .evictionPolicy(EvictionPolicy.LFU)

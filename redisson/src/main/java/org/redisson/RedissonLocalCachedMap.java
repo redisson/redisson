@@ -711,7 +711,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         ByteBuf msgEncoded = null;
         if (syncStrategy == SyncStrategy.UPDATE) {
             List<LocalCachedMapUpdate.Entry> entries = new ArrayList<LocalCachedMapUpdate.Entry>();
-            for (int j = 2; j < params.size(); j += 2) {
+            for (int j = 3; j < params.size(); j += 2) {
                 ByteBuf key = (ByteBuf) params.get(j);
                 ByteBuf value = (ByteBuf) params.get(j+1);
                 entries.add(new LocalCachedMapUpdate.Entry(key, value));
