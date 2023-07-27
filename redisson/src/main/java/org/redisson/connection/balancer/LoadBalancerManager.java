@@ -195,13 +195,14 @@ public class LoadBalancerManager {
                     future.whenComplete((r, e) -> {
                         if (e != null) {
                             int maxAttempts = connectionManager.getServiceManager().getConfig().getRetryAttempts();
+                            int retryInterval = connectionManager.getServiceManager().getConfig().getRetryInterval();
                             log.error("Unable to unfreeze entry: {} attempt: {} of {}", entry, retry, maxAttempts, e);
                             entry.setInitialized(false);
                             if (retry < maxAttempts) {
                                 connectionManager.getServiceManager().newTimeout(t -> {
                                     CompletableFuture<Boolean> ff = unfreezeAsync(entry, freezeReason, retry + 1);
                                     connectionManager.getServiceManager().transfer(ff, f);
-                                }, 1, TimeUnit.SECONDS);
+                                }, retryInterval, TimeUnit.MILLISECONDS);
                             } else {
                                 f.complete(false);
                             }
