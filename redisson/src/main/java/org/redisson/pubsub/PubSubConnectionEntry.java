@@ -260,11 +260,6 @@ public class PubSubConnectionEntry {
 
     @Override
     public String toString() {
-        return "PubSubConnectionEntry{" +
-                "subscribedChannelsAmount=" + subscribedChannelsAmount +
-                ", conn=" + conn +
-                ", subscribeChannelListeners=" + subscribeChannelListeners +
-                ", channelListeners=" + channelListeners +
-                '}';
+        return "PubSubConnectionEntry [subscribedChannelsAmount=" + subscribedChannelsAmount + ", conn=" + conn + "]";
     }
 }
