@@ -204,7 +204,8 @@ public class MasterSlaveEntry {
             }
         }
 
-        return nodeDown(entry);
+        nodeDown(entry);
+        return true;
     }
 
     public CompletableFuture<Boolean> slaveDownAsync(ClientConnectionsEntry entry, FreezeReason freezeReason) {
@@ -231,11 +232,13 @@ public class MasterSlaveEntry {
                     log.info("master {} used as slave", masterEntry.getClient().getAddr());
                 }
 
-                return nodeDown(entry);
+                nodeDown(entry);
+                return value;
             });
         }
 
-        return CompletableFuture.completedFuture(nodeDown(entry));
+        nodeDown(entry);
+        return CompletableFuture.completedFuture(true);
     }
 
     public void masterDown() {
@@ -256,7 +259,7 @@ public class MasterSlaveEntry {
         masterEntry.getAllSubscribeConnections().clear();
     }
 
-    public boolean nodeDown(ClientConnectionsEntry entry) {
+    public void nodeDown(ClientConnectionsEntry entry) {
         entry.reset();
         
         for (RedisConnection connection : entry.getAllConnections()) {
@@ -282,8 +285,6 @@ public class MasterSlaveEntry {
             }
         }
         entry.getAllSubscribeConnections().clear();
-        
-        return true;
     }
 
     private void reattachBlockingQueue(CommandData<?, ?> commandData) {
