@@ -9,7 +9,7 @@ Feature - Micronaut 4.0 integration
 Improvement - PubSub channels should be reconnected back to Slave from Master node if `SubscriptionMode = UPDATE`
 
 Fixed - Setting `retryAttempts` to 0 causes an exception (regression since 3.23.1)  
-Fixed - `RTopic` subscribes only to a single master if `__keyspace` or `__keyevent` channel is defined  
+Fixed - `RTopic` subscribes only to a single master in cluster if `__keyspace` or `__keyevent` channel is defined  
 Fixed - `SlaveConnectionPool no available Redis entries` error may arise in some cases  
 Fixed - StackOverflowError is thrown by `AggregationOptions.groupBy()` method  
 Fixed - `failedSlaveCheckInterval` value should be greater than zero before it can be applied  
