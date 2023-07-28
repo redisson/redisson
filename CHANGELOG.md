@@ -3,6 +3,18 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 28-Jul-2023 - 3.23.2 released
+Feature - Micronaut 4.0 integration  
+
+Improvement - PubSub channels should be reconnected back to Slave from Master node if `SubscriptionMode = UPDATE`
+
+Fixed - Setting `retryAttempts` to 0 causes an exception (regression since 3.23.1)  
+Fixed - `RTopic` subscribes only to a single master if `__keyspace` or `__keyevent` channel is defined  
+Fixed - `SlaveConnectionPool no available Redis entries` error may arise in some cases  
+Fixed - StackOverflowError is thrown by `AggregationOptions.groupBy()` method  
+Fixed - `failedSlaveCheckInterval` value should be greater than zero before it can be applied  
+Fixed - `RedissonLocalCachedMap.putAllOperation()` method throws `ClassCastException` if `SyncStrategy = UPDATE`  
+
 ### 18-Jul-2023 - 3.23.1 released
 Improvement - the scope of key event subscriptions reduced for `RLiveObjectService` object. Now it uses key-space channel  
 Improvement - the scope of key event subscriptions reduced for `RLocalCachedMap` object. Now it uses key-space channel  
