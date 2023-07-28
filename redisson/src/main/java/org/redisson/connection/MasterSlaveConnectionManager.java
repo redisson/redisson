@@ -183,23 +183,24 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public final void connect() throws InterruptedException {
-        for (int i = 0; i < config.getRetryAttempts(); i++) {
+        int attempts = config.getRetryAttempts() + 1;
+        for (int i = 0; i < attempts; i++) {
             try {
-                if (i == config.getRetryAttempts() - 1) {
+                if (i == attempts - 1) {
                     lastAttempt = true;
                 }
                 doConnect();
                 return;
             } catch (Exception e) {
+                if (i == attempts - 1) {
+                    lastAttempt = false;
+                    throw e;
+                }
                 try {
                     Thread.sleep(config.getRetryInterval());
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
                     return;
-                }
-                if (i == config.getRetryAttempts() - 1) {
-                    lastAttempt = false;
-                    throw e;
                 }
             }
         }
@@ -212,6 +213,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             } else {
                 masterSlaveEntry = new MasterSlaveEntry(this, serviceManager.getConnectionWatcher(), config);
             }
+            System.out.println(System.identityHashCode(this)  + " master " + masterSlaveEntry);
             CompletableFuture<RedisClient> masterFuture = masterSlaveEntry.setupMasterEntry(new RedisURI(config.getMasterAddress()));
             masterFuture.join();
 
