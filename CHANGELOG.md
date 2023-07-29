@@ -6,7 +6,7 @@ Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and
 ### 28-Jul-2023 - 3.23.2 released
 Feature - Micronaut 4.0 integration  
 
-Improvement - PubSub channels should be reconnected back to Slave from Master node if `SubscriptionMode = UPDATE`
+Improvement - PubSub channels should be reconnected back to Slave from Master node if `SubscriptionMode = SLAVE`
 
 Fixed - Setting `retryAttempts` to 0 causes an exception (regression since 3.23.1)  
 Fixed - `RTopic` subscribes only to a single master in cluster if `__keyspace` or `__keyevent` channel is defined  
