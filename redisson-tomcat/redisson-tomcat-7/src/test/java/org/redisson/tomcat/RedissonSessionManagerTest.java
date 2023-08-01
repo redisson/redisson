@@ -53,7 +53,7 @@ public class RedissonSessionManagerTest {
             write(8081, executor, "test", "from_server2");
 
             read(8080, executor, "test", "from_server2");
-            read(8080, executor, "test", "from_server2");
+            read(8081, executor, "test", "from_server2");
 
         } finally {
             Executor.closeIdleConnections();
