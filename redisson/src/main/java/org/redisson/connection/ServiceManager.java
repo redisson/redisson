@@ -252,6 +252,11 @@ public class ServiceManager {
         return group;
     }
 
+    public Future<List<InetSocketAddress>> resolveAll(RedisURI uri) {
+        AddressResolver<InetSocketAddress> resolver = resolverGroup.getResolver(group.next());
+        return resolver.resolveAll(InetSocketAddress.createUnresolved(uri.getHost(), uri.getPort()));
+    }
+
     public AddressResolverGroup<InetSocketAddress> getResolverGroup() {
         return resolverGroup;
     }
