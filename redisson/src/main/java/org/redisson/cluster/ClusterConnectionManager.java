@@ -15,7 +15,6 @@
  */
 package org.redisson.cluster;
 
-import io.netty.resolver.AddressResolver;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
@@ -360,8 +359,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 if (configEndpointHostName != null) {
                     String address = cfg.getNodeAddresses().iterator().next();
                     RedisURI uri = new RedisURI(address);
-                    AddressResolver<InetSocketAddress> resolver = serviceManager.getResolverGroup().getResolver(serviceManager.getGroup().next());
-                    Future<List<InetSocketAddress>> allNodes = resolver.resolveAll(InetSocketAddress.createUnresolved(uri.getHost(), uri.getPort()));
+                    Future<List<InetSocketAddress>> allNodes = serviceManager.resolveAll(uri);
                     allNodes.addListener(new FutureListener<List<InetSocketAddress>>() {
                         @Override
                         public void operationComplete(Future<List<InetSocketAddress>> future) throws Exception {

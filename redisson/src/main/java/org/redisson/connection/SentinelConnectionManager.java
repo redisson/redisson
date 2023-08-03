@@ -15,7 +15,6 @@
  */
 package org.redisson.connection;
 
-import io.netty.resolver.AddressResolver;
 import io.netty.util.NetUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -58,7 +57,6 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
     private final Set<RedisURI> disconnectedSlaves = new HashSet<>();
     private ScheduledFuture<?> monitorFuture;
-    private final AddressResolver<InetSocketAddress> sentinelResolver;
     private final Set<RedisURI> disconnectedSentinels = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     private RedisStrictCommand<RedisURI> masterHostCommand;
@@ -70,8 +68,6 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     public SentinelConnectionManager(SentinelServersConfig cfg, ServiceManager serviceManager) {
         super(cfg, serviceManager);
         this.serviceManager.setNatMapper(cfg.getNatMapper());
-
-        this.sentinelResolver = serviceManager.getResolverGroup().getResolver(serviceManager.getGroup().next());
 
         for (String address : cfg.getSentinelAddresses()) {
             RedisURI addr = new RedisURI(address);
@@ -284,7 +280,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
     private void performSentinelDNSCheck(FutureListener<List<InetSocketAddress>> commonListener) {
         for (RedisURI host : sentinelHosts) {
-            Future<List<InetSocketAddress>> allNodes = sentinelResolver.resolveAll(InetSocketAddress.createUnresolved(host.getHost(), host.getPort()));
+            Future<List<InetSocketAddress>> allNodes = serviceManager.resolveAll(host);
             allNodes.addListener((FutureListener<List<InetSocketAddress>>) future -> {
                 if (!future.isSuccess()) {
                     log.error("Unable to resolve {}", host.getHost(), future.cause());
