@@ -402,7 +402,7 @@ public class RedisExecutor<V, R> {
                     new RedisResponseTimeoutException("Redis server response timeout (" + timeoutAmount + " ms) occured"
                             + " after " + attempt + " retry attempts,"
                             + " is non-idempotent command: " + (command != null && command.isNoRetry())
-                            + " Check connection with Redis node: " + connection.getRedisClient().getAddr() + " for TCP packet drops. "
+                            + " Check connection with Redis node: " + connection.getRedisClient().getAddr() + " for TCP packet drops or bandwidth limits. "
                             + " Try to increase nettyThreads and/or timeout settings. Command: "
                             + LogHelper.toString(command, params) + ", channel: " + connection.getChannel()));
         };
