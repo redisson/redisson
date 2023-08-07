@@ -38,4 +38,9 @@ public enum TransportMode {
      */
     KQUEUE,
 
+    /**
+     * Use `io_uring` transport. Requires <b>netty-transport-io_uring</b> lib in classpath.
+     */
+    IO_URING,
+
 }

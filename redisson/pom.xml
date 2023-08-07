@@ -40,6 +40,13 @@
             <artifactId>netty-transport-native-epoll</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>io.netty.incubator</groupId>
+            <artifactId>netty-incubator-transport-native-io_uring</artifactId>
+            <scope>provided</scope>
+            <version>0.0.21.Final</version>
+            <classifier>linux-x86_64</classifier>
+        </dependency>
 
         <dependency>
             <groupId>io.netty</groupId>

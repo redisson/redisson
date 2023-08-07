@@ -27,6 +27,9 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.incubator.channel.uring.IOUringDatagramChannel;
+import io.netty.incubator.channel.uring.IOUringEventLoopGroup;
+import io.netty.incubator.channel.uring.IOUringSocketChannel;
 import io.netty.resolver.AddressResolver;
 import io.netty.resolver.AddressResolverGroup;
 import io.netty.resolver.DefaultAddressResolverGroup;
@@ -154,11 +157,16 @@ public class ServiceManager {
             }
 
             this.socketChannelClass = KQueueSocketChannel.class;
-            if (PlatformDependent.isAndroid()) {
-                this.resolverGroup = DefaultAddressResolverGroup.INSTANCE;
+            this.resolverGroup = cfg.getAddressResolverGroupFactory().create(KQueueDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
+        } else if (cfg.getTransportMode() == TransportMode.IO_URING) {
+            if (cfg.getEventLoopGroup() == null) {
+                this.group = new IOUringEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
             } else {
-                this.resolverGroup = cfg.getAddressResolverGroupFactory().create(KQueueDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
+                this.group = cfg.getEventLoopGroup();
             }
+
+            this.socketChannelClass = IOUringSocketChannel.class;
+            this.resolverGroup = cfg.getAddressResolverGroupFactory().create(IOUringDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
         } else {
             if (cfg.getEventLoopGroup() == null) {
                 this.group = new NioEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
