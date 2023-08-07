@@ -167,11 +167,10 @@ public class PublishSubscribeService {
                 if (l instanceof PubSubPatternStatusListener) {
                     return new PubSubPatternStatusListener((PubSubPatternStatusListener) l) {
                         @Override
-                        public boolean onStatus(PubSubType type, CharSequence channel) {
+                        public void onStatus(PubSubType type, CharSequence channel) {
                             if (statusCounter.decrementAndGet() == 0) {
-                                return super.onStatus(type, channel);
+                                super.onStatus(type, channel);
                             }
-                            return true;
                         }
                     };
                 }
@@ -221,11 +220,10 @@ public class PublishSubscribeService {
                 if (l instanceof PubSubStatusListener) {
                     return new PubSubStatusListener(((PubSubStatusListener) l).getListener(), ((PubSubStatusListener) l).getName()) {
                         @Override
-                        public boolean onStatus(PubSubType type, CharSequence channel) {
+                        public void onStatus(PubSubType type, CharSequence channel) {
                             if (statusCounter.decrementAndGet() == 0) {
-                                return super.onStatus(type, channel);
+                                super.onStatus(type, channel);
                             }
-                            return true;
                         }
                     };
                 }
@@ -571,7 +569,7 @@ public class PublishSubscribeService {
         BaseRedisPubSubListener listener = new BaseRedisPubSubListener() {
 
             @Override
-            public boolean onStatus(PubSubType type, CharSequence channel) {
+            public void onStatus(PubSubType type, CharSequence channel) {
                 if (type == topicType && channel.equals(channelName)) {
                     freePubSubLock.acquire().thenAccept(c -> {
                         release(entry, msEntry);
@@ -579,9 +577,7 @@ public class PublishSubscribeService {
 
                         result.complete(null);
                     });
-                    return true;
                 }
-                return false;
             }
 
         };
@@ -671,7 +667,7 @@ public class PublishSubscribeService {
             RedisPubSubListener<Object> listener = new BaseRedisPubSubListener() {
 
                 @Override
-                public boolean onStatus(PubSubType type, CharSequence channel) {
+                public void onStatus(PubSubType type, CharSequence channel) {
                     if (type == topicType && channel.equals(channelName)) {
                         lock.release();
                         freePubSubLock.acquire().thenAccept(c -> {
@@ -680,9 +676,7 @@ public class PublishSubscribeService {
 
                             result.complete(entryCodec);
                         });
-                        return true;
                     }
-                    return false;
                 }
 
             };

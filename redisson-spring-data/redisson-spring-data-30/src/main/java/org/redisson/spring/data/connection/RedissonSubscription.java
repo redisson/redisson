@@ -70,15 +70,15 @@ public class RedissonSubscription extends AbstractSubscription {
                 }
 
                 @Override
-                public boolean onStatus(PubSubType type, CharSequence ch) {
+                public void onStatus(PubSubType type, CharSequence ch) {
                     if (!Arrays.equals(((ChannelName) ch).getName(), channel)) {
-                        return false;
+                        return;
                     }
 
                     if (getListener() instanceof SubscriptionListener) {
                         subscribed.add(channel);
                     }
-                    return super.onStatus(type, ch);
+                    super.onStatus(type, ch);
                 }
 
             });
@@ -128,15 +128,15 @@ public class RedissonSubscription extends AbstractSubscription {
                 }
 
                 @Override
-                public boolean onStatus(PubSubType type, CharSequence pattern) {
+                public void onStatus(PubSubType type, CharSequence pattern) {
                     if (!Arrays.equals(((ChannelName) pattern).getName(), channel)) {
-                        return false;
+                        return;
                     }
 
                     if (getListener() instanceof SubscriptionListener) {
                         subscribed.add(channel);
                     }
-                    return super.onStatus(type, pattern);
+                    super.onStatus(type, pattern);
                 }
             });
             list.add(f);

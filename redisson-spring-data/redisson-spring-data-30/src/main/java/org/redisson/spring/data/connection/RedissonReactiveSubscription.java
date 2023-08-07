@@ -95,7 +95,7 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
         this.subscriptionListener = new RedisPubSubListener() {
 
             @Override
-            public boolean onStatus(PubSubType type, CharSequence channel) {
+            public void onStatus(PubSubType type, CharSequence channel) {
                 if (type == PubSubType.SUBSCRIBE) {
                     subscriptionListener.onChannelSubscribed(channel.toString().getBytes(StandardCharsets.UTF_8), 1L);
                 } else if (type == PubSubType.PSUBSCRIBE) {
@@ -105,7 +105,6 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
                 } else if (type == PubSubType.PUNSUBSCRIBE) {
                     subscriptionListener.onPatternUnsubscribed(channel.toString().getBytes(StandardCharsets.UTF_8), 1L);
                 }
-                return true;
             }
 
             @Override

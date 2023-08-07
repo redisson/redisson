@@ -77,11 +77,10 @@ public class RedisClientTest {
         pubSubConnection.addListener(new RedisPubSubListener<Object>() {
 
             @Override
-            public boolean onStatus(PubSubType type, CharSequence channel) {
+            public void onStatus(PubSubType type, CharSequence channel) {
                 assertThat(type).isEqualTo(PubSubType.SUBSCRIBE);
                 assertThat(Arrays.asList("test1", "test2").contains(channel.toString())).isTrue();
                 latch.countDown();
-                return true;
             }
 
             @Override

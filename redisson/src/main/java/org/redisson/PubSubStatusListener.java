@@ -70,16 +70,14 @@ public class PubSubStatusListener implements RedisPubSubListener<Object> {
     }
 
     @Override
-    public boolean onStatus(PubSubType type, CharSequence channel) {
+    public void onStatus(PubSubType type, CharSequence channel) {
         if (channel.toString().equals(name)) {
             if (type == PubSubType.SUBSCRIBE) {
                 listener.onSubscribe(channel.toString());
             } else if (type == PubSubType.UNSUBSCRIBE) {
                 listener.onUnsubscribe(channel.toString());
             }
-            return true;
         }
-        return false;
     }
 
     public String getName() {
