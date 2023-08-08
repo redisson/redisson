@@ -1,37 +1,5 @@
 [
 {
-  "name": "org.redisson.codec.SmileJacksonCodec",
-  "allDeclaredConstructors":true
-},
-{
-  "name": "org.redisson.codec.CborJacksonCodec",
-  "allDeclaredConstructors":true
-},
-{
-  "name": "org.redisson.codec.MsgPackJacksonCodec",
-  "allDeclaredConstructors":true
-},
-{
-  "name": "org.redisson.codec.IonJacksonCodec",
-  "allDeclaredConstructors":true
-},
-{
-  "name": "org.redisson.codec.JsonJacksonCodec",
-  "allDeclaredConstructors":true
-},
-{
-  "name": "org.redisson.codec.SerializationCodec",
-  "allDeclaredConstructors":true
-},
-{
-  "name": "org.redisson.codec.LZ4Codec",
-  "allDeclaredConstructors":true
-},
-{
-  "name": "org.redisson.codec.SnappyCodecV2",
-  "allDeclaredConstructors":true
-},
-{
   "name": "org.redisson.codec.Kryo5Codec",
   "allDeclaredConstructors":true
 },
