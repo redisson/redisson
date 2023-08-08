@@ -160,7 +160,7 @@ public class ServiceManager {
             this.resolverGroup = cfg.getAddressResolverGroupFactory().create(KQueueDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
         } else if (cfg.getTransportMode() == TransportMode.IO_URING) {
             if (cfg.getEventLoopGroup() == null) {
-                this.group = new IOUringEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
+                this.group = createIOUringGroup(cfg);
             } else {
                 this.group = cfg.getEventLoopGroup();
             }
@@ -209,6 +209,11 @@ public class ServiceManager {
                 SCRIPT_SHA_CACHE.remove(addr);
             }
         });
+    }
+
+    // for Quarkus substitution
+    private static EventLoopGroup createIOUringGroup(Config cfg) {
+        return new IOUringEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
     }
 
     public void initTimer() {
