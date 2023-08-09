@@ -139,6 +139,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     private CacheProvider cacheProvider;
     private StoreMode storeMode;
     private boolean storeCacheMiss;
+    private boolean useKeyEventsPattern;
     
     protected LocalCachedMapOptions() {
     }
@@ -183,7 +184,8 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
                     .cacheProvider(CacheProvider.REDISSON)
                     .storeMode(StoreMode.LOCALCACHE_REDIS)
                     .syncStrategy(SyncStrategy.INVALIDATE)
-                    .storeCacheMiss(false);
+                    .storeCacheMiss(false)
+                    .useKeyEventsPattern(true);
     }
 
     public CacheProvider getCacheProvider() {
@@ -374,6 +376,21 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
      */
     public LocalCachedMapOptions<K, V> storeCacheMiss(boolean storeCacheMiss) {
         this.storeCacheMiss = storeCacheMiss;
+        return this;
+    }
+
+    public boolean isUseKeyEventsPattern() {
+        return useKeyEventsPattern;
+    }
+
+    /**
+     * Defines whether to use __keyevent pattern topic to listen for expired events.
+     *
+     * @param useKeyEventsPattern - whether to use __keyevent pattern topic
+     * @return LocalCachedMapOptions instance
+     */
+    public LocalCachedMapOptions<K, V> useKeyEventsPattern(boolean useKeyEventsPattern) {
+        this.useKeyEventsPattern = useKeyEventsPattern;
         return this;
     }
 
