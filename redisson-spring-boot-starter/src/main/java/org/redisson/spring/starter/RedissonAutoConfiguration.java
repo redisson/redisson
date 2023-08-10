@@ -36,6 +36,7 @@ import org.springframework.boot.ssl.SslBundles;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.Resource;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -63,6 +64,7 @@ import java.util.List;
 @ConditionalOnClass({Redisson.class, RedisOperations.class})
 @AutoConfigureBefore(RedisAutoConfiguration.class)
 @EnableConfigurationProperties({RedissonProperties.class, RedisProperties.class})
+@Import({RedissonAspectConfiguration.class})
 public class RedissonAutoConfiguration {
 
     private static final String REDIS_PROTOCOL_PREFIX = "redis://";
