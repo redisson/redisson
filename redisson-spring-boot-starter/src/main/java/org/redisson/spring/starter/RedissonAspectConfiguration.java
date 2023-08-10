@@ -16,21 +16,26 @@
 package org.redisson.spring.starter;
 
 import org.redisson.api.RedissonClient;
+import org.redisson.spring.factory.RLockFactory;
 import org.redisson.spring.processor.RMutexLockAspect;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * @author qiyue.zhang@aloudata.com
+ * @author 985492783@qq.com
  * @description RedissonAspectConfiguration
  * @date 2023/8/9 15:56
  */
 @Configuration
 public class RedissonAspectConfiguration {
 
+    @Bean
+    public RMutexLockAspect lockAspect(RLockFactory factory) {
+        return new RMutexLockAspect(factory);
+    }
 
     @Bean
-    public RMutexLockAspect fairLockAspect(RedissonClient client) {
-        return new RMutexLockAspect(client);
+    public RLockFactory getLockFactory(RedissonClient client) {
+        return new RLockFactory(client);
     }
 }

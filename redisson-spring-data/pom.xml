@@ -79,7 +79,7 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-test</artifactId>
-            <version>[4.1,6.0)</version>
+            <version>6.0.3</version>
             <scope>test</scope>
         </dependency>
 

@@ -13,18 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api.annotation;
+package org.redisson.spring.type;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+/**
+ * @author 985492783@qq.com
+ * @description LockTypeEnum to choose lock.
+ * @date 2023/8/10 15:18
+ */
+public enum LockTypeEnum {
+    SIMPLE,
+    SPIN,
+    FENCE,
+    READ,
+    WRITE,
+    FAIR
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE})
-@Inherited
-public @interface RMethodLock {
-
-    String key() default "";
 }
