@@ -150,6 +150,7 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
                 .randomPort()
                 .randomDir()
                 .notifyKeyspaceEvents(
+                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
                         RedisRunner.KEYSPACE_EVENTS_OPTIONS.K,
                         RedisRunner.KEYSPACE_EVENTS_OPTIONS.x)
                 .run();
@@ -433,7 +434,7 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         map2.put("2", 4);
         Thread.sleep(50);
 
-        assertThat(redisson.getKeys().getKeys()).containsOnly("test:suffix:");
+        assertThat(redisson.getKeys().getKeys()).containsOnly("test");
 
         RedisClientConfig destinationCfg = new RedisClientConfig();
         destinationCfg.setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
