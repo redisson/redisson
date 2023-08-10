@@ -65,14 +65,14 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<?, ?>> {
 
     private static final Integer STRING_CACHE_SIZE = 100_000;
 
-    private static final List<byte[]> longToStringCache = LongStream.range(0, STRING_CACHE_SIZE)
+    private static final List<byte[]> LONG_TO_STRING_CACHE = LongStream.range(0, STRING_CACHE_SIZE)
         .mapToObj(Long::toString)
         .map(s -> s.getBytes(CharsetUtil.US_ASCII))
         .collect(Collectors.toList());
 
     public static byte[] longToString(long number) {
-        if (number < longToStringCache.size()) {
-            return longToStringCache.get((int)number);
+        if (number < LONG_TO_STRING_CACHE.size()) {
+            return LONG_TO_STRING_CACHE.get((int) number);
         } else {
             return Long.toString(number).getBytes(CharsetUtil.US_ASCII);
         }
