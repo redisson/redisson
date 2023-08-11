@@ -63,7 +63,7 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<?, ?>> {
     private static final char BYTES_PREFIX = '$';
     private static final byte[] CRLF = "\r\n".getBytes();
 
-    private static final Integer STRING_CACHE_SIZE = 100_000;
+    private static final Integer STRING_CACHE_SIZE = 10_000;
 
     private static final List<byte[]> LONG_TO_STRING_CACHE = LongStream.range(0, STRING_CACHE_SIZE)
         .mapToObj(Long::toString)
