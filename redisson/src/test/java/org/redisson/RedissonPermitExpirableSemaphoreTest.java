@@ -12,6 +12,7 @@ import org.redisson.config.Config;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -326,6 +327,18 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
     }
 
     @Test
+    public void testBlockingAcquireMany() throws InterruptedException {
+        RPermitExpirableSemaphore s = redisson.getPermitExpirableSemaphore("test");
+        s.trySetPermits(10);
+        String permitId = s.acquire(6);
+        assertThat(s.availablePermits()).isEqualTo(4);
+
+        s.release(permitId, 6);
+        Assertions.assertThrows(RedisException.class, () -> s.release(permitId, 4));
+        assertThat(s.availablePermits()).isEqualTo(10);
+    }
+
+    @Test
     public void testTryAcquire() throws InterruptedException {
         RPermitExpirableSemaphore s = redisson.getPermitExpirableSemaphore("test");
         s.trySetPermits(1);
@@ -356,6 +369,19 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
         assertThat(permitId2).hasSize(32);
         assertThat(System.currentTimeMillis() - startTime).isBetween(450L, 600L);
         assertThat(s.availablePermits()).isEqualTo(0);
+    }
+
+    @Test
+    public void testTryAcquireMany() {
+        RPermitExpirableSemaphore s = redisson.getPermitExpirableSemaphore("test");
+        s.trySetPermits(10);
+        String permitId = s.tryAcquire(4);
+        assertThat(permitId).hasSize(32);
+
+        String permitId2 = s.tryAcquire(5);
+        assertThat(permitId2).hasSize(32);
+
+        assertThat(s.availablePermits()).isEqualTo(1);
     }
 
     @Test
@@ -438,6 +464,37 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
             RFuture<String> permit = semaphore.acquireAsync(5000L, TimeUnit.MILLISECONDS);
             assertThat(permit.get()).isNotNull();
         });
+    }
+
+    @Test
+    public void testAcquireAsyncMany() {
+        RPermitExpirableSemaphore semaphore = redisson.getPermitExpirableSemaphore("test");
+        semaphore.trySetPermits(10);
+
+        RFuture<String> permitId = semaphore.acquireAsync(6);
+
+        Awaitility.await().atMost(Duration.ofMillis(100)).pollDelay(Duration.ofMillis(10)).untilAsserted(() -> {
+            assertThat(permitId.isDone()).isTrue();
+        });
+        assertThat(semaphore.availablePermits()).isEqualTo(4);
+    }
+
+    @Test
+    public void testReleaseAsyncMany() throws InterruptedException, ExecutionException {
+        RPermitExpirableSemaphore semaphore = redisson.getPermitExpirableSemaphore("test");
+        semaphore.trySetPermits(10);
+
+        String permitId = semaphore.acquire(6);
+        assertThat(semaphore.availablePermits()).isEqualTo(4);
+
+        RFuture<Boolean> releaseResult = semaphore.tryReleaseAsync(permitId, 4);
+
+        Awaitility.await().atMost(Duration.ofMillis(100)).pollDelay(Duration.ofMillis(10)).untilAsserted(() -> {
+            assertThat(releaseResult.isDone()).isTrue();
+        });
+        assertThat(releaseResult.get()).isTrue();
+
+        assertThat(semaphore.availablePermits()).isEqualTo(8);
     }
 
 }
