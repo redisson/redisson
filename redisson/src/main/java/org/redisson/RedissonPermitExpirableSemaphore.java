@@ -404,11 +404,6 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     }
     
     @Override
-    public RFuture<String> tryAcquireAsync(int permits, long waitTime, TimeUnit unit) {
-        return tryAcquireAsync(permits, waitTime, -1, unit);
-    }
-    
-    @Override
     public String tryAcquire(long waitTime, long ttl, TimeUnit unit) throws InterruptedException {
         return tryAcquire(1, waitTime, ttl, unit);
     }

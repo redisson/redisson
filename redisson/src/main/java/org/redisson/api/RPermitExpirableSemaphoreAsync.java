@@ -100,19 +100,6 @@ public interface RPermitExpirableSemaphoreAsync extends RExpirableAsync {
     RFuture<String> tryAcquireAsync(long waitTime, TimeUnit unit);
 
     /**
-     * Tries to acquire defined amount of currently available <code>permits</code> and returns id.
-     * Waits up to defined <code>waitTime</code> if necessary until a permit became available.
-     *
-     * @param permits the number of permits to acquire
-     * @param waitTime the maximum time to wait
-     * @param unit the time unit
-     * @return permits id if a permit was acquired and {@code null}
-     *         if the waiting time elapsed before a permit was acquired
-     * @throws IllegalArgumentException if <code>permits</code> is negative
-     */
-    RFuture<String> tryAcquireAsync(int permits, long waitTime, TimeUnit unit);
-
-    /**
      * Tries to acquire currently available permit
      * with defined <code>leaseTime</code> and return its id.
      * Waits up to defined <code>waitTime</code> if necessary until a permit became available.
