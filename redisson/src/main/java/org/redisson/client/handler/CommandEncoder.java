@@ -108,7 +108,7 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<?, ?>> {
             if (msg.getCommand().getSubName() != null) {
                 len++;
             }
-            out.writeCharSequence(Long.toString(len), CharsetUtil.US_ASCII);
+            out.writeBytes(longToString(len));
             out.writeBytes(CRLF);
 
             String name = commandMapper.map(msg.getCommand().getName());
