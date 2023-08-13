@@ -120,12 +120,16 @@ public class JsonJacksonCodec extends BaseCodec {
         }
         warmedup = true;
 
+        ByteBuf d = null;
         try {
-            ByteBuf d = getValueEncoder().encode("testValue");
+            d = getValueEncoder().encode("testValue");
             getValueDecoder().decode(d, null);
-            d.release();
         } catch (IOException e) {
             e.printStackTrace();
+        } finally {
+            if (d != null) {
+                d.release();
+            }
         }
     }
 
