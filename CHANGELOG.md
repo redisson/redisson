@@ -3,6 +3,17 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 28-Jul-2023 - 3.23.3 released
+Feature - `TransportMode.IO_URING` added (thanks to @sgammon)  
+Feature - `LocalCachedMapOptions.useKeyEventsPattern()` setting introduced  
+
+Improvement - Long as string cache in CommandEncoder (thanks to @tomerarazy)  
+Improvement - each `AddressResolver` created by `SequentialDnsAddressResolverFactory` should share common DnsCache and DnsCnameCache instances  
+Improvement - RedisURI optimization (thanks to @ikss)  
+
+Fixed - codec errors during Quarkus native build  
+Fixed - `Unable to acquire connection for subscription` issue if `RLocalCachedMap` is used (regression since 3.23.2)  
+
 ### 28-Jul-2023 - 3.23.2 released
 Feature - Micronaut 4.0 integration  
 
