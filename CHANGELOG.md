@@ -12,7 +12,7 @@ Improvement - each `AddressResolver` created by `SequentialDnsAddressResolverFac
 Improvement - RedisURI optimization (thanks to @ikss)  
 
 Fixed - codec errors during Quarkus native build  
-Fixed - `Unable to acquire connection for subscription` issue if `RLocalCachedMap` is used (regression since 3.23.2)  
+Fixed - extra subscription topic allocation by `RLocalCachedMap` object (regression since 3.23.2)  
 
 ### 28-Jul-2023 - 3.23.2 released
 Feature - Micronaut 4.0 integration  
