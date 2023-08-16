@@ -1,6 +1,7 @@
 package org.redisson.codec;
 
 import com.google.protobuf.GeneratedMessageV3;
+import com.google.protobuf.MessageLite;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.protostuff.LinkedBuffer;
@@ -42,9 +43,8 @@ public class ProtoCodec extends BaseCodec {
             public ByteBuf encode(Object in) {
                 ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
                 byte[] bytes;
-                //todo V2?
-                if (in instanceof GeneratedMessageV3) {
-                    bytes = ((GeneratedMessageV3) in).toByteArray();
+                if (in instanceof MessageLite) {
+                    bytes = ((MessageLite) in).toByteArray();
                 } else {
                     bytes = ProtostuffUtils.serialize(in);
                 }
