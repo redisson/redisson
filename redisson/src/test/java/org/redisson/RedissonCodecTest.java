@@ -32,6 +32,7 @@ public class RedissonCodecTest extends BaseTest {
     private Codec lz4Codec = new LZ4Codec();
     private Codec jsonListOfStringCodec = new TypedJsonJacksonCodec(
                     new TypeReference<String>() {}, new TypeReference<List<String>>() {});
+    private Codec protobufCodec = new ProtobufCodec(String.class);
 
     @Test
     public void testLZ4() {
@@ -137,6 +138,15 @@ public class RedissonCodecTest extends BaseTest {
         config.setCodec(jsonCodec);
         RedissonClient redisson = Redisson.create(config);
 
+        test(redisson);
+    }
+
+    @Test
+    public void testProtobuf() {
+        Config config = createConfig();
+        config.setCodec(protobufCodec);
+        RedissonClient redisson = Redisson.create(config);
+        //todo go on
         test(redisson);
     }
 
