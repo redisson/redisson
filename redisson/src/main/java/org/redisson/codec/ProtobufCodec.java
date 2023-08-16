@@ -1,6 +1,5 @@
 package org.redisson.codec;
 
-import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.MessageLite;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -16,10 +15,10 @@ import org.redisson.client.protocol.Encoder;
 import java.io.IOException;
 import java.util.Arrays;
 
-public class ProtoCodec extends BaseCodec {
+public class ProtobufCodec extends BaseCodec {
     final Class<?> t;
 
-    public ProtoCodec(Class<?> t) {
+    public ProtobufCodec(Class<?> t) {
         this.t = t;
     }
 
@@ -61,7 +60,7 @@ public class ProtoCodec extends BaseCodec {
         /**
          * 避免每次序列化都重新申请Buffer空间
          */
-        private static LinkedBuffer buffer = LinkedBuffer.allocate(LinkedBuffer.DEFAULT_BUFFER_SIZE);
+        private static final LinkedBuffer buffer = LinkedBuffer.allocate(LinkedBuffer.DEFAULT_BUFFER_SIZE);
 
         /**
          * 序列化方法，把指定对象序列化成字节数组 * * @param obj * @param <T> * @return

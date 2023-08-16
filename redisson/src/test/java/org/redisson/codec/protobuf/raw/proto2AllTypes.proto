@@ -1,0 +1,27 @@
+syntax = "proto2";
+
+package org.redisson.codec.protobuf.raw;
+
+option java_package = "org.redisson.codec.protobuf.raw";
+
+option java_outer_classname = "Proto2AllTypes";
+
+message AllTypes2{
+  //types from https://protobuf.dev/programming-guides/proto2/
+  repeated double doubleType = 1;
+  optional float floatType = 2;
+  required int32 int32Type = 3;
+  optional int64 int64Type = 4;
+  optional uint32 uint32Type = 5;
+  optional uint64 uint64Type = 6;
+  optional sint32 sint32Type = 7;
+  optional sint64 sint64Type = 8;
+  optional fixed32 fixed32Type = 9;
+  optional fixed64 fixed64Type = 10;
+  optional sfixed32 sfixed32Type = 11;
+  optional sfixed64 sfixed64Type = 12;
+  optional bool boolType = 13;
+  optional string stringType = 14;
+  optional bytes bytesType = 15 ;
+}
+
