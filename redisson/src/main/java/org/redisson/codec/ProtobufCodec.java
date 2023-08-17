@@ -1,8 +1,12 @@
 package org.redisson.codec;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ser.BasicSerializerFactory;
 import com.google.protobuf.MessageLite;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.ByteBufInputStream;
+import io.netty.buffer.ByteBufOutputStream;
 import io.protostuff.LinkedBuffer;
 import io.protostuff.ProtostuffIOUtil;
 import io.protostuff.Schema;
@@ -11,20 +15,45 @@ import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 public class ProtobufCodec extends BaseCodec {
+    private static final Logger log = LoggerFactory.getLogger(ProtobufCodec.class);
     private final Class<?> mapKeyClass;
     private final Class<?> mapValueClass;
     private final Class<?> valueClass;
 
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
     //class in blacklist will not be serialized using protobuf ,but instead will use jackson
-    private final Set<Class<?>> blacklist = new HashSet<>();
+    private final Set<String> protobufBlacklist;
+
+    private final static Set<String> CLASSES_OWNS_JACKSON_SERIALIZER = new HashSet<>();
+
+    static {
+        try {
+            Field concreteField = BasicSerializerFactory.class.getDeclaredField("_concrete");
+            concreteField.setAccessible(true);
+            CLASSES_OWNS_JACKSON_SERIALIZER.addAll(((Map) concreteField.get(BasicSerializerFactory.class)).keySet());
+            Field _concreteLazyField = BasicSerializerFactory.class.getDeclaredField("_concreteLazy");
+            _concreteLazyField.setAccessible(true);
+            CLASSES_OWNS_JACKSON_SERIALIZER.addAll(((Map) concreteField.get(BasicSerializerFactory.class)).keySet());
+        } catch (NoSuchFieldException | IllegalAccessException ignored) {
+            log.warn("Failed to retrieve Jackson serializers. Maybe some objects (like String which using StringSerializer is better) will be serialized with protobuf unless the protobuf blacklist is explicitly set.");
+        }
+    }
 
     public ProtobufCodec(Class<?> mapKeyClass, Class<?> mapValueClass) {
         this(mapKeyClass, mapValueClass, null);
@@ -38,6 +67,18 @@ public class ProtobufCodec extends BaseCodec {
         this.mapKeyClass = mapKeyClass;
         this.mapValueClass = mapValueClass;
         this.valueClass = valueClass;
+
+        protobufBlacklist = new HashSet<>();
+        protobufBlacklist.addAll(CLASSES_OWNS_JACKSON_SERIALIZER);
+
+    }
+
+    public void addBlacklist(Class<?> clazz) {
+        protobufBlacklist.add(clazz.getName());
+    }
+
+    public void removeBlacklist(Class<?> clazz) {
+        protobufBlacklist.remove(clazz.getName());
     }
 
     @Override
@@ -76,18 +117,20 @@ public class ProtobufCodec extends BaseCodec {
         return new Decoder<Object>() {
             @Override
             public Object decode(ByteBuf buf, State state) throws IOException {
+                if (protobufBlacklist.contains(clazz.getName())) {
+                    return objectMapper.readValue((InputStream) new ByteBufInputStream(buf), clazz);
+                }
+                //todo 使用ByteBuf
                 byte[] bytes = new byte[buf.readableBytes()];
                 buf.readBytes(bytes);
-                //todo 这里是否不该用MessageLite，而是使用存在parseFrom方法的类？
                 if (MessageLite.class.isAssignableFrom(clazz)) {
                     try {
                         final Method parseFrom = clazz.getDeclaredMethod("parseFrom", byte[].class);
                         return parseFrom.invoke(clazz, bytes);
-                    } catch (Exception e) {
+                    } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
                         throw new RuntimeException(e);
                     }
                 } else {
-
                     return ProtostuffUtils.deserialize(bytes, clazz);
                 }
             }
@@ -97,11 +140,20 @@ public class ProtobufCodec extends BaseCodec {
     private Encoder createEncoder(Class<?> clazz) {
         return new Encoder() {
             @Override
-            public ByteBuf encode(Object in) {
+            public ByteBuf encode(Object in) throws IOException {
+                if (protobufBlacklist.contains(clazz.getName())) {
+                    ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
+                    try {
+                        ByteBufOutputStream os = new ByteBufOutputStream(out);
+                        objectMapper.writeValue((OutputStream) os, in);
+                        return os.buffer();
+                    } catch (IOException e) {
+                        out.release();
+                        throw e;
+                    }
+                }
                 ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
                 byte[] bytes;
-                //todo 缓存下来
-                //todo String类型的key要使用proto编码吗
                 if (MessageLite.class.isAssignableFrom(clazz)) {
                     bytes = ((MessageLite) in).toByteArray();
                 } else {
