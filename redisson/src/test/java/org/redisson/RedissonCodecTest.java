@@ -8,10 +8,13 @@ import net.bytebuddy.utility.RandomString;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RBucket;
+import org.redisson.api.RList;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.*;
+import org.redisson.codec.protobuf.raw.Proto2AllTypes;
+import org.redisson.codec.protobuf.raw.Proto3AllTypes;
 import org.redisson.config.Config;
 
 import java.io.IOException;
@@ -32,7 +35,9 @@ public class RedissonCodecTest extends BaseTest {
     private Codec lz4Codec = new LZ4Codec();
     private Codec jsonListOfStringCodec = new TypedJsonJacksonCodec(
                     new TypeReference<String>() {}, new TypeReference<List<String>>() {});
-    private Codec protobufCodec = new ProtobufCodec(String.class);
+    private Codec protobufV2Codec = new ProtobufCodec(Proto2AllTypes.AllTypes2.class);
+    private Codec protobufV3Codec = new ProtobufCodec(Proto3AllTypes.AllTypes3.class);
+
 
     @Test
     public void testLZ4() {
@@ -143,11 +148,23 @@ public class RedissonCodecTest extends BaseTest {
 
     @Test
     public void testProtobuf() {
+        //传来的对象，我怎么知道哪些需要使用proto来序列化，哪些不用（string用stuff会变得更大）
+        //使用proto序列化的：1.messageLite使用自带的 2.非白名单使用protoStuffa
+        //不使用(走jackson那套)的：1.白名单
         Config config = createConfig();
-        config.setCodec(protobufCodec);
+        config.setCodec(protobufV2Codec);
         RedissonClient redisson = Redisson.create(config);
-        //todo go on
-        test(redisson);
+        final Proto2AllTypes.AllTypes2 allTypes2 = Proto2AllTypes.AllTypes2.newBuilder()
+                .setBoolType(true)
+                .setFixed32Type(111)
+                .setInt32Type(222)
+                .build();
+        final RMap<String, Proto2AllTypes.AllTypes2> rMap = redisson.getMap("protobufMap");
+        rMap.put("raw",allTypes2);
+
+        final Proto2AllTypes.AllTypes2 key = rMap.get("raw");
+        Assertions.assertEquals(allTypes2, key);
+
     }
 
     @Test
