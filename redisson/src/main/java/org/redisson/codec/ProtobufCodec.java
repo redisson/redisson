@@ -13,36 +13,96 @@ import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 public class ProtobufCodec extends BaseCodec {
-    final Class<?> t;
+    private final Class<?> mapKeyClass;
+    private final Class<?> mapValueClass;
+    private final Class<?> valueClass;
 
-    public ProtobufCodec(Class<?> t) {
-        this.t = t;
+    //class in blacklist will not be serialized using protobuf ,but instead will use jackson
+    private final Set<Class<?>> blacklist = new HashSet<>();
+
+    public ProtobufCodec(Class<?> mapKeyClass, Class<?> mapValueClass) {
+        this(mapKeyClass, mapValueClass, null);
+    }
+
+    public ProtobufCodec(Class<?> valueClass) {
+        this(null, null, valueClass);
+    }
+
+    private ProtobufCodec(Class<?> mapKeyClass, Class<?> mapValueClass, Class<?> valueClass) {
+        this.mapKeyClass = mapKeyClass;
+        this.mapValueClass = mapValueClass;
+        this.valueClass = valueClass;
     }
 
     @Override
     public Decoder<Object> getValueDecoder() {
+        return createDecoder(valueClass);
+    }
+
+
+    @Override
+    public Encoder getValueEncoder() {
+        return createEncoder(valueClass);
+    }
+
+    @Override
+    public Decoder<Object> getMapValueDecoder() {
+        return createDecoder(mapValueClass);
+    }
+
+    @Override
+    public Encoder getMapValueEncoder() {
+        return createEncoder(mapValueClass);
+    }
+
+    @Override
+    public Decoder<Object> getMapKeyDecoder() {
+        return createDecoder(mapKeyClass);
+    }
+
+    @Override
+    public Encoder getMapKeyEncoder() {
+        return createEncoder(mapKeyClass);
+    }
+
+
+    private Decoder<Object> createDecoder(Class<?> clazz) {
         return new Decoder<Object>() {
             @Override
             public Object decode(ByteBuf buf, State state) throws IOException {
-                final int i = buf.readableBytes();
-                byte[] bytes = new byte[i];
+                byte[] bytes = new byte[buf.readableBytes()];
                 buf.readBytes(bytes);
-                return ProtostuffUtils.deserialize(bytes, t);
+                //todo 这里是否不该用MessageLite，而是使用存在parseFrom方法的类？
+                if (MessageLite.class.isAssignableFrom(clazz)) {
+                    try {
+                        final Method parseFrom = clazz.getDeclaredMethod("parseFrom", byte[].class);
+                        return parseFrom.invoke(clazz, bytes);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                } else {
+
+                    return ProtostuffUtils.deserialize(bytes, clazz);
+                }
             }
         };
     }
 
-    @Override
-    public Encoder getValueEncoder() {
+    private Encoder createEncoder(Class<?> clazz) {
         return new Encoder() {
             @Override
             public ByteBuf encode(Object in) {
                 ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
                 byte[] bytes;
-                if (in instanceof MessageLite) {
+                //todo 缓存下来
+                //todo String类型的key要使用proto编码吗
+                if (MessageLite.class.isAssignableFrom(clazz)) {
                     bytes = ((MessageLite) in).toByteArray();
                 } else {
                     bytes = ProtostuffUtils.serialize(in);
