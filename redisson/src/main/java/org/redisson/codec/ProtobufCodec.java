@@ -23,9 +23,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -71,7 +68,17 @@ public class ProtobufCodec extends BaseCodec {
 
         protobufBlacklist = new HashSet<>();
         protobufBlacklist.addAll(CLASSES_OWN_JACKSON_SERIALIZER);
+        protobufBlacklist.add("java.util.ArrayList");
+        protobufBlacklist.add("java.util.HashSet");
+        protobufBlacklist.add("java.util.HashMap");
+    }
 
+    public void addBlacklist(Class<?> clazz) {
+        protobufBlacklist.add(clazz.getName());
+    }
+
+    public void removeBlacklist(Class<?> clazz) {
+        protobufBlacklist.remove(clazz.getName());
     }
 
     @Override
@@ -107,6 +114,10 @@ public class ProtobufCodec extends BaseCodec {
 
 
     private Decoder<Object> createDecoder(Class<?> clazz) {
+        if (clazz == null) {
+            throw new IllegalArgumentException("class to create protobuf decoder can not be null");
+        }
+
         return new Decoder<Object>() {
             @Override
             public Object decode(ByteBuf buf, State state) throws IOException {
@@ -133,6 +144,9 @@ public class ProtobufCodec extends BaseCodec {
     }
 
     private Encoder createEncoder(Class<?> clazz) {
+        if (clazz == null) {
+            throw new IllegalArgumentException("class to create protobuf encoder can not be null");
+        }
         return new Encoder() {
             @Override
             public ByteBuf encode(Object in) throws IOException {
@@ -164,30 +178,16 @@ public class ProtobufCodec extends BaseCodec {
 
     private static class ProtostuffUtils {
 
-        /**
-         * 避免每次序列化都重新申请Buffer空间
-         */
-        private static final LinkedBuffer buffer = LinkedBuffer.allocate(LinkedBuffer.DEFAULT_BUFFER_SIZE);
-
-        /**
-         * 序列化方法，把指定对象序列化成字节数组 * * @param obj * @param <T> * @return
-         */
         @SuppressWarnings("unchecked")
         public static <T> byte[] serialize(T obj) {
-            Schema<T> schema = RuntimeSchema.getSchema((Class<T>) obj.getClass());
-            byte[] data;
+            LinkedBuffer buffer = LinkedBuffer.allocate(LinkedBuffer.DEFAULT_BUFFER_SIZE);
             try {
-                data = ProtostuffIOUtil.toByteArray(obj, schema, buffer);
+                return ProtostuffIOUtil.toByteArray(obj, RuntimeSchema.getSchema((Class<T>) obj.getClass()), buffer);
             } finally {
                 buffer.clear();
             }
-
-            return data;
         }
 
-        /**
-         * 反序列化方法，将字节数组反序列化成指定Class类型 * * @param data * @param clazz * @param <T> * @return
-         */
         public static <T> T deserialize(byte[] data, Class<T> clazz) {
             Schema<T> schema = RuntimeSchema.getSchema(clazz);
             T obj = schema.newMessage();

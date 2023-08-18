@@ -1,4 +1,4 @@
-package org.redisson.codec.protobuf.stuffData;
+package org.redisson.codec.protobuf.protostuffData;
 
 import java.util.List;
 import java.util.Objects;
