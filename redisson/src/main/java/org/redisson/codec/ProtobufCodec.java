@@ -86,7 +86,6 @@ public class ProtobufCodec extends BaseCodec {
         return createDecoder(valueClass);
     }
 
-
     @Override
     public Encoder getValueEncoder() {
         return createEncoder(valueClass);
@@ -111,7 +110,6 @@ public class ProtobufCodec extends BaseCodec {
     public Encoder getMapKeyEncoder() {
         return createEncoder(mapKeyClass);
     }
-
 
     private Decoder<Object> createDecoder(Class<?> clazz) {
         if (clazz == null) {
@@ -174,7 +172,6 @@ public class ProtobufCodec extends BaseCodec {
             }
         };
     }
-
 
     private static class ProtostuffUtils {
 
