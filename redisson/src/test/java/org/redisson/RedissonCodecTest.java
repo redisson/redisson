@@ -9,16 +9,15 @@ import net.bytebuddy.utility.RandomString;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RBucket;
+import org.redisson.api.RList;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.*;
 import org.redisson.codec.protobuf.nativeData.Proto2AllTypes;
 import org.redisson.codec.protobuf.nativeData.Proto3AllTypes;
-import org.redisson.codec.protobuf.stuffData.StuffData;
+import org.redisson.codec.protobuf.protostuffData.StuffData;
 import org.redisson.config.Config;
-import org.testcontainers.shaded.com.fasterxml.jackson.core.JsonProcessingException;
-import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.util.*;
@@ -210,24 +209,6 @@ public class RedissonCodecTest extends BaseTest {
         final Proto3AllTypes.AllTypes3 getAllTypes3 = v3rMap.get("V3");
         Assertions.assertEquals(allTypes3, getAllTypes3);
         redisson.shutdown();
-
-        //protostuff (a framework that bypasses the need to compile .proto files into .java file.)
-        config = createConfig();
-        config.setCodec(protobufStuffDataCodec);
-        redisson = Redisson.create(config);
-        final StuffData stuffData = new StuffData();
-        stuffData.setAge(18);
-        List<String> hobbies = new ArrayList<>();
-        hobbies.add("game");
-        hobbies.add("game");
-        stuffData.setHobbies(hobbies);
-        stuffData.setName("ccc");
-        final RMap<String, StuffData> stuffMap = redisson.getMap("protostuffMap");
-        stuffMap.put("stuff",stuffData);
-        final StuffData getStuffData = stuffMap.get("stuff");
-        Assertions.assertEquals(stuffData, getStuffData);
-        redisson.shutdown();
-
     }
 
     @Test
@@ -243,9 +224,9 @@ public class RedissonCodecTest extends BaseTest {
         hobbies.add("game");
         stuffData.setHobbies(hobbies);
         stuffData.setName("ccc");
-        final RMap<String, StuffData> stuffMap = redisson.getMap("protostuffMap");
-        stuffMap.put("stuff",stuffData);
-        final StuffData getStuffData = stuffMap.get("stuff");
+        RList<StuffData> protostuffList = redisson.getList("protostuffList");
+        protostuffList.add(stuffData);
+        final StuffData getStuffData = protostuffList.get(0);
         Assertions.assertEquals(stuffData, getStuffData);
         redisson.shutdown();
     }
@@ -315,19 +296,5 @@ public class RedissonCodecTest extends BaseTest {
         Assertions.assertFalse(set.contains(new TestObject("1", "9")));
         
         redisson.shutdown();
-    }
-
-    public static void main(String[] args) throws JsonProcessingException {
-        final List<List<StuffData>> list = new ArrayList<>();
-        List<StuffData>  singleList = new ArrayList<>();
-        StuffData stuffData = new StuffData();
-        stuffData.setAge(18);
-        stuffData.setName("ccc");
-        singleList.add(stuffData);
-        list.add(        singleList);
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        final String s = objectMapper.writeValueAsString(list);
-        System.out.println(s);
     }
 }
