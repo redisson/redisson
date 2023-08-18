@@ -3,19 +3,22 @@ package org.redisson;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.dataformat.avro.AvroMapper;
 import com.fasterxml.jackson.dataformat.avro.AvroSchema;
+import com.google.protobuf.ByteString;
 import io.netty.buffer.ByteBuf;
 import net.bytebuddy.utility.RandomString;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RBucket;
-import org.redisson.api.RList;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.*;
-import org.redisson.codec.protobuf.raw.Proto2AllTypes;
-import org.redisson.codec.protobuf.raw.Proto3AllTypes;
+import org.redisson.codec.protobuf.nativeData.Proto2AllTypes;
+import org.redisson.codec.protobuf.nativeData.Proto3AllTypes;
+import org.redisson.codec.protobuf.stuffData.StuffData;
 import org.redisson.config.Config;
+import org.testcontainers.shaded.com.fasterxml.jackson.core.JsonProcessingException;
+import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.util.*;
@@ -37,6 +40,7 @@ public class RedissonCodecTest extends BaseTest {
                     new TypeReference<String>() {}, new TypeReference<List<String>>() {});
     private Codec protobufV2Codec = new ProtobufCodec(String.class, Proto2AllTypes.AllTypes2.class);
     private Codec protobufV3Codec = new ProtobufCodec(String.class, Proto3AllTypes.AllTypes3.class);
+    private Codec protobufStuffDataCodec = new ProtobufCodec( StuffData.class);
 
 
     @Test
@@ -147,25 +151,105 @@ public class RedissonCodecTest extends BaseTest {
     }
 
     @Test
-    public void testProtobuf() {
-        //传来的对象，我怎么知道哪些需要使用proto来序列化，哪些不用（string用stuff会变得更大）
-        //使用proto序列化的：1.messageLite使用自带的 2.非白名单使用protoStuffa
-        //不使用(走jackson那套)的：1.白名单
+    public void testProtobufV2() {
+        //native V2
         Config config = createConfig();
         config.setCodec(protobufV2Codec);
         RedissonClient redisson = Redisson.create(config);
         final Proto2AllTypes.AllTypes2 allTypes2 = Proto2AllTypes.AllTypes2.newBuilder()
+                .addDoubleType(1)
+                .addDoubleType(1.1)
+                .setFloatType(1.1f)
+                .setInt32Type(1)
+                .setInt64Type(1)
+                .setUint32Type(1)
+                .setUint64Type(1)
+                .setSint32Type(1)
+                .setSint64Type(1)
+                .setFixed32Type(1)
+                .setFixed64Type(1)
+                .setSfixed32Type(1)
+                .setSfixed64Type(1)
                 .setBoolType(true)
-                .setFixed32Type(111)
-                .setInt32Type(222)
+                .setStringType("1")
+                .setBytesType(ByteString.copyFrom("1".getBytes()))
                 .build();
-        final RMap<String, Proto2AllTypes.AllTypes2> rMap = redisson.getMap("protobufMap");
-        rMap.put("raw",allTypes2);
+        final RMap<String, Proto2AllTypes.AllTypes2> v2rMap = redisson.getMap("protobuf2Map");
+        v2rMap.put("V2",allTypes2);
+        final Proto2AllTypes.AllTypes2 getAllTypes2 = v2rMap.get("V2");
+        Assertions.assertEquals(allTypes2, getAllTypes2);
+        redisson.shutdown();
+    }
 
-        final Proto2AllTypes.AllTypes2 key = rMap.get("raw");
-        Assertions.assertEquals(allTypes2, key);
+    @Test
+    public void testProtobufV3() {
+        //native V3
+        Config config = createConfig();
+        config.setCodec(protobufV3Codec);
+        RedissonClient redisson = Redisson.create(config);
+        final Proto3AllTypes.AllTypes3 allTypes3 = Proto3AllTypes.AllTypes3.newBuilder()
+                .addDoubleType(1.1)
+                .addDoubleType(1.2)
+                .setFloatType(1.1f)
+                .setInt32Type(1)
+                .setInt64Type(1)
+                .setUint32Type(1)
+                .setUint64Type(1)
+                .setSint32Type(1)
+                .setSint64Type(1)
+                .setFixed32Type(1)
+                .setFixed64Type(1)
+                .setSfixed32Type(1)
+                .setSfixed64Type(1)
+                .setBoolType(true)
+                .setStringType("1")
+                .setBytesType(ByteString.copyFrom("1".getBytes()))
+                .build();
+        final RMap<String, Proto3AllTypes.AllTypes3> v3rMap = redisson.getMap("protobuf3Map");
+        v3rMap.put("V3",allTypes3);
+        final Proto3AllTypes.AllTypes3 getAllTypes3 = v3rMap.get("V3");
+        Assertions.assertEquals(allTypes3, getAllTypes3);
+        redisson.shutdown();
+
+        //protostuff (a framework that bypasses the need to compile .proto files into .java file.)
+        config = createConfig();
+        config.setCodec(protobufStuffDataCodec);
+        redisson = Redisson.create(config);
+        final StuffData stuffData = new StuffData();
+        stuffData.setAge(18);
+        List<String> hobbies = new ArrayList<>();
+        hobbies.add("game");
+        hobbies.add("game");
+        stuffData.setHobbies(hobbies);
+        stuffData.setName("ccc");
+        final RMap<String, StuffData> stuffMap = redisson.getMap("protostuffMap");
+        stuffMap.put("stuff",stuffData);
+        final StuffData getStuffData = stuffMap.get("stuff");
+        Assertions.assertEquals(stuffData, getStuffData);
+        redisson.shutdown();
 
     }
+
+    @Test
+    public void testProtostuff() {
+        //protostuff (a framework that bypasses the need to compile .proto files into .java file.)
+        Config config = createConfig();
+        config.setCodec(protobufStuffDataCodec);
+        RedissonClient redisson = Redisson.create(config);
+        final StuffData stuffData = new StuffData();
+        stuffData.setAge(18);
+        List<String> hobbies = new ArrayList<>();
+        hobbies.add("game");
+        hobbies.add("game");
+        stuffData.setHobbies(hobbies);
+        stuffData.setName("ccc");
+        final RMap<String, StuffData> stuffMap = redisson.getMap("protostuffMap");
+        stuffMap.put("stuff",stuffData);
+        final StuffData getStuffData = stuffMap.get("stuff");
+        Assertions.assertEquals(stuffData, getStuffData);
+        redisson.shutdown();
+    }
+
 
     @Test
     public void testKryo() {
@@ -231,5 +315,19 @@ public class RedissonCodecTest extends BaseTest {
         Assertions.assertFalse(set.contains(new TestObject("1", "9")));
         
         redisson.shutdown();
+    }
+
+    public static void main(String[] args) throws JsonProcessingException {
+        final List<List<StuffData>> list = new ArrayList<>();
+        List<StuffData>  singleList = new ArrayList<>();
+        StuffData stuffData = new StuffData();
+        stuffData.setAge(18);
+        stuffData.setName("ccc");
+        singleList.add(stuffData);
+        list.add(        singleList);
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        final String s = objectMapper.writeValueAsString(list);
+        System.out.println(s);
     }
 }

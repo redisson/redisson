@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
@@ -37,21 +38,21 @@ public class ProtobufCodec extends BaseCodec {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    //class in blacklist will not be serialized using protobuf ,but instead will use jackson
+    //classes in blacklist will not be serialized using protobuf ,but instead will use jackson
     private final Set<String> protobufBlacklist;
 
-    private final static Set<String> CLASSES_OWNS_JACKSON_SERIALIZER = new HashSet<>();
+    private final static Set<String> CLASSES_OWN_JACKSON_SERIALIZER = new HashSet<>();
 
     static {
         try {
             Field concreteField = BasicSerializerFactory.class.getDeclaredField("_concrete");
             concreteField.setAccessible(true);
-            CLASSES_OWNS_JACKSON_SERIALIZER.addAll(((Map) concreteField.get(BasicSerializerFactory.class)).keySet());
+            CLASSES_OWN_JACKSON_SERIALIZER.addAll(((Map) concreteField.get(BasicSerializerFactory.class)).keySet());
             Field _concreteLazyField = BasicSerializerFactory.class.getDeclaredField("_concreteLazy");
             _concreteLazyField.setAccessible(true);
-            CLASSES_OWNS_JACKSON_SERIALIZER.addAll(((Map) concreteField.get(BasicSerializerFactory.class)).keySet());
+            CLASSES_OWN_JACKSON_SERIALIZER.addAll(((Map) concreteField.get(BasicSerializerFactory.class)).keySet());
         } catch (NoSuchFieldException | IllegalAccessException ignored) {
-            log.warn("Failed to retrieve Jackson serializers. Maybe some objects (like String which using StringSerializer is better) will be serialized with protobuf unless the protobuf blacklist is explicitly set.");
+            log.warn("ProtobufCodec failed to retrieve Jackson serializers. Maybe some objects (like String which using StringSerializer is better) will be serialized with protobuf unless the protobuf blacklist is explicitly set.");
         }
     }
 
@@ -69,16 +70,8 @@ public class ProtobufCodec extends BaseCodec {
         this.valueClass = valueClass;
 
         protobufBlacklist = new HashSet<>();
-        protobufBlacklist.addAll(CLASSES_OWNS_JACKSON_SERIALIZER);
+        protobufBlacklist.addAll(CLASSES_OWN_JACKSON_SERIALIZER);
 
-    }
-
-    public void addBlacklist(Class<?> clazz) {
-        protobufBlacklist.add(clazz.getName());
-    }
-
-    public void removeBlacklist(Class<?> clazz) {
-        protobufBlacklist.remove(clazz.getName());
     }
 
     @Override
@@ -117,20 +110,22 @@ public class ProtobufCodec extends BaseCodec {
         return new Decoder<Object>() {
             @Override
             public Object decode(ByteBuf buf, State state) throws IOException {
+                //use jackson deserializer
                 if (protobufBlacklist.contains(clazz.getName())) {
                     return objectMapper.readValue((InputStream) new ByteBufInputStream(buf), clazz);
                 }
-                //todo 使用ByteBuf
+
                 byte[] bytes = new byte[buf.readableBytes()];
                 buf.readBytes(bytes);
                 if (MessageLite.class.isAssignableFrom(clazz)) {
+                    //native deserialize
                     try {
-                        final Method parseFrom = clazz.getDeclaredMethod("parseFrom", byte[].class);
-                        return parseFrom.invoke(clazz, bytes);
+                        return clazz.getDeclaredMethod("parseFrom", byte[].class).invoke(clazz, bytes);
                     } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
                         throw new RuntimeException(e);
                     }
                 } else {
+                    //protostuff
                     return ProtostuffUtils.deserialize(bytes, clazz);
                 }
             }
@@ -141,8 +136,9 @@ public class ProtobufCodec extends BaseCodec {
         return new Encoder() {
             @Override
             public ByteBuf encode(Object in) throws IOException {
+                //use jackson serializer
+                ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
                 if (protobufBlacklist.contains(clazz.getName())) {
-                    ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
                     try {
                         ByteBufOutputStream os = new ByteBufOutputStream(out);
                         objectMapper.writeValue((OutputStream) os, in);
@@ -152,15 +148,14 @@ public class ProtobufCodec extends BaseCodec {
                         throw e;
                     }
                 }
-                ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
-                byte[] bytes;
+
                 if (MessageLite.class.isAssignableFrom(clazz)) {
-                    bytes = ((MessageLite) in).toByteArray();
+                    //native serialize
+                    out.writeBytes(((MessageLite) in).toByteArray());
                 } else {
-                    bytes = ProtostuffUtils.serialize(in);
+                    //protostuff
+                    out.writeBytes(ProtostuffUtils.serialize(in));
                 }
-                out.writeBytes(bytes);
-                System.out.println(Arrays.toString(bytes));
                 return out;
             }
         };
@@ -201,5 +196,6 @@ public class ProtobufCodec extends BaseCodec {
         }
 
     }
+
 
 }
