@@ -1,17 +1,15 @@
 package org.redisson.codec;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ser.BasicSerializerFactory;
 import com.google.protobuf.MessageLite;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.ByteBufInputStream;
-import io.netty.buffer.ByteBufOutputStream;
 import io.protostuff.LinkedBuffer;
 import io.protostuff.ProtostuffIOUtil;
 import io.protostuff.Schema;
 import io.protostuff.runtime.RuntimeSchema;
 import org.redisson.client.codec.BaseCodec;
+import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
@@ -19,8 +17,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
@@ -33,41 +29,64 @@ public class ProtobufCodec extends BaseCodec {
     private final Class<?> mapValueClass;
     private final Class<?> valueClass;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
-    //classes in blacklist will not be serialized using protobuf ,but instead will use jackson
+    //classes in blacklist will not be serialized using protobuf ,but instead will use blacklistCodec
     private final Set<String> protobufBlacklist;
+    //default value is JsonJacksonCodec
+    private final Codec blacklistCodec;
 
-    private final static Set<String> CLASSES_OWN_JACKSON_SERIALIZER = new HashSet<>();
+    private final static Set<String> CLASSES_NOT_SUITABLE_FOR_PROTOBUF = new HashSet<>();
 
     static {
         try {
             Field concreteField = BasicSerializerFactory.class.getDeclaredField("_concrete");
             concreteField.setAccessible(true);
-            CLASSES_OWN_JACKSON_SERIALIZER.addAll(((Map) concreteField.get(BasicSerializerFactory.class)).keySet());
+            CLASSES_NOT_SUITABLE_FOR_PROTOBUF.addAll(((Map) concreteField.get(BasicSerializerFactory.class)).keySet());
             Field _concreteLazyField = BasicSerializerFactory.class.getDeclaredField("_concreteLazy");
             _concreteLazyField.setAccessible(true);
-            CLASSES_OWN_JACKSON_SERIALIZER.addAll(((Map) concreteField.get(BasicSerializerFactory.class)).keySet());
+            CLASSES_NOT_SUITABLE_FOR_PROTOBUF.addAll(((Map) concreteField.get(BasicSerializerFactory.class)).keySet());
         } catch (NoSuchFieldException | IllegalAccessException ignored) {
-            log.warn("ProtobufCodec failed to retrieve Jackson serializers. Maybe some objects (like String which using StringSerializer is better) will be serialized with protobuf unless the protobuf blacklist is explicitly set.");
+            log.warn("ProtobufCodec failed to retrieve classes not suitable for protobuf.Maybe some objects (like String which using StringSerializer is better) will be serialized with protobuf unless the protobuf blacklist is explicitly set.");
         }
     }
 
     public ProtobufCodec(Class<?> mapKeyClass, Class<?> mapValueClass) {
-        this(mapKeyClass, mapValueClass, null);
+        this(mapKeyClass, mapValueClass, null, null);
+    }
+
+    /**
+     * @param blacklistCodec classes in protobufBlacklist will use this codec
+     */
+    public ProtobufCodec(Class<?> mapKeyClass, Class<?> mapValueClass, Codec blacklistCodec) {
+        this(mapKeyClass, mapValueClass, null, blacklistCodec);
     }
 
     public ProtobufCodec(Class<?> valueClass) {
-        this(null, null, valueClass);
+        this(null, null, valueClass, null);
     }
 
-    private ProtobufCodec(Class<?> mapKeyClass, Class<?> mapValueClass, Class<?> valueClass) {
+    /**
+     * @param blacklistCodec classes in protobufBlacklist will use this codec
+     */
+    public ProtobufCodec(Class<?> valueClass, Codec blacklistCodec) {
+        this(null, null, valueClass, blacklistCodec);
+    }
+
+    private ProtobufCodec(Class<?> mapKeyClass, Class<?> mapValueClass, Class<?> valueClass, Codec blacklistCodec) {
         this.mapKeyClass = mapKeyClass;
         this.mapValueClass = mapValueClass;
         this.valueClass = valueClass;
+        if (blacklistCodec == null) {
+            this.blacklistCodec = new JsonJacksonCodec();
+        } else {
+            if (blacklistCodec instanceof ProtobufCodec) {
+                //will loop infinitely when encode or decode
+                throw new IllegalArgumentException("BlacklistCodec can not be ProtobufCodec");
+            }
+            this.blacklistCodec = blacklistCodec;
+        }
 
         protobufBlacklist = new HashSet<>();
-        protobufBlacklist.addAll(CLASSES_OWN_JACKSON_SERIALIZER);
+        protobufBlacklist.addAll(CLASSES_NOT_SUITABLE_FOR_PROTOBUF);
         protobufBlacklist.add("java.util.ArrayList");
         protobufBlacklist.add("java.util.HashSet");
         protobufBlacklist.add("java.util.HashMap");
@@ -83,35 +102,35 @@ public class ProtobufCodec extends BaseCodec {
 
     @Override
     public Decoder<Object> getValueDecoder() {
-        return createDecoder(valueClass);
+        return createDecoder(valueClass, blacklistCodec.getValueDecoder());
     }
 
     @Override
     public Encoder getValueEncoder() {
-        return createEncoder(valueClass);
+        return createEncoder(valueClass, blacklistCodec.getValueEncoder());
     }
 
     @Override
     public Decoder<Object> getMapValueDecoder() {
-        return createDecoder(mapValueClass);
+        return createDecoder(mapValueClass, blacklistCodec.getMapValueDecoder());
     }
 
     @Override
     public Encoder getMapValueEncoder() {
-        return createEncoder(mapValueClass);
+        return createEncoder(mapValueClass, blacklistCodec.getMapValueEncoder());
     }
 
     @Override
     public Decoder<Object> getMapKeyDecoder() {
-        return createDecoder(mapKeyClass);
+        return createDecoder(mapKeyClass, blacklistCodec.getMapKeyDecoder());
     }
 
     @Override
     public Encoder getMapKeyEncoder() {
-        return createEncoder(mapKeyClass);
+        return createEncoder(mapKeyClass, blacklistCodec.getMapKeyEncoder());
     }
 
-    private Decoder<Object> createDecoder(Class<?> clazz) {
+    private Decoder<Object> createDecoder(Class<?> clazz, Decoder<Object> blacklistDecoder) {
         if (clazz == null) {
             throw new IllegalArgumentException("class to create protobuf decoder can not be null");
         }
@@ -119,9 +138,9 @@ public class ProtobufCodec extends BaseCodec {
         return new Decoder<Object>() {
             @Override
             public Object decode(ByteBuf buf, State state) throws IOException {
-                //use jackson deserializer
+                //use blacklistDecoder
                 if (protobufBlacklist.contains(clazz.getName())) {
-                    return objectMapper.readValue((InputStream) new ByteBufInputStream(buf), clazz);
+                    return blacklistDecoder.decode(buf, state);
                 }
 
                 byte[] bytes = new byte[buf.readableBytes()];
@@ -141,26 +160,19 @@ public class ProtobufCodec extends BaseCodec {
         };
     }
 
-    private Encoder createEncoder(Class<?> clazz) {
+    private Encoder createEncoder(Class<?> clazz, Encoder blacklistEncoder) {
         if (clazz == null) {
             throw new IllegalArgumentException("class to create protobuf encoder can not be null");
         }
         return new Encoder() {
             @Override
             public ByteBuf encode(Object in) throws IOException {
-                //use jackson serializer
-                ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
+                //use blacklistEncoder
                 if (protobufBlacklist.contains(clazz.getName())) {
-                    try {
-                        ByteBufOutputStream os = new ByteBufOutputStream(out);
-                        objectMapper.writeValue((OutputStream) os, in);
-                        return os.buffer();
-                    } catch (IOException e) {
-                        out.release();
-                        throw e;
-                    }
+                    return blacklistEncoder.encode(in);
                 }
 
+                ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
                 if (MessageLite.class.isAssignableFrom(clazz)) {
                     //native serialize
                     out.writeBytes(((MessageLite) in).toByteArray());

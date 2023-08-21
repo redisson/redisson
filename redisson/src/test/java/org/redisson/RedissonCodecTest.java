@@ -38,7 +38,7 @@ public class RedissonCodecTest extends BaseTest {
     private Codec jsonListOfStringCodec = new TypedJsonJacksonCodec(
             new TypeReference<String>() {}, new TypeReference<List<String>>() {});
     private Codec protobufV2Codec = new ProtobufCodec(String.class, Proto2AllTypes.AllTypes2.class);
-    private Codec protobufV3Codec = new ProtobufCodec(String.class, Proto3AllTypes.AllTypes3.class);
+    private Codec protobufV3Codec = new ProtobufCodec(String.class, Proto3AllTypes.AllTypes3.class,new JsonJacksonCodec());
     private Codec protobufStuffDataCodec = new ProtobufCodec( StuffData.class);
 
 
