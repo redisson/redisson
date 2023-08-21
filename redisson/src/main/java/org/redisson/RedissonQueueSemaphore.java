@@ -41,6 +41,7 @@ public class RedissonQueueSemaphore extends RedissonSemaphore {
     public RedissonQueueSemaphore(CommandAsyncExecutor commandExecutor, String name, Codec codec) {
         super(commandExecutor, name);
         this.codec = codec;
+        this.name = name;
     }
     
     public void setQueueName(String queueName) {

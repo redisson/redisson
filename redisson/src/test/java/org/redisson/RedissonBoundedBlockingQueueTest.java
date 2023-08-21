@@ -3,6 +3,7 @@ package org.redisson;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.RedisRunner.RedisProcess;
+import org.redisson.api.NameMapper;
 import org.redisson.api.RBoundedBlockingQueue;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
@@ -22,6 +23,33 @@ import static org.awaitility.Awaitility.await;
 public class RedissonBoundedBlockingQueueTest extends BaseTest {
 
     @Test
+    public void testNameMapper() {
+        Config config = new Config();
+        config.useSingleServer()
+                .setNameMapper(new NameMapper() {
+                    @Override
+                    public String map(String name) {
+                        return name + ":suffix:";
+                    }
+
+                    @Override
+                    public String unmap(String name) {
+                        return name.replace(":suffix:", "");
+                    }
+                })
+                .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+
+        RedissonClient redisson = Redisson.create(config);
+        RBoundedBlockingQueue<Integer> queue = redisson.getBoundedBlockingQueue("bounded-queue");
+
+        queue.trySetCapacity(5);
+        queue.add(1);
+
+        queue.delete();
+        assertThat(redisson.getKeys().count()).isZero();
+    }
+
+        @Test
     public void testOfferTimeout() throws InterruptedException {
         RBoundedBlockingQueue<Integer> queue = redisson.getBoundedBlockingQueue("bounded-queue");
         queue.trySetCapacity(5);

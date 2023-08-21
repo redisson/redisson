@@ -60,7 +60,7 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
     }
     
     private String getSemaphoreName() {
-        return prefixName("redisson_bqs", getName());
+        return prefixName("redisson_bqs", getRawName());
     }
     
     @Override
