@@ -1,5 +1,6 @@
 package org.redisson.codec;
 
+import com.fasterxml.jackson.databind.cfg.SerializerFactoryConfig;
 import com.fasterxml.jackson.databind.ser.BasicSerializerFactory;
 import com.google.protobuf.MessageLite;
 import io.netty.buffer.ByteBuf;
@@ -13,18 +14,13 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 public class ProtobufCodec extends BaseCodec {
-    private static final Logger log = LoggerFactory.getLogger(ProtobufCodec.class);
     private final Class<?> mapKeyClass;
     private final Class<?> mapValueClass;
     private final Class<?> valueClass;
@@ -33,21 +29,6 @@ public class ProtobufCodec extends BaseCodec {
     private final Set<String> protobufBlacklist;
     //default value is JsonJacksonCodec
     private final Codec blacklistCodec;
-
-    private final static Set<String> CLASSES_NOT_SUITABLE_FOR_PROTOBUF = new HashSet<>();
-
-    static {
-        try {
-            Field concreteField = BasicSerializerFactory.class.getDeclaredField("_concrete");
-            concreteField.setAccessible(true);
-            CLASSES_NOT_SUITABLE_FOR_PROTOBUF.addAll(((Map) concreteField.get(BasicSerializerFactory.class)).keySet());
-            Field _concreteLazyField = BasicSerializerFactory.class.getDeclaredField("_concreteLazy");
-            _concreteLazyField.setAccessible(true);
-            CLASSES_NOT_SUITABLE_FOR_PROTOBUF.addAll(((Map) concreteField.get(BasicSerializerFactory.class)).keySet());
-        } catch (NoSuchFieldException | IllegalAccessException ignored) {
-            log.warn("ProtobufCodec failed to retrieve classes not suitable for protobuf.Maybe some objects (like String which using StringSerializer is better) will be serialized with protobuf unless the protobuf blacklist is explicitly set.");
-        }
-    }
 
     public ProtobufCodec(Class<?> mapKeyClass, Class<?> mapValueClass) {
         this(mapKeyClass, mapValueClass, null, null);
@@ -86,7 +67,7 @@ public class ProtobufCodec extends BaseCodec {
         }
 
         protobufBlacklist = new HashSet<>();
-        protobufBlacklist.addAll(CLASSES_NOT_SUITABLE_FOR_PROTOBUF);
+        protobufBlacklist.addAll(BasicSerializerFactoryConcreteGetter.getConcreteKeySet());
         protobufBlacklist.add("java.util.ArrayList");
         protobufBlacklist.add("java.util.HashSet");
         protobufBlacklist.add("java.util.HashMap");
@@ -206,5 +187,20 @@ public class ProtobufCodec extends BaseCodec {
 
     }
 
+    private static abstract class BasicSerializerFactoryConcreteGetter extends BasicSerializerFactory {
+        protected BasicSerializerFactoryConcreteGetter(SerializerFactoryConfig config) {
+            super(config);
+        }
 
+        private static Set<String> getConcreteKeySet() {
+            Set<String> concreteKeySet = new HashSet<>();
+            if (_concrete != null && !_concrete.isEmpty()) {
+                concreteKeySet.addAll(_concrete.keySet());
+            }
+            if (_concreteLazy != null && !_concreteLazy.isEmpty()) {
+                concreteKeySet.addAll(_concreteLazy.keySet());
+            }
+            return concreteKeySet;
+        }
+    }
 }
