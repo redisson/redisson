@@ -17,6 +17,8 @@ import org.redisson.client.protocol.Encoder;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -68,9 +70,9 @@ public class ProtobufCodec extends BaseCodec {
 
         protobufBlacklist = new HashSet<>();
         protobufBlacklist.addAll(BasicSerializerFactoryConcreteGetter.getConcreteKeySet());
-        protobufBlacklist.add("java.util.ArrayList");
-        protobufBlacklist.add("java.util.HashSet");
-        protobufBlacklist.add("java.util.HashMap");
+        protobufBlacklist.add(ArrayList.class.getName());
+        protobufBlacklist.add(HashSet.class.getName());
+        protobufBlacklist.add(HashMap.class.getName());
     }
 
     public void addBlacklist(Class<?> clazz) {
