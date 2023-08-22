@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package org.redisson.codec.protobuf.raw;
+
+option java_package = "org.redisson.codec.protobuf.raw";
+
+option java_outer_classname = "Proto3AllTypes";
+
+message AllTypes3{
+  //types from https://protobuf.dev/programming-guides/proto3/
+  repeated double doubleType = 1;
+  optional float floatType = 2;
+  int32 int32Type = 3;
+  int64 int64Type = 4;
+  uint32 uint32Type = 5;
+  uint64 uint64Type = 6;
+  sint32 sint32Type = 7;
+  sint64 sint64Type = 8;
+  fixed32 fixed32Type = 9;
+  fixed64 fixed64Type = 10;
+  sfixed32 sfixed32Type = 11;
+  sfixed64 sfixed64Type = 12;
+  bool boolType = 13;
+  string stringType = 14;
+  bytes bytesType = 15 ;
+}
+
