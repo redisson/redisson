@@ -12,7 +12,9 @@ import org.redisson.ClusterRunner.ClusterProcesses;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.*;
 import org.redisson.api.redisnode.RedisClusterMaster;
+import org.redisson.api.redisnode.RedisMaster;
 import org.redisson.api.redisnode.RedisNodes;
+import org.redisson.api.redisnode.RedisSingle;
 import org.redisson.client.*;
 import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.codec.StringCodec;
@@ -33,6 +35,7 @@ import org.redisson.connection.balancer.RandomLoadBalancer;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -865,6 +868,22 @@ public class RedissonTest extends BaseTest {
         Assertions.assertEquals(0, pp.stop());
     }
 
+
+    @Test
+    public void testSave() throws InterruptedException {
+        Instant s2 = Instant.now();
+        Thread.sleep(1000);
+        RedisSingle nodes = redisson.getRedisNodes(RedisNodes.SINGLE);
+        RedisMaster node = nodes.getInstance();
+
+        Instant time1 = node.getLastSaveTime();
+        assertThat(time1).isNotNull();
+        node.save();
+        Instant time2 = node.getLastSaveTime();
+        assertThat(time2.isAfter(s2)).isTrue();
+        node.bgSave();
+        node.bgRewriteAOF();
+    }
 
     @Test
     public void testShutdown() {

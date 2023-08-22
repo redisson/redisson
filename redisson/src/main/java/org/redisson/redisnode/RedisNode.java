@@ -30,6 +30,7 @@ import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.RedisURI;
 
 import java.net.InetSocketAddress;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -339,4 +340,53 @@ public class RedisNode implements RedisClusterMaster, RedisClusterSlave, RedisMa
         return commandExecutor.writeAsync(client, StringCodec.INSTANCE, RedisCommands.CONFIG_SET, parameter, value);
     }
 
+    @Override
+    public void bgSave() {
+        commandExecutor.get(bgSaveAsync());
+    }
+
+    @Override
+    public void scheduleBgSave() {
+        commandExecutor.get(scheduleBgSaveAsync());
+    }
+
+    @Override
+    public void save() {
+        commandExecutor.get(saveAsync());
+    }
+
+    @Override
+    public Instant getLastSaveTime() {
+        return commandExecutor.get(getLastSaveTimeAsync());
+    }
+
+    @Override
+    public RFuture<Void> bgSaveAsync() {
+        return commandExecutor.writeAsync(client, StringCodec.INSTANCE, RedisCommands.BGSAVE);
+    }
+
+    @Override
+    public RFuture<Void> scheduleBgSaveAsync() {
+        return commandExecutor.writeAsync(client, StringCodec.INSTANCE, RedisCommands.BGSAVE, "SCHEDULE");
+    }
+
+    @Override
+    public RFuture<Void> saveAsync() {
+        return commandExecutor.writeAsync(client, StringCodec.INSTANCE, RedisCommands.SAVE);
+    }
+
+    @Override
+    public RFuture<Instant> getLastSaveTimeAsync() {
+        return commandExecutor.writeAsync(client, StringCodec.INSTANCE, RedisCommands.LASTSAVE_INSTANT);
+    }
+
+    @Override
+    public void bgRewriteAOF() {
+        commandExecutor.get(bgRewriteAOFAsync());
+    }
+
+    @Override
+    public RFuture<Void> bgRewriteAOFAsync() {
+        return commandExecutor.writeAsync(client, StringCodec.INSTANCE, RedisCommands.BGREWRITEAOF);
+    }
 }
