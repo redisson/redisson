@@ -21,13 +21,13 @@ import org.redisson.api.RedissonReactiveClient;
 import org.redisson.api.RedissonRxClient;
 import org.redisson.config.*;
 import org.redisson.spring.data.connection.RedissonConnectionFactory;
-import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
+import org.springframework.boot.autoconfigure.data.redis.RedisConnectionDetails;
 import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
 import org.springframework.boot.autoconfigure.data.redis.RedisProperties.Sentinel;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -79,6 +79,13 @@ public class RedissonAutoConfiguration {
 
     @Autowired
     private ApplicationContext ctx;
+
+    @Bean
+    @ConditionalOnClass(RedisConnectionDetails.class)
+    @ConditionalOnMissingBean(RedisConnectionDetails.class)
+    Object redisConnectionDetails(RedisProperties properties) {
+        return new PropertiesRedisConnectionDetails(properties);
+    }
 
     @Bean
     @ConditionalOnMissingBean(name = "redisTemplate")
