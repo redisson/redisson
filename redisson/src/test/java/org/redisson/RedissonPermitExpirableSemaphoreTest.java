@@ -175,7 +175,7 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
-            };
+            }
         };
 
         t.start();
@@ -206,7 +206,7 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
-            };
+            }
         };
 
         t.start();
@@ -466,6 +466,26 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
     }
 
     @Test
+    public void testRelease() throws InterruptedException {
+        RPermitExpirableSemaphore semaphore = redisson.getPermitExpirableSemaphore("test");
+        semaphore.trySetPermits(10);
+
+        List<String> permitsIds = semaphore.acquire(6);
+        assertThat(permitsIds).hasSize(6);
+        assertThat(semaphore.availablePermits()).isEqualTo(4);
+
+        List<String> permitsIdsFirstPart = permitsIds.subList(0, 4);
+        int releaseResult1 = semaphore.release(permitsIdsFirstPart);
+        assertThat(releaseResult1).isEqualTo(4);
+        assertThat(semaphore.availablePermits()).isEqualTo(8);
+
+        List<String> permitsIdsSecondPart = permitsIds.subList(4, 6);
+        int releaseResult2 = semaphore.release(permitsIdsSecondPart);
+        assertThat(releaseResult2).isEqualTo(2);
+        assertThat(semaphore.availablePermits()).isEqualTo(10);
+    }
+
+    @Test
     public void testAcquireAsyncMany() throws ExecutionException, InterruptedException {
         RPermitExpirableSemaphore semaphore = redisson.getPermitExpirableSemaphore("test");
         semaphore.trySetPermits(10);
@@ -485,16 +505,42 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
         semaphore.trySetPermits(10);
 
         List<String> permitsIds = semaphore.acquire(6);
+        assertThat(permitsIds).hasSize(6);
         assertThat(semaphore.availablePermits()).isEqualTo(4);
 
-        RFuture<Integer> releaseResult = semaphore.tryReleaseAsync(permitsIds);
-
+        List<String> permitsIdsFirstPart = permitsIds.subList(0, 4);
+        RFuture<Integer> releaseResult1 = semaphore.tryReleaseAsync(permitsIdsFirstPart);
         Awaitility.await().atMost(Duration.ofMillis(100)).pollDelay(Duration.ofMillis(10)).untilAsserted(() -> {
-            assertThat(releaseResult.isDone()).isTrue();
+            assertThat(releaseResult1.isDone()).isTrue();
         });
-        assertThat(releaseResult.get()).isEqualTo(6);
+        assertThat(releaseResult1.get()).isEqualTo(4);
+        assertThat(semaphore.availablePermits()).isEqualTo(8);
 
+        List<String> permitsIdsSecondPart = permitsIds.subList(4, 6);
+        RFuture<Integer> releaseResult2 = semaphore.tryReleaseAsync(permitsIdsSecondPart);
+        Awaitility.await().atMost(Duration.ofMillis(100)).pollDelay(Duration.ofMillis(10)).untilAsserted(() -> {
+            assertThat(releaseResult2.isDone()).isTrue();
+        });
+        assertThat(releaseResult2.get()).isEqualTo(2);
         assertThat(semaphore.availablePermits()).isEqualTo(10);
     }
 
+    @Test
+    public void testReleaseManyExpiredDoesNotThrow() throws InterruptedException, ExecutionException {
+        RPermitExpirableSemaphore semaphore = redisson.getPermitExpirableSemaphore("test");
+        semaphore.trySetPermits(10);
+
+        List<String> permitsIds = semaphore.acquire(6, 100, TimeUnit.MILLISECONDS);
+        assertThat(permitsIds).hasSize(6);
+        assertThat(semaphore.availablePermits()).isEqualTo(4);
+        Thread.sleep(250);
+
+        semaphore.acquire(100, TimeUnit.MILLISECONDS);
+        assertThat(semaphore.availablePermits()).isEqualTo(9);
+        Awaitility.await().atMost(Duration.ofMillis(250)).pollDelay(Duration.ofMillis(10)).untilAsserted(() -> {
+            assertThat(semaphore.availablePermits()).isEqualTo(10);
+        });
+
+        Assertions.assertDoesNotThrow(() -> semaphore.release(permitsIds));
+    }
 }
