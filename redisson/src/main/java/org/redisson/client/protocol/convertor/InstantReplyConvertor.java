@@ -25,6 +25,6 @@ import java.time.Instant;
 public class InstantReplyConvertor implements Convertor<Instant> {
     @Override
     public Instant convert(Object obj) {
-        return Instant.ofEpochSecond((Long)obj);
+        return Instant.ofEpochSecond((Long) obj);
     }
 }
