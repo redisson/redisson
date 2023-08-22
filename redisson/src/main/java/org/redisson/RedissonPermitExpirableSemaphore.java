@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import io.netty.buffer.ByteBufUtil;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import org.redisson.api.RFuture;
@@ -27,7 +26,9 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.pubsub.SemaphorePubSub;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -56,29 +57,33 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
 
     @Override
     public String acquire() throws InterruptedException {
-        return acquire(1, -1, TimeUnit.MILLISECONDS);
+        return acquire(-1, TimeUnit.MILLISECONDS);
     }
 
     @Override
-    public String acquire(int permits) throws InterruptedException {
+    public List<String> acquire(int permits) throws InterruptedException {
         return acquire(permits, -1, TimeUnit.MILLISECONDS);
     }
 
     @Override
     public String acquire(long leaseTime, TimeUnit timeUnit) throws InterruptedException {
-        return acquire(1, leaseTime, timeUnit);
+        List<String> ids = acquire(1, leaseTime, timeUnit);
+        return ids.isEmpty() ? null : ids.get(0);
     }
     
     @Override
     public RFuture<String> acquireAsync(long leaseTime, TimeUnit timeUnit) {
-        return acquireAsync(1, leaseTime, timeUnit);
+        CompletionStage<String> future = acquireAsync(1, leaseTime, timeUnit)
+                .thenApply(f -> f.get(0));
+
+        return new CompletableFutureWrapper<>(future);
     }
 
     @Override
-    public String acquire(int permits, long ttl, TimeUnit timeUnit) throws InterruptedException {
-        String permitId = tryAcquire(permits, ttl, timeUnit);
-        if (permitId != null && !permitId.startsWith(":")) {
-            return permitId;
+    public List<String> acquire(int permits, long ttl, TimeUnit timeUnit) throws InterruptedException {
+        List<String> permitsIds = tryAcquire(permits, ttl, timeUnit);
+        if (!permitsIds.isEmpty() && !permitsIds.get(0).startsWith(":")) {
+            return permitsIds;
         }
 
         CompletableFuture<RedissonLockEntry> future = subscribe();
@@ -87,15 +92,15 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         try {
             while (true) {
                 Long nearestTimeout;
-                permitId = tryAcquire(permits, ttl, timeUnit);
-                if (permitId != null) {
-                    if (!permitId.startsWith(":")) {
-                        return permitId;
-                    } else {
-                        nearestTimeout = Long.parseLong(permitId.substring(1)) - System.currentTimeMillis();
-                    }
-                } else {
+                permitsIds = tryAcquire(permits, ttl, timeUnit);
+                if (permitsIds.isEmpty()) {
                     nearestTimeout = null;
+                } else {
+                    if (permitsIds.get(0).startsWith(":")) {
+                        nearestTimeout = Long.parseLong(permitsIds.get(0).substring(1)) - System.currentTimeMillis();
+                    } else {
+                        return permitsIds;
+                    }
                 }
                 
                 if (nearestTimeout != null) {
@@ -111,21 +116,23 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     }
     
     public RFuture<String> acquireAsync() {
-        return acquireAsync(1, -1, TimeUnit.MILLISECONDS);
+        RFuture<List<String>> ids = acquireAsync(1, -1, TimeUnit.MILLISECONDS);
+        CompletionStage<String> f = ids.thenApply(r -> r.get(0));
+        return new CompletableFutureWrapper<>(f);
     }
     
     @Override
-    public RFuture<String> acquireAsync(int permits) {
+    public RFuture<List<String>> acquireAsync(int permits) {
         return acquireAsync(permits, -1, TimeUnit.MILLISECONDS);
     }
 
     @Override
-    public RFuture<String> acquireAsync(int permits, long ttl, TimeUnit timeUnit) {
+    public RFuture<List<String>> acquireAsync(int permits, long ttl, TimeUnit timeUnit) {
         long timeoutDate = calcTimeout(ttl, timeUnit);
-        RFuture<String> tryAcquireFuture = tryAcquireAsync(permits, timeoutDate);
-        CompletionStage<String> f = tryAcquireFuture.thenCompose(permitId -> {
-            if (permitId != null && !permitId.startsWith(":")) {
-                return CompletableFuture.completedFuture(permitId);
+        RFuture<List<String>> tryAcquireFuture = tryAcquireAsync(permits, timeoutDate);
+        CompletionStage<List<String>> f = tryAcquireFuture.thenCompose(permitsIds -> {
+            if (!permitsIds.isEmpty() && !permitsIds.get(0).startsWith(":")) {
+                return CompletableFuture.completedFuture(permitsIds);
             }
 
             CompletableFuture<RedissonLockEntry> subscribeFuture = subscribe();
@@ -136,9 +143,9 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         });
         f.whenComplete((r, e) -> {
             if (f.toCompletableFuture().isCancelled()) {
-                tryAcquireFuture.whenComplete((permitId, ex) -> {
-                    if (permitId != null && !permitId.startsWith(":")) {
-                        releaseAsync(permitId);
+                tryAcquireFuture.whenComplete((permitsIds, ex) -> {
+                    if (!permitsIds.isEmpty() && !permitsIds.get(0).startsWith(":")) {
+                        releaseAsync(permitsIds);
                     }
                 });
             }
@@ -146,7 +153,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         return new CompletableFutureWrapper<>(f);
     }
     
-    private void tryAcquireAsync(AtomicLong time, int permits, RedissonLockEntry entry, CompletableFuture<String> result, long ttl, TimeUnit timeUnit) {
+    private void tryAcquireAsync(AtomicLong time, int permits, RedissonLockEntry entry, CompletableFuture<List<String>> result, long ttl, TimeUnit timeUnit) {
         if (result.isDone()) {
             unsubscribe(entry);
             return;
@@ -160,8 +167,8 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         
         long timeoutDate = calcTimeout(ttl, timeUnit);
         long curr = System.currentTimeMillis();
-        RFuture<String> tryAcquireFuture = tryAcquireAsync(permits, timeoutDate);
-        tryAcquireFuture.whenComplete((permitId, e) -> {
+        RFuture<List<String>> tryAcquireFuture = tryAcquireAsync(permits, timeoutDate);
+        tryAcquireFuture.whenComplete((permitsIds, e) -> {
             if (e != null) {
                 unsubscribe(entry);
                 result.completeExceptionally(e);
@@ -169,18 +176,18 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             }
 
             Long nearestTimeout;
-            if (permitId != null) {
-                if (!permitId.startsWith(":")) {
+            if (permitsIds.isEmpty()) {
+                nearestTimeout = null;
+            } else {
+                if (permitsIds.get(0).startsWith(":")) {
+                    nearestTimeout = Long.parseLong(permitsIds.get(0).substring(1)) - System.currentTimeMillis();
+                } else {
                     unsubscribe(entry);
-                    if (!result.complete(permitId)) {
-                        releaseAsync(permitId);
+                    if (!result.complete(permitsIds)) {
+                        releaseAsync(permitsIds);
                     }
                     return;
-                } else {
-                    nearestTimeout = Long.parseLong(permitId.substring(1)) - System.currentTimeMillis();
                 }
-            } else {
-                nearestTimeout = null;
             }
 
             long el = System.currentTimeMillis() - curr;
@@ -257,35 +264,35 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         
     }
 
-    private CompletableFuture<String> acquireAsync(int permits, RedissonLockEntry entry, long ttl, TimeUnit timeUnit) {
+    private CompletableFuture<List<String>> acquireAsync(int permits, RedissonLockEntry entry, long ttl, TimeUnit timeUnit) {
         long timeoutDate = calcTimeout(ttl, timeUnit);
-        CompletableFuture<String> tryAcquireFuture = tryAcquireAsync(permits, timeoutDate).toCompletableFuture();
+        CompletableFuture<List<String>> tryAcquireFuture = tryAcquireAsync(permits, timeoutDate).toCompletableFuture();
         return tryAcquireFuture.whenComplete((p, e) -> {
             if (e != null) {
                 unsubscribe(entry);
             }
-        }).thenCompose(permitId -> {
+        }).thenCompose(permitsIds -> {
             Long nearestTimeout;
-            if (permitId != null) {
-                if (!permitId.startsWith(":")) {
-                    unsubscribe(entry);
-                    return CompletableFuture.completedFuture(permitId);
-                } else {
-                    nearestTimeout = Long.parseLong(permitId.substring(1)) - System.currentTimeMillis();
-                }
-            } else {
+            if (permitsIds.isEmpty()) {
                 nearestTimeout = null;
+            } else {
+                if (permitsIds.size() == 1 && permitsIds.get(0).startsWith(":")) {
+                    nearestTimeout = Long.parseLong(permitsIds.get(0).substring(1)) - System.currentTimeMillis();
+                } else {
+                    unsubscribe(entry);
+                    return CompletableFuture.completedFuture(permitsIds);
+                }
             }
 
             if (entry.getLatch().tryAcquire(permits)) {
                 return acquireAsync(permits, entry, ttl, timeUnit);
             }
 
-            CompletableFuture<String> res = new CompletableFuture<>();
+            CompletableFuture<List<String>> res = new CompletableFuture<>();
             Timeout scheduledFuture;
             if (nearestTimeout != null) {
                 scheduledFuture = getServiceManager().newTimeout(timeout -> {
-                    CompletableFuture<String> r = acquireAsync(permits, entry, ttl, timeUnit);
+                    CompletableFuture<List<String>> r = acquireAsync(permits, entry, ttl, timeUnit);
                     commandExecutor.transfer(r, res);
                 }, nearestTimeout, TimeUnit.MILLISECONDS);
             } else {
@@ -297,7 +304,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                     entry.getLatch().release();
                     return;
                 }
-                CompletableFuture<String> r = acquireAsync(permits, entry, ttl, timeUnit);
+                CompletableFuture<List<String>> r = acquireAsync(permits, entry, ttl, timeUnit);
                 commandExecutor.transfer(r, res);
             };
             entry.addListener(listener);
@@ -307,21 +314,22 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
 
     @Override
     public String tryAcquire() {
-        return tryAcquire(1, -1, TimeUnit.MILLISECONDS);
+        List<String> ids = tryAcquire(1);
+        return ids.isEmpty() ? null : ids.get(0);
     }
 
     @Override
-    public String tryAcquire(int permits) {
-        return tryAcquire(permits, -1, TimeUnit.MILLISECONDS);
+    public List<String> tryAcquire(int permits) {
+        List<String> ids = tryAcquire(permits, -1, TimeUnit.MILLISECONDS);
+        if (ids.size() == 1 && ids.get(0).startsWith(":")) {
+            return Collections.emptyList();
+        }
+        return ids;
     }
 
-    private String tryAcquire(int permits, long ttl, TimeUnit timeUnit) {
+    private List<String> tryAcquire(int permits, long ttl, TimeUnit timeUnit) {
         long timeoutDate = calcTimeout(ttl, timeUnit);
-        String res = get(tryAcquireAsync(permits, timeoutDate));
-        if (res != null && res.startsWith(":")) {
-            return null;
-        }
-        return res;
+        return get(tryAcquireAsync(permits, timeoutDate));
     }
 
     private long calcTimeout(long ttl, TimeUnit timeUnit) {
@@ -333,99 +341,120 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
 
     @Override
     public RFuture<String> tryAcquireAsync() {
-        return tryAcquireAsync(1);
+        CompletionStage<String> future = tryAcquireAsync(1)
+                .thenApply(r -> r.isEmpty() ? null : r.get(0));
+        return new CompletableFutureWrapper<>(future);
     }
 
     @Override
-    public RFuture<String> tryAcquireAsync(int permits) {
-        CompletableFuture<String> future = tryAcquireAsync(permits, nonExpirableTimeout).toCompletableFuture();
-        CompletableFuture<String> f = future.thenApply(permitId -> {
-            if (permitId != null && !permitId.startsWith(":")) {
-                return permitId;
+    public RFuture<List<String>> tryAcquireAsync(int permits) {
+        CompletableFuture<List<String>> future = tryAcquireAsync(permits, nonExpirableTimeout).toCompletableFuture()
+                .thenApply(permitsIds -> {
+                    if (permitsIds.size() == 1 && permitsIds.get(0).startsWith(":")) {
+                        return null;
+                    }
+                    return permitsIds;
+                });
+        future.whenComplete((permitsIds, e) -> {
+            if (future.isCancelled() && !permitsIds.isEmpty() && !permitsIds.get(0).startsWith(":")) {
+                releaseAsync(permitsIds);
             }
-            return null;
         });
 
-        future.whenComplete((permitId, e) -> {
-            if (f.isCancelled() && permitId != null && !permitId.startsWith(":")) {
-                releaseAsync(permitId);
-            }
-        });
-
-        return new CompletableFutureWrapper<>(f);
+        return new CompletableFutureWrapper<>(future);
     }
 
-    private RFuture<String> tryAcquireAsync(int permits, long timeoutDate) {
+    private RFuture<List<String>> tryAcquireAsync(int permits, long timeoutDate) {
         if (permits < 0) {
             throw new IllegalArgumentException("Permits amount can't be negative");
         }
+        List<String> ids = new ArrayList<>(permits);
+        for (int i = 0; i < permits; i++) {
+            ids.add(getServiceManager().generateId());
+        }
 
-        byte[] id = getServiceManager().generateIdArray();
         return getServiceManager().execute(() -> {
-            RFuture<String> future = tryAcquireAsync(id, permits, timeoutDate);
-            return commandExecutor.handleNoSync(future, () -> releaseAsync(ByteBufUtil.hexDump(id)));
+            RFuture<List<String>> future = tryAcquireAsync(ids, timeoutDate);
+            return commandExecutor.handleNoSync(future, () -> releaseAsync(ids));
         });
     }
 
-    private RFuture<String> tryAcquireAsync(byte[] id, int permits, long timeoutDate) {
-        return commandExecutor.syncedEval(getRawName(), ByteArrayCodec.INSTANCE, RedisCommands.EVAL_PERMIT_DATA,
-                  "local expiredIds = redis.call('zrangebyscore', KEYS[2], 0, ARGV[4], 'limit', 0, ARGV[1]); " +
-                  "if #expiredIds > 0 then " +
-                      "redis.call('zrem', KEYS[2], unpack(expiredIds)); " +
-                      "local value = redis.call('incrby', KEYS[1], #expiredIds); " +
-                      "if tonumber(value) > 0 then " +
-                          "redis.call(ARGV[6], KEYS[3], value); " +
-                      "end;" +
-                  "end; " +
-                  "local value = redis.call('get', KEYS[1]); " +
-                  "if (value ~= false and tonumber(value) >= tonumber(ARGV[1])) then " +
-                      "redis.call('decrby', KEYS[1], ARGV[1]); " +
-                      "redis.call('zadd', KEYS[2], ARGV[2], ARGV[3]); " +
+    private RFuture<List<String>> tryAcquireAsync(List<String> ids, long timeoutDate) {
+        CompletionStage<List<String>> future = commandExecutor.syncedEval(getRawName(), ByteArrayCodec.INSTANCE, RedisCommands.EVAL_STRING,
+            "local expiredIds = redis.call('zrangebyscore', KEYS[2], 0, ARGV[4], 'limit', 0, ARGV[1]); " +
+                "if #expiredIds > 0 then " +
+                    "redis.call('zrem', KEYS[2], unpack(expiredIds)); " +
+                    "local value = redis.call('incrby', KEYS[1], #expiredIds); " +
+                    "if tonumber(value) > 0 then " +
+                        "redis.call(ARGV[6], KEYS[3], value); " +
+                    "end; " +
+                "end; " +
+                "local value = redis.call('get', KEYS[1]); " +
+                "if (value ~= false and tonumber(value) >= tonumber(ARGV[1])) then " +
+                    "redis.call('decrby', KEYS[1], ARGV[1]); " +
+                    "for key in string.gmatch(ARGV[3], '%w+') do " +
+                        "redis.call('zadd', KEYS[2], ARGV[2], key); " +
+                    "end; " +
 
-                      "local ttl = redis.call('pttl', KEYS[1]); " +
-                      "if ttl > 0 then " +
-                          "redis.call('pexpire', KEYS[2], ttl); " +
-                      "end; " +
+                    "local ttl = redis.call('pttl', KEYS[1]); " +
+                    "if ttl > 0 then " +
+                        "redis.call('pexpire', KEYS[2], ttl); " +
+                    "end; " +
 
-                      "return ARGV[3]; " +
-                  "end; " +
-                  "local v = redis.call('zrange', KEYS[2], 0, 0, 'WITHSCORES'); " +
-                  "if v[1] ~= nil and v[2] ~= ARGV[5] then " +
-                      "return ':' .. tostring(v[2]); " +
-                  "end " +
-                  "return nil;",
-                  Arrays.asList(getRawName(), timeoutName, channelName),
-                permits, timeoutDate, id, System.currentTimeMillis(), nonExpirableTimeout, getSubscribeService().getPublishCommand());
+                    "return 'OK'; " +
+                "end; " +
+                "local v = redis.call('zrange', KEYS[2], 0, 0, 'WITHSCORES'); " +
+                "if v[1] ~= nil and v[2] ~= ARGV[5] then " +
+                    "return ':' .. tostring(v[2]); " +
+                "end " +
+                "return nil;",
+                Arrays.asList(getRawName(), timeoutName, channelName),
+                ids.size(), timeoutDate, ids, System.currentTimeMillis(), nonExpirableTimeout, getSubscribeService().getPublishCommand()
+        ).thenApply(result -> {
+            if (result == null) {
+                return Collections.emptyList();
+            }
+            if (result.equals("OK")) {
+                return ids;
+            }
+            return Collections.singletonList(result);
+        });
+        return new CompletableFutureWrapper<>(future);
     }
 
     @Override
     public RFuture<String> tryAcquireAsync(long waitTime, TimeUnit unit) {
-        return tryAcquireAsync(1, waitTime, -1, unit);
+        CompletionStage<String> future = tryAcquireAsync(1, waitTime, -1, unit)
+                .thenApply(ids -> ids.isEmpty() ? null : ids.get(0));
+        return new CompletableFutureWrapper<>(future);
     }
     
     @Override
     public String tryAcquire(long waitTime, long ttl, TimeUnit unit) throws InterruptedException {
-        return tryAcquire(1, waitTime, ttl, unit);
+        List<String> ids = tryAcquire(1, waitTime, ttl, unit);
+        return ids.isEmpty() ? null : ids.get(0);
     }
     
     @Override
     public RFuture<String> tryAcquireAsync(long waitTime, long ttl, TimeUnit unit) {
-        return tryAcquireAsync(1, waitTime, ttl, unit);
+        CompletionStage<String> future = tryAcquireAsync(1, waitTime, ttl, unit)
+                .thenApply(ids -> ids.isEmpty() ? null : ids.get(0));
+        return new CompletableFutureWrapper<>(future);
     }
 
     @Override
-    public String tryAcquire(int permits, long waitTime, long ttl, TimeUnit unit) throws InterruptedException {
+    public List<String> tryAcquire(int permits, long waitTime, long ttl, TimeUnit unit) throws InterruptedException {
         long time = unit.toMillis(waitTime);
         long current = System.currentTimeMillis();
 
-        String permitId = tryAcquire(permits, ttl, unit);
-        if (permitId != null && !permitId.startsWith(":")) {
-            return permitId;
+        List<String> permitsIds = tryAcquire(permits, ttl, unit);
+        if (!permitsIds.isEmpty() && !permitsIds.get(0).startsWith(":")) {
+            return permitsIds;
         }
 
         time -= System.currentTimeMillis() - current;
         if (time <= 0) {
-            return null;
+            return Collections.emptyList();
         }
         
         current = System.currentTimeMillis();
@@ -434,27 +463,27 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         try {
             entry = future.get(time, TimeUnit.MILLISECONDS);
         } catch (ExecutionException | TimeoutException e) {
-            return null;
+            return Collections.emptyList();
         }
 
         try {
             time -= System.currentTimeMillis() - current;
             if (time <= 0) {
-                return null;
+                return Collections.emptyList();
             }
             
             while (true) {
                 current = System.currentTimeMillis();
                 Long nearestTimeout;
-                permitId = tryAcquire(permits, ttl, unit);
-                if (permitId != null) {
-                    if (!permitId.startsWith(":")) {
-                        return permitId;
-                    } else {
-                        nearestTimeout = Long.parseLong(permitId.substring(1)) - System.currentTimeMillis();
-                    }
-                } else {
+                permitsIds = tryAcquire(permits, ttl, unit);
+                if (permitsIds.isEmpty()) {
                     nearestTimeout = null;
+                } else {
+                    if (permitsIds.get(0).startsWith(":")) {
+                        nearestTimeout = Long.parseLong(permitsIds.get(0).substring(1)) - System.currentTimeMillis();
+                    } else {
+                        return permitsIds;
+                    }
                 }
                 
                 time -= System.currentTimeMillis() - current;
@@ -474,7 +503,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 long elapsed = System.currentTimeMillis() - current;
                 time -= elapsed;
                 if (time <= 0) {
-                    return null;
+                    return Collections.emptyList();
                 }
             }
         } finally {
@@ -484,21 +513,20 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     }
 
     @Override
-    public RFuture<String> tryAcquireAsync(int permits, long waitTime, long ttl, TimeUnit timeUnit) {
-        CompletableFuture<String> result = new CompletableFuture<>();
+    public RFuture<List<String>> tryAcquireAsync(int permits, long waitTime, long ttl, TimeUnit timeUnit) {
+        CompletableFuture<List<String>> result = new CompletableFuture<>();
         AtomicLong time = new AtomicLong(timeUnit.toMillis(waitTime));
         long curr = System.currentTimeMillis();
         long timeoutDate = calcTimeout(ttl, timeUnit);
-        RFuture<String> tryAcquireFuture = tryAcquireAsync(permits, timeoutDate);
-        tryAcquireFuture.whenComplete((permitId, e) -> {
+        tryAcquireAsync(permits, timeoutDate).whenComplete((permitsIds, e) -> {
             if (e != null) {
                 result.completeExceptionally(e);
                 return;
             }
 
-            if (permitId != null && !permitId.startsWith(":")) {
-                if (!result.complete(permitId)) {
-                    releaseAsync(permitId);
+            if (!permitsIds.isEmpty() && !permitsIds.get(0).startsWith(":")) {
+                if (!result.complete(permitsIds)) {
+                    releaseAsync(permitsIds);
                 }
                 return;
             }
@@ -556,11 +584,11 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
 
     @Override
     public String tryAcquire(long waitTime, TimeUnit unit) throws InterruptedException {
-        String res = tryAcquire(1, waitTime, -1, unit);
-        if (res != null && res.startsWith(":")) {
+        List<String> res = tryAcquire(1, waitTime, -1, unit);
+        if (res.isEmpty() || res.get(0).startsWith(":")) {
             return null;
         }
-        return res;
+        return res.get(0);
     }
 
     @Override
@@ -569,49 +597,70 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     }
 
     @Override
-    public void release(String permitId, int permits) {
-        get(releaseAsync(permitId, permits));
+    public int release(List<String> permitsIds) {
+        return get(releaseAsync(permitsIds));
     }
 
     @Override
     public boolean tryRelease(String permitId) {
-        return get(tryReleaseAsync(permitId, 1));
+        return get(tryReleaseAsync(permitId));
     }
 
     @Override
-    public boolean tryRelease(String permitId, int permits) {
-        return get(tryReleaseAsync(permitId, permits));
+    public int tryRelease(List<String> permitsIds) {
+        return 0;
     }
 
     @Override
     public RFuture<Boolean> tryReleaseAsync(String permitId) {
-        return tryReleaseAsync(permitId, 1);
-    }
-
-    @Override
-    public RFuture<Boolean> tryReleaseAsync(String permitId, int permits) {
         if (permitId == null) {
             throw new IllegalArgumentException("permitId can't be null");
         }
-        if (permits < 0) {
-            throw new IllegalArgumentException("Permits amount can't be negative");
+
+        return commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "local expire = redis.call('zscore', KEYS[3], ARGV[1]);" +
+                "local removed = redis.call('zrem', KEYS[3], ARGV[1]);" +
+                "if tonumber(removed) ~= 1 then " +
+                    "return 0;" +
+                "end;" +
+                "local value = redis.call('incrby', KEYS[1], ARGV[2]); " +
+                "redis.call(ARGV[4], KEYS[2], value); " +
+                "if tonumber(expire) <= tonumber(ARGV[3]) then " +
+                    "return 0;" +
+                "end;" +
+                "return 1;",
+                Arrays.asList(getRawName(), channelName, timeoutName),
+                permitId, 1, System.currentTimeMillis(), getSubscribeService().getPublishCommand());
+    }
+
+    @Override
+    public RFuture<Integer> tryReleaseAsync(List<String> permitsIds) {
+        if (permitsIds == null || permitsIds.isEmpty()) {
+            throw new IllegalArgumentException("permitIds can't be null or empty");
         }
 
-        byte[] id = ByteBufUtil.decodeHexDump(permitId);
-        return commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                  "local expire = redis.call('zscore', KEYS[3], ARGV[1]);" +
-                        "local removed = redis.call('zrem', KEYS[3], ARGV[1]);" +
-                        "if tonumber(removed) ~= 1 then " +
-                            "return 0;" +
-                        "end;" +
-                        "local value = redis.call('incrby', KEYS[1], ARGV[2]); " +
+        return commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
+                "local expiredIds = redis.call('zrangebyscore', KEYS[3], 0, ARGV[3], 'limit', 0, -1); " +
+                "if #expiredIds > 0 then " +
+                    "redis.call('zrem', KEYS[3], unpack(expiredIds)); " +
+                    "local value = redis.call('incrby', KEYS[1], #expiredIds); " +
+                    "if tonumber(value) > 0 then " +
                         "redis.call(ARGV[4], KEYS[2], value); " +
-                        "if tonumber(expire) <= tonumber(ARGV[3]) then " +
-                            "return 0;" +
-                        "end;" +
-                        "return 1;",
+                    "end; " +
+                "end; " +
+                "local keys = {}; " +
+                "for key in string.gmatch(ARGV[1], '%w+') do " +
+                    "keys[#keys + 1] = key; " +
+                "end; " +
+                "local removed = redis.call('zrem', KEYS[3], unpack(keys)); " +
+                "if tonumber(removed) == 0 then " +
+                    "return 0;" +
+                "end; " +
+                "redis.call('incrby', KEYS[1], removed); " +
+                "redis.call(ARGV[4], KEYS[2], removed); " +
+                "return removed;",
                 Arrays.asList(getRawName(), channelName, timeoutName),
-                id, permits, System.currentTimeMillis(), getSubscribeService().getPublishCommand());
+                permitsIds, permitsIds.size(), System.currentTimeMillis(), getSubscribeService().getPublishCommand());
     }
     
     @Override
@@ -642,12 +691,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
 
     @Override
     public RFuture<Void> releaseAsync(String permitId) {
-       return releaseAsync(permitId, 1);
-    }
-
-    @Override
-    public RFuture<Void> releaseAsync(String permitId, int permits) {
-        CompletionStage<Void> f = tryReleaseAsync(permitId, permits).handle((res, e) -> {
+        CompletionStage<Void> f = tryReleaseAsync(permitId).handle((res, e) -> {
             if (e != null) {
                 throw new CompletionException(e);
             }
@@ -658,6 +702,11 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             throw new CompletionException(new IllegalArgumentException("Permit with id " + permitId + " has already been released or doesn't exist"));
         });
         return new CompletableFutureWrapper<>(f);
+    }
+
+    @Override
+    public RFuture<Integer> releaseAsync(List<String> permitsIds) {
+        return tryReleaseAsync(permitsIds);
     }
 
     @Override
@@ -681,13 +730,13 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 "local expiredIds = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, -1); " +
                 "if #expiredIds > 0 then " +
                     "redis.call('zrem', KEYS[2], unpack(expiredIds)); " +
-                    "local value = redis.call('incrby', KEYS[1], #expiredIds); " + 
+                    "local value = redis.call('incrby', KEYS[1], #expiredIds); " +
                     "if tonumber(value) > 0 then " +
                         "redis.call(ARGV[2], KEYS[3], value); " +
-                    "end;" + 
+                    "end;" +
                     "return value; " +
                 "end; " +
-                "local ret = redis.call('get', KEYS[1]); " + 
+                "local ret = redis.call('get', KEYS[1]); " +
                 "return ret == false and 0 or ret;",
                 Arrays.asList(getRawName(), timeoutName, channelName),
                 System.currentTimeMillis(), getSubscribeService().getPublishCommand());
@@ -768,12 +817,12 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     public RFuture<Boolean> trySetPermitsAsync(int permits) {
         return commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local value = redis.call('get', KEYS[1]); " +
-                "if (value == false) then "
-                    + "redis.call('set', KEYS[1], ARGV[1]); "
-                    + "redis.call(ARGV[2], KEYS[2], ARGV[1]); "
-                    + "return 1;"
-                + "end;"
-                + "return 0;",
+                "if (value == false) then " +
+                    "redis.call('set', KEYS[1], ARGV[1]); " +
+                    "redis.call(ARGV[2], KEYS[2], ARGV[1]); " +
+                    "return 1;" +
+                "end;" +
+                "return 0;",
                 Arrays.asList(getRawName(), channelName),
                 permits, getSubscribeService().getPublishCommand());
     }
@@ -787,38 +836,37 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     public RFuture<Void> addPermitsAsync(int permits) {
         return commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 "local value = redis.call('get', KEYS[1]); " +
-                "if (value == false) then "
-                  + "value = 0;"
-              + "end;"
-              + "redis.call('set', KEYS[1], tonumber(value) + tonumber(ARGV[1])); "
-              + "if tonumber(ARGV[1]) > 0 then "
-                  + "redis.call(ARGV[2], KEYS[2], ARGV[1]); "
-              + "end;",
+                "if (value == false) then " +
+                    "value = 0;" +
+                "end;" +
+                "redis.call('set', KEYS[1], tonumber(value) + tonumber(ARGV[1])); " +
+                "if tonumber(ARGV[1]) > 0 then " +
+                    "redis.call(ARGV[2], KEYS[2], ARGV[1]); " +
+                "end;",
                 Arrays.asList(getRawName(), channelName), permits, getSubscribeService().getPublishCommand());
     }
 
     @Override
     public RFuture<Boolean> updateLeaseTimeAsync(String permitId, long leaseTime, TimeUnit unit) {
         long timeoutDate = calcTimeout(leaseTime, unit);
-        byte[] id = ByteBufUtil.decodeHexDump(permitId);
         return commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local expiredIds = redis.call('zrangebyscore', KEYS[2], 0, ARGV[3], 'limit', 0, -1); " +
                 "if #expiredIds > 0 then " +
                     "redis.call('zrem', KEYS[2], unpack(expiredIds)); " +
-                    "local value = redis.call('incrby', KEYS[1], #expiredIds); " + 
+                    "local value = redis.call('incrby', KEYS[1], #expiredIds); " +
                     "if tonumber(value) > 0 then " +
                         "redis.call(ARGV[4], KEYS[3], value); " +
-                    "end;" + 
+                    "end;" +
                 "end; " +
 
-                  "local value = redis.call('zscore', KEYS[2], ARGV[1]); " +
-                  "if (value ~= false) then "
-                    + "redis.call('zadd', KEYS[2], ARGV[2], ARGV[1]); "
-                    + "return 1;"
-                + "end;"
-                + "return 0;",
+                "local value = redis.call('zscore', KEYS[2], ARGV[1]); " +
+                "if (value ~= false) then " +
+                    "redis.call('zadd', KEYS[2], ARGV[2], ARGV[1]); " +
+                    "return 1;" +
+                "end;" +
+                "return 0;",
                 Arrays.asList(getRawName(), timeoutName, channelName),
-                id, timeoutDate, System.currentTimeMillis(), getSubscribeService().getPublishCommand());
+                permitId, timeoutDate, System.currentTimeMillis(), getSubscribeService().getPublishCommand());
     }
 
     @Override

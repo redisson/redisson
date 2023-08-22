@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -44,11 +45,11 @@ public interface RPermitExpirableSemaphore extends RExpirable, RPermitExpirableS
      * Waits if necessary until all permits became available.
      *
      * @param permits the number of permits to acquire
-     * @return permits id
+     * @return permits ids
      * @throws InterruptedException if the current thread is interrupted
      * @throws IllegalArgumentException if <code>permits</code> is negative
      */
-    String acquire(int permits) throws InterruptedException;
+    List<String> acquire(int permits) throws InterruptedException;
     
     /**
      * Acquires a permit with defined <code>leaseTime</code> and return its id.
@@ -62,17 +63,17 @@ public interface RPermitExpirableSemaphore extends RExpirable, RPermitExpirableS
     String acquire(long leaseTime, TimeUnit unit) throws InterruptedException;
     
     /**
-     * Acquires defined amount of <code>permits</code> with defined <code>leaseTime</code> and returns id.
+     * Acquires defined amount of <code>permits</code> with defined <code>leaseTime</code> and returns ids.
      * Waits if necessary until all permits became available.
      *
      * @param permits the number of permits to acquire
      * @param leaseTime permit lease time
      * @param unit time unit
-     * @return permits id
+     * @return permits ids
      * @throws InterruptedException if the current thread is interrupted
      * @throws IllegalArgumentException if <code>permits</code> is negative
      */
-    String acquire(int permits, long leaseTime, TimeUnit unit) throws InterruptedException;
+    List<String> acquire(int permits, long leaseTime, TimeUnit unit) throws InterruptedException;
 
     /**
      * Tries to acquire currently available permit and return its id.
@@ -83,14 +84,14 @@ public interface RPermitExpirableSemaphore extends RExpirable, RPermitExpirableS
     String tryAcquire();
     
     /**
-     * Tries to acquire defined amount of currently available <code>permits</code> and returns id.
+     * Tries to acquire defined amount of currently available <code>permits</code> and returns ids.
      *
      * @param permits the number of permits to acquire
-     * @return permits id if permits were acquired and {@code null}
+     * @return permits ids if permits were acquired and empty list
      *         otherwise
      * @throws IllegalArgumentException if <code>permits</code> is negative
      */
-    String tryAcquire(int permits);
+    List<String> tryAcquire(int permits);
     
     /**
      * Tries to acquire currently available permit and return its id.
@@ -102,6 +103,7 @@ public interface RPermitExpirableSemaphore extends RExpirable, RPermitExpirableS
      *         if the waiting time elapsed before a permit was acquired
      * @throws InterruptedException if the current thread is interrupted
      */
+
     String tryAcquire(long waitTime, TimeUnit unit) throws InterruptedException;
 
     /**
@@ -120,19 +122,19 @@ public interface RPermitExpirableSemaphore extends RExpirable, RPermitExpirableS
 
     /**
      * Tries to acquire defined amount of currently available <code>permits</code>
-     * with defined <code>leaseTime</code> and return id.
-     * Waits up to defined <code>waitTime</code> if necessary until a permit became available.
+     * with defined <code>leaseTime</code> and return ids.
+     * Waits up to defined <code>waitTime</code> if necessary until permits became available.
      *
      * @param permits the number of permits to acquire
      * @param waitTime the maximum time to wait
      * @param leaseTime permit lease time, use -1 to make it permanent
      * @param unit the time unit
-     * @return permit id if a permit was acquired and <code>null</code>
-     *         if the waiting time elapsed before a permit was acquired
+     * @return permits ids if permits were acquired and empty list
+     *         if the waiting time elapsed before permits were acquired
      * @throws InterruptedException if the current thread is interrupted
      * @throws IllegalArgumentException if <code>permits</code> is negative
      */
-    String tryAcquire(int permits, long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException;
+    List<String> tryAcquire(int permits, long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException;
 
     /**
      * Tries to release permit by its id.
@@ -145,16 +147,13 @@ public interface RPermitExpirableSemaphore extends RExpirable, RPermitExpirableS
     boolean tryRelease(String permitId);
     
     /**
-     * Tries to release defined amount of <code>permits</code> permits by id.
+     * Tries to release permits by their ids.
      *
-     * @param permitId permit id
-     * @param permits the number of permits to release
-     * @return <code>true</code> if a permits has been released and <code>false</code>
-     *         otherwise
-     * @throws IllegalArgumentException if <code>permitId</code> is null
-     * @throws IllegalArgumentException if <code>permits</code> is negative
+     * @param permitsIds - permits ids
+     * @return amount of released permits
+     * @throws IllegalArgumentException if <code>permitsIds</code> is null or empty
      */
-    boolean tryRelease(String permitId, int permits);
+    int tryRelease(List<String> permitsIds);
     
     /**
      * Releases a permit by its id. Increases the number of available permits.
@@ -166,15 +165,12 @@ public interface RPermitExpirableSemaphore extends RExpirable, RPermitExpirableS
     void release(String permitId);
     
     /**
-     * Releases a permit by its id. Increases the number of available permits.
-     * Throws an exception if permit id doesn't exist or has already been released.
+     * Releases a permits by their ids. Increases the number of available permits.
      *
-     * @param permitId - permit id
-     * @param permits the number of permits to release
-     * @throws IllegalArgumentException if <code>permitId</code> is null
-     * @throws IllegalArgumentException if <code>permits</code> is negative
+     * @param permitsIds - permits ids
+     * @throws IllegalArgumentException if <code>permitsIds</code> is null or empty
      */
-    void release(String permitId, int permits);
+    int release(List<String> permitsIds);
 
     /**
      * Returns number of available permits.

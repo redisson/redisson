@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -39,14 +40,14 @@ public interface RPermitExpirableSemaphoreAsync extends RExpirableAsync {
     RFuture<String> acquireAsync();
     
     /**
-     * Acquires defined amount of <code>permits</code>.
+     * Acquires defined amount of <code>permits</code> and returns their ids.
      * Waits if necessary until all permits became available.
      *
      * @param permits the number of permits to acquire
-     * @return permits id
+     * @return permits ids
      * @throws IllegalArgumentException if <code>permits</code> is negative
      */
-    RFuture<String> acquireAsync(int permits);
+    RFuture<List<String>> acquireAsync(int permits);
     
     /**
      * Acquires a permit with defined <code>leaseTime</code> and return its id.
@@ -59,16 +60,16 @@ public interface RPermitExpirableSemaphoreAsync extends RExpirableAsync {
     RFuture<String> acquireAsync(long leaseTime, TimeUnit unit);
     
     /**
-     * Acquires defined amount of <code>permits</code> and return its id.
+     * Acquires defined amount of <code>permits</code> and return their ids.
      * Waits if necessary until all permits became available.
      *
      * @param permits the number of permits to acquire
      * @param leaseTime permit lease time
      * @param unit time unit
-     * @return permits id
+     * @return permits ids
      * @throws IllegalArgumentException if <code>permits</code> is negative
      */
-    RFuture<String> acquireAsync(int permits, long leaseTime, TimeUnit unit);
+    RFuture<List<String>> acquireAsync(int permits, long leaseTime, TimeUnit unit);
     
     /**
      * Tries to acquire currently available permit and return its id.
@@ -79,14 +80,14 @@ public interface RPermitExpirableSemaphoreAsync extends RExpirableAsync {
     RFuture<String> tryAcquireAsync();
 
     /**
-     * Tries to acquire defined amount of currently available <code>permits</code> and returns id.
+     * Tries to acquire defined amount of currently available <code>permits</code> and returns their ids.
      *
      * @param permits the number of permits to acquire
-     * @return permits id if a permit was acquired and {@code null}
+     * @return permits ids if permits were acquired and empty list
      *         otherwise
      * @throws IllegalArgumentException if <code>permits</code> is negative
      */
-    RFuture<String> tryAcquireAsync(int permits);
+    RFuture<List<String>> tryAcquireAsync(int permits);
 
     /**
      * Tries to acquire currently available permit and return its id.
@@ -114,18 +115,18 @@ public interface RPermitExpirableSemaphoreAsync extends RExpirableAsync {
 
     /**
      * Tries to acquire defined amount of currently available <code>permits</code>
-     * with defined <code>leaseTime</code> and returns id.
-     * Waits up to defined <code>waitTime</code> if necessary until a permit became available.
+     * with defined <code>leaseTime</code> and returns their ids.
+     * Waits up to defined <code>waitTime</code> if necessary until permits became available.
      *
      * @param permits the number of permits to acquire
      * @param waitTime the maximum time to wait
      * @param leaseTime permit lease time, use -1 to make it permanent
      * @param unit the time unit
-     * @return permits id if a permit was acquired and <code>null</code>
-     *         if the waiting time elapsed before a permit was acquired
+     * @return permits ids if permits were acquired and empty list
+     *         if the waiting time elapsed before permit were acquired
      * @throws IllegalArgumentException if <code>permits</code> is negative
      */
-    RFuture<String> tryAcquireAsync(int permits, long waitTime, long leaseTime, TimeUnit unit);
+    RFuture<List<String>> tryAcquireAsync(int permits, long waitTime, long leaseTime, TimeUnit unit);
 
     /**
      * Tries to release permit by its id.
@@ -137,15 +138,13 @@ public interface RPermitExpirableSemaphoreAsync extends RExpirableAsync {
     RFuture<Boolean> tryReleaseAsync(String permitId);
 
     /**
-     * Tries to release defined amount of <code>permits</code> by id.
+     * Tries to release defined permits by their ids.
      *
-     * @param permitId permit id
-     * @param permits the number of permits to acquire
-     * @return <code>true</code> if a permit has been released and <code>false</code>
-     *         otherwise
-     * @throws IllegalArgumentException if <code>permits</code> is negative
+     * @param permitsIds - permits ids
+     * @return amount of released permits
+     * @throws IllegalArgumentException if <code>permitsIds</code> is null or empty
      */
-    RFuture<Boolean> tryReleaseAsync(String permitId, int permits);
+    RFuture<Integer> tryReleaseAsync(List<String> permitsIds);
 
     /**
      * Releases a permit by its id. Increases the number of available permits.
@@ -157,17 +156,14 @@ public interface RPermitExpirableSemaphoreAsync extends RExpirableAsync {
     RFuture<Void> releaseAsync(String permitId);
 
     /**
-     * Releases defined amount of <code>permits</code> by id.
-     * Increases the number of available permits by <code>permits</code> .
-     * Throws an exception if permit id doesn't exist or has already been released,
-     * or amount of <code>permits</code> is negative.
+     * Releases permits by their ids.
+     * Increases the number of available permits .
      *
-     * @param permitId - permit id
-     * @param permits the number of permits to release
-     * @return void
-     * @throws IllegalArgumentException if <code>permits</code> is negative
+     * @param permitsIds - permit id
+     * @return amount of released permits
+     * @throws IllegalArgumentException if <code>permitsIds</code> is null or empty
      */
-    RFuture<Void> releaseAsync(String permitId, int permits);
+    RFuture<Integer> releaseAsync(List<String> permitsIds);
 
     /**
      * Returns number of available permits.
