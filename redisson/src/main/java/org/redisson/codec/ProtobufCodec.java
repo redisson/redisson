@@ -189,7 +189,7 @@ public class ProtobufCodec extends BaseCodec {
 
     }
 
-    private static abstract class BasicSerializerFactoryConcreteGetter extends BasicSerializerFactory {
+    private abstract static class BasicSerializerFactoryConcreteGetter extends BasicSerializerFactory {
         protected BasicSerializerFactoryConcreteGetter(SerializerFactoryConfig config) {
             super(config);
         }
