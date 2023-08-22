@@ -16,7 +16,6 @@
 package org.redisson;
 
 import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
 import org.redisson.api.RFuture;
 import org.redisson.api.RPermitExpirableSemaphore;
 import org.redisson.client.codec.ByteArrayCodec;
@@ -70,19 +69,11 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         List<String> ids = acquire(1, leaseTime, timeUnit);
         return getFirstOrNull(ids);
     }
-    
-    @Override
-    public RFuture<String> acquireAsync(long leaseTime, TimeUnit timeUnit) {
-        CompletionStage<String> future = acquireAsync(1, leaseTime, timeUnit)
-                .thenApply(RedissonPermitExpirableSemaphore::getFirstOrNull);
-
-        return new CompletableFutureWrapper<>(future);
-    }
 
     @Override
-    public List<String> acquire(int permits, long ttl, TimeUnit timeUnit) throws InterruptedException {
-        List<String> ids = tryAcquire(permits, ttl, timeUnit);
-        if (!ids.isEmpty() && !hasOnlyNextTimeout(ids)) {
+    public List<String> acquire(int permits, long leaseTime, TimeUnit timeUnit) throws InterruptedException {
+        List<String> ids = tryAcquire(permits, leaseTime, timeUnit);
+        if (!ids.isEmpty() && !hasOnlyNearestTimeout(ids)) {
             return ids;
         }
 
@@ -92,10 +83,10 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         try {
             while (true) {
                 Long nearestTimeout;
-                ids = tryAcquire(permits, ttl, timeUnit);
+                ids = tryAcquire(permits, leaseTime, timeUnit);
                 if (ids.isEmpty()) {
                     nearestTimeout = null;
-                } else if (hasOnlyNextTimeout(ids)) {
+                } else if (hasOnlyNearestTimeout(ids)) {
                     nearestTimeout = Long.parseLong(ids.get(0).substring(1)) - System.currentTimeMillis();
                 } else {
                     return ids;
@@ -110,7 +101,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         } finally {
             unsubscribe(entry);
         }
-//        return get(acquireAsync(permits, ttl, timeUnit));
+//        return get(acquireAsync(permits, leaseTime, timeUnit));
     }
 
     @Override
@@ -126,22 +117,30 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     }
 
     @Override
-    public RFuture<List<String>> acquireAsync(int permits, long ttl, TimeUnit timeUnit) {
-        long timeoutDate = calcTimeout(ttl, timeUnit);
+    public RFuture<String> acquireAsync(long leaseTime, TimeUnit timeUnit) {
+        CompletionStage<String> future = acquireAsync(1, leaseTime, timeUnit)
+                .thenApply(RedissonPermitExpirableSemaphore::getFirstOrNull);
+
+        return new CompletableFutureWrapper<>(future);
+    }
+    
+    @Override
+    public RFuture<List<String>> acquireAsync(int permits, long leaseTime, TimeUnit timeUnit) {
+        long timeoutDate = calcTimeout(leaseTime, timeUnit);
         RFuture<List<String>> tryAcquireFuture = tryAcquireAsync(permits, timeoutDate);
         CompletionStage<List<String>> f = tryAcquireFuture.thenCompose(ids -> {
-            if (!ids.isEmpty() && !hasOnlyNextTimeout(ids)) {
+            if (!ids.isEmpty() && !hasOnlyNearestTimeout(ids)) {
                 return CompletableFuture.completedFuture(ids);
             }
 
             CompletableFuture<RedissonLockEntry> subscribeFuture = subscribe();
             semaphorePubSub.timeout(subscribeFuture);
-            return subscribeFuture.thenCompose(res -> acquireAsync(permits, res, ttl, timeUnit));
+            return subscribeFuture.thenCompose(res -> acquireAsync(permits, res, leaseTime, timeUnit));
         });
         f.whenComplete((r, e) -> {
             if (f.toCompletableFuture().isCancelled()) {
                 tryAcquireFuture.whenComplete((ids, ex) -> {
-                    if (!ids.isEmpty() && !hasOnlyNextTimeout(ids)) {
+                    if (!ids.isEmpty() && !hasOnlyNearestTimeout(ids)) {
                         releaseAsync(ids);
                     }
                 });
@@ -150,7 +149,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         return new CompletableFutureWrapper<>(f);
     }
     
-    private void tryAcquireAsync(AtomicLong time, int permits, RedissonLockEntry entry, CompletableFuture<List<String>> result, long ttl, TimeUnit timeUnit) {
+    private void tryAcquireAsync(AtomicLong time, int permits, RedissonLockEntry entry, CompletableFuture<List<String>> result, long leaseTime, TimeUnit timeUnit) {
         if (result.isDone()) {
             unsubscribe(entry);
             return;
@@ -162,7 +161,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             return;
         }
         
-        long timeoutDate = calcTimeout(ttl, timeUnit);
+        long timeoutDate = calcTimeout(leaseTime, timeUnit);
         long curr = System.currentTimeMillis();
         RFuture<List<String>> tryAcquireFuture = tryAcquireAsync(permits, timeoutDate);
         tryAcquireFuture.whenComplete((ids, e) -> {
@@ -175,7 +174,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             Long nearestTimeout;
             if (ids.isEmpty()) {
                 nearestTimeout = null;
-            } else if (hasOnlyNextTimeout(ids)) {
+            } else if (hasOnlyNearestTimeout(ids)) {
                 nearestTimeout = Long.parseLong(ids.get(0).substring(1)) - System.currentTimeMillis();
             } else {
                 unsubscribe(entry);
@@ -197,24 +196,21 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             // waiting for message
             long current = System.currentTimeMillis();
             if (entry.getLatch().tryAcquire()) {
-                tryAcquireAsync(time, permits, entry, result, ttl, timeUnit);
+                tryAcquireAsync(time, permits, entry, result, leaseTime, timeUnit);
             } else {
                 AtomicReference<Timeout> waitTimeoutFutureRef = new AtomicReference<>();
 
                 Timeout scheduledFuture;
                 if (nearestTimeout != null) {
-                    scheduledFuture = getServiceManager().newTimeout(new TimerTask() {
-                        @Override
-                        public void run(Timeout timeout) throws Exception {
-                            if (waitTimeoutFutureRef.get() != null && !waitTimeoutFutureRef.get().cancel()) {
-                                return;
-                            }
-                            
-                            long elapsed = System.currentTimeMillis() - current;
-                            time.addAndGet(-elapsed);
-
-                            tryAcquireAsync(time, permits, entry, result, ttl, timeUnit);
+                    scheduledFuture = getServiceManager().newTimeout(timeout -> {
+                        if (waitTimeoutFutureRef.get() != null && !waitTimeoutFutureRef.get().cancel()) {
+                            return;
                         }
+                        
+                        long elapsed = System.currentTimeMillis() - current;
+                        time.addAndGet(-elapsed);
+
+                        tryAcquireAsync(time, permits, entry, result, leaseTime, timeUnit);
                     }, nearestTimeout, TimeUnit.MILLISECONDS);
                 } else {
                     scheduledFuture = null;
@@ -233,24 +229,21 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                     long elapsed = System.currentTimeMillis() - current;
                     time.addAndGet(-elapsed);
 
-                    tryAcquireAsync(time, permits, entry, result, ttl, timeUnit);
+                    tryAcquireAsync(time, permits, entry, result, leaseTime, timeUnit);
                 };
                 entry.addListener(listener);
 
                 long t = time.get();
-                Timeout waitTimeoutFuture = getServiceManager().newTimeout(new TimerTask() {
-                    @Override
-                    public void run(Timeout timeout) throws Exception {
-                        if (scheduledFuture != null && !scheduledFuture.cancel()) {
-                            return;
-                        }
+                Timeout waitTimeoutFuture = getServiceManager().newTimeout(timeout -> {
+                    if (scheduledFuture != null && !scheduledFuture.cancel()) {
+                        return;
+                    }
 
-                        if (entry.removeListener(listener)) {
-                            long elapsed = System.currentTimeMillis() - current;
-                            time.addAndGet(-elapsed);
-                            
-                            tryAcquireAsync(time, permits, entry, result, ttl, timeUnit);
-                        }
+                    if (entry.removeListener(listener)) {
+                        long elapsed = System.currentTimeMillis() - current;
+                        time.addAndGet(-elapsed);
+                        
+                        tryAcquireAsync(time, permits, entry, result, leaseTime, timeUnit);
                     }
                 }, t, TimeUnit.MILLISECONDS);
                 waitTimeoutFutureRef.set(waitTimeoutFuture);
@@ -259,8 +252,8 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         
     }
 
-    private CompletableFuture<List<String>> acquireAsync(int permits, RedissonLockEntry entry, long ttl, TimeUnit timeUnit) {
-        long timeoutDate = calcTimeout(ttl, timeUnit);
+    private CompletableFuture<List<String>> acquireAsync(int permits, RedissonLockEntry entry, long leaseTime, TimeUnit timeUnit) {
+        long timeoutDate = calcTimeout(leaseTime, timeUnit);
         CompletableFuture<List<String>> tryAcquireFuture = tryAcquireAsync(permits, timeoutDate).toCompletableFuture();
         return tryAcquireFuture.whenComplete((p, e) -> {
             if (e != null) {
@@ -270,7 +263,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             Long nearestTimeout;
             if (ids.isEmpty()) {
                 nearestTimeout = null;
-            } else if (hasOnlyNextTimeout(ids)) {
+            } else if (hasOnlyNearestTimeout(ids)) {
                 nearestTimeout = Long.parseLong(ids.get(0).substring(1)) - System.currentTimeMillis();
             } else {
                 unsubscribe(entry);
@@ -278,14 +271,14 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             }
 
             if (entry.getLatch().tryAcquire(permits)) {
-                return acquireAsync(permits, entry, ttl, timeUnit);
+                return acquireAsync(permits, entry, leaseTime, timeUnit);
             }
 
             CompletableFuture<List<String>> res = new CompletableFuture<>();
             Timeout scheduledFuture;
             if (nearestTimeout != null) {
                 scheduledFuture = getServiceManager().newTimeout(timeout -> {
-                    CompletableFuture<List<String>> r = acquireAsync(permits, entry, ttl, timeUnit);
+                    CompletableFuture<List<String>> r = acquireAsync(permits, entry, leaseTime, timeUnit);
                     commandExecutor.transfer(r, res);
                 }, nearestTimeout, TimeUnit.MILLISECONDS);
             } else {
@@ -297,7 +290,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                     entry.getLatch().release();
                     return;
                 }
-                CompletableFuture<List<String>> r = acquireAsync(permits, entry, ttl, timeUnit);
+                CompletableFuture<List<String>> r = acquireAsync(permits, entry, leaseTime, timeUnit);
                 commandExecutor.transfer(r, res);
             };
             entry.addListener(listener);
@@ -314,20 +307,20 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     @Override
     public List<String> tryAcquire(int permits) {
         List<String> ids = tryAcquire(permits, -1, TimeUnit.MILLISECONDS);
-        if (hasOnlyNextTimeout(ids)) {
+        if (hasOnlyNearestTimeout(ids)) {
             return Collections.emptyList();
         }
         return ids;
     }
 
-    private List<String> tryAcquire(int permits, long ttl, TimeUnit timeUnit) {
-        long timeoutDate = calcTimeout(ttl, timeUnit);
+    private List<String> tryAcquire(int permits, long leaseTime, TimeUnit timeUnit) {
+        long timeoutDate = calcTimeout(leaseTime, timeUnit);
         return get(tryAcquireAsync(permits, timeoutDate));
     }
 
-    private long calcTimeout(long ttl, TimeUnit timeUnit) {
-        if (ttl != -1) {
-            return System.currentTimeMillis() + timeUnit.toMillis(ttl);
+    private long calcTimeout(long leaseTime, TimeUnit timeUnit) {
+        if (leaseTime != -1) {
+            return System.currentTimeMillis() + timeUnit.toMillis(leaseTime);
         }
         return nonExpirableTimeout;
     }
@@ -343,13 +336,13 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     public RFuture<List<String>> tryAcquireAsync(int permits) {
         CompletableFuture<List<String>> future = tryAcquireAsync(permits, nonExpirableTimeout).toCompletableFuture()
                 .thenApply(ids -> {
-                    if (hasOnlyNextTimeout(ids)) {
+                    if (hasOnlyNearestTimeout(ids)) {
                         return null;
                     }
                     return ids;
                 });
         future.whenComplete((ids, e) -> {
-            if (future.isCancelled() && !ids.isEmpty() && !hasOnlyNextTimeout(ids)) {
+            if (future.isCancelled() && !ids.isEmpty() && !hasOnlyNearestTimeout(ids)) {
                 releaseAsync(ids);
             }
         });
@@ -423,25 +416,25 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     }
     
     @Override
-    public String tryAcquire(long waitTime, long ttl, TimeUnit unit) throws InterruptedException {
-        List<String> ids = tryAcquire(1, waitTime, ttl, unit);
+    public String tryAcquire(long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException {
+        List<String> ids = tryAcquire(1, waitTime, leaseTime, unit);
         return getFirstOrNull(ids);
     }
     
     @Override
-    public RFuture<String> tryAcquireAsync(long waitTime, long ttl, TimeUnit unit) {
-        CompletionStage<String> future = tryAcquireAsync(1, waitTime, ttl, unit)
+    public RFuture<String> tryAcquireAsync(long waitTime, long leaseTime, TimeUnit unit) {
+        CompletionStage<String> future = tryAcquireAsync(1, waitTime, leaseTime, unit)
                 .thenApply(RedissonPermitExpirableSemaphore::getFirstOrNull);
         return new CompletableFutureWrapper<>(future);
     }
 
     @Override
-    public List<String> tryAcquire(int permits, long waitTime, long ttl, TimeUnit unit) throws InterruptedException {
+    public List<String> tryAcquire(int permits, long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException {
         long time = unit.toMillis(waitTime);
         long current = System.currentTimeMillis();
 
-        List<String> ids = tryAcquire(permits, ttl, unit);
-        if (!ids.isEmpty() && !hasOnlyNextTimeout(ids)) {
+        List<String> ids = tryAcquire(permits, leaseTime, unit);
+        if (!ids.isEmpty() && !hasOnlyNearestTimeout(ids)) {
             return ids;
         }
 
@@ -468,10 +461,10 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             while (true) {
                 current = System.currentTimeMillis();
                 Long nearestTimeout;
-                ids = tryAcquire(permits, ttl, unit);
+                ids = tryAcquire(permits, leaseTime, unit);
                 if (ids.isEmpty()) {
                     nearestTimeout = null;
-                } else if (hasOnlyNextTimeout(ids)) {
+                } else if (hasOnlyNearestTimeout(ids)) {
                     nearestTimeout = Long.parseLong(ids.get(0).substring(1)) - System.currentTimeMillis();
                 } else {
                     return ids;
@@ -500,22 +493,22 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         } finally {
             unsubscribe(entry);
         }
-//        return get(tryAcquireAsync(permits, waitTime, ttl, unit));
+//        return get(tryAcquireAsync(permits, waitTime, leaseTime, unit));
     }
 
     @Override
-    public RFuture<List<String>> tryAcquireAsync(int permits, long waitTime, long ttl, TimeUnit timeUnit) {
+    public RFuture<List<String>> tryAcquireAsync(int permits, long waitTime, long leaseTime, TimeUnit timeUnit) {
         CompletableFuture<List<String>> result = new CompletableFuture<>();
         AtomicLong time = new AtomicLong(timeUnit.toMillis(waitTime));
         long curr = System.currentTimeMillis();
-        long timeoutDate = calcTimeout(ttl, timeUnit);
+        long timeoutDate = calcTimeout(leaseTime, timeUnit);
         tryAcquireAsync(permits, timeoutDate).whenComplete((ids, e) -> {
             if (e != null) {
                 result.completeExceptionally(e);
                 return;
             }
 
-            if (!ids.isEmpty() && !hasOnlyNextTimeout(ids)) {
+            if (!ids.isEmpty() && !hasOnlyNearestTimeout(ids)) {
                 if (!result.complete(ids)) {
                     releaseAsync(ids);
                 }
@@ -531,7 +524,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             }
             
             long current = System.currentTimeMillis();
-            AtomicReference<Timeout> futureRef = new AtomicReference<Timeout>();
+            AtomicReference<Timeout> futureRef = new AtomicReference<>();
             CompletableFuture<RedissonLockEntry> subscribeFuture = subscribe();
             subscribeFuture.whenComplete((r, ex) -> {
                 if (ex != null) {
@@ -546,16 +539,13 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 long elapsed = System.currentTimeMillis() - current;
                 time.addAndGet(-elapsed);
                 
-                tryAcquireAsync(time, permits, r, result, ttl, timeUnit);
+                tryAcquireAsync(time, permits, r, result, leaseTime, timeUnit);
             });
             
             if (!subscribeFuture.isDone()) {
-                Timeout scheduledFuture = getServiceManager().newTimeout(new TimerTask() {
-                    @Override
-                    public void run(Timeout timeout) throws Exception {
-                        if (!subscribeFuture.isDone()) {
-                            result.complete(null);
-                        }
+                Timeout scheduledFuture = getServiceManager().newTimeout(timeout -> {
+                    if (!subscribeFuture.isDone()) {
+                        result.complete(null);
                     }
                 }, time.get(), TimeUnit.MILLISECONDS);
                 futureRef.set(scheduledFuture);
@@ -576,7 +566,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     @Override
     public String tryAcquire(long waitTime, TimeUnit unit) throws InterruptedException {
         List<String> ids = tryAcquire(1, waitTime, -1, unit);
-        if (ids.isEmpty() || hasOnlyNextTimeout(ids)) {
+        if (ids.isEmpty() || hasOnlyNearestTimeout(ids)) {
             return null;
         }
         return ids.get(0);
@@ -865,7 +855,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         return get(updateLeaseTimeAsync(permitId, leaseTime, unit));
     }
 
-    private static boolean hasOnlyNextTimeout(List<String> ids) {
+    private static boolean hasOnlyNearestTimeout(List<String> ids) {
         return ids.size() == 1 && ids.get(0).startsWith(":");
     }
 
