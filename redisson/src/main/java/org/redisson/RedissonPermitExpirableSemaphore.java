@@ -74,7 +74,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     @Override
     public RFuture<String> acquireAsync(long leaseTime, TimeUnit timeUnit) {
         CompletionStage<String> future = acquireAsync(1, leaseTime, timeUnit)
-                .thenApply(f -> f.get(0));
+                .thenApply(RedissonPermitExpirableSemaphore::getFirstOrNull);
 
         return new CompletableFutureWrapper<>(future);
     }
@@ -112,11 +112,12 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         }
 //        return get(acquireAsync(permits, ttl, timeUnit));
     }
-    
+
+    @Override
     public RFuture<String> acquireAsync() {
-        RFuture<List<String>> ids = acquireAsync(1, -1, TimeUnit.MILLISECONDS);
-        CompletionStage<String> f = ids.thenApply(r -> r.get(0));
-        return new CompletableFutureWrapper<>(f);
+        CompletionStage<String> future = acquireAsync(1)
+                .thenApply(RedissonPermitExpirableSemaphore::getFirstOrNull);
+        return new CompletableFutureWrapper<>(future);
     }
     
     @Override
