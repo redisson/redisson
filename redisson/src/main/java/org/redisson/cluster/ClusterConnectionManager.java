@@ -499,7 +499,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 continue;
             }
 
-            MasterSlaveEntry entry = getEntry(currentPart.slots().nextSetBit(0));
+            MasterSlaveEntry entry = getEntry(currentPart.getSlotRanges().iterator().next().getStartSlot());
             // should be invoked first in order to remove stale failedSlaveAddresses
             CompletableFuture<Set<RedisURI>> addedSlavesFuture = addRemoveSlaves(entry, currentPart, newPart);
             CompletableFuture<Void> f = addedSlavesFuture.thenCompose(addedSlaves -> {
@@ -717,13 +717,14 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
         // https://github.com/redisson/redisson/issues/3635
         Map<String, MasterSlaveEntry> nodeEntries = clusterLastPartitions.stream().collect(Collectors.toMap(p -> p.getNodeId(),
-                                                                                    p -> getEntry(p.slots().nextSetBit(0))));
+                                                                                    p -> getEntry(p.getSlotRanges().iterator().next().getStartSlot())));
 
         Set<Integer> changedSlots = new HashSet<>();
         for (ClusterPartition currentPartition : clusterLastPartitions) {
             String nodeId = currentPartition.getNodeId();
             for (ClusterPartition newPartition : newPartitions) {
-                if (!Objects.equals(nodeId, newPartition.getNodeId())) {
+                if (!Objects.equals(nodeId, newPartition.getNodeId())
+                        || newPartition.getSlotRanges().equals(currentPartition.getSlotRanges())) {
                     continue;
                 }
 
