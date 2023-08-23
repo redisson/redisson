@@ -78,26 +78,13 @@ public class ClusterPartition {
         return masterFail;
     }
 
-    public void addSlots(BitSet slots) {
-        this.slots.or(slots);
-    }
-
-    public void removeSlots(BitSet slots) {
-        this.slots.andNot(slots);
-    }
-
     public void addSlotRanges(Set<ClusterSlotRange> ranges) {
         for (ClusterSlotRange clusterSlotRange : ranges) {
             slots.set(clusterSlotRange.getStartSlot(), clusterSlotRange.getEndSlot() + 1);
         }
         slotRanges.addAll(ranges);
     }
-    public void removeSlotRanges(Set<ClusterSlotRange> ranges) {
-        for (ClusterSlotRange clusterSlotRange : ranges) {
-            slots.clear(clusterSlotRange.getStartSlot(), clusterSlotRange.getEndSlot() + 1);
-        }
-        slotRanges.removeAll(ranges);
-    }
+
     public Set<ClusterSlotRange> getSlotRanges() {
         return slotRanges;
     }
