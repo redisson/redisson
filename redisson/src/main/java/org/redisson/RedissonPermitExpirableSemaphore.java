@@ -708,7 +708,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 "end;" +
                 "local acquired = redis.call('zcount', KEYS[3], 0, '+inf'); " +
                 "local maximum = (acquired == false and 0 or acquired) + tonumber(available); " +
-                "if (maximum == ARGV[1]) then " +
+                "if (maximum == tonumber(ARGV[1])) then " +
                     "return;" +
                 "end;" +
                 "redis.call('incrby', KEYS[1], tonumber(ARGV[1]) - maximum); " +
