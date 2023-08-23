@@ -68,7 +68,7 @@ public class ConfigSupport {
 
     }
 
-    @JsonIgnoreProperties({"clusterConfig", "sentinelConfig", "slaveNotUsed"})
+    @JsonIgnoreProperties({"clusterConfig", "sentinelConfig", "singleConfig"})
     public static class ConfigMixIn {
 
         @JsonProperty
