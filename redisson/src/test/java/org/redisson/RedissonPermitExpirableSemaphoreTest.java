@@ -175,7 +175,7 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
-            }
+            };
         };
 
         t.start();
@@ -206,7 +206,7 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
-            }
+            };
         };
 
         t.start();
@@ -414,10 +414,10 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
             RPermitExpirableSemaphore s1 = redisson.getPermitExpirableSemaphore("test");
             try {
                 String permitId = s1.acquire();
-                int value = lockedCounter.get();
-                lockedCounter.set(value + 1);
-                s1.release(permitId);
-            } catch (InterruptedException e) {
+            int value = lockedCounter.get();
+            lockedCounter.set(value + 1);
+            s1.release(permitId);
+            }catch (InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
@@ -443,9 +443,10 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                    lockedCounter.getAndIncrement();
+                    int value = lockedCounter.get();
+                    lockedCounter.set(value + 1);
                     r.getPermitExpirableSemaphore("test").release(permitId);
-                } catch (InterruptedException e1) {
+                }catch (InterruptedException e1) {
                     // TODO Auto-generated catch block
                     e1.printStackTrace();
                 }

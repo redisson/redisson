@@ -103,7 +103,6 @@ public interface RPermitExpirableSemaphore extends RExpirable, RPermitExpirableS
      *         if the waiting time elapsed before a permit was acquired
      * @throws InterruptedException if the current thread is interrupted
      */
-
     String tryAcquire(long waitTime, TimeUnit unit) throws InterruptedException;
 
     /**
