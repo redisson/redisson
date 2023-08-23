@@ -18,7 +18,6 @@ package org.redisson.api;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
@@ -49,7 +48,7 @@ public interface RPermitExpirableSemaphoreReactive extends RExpirableReactive {
      * @param permits the number of permits to acquire
      * @return permits ids
      */
-    Flux<String> acquire(int permits);
+    Mono<List<String>> acquire(int permits);
     
     /**
      * Acquires a permit with defined <code>leaseTime</code> and return its id.
@@ -70,7 +69,7 @@ public interface RPermitExpirableSemaphoreReactive extends RExpirableReactive {
      * @param unit time unit
      * @return permits ids
      */
-    Flux<String> acquire(int permits, long leaseTime, TimeUnit unit);
+    Mono<List<String>> acquire(int permits, long leaseTime, TimeUnit unit);
     
     /**
      * Tries to acquire currently available permit and return its id.
@@ -87,7 +86,7 @@ public interface RPermitExpirableSemaphoreReactive extends RExpirableReactive {
      * @return permits ids if permits were acquired and empty collection
      *         otherwise
      */
-    Flux<String> tryAcquire(int permits);
+    Mono<List<String>> tryAcquire(int permits);
 
     /**
      * Tries to acquire currently available permit and return its id.
@@ -125,7 +124,7 @@ public interface RPermitExpirableSemaphoreReactive extends RExpirableReactive {
      * @return permits ids if permits were acquired and empty collection
      *         if the waiting time elapsed before permits were acquired
      */
-    Flux<String> tryAcquire(int permits, long waitTime, long leaseTime, TimeUnit unit);
+    Mono<List<String>> tryAcquire(int permits, long waitTime, long leaseTime, TimeUnit unit);
 
     /**
      * Tries to release permit by its id.

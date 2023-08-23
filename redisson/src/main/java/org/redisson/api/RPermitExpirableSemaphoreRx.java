@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.rxjava3.core.Completable;
-import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
 
@@ -77,7 +76,7 @@ public interface RPermitExpirableSemaphoreRx extends RExpirableRx {
      * @param permits - the number of permits to acquire
      * @return permits ids
      */
-    Flowable<String> acquire(int permits);
+    Single<List<String>> acquire(int permits);
 
     /**
      * Acquires a permit with defined lease time from this semaphore, 
@@ -126,7 +125,7 @@ public interface RPermitExpirableSemaphoreRx extends RExpirableRx {
      * @param unit - time unit
      * @return permits ids
      */
-    Flowable<String> acquire(int permits, long leaseTime, TimeUnit unit);
+    Single<List<String>> acquire(int permits, long leaseTime, TimeUnit unit);
 
     /**
      * Acquires a permit only if one is available at the
@@ -159,7 +158,7 @@ public interface RPermitExpirableSemaphoreRx extends RExpirableRx {
      * @return permits ids if permit were acquired and empty collection
      *         otherwise
      */
-    Flowable<String> tryAcquire(int permits);
+    Single<List<String>> tryAcquire(int permits);
 
     /**
      * Acquires a permit from this semaphore, if one becomes available
@@ -263,7 +262,7 @@ public interface RPermitExpirableSemaphoreRx extends RExpirableRx {
      * @return permits ids if permit were acquired and empty collection
      *         if the waiting time elapsed before permits were acquired
      */
-    Flowable<String> tryAcquire(int permits, long waitTime, long leaseTime, TimeUnit unit);
+    Single<List<String>> tryAcquire(int permits, long waitTime, long leaseTime, TimeUnit unit);
 
     /**
      * Releases a permit by its id, returning it to the semaphore.
