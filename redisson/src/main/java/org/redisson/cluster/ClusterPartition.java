@@ -40,9 +40,9 @@ public class ClusterPartition {
     private RedisURI masterAddress;
     private final Set<RedisURI> slaveAddresses = new HashSet<>();
     private final Set<RedisURI> failedSlaves = new HashSet<>();
-    
-    private final BitSet slots = new BitSet(MAX_SLOT);
-    private final Set<ClusterSlotRange> slotRanges = new HashSet<ClusterSlotRange>();
+
+    private BitSet slots;
+    private Set<ClusterSlotRange> slotRanges = Collections.emptySet();
 
     private ClusterPartition parent;
     
@@ -78,20 +78,21 @@ public class ClusterPartition {
         return masterFail;
     }
 
-    public void addSlotRanges(Set<ClusterSlotRange> ranges) {
+    public void updateSlotRanges(Set<ClusterSlotRange> ranges, BitSet slots) {
+        this.slotRanges = ranges;
+        this.slots = slots;
+    }
+
+    public void setSlotRanges(Set<ClusterSlotRange> ranges) {
+        slots = new BitSet(MAX_SLOT);
         for (ClusterSlotRange clusterSlotRange : ranges) {
             slots.set(clusterSlotRange.getStartSlot(), clusterSlotRange.getEndSlot() + 1);
         }
-        slotRanges.addAll(ranges);
+        slotRanges = ranges;
     }
 
     public Set<ClusterSlotRange> getSlotRanges() {
-        return slotRanges;
-    }
-
-    public void clear() {
-        slotRanges.clear();
-        this.slots.clear();
+        return Collections.unmodifiableSet(slotRanges);
     }
 
     public Iterable<Integer> getSlots() {

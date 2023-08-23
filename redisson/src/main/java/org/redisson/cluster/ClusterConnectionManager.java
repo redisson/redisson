@@ -756,8 +756,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
                 if (!addedSlots.isEmpty() || !removedSlots.isEmpty()) {
                     // https://github.com/redisson/redisson/issues/3695, slotRanges not update when slots of node changed.
-                    currentPartition.clear();
-                    currentPartition.addSlotRanges(newPartition.getSlotRanges());
+                    currentPartition.updateSlotRanges(newPartition.getSlotRanges(), newPartition.slots());
                 }
                 break;
             }
@@ -852,7 +851,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     }
                 } else if (clusterNodeInfo.containsFlag(Flag.MASTER)) {
                     ClusterPartition masterPartition = partitions.computeIfAbsent(masterId, k -> new ClusterPartition(masterId));
-                    masterPartition.addSlotRanges(clusterNodeInfo.getSlotRanges());
+                    masterPartition.setSlotRanges(clusterNodeInfo.getSlotRanges());
                     masterPartition.setMasterAddress(address);
                     masterPartition.setType(Type.MASTER);
                     if (clusterNodeInfo.containsFlag(Flag.FAIL)) {
