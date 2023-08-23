@@ -15,9 +15,11 @@
  */
 package org.redisson.api;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
 
@@ -54,7 +56,29 @@ public interface RPermitExpirableSemaphoreRx extends RExpirableRx {
      * @return permit id
      */
     Single<String> acquire();
-    
+
+    /**
+     * Acquires defined amount of <code>permits</code> from this semaphore, blocking until enough permits are
+     * available, or the thread is {@linkplain Thread#interrupt interrupted}.
+     *
+     * <p>Acquires <code>permits</code> permits, if they are available and returns their ids,
+     * reducing the number of available permits by <code>permits</code>.
+     *
+     * <p>If not enough permits are available then the current thread becomes
+     * disabled for thread scheduling purposes and lies dormant until
+     * one of two things happens:
+     * <ul>
+     * <li>Some other thread invokes the {@link #release(String)} method for this
+     * semaphore and the current thread is next to be assigned a permit; or
+     * <li>Some other thread {@linkplain Thread#interrupt interrupts}
+     * the current thread.
+     * </ul>
+     * 
+     * @param permits - the number of permits to acquire
+     * @return permits ids
+     */
+    Flowable<String> acquire(int permits);
+
     /**
      * Acquires a permit with defined lease time from this semaphore, 
      * blocking until one is available, 
@@ -78,7 +102,32 @@ public interface RPermitExpirableSemaphoreRx extends RExpirableRx {
      * @return permit id
      */
     Single<String> acquire(long leaseTime, TimeUnit unit);
-    
+
+    /**
+     * Acquires defined amount of <code>permits</code> with defined lease time from this semaphore, 
+     * blocking until enough permits are available, 
+     * or the thread is {@linkplain Thread#interrupt interrupted}.
+     *
+     * <p>Acquires <code>permits</code> permits, if they are available and returns their ids,
+     * reducing the number of available permits by <code>permits</code>.
+     *
+     * <p>If not enough permits are available then the current thread becomes
+     * disabled for thread scheduling purposes and lies dormant until
+     * one of two things happens:
+     * <ul>
+     * <li>Some other thread invokes the {@link #release} method for this
+     * semaphore and the current thread is next to be assigned a permit; or
+     * <li>Some other thread {@linkplain Thread#interrupt interrupts}
+     * the current thread.
+     * </ul>
+     *
+     * @param permits - the number of permits to acquire
+     * @param leaseTime - permit lease time
+     * @param unit - time unit
+     * @return permits ids
+     */
+    Flowable<String> acquire(int permits, long leaseTime, TimeUnit unit);
+
     /**
      * Acquires a permit only if one is available at the
      * time of invocation.
@@ -94,6 +143,23 @@ public interface RPermitExpirableSemaphoreRx extends RExpirableRx {
      *         otherwise
      */
     Maybe<String> tryAcquire();
+
+    /**
+     * Acquires defined amount of <code>permits</code> only if they are available at the
+     * time of invocation.
+     *
+     * <p>Acquires <code>permits</code> permits, if they are available and returns immediately,
+     * with the permits ids,
+     * reducing the number of available permits by <code>permits</code>.
+     *
+     * <p>If not enough permits are available then this method will return
+     * immediately with empty collection.
+     *
+     * @param permits - the number of permits to acquire
+     * @return permits ids if permit were acquired and empty collection
+     *         otherwise
+     */
+    Flowable<String> tryAcquire(int permits);
 
     /**
      * Acquires a permit from this semaphore, if one becomes available
@@ -164,6 +230,42 @@ public interface RPermitExpirableSemaphoreRx extends RExpirableRx {
     Maybe<String> tryAcquire(long waitTime, long leaseTime, TimeUnit unit);
 
     /**
+     * Acquires defined amount of <code>permits</code> with defined lease time from this semaphore,
+     * if enough permits become available
+     * within the given waiting time and the current thread has not
+     * been {@linkplain Thread#interrupt interrupted}.
+     *
+     * <p>Acquires <code>permits</code> permits, if they are available and returns immediately,
+     * with the permits ids,
+     * reducing the number of available permits by <code>permits</code>.
+     *
+     * <p>If not enough permits are available then the current thread becomes
+     * disabled for thread scheduling purposes and lies dormant until
+     * one of three things happens:
+     * <ul>
+     * <li>Some other thread invokes the {@link #release(String)} method for this
+     * semaphore and the current thread is next to be assigned a permit; or
+     * <li>Some other thread {@linkplain Thread#interrupt interrupts}
+     * the current thread; or
+     * <li>The specified waiting time elapses.
+     * </ul>
+     *
+     * <p>If permit are acquired then permits ids are returned.
+     *
+     * <p>If the specified waiting time elapses then the empty collection
+     * is returned. If the time is less than or equal to zero, the method
+     * will not wait at all.
+     * 
+     * @param permits the number of permits to acquire
+     * @param waitTime the maximum time to wait for permits
+     * @param leaseTime permits lease time
+     * @param unit the time unit of the {@code timeout} argument
+     * @return permits ids if permit were acquired and empty collection
+     *         if the waiting time elapsed before permits were acquired
+     */
+    Flowable<String> tryAcquire(int permits, long waitTime, long leaseTime, TimeUnit unit);
+
+    /**
      * Releases a permit by its id, returning it to the semaphore.
      *
      * <p>Releases a permit, increasing the number of available permits by
@@ -180,6 +282,23 @@ public interface RPermitExpirableSemaphoreRx extends RExpirableRx {
      *         otherwise
      */
     Single<Boolean> tryRelease(String permitId);
+
+    /**
+     * Releases permits by their ids, returning them to the semaphore.
+     *
+     * <p>Releases <code>permits</code> permits, increasing the number of available permits
+     * by released amount. If any threads of Redisson client are trying to acquire a permit,
+     * then one is selected and given one of the permits that were just released.
+     *
+     * <p>There is no requirement that a thread that releases permits must
+     * have acquired that permit by calling {@link #acquire()}.
+     * Correct usage of a semaphore is established by programming convention
+     * in the application.
+     *
+     * @param permitsIds - permits ids
+     * @return amount of released permits
+     */
+    Single<Integer> tryRelease(List<String> permitsIds);
 
     /**
      * Releases a permit by its id, returning it to the semaphore.
@@ -199,6 +318,23 @@ public interface RPermitExpirableSemaphoreRx extends RExpirableRx {
      * @return void
      */
     Completable release(String permitId);
+
+    /**
+     * Releases permits by their ids, returning them to the semaphore.
+     *
+     * <p>Releases <code>permits</code> permits, increasing the number of available permits
+     * by released amount. If any threads of Redisson client are trying to acquire a permit,
+     * then one is selected and given the permit that were just released.
+     *
+     * <p>There is no requirement that a thread that releases permits must
+     * have acquired that permit by calling {@link #acquire()}.
+     * Correct usage of a semaphore is established by programming convention
+     * in the application.
+     *
+     * @param permitsIds - permits ids
+     * @return amount of released permits
+     */
+    Single<Integer> release(List<String> permitsIds);
 
     /**
      * Returns the current number of available permits.
