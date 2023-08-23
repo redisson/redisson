@@ -154,11 +154,12 @@ public interface RPermitExpirableSemaphoreReactive extends RExpirableReactive {
     
     /**
      * Releases a permits by their ids. Increases the number of available permits.
+     * Throws an exception if permit id doesn't exist or has already been released.
      *
      * @param permitsIds - permits ids
-     * @return amount of released permits
+     * @return void
      */
-    Mono<Integer> release(List<String> permitsIds);
+    Mono<Void> release(List<String> permitsIds);
 
     /**
      * Returns amount of available permits.

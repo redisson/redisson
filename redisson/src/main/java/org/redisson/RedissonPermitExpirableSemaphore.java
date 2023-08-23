@@ -597,8 +597,8 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     }
 
     @Override
-    public int release(List<String> permitsIds) {
-        return get(releaseAsync(permitsIds));
+    public void release(List<String> permitsIds) {
+        get(releaseAsync(permitsIds));
     }
 
     @Override
@@ -608,7 +608,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
 
     @Override
     public int tryRelease(List<String> permitsIds) {
-        return 0;
+        return get(tryReleaseAsync(permitsIds));
     }
 
     @Override
@@ -715,8 +715,18 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     }
 
     @Override
-    public RFuture<Integer> releaseAsync(List<String> permitsIds) {
-        return tryReleaseAsync(permitsIds);
+    public RFuture<Void> releaseAsync(List<String> permitsIds) {
+        CompletionStage<Void> f = tryReleaseAsync(permitsIds).handle((res, e) -> {
+            if (e != null) {
+                throw new CompletionException(e);
+            }
+
+            if (res == permitsIds.size()) {
+                return null;
+            }
+            throw new CompletionException(new IllegalArgumentException("Permits with ids " + permitsIds + " have already been released or don't exist"));
+        });
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override

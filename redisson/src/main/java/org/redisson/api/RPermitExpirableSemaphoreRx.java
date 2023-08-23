@@ -330,10 +330,12 @@ public interface RPermitExpirableSemaphoreRx extends RExpirableRx {
      * Correct usage of a semaphore is established by programming convention
      * in the application.
      *
+     * <p>Throws an exception if permit id doesn't exist or has already been release
+     *
      * @param permitsIds - permits ids
-     * @return amount of released permits
+     * @return void
      */
-    Single<Integer> release(List<String> permitsIds);
+    Completable release(List<String> permitsIds);
 
     /**
      * Returns the current number of available permits.

@@ -157,13 +157,13 @@ public interface RPermitExpirableSemaphoreAsync extends RExpirableAsync {
 
     /**
      * Releases permits by their ids.
-     * Increases the number of available permits .
+     * Increases the number of available permits.
+     * Throws an exception if permits ids don't exist or have already been released.
      *
      * @param permitsIds - permit id
-     * @return amount of released permits
      * @throws IllegalArgumentException if <code>permitsIds</code> is null or empty
      */
-    RFuture<Integer> releaseAsync(List<String> permitsIds);
+    RFuture<Void> releaseAsync(List<String> permitsIds);
 
     /**
      * Returns number of available permits.

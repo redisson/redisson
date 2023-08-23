@@ -165,11 +165,12 @@ public interface RPermitExpirableSemaphore extends RExpirable, RPermitExpirableS
     
     /**
      * Releases permits by their ids. Increases the number of available permits.
+     * Throws an exception if permit id doesn't exist or has already been released.
      *
      * @param permitsIds - permits ids
      * @throws IllegalArgumentException if <code>permitsIds</code> is null or empty
      */
-    int release(List<String> permitsIds);
+    void release(List<String> permitsIds);
 
     /**
      * Returns number of available permits.
