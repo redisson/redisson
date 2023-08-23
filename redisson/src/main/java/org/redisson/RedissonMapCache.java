@@ -21,6 +21,7 @@ import org.redisson.api.listener.MessageListener;
 import org.redisson.api.map.event.*;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.IntegerCodec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
@@ -35,6 +36,7 @@ import org.redisson.eviction.EvictionScheduler;
 import org.redisson.misc.CompletableFutureWrapper;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -66,20 +68,20 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     protected String publishCommand;
     
     public RedissonMapCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor,
-                            String name, RedissonClient redisson, MapOptions<K, V> options, WriteBehindService writeBehindService) {
+                            String name, RedissonClient redisson, MapCacheOptions<K, V> options, WriteBehindService writeBehindService) {
         super(commandExecutor, name, redisson, options, writeBehindService);
         if (evictionScheduler != null) {
-            evictionScheduler.schedule(getRawName(), getTimeoutSetName(), getIdleSetName(), getExpiredChannelName(), getLastAccessTimeSetName());
+            evictionScheduler.schedule(getRawName(), getTimeoutSetName(), getIdleSetName(), getExpiredChannelName(), getLastAccessTimeSetName(), options);
         }
         this.evictionScheduler = evictionScheduler;
         this.publishCommand = commandExecutor.getConnectionManager().getSubscribeService().getPublishCommand();
     }
 
     public RedissonMapCache(Codec codec, EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor,
-                            String name, RedissonClient redisson, MapOptions<K, V> options, WriteBehindService writeBehindService) {
+                            String name, RedissonClient redisson, MapCacheOptions<K, V> options, WriteBehindService writeBehindService) {
         super(codec, commandExecutor, name, redisson, options, writeBehindService);
         if (evictionScheduler != null) {
-            evictionScheduler.schedule(getRawName(), getTimeoutSetName(), getIdleSetName(), getExpiredChannelName(), getLastAccessTimeSetName());
+            evictionScheduler.schedule(getRawName(), getTimeoutSetName(), getIdleSetName(), getExpiredChannelName(), getLastAccessTimeSetName(), options);
         }
         this.evictionScheduler = evictionScheduler;
         this.publishCommand = commandExecutor.getConnectionManager().getSubscribeService().getPublishCommand();
@@ -1062,17 +1064,35 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     @Override
     public RFuture<Boolean> updateEntryExpirationAsync(K key, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
+        Duration ttld = null;
+        if (ttl > 0) {
+            ttld = Duration.ofMillis(ttlUnit.toMillis(ttl));
+        }
+        Duration idled = null;
+        if (maxIdleTime > 0) {
+            idled = Duration.ofMillis(maxIdleUnit.toMillis(maxIdleTime));
+        }
+        return expireEntryAsync(key, ttld, idled);
+    }
+
+    @Override
+    public boolean expireEntry(K key, Duration ttl, Duration maxIdleTime) {
+        return get(expireEntryAsync(key, ttl, maxIdleTime));
+    }
+
+    @Override
+    public RFuture<Boolean> expireEntryAsync(K key, Duration ttl, Duration maxIdleTime) {
         checkKey(key);
 
         long currentTime = System.currentTimeMillis();
         long ttlTimeout = 0;
-        if (ttl > 0) {
-            ttlTimeout = currentTime + ttlUnit.toMillis(ttl);
+        if (ttl != null && !ttl.isZero()) {
+            ttlTimeout = currentTime + ttl.toMillis();
         }
 
         long maxIdleTimeout = 0;
-        if (maxIdleTime > 0) {
-            long maxIdleDelta = maxIdleUnit.toMillis(maxIdleTime);
+        if (maxIdleTime != null && !maxIdleTime.isZero()) {
+            long maxIdleDelta = maxIdleTime.toMillis();
             maxIdleTimeout = currentTime + maxIdleDelta;
         }
 
@@ -1128,6 +1148,255 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 Arrays.asList(name, getTimeoutSetName(name), getIdleSetName(name),
                               getLastAccessTimeSetName(name), getOptionsName(name)),
                 System.currentTimeMillis(), ttlTimeout, maxIdleTimeout, encodeMapKey(key));
+        return future;
+    }
+
+    public boolean expireEntryIfNotSet(K key, Duration ttl, Duration maxIdleTime) {
+        return get(expireEntryIfNotSetAsync(key, ttl, maxIdleTime));
+    }
+
+    public RFuture<Boolean> expireEntryIfNotSetAsync(K key, Duration ttl, Duration maxIdleTime) {
+        checkKey(key);
+
+        long currentTime = System.currentTimeMillis();
+        long ttlTimeout = 0;
+        if (ttl != null && !ttl.isZero()) {
+            ttlTimeout = currentTime + ttl.toMillis();
+        }
+
+        long maxIdleTimeout = 0;
+        if (maxIdleTime != null && !maxIdleTime.isZero()) {
+            long maxIdleDelta = maxIdleTime.toMillis();
+            maxIdleTimeout = currentTime + maxIdleDelta;
+        }
+
+        String name = getRawName(key);
+        RFuture<Boolean> future = commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_BOOLEAN,
+                        "local value = redis.call('hget', KEYS[1], ARGV[4]); "
+                        + "local t, val;"
+                        + "if value == false then "
+                            + "return 0; "
+                        + "else "
+                            + "t, val = struct.unpack('dLc0', value); "
+                            + "local expireDate = 92233720368547758; "
+                            + "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[4]); "
+                            + "if expireDateScore ~= false then "
+                                + "expireDate = tonumber(expireDateScore) "
+                            + "end; "
+                            + "if t ~= 0 then "
+                                + "local expireIdle = redis.call('zscore', KEYS[3], ARGV[4]); "
+                                + "if expireIdle ~= false then "
+                                    + "expireDate = math.min(expireDate, tonumber(expireIdle)) "
+                                + "end; "
+                            + "end; "
+                            + "if expireDate ~= 92233720368547758 then "
+                                + "return 0; "
+                            + "end; "
+                        + "end; " +
+
+                        "if tonumber(ARGV[2]) > 0 then "
+                            + "redis.call('zadd', KEYS[2], ARGV[2], ARGV[4]); "
+                        + "else "
+                            + "redis.call('zrem', KEYS[2], ARGV[4]); "
+                        + "end; "
+                        + "if tonumber(ARGV[3]) > 0 then "
+                            + "redis.call('zadd', KEYS[3], ARGV[3], ARGV[4]); "
+                        + "else "
+                            + "redis.call('zrem', KEYS[3], ARGV[4]); "
+                        + "end; " +
+
+                        // last access time
+                        "local maxSize = tonumber(redis.call('hget', KEYS[5], 'max-size')); " +
+                        "local mode = redis.call('hget', KEYS[5], 'mode'); " +
+                        "if maxSize ~= nil and maxSize ~= 0 then " +
+                           "local currentTime = tonumber(ARGV[1]); " +
+
+                           "if mode == false or mode == 'LRU' then " +
+                               "redis.call('zadd', KEYS[4], currentTime, ARGV[4]); " +
+                           "end; " +
+                           "if mode == 'LFU' then " +
+                                "redis.call('zincrby', KEYS[4], 1, ARGV[4]); " +
+                           "end; " +
+                        "end; " +
+                        "return 1;",
+                Arrays.asList(name, getTimeoutSetName(name), getIdleSetName(name),
+                              getLastAccessTimeSetName(name), getOptionsName(name)),
+                System.currentTimeMillis(), ttlTimeout, maxIdleTimeout, encodeMapKey(key));
+        return future;
+    }
+
+    public int expireEntriesIfNotSet(Set<K> keys, Duration ttl, Duration maxIdleTime) {
+        return get(expireEntriesIfNotSetAsync(keys, ttl, maxIdleTime));
+    }
+
+    public RFuture<Integer> expireEntriesIfNotSetAsync(Set<K> keys, Duration ttl, Duration maxIdleTime) {
+        for (K key : keys) {
+            checkKey(key);
+        }
+
+        long currentTime = System.currentTimeMillis();
+        long ttlTimeout = 0;
+        if (ttl != null && !ttl.isZero()) {
+            ttlTimeout = currentTime + ttl.toMillis();
+        }
+
+        long maxIdleTimeout = 0;
+        if (maxIdleTime != null && !maxIdleTime.isZero()) {
+            long maxIdleDelta = maxIdleTime.toMillis();
+            maxIdleTimeout = currentTime + maxIdleDelta;
+        }
+
+        List<Object> args = new ArrayList<>(keys.size() + 3);
+        args.add(System.currentTimeMillis());
+        args.add(ttlTimeout);
+        args.add(maxIdleTimeout);
+        encodeMapKeys(args, keys);
+
+        RFuture<Integer> future = commandExecutor.evalWriteAsync(getRawName(), IntegerCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
+          "local counter = 0;" +
+                "for i = 4, #ARGV, 1 do " +
+                        "local value = redis.call('hget', KEYS[1], ARGV[i]); "
+                        + "local t, val;"
+                        + "if value == false then "
+                        + "else "
+                            + "t, val = struct.unpack('dLc0', value); "
+                            + "local expireDate = 92233720368547758; "
+                            + "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[i]); "
+                            + "if expireDateScore ~= false then "
+                                + "expireDate = tonumber(expireDateScore) "
+                            + "end; "
+                            + "if t ~= 0 then "
+                                + "local expireIdle = redis.call('zscore', KEYS[3], ARGV[i]); "
+                                + "if expireIdle ~= false then "
+                                    + "expireDate = math.min(expireDate, tonumber(expireIdle)) "
+                                + "end; "
+                            + "end; "
+                            + "if expireDate ~= 92233720368547758 then "
+                                + "value = false; "
+                            + "end; "
+                        + "end; " +
+
+                          "if value ~= false then " +
+                            "if tonumber(ARGV[2]) > 0 then "
+                                + "redis.call('zadd', KEYS[2], ARGV[2], ARGV[i]); "
+                            + "else "
+                                + "redis.call('zrem', KEYS[2], ARGV[i]); "
+                            + "end; "
+                            + "if tonumber(ARGV[3]) > 0 then "
+                                + "redis.call('zadd', KEYS[3], ARGV[3], ARGV[i]); "
+                            + "else "
+                                + "redis.call('zrem', KEYS[3], ARGV[i]); "
+                            + "end; " +
+
+                            // last access time
+                            "local maxSize = tonumber(redis.call('hget', KEYS[5], 'max-size')); " +
+                            "local mode = redis.call('hget', KEYS[5], 'mode'); " +
+                            "if maxSize ~= nil and maxSize ~= 0 then " +
+                               "local currentTime = tonumber(ARGV[1]); " +
+
+                               "if mode == false or mode == 'LRU' then " +
+                                   "redis.call('zadd', KEYS[4], currentTime, ARGV[i]); " +
+                               "end; " +
+                               "if mode == 'LFU' then " +
+                                    "redis.call('zincrby', KEYS[4], 1, ARGV[i]); " +
+                               "end; " +
+                            "end; " +
+                            "counter = counter + 1; " +
+                          "end;" +
+                    "end;" +
+                    "return counter;",
+                Arrays.asList(getRawName(), getTimeoutSetName(), getIdleSetName(),
+                              getLastAccessTimeSetName(), getOptionsName()),
+                            args.toArray());
+        return future;
+    }
+
+
+    @Override
+    public int expireEntries(Set<K> keys, Duration ttl, Duration maxIdleTime) {
+        return get(expireEntriesAsync(keys, ttl, maxIdleTime));
+    }
+
+    @Override
+    public RFuture<Integer> expireEntriesAsync(Set<K> keys, Duration ttl, Duration maxIdleTime) {
+        for (K key : keys) {
+            checkKey(key);
+        }
+
+        long currentTime = System.currentTimeMillis();
+        long ttlTimeout = 0;
+        if (ttl != null && !ttl.isZero()) {
+            ttlTimeout = currentTime + ttl.toMillis();
+        }
+
+        long maxIdleTimeout = 0;
+        if (maxIdleTime != null && !maxIdleTime.isZero()) {
+            long maxIdleDelta = maxIdleTime.toMillis();
+            maxIdleTimeout = currentTime + maxIdleDelta;
+        }
+
+        List<Object> args = new ArrayList<>(keys.size() + 3);
+        args.add(System.currentTimeMillis());
+        args.add(ttlTimeout);
+        args.add(maxIdleTimeout);
+        encodeMapKeys(args, keys);
+
+        RFuture<Integer> future = commandExecutor.evalWriteAsync(getRawName(), IntegerCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
+          "local counter = 0;" +
+                "for i = 4, #ARGV, 1 do " +
+                        "local value = redis.call('hget', KEYS[1], ARGV[i]); "
+                        + "local t, val;"
+                        + "if value == false then "
+                        + "else "
+                            + "t, val = struct.unpack('dLc0', value); "
+                            + "local expireDate = 92233720368547758; "
+                            + "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[i]); "
+                            + "if expireDateScore ~= false then "
+                                + "expireDate = tonumber(expireDateScore) "
+                            + "end; "
+                            + "if t ~= 0 then "
+                                + "local expireIdle = redis.call('zscore', KEYS[3], ARGV[i]); "
+                                + "if expireIdle ~= false then "
+                                    + "expireDate = math.min(expireDate, tonumber(expireIdle)) "
+                                + "end; "
+                            + "end; "
+                            + "if expireDate <= tonumber(ARGV[1]) then "
+                                + "value = false; "
+                            + "end; "
+                        + "end; " +
+
+                          "if value ~= false then " +
+                            "if tonumber(ARGV[2]) > 0 then "
+                                + "redis.call('zadd', KEYS[2], ARGV[2], ARGV[i]); "
+                            + "else "
+                                + "redis.call('zrem', KEYS[2], ARGV[i]); "
+                            + "end; "
+                            + "if tonumber(ARGV[3]) > 0 then "
+                                + "redis.call('zadd', KEYS[3], ARGV[3], ARGV[i]); "
+                            + "else "
+                                + "redis.call('zrem', KEYS[3], ARGV[i]); "
+                            + "end; " +
+
+                            // last access time
+                            "local maxSize = tonumber(redis.call('hget', KEYS[5], 'max-size')); " +
+                            "local mode = redis.call('hget', KEYS[5], 'mode'); " +
+                            "if maxSize ~= nil and maxSize ~= 0 then " +
+                               "local currentTime = tonumber(ARGV[1]); " +
+
+                               "if mode == false or mode == 'LRU' then " +
+                                   "redis.call('zadd', KEYS[4], currentTime, ARGV[i]); " +
+                               "end; " +
+                               "if mode == 'LFU' then " +
+                                    "redis.call('zincrby', KEYS[4], 1, ARGV[i]); " +
+                               "end; " +
+                            "end; " +
+                            "counter = counter + 1; " +
+                          "end;" +
+                    "end;" +
+                    "return counter;",
+                Arrays.asList(getRawName(), getTimeoutSetName(), getIdleSetName(),
+                              getLastAccessTimeSetName(), getOptionsName()),
+                            args.toArray());
         return future;
     }
 

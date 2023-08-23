@@ -3,6 +3,64 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 28-Jul-2023 - 3.23.3 released
+Feature - `TransportMode.IO_URING` added (thanks to @sgammon)  
+Feature - `LocalCachedMapOptions.useKeyEventsPattern()` setting introduced  
+
+Improvement - Long as string cache in CommandEncoder (thanks to @tomerarazy)  
+Improvement - each `AddressResolver` created by `SequentialDnsAddressResolverFactory` should share common DnsCache and DnsCnameCache instances  
+Improvement - RedisURI optimization (thanks to @ikss)  
+
+Fixed - codec errors during Quarkus native build  
+Fixed - extra subscription topic allocation by `RLocalCachedMap` object (regression since 3.23.2)  
+
+### 28-Jul-2023 - 3.23.2 released
+Feature - Micronaut 4.0 integration  
+
+Improvement - PubSub channels should be reconnected back to Slave from Master node if `SubscriptionMode = SLAVE`
+
+Fixed - Setting `retryAttempts` to 0 causes an exception (regression since 3.23.1)  
+Fixed - `RTopic` subscribes only to a single master in cluster if `__keyspace` or `__keyevent` channel is defined  
+Fixed - `SlaveConnectionPool no available Redis entries` error may arise in some cases  
+Fixed - StackOverflowError is thrown by `AggregationOptions.groupBy()` method  
+Fixed - `failedSlaveCheckInterval` value should be greater than zero before it can be applied  
+Fixed - `RedissonLocalCachedMap.putAllOperation()` method throws `ClassCastException` if `SyncStrategy = UPDATE`  
+
+### 18-Jul-2023 - 3.23.1 released
+Improvement - the scope of key event subscriptions reduced for `RLiveObjectService` object. Now it uses key-space channel  
+Improvement - the scope of key event subscriptions reduced for `RLocalCachedMap` object. Now it uses key-space channel  
+
+Fixed - codecs defined via Spring Native application.properties file can't be recognized during application run  
+Fixed - `retryAttempt` setting isn't applied during Redisson startup  
+Fixed - Quarkus 2/3 native image can't be built  
+Fixed - unknown property `quarkus.redisson.*` warnings in quarkus  
+Fixed - Redisson settings defined in Quarkus application.properties file can't be used in native mode  
+
+### 10-Jul-2023 - 3.23.0 released
+Feature - added `RBloomFilter` `contains()` and `add()` methods with element collection support  
+Feature - RMapCache and RLocalCachedMap should use sharded pubsub in Redis Cluster 7.0+  
+Feature - [lazyInitialization](https://github.com/redisson/redisson/wiki/2.-Configuration#lazyinitialization) setting added  
+Feature - `expireEntryIfNotSet()`, `expireEntries()`, `expireEntry()`, `expireEntriesIfNotSet()` methods added to `RMapCache` object  
+Feature - `MapCacheOptions` object with `removeEmptyEvictionTask()` setting introduced. Removes `RMapCache` eviction task from memory if map is empty upon entries eviction process completion  
+
+__Breaking change - RMapCache and RLocalCachedMap should use sharded pubsub in Redis Cluster 7.0+__  
+__Breaking change - RMapCache object uses MapCacheOptions object__  
+
+Improvement - `RMapCache` shouldn't emit events if no listeners added  
+
+Fixed - canceling tasks that scheduled with cron expression does not interrupt the thread (thanks to @zcxsythenew)  
+Fixed - `RExecutorService` task response should be deleted if task was canceled  
+Fixed - `RedisConnection.close()` method has private visibility  
+Fixed - `ConcurrentModificationException` occasionally thrown during batch execution  
+Fixed - `StringIndexOutOfBoundsException` is thrown if Redis port isn't defined in configuration  
+Fixed - missed methods implementation of Spring Data Redis module: `zRevRangeByLex()`, `time(TimeUnit)`, `zRemRangeByLex()`, `zLexCount()`, `rewriteConfig()`, `zRangeStoreByLex()`, `zRangeStoreRevByLex()`, `zRangeStoreByScore()`, `zRangeStoreRevByScore()`, `flushDb()`, `flushAll()`, `replicaOf()`, `replicaOfNoOne()`
+Fixed - transactional `RMap.fastRemove()` method throws `UnsupportedOperationException`  
+Fixed - `RBloomFilter` `contains()` and `add()` methods don't return accurate results if false probability is high  
+Fixed - incorrect handling "unknown command" response for `RTopic` operations  
+Fixed - `RLiveObjectService.delete(class, id)` method doesn't delete indexes  
+Fixed - `RMultimapCache` throws an exception if entry removed before expiration moment  
+Fixed - `keepPubSubOrder` setting isn't applied  
+
 ### 19-Jun-2023 - 3.22.1 released
 Feature - Apache Tomcat Manager should use sharded pubsub in Redis Cluster 7.0+  
 Feature - Micronaut Session store should use sharded pubsub in Redis Cluster 7.0+  

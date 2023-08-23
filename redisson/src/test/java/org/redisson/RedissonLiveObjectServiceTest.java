@@ -1727,7 +1727,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
                 .randomPort()
                 .randomDir()
                 .notifyKeyspaceEvents(
-                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
+                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.K,
                         RedisRunner.KEYSPACE_EVENTS_OPTIONS.x)
                 .run();
 

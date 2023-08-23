@@ -34,6 +34,7 @@ import org.redisson.pubsub.PublishSubscribeService;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -123,8 +124,20 @@ public class RedissonTopic implements RTopic {
     }
 
     protected RFuture<Integer> addListenerAsync(RedisPubSubListener<?> pubSubListener) {
-        CompletableFuture<PubSubConnectionEntry> future = subscribeService.subscribe(codec, channelName, pubSubListener);
+        CompletableFuture<List<PubSubConnectionEntry>> future = subscribeService.subscribe(codec, channelName, pubSubListener);
         CompletableFuture<Integer> f = future.thenApply(res -> {
+            if (pubSubListener instanceof PubSubStatusListener
+                    && subscribeService.isMultiEntity(channelName)) {
+                // replaced in subscribe() method
+                Optional<RedisPubSubListener<?>> l = res.stream()
+                        .flatMap(r -> r.getListeners(channelName).stream())
+                        .filter(r -> r instanceof PubSubStatusListener
+                                && ((PubSubStatusListener) pubSubListener).getListener() == ((PubSubStatusListener) r).getListener())
+                        .findAny();
+                if (l.isPresent()) {
+                    return System.identityHashCode(l.get());
+                }
+            }
             return System.identityHashCode(pubSubListener);
         });
         return new CompletableFutureWrapper<>(f);

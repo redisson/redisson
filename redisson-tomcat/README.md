@@ -31,7 +31,7 @@ Add `RedissonSessionManager` in global context - `tomcat/conf/context.xml` or pe
    * `DEFAULT` - session attributes are stored into Redis only through the `Session.setAttribute` method. Default mode.
    * `AFTER_REQUEST`
        * In `readMode=REDIS` all changes of session attributes made through the `Session.setAttribute` method are accumulated in memory and stored into Redis only after the end of the request. 
-       * In `readMode=MEMORY` all session attributes are always stored into Redis after the end of the request regardless of the `Session.setAttribute` method invocation. It is useful in case when some objects stored in session change their own state without `Session.setAttribute` method execution.
+       * In `readMode=MEMORY` all session attributes are always stored into Redis after the end of the request regardless of the `Session.setAttribute` method invocation. It is useful in case when some objects stored in session change their own state without `Session.setAttribute` method execution. Updated attributes are removed from all other Session instances if `broadcastSessionUpdates=true` and reloaded from Redis when these attributes are requested.  
    <br/>
 
    `configPath` - path to Redisson YAML config. See [configuration wiki page](https://github.com/redisson/redisson/wiki/2.-Configuration) for more details.
@@ -67,14 +67,14 @@ Amount of Redisson instances created by Tomcat for multiple contexts could be re
 ### 2. Copy two jars into `TOMCAT_BASE/lib` directory:
 
   
-[redisson-all-3.22.1.jar](https://repo1.maven.org/maven2/org/redisson/redisson-all/3.22.1/redisson-all-3.22.1.jar)
+[redisson-all-3.23.3.jar](https://repo1.maven.org/maven2/org/redisson/redisson-all/3.23.3/redisson-all-3.23.3.jar)
   
-Tomcat 7.x - [redisson-tomcat-7-3.22.1.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-7/3.22.1/redisson-tomcat-7-3.22.1.jar)  
+Tomcat 7.x - [redisson-tomcat-7-3.23.3.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-7/3.23.3/redisson-tomcat-7-3.23.3.jar)  
 
-Tomcat 8.x - [redisson-tomcat-8-3.22.1.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-8/3.22.1/redisson-tomcat-8-3.22.1.jar)  
+Tomcat 8.x - [redisson-tomcat-8-3.23.3.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-8/3.23.3/redisson-tomcat-8-3.23.3.jar)  
 
-Tomcat 9.x - [redisson-tomcat-9-3.22.1.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-9/3.22.1/redisson-tomcat-9-3.22.1.jar)  
+Tomcat 9.x - [redisson-tomcat-9-3.23.3.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-9/3.23.3/redisson-tomcat-9-3.23.3.jar)  
 
-Tomcat 10.x - [redisson-tomcat-10-3.22.1.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-10/3.22.1/redisson-tomcat-10-3.22.1.jar)  
+Tomcat 10.x - [redisson-tomcat-10-3.23.3.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-10/3.23.3/redisson-tomcat-10-3.23.3.jar)  
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.

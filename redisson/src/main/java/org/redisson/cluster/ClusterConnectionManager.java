@@ -15,7 +15,6 @@
  */
 package org.redisson.cluster;
 
-import io.netty.resolver.AddressResolver;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
@@ -80,7 +79,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
 
     @Override
-    public void connect() {
+    public void doConnect() {
         if (cfg.getNodeAddresses().isEmpty()) {
             throw new IllegalArgumentException("At least one cluster node should be defined!");
         }
@@ -360,8 +359,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 if (configEndpointHostName != null) {
                     String address = cfg.getNodeAddresses().iterator().next();
                     RedisURI uri = new RedisURI(address);
-                    AddressResolver<InetSocketAddress> resolver = serviceManager.getResolverGroup().getResolver(serviceManager.getGroup().next());
-                    Future<List<InetSocketAddress>> allNodes = resolver.resolveAll(InetSocketAddress.createUnresolved(uri.getHost(), uri.getPort()));
+                    Future<List<InetSocketAddress>> allNodes = serviceManager.resolveAll(uri);
                     allNodes.addListener(new FutureListener<List<InetSocketAddress>>() {
                         @Override
                         public void operationComplete(Future<List<InetSocketAddress>> future) throws Exception {
@@ -527,7 +525,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 .collect(Collectors.toList());
         nonFailedSlaves.forEach(uri -> {
             if (entry.hasSlave(uri)) {
-                CompletableFuture<Boolean> f = entry.slaveUpAsync(uri, FreezeReason.MANAGER);
+                CompletableFuture<Boolean> f = entry.slaveUpNoMasterExclusionAsync(uri, FreezeReason.MANAGER);
                 f = f.thenCompose(v -> {
                     if (v) {
                         log.info("slave: {} is up for slot ranges: {}", uri, currentPart.getSlotRanges());
@@ -582,7 +580,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         for (RedisURI uri : addedSlaves) {
             ClientConnectionsEntry slaveEntry = entry.getEntry(uri);
             if (slaveEntry != null) {
-                CompletableFuture<Boolean> slaveUpFuture = entry.slaveUpAsync(uri, FreezeReason.MANAGER);
+                CompletableFuture<Boolean> slaveUpFuture = entry.slaveUpNoMasterExclusionAsync(uri, FreezeReason.MANAGER);
                 slaveUpFuture = slaveUpFuture.thenCompose(v -> {
                     if (v) {
                         currentPart.addSlaveAddress(uri);

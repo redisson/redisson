@@ -1,16 +1,38 @@
 package org.redisson.transaction;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
+import org.redisson.RedisRunner;
+import org.redisson.Redisson;
+import org.redisson.api.*;
+import org.redisson.config.Config;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.jupiter.api.Test;
-import org.redisson.api.RMap;
-import org.redisson.api.RMapCache;
-import org.redisson.api.RTransaction;
-import org.redisson.api.TransactionOptions;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonTransactionalMapCacheTest extends RedissonBaseTransactionalMapTest {
+
+    @Test
+    public void testSyncWait() throws IOException, InterruptedException {
+        String mapCacheName = "map";
+        String dataKey = "key";
+
+        Config redisConfig = new Config();
+        redisConfig.useReplicatedServers()
+                .addNodeAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+        RedissonClient client = Redisson.create(redisConfig);
+
+        RTransaction transaction = client.createTransaction(TransactionOptions.defaults());
+        RMapCache<String, String> cache = transaction.getMapCache(mapCacheName);
+        cache.putIfAbsent(dataKey, "foo", 1000, TimeUnit.MILLISECONDS);
+        transaction.commit();
+
+        RTransaction transaction2 = client.createTransaction(TransactionOptions.defaults());
+        RMapCache<String, String> cache2 = transaction2.getMapCache(mapCacheName);
+        cache2.putIfAbsent(dataKey, "bar", 1000, TimeUnit.MILLISECONDS);
+        transaction2.commit();
+    }
 
     @Test
     public void testPutIfAbsentTTL() throws InterruptedException {

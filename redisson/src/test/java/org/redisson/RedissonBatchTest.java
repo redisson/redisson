@@ -19,6 +19,9 @@ import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.command.BatchPromise;
 import org.redisson.config.Config;
 import org.redisson.config.SubscriptionMode;
+import org.redisson.misc.RedisURI;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.startupcheck.MinimumDurationRunningStartupCheckStrategy;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -359,7 +362,7 @@ public class RedissonBatchTest extends BaseTest {
         try {
                     batchOptions
                     .skipResult()
-                    .syncSlaves(2, 1, TimeUnit.SECONDS);
+                    .sync(2, Duration.ofSeconds(1));
             RBatch batch = redisson.createBatch(batchOptions);
             RBucketAsync<Integer> bucket = batch.getBucket("1");
             bucket.setAsync(1);
@@ -370,6 +373,46 @@ public class RedissonBatchTest extends BaseTest {
         } finally {
             redisson.shutdown();
         }
+    }
+
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testSyncSlavesAOF(BatchOptions batchOptions) {
+        GenericContainer<?> redisClusterContainer =
+                new GenericContainer<>("vishnunair/docker-redis-cluster")
+                        .withExposedPorts(6379, 6380, 6381, 6382, 6383, 6384)
+                        .withStartupCheckStrategy(new MinimumDurationRunningStartupCheckStrategy(Duration.ofSeconds(10)));
+        redisClusterContainer.start();
+
+        Config config = new Config();
+        config.useClusterServers()
+                .setTimeout(30000)
+                .setNatMapper(new NatMapper() {
+                    @Override
+                    public RedisURI map(RedisURI uri) {
+                        if (redisClusterContainer.getMappedPort(uri.getPort()) == null) {
+                            return uri;
+                        }
+                        return new RedisURI(uri.getScheme(), redisClusterContainer.getHost(), redisClusterContainer.getMappedPort(uri.getPort()));
+                    }
+                })
+                .addNodeAddress("redis://127.0.0.1:" + redisClusterContainer.getFirstMappedPort());
+        RedissonClient redisson = Redisson.create(config);
+
+        batchOptions
+                .syncAOF(1, 1, Duration.ofSeconds(1));
+
+        RBatch batch = redisson.createBatch(batchOptions);
+        for (int i = 0; i < 20; i++) {
+            RMapAsync<String, String> map = batch.getMap("test");
+            map.putAsync("" + i, "" + i);
+        }
+
+        BatchResult<?> result = batch.execute();
+        assertThat(result.getResponses()).hasSize(20);
+
+        redisson.shutdown();
+        redisClusterContainer.stop();
     }
 
     @ParameterizedTest
@@ -397,7 +440,7 @@ public class RedissonBatchTest extends BaseTest {
         RedissonClient redisson = Redisson.create(config);
         
         batchOptions
-                .syncSlaves(1, 1, TimeUnit.SECONDS);
+                .sync(1, Duration.ofSeconds(1));
         
         RBatch batch = redisson.createBatch(batchOptions);
         for (int i = 0; i < 100; i++) {
@@ -521,7 +564,7 @@ public class RedissonBatchTest extends BaseTest {
         
         batchOptions
                                             .executionMode(ExecutionMode.IN_MEMORY_ATOMIC)
-                                            .syncSlaves(1, 1, TimeUnit.SECONDS);
+                                            .sync(1, Duration.ofSeconds(1));
 
         RBatch batch = redisson.createBatch(batchOptions);
         for (int i = 0; i < 10; i++) {

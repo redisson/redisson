@@ -14,18 +14,17 @@ Maven
      <dependency>
          <groupId>org.redisson</groupId>
          <artifactId>redisson-spring-boot-starter</artifactId>
-         <version>3.22.1</version>
+         <version>3.23.3</version>
      </dependency>
 ```
 
 Gradle
 
 ```groovy
-     implementation 'org.redisson:redisson-spring-boot-starter:3.22.1'
+     implementation 'org.redisson:redisson-spring-boot-starter:3.23.3'
 ```
 
-
-Downgrade `redisson-spring-data` module if necessary to support required Spring Boot version:
+`redisson-spring-boot-starter` depends on `redisson-spring-data` module compatible with the latest version of Spring Boot. Downgrade `redisson-spring-data` module if necessary to support previous Spring Boot versions:
 
 |redisson-spring-data<br/>module name|Spring Boot<br/>version|
 |----------------------------|-------------------|

@@ -38,6 +38,7 @@ import org.redisson.connection.NodeSource;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.misc.CompletableFutureWrapper;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -86,7 +87,7 @@ public class CommandBatchService extends CommandAsyncService {
     public static class Entry {
 
         final List<BatchCommandData<?, ?>> evalCommands = new LinkedList<>();
-        final LinkedList<BatchCommandData<?, ?>> commands = new LinkedList<>();
+        final Deque<BatchCommandData<?, ?>> commands = new ConcurrentLinkedDeque<>();
         volatile boolean readOnlyMode = true;
 
         public void addCommand(BatchCommandData<?, ?> command) {
@@ -99,8 +100,37 @@ public class CommandBatchService extends CommandAsyncService {
             return evalCommands;
         }
 
-        public LinkedList<BatchCommandData<?, ?>> getCommands() {
+        public void addFirstCommand(BatchCommandData<?, ?> command) {
+            commands.addFirst(command);
+        }
+
+        public void add(BatchCommandData<?, ?> command) {
+            commands.add(command);
+        }
+
+        public Deque<BatchCommandData<?, ?>> getCommands() {
             return commands;
+        }
+
+        public void sortCommands() {
+            int index = 0;
+            boolean sorted = true;
+            for (BatchCommandData<?, ?> command : commands) {
+                if (command.getIndex() > index) {
+                    index = command.getIndex();
+                } else {
+                    sorted = false;
+                    break;
+                }
+            }
+            if (sorted) {
+                return;
+            }
+
+            BatchCommandData<?, ?>[] cmds = commands.toArray(new BatchCommandData[0]);
+            Arrays.sort(cmds);
+            commands.clear();
+            Collections.addAll(commands, cmds);
         }
 
         public void setReadOnlyMode(boolean readOnlyMode) {
@@ -302,7 +332,12 @@ public class CommandBatchService extends CommandAsyncService {
                 int syncedSlaves = 0;
                 for (BatchCommandData<?, ?> commandEntry : entries) {
                     if (isWaitCommand(commandEntry)) {
-                        syncedSlaves = (Integer) commandEntry.getPromise().getNow(null);
+                        if (commandEntry.getCommand().getName().equals(RedisCommands.WAIT.getName())) {
+                            syncedSlaves += ((CompletableFuture<Integer>) commandEntry.getPromise()).getNow(0);
+                        } else {
+                            List<Integer> list = ((CompletableFuture<List<Integer>>) commandEntry.getPromise()).getNow(Arrays.asList(0, 0));
+                            syncedSlaves += list.get(1);
+                        }
                     } else if (!commandEntry.getCommand().getName().equals(RedisCommands.MULTI.getName())
                             && !commandEntry.getCommand().getName().equals(RedisCommands.EXEC.getName())
                             && !this.options.isSkipResult()) {
@@ -323,7 +358,7 @@ public class CommandBatchService extends CommandAsyncService {
                     }
                 }
 
-                BatchResult<Object> result = new BatchResult<Object>(responses, syncedSlaves);
+                BatchResult<Object> result = new BatchResult<>(responses, syncedSlaves);
                 promise.complete(result);
 
                 commands.clear();
@@ -379,38 +414,51 @@ public class CommandBatchService extends CommandAsyncService {
                     if (this.options.getExecutionMode() != ExecutionMode.IN_MEMORY) {
                         for (Entry entry : r.values()) {
                             BatchCommandData<?, ?> multiCommand = new BatchCommandData(RedisCommands.MULTI, new Object[] {}, index.incrementAndGet());
-                            entry.getCommands().addFirst(multiCommand);
+                            entry.addFirstCommand(multiCommand);
                             BatchCommandData<?, ?> execCommand = new BatchCommandData(RedisCommands.EXEC, new Object[] {}, index.incrementAndGet());
-                            entry.getCommands().add(execCommand);
+                            entry.add(execCommand);
                         }
                     }
 
                     if (this.options.isSkipResult()) {
                         for (Entry entry : r.values()) {
                             BatchCommandData<?, ?> offCommand = new BatchCommandData(RedisCommands.CLIENT_REPLY, new Object[] { "OFF" }, index.incrementAndGet());
-                            entry.getCommands().addFirst(offCommand);
+                            entry.addFirstCommand(offCommand);
                             BatchCommandData<?, ?> onCommand = new BatchCommandData(RedisCommands.CLIENT_REPLY, new Object[] { "ON" }, index.incrementAndGet());
-                            entry.getCommands().add(onCommand);
+                            entry.add(onCommand);
                         }
                     }
 
                     if (this.options.getSyncSlaves() > 0) {
-                        for (Entry entry : r.values()) {
-                            BatchCommandData<?, ?> waitCommand = new BatchCommandData(RedisCommands.WAIT,
-                                    new Object[] { this.options.getSyncSlaves(), this.options.getSyncTimeout() }, index.incrementAndGet());
-                            entry.getCommands().add(waitCommand);
+                        if (this.options.isSyncAOF()) {
+                            for (Entry entry : r.values()) {
+                                BatchCommandData<?, ?> waitCommand = new BatchCommandData(RedisCommands.WAITAOF,
+                                        new Object[] { this.options.getSyncLocals(), this.options.getSyncSlaves(), this.options.getSyncTimeout() }, index.incrementAndGet());
+                                entry.add(waitCommand);
+                            }
+                        } else {
+                            for (Entry entry : r.values()) {
+                                BatchCommandData<?, ?> waitCommand = new BatchCommandData(RedisCommands.WAIT,
+                                        new Object[] { this.options.getSyncSlaves(), this.options.getSyncTimeout() }, index.incrementAndGet());
+                                entry.add(waitCommand);
+                            }
                         }
                     }
 
                     BatchOptions options = BatchOptions.defaults()
                             .executionMode(this.options.getExecutionMode())
-                            .syncSlaves(this.options.getSyncSlaves(), this.options.getSyncTimeout(), TimeUnit.MILLISECONDS)
                             .responseTimeout(this.options.getResponseTimeout(), TimeUnit.MILLISECONDS)
                             .retryAttempts(Math.max(0, retryAttempts - attempt.get()))
                             .retryInterval(retryInterval, TimeUnit.MILLISECONDS);
 
                     if (this.options.isSkipResult()) {
                         options.skipResult();
+                    }
+
+                    if (this.options.isSyncAOF()) {
+                        options.syncAOF(this.options.getSyncLocals(), this.options.getSyncSlaves(), Duration.ofMillis(this.options.getSyncTimeout()));
+                    } else {
+                        options.sync(this.options.getSyncSlaves(), Duration.ofMillis(this.options.getSyncTimeout()));
                     }
 
                     CompletableFuture<Void> mainPromise = new CompletableFuture<>();
@@ -492,7 +540,7 @@ public class CommandBatchService extends CommandAsyncService {
             ee.getEvalCommands().addAll(e.getValue().getEvalCommands());
         }
         for (Entry entry : result.values()) {
-            entry.getCommands().sort(null);
+            entry.sortCommands();
         }
         future.complete(result);
     }
@@ -529,7 +577,7 @@ public class CommandBatchService extends CommandAsyncService {
             ee.getEvalCommands().addAll(e.getValue().getEvalCommands());
         }
         for (Entry entry : result.values()) {
-            entry.getCommands().sort(null);
+            entry.sortCommands();
         }
         future.complete(result);
     }
@@ -621,7 +669,7 @@ public class CommandBatchService extends CommandAsyncService {
                         executor.execute();
 
                         CompletionStage<Void> f = execPromise.thenCompose(r -> {
-                            BatchCommandData<?, Integer> lastCommand = (BatchCommandData<?, Integer>) entry.getValue().getCommands().peekLast();
+                            BatchCommandData<?, ?> lastCommand = entry.getValue().getCommands().peekLast();
                             result.put(entry.getKey(), r);
 
                             if (RedisCommands.WAIT.getName().equals(lastCommand.getCommand().getName())) {
@@ -668,7 +716,12 @@ public class CommandBatchService extends CommandAsyncService {
                             int syncedSlaves = 0;
                             for (BatchCommandData<?, ?> commandEntry : entries) {
                                 if (isWaitCommand(commandEntry)) {
-                                    syncedSlaves += (Integer) commandEntry.getPromise().getNow(null);
+                                    if (commandEntry.getCommand().getName().equals(RedisCommands.WAIT.getName())) {
+                                        syncedSlaves += ((CompletableFuture<Integer>) commandEntry.getPromise()).getNow(0);
+                                    } else {
+                                        List<Integer> list = ((CompletableFuture<List<Integer>>) commandEntry.getPromise()).getNow(Arrays.asList(0, 0));
+                                        syncedSlaves += list.get(1);
+                                    }
                                 } else if (!commandEntry.getCommand().getName().equals(RedisCommands.MULTI.getName())
                                         && !commandEntry.getCommand().getName().equals(RedisCommands.EXEC.getName())) {
                                     Object entryResult = commandEntry.getPromise().getNow(null);
@@ -695,7 +748,8 @@ public class CommandBatchService extends CommandAsyncService {
     }
 
     protected boolean isWaitCommand(CommandData<?, ?> c) {
-        return c.getCommand().getName().equals(RedisCommands.WAIT.getName());
+        return c.getCommand().getName().equals(RedisCommands.WAIT.getName())
+                || c.getCommand().getName().equals(RedisCommands.WAITAOF.getName());
     }
 
     @Override

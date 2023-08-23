@@ -237,6 +237,23 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
     }
 
     @Override
+    public boolean setIfExists(V value, Duration duration) {
+        return get(setIfExistsAsync(value, duration));
+    }
+
+    @Override
+    public RFuture<Boolean> setIfExistsAsync(V value, Duration duration) {
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
+                "local currValue = redis.call('json.set', KEYS[1], '$', ARGV[1], 'XX'); " +
+                      "if currValue ~= false then " +
+                         "redis.call('pexpire', KEYS[1], ARGV[2]); " +
+                         "return 1;" +
+                      "end;" +
+                      "return 0; ",
+                Collections.singletonList(getRawName()), encode(value), duration.toMillis());
+    }
+
+    @Override
     public boolean compareAndSet(V expect, V update) {
         return get(compareAndSetAsync(expect, update));
     }
@@ -368,6 +385,29 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
     }
 
     @Override
+    public V getAndSet(V value, Duration duration) {
+        return get(getAndSetAsync(value, duration));
+    }
+
+    @Override
+    public RFuture<V> getAndSetAsync(V value, Duration duration) {
+        if (value == null) {
+            return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_OBJECT,
+                    "local v = redis.call('json.get', KEYS[1]); " +
+                            "redis.call('json.del', KEYS[1]); " +
+                            "return v",
+                    Collections.singletonList(getRawName()));
+        }
+
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_OBJECT,
+                "local currValue = redis.call('json.get', KEYS[1]); " +
+                        "redis.call('json.set', KEYS[1], '$', ARGV[1]); " +
+                        "redis.call('pexpire', KEYS[1], ARGV[2]); " +
+                        "return currValue; ",
+                Collections.singletonList(getRawName()), encode(value), duration.toMillis());
+    }
+
+    @Override
     public V getAndExpire(Duration duration) {
         return get(getAndExpireAsync(duration));
     }
@@ -440,6 +480,19 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
                         "redis.call('json.set', KEYS[1], '$', ARGV[1]); " +
                               "redis.call('pexpire', KEYS[1], ARGV[2]); ",
                 Collections.singletonList(getRawName()), encode(value), timeUnit.toMillis(timeToLive));
+    }
+
+    @Override
+    public void set(V value, Duration duration) {
+        get(setAsync(value, duration));
+    }
+
+    @Override
+    public RFuture<Void> setAsync(V value, Duration duration) {
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
+                        "redis.call('json.set', KEYS[1], '$', ARGV[1]); " +
+                              "redis.call('pexpire', KEYS[1], ARGV[2]); ",
+                Collections.singletonList(getRawName()), encode(value), duration.toMillis());
     }
 
     @Override

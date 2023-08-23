@@ -263,7 +263,8 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 List<CommandData<?, ?>> commandsData = null;
                 if (!commandBatch.isAtomic()
                         || RedisCommands.EXEC.getName().equals(cmd.getName())
-                        || RedisCommands.WAIT.getName().equals(cmd.getName())) {
+                        || RedisCommands.WAIT.getName().equals(cmd.getName())
+                        || RedisCommands.WAITAOF.getName().equals(cmd.getName())) {
                     commandData = (CommandData<Object, Object>) commandBatch.getCommands().get(i);
                     if (RedisCommands.EXEC.getName().equals(cmd.getName())) {
                         skipConvertor = false;

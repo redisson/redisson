@@ -85,8 +85,7 @@ public class PubSubPatternMessageListener<V> implements RedisPubSubListener<V> {
     }
 
     @Override
-    public boolean onStatus(PubSubType type, CharSequence channel) {
-        return false;
+    public void onStatus(PubSubType type, CharSequence channel) {
     }
 
 }

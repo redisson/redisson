@@ -17,6 +17,18 @@ package io.quarkus.redisson.client.runtime.graal;
 
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
+import io.netty.channel.EventLoopGroup;
+import org.redisson.config.Config;
+
+@TargetClass(className = "org.redisson.connection.ServiceManager")
+final class ServiceManagerSubstitute {
+
+    @Substitute
+    private static EventLoopGroup createIOUringGroup(Config cfg) {
+        throw new IllegalArgumentException("IOUring isn't compatible with native mode");
+    }
+
+}
 
 @TargetClass(className = "org.redisson.codec.JsonJacksonCodec")
 final class JsonJacksonCodecSubstitute {

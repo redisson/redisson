@@ -20,7 +20,9 @@ import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
+import org.redisson.RedissonBlockingQueue;
 import org.redisson.RedissonMap;
+import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
 import org.redisson.api.RemoteInvocationOptions;
@@ -198,6 +200,10 @@ public abstract class BaseRemoteService {
         }
         
         return result;
+    }
+
+    protected <V> RBlockingQueue<V> getBlockingQueue(String name, Codec codec) {
+        return new RedissonBlockingQueue<>(codec, commandExecutor, name);
     }
 
 }

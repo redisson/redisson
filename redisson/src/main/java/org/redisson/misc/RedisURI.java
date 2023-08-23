@@ -42,8 +42,7 @@ public class RedisURI {
     }
 
     public RedisURI(String uri) {
-        if (!uri.startsWith("redis://")
-                && !uri.startsWith("rediss://")) {
+        if (!uri.startsWith("redis://") && !uri.startsWith("rediss://")) {
             throw new IllegalArgumentException("Redis url should start with redis:// or rediss:// (for SSL connection)");
         }
 
@@ -73,8 +72,9 @@ public class RedisURI {
     }
 
     private String parseUrl(String uri) {
-        String urlHost = uri.replaceFirst("redis://", "http://").replaceFirst("rediss://", "http://");
-        String ipV6Host = uri.substring(uri.indexOf("://")+3, uri.lastIndexOf(":"));
+        int hostStartIndex = uri.indexOf("://") + 3;
+        String urlHost = "http://" + uri.substring(hostStartIndex);
+        String ipV6Host = uri.substring(hostStartIndex, uri.lastIndexOf(":"));
         if (ipV6Host.contains("@")) {
             ipV6Host = ipV6Host.split("@")[1];
         }

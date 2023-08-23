@@ -591,7 +591,7 @@ public class RedissonRx implements RedissonRxClient {
     }
 
     @Override
-    public <K, V> RMapCacheRx<K, V> getMapCache(String name, Codec codec, MapOptions<K, V> options) {
+    public <K, V> RMapCacheRx<K, V> getMapCache(String name, Codec codec, MapCacheOptions<K, V> options) {
         RedissonMapCache<K, V> map = new RedissonMapCache<K, V>(codec, evictionScheduler, commandExecutor, name, null, options, writeBehindService);
         return RxProxyBuilder.create(commandExecutor, map, 
                 new RedissonMapCacheRx<K, V>(map, commandExecutor), RMapCacheRx.class);
@@ -599,7 +599,7 @@ public class RedissonRx implements RedissonRxClient {
 
 
     @Override
-    public <K, V> RMapCacheRx<K, V> getMapCache(String name, MapOptions<K, V> options) {
+    public <K, V> RMapCacheRx<K, V> getMapCache(String name, MapCacheOptions<K, V> options) {
         RMap<K, V> map = new RedissonMapCache<K, V>(evictionScheduler, commandExecutor, name, null, options, writeBehindService);
         return RxProxyBuilder.create(commandExecutor, map, 
                 new RedissonMapCacheRx<K, V>(map, commandExecutor), RMapCacheRx.class);

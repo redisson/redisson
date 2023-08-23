@@ -19,6 +19,7 @@ import org.redisson.api.map.MapLoader;
 import org.redisson.api.map.event.MapEntryListener;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -238,12 +239,8 @@ public interface RMapCacheReactive<K, V> extends RMapReactive<K, V>, RDestroyabl
      */
     Mono<Boolean> fastPutIfAbsent(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
 
-        /**
-     * Updates time to live and max idle time of specified entry by key.
-     * Entry expires when specified time to live or max idle time was reached.
-     * <p>
-     * Returns <code>false</code> if entry already expired or doesn't exist,
-     * otherwise returns <code>true</code>.
+    /**
+     * Use {@link #expireEntry(Object, Duration, Duration)} instead.
      *
      * @param key - map key
      * @param ttl - time to live for key\value entry.
@@ -259,7 +256,90 @@ public interface RMapCacheReactive<K, V> extends RMapReactive<K, V>, RDestroyabl
      * @return returns <code>false</code> if entry already expired or doesn't exist,
      *         otherwise returns <code>true</code>.
      */
+    @Deprecated
     Mono<Boolean> updateEntryExpiration(K key, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
+
+    /**
+     * Updates time to live and max idle time of specified entry by key.
+     * Entry expires when specified time to live or max idle time was reached.
+     * <p>
+     * Returns <code>false</code> if entry already expired or doesn't exist,
+     * otherwise returns <code>true</code>.
+     *
+     * @param key map key
+     * @param ttl time to live for key\value entry.
+     *              If <code>0</code> then time to live doesn't affect entry expiration.
+     * @param maxIdleTime max idle time for key\value entry.
+     *              If <code>0</code> then max idle time doesn't affect entry expiration.
+     * <p>
+     * if <code>maxIdleTime</code> and <code>ttl</code> params are equal to <code>0</code>
+     * then entry stores infinitely.
+     *
+     * @return returns <code>false</code> if entry already expired or doesn't exist,
+     *         otherwise returns <code>true</code>.
+     */
+    Mono<Boolean> expireEntry(K key, Duration ttl, Duration maxIdleTime);
+
+    /**
+     * Updates time to live and max idle time of specified entries by keys.
+     * Entries expires when specified time to live or max idle time was reached.
+     * <p>
+     * Returns amount of updated entries.
+     *
+     * @param keys map keys
+     * @param ttl time to live for key\value entries.
+     *              If <code>0</code> then time to live doesn't affect entry expiration.
+     * @param maxIdleTime max idle time for key\value entries.
+     *              If <code>0</code> then max idle time doesn't affect entry expiration.
+     * <p>
+     * if <code>maxIdleTime</code> and <code>ttl</code> params are equal to <code>0</code>
+     * then entries are stored infinitely.
+     *
+     * @return amount of updated entries.
+     */
+    Mono<Integer> expireEntries(Set<K> keys, Duration ttl, Duration maxIdleTime);
+
+    /**
+     * Sets time to live and max idle time of specified entry by key.
+     * If these parameters weren't set before.
+     * Entry expires when specified time to live or max idle time was reached.
+     * <p>
+     * Returns <code>false</code> if entry already has expiration time or doesn't exist,
+     * otherwise returns <code>true</code>.
+     *
+     * @param key map key
+     * @param ttl time to live for key\value entry.
+     *              If <code>0</code> then time to live doesn't affect entry expiration.
+     * @param maxIdleTime max idle time for key\value entry.
+     *              If <code>0</code> then max idle time doesn't affect entry expiration.
+     * <p>
+     * if <code>maxIdleTime</code> and <code>ttl</code> params are equal to <code>0</code>
+     * then entry stores infinitely.
+     *
+     * @return returns <code>false</code> if entry already has expiration time or doesn't exist,
+     *         otherwise returns <code>true</code>.
+     */
+    Mono<Boolean> expireEntryIfNotSet(K key, Duration ttl, Duration maxIdleTime);
+
+    /**
+     * Sets time to live and max idle time of specified entries by keys.
+     * If these parameters weren't set before.
+     * Entries expire when specified time to live or max idle time was reached.
+     * <p>
+     * Returns amount of updated entries.
+     *
+     * @param keys map keys
+     * @param ttl time to live for key\value entry.
+     *              If <code>0</code> then time to live doesn't affect entry expiration.
+     * @param maxIdleTime max idle time for key\value entry.
+     *              If <code>0</code> then max idle time doesn't affect entry expiration.
+     * <p>
+     * if <code>maxIdleTime</code> and <code>ttl</code> params are equal to <code>0</code>
+     * then entry stores infinitely.
+     *
+     * @return amount of updated entries.
+     */
+    Mono<Integer> expireEntriesIfNotSet(Set<K> keys, Duration ttl, Duration maxIdleTime);
 
     /**
      * Returns the value mapped by defined <code>key</code> or {@code null} if value is absent.

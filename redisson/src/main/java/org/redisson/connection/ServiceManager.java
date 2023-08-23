@@ -27,6 +27,9 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.incubator.channel.uring.IOUringDatagramChannel;
+import io.netty.incubator.channel.uring.IOUringEventLoopGroup;
+import io.netty.incubator.channel.uring.IOUringSocketChannel;
 import io.netty.resolver.AddressResolver;
 import io.netty.resolver.AddressResolverGroup;
 import io.netty.resolver.DefaultAddressResolverGroup;
@@ -154,11 +157,16 @@ public class ServiceManager {
             }
 
             this.socketChannelClass = KQueueSocketChannel.class;
-            if (PlatformDependent.isAndroid()) {
-                this.resolverGroup = DefaultAddressResolverGroup.INSTANCE;
+            this.resolverGroup = cfg.getAddressResolverGroupFactory().create(KQueueDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
+        } else if (cfg.getTransportMode() == TransportMode.IO_URING) {
+            if (cfg.getEventLoopGroup() == null) {
+                this.group = createIOUringGroup(cfg);
             } else {
-                this.resolverGroup = cfg.getAddressResolverGroupFactory().create(KQueueDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
+                this.group = cfg.getEventLoopGroup();
             }
+
+            this.socketChannelClass = IOUringSocketChannel.class;
+            this.resolverGroup = cfg.getAddressResolverGroupFactory().create(IOUringDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
         } else {
             if (cfg.getEventLoopGroup() == null) {
                 this.group = new NioEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
@@ -201,6 +209,11 @@ public class ServiceManager {
                 SCRIPT_SHA_CACHE.remove(addr);
             }
         });
+    }
+
+    // for Quarkus substitution
+    private static EventLoopGroup createIOUringGroup(Config cfg) {
+        return new IOUringEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
     }
 
     public void initTimer() {
@@ -250,6 +263,11 @@ public class ServiceManager {
 
     public EventLoopGroup getGroup() {
         return group;
+    }
+
+    public Future<List<InetSocketAddress>> resolveAll(RedisURI uri) {
+        AddressResolver<InetSocketAddress> resolver = resolverGroup.getResolver(group.next());
+        return resolver.resolveAll(InetSocketAddress.createUnresolved(uri.getHost(), uri.getPort()));
     }
 
     public AddressResolverGroup<InetSocketAddress> getResolverGroup() {
@@ -409,14 +427,14 @@ public class ServiceManager {
         });
     }
 
-    public <V> void transfer(CompletionStage<V> future1, CompletableFuture<V> future2) {
-        future1.whenComplete((res, e) -> {
+    public <V> void transfer(CompletionStage<V> source, CompletableFuture<V> dest) {
+        source.whenComplete((res, e) -> {
             if (e != null) {
-                future2.completeExceptionally(e);
+                dest.completeExceptionally(e);
                 return;
             }
 
-            future2.complete(res);
+            dest.complete(res);
         });
     }
 

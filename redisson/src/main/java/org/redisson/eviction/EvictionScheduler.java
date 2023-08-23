@@ -15,10 +15,11 @@
  */
 package org.redisson.eviction;
 
+import org.redisson.api.MapCacheOptions;
+import org.redisson.command.CommandAsyncExecutor;
+
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
-import org.redisson.command.CommandAsyncExecutor;
 
 /**
  * Eviction scheduler.
@@ -45,7 +46,7 @@ public class EvictionScheduler {
             task.schedule();
         }
     }
-    
+
     public void scheduleJCache(String name, String timeoutSetName, String expiredChannelName) {
         EvictionTask task = new JCacheEvictionTask(name, timeoutSetName, expiredChannelName, executor);
         EvictionTask prevTask = tasks.putIfAbsent(name, task);
@@ -70,8 +71,15 @@ public class EvictionScheduler {
         }
     }
 
-    public void schedule(String name, String timeoutSetName, String maxIdleSetName, String expiredChannelName, String lastAccessTimeSetName) {
-        EvictionTask task = new MapCacheEvictionTask(name, timeoutSetName, maxIdleSetName, expiredChannelName, lastAccessTimeSetName, executor);
+    public void schedule(String name, String timeoutSetName, String maxIdleSetName,
+                         String expiredChannelName, String lastAccessTimeSetName, MapCacheOptions<?, ?> options) {
+        boolean removeEmpty = false;
+        if (options != null) {
+            removeEmpty = options.isRemoveEmptyEvictionTask();
+        }
+
+        EvictionTask task = new MapCacheEvictionTask(name, timeoutSetName, maxIdleSetName, expiredChannelName, lastAccessTimeSetName,
+                executor, removeEmpty, this);
         EvictionTask prevTask = tasks.putIfAbsent(name, task);
         if (prevTask == null) {
             task.schedule();
@@ -84,5 +92,5 @@ public class EvictionScheduler {
             task.getScheduledFuture().cancel(false);
         }
     }
-    
+
 }

@@ -209,7 +209,7 @@ public class PubSubConnectionEntry {
         AtomicBoolean executed = new AtomicBoolean();
         conn.addListener(new BaseRedisPubSubListener() {
             @Override
-            public boolean onStatus(PubSubType type, CharSequence ch) {
+            public void onStatus(PubSubType type, CharSequence ch) {
                 if (type == commandType && channel.equals(ch)) {
                     executed.set(true);
 
@@ -218,9 +218,7 @@ public class PubSubConnectionEntry {
                     if (listener != null) {
                         listener.onStatus(type, ch);
                     }
-                    return true;
                 }
-                return false;
             }
         });
 
@@ -260,11 +258,6 @@ public class PubSubConnectionEntry {
 
     @Override
     public String toString() {
-        return "PubSubConnectionEntry{" +
-                "subscribedChannelsAmount=" + subscribedChannelsAmount +
-                ", conn=" + conn +
-                ", subscribeChannelListeners=" + subscribeChannelListeners +
-                ", channelListeners=" + channelListeners +
-                '}';
+        return "PubSubConnectionEntry [subscribedChannelsAmount=" + subscribedChannelsAmount + ", conn=" + conn + "]";
     }
 }

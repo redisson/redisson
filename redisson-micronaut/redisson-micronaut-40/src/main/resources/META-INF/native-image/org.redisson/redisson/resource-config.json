@@ -1,0 +1,8 @@
+{
+  "resources":{
+  "includes":[
+    {"pattern":"\\QMETA-INF/MANIFEST.MF\\E"}, 
+    {"pattern":"\\QMETA-INF/services/org.jboss.marshalling.ProviderDescriptor\\E"}
+  ]},
+  "bundles":[]
+}

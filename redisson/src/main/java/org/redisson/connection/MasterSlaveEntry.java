@@ -102,9 +102,9 @@ public class MasterSlaveEntry {
 
     private void useMasterAsSlave() {
         if (slaveBalancer.getAvailableClients() == 0) {
-            slaveUp(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM);
+            slaveUpAsync(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM);
         } else {
-            slaveDown(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM);
+            slaveDownAsync(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM);
         }
     }
 
@@ -199,12 +199,15 @@ public class MasterSlaveEntry {
         if (!config.isSlaveNotUsed()
                 && !masterEntry.getClient().getAddr().equals(entry.getClient().getAddr())
                     && slaveBalancer.getAvailableClients() == 0) {
-            if (slaveBalancer.unfreeze(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM)) {
-                log.info("master {} used as slave", masterEntry.getClient().getAddr());
-            }
+            slaveBalancer.unfreezeAsync(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM).thenAccept(r -> {
+                if (r) {
+                    log.info("master {} used as slave", masterEntry.getClient().getAddr());
+                }
+            });
         }
 
-        return nodeDown(entry);
+        nodeDown(entry);
+        return true;
     }
 
     public CompletableFuture<Boolean> slaveDownAsync(ClientConnectionsEntry entry, FreezeReason freezeReason) {
@@ -231,19 +234,37 @@ public class MasterSlaveEntry {
                     log.info("master {} used as slave", masterEntry.getClient().getAddr());
                 }
 
-                return nodeDown(entry);
+                nodeDown(entry);
+                return value;
             });
         }
 
-        return CompletableFuture.completedFuture(nodeDown(entry));
+        nodeDown(entry);
+        return CompletableFuture.completedFuture(true);
     }
 
     public void masterDown() {
         nodeDown(masterEntry);
     }
 
-    public boolean nodeDown(ClientConnectionsEntry entry) {
-        entry.reset();
+    private void reattachPubSub(ClientConnectionsEntry entry) {
+        entry.resetPubSubConnectionsSemaphore();
+
+        for (RedisPubSubConnection connection : entry.getAllSubscribeConnections()) {
+            connection.closeAsync();
+            connectionManager.getSubscribeService().reattachPubSub(connection);
+        }
+        while (true) {
+            RedisConnection connection = entry.pollSubscribeConnection();
+            if (connection == null) {
+                break;
+            }
+        }
+        entry.getAllSubscribeConnections().clear();
+    }
+
+    public void nodeDown(ClientConnectionsEntry entry) {
+        entry.resetConnectionsSemaphore();
         
         for (RedisConnection connection : entry.getAllConnections()) {
             connection.closeAsync();
@@ -257,19 +278,7 @@ public class MasterSlaveEntry {
         }
         entry.getAllConnections().clear();
 
-        for (RedisPubSubConnection connection : entry.getAllSubscribeConnections()) {
-            connection.closeAsync();
-            connectionManager.getSubscribeService().reattachPubSub(connection);
-        }
-        while (true) {
-            RedisConnection connection = entry.pollSubscribeConnection();
-            if (connection == null) {
-                break;
-            }
-        }
-        entry.getAllSubscribeConnections().clear();
-        
-        return true;
+        reattachPubSub(entry);
     }
 
     private void reattachBlockingQueue(CommandData<?, ?> commandData) {
@@ -415,38 +424,26 @@ public class MasterSlaveEntry {
         return masterEntry.getClient();
     }
 
-    public boolean slaveUp(ClientConnectionsEntry entry, FreezeReason freezeReason) {
-        if (!slaveBalancer.unfreeze(entry, freezeReason)) {
-            return false;
-        }
-
-        InetSocketAddress addr = masterEntry.getClient().getAddr();
-        // exclude master from slaves
-        if (!config.isSlaveNotUsed()
-                && !addr.equals(entry.getClient().getAddr())) {
-            if (slaveDown(addr, FreezeReason.SYSTEM)) {
-                log.info("master {} excluded from slaves", addr);
-            }
-        }
+    public CompletableFuture<Boolean> slaveUpAsync(ClientConnectionsEntry entry, FreezeReason freezeReason) {
         noPubSubSlaves.set(false);
-        return true;
+        CompletableFuture<Boolean> f = slaveBalancer.unfreezeAsync(entry, freezeReason);
+        return f.thenCompose(r -> {
+            if (r) {
+                return excludeMasterFromSlaves(entry.getClient().getAddr());
+            }
+            return CompletableFuture.completedFuture(r);
+        });
     }
     
-    public boolean slaveUp(RedisURI address, FreezeReason freezeReason) {
-        if (!slaveBalancer.unfreeze(address, freezeReason)) {
-            return false;
-        }
-
-        InetSocketAddress addr = masterEntry.getClient().getAddr();
-        // exclude master from slaves
-        if (!config.isSlaveNotUsed()
-                && !address.equals(addr)) {
-            if (slaveDown(addr, FreezeReason.SYSTEM)) {
-                log.info("master {} excluded from slaves", addr);
-            }
-        }
+    public CompletableFuture<Boolean> slaveUpAsync(RedisURI address, FreezeReason freezeReason) {
         noPubSubSlaves.set(false);
-        return true;
+        CompletableFuture<Boolean> f = slaveBalancer.unfreezeAsync(address, freezeReason);
+        return f.thenCompose(r -> {
+            if (r) {
+                return excludeMasterFromSlaves(address);
+            }
+            return CompletableFuture.completedFuture(r);
+        });
     }
 
     public CompletableFuture<Boolean> excludeMasterFromSlaves(RedisURI address) {
@@ -457,6 +454,9 @@ public class MasterSlaveEntry {
         CompletableFuture<Boolean> downFuture = slaveDownAsync(addr, FreezeReason.SYSTEM);
         return downFuture.thenApply(r -> {
             if (r) {
+                if (config.getSubscriptionMode() == SubscriptionMode.SLAVE) {
+                    reattachPubSub(masterEntry);
+                }
                 log.info("master {} excluded from slaves", addr);
             }
             return r;
@@ -471,13 +471,16 @@ public class MasterSlaveEntry {
         CompletableFuture<Boolean> downFuture = slaveDownAsync(addr, FreezeReason.SYSTEM);
         return downFuture.thenApply(r -> {
             if (r) {
+                if (config.getSubscriptionMode() == SubscriptionMode.SLAVE) {
+                    reattachPubSub(masterEntry);
+                }
                 log.info("master {} excluded from slaves", addr);
             }
             return r;
         });
     }
 
-    public CompletableFuture<Boolean> slaveUpAsync(RedisURI address, FreezeReason freezeReason) {
+    public CompletableFuture<Boolean> slaveUpNoMasterExclusionAsync(RedisURI address, FreezeReason freezeReason) {
         noPubSubSlaves.set(false);
         return slaveBalancer.unfreezeAsync(address, freezeReason);
     }
@@ -492,24 +495,6 @@ public class MasterSlaveEntry {
             return CompletableFuture.completedFuture(r);
         });
     }
-
-    public boolean slaveUp(InetSocketAddress address, FreezeReason freezeReason) {
-        if (!slaveBalancer.unfreeze(address, freezeReason)) {
-            return false;
-        }
-
-        InetSocketAddress addr = masterEntry.getClient().getAddr();
-        // exclude master from slaves
-        if (!config.isSlaveNotUsed()
-                && !addr.equals(address)) {
-            if (slaveDown(addr, FreezeReason.SYSTEM)) {
-                log.info("master {} excluded from slaves", addr);
-            }
-        }
-        noPubSubSlaves.set(false);
-        return true;
-    }
-
 
     /**
      * Freeze slave with <code>redis(s)://host:port</code> from slaves list.
@@ -557,7 +542,7 @@ public class MasterSlaveEntry {
             slaveBalancer.changeType(oldMaster.getClient().getAddr(), NodeType.SLAVE);
             slaveBalancer.changeType(newMasterClient.getAddr(), NodeType.MASTER);
             // freeze in slaveBalancer
-            slaveDown(oldMaster.getClient().getAddr(), FreezeReason.MANAGER);
+            slaveDownAsync(oldMaster.getClient().getAddr(), FreezeReason.MANAGER);
 
             // check if at least one slave is available, use master as slave if false
             if (!config.isSlaveNotUsed()) {

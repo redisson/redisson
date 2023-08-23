@@ -37,11 +37,10 @@ public class SubscribeListener extends BaseRedisPubSubListener {
     }
 
     @Override
-    public boolean onStatus(PubSubType type, CharSequence channel) {
+    public void onStatus(PubSubType type, CharSequence channel) {
         if (name.equals(channel) && this.type.equals(type)) {
             promise.complete(null);
         }
-        return true;
     }
 
     public CompletableFuture<Void> getSuccessFuture() {

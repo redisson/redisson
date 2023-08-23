@@ -612,7 +612,7 @@ public class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
-    public <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec, MapOptions<K, V> options) {
+    public <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec, MapCacheOptions<K, V> options) {
         RMapCache<K, V> map = new RedissonMapCache<>(codec, evictionScheduler, commandExecutor, name, null, options, writeBehindService);
         return ReactiveProxyBuilder.create(commandExecutor, map,
                 new RedissonMapCacheReactive<>(map, commandExecutor), RMapCacheReactive.class);
@@ -620,7 +620,7 @@ public class RedissonReactive implements RedissonReactiveClient {
 
 
     @Override
-    public <K, V> RMapCacheReactive<K, V> getMapCache(String name, MapOptions<K, V> options) {
+    public <K, V> RMapCacheReactive<K, V> getMapCache(String name, MapCacheOptions<K, V> options) {
         RMapCache<K, V> map = new RedissonMapCache<K, V>(evictionScheduler, commandExecutor, name, null, options, writeBehindService);
         return ReactiveProxyBuilder.create(commandExecutor, map,
                 new RedissonMapCacheReactive<>(map, commandExecutor), RMapCacheReactive.class);

@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-parent</artifactId>
-        <version>3.22.2-SNAPSHOT</version>
+        <version>3.23.4-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
@@ -16,6 +16,7 @@
     <modules>
         <module>redisson-micronaut-20</module>
         <module>redisson-micronaut-30</module>
+        <module>redisson-micronaut-40</module>
     </modules>
 
 </project>

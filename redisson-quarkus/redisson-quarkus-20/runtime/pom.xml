@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-quarkus-20-parent</artifactId>
-        <version>3.22.2-SNAPSHOT</version>
+        <version>3.23.4-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
@@ -32,6 +32,13 @@
           <artifactId>netty-transport-native-kqueue</artifactId>
           <classifier>osx-x86_64</classifier>
       </dependency>
+        <dependency>
+            <groupId>io.netty.incubator</groupId>
+            <artifactId>netty-incubator-transport-native-io_uring</artifactId>
+            <version>0.0.21.Final</version>
+            <classifier>linux-x86_64</classifier>
+        </dependency>
+
 
       <dependency>
           <groupId>org.redisson</groupId>
@@ -48,6 +55,12 @@
               <groupId>org.graalvm.nativeimage</groupId>
               <artifactId>svm</artifactId>
               <scope>provided</scope>
+          </dependency>
+
+          <dependency>
+              <groupId>com.github.ben-manes.caffeine</groupId>
+              <artifactId>caffeine</artifactId>
+              <version>3.1.1</version>
           </dependency>
 
     </dependencies>

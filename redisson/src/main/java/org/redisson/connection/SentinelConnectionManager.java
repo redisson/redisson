@@ -15,7 +15,6 @@
  */
 package org.redisson.connection;
 
-import io.netty.resolver.AddressResolver;
 import io.netty.util.NetUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -58,7 +57,6 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
     private final Set<RedisURI> disconnectedSlaves = new HashSet<>();
     private ScheduledFuture<?> monitorFuture;
-    private final AddressResolver<InetSocketAddress> sentinelResolver;
     private final Set<RedisURI> disconnectedSentinels = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     private RedisStrictCommand<RedisURI> masterHostCommand;
@@ -71,8 +69,6 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         super(cfg, serviceManager);
         this.serviceManager.setNatMapper(cfg.getNatMapper());
 
-        this.sentinelResolver = serviceManager.getResolverGroup().getResolver(serviceManager.getGroup().next());
-
         for (String address : cfg.getSentinelAddresses()) {
             RedisURI addr = new RedisURI(address);
             scheme = addr.getScheme();
@@ -84,7 +80,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     @Override
-    public void connect() {
+    public void doConnect() {
         checkAuth(cfg);
 
         if ("redis".equals(scheme)) {
@@ -202,7 +198,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             log.warn("ReadMode = {}, but slave nodes are not found!", this.config.getReadMode());
         }
 
-        super.connect();
+        super.doConnect();
 
         scheduleChangeCheck(cfg, null);
     }
@@ -284,7 +280,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
     private void performSentinelDNSCheck(FutureListener<List<InetSocketAddress>> commonListener) {
         for (RedisURI host : sentinelHosts) {
-            Future<List<InetSocketAddress>> allNodes = sentinelResolver.resolveAll(InetSocketAddress.createUnresolved(host.getHost(), host.getPort()));
+            Future<List<InetSocketAddress>> allNodes = serviceManager.resolveAll(host);
             allNodes.addListener((FutureListener<List<InetSocketAddress>>) future -> {
                 if (!future.isSuccess()) {
                     log.error("Unable to resolve {}", host.getHost(), future.cause());
@@ -594,7 +590,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             });
         }
 
-        CompletableFuture<Boolean> f = entry.slaveUpAsync(uri, FreezeReason.MANAGER);
+        CompletableFuture<Boolean> f = entry.slaveUpNoMasterExclusionAsync(uri, FreezeReason.MANAGER);
         return f.thenCompose(e -> {
             if (e) {
                 log.info("slave: {} is up", uri);

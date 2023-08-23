@@ -41,6 +41,28 @@ import org.redisson.eviction.EvictionScheduler;
 public class RedissonMapCacheTest extends BaseMapTest {
 
     @Test
+    public void testRemoveEmptyEvictionTask() throws InterruptedException {
+        Config config = createConfig();
+        config.setMaxCleanUpDelay(2);
+        config.setMinCleanUpDelay(1);
+        RedissonClient redisson = Redisson.create(config);
+
+        assertThat(redisson.getKeys().count()).isZero();
+        RMapCache<Integer, Integer> map = redisson.getMapCache("simple", MapCacheOptions.<Integer, Integer>defaults().removeEmptyEvictionTask());
+        map.fastPut(1, 1, 1, TimeUnit.SECONDS);
+
+        EvictionScheduler evictionScheduler = ((Redisson) redisson).getEvictionScheduler();
+        Map<?, ?> tasks = Reflect.on(evictionScheduler).get("tasks");
+        assertThat(tasks.isEmpty()).isFalse();
+
+        Thread.sleep(6000);
+
+        assertThat(tasks.isEmpty()).isTrue();
+
+        redisson.shutdown();
+    }
+
+    @Test
     public void testFastPutExpiration() throws Exception {
         RMapCache<String, Object> mapCache = redisson.getMapCache("testFastPutExpiration");
         mapCache.fastPut("k1", "v1", 1, TimeUnit.SECONDS);
@@ -75,6 +97,57 @@ public class RedissonMapCacheTest extends BaseMapTest {
         assertThat(cache.getWithTTLOnly(1)).isEqualTo(2);
         Thread.sleep(2000);
         assertThat(cache.getWithTTLOnly(1)).isNull();
+    }
+
+    @Test
+    public void testEntryEntryIfNotSet() throws InterruptedException {
+        RMapCache<Integer, Integer> cache = redisson.getMapCache("testUpdateEntryExpiration");
+        cache.put(1, 10);
+        cache.put(2, 20);
+        cache.put(3, 30, 1, TimeUnit.SECONDS);
+
+        assertThat(cache.expireEntryIfNotSet(2, Duration.ofSeconds(2), null)).isTrue();
+        assertThat(cache.expireEntryIfNotSet(3, Duration.ofSeconds(4), null)).isFalse();
+        long ttl2 = cache.remainTimeToLive(2);
+        assertThat(ttl2).isBetween(1900L, 2000L);
+        Thread.sleep(1200);
+        assertThat(cache.containsKey(2)).isTrue();
+        assertThat(cache.containsKey(3)).isFalse();
+        Thread.sleep(1300);
+        assertThat(cache.containsKey(2)).isFalse();
+    }
+
+    @Test
+    public void testEntryEntriesIfNotSet() throws InterruptedException {
+        RMapCache<Integer, Integer> cache = redisson.getMapCache("testUpdateEntryExpiration");
+        cache.put(1, 10);
+        cache.put(2, 20);
+        cache.put(3, 30, 1, TimeUnit.SECONDS);
+
+        assertThat(cache.expireEntriesIfNotSet(new HashSet<>(Arrays.asList(2, 3)), Duration.ofSeconds(2), null)).isEqualTo(1);
+        long ttl2 = cache.remainTimeToLive(2);
+        assertThat(ttl2).isBetween(1900L, 2000L);
+        Thread.sleep(2200);
+        assertThat(cache.expireEntriesIfNotSet(new HashSet<>(Arrays.asList(2, 3)), Duration.ofSeconds(2), null)).isZero();
+        assertThat(cache.containsKey(2)).isFalse();
+        assertThat(cache.containsKey(3)).isFalse();
+    }
+
+    @Test
+    public void testEntryEntries() throws InterruptedException {
+        RMapCache<Integer, Integer> cache = redisson.getMapCache("testUpdateEntryExpiration");
+        cache.put(1, 10, 3, TimeUnit.SECONDS);
+        cache.put(2, 20, 3, TimeUnit.SECONDS);
+        cache.put(3, 30, 3, TimeUnit.SECONDS);
+
+        Thread.sleep(2000);
+        long ttl = cache.remainTimeToLive(1);
+        assertThat(ttl).isBetween(900L, 1000L);
+        assertThat(cache.expireEntries(new HashSet<>(Arrays.asList(2, 3)), Duration.ofSeconds(2), null)).isEqualTo(2);
+        long ttl2 = cache.remainTimeToLive(2);
+        assertThat(ttl2).isBetween(1900L, 2000L);
+        Thread.sleep(2000);
+        assertThat(cache.expireEntries(new HashSet<>(Arrays.asList(2, 3)), Duration.ofSeconds(2), null)).isZero();
     }
 
     @Test
@@ -137,13 +210,13 @@ public class RedissonMapCacheTest extends BaseMapTest {
     
     @Override
     protected <K, V> RMap<K, V> getWriterTestMap(String name, Map<K, V> map) {
-        MapOptions<K, V> options = MapOptions.<K, V>defaults().writer(createMapWriter(map));
+        MapCacheOptions<K, V> options = MapCacheOptions.<K, V>defaults().writer(createMapWriter(map));
         return redisson.getMapCache("test", options);        
     }
     
     @Override
     protected <K, V> RMap<K, V> getWriteBehindTestMap(String name, Map<K, V> map) {
-        MapOptions<K, V> options = MapOptions.<K, V>defaults()
+        MapCacheOptions<K, V> options = MapCacheOptions.<K, V>defaults()
                                     .writer(createMapWriter(map))
                                     .writeMode(WriteMode.WRITE_BEHIND);
         return redisson.getMapCache("test", options);        
@@ -151,7 +224,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
 
     @Override
     protected <K, V> RMap<K, V> getWriteBehindAsyncTestMap(String name, Map<K, V> map) {
-        MapOptions<K, V> options = MapOptions.<K, V>defaults()
+        MapCacheOptions<K, V> options = MapCacheOptions.<K, V>defaults()
                 .writerAsync(createMapWriterAsync(map))
                 .writeMode(WriteMode.WRITE_BEHIND);
         return redisson.getMapCache("test", options);
@@ -159,13 +232,13 @@ public class RedissonMapCacheTest extends BaseMapTest {
 
     @Override
     protected <K, V> RMap<K, V> getLoaderTestMap(String name, Map<K, V> map) {
-        MapOptions<K, V> options = MapOptions.<K, V>defaults().loader(createMapLoader(map));
+        MapCacheOptions<K, V> options = MapCacheOptions.<K, V>defaults().loader(createMapLoader(map));
         return redisson.getMapCache("test", options);        
     }
 
     @Override
     protected <K, V> RMap<K, V> getLoaderAsyncTestMap(String name, Map<K, V> map) {
-        MapOptions<K, V> options = MapOptions.<K, V>defaults().loaderAsync(createMapLoaderAsync(map));
+        MapCacheOptions<K, V> options = MapCacheOptions.<K, V>defaults().loaderAsync(createMapLoaderAsync(map));
         return redisson.getMapCache("test", options);
     }
 
@@ -333,7 +406,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
                 return size() > maxSize.get();
             }
         };
-        MapOptions<String, String> options = MapOptions.<String, String>defaults().writer(createMapWriter(store));
+        MapCacheOptions<String, String> options = MapCacheOptions.<String, String>defaults().writer(createMapWriter(store));
         RMapCache<String, String> map = redisson.getMapCache("test", options);
         assertThat(map.trySetMaxSize(maxSize.get())).isTrue();
         assertThat(map.trySetMaxSize(1)).isFalse();

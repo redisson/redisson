@@ -73,7 +73,6 @@ public final class AggregationOptions {
     }
 
     public AggregationOptions groupBy(GroupBy... groups) {
-        groupBy(GroupBy.fieldNames("123").reducers(Reducer.avg("12").as("23")));
         groupByParams = Arrays.stream(groups).map(g -> (GroupParams) g).collect(Collectors.toList());
         return this;
     }

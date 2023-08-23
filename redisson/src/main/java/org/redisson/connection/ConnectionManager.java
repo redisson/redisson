@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
  */
 public interface ConnectionManager {
 
-    void connect();
+    void connect() throws InterruptedException;
 
     PublishSubscribeService getSubscribeService();
     

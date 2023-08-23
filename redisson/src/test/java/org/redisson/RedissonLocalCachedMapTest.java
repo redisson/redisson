@@ -151,6 +151,7 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
                 .randomDir()
                 .notifyKeyspaceEvents(
                         RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
+                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.K,
                         RedisRunner.KEYSPACE_EVENTS_OPTIONS.x)
                 .run();
 
@@ -433,7 +434,7 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         map2.put("2", 4);
         Thread.sleep(50);
 
-        assertThat(redisson.getKeys().getKeys()).containsOnly("test:suffix:");
+        assertThat(redisson.getKeys().getKeys()).containsOnly("test");
 
         RedisClientConfig destinationCfg = new RedisClientConfig();
         destinationCfg.setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
@@ -448,6 +449,19 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         assertThat(cache2.size()).isEqualTo(1);
 
         redisson.shutdown();
+    }
+
+    @Test
+    public void testPutAllSyncUpdate() {
+        RLocalCachedMap<Object, Object> rLocalCachedMap1 = redisson.getLocalCachedMap("znMapTest1", LocalCachedMapOptions.defaults()
+                .evictionPolicy(EvictionPolicy.NONE)
+                .cacheSize(0)
+                .syncStrategy(SyncStrategy.UPDATE)
+                .reconnectionStrategy(ReconnectionStrategy.NONE)
+                .writeMode(WriteMode.WRITE_BEHIND));
+        Map<String, String> map = new HashMap<>();
+        map.put("test", "123");
+        rLocalCachedMap1.putAll(map);
     }
 
     @Test

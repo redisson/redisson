@@ -18,6 +18,7 @@ package org.redisson.api.redisnode;
 import org.redisson.client.protocol.Time;
 
 import java.net.InetSocketAddress;
+import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -92,5 +93,42 @@ public interface RedisNode {
      * @param value - value of parameter
      */
     void setConfig(String parameter, String value);
+
+    /**
+     * Runs the Redis database saving process in background.
+     *
+     */
+    void bgSave();
+
+    /**
+     * Save the Redis database in background.
+     * If AOF rewrite process is in progress then
+     * the background save is scheduled to run upon its completion.
+     *
+     */
+    void scheduleBgSave();
+
+    /**
+     * Save the Redis database.
+     *
+     */
+    void save();
+
+    /**
+     * Returns time of the last successful
+     * Redis database save operation.
+     *
+     * @return time
+     */
+    Instant getLastSaveTime();
+
+    /**
+     * Runs an Append Only File rewrite process.
+     * Starts only if there is no a background process doing persistence.
+     * <p>
+     * If fails no data gets lost
+     *
+     */
+    void bgRewriteAOF();
 
 }

@@ -381,6 +381,10 @@ public class Config {
         return sentinelServersConfig != null;
     }
 
+    public boolean isSingleConfig() {
+        return singleServerConfig != null;
+    }
+
     public int getThreads() {
         return threads;
     }

@@ -153,7 +153,8 @@ public class RedisCommonBatchExecutor extends RedisExecutor<Object, Void> {
     }
 
     protected boolean isWaitCommand(CommandData<?, ?> c) {
-        return c.getCommand().getName().equals(RedisCommands.WAIT.getName());
+        return c.getCommand().getName().equals(RedisCommands.WAIT.getName())
+                || c.getCommand().getName().equals(RedisCommands.WAITAOF.getName());
     }
 
     @Override

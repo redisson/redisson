@@ -1,5 +1,9 @@
 [
 {
+  "name": "org.redisson.codec.Kryo5Codec",
+  "allDeclaredConstructors":true
+},
+{
   "name": "com.esotericsoftware.kryo.serializers.BeanSerializer",
   "allDeclaredConstructors":true
 },
