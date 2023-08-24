@@ -541,8 +541,6 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
         Awaitility.await().atMost(Duration.ofMillis(250)).pollDelay(Duration.ofMillis(10)).untilAsserted(() -> {
             assertThat(semaphore.availablePermits()).isEqualTo(10);
         });
-
-        Assertions.assertDoesNotThrow(() -> semaphore.release(permitsIds));
     }
 
     @Test

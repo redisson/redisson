@@ -156,7 +156,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         
         if (time.get() <= 0) {
             unsubscribe(entry);
-            result.complete(null);
+            result.complete(Collections.emptyList());
             return;
         }
         
@@ -188,7 +188,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             
             if (time.get() <= 0) {
                 unsubscribe(entry);
-                result.complete(null);
+                result.complete(Collections.emptyList());
                 return;
             }
 
@@ -535,12 +535,12 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             time.addAndGet(-el);
             
             if (time.get() <= 0) {
-                result.complete(null);
+                result.complete(Collections.emptyList());
                 return;
             }
             
             long current = System.currentTimeMillis();
-            AtomicReference<Timeout> futureRef = new AtomicReference<Timeout>();
+            AtomicReference<Timeout> futureRef = new AtomicReference<>();
             CompletableFuture<RedissonLockEntry> subscribeFuture = subscribe();
             subscribeFuture.whenComplete((r, ex) -> {
                 if (ex != null) {
@@ -563,7 +563,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                     @Override
                     public void run(Timeout timeout) throws Exception {
                         if (!subscribeFuture.isDone()) {
-                            result.complete(null);
+                            result.complete(Collections.emptyList());
                         }
                     }
                 }, time.get(), TimeUnit.MILLISECONDS);
