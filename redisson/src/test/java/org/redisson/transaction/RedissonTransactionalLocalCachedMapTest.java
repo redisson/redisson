@@ -8,9 +8,46 @@ import org.redisson.api.RLocalCachedMap;
 import org.redisson.api.RMap;
 import org.redisson.api.RTransaction;
 import org.redisson.api.TransactionOptions;
+import org.redisson.api.map.MapLoader;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class RedissonTransactionalLocalCachedMapTest extends BaseTest {
 
+
+    // reproducer for https://github.com/redisson/redisson/issues/5198
+    //@Test
+    public void test1() {
+        final LocalCachedMapOptions opts = LocalCachedMapOptions.defaults();
+        final Map<String, String> externalStore = new HashMap<>();
+        externalStore.put("hello", "world");
+        opts.loader(new MapLoader<String, String>() {
+            @Override
+            public String load(String key) {
+                return externalStore.get(key);
+            }
+
+            @Override
+            public Iterable loadAllKeys() {
+                return externalStore.keySet();
+            }
+        });
+
+        RLocalCachedMap lcMap = redisson.getLocalCachedMap("lcMap", opts);
+
+        // Uncomment the below line and hang will be avoided
+//         lcMap.get("hello");
+
+        RTransaction tx = redisson.createTransaction(TransactionOptions.defaults());
+        RLocalCachedMap txMap = tx.getLocalCachedMap(lcMap);
+
+        // Below line will hang for tx timeout period
+        txMap.fastRemove("hello");
+
+        // Commit will fail because tx has timed out
+        tx.commit();
+    }
     @Test
     public void testPut() throws InterruptedException {
         RLocalCachedMap<String, String> m1 = redisson.getLocalCachedMap("test", LocalCachedMapOptions.defaults());
