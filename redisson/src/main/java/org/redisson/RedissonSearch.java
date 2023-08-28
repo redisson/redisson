@@ -254,6 +254,13 @@ public class RedissonSearch implements RSearch {
                 args.add(params.getAs());
             }
             args.add("TAG");
+            if (params.isCaseSensitive()) {
+                args.add("CASESENSITIVE");
+            }
+            if (params.getSeparator() != null) {
+                args.add("SEPARATOR");
+                args.add(params.getSeparator());
+            }
             if (params.getSortMode() != null) {
                 args.add("SORTABLE");
                 if (params.getSortMode() == SortMode.UNNORMALIZED) {
@@ -262,13 +269,6 @@ public class RedissonSearch implements RSearch {
             }
             if (params.isNoIndex()) {
                 args.add("NOINDEX");
-            }
-            if (params.getSeparator() != null) {
-                args.add("SEPARATOR");
-                args.add(params.getSeparator());
-            }
-            if (params.isCaseSensitive()) {
-                args.add("CASESENSITIVE");
             }
             if (params.isWithSuffixTrie()) {
                 args.add("WITHSUFFIXTRIE");

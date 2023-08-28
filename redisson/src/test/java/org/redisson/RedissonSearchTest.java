@@ -7,10 +7,7 @@ import org.redisson.api.RSearch;
 import org.redisson.api.search.SpellcheckOptions;
 import org.redisson.api.search.aggregate.AggregationOptions;
 import org.redisson.api.search.aggregate.AggregationResult;
-import org.redisson.api.search.index.FieldIndex;
-import org.redisson.api.search.index.IndexInfo;
-import org.redisson.api.search.index.IndexOptions;
-import org.redisson.api.search.index.IndexType;
+import org.redisson.api.search.index.*;
 import org.redisson.api.search.query.Document;
 import org.redisson.api.search.query.QueryOptions;
 import org.redisson.api.search.query.ReturnAttribute;
@@ -259,6 +256,24 @@ public class RedissonSearchTest extends BaseTest {
         Map<String, Map<String, Double>> emptyRes = s.spellcheck("idx", "Hocke sti", SpellcheckOptions.defaults());
         assertThat(emptyRes.get("hocke")).isEmpty();
         assertThat(emptyRes.get("sti")).isEmpty();
+    }
+
+    @Test
+    public void testFieldTag() {
+        IndexOptions indexOptions = IndexOptions.defaults()
+                .on(IndexType.JSON)
+                .prefix(Arrays.asList("items"));
+
+        FieldIndex[] fields = new FieldIndex[]{
+                FieldIndex.tag("$.name")
+                        .caseSensitive()
+                        .noIndex()
+                        .separator("a")
+                        .sortMode(SortMode.NORMALIZED)
+                        .as("name")
+        };
+        RSearch s = redisson.getSearch();
+        s.createIndex("itemIndex", indexOptions, fields);
     }
 
     @Test
