@@ -46,6 +46,7 @@ import org.springframework.util.ReflectionUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -79,13 +80,6 @@ public class RedissonAutoConfiguration {
 
     @Autowired
     private ApplicationContext ctx;
-
-    @Bean
-    @ConditionalOnClass(RedisConnectionDetails.class)
-    @ConditionalOnMissingBean(RedisConnectionDetails.class)
-    Object redisConnectionDetails(RedisProperties properties) {
-        return new PropertiesRedisConnectionDetails(properties);
-    }
 
     @Bean
     @ConditionalOnMissingBean(name = "redisTemplate")
@@ -123,6 +117,15 @@ public class RedissonAutoConfiguration {
         return redisson.rxJava();
     }
 
+    private boolean hasConnectionDetails() {
+        try {
+            Class.forName("org.springframework.boot.autoconfigure.data.redis.RedisConnectionDetails");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
+
     @Bean(destroyMethod = "shutdown")
     @ConditionalOnMissingBean(RedissonClient.class)
     public RedissonClient redisson() throws IOException {
@@ -132,8 +135,21 @@ public class RedissonAutoConfiguration {
         Method timeoutMethod = ReflectionUtils.findMethod(RedisProperties.class, "getTimeout");
         Method connectTimeoutMethod = ReflectionUtils.findMethod(RedisProperties.class, "getConnectTimeout");
         Method clientNameMethod = ReflectionUtils.findMethod(RedisProperties.class, "getClientName");
+
         Object timeoutValue = ReflectionUtils.invokeMethod(timeoutMethod, redisProperties);
         String prefix = getPrefix();
+
+        String username = null;
+        int database = redisProperties.getDatabase();
+        String password = redisProperties.getPassword();
+        if (hasConnectionDetails()) {
+            ObjectProvider<RedisConnectionDetails> provider = ctx.getBeanProvider(RedisConnectionDetails.class);
+            RedisConnectionDetails b = provider.getIfAvailable();
+            if (b != null) {
+                password = b.getPassword();
+                username = b.getUsername();
+            }
+        }
 
         Integer timeout = null;
         if (timeoutValue instanceof Duration) {
@@ -157,7 +173,6 @@ public class RedissonAutoConfiguration {
             clientName = (String) ReflectionUtils.invokeMethod(clientNameMethod, redisProperties);
         }
 
-        String username = null;
         if (usernameMethod != null) {
             username = (String) ReflectionUtils.invokeMethod(usernameMethod, redisProperties);
         }
@@ -198,13 +213,31 @@ public class RedissonAutoConfiguration {
                 nodes = convert(prefix, (List<String>)nodesValue);
             }
 
+            String sentinelMaster = redisProperties.getSentinel().getMaster();
+
+            String sentinelUsername = null;
+            String sentinelPassword = null;
+            if (hasConnectionDetails()) {
+                ObjectProvider<RedisConnectionDetails> provider = ctx.getBeanProvider(RedisConnectionDetails.class);
+                RedisConnectionDetails b = provider.getIfAvailable();
+                if (b.getSentinel() != null) {
+                    database = b.getSentinel().getDatabase();
+                    sentinelMaster = b.getSentinel().getMaster();
+                    nodes = convertNodes(prefix, (List<Object>) (Object) b.getSentinel().getNodes());
+                    sentinelUsername = b.getSentinel().getUsername();
+                    sentinelPassword = b.getSentinel().getPassword();
+                }
+            }
+
             config = new Config();
             SentinelServersConfig c = config.useSentinelServers()
-                    .setMasterName(redisProperties.getSentinel().getMaster())
+                    .setMasterName(sentinelMaster)
                     .addSentinelAddress(nodes)
-                    .setDatabase(redisProperties.getDatabase())
+                    .setSentinelPassword(sentinelPassword)
+                    .setSentinelUsername(sentinelUsername)
+                    .setDatabase(database)
                     .setUsername(username)
-                    .setPassword(redisProperties.getPassword())
+                    .setPassword(password)
                     .setClientName(clientName);
             if (connectTimeout != null) {
                 c.setConnectTimeout(connectTimeout);
@@ -220,11 +253,19 @@ public class RedissonAutoConfiguration {
 
             String[] nodes = convert(prefix, nodesObject);
 
+            if (hasConnectionDetails()) {
+                ObjectProvider<RedisConnectionDetails> provider = ctx.getBeanProvider(RedisConnectionDetails.class);
+                RedisConnectionDetails b = provider.getIfAvailable();
+                if (b.getCluster() != null) {
+                    nodes = convertNodes(prefix, (List<Object>) (Object) b.getCluster().getNodes());
+                }
+            }
+
             config = new Config();
             ClusterServersConfig c = config.useClusterServers()
                     .addNodeAddress(nodes)
                     .setUsername(username)
-                    .setPassword(redisProperties.getPassword())
+                    .setPassword(password)
                     .setClientName(clientName);
             if (connectTimeout != null) {
                 c.setConnectTimeout(connectTimeout);
@@ -236,11 +277,22 @@ public class RedissonAutoConfiguration {
         } else {
             config = new Config();
 
+            String singleAddr = prefix + redisProperties.getHost() + ":" + redisProperties.getPort();
+
+            if (hasConnectionDetails()) {
+                ObjectProvider<RedisConnectionDetails> provider = ctx.getBeanProvider(RedisConnectionDetails.class);
+                RedisConnectionDetails b = provider.getIfAvailable();
+                if (b.getStandalone() != null) {
+                    database = b.getStandalone().getDatabase();
+                    singleAddr = prefix + b.getStandalone().getHost() + ":" + b.getStandalone().getPort();
+                }
+            }
+
             SingleServerConfig c = config.useSingleServer()
-                    .setAddress(prefix + redisProperties.getHost() + ":" + redisProperties.getPort())
-                    .setDatabase(redisProperties.getDatabase())
+                    .setAddress(singleAddr)
+                    .setDatabase(database)
                     .setUsername(username)
-                    .setPassword(redisProperties.getPassword())
+                    .setPassword(password)
                     .setClientName(clientName);
             if (connectTimeout != null) {
                 c.setConnectTimeout(connectTimeout);
@@ -303,6 +355,18 @@ public class RedissonAutoConfiguration {
             }
         }
         return prefix;
+    }
+
+    private String[] convertNodes(String prefix, List<Object> nodesObject) {
+        List<String> nodes = new ArrayList<>(nodesObject.size());
+        for (Object node : nodesObject) {
+            Field hostField = ReflectionUtils.findField(node.getClass(), "host");
+            Field portField = ReflectionUtils.findField(node.getClass(), "port");
+            String host = (String) ReflectionUtils.getField(hostField, node);
+            int port = (int) ReflectionUtils.getField(portField, node);
+            nodes.add(prefix + host + ":" + port);
+        }
+        return nodes.toArray(new String[0]);
     }
 
     private String[] convert(String prefix, List<String> nodesObject) {
