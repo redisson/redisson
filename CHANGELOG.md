@@ -3,6 +3,22 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 29-Aug-2023 - 3.23.4 released
+
+Feature - methods for multiple permits support added to `RPermitExpirableSemaphore` object (thanks to @ikss)  
+Feature - `ProtobufCodec` codec added (thanks to @dumbbell-5kg)  
+Feature - `WAITAOF` command support through `BatchOptions.syncAOF()` setting  
+Feature - `bgSave()`, `scheduleBgSave()`, `save()`, `getLastSaveTime()`, `bgRewriteAOF()`, `size()` methods added to `RedisNode` object  
+
+Improvement - `RSemaphore` and `RLock` operations should have slave synchronization even if `readMode = MASTER` and `subscriptionMode = MASTER`  
+
+Fixed - wrong order call of RSearch's `FieldIndex` tag `caseSensitive()` and `separator()` settings  
+Fixed - `RedisConnectionDetails` object isn't used for Redisson configuration in Spring Boot 3.1+  
+Fixed - incorrect `slots added`,`slots removed` messages in Redis Cluster mode  
+Fixed - Tomcat Manager "Session can't be found" message should have debug level  
+Fixed - `RBoundedBlockingQueue` can't be deleted if `nameMapper` was defined  
+Fixed - `RLock` isn't unlocked after `RTransaction.commit()`  
+
 ### 28-Jul-2023 - 3.23.3 released
 Feature - `TransportMode.IO_URING` added (thanks to @sgammon)  
 Feature - `LocalCachedMapOptions.useKeyEventsPattern()` setting introduced  
