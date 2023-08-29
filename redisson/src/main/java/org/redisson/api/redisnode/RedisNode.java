@@ -131,4 +131,11 @@ public interface RedisNode {
      */
     void bgRewriteAOF();
 
+    /**
+     * Returns keys amount stored in this Redis node.
+     *
+     * @return keys amount
+     */
+    long size();
+
 }

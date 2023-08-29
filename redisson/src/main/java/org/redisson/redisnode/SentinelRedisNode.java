@@ -320,4 +320,15 @@ public class SentinelRedisNode implements RedisSentinel, RedisSentinelAsync {
     public RFuture<Void> bgRewriteAOFAsync() {
         return executeAsync(null, StringCodec.INSTANCE, -1, RedisCommands.BGREWRITEAOF);
     }
+
+    @Override
+    public long size() {
+        return commandAsyncService.get(sizeAsync());
+    }
+
+    @Override
+    public RFuture<Long> sizeAsync() {
+        return executeAsync(null, StringCodec.INSTANCE, -1, RedisCommands.DBSIZE);
+    }
+
 }

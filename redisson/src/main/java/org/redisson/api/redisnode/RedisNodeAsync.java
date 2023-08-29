@@ -123,4 +123,11 @@ public interface RedisNodeAsync {
      */
     RFuture<Void> bgRewriteAOFAsync();
 
+    /**
+     * Returns keys amount stored in this Redis node.
+     *
+     * @return keys amount
+     */
+    RFuture<Long> sizeAsync();
+
 }

@@ -389,4 +389,15 @@ public class RedisNode implements RedisClusterMaster, RedisClusterSlave, RedisMa
     public RFuture<Void> bgRewriteAOFAsync() {
         return commandExecutor.writeAsync(client, StringCodec.INSTANCE, RedisCommands.BGREWRITEAOF);
     }
+
+    @Override
+    public long size() {
+        return commandExecutor.get(sizeAsync());
+    }
+
+    @Override
+    public RFuture<Long> sizeAsync() {
+        return commandExecutor.writeAsync(client, StringCodec.INSTANCE, RedisCommands.DBSIZE);
+    }
+
 }
