@@ -22,4 +22,13 @@ package org.redisson.api.search.index;
  *
  */
 public interface FlatVectorIndex extends VectorTypeParam<FlatVectorOptionalArgs> {
+
+    /**
+     * Defines the attribute associated to the field name
+     *
+     * @param as the associated attribute
+     * @return options object
+     */
+    FlatVectorIndex as(String as);
+
 }

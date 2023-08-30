@@ -32,9 +32,16 @@ public final class FlatVectorIndexParams implements FlatVectorIndex,
     private Integer initialCapacity;
     private Integer blockSize;
     private int count;
+    private String as;
 
     FlatVectorIndexParams(String name) {
         this.fieldName = name;
+    }
+
+    @Override
+    public FlatVectorIndexParams as(String as) {
+        this.as = as;
+        return this;
     }
 
     @Override
@@ -98,5 +105,9 @@ public final class FlatVectorIndexParams implements FlatVectorIndex,
 
     public int getCount() {
         return count;
+    }
+
+    public String getAs() {
+        return as;
     }
 }

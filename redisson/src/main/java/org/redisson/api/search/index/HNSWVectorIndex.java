@@ -22,4 +22,13 @@ package org.redisson.api.search.index;
  *
  */
 public interface HNSWVectorIndex extends VectorTypeParam<HNSWVectorOptionalArgs> {
+
+    /**
+     * Defines the attribute associated to the field name
+     *
+     * @param as the associated attribute
+     * @return options object
+     */
+    HNSWVectorIndex as(String as);
+
 }

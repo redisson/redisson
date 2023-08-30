@@ -34,11 +34,17 @@ public final class HNSWVectorIndexParams implements HNSWVectorIndex,
     private Integer efConstruction;
     private Integer efRuntime;
     private Double epsilon;
-
     private int count;
+    private String as;
 
     HNSWVectorIndexParams(String name) {
         this.fieldName = name;
+    }
+
+    @Override
+    public HNSWVectorIndexParams as(String as) {
+        this.as = as;
+        return this;
     }
 
     @Override
@@ -135,5 +141,9 @@ public final class HNSWVectorIndexParams implements HNSWVectorIndex,
 
     public int getCount() {
         return count;
+    }
+
+    public String getAs() {
+        return as;
     }
 }
