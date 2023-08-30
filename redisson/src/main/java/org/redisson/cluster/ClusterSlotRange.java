@@ -38,7 +38,11 @@ public class ClusterSlotRange {
     public int getEndSlot() {
         return endSlot;
     }
-    
+
+    public boolean hasSlot(int slot) {
+        return slot >= startSlot && slot <= endSlot;
+    }
+
     public int size() {
         return endSlot - startSlot + 1;
     }
