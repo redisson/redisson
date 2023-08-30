@@ -184,7 +184,7 @@ public class RedissonSearch implements RSearch {
             args.add(params.getFieldName());
             args.add("VECTOR");
             args.add("FLAT");
-            args.add(params.getCount());
+            args.add(params.getCount()*2);
             args.add("TYPE");
             args.add(params.getType());
             args.add("DIM");

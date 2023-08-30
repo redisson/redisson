@@ -1,5 +1,6 @@
 package org.redisson;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RJsonBucket;
 import org.redisson.api.RMap;
@@ -14,6 +15,7 @@ import org.redisson.api.search.query.ReturnAttribute;
 import org.redisson.api.search.query.SearchResult;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.CompositeCodec;
+import org.redisson.codec.JacksonCodec;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -256,6 +258,44 @@ public class RedissonSearchTest extends BaseTest {
         Map<String, Map<String, Double>> emptyRes = s.spellcheck("idx", "Hocke sti", SpellcheckOptions.defaults());
         assertThat(emptyRes.get("hocke")).isEmpty();
         assertThat(emptyRes.get("sti")).isEmpty();
+    }
+
+    public static class TestClass {
+        private List<Float> vector;
+        private String content;
+
+        public TestClass(List<Float> vector, String content) {
+            this.vector = vector;
+            this.content = content;
+        }
+
+        public List<Float> getVector() {
+            return vector;
+        }
+
+        public String getContent() {
+            return content;
+        }
+    }
+
+    @Test
+    public void testVector() {
+        RJsonBucket<List<Float>> b = redisson.getJsonBucket("doc:1", new JacksonCodec<>(new TypeReference<List<Float>>() {}));
+        List<Float> vector = Arrays.asList(1F, 2F, 3F, 4F);
+        b.set(vector);
+
+        RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+        s.createIndex("text_index", IndexOptions.defaults()
+                        .on(IndexType.JSON)
+                        .prefix(Arrays.asList("doc:")),
+                FieldIndex.flatVector("$.vector")
+                        .type(VectorTypeParam.Type.FLOAT32)
+                        .dim(vector.size())
+                        .distance(VectorDistParam.DistanceMetric.COSINE),
+                FieldIndex.text("$.content").as("content"));
+
+        SearchResult r = s.search("text_index", "*", QueryOptions.defaults());
+        assertThat(r.getTotal()).isEqualTo(1);
     }
 
     @Test
