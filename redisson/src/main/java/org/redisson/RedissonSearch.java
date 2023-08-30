@@ -145,6 +145,10 @@ public class RedissonSearch implements RSearch {
         if (field instanceof HNSWVectorIndex) {
             HNSWVectorIndexParams params = (HNSWVectorIndexParams) field;
             args.add(params.getFieldName());
+            if (params.getAs() != null) {
+                args.add("AS");
+                args.add(params.getAs());
+            }
             args.add("VECTOR");
             args.add("HNSW");
             args.add(params.getCount());
@@ -182,6 +186,10 @@ public class RedissonSearch implements RSearch {
         if (field instanceof FlatVectorIndex) {
             FlatVectorIndexParams params = (FlatVectorIndexParams) field;
             args.add(params.getFieldName());
+            if (params.getAs() != null) {
+                args.add("AS");
+                args.add(params.getAs());
+            }
             args.add("VECTOR");
             args.add("FLAT");
             args.add(params.getCount()*2);

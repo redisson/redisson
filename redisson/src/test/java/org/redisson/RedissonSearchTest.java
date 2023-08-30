@@ -289,6 +289,12 @@ public class RedissonSearchTest extends BaseTest {
                         .on(IndexType.JSON)
                         .prefix(Arrays.asList("doc:")),
                 FieldIndex.flatVector("$.vector")
+                        .as("vector")
+                        .type(VectorTypeParam.Type.FLOAT32)
+                        .dim(vector.size())
+                        .distance(VectorDistParam.DistanceMetric.COSINE),
+                FieldIndex.hnswVector("$.vector")
+                        .as("vector2")
                         .type(VectorTypeParam.Type.FLOAT32)
                         .dim(vector.size())
                         .distance(VectorDistParam.DistanceMetric.COSINE),
