@@ -1,18 +1,16 @@
 /**
  * Copyright (c) 2013-2022 Nikita Koksharov
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
  * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
+
 package org.redisson.spring.annotation;
 
 import org.redisson.spring.type.LockTypeEnum;
@@ -31,18 +29,39 @@ import java.util.concurrent.TimeUnit;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD})
 public @interface RMutexLock {
+    
     /**
      * empty placeholder.
      */
     String placeholder = "@@empty";
-
+    
+    /**
+     * key name, empty value is {@value  placeholder} to compare whether key name is NULL.
+     * @return name
+     */
     String name() default placeholder;
-
+    
+    /**
+     * redis key wait time.
+     * @return long
+     */
     long waitTime() default -1L;
-
+    
+    /**
+     * redis key lease time.
+     * @return long
+     */
     long leaseTime() default -1L;
-
+    
+    /**
+     * time unit.
+     * @return unit
+     */
     TimeUnit timeUnit() default TimeUnit.SECONDS;
-
+    
+    /**
+     * redisson key type.
+     * @return type
+     */
     LockTypeEnum type() default LockTypeEnum.SIMPLE;
 }
