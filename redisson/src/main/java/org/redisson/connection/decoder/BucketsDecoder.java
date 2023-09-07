@@ -29,9 +29,9 @@ import java.util.Map;
  */
 public class BucketsDecoder implements MultiDecoder<Map<Object, Object>> {
 
-    private final List<String> keys;
+    private final List<Object> keys;
     
-    public BucketsDecoder(List<String> keys) {
+    public BucketsDecoder(List<Object> keys) {
         this.keys = keys;
     }
 

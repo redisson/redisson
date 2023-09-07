@@ -15,6 +15,7 @@
  */
 package org.redisson.connection;
 
+import io.netty.buffer.ByteBuf;
 import org.redisson.api.NodeType;
 import org.redisson.client.RedisClient;
 import org.redisson.misc.RedisURI;
@@ -40,7 +41,9 @@ public interface ConnectionManager {
     boolean isClusterMode();
 
     int calcSlot(String key);
-    
+
+    int calcSlot(ByteBuf key);
+
     int calcSlot(byte[] key);
 
     Collection<MasterSlaveEntry> getEntrySet();

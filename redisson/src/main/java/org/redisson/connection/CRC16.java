@@ -15,6 +15,8 @@
  */
 package org.redisson.connection;
 
+import io.netty.buffer.ByteBuf;
+
 /**
  * @author <a href="mailto:mpaluch@paluch.biz">Mark Paluch</a>
 **/
@@ -50,6 +52,16 @@ public final class CRC16 {
         int crc = 0x0000;
 
         for (byte b : bytes) {
+            crc = (crc << 8) ^ LOOKUP_TABLE[((crc >>> 8) ^ (b & 0xFF)) & 0xFF];
+        }
+        return crc & 0xFFFF;
+    }
+
+    public static int crc16(ByteBuf bytes) {
+        int crc = 0x0000;
+
+        for (int i = 0; i < bytes.readableBytes(); i++) {
+            byte b = bytes.getByte(bytes.readerIndex() + i);
             crc = (crc << 8) ^ LOOKUP_TABLE[((crc >>> 8) ^ (b & 0xFF)) & 0xFF];
         }
         return crc & 0xFFFF;

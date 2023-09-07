@@ -15,6 +15,7 @@
  */
 package org.redisson.cluster;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
@@ -791,7 +792,26 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         int result = CRC16.crc16(key) % MAX_SLOT;
         return result;
     }
-    
+
+    @Override
+    public int calcSlot(ByteBuf key) {
+        if (key == null) {
+            return 0;
+        }
+
+        int start = key.indexOf(key.readerIndex(), key.readerIndex() + key.readableBytes(), (byte) '{');
+        if (start != -1) {
+            int end = key.indexOf(start + 1, key.readerIndex() + key.readableBytes(), (byte) '}');
+            if (end != -1 && start + 1 < end) {
+                key = key.slice(start + 1, end-start - 1);
+            }
+        }
+
+        int result = CRC16.crc16(key) % MAX_SLOT;
+        log.debug("slot {} for {}", result, key);
+        return result;
+    }
+
     @Override
     public int calcSlot(String key) {
         if (key == null) {

@@ -28,11 +28,11 @@ import java.util.List;
  */
 public interface SlotCallback<T, R> {
 
-    default RedisCommand<T> createCommand(List<String> params) {
+    default RedisCommand<T> createCommand(List<Object> params) {
         return null;
     }
 
-    default Object[] createParams(List<String> params) {
+    default Object[] createParams(List<Object> params) {
         return params.toArray();
     }
 

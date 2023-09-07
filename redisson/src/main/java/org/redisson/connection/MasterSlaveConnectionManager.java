@@ -15,6 +15,7 @@
  */
 package org.redisson.connection;
 
+import io.netty.buffer.ByteBuf;
 import org.redisson.api.NodeType;
 import org.redisson.client.*;
 import org.redisson.cluster.ClusterSlotRange;
@@ -397,6 +398,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public int calcSlot(byte[] key) {
+        return singleSlotRange.getStartSlot();
+    }
+
+    @Override
+    public int calcSlot(ByteBuf key) {
         return singleSlotRange.getStartSlot();
     }
 
