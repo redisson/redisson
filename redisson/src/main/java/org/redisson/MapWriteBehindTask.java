@@ -84,7 +84,12 @@ public class MapWriteBehindTask {
     }
 
     private void flushTasks(Map<Object, Object> addedMap, List<Object> deletedKeys) {
-        final RetryableWriter retryableWriter = options.getWriter() == null ? options.getWriterAsync() : options.getWriter();
+        final RetryableWriter retryableWriter;
+        if (options.getWriter() != null) {
+            retryableWriter = options.getWriter();
+        } else {
+            retryableWriter = options.getWriterAsync();
+        }
         //execute at least once
         final int leftAttempts = Math.max(1, retryableWriter.getRetryAttempts());
 
