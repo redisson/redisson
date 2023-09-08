@@ -31,8 +31,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * @param <V> value type
  */
 public abstract class MapWriterAsync<K, V> extends RetryableWriter {
+    //store entries no need to be retried
 
     private final Map<K, V> noRetriesForWrite = new ConcurrentHashMap<>();
+    //store elements no need to be retried
     private final Collection<K> noRetriesForDelete = Collections.synchronizedList(new ArrayList<>());
 
 
