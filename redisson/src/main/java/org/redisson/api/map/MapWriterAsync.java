@@ -15,9 +15,12 @@
  */
 package org.redisson.api.map;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Asynchronous Map writer used for write-through operations.
@@ -27,10 +30,50 @@ import java.util.concurrent.CompletionStage;
  * @param <K> key type
  * @param <V> value type
  */
-public interface MapWriterAsync<K, V> {
+public abstract class MapWriterAsync<K, V> extends RetryableWriter {
 
-    CompletionStage<Void> write(Map<K, V> map);
+    private final Map<K, V> noRetriesForWrite = new ConcurrentHashMap<>();
+    private final Collection<K> noRetriesForDelete = Collections.synchronizedList(new ArrayList<>());
 
-    CompletionStage<Void> delete(Collection<K> keys);
-    
+
+    public MapWriterAsync() {
+        super();
+    }
+
+    public MapWriterAsync(int retryAttempts) {
+        super(retryAttempts);
+    }
+
+    public MapWriterAsync(int retryAttempts, long retryInterval) {
+        super(retryAttempts, retryInterval);
+    }
+
+    public abstract CompletionStage<Void> write(Map<K, V> map);
+
+    public abstract CompletionStage<Void> delete(Collection<K> keys);
+
+
+    public void writeSuccess(Map<K, V> noRetries) {
+        noRetriesForWrite.putAll(noRetries);
+    }
+
+    public void writeSuccess(Map.Entry<K, V> noRetry) {
+        noRetriesForWrite.put(noRetry.getKey(), noRetry.getValue());
+    }
+
+    public void deleteSuccess(K noRetry) {
+        noRetriesForDelete.add(noRetry);
+    }
+
+    public void deleteSuccess(Collection<K> noRetries) {
+        noRetriesForDelete.addAll(noRetries);
+    }
+
+    public Map<K, V> getNoRetriesForWrite() {
+        return noRetriesForWrite;
+    }
+
+    public Collection<K> getNoRetriesForDelete() {
+        return noRetriesForDelete;
+    }
 }

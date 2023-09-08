@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.redisson.api.MapOptions;
 import org.redisson.api.RFuture;
 import org.redisson.api.RQueue;
+import org.redisson.api.map.RetryableWriter;
 import org.redisson.command.CommandAsyncExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,29 +84,76 @@ public class MapWriteBehindTask {
     }
 
     private void flushTasks(Map<Object, Object> addedMap, List<Object> deletedKeys) {
-        try {
-            if (!deletedKeys.isEmpty()) {
-                if (options.getWriter() != null) {
-                    options.getWriter().delete(deletedKeys);
-                } else {
-                    options.getWriterAsync().delete(deletedKeys).toCompletableFuture().join();
+        final RetryableWriter retryableWriter = options.getWriter() == null
+                ? options.getWriterAsync()
+                : options.getWriter();
+        //execute at least once
+        final int leftAttempts = Math.max(1, retryableWriter.getRetryAttempts());
+
+        if (!deletedKeys.isEmpty()) {
+            int leftDeleteAttempts = leftAttempts;
+            while (leftDeleteAttempts > 0) {
+                try {
+                    //remove successful part
+                    final List<Object> noRetries = (List<Object>) retryableWriter.getNoRetriesForDelete();
+                    if (!noRetries.isEmpty()) {
+                        deletedKeys.removeAll(noRetries);
+                        noRetries.clear();
+                    }
+
+                    //do delete
+                    if (options.getWriter() != null) {
+                        options.getWriter().delete(deletedKeys);
+                    } else {
+                        options.getWriterAsync().delete(deletedKeys).toCompletableFuture().join();
+                    }
+                    break;
+                } catch (Exception exception) {
+                    if (--leftDeleteAttempts == 0) {
+                        log.error("Unable to delete keys: {}", deletedKeys, exception);
+                    } else {
+                        log.warn("Unable to delete keys: {}, will retry after {}ms", deletedKeys, retryableWriter.getRetryInterval(), exception);
+                        try {
+                            Thread.sleep(retryableWriter.getRetryInterval());
+                        } catch (InterruptedException ignore) {
+                        }
+                    }
                 }
-                deletedKeys.clear();
             }
-        } catch (Exception exception) {
-            log.error("Unable to delete keys: {}", deletedKeys, exception);
+            deletedKeys.clear();
         }
-        try {
-            if (!addedMap.isEmpty()) {
-                if (options.getWriter() != null) {
-                    options.getWriter().write(addedMap);
-                } else {
-                    options.getWriterAsync().write(addedMap).toCompletableFuture().join();
+
+        if (!addedMap.isEmpty()) {
+            int leftAddAttempts = leftAttempts;
+            while (leftAddAttempts > 0) {
+                try {
+                    //remove successful part
+                    final Map<Object, Object> noRetries = (Map<Object, Object>) retryableWriter.getNoRetriesForWrite();
+                    if (!noRetries.isEmpty()) {
+                        noRetries.forEach(addedMap::remove);
+                        noRetries.clear();
+                    }
+
+                    //do write
+                    if (options.getWriter() != null) {
+                        options.getWriter().write(addedMap);
+                    } else {
+                        options.getWriterAsync().write(addedMap).toCompletableFuture().join();
+                    }
+                    break;
+                } catch (Exception exception) {
+                    if (--leftAddAttempts == 0) {
+                        log.error("Unable to add keys: {}", addedMap, exception);
+                    } else {
+                        log.warn("Unable to add keys: {}, will retry after {}ms", addedMap, retryableWriter.getRetryInterval(), exception);
+                        try {
+                            Thread.sleep(retryableWriter.getRetryInterval());
+                        } catch (InterruptedException ignore) {
+                        }
+                    }
                 }
-                addedMap.clear();
             }
-        } catch (Exception exception) {
-            log.error("Unable to add keys: {}", addedMap, exception);
+            addedMap.clear();
         }
     }
 

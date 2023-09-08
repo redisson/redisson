@@ -24,6 +24,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -1436,6 +1437,87 @@ public abstract class BaseMapTest extends BaseTest {
         expected.put("2", "22");
         expected.put("3", "33");
         assertThat(store).isEqualTo(expected);
+        destroy(map);
+    }
+
+    @Test
+    public void testRetryableWriterSuccessAtLastRetry() throws InterruptedException {
+        //success at last retry
+        int expectedRetryAttempts = 3;
+        AtomicInteger actualRetryTimes = new AtomicInteger(0);
+        Map<String, String> store = new HashMap<>();
+        MapOptions<String, String> options = MapOptions.<String, String>defaults()
+                .writerAsync(new MapWriterAsync<String, String>(expectedRetryAttempts) {
+                    @Override
+                    public CompletionStage<Void> write(Map<String, String> map) {
+                        //throws until last chance
+                        if (actualRetryTimes.incrementAndGet() < getRetryAttempts()) {
+                            throw new IllegalStateException("retry");
+                        }
+                        store.putAll(map);
+                        writeSuccess(map);
+                        return CompletableFuture.completedFuture(null);
+                    }
+
+                    @Override
+                    public CompletionStage<Void> delete(Collection<String> keys) {
+                        return null;
+                    }
+                })
+                .writeMode(MapOptions.WriteMode.WRITE_BEHIND);
+
+        final RMap<String, String> map = redisson.getMap("test", options);
+        map.put("1", "11");
+        Thread.sleep(1400);
+
+        Map<String, String> expectedMap = new HashMap<>();
+        expectedMap.put("1", "11");
+        assertThat(store).isEqualTo(expectedMap);
+
+        //assert retry times
+        assertThat(actualRetryTimes.get()).isEqualTo(expectedRetryAttempts);
+        destroy(map);
+    }
+
+    @Test
+    public void testRetryableWriterOnlyRetryFailedPart() throws InterruptedException {
+        //lastWritingMap only contains the part that needs to be retried
+        Map<String, String> lastWritingMap = new HashMap<>();
+        MapOptions<String, String> options = MapOptions.<String, String>defaults()
+                .writerAsync(new MapWriterAsync<String, String>(3) {
+                    @Override
+                    public CompletionStage<Void> write(Map<String, String> writingMap) {
+                        lastWritingMap.clear();
+                        lastWritingMap.putAll(writingMap);
+
+                        for (Entry<String, String> entry : writingMap.entrySet()) {
+                            if (entry.getKey().equals("illegalData")) {
+                                throw new IllegalStateException("illegalData");
+                            }
+                            //writeSuccess will exclude entry in next retry
+                            writeSuccess(entry);
+                        }
+                        return CompletableFuture.completedFuture(null);
+                    }
+
+                    @Override
+                    public CompletionStage<Void> delete(Collection<String> keys) {
+                        return null;
+                    }
+                })
+                .writeMode(MapOptions.WriteMode.WRITE_BEHIND);
+
+        final RMap<String, String> map = redisson.getMap("test", options);
+        map.put("22", "11");
+        map.put("333", "11");
+        map.put("illegalData", "11");
+        Thread.sleep(1400);
+
+        Map<String, String> expectedLastWritingMap = new HashMap<>();
+        expectedLastWritingMap.put("illegalData", "11");
+        //finally, only "illegalData" still needs to be retried but the maximum number of retries is reached
+        assertThat(lastWritingMap).isEqualTo(expectedLastWritingMap);
+
         destroy(map);
     }
     
