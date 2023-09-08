@@ -101,6 +101,11 @@ public class MapWriteBehindTask {
                         noRetries.clear();
                     }
 
+                    //no need to delete
+                    if (deletedKeys.isEmpty()){
+                        break;
+                    }
+
                     //do delete
                     if (options.getWriter() != null) {
                         options.getWriter().delete(deletedKeys);
@@ -132,6 +137,11 @@ public class MapWriteBehindTask {
                     if (!noRetries.isEmpty()) {
                         noRetries.forEach(addedMap::remove);
                         noRetries.clear();
+                    }
+
+                    //no need to write
+                    if (addedMap.isEmpty()){
+                        break;
                     }
 
                     //do write
