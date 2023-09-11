@@ -179,7 +179,7 @@ public class MapOptions<K, V> {
         return writerRetryInterval;
     }
 
-    public MapOptions<K, V> writerRetryInterval(long writerRetryInterval,TimeUnit timeUnit) {
+    public MapOptions<K, V> writerRetryInterval(long writerRetryInterval, TimeUnit timeUnit) {
         this.writerRetryInterval = timeUnit.toMillis(writerRetryInterval);
         return this;
     }
