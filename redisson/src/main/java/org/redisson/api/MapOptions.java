@@ -19,6 +19,9 @@ import org.redisson.api.map.MapLoader;
 import org.redisson.api.map.MapLoaderAsync;
 import org.redisson.api.map.MapWriter;
 import org.redisson.api.map.MapWriterAsync;
+import org.redisson.api.map.RetryableMapWriterAsync;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * Configuration for RMap object.
@@ -56,7 +59,10 @@ public class MapOptions<K, V> {
     private WriteMode writeMode = WriteMode.WRITE_THROUGH;
     private int writeBehindBatchSize = 50;
     private int writeBehindDelay = 1000;
-    
+    private int writerRetryAttempts = 0;
+    //ms
+    private long writerRetryInterval = 100;
+
     protected MapOptions() {
     }
     
@@ -103,7 +109,7 @@ public class MapOptions<K, V> {
      * @return MapOptions instance
      */
     public MapOptions<K, V> writerAsync(MapWriterAsync<K, V> writer) {
-        this.writerAsync = writer;
+        this.writerAsync = new RetryableMapWriterAsync<>(this, writer);
         return this;
     }
     public MapWriterAsync<K, V> getWriterAsync() {
@@ -159,7 +165,25 @@ public class MapOptions<K, V> {
     public WriteMode getWriteMode() {
         return writeMode;
     }
-    
+
+    public int getWriterRetryAttempts() {
+        return writerRetryAttempts;
+    }
+
+    public MapOptions<K, V> writerRetryAttempts(int writerRetryAttempts) {
+        this.writerRetryAttempts = writerRetryAttempts;
+        return this;
+    }
+
+    public long getWriterRetryInterval() {
+        return writerRetryInterval;
+    }
+
+    public MapOptions<K, V> writerRetryInterval(long writerRetryInterval,TimeUnit timeUnit) {
+        this.writerRetryInterval = timeUnit.toMillis(writerRetryInterval);
+        return this;
+    }
+
     /**
      * Sets {@link MapLoader} object.
      * 
