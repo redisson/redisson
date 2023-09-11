@@ -17,14 +17,14 @@
        <dependency>
          <groupId>org.hibernate.orm</groupId>
          <artifactId>hibernate-core</artifactId>
-         <version>6.2.5.Final</version>
+         <version>6.3.0.Final</version>
          <optional>true</optional>
        </dependency>
 
        <dependency>
          <groupId>org.hibernate.orm</groupId>
          <artifactId>hibernate-testing</artifactId>
-         <version>6.2.5.Final</version>
+         <version>6.3.0.Final</version>
          <scope>test</scope>
        </dependency>
 

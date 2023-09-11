@@ -308,7 +308,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         int slot = connectionManager.calcSlot(key);
         return new NodeSource(slot);
     }
-    
+
+    private NodeSource getNodeSource(ByteBuf key) {
+        int slot = connectionManager.calcSlot(key);
+        return new NodeSource(slot);
+    }
+
     @Override
     public <T, R> RFuture<R> readAsync(String key, Codec codec, RedisCommand<T> command, Object... params) {
         NodeSource source = getNodeSource(key);
@@ -317,6 +322,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     
     @Override
     public <T, R> RFuture<R> readAsync(byte[] key, Codec codec, RedisCommand<T> command, Object... params) {
+        NodeSource source = getNodeSource(key);
+        return async(true, source, codec, command, params, false, false);
+    }
+
+    @Override
+    public <T, R> RFuture<R> readAsync(ByteBuf key, Codec codec, RedisCommand<T> command, Object... params) {
         NodeSource source = getNodeSource(key);
         return async(true, source, codec, command, params, false, false);
     }
@@ -359,7 +370,18 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
+    public <T, R> RFuture<R> evalReadAsync(RedisClient client, MasterSlaveEntry entry, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
+        return evalAsync(new NodeSource(entry, client), true, codec, evalCommandType, script, keys, false, params);
+    }
+
+    @Override
     public <T, R> RFuture<R> evalWriteAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
+        NodeSource source = getNodeSource(key);
+        return evalAsync(source, false, codec, evalCommandType, script, keys, false, params);
+    }
+
+    @Override
+    public <T, R> RFuture<R> evalWriteAsync(ByteBuf key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
         NodeSource source = getNodeSource(key);
         return evalAsync(source, false, codec, evalCommandType, script, keys, false, params);
     }
@@ -504,6 +526,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return async(false, source, codec, command, params, false, false);
     }
 
+    @Override
+    public <T, R> RFuture<R> writeAsync(ByteBuf key, Codec codec, RedisCommand<T> command, Object... params) {
+        NodeSource source = getNodeSource(key);
+        return async(false, source, codec, command, params, false, false);
+    }
+
     private final AtomicBoolean sortRoSupported = new AtomicBoolean(true);
     
     public <V, R> RFuture<R> async(boolean readOnlyMode, NodeSource source, Codec codec,
@@ -543,34 +571,53 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
     
     @Override
-    public <T, R> RFuture<R> readBatchedAsync(Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, String... keys) {
+    public <T, R> RFuture<R> readBatchedAsync(Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, Object... keys) {
         return executeBatchedAsync(true, codec, command, callback, keys);
     }
 
     @Override
-    public <T, R> RFuture<R> writeBatchedAsync(Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, String... keys) {
+    public <T, R> RFuture<R> writeBatchedAsync(Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, Object... keys) {
         return executeBatchedAsync(false, codec, command, callback, keys);
     }
-    
-    private <T, R> RFuture<R> executeBatchedAsync(boolean readOnly, Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, String[] keys) {
+
+    @Override
+    public <T, R> RFuture<R> evalWriteBatchedAsync(Codec codec, RedisCommand<T> command, String script, List<Object> keys, SlotCallback<T, R> callback) {
+        return evalWriteBatchedAsync(false, codec, command, script, keys, callback);
+    }
+
+    private <T, R> RFuture<R> evalWriteBatchedAsync(boolean readOnly, Codec codec, RedisCommand<T> command, String script, List<Object> keys, SlotCallback<T, R> callback) {
         if (!connectionManager.isClusterMode()) {
-            Object[] params = callback.createParams(Arrays.asList(keys));
+            Object[] keysArray = callback.createParams(keys);
+            Object[] paramsArray = callback.createParams(null);
             if (readOnly) {
-                return readAsync((String) null, codec, command, params);
+                return evalReadAsync((String) null, codec, command, script, Arrays.asList(keysArray), paramsArray);
             }
-            return writeAsync((String) null, codec, command, params);
+            return evalWriteAsync((String) null, codec, command, script, Arrays.asList(keysArray), paramsArray);
         }
 
-        Map<MasterSlaveEntry, Map<Integer, List<String>>> entry2keys = Arrays.stream(keys).collect(
+        Map<MasterSlaveEntry, Map<Integer, List<Object>>> entry2keys = keys.stream().collect(
                 Collectors.groupingBy(k -> {
-                    int slot = connectionManager.calcSlot(k);
+                    int slot;
+                    if (k instanceof String) {
+                        slot = connectionManager.calcSlot((String) k);
+                    } else if (k instanceof ByteBuf) {
+                        slot = connectionManager.calcSlot((ByteBuf) k);
+                    } else {
+                        throw new IllegalArgumentException();
+                    }
                     return connectionManager.getWriteEntry(slot);
                 }, Collectors.groupingBy(k -> {
-                    return connectionManager.calcSlot(k);
-                        }, Collectors.toList())));
+                    if (k instanceof String) {
+                        return connectionManager.calcSlot((String) k);
+                    } else if (k instanceof ByteBuf) {
+                        return connectionManager.calcSlot((ByteBuf) k);
+                    } else {
+                        throw new IllegalArgumentException();
+                    }
+                }, Collectors.toList())));
 
         List<CompletableFuture<?>> futures = new ArrayList<>();
-        for (Entry<MasterSlaveEntry, Map<Integer, List<String>>> entry : entry2keys.entrySet()) {
+        for (Entry<MasterSlaveEntry, Map<Integer, List<Object>>> entry : entry2keys.entrySet()) {
             // executes in batch due to CROSSLOT error
             CommandBatchService executorService;
             if (this instanceof CommandBatchService) {
@@ -579,7 +626,80 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 executorService = new CommandBatchService(this);
             }
 
-            for (List<String> groupedKeys : entry.getValue().values()) {
+            for (List<Object> groupedKeys : entry.getValue().values()) {
+                RedisCommand<T> c = command;
+                RedisCommand<T> newCommand = callback.createCommand(groupedKeys);
+                if (newCommand != null) {
+                    c = newCommand;
+                }
+                Object[] keysArray = callback.createParams(groupedKeys);
+                Object[] paramsArray = callback.createParams(null);
+                if (readOnly) {
+                    RFuture<T> f = executorService.evalReadAsync(entry.getKey(), codec, c, script, Arrays.asList(keysArray), paramsArray);
+                    futures.add(f.toCompletableFuture());
+                } else {
+                    RFuture<T> f = executorService.evalWriteAsync(entry.getKey(), codec, c, script, Arrays.asList(keysArray), paramsArray);
+                    futures.add(f.toCompletableFuture());
+                }
+            }
+
+            if (!(this instanceof CommandBatchService)) {
+                executorService.executeAsync();
+            }
+        }
+
+        CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        CompletableFuture<R> result = future.thenApply(r -> {
+            futures.forEach(f -> {
+                callback.onSlotResult((T) f.join());
+            });
+            return callback.onFinish();
+        });
+
+        return new CompletableFutureWrapper<>(result);
+    }
+
+    private <T, R> RFuture<R> executeBatchedAsync(boolean readOnly, Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, Object[] keys) {
+        if (!connectionManager.isClusterMode()) {
+            Object[] params = callback.createParams(Arrays.asList(keys));
+            if (readOnly) {
+                return readAsync((String) null, codec, command, params);
+            }
+            return writeAsync((String) null, codec, command, params);
+        }
+
+        Map<MasterSlaveEntry, Map<Integer, List<Object>>> entry2keys = Arrays.stream(keys).collect(
+                Collectors.groupingBy(k -> {
+                    int slot;
+                    if (k instanceof String) {
+                        slot = connectionManager.calcSlot((String) k);
+                    } else if (k instanceof ByteBuf) {
+                        slot = connectionManager.calcSlot((ByteBuf) k);
+                    } else {
+                        throw new IllegalArgumentException();
+                    }
+                    return connectionManager.getWriteEntry(slot);
+                }, Collectors.groupingBy(k -> {
+                    if (k instanceof String) {
+                        return connectionManager.calcSlot((String) k);
+                    } else if (k instanceof ByteBuf) {
+                        return connectionManager.calcSlot((ByteBuf) k);
+                    } else {
+                        throw new IllegalArgumentException();
+                    }
+                }, Collectors.toList())));
+
+        List<CompletableFuture<?>> futures = new ArrayList<>();
+        for (Entry<MasterSlaveEntry, Map<Integer, List<Object>>> entry : entry2keys.entrySet()) {
+            // executes in batch due to CROSSLOT error
+            CommandBatchService executorService;
+            if (this instanceof CommandBatchService) {
+                executorService = (CommandBatchService) this;
+            } else {
+                executorService = new CommandBatchService(this);
+            }
+
+            for (List<Object> groupedKeys : entry.getValue().values()) {
                 RedisCommand<T> c = command;
                 RedisCommand<T> newCommand = callback.createCommand(groupedKeys);
                 if (newCommand != null) {

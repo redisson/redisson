@@ -102,10 +102,10 @@ public class RedissonBuckets implements RBuckets {
             }
 
             @Override
-            public RedisCommand<Map<Object, Object>> createCommand(List<String> keys) {
+            public RedisCommand<Map<Object, Object>> createCommand(List<Object> keys) {
                 return new RedisCommand<>("MGET", new BucketsDecoder(keys));
             }
-        }, keysList.toArray(new String[0]));
+        }, keysList.toArray(new Object[0]));
     }
 
     @Override
@@ -132,9 +132,9 @@ public class RedissonBuckets implements RBuckets {
             }
 
             @Override
-            public Object[] createParams(List<String> keys) {
+            public Object[] createParams(List<Object> keys) {
                 List<Object> params = new ArrayList<>(keys.size());
-                for (String key : keys) {
+                for (Object key : keys) {
                     params.add(key);
                     try {
                         params.add(codec.getValueEncoder().encode(mappedBuckets.get(key)));
@@ -144,7 +144,7 @@ public class RedissonBuckets implements RBuckets {
                 }
                 return params.toArray();
             }
-        }, mappedBuckets.keySet().toArray(new String[]{}));
+        }, mappedBuckets.keySet().toArray(new Object[0]));
     }
 
     private Map<String, ?> map(Map<String, ?> buckets) {
@@ -172,9 +172,9 @@ public class RedissonBuckets implements RBuckets {
             }
 
             @Override
-            public Object[] createParams(List<String> keys) {
+            public Object[] createParams(List<Object> keys) {
                 List<Object> params = new ArrayList<>(keys.size());
-                for (String key : keys) {
+                for (Object key : keys) {
                     params.add(key);
                     try {
                         params.add(codec.getValueEncoder().encode(mappedBuckets.get(key)));
@@ -184,7 +184,7 @@ public class RedissonBuckets implements RBuckets {
                 }
                 return params.toArray();
             }
-        }, mappedBuckets.keySet().toArray(new String[]{}));
+        }, mappedBuckets.keySet().toArray(new Object[0]));
     }
 
 }
