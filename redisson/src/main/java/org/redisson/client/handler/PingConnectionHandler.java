@@ -84,10 +84,7 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
 
                 Throwable cause = cause(future);
 
-                if (!(cause instanceof RedisLoadingException
-                        || cause instanceof RedisTryAgainException
-                            || cause instanceof RedisClusterDownException
-                                || cause instanceof RedisBusyException)) {
+                if (!(cause instanceof RedisRetryException)) {
                     if (!future.isCancelled()) {
                         log.error("Unable to send PING command over channel: {}", ctx.channel(), cause);
                     }

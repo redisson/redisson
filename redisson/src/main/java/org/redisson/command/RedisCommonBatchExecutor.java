@@ -161,10 +161,10 @@ public class RedisCommonBatchExecutor extends RedisExecutor<Object, Void> {
     protected void handleResult(CompletableFuture<Void> attemptPromise, CompletableFuture<RedisConnection> connectionFuture) throws ReflectiveOperationException {
         if (attemptPromise.isDone() && !attemptPromise.isCompletedExceptionally()) {
             if (slots.decrementAndGet() == 0) {
-                mainPromise.complete(null);
+                handleSuccess(mainPromise, connectionFuture, null);
             }
         } else {
-            mainPromise.completeExceptionally(cause(attemptPromise));
+            handleError(connectionFuture, cause(attemptPromise));
         }
     }
     
