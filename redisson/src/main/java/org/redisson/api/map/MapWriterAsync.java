@@ -34,4 +34,3 @@ public interface MapWriterAsync<K, V> {
     CompletionStage<Void> delete(Collection<K> keys);
 
 }
-

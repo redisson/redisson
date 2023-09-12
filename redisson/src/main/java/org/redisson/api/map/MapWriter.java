@@ -33,4 +33,3 @@ public interface MapWriter<K, V> {
     void delete(Collection<K> keys);
 
 }
-
