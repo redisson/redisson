@@ -1451,13 +1451,14 @@ public abstract class BaseMapTest extends BaseTest {
                 .writerAsync(new MapWriterAsync<String, String>() {
                     @Override
                     public CompletionStage<Void> write(Map<String, String> map) {
-                        //throws until last chance
-                        if (actualRetryTimes.incrementAndGet() < expectedRetryAttempts) {
-                            throw new IllegalStateException("retry");
-                        }
-                        store.putAll(map);
-                        //todo writeSuccess(map);
-                        return CompletableFuture.completedFuture(null);
+                        return CompletableFuture.runAsync(()->{
+                            //throws until last chance
+                            if (actualRetryTimes.incrementAndGet() < expectedRetryAttempts) {
+                                throw new IllegalStateException("retry");
+                            }
+                            store.putAll(map);
+                            //todo writeSuccess(map);
+                        });
                     }
 
                     @Override

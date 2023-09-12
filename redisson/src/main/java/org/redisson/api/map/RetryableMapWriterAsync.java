@@ -1,12 +1,12 @@
 /**
  * Copyright (c) 2013-2022 Nikita Koksharov
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -53,7 +53,8 @@ public class RetryableMapWriterAsync<K, V> implements MapWriterAsync<K, V> {
                 }
 
                 //do write
-                return mapWriterAsync.write(addedMap);
+                mapWriterAsync.write(addedMap).toCompletableFuture().join();
+                break;
             } catch (Exception exception) {
                 if (--leftAddAttempts == 0) {
                     throw exception;
@@ -67,7 +68,6 @@ public class RetryableMapWriterAsync<K, V> implements MapWriterAsync<K, V> {
             }
         }
 
-        //unreachable
         return CompletableFuture.completedFuture(null);
     }
 
@@ -75,13 +75,4 @@ public class RetryableMapWriterAsync<K, V> implements MapWriterAsync<K, V> {
     public CompletionStage<Void> delete(Collection<K> keys) {
         return mapWriterAsync.delete(keys);
     }
-
-
-   /* public void writeSuccess(Map<K, V> noRetries) {
-        noRetriesForWrite.putAll(noRetries);
-    }
-
-    public void writeSuccess(Map.Entry<K, V> noRetry) {
-        noRetriesForWrite.put(noRetry.getKey(), noRetry.getValue());
-    }*/
 }

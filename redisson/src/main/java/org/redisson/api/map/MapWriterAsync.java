@@ -21,7 +21,7 @@ import java.util.concurrent.CompletionStage;
 
 /**
  * Asynchronous Map writer used for write-through operations.
- *
+ * 
  * @author Nikita Koksharov
  *
  * @param <K> key type
@@ -32,5 +32,5 @@ public interface MapWriterAsync<K, V> {
     CompletionStage<Void> write(Map<K, V> map);
 
     CompletionStage<Void> delete(Collection<K> keys);
-
+    
 }

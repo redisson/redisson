@@ -29,7 +29,7 @@ import java.util.Map;
 public interface MapWriter<K, V> {
 
     void write(Map<K, V> map);
-
+    
     void delete(Collection<K> keys);
-
+    
 }
