@@ -142,12 +142,20 @@ public class RedissonAutoConfiguration {
         String username = null;
         int database = redisProperties.getDatabase();
         String password = redisProperties.getPassword();
+        boolean isSentinel = false;
+        boolean isCluster = false;
         if (hasConnectionDetails()) {
             ObjectProvider<RedisConnectionDetails> provider = ctx.getBeanProvider(RedisConnectionDetails.class);
             RedisConnectionDetails b = provider.getIfAvailable();
             if (b != null) {
                 password = b.getPassword();
                 username = b.getUsername();
+            }
+            if (b.getSentinel() != null) {
+                isSentinel = true;
+            }
+            if (b.getCluster() != null) {
+                isCluster = true;
             }
         }
 
@@ -202,18 +210,21 @@ public class RedissonAutoConfiguration {
                     throw new IllegalArgumentException("Can't parse config", e1);
                 }
             }
-        } else if (redisProperties.getSentinel() != null) {
-            Method nodesMethod = ReflectionUtils.findMethod(Sentinel.class, "getNodes");
-            Object nodesValue = ReflectionUtils.invokeMethod(nodesMethod, redisProperties.getSentinel());
+        } else if (redisProperties.getSentinel() != null || isSentinel) {
+            String[] nodes = {};
+            String sentinelMaster = null;
 
-            String[] nodes;
-            if (nodesValue instanceof String) {
-                nodes = convert(prefix, Arrays.asList(((String)nodesValue).split(",")));
-            } else {
-                nodes = convert(prefix, (List<String>)nodesValue);
+            if (redisProperties.getSentinel() != null) {
+                Method nodesMethod = ReflectionUtils.findMethod(Sentinel.class, "getNodes");
+                Object nodesValue = ReflectionUtils.invokeMethod(nodesMethod, redisProperties.getSentinel());
+                if (nodesValue instanceof String) {
+                    nodes = convert(prefix, Arrays.asList(((String)nodesValue).split(",")));
+                } else {
+                    nodes = convert(prefix, (List<String>)nodesValue);
+                }
+                sentinelMaster = redisProperties.getSentinel().getMaster();
             }
 
-            String sentinelMaster = redisProperties.getSentinel().getMaster();
 
             String sentinelUsername = null;
             String sentinelPassword = null;
@@ -246,12 +257,17 @@ public class RedissonAutoConfiguration {
                 c.setTimeout(timeout);
             }
             initSSL(c);
-        } else if (clusterMethod != null && ReflectionUtils.invokeMethod(clusterMethod, redisProperties) != null) {
-            Object clusterObject = ReflectionUtils.invokeMethod(clusterMethod, redisProperties);
-            Method nodesMethod = ReflectionUtils.findMethod(clusterObject.getClass(), "getNodes");
-            List<String> nodesObject = (List) ReflectionUtils.invokeMethod(nodesMethod, clusterObject);
+        } else if ((clusterMethod != null && ReflectionUtils.invokeMethod(clusterMethod, redisProperties) != null)
+                    || isCluster) {
 
-            String[] nodes = convert(prefix, nodesObject);
+            String[] nodes = {};
+            if (clusterMethod != null && ReflectionUtils.invokeMethod(clusterMethod, redisProperties) != null) {
+                Object clusterObject = ReflectionUtils.invokeMethod(clusterMethod, redisProperties);
+                Method nodesMethod = ReflectionUtils.findMethod(clusterObject.getClass(), "getNodes");
+                List<String> nodesObject = (List) ReflectionUtils.invokeMethod(nodesMethod, clusterObject);
+
+                nodes = convert(prefix, nodesObject);
+            }
 
             if (hasConnectionDetails()) {
                 ObjectProvider<RedisConnectionDetails> provider = ctx.getBeanProvider(RedisConnectionDetails.class);
@@ -362,6 +378,8 @@ public class RedissonAutoConfiguration {
         for (Object node : nodesObject) {
             Field hostField = ReflectionUtils.findField(node.getClass(), "host");
             Field portField = ReflectionUtils.findField(node.getClass(), "port");
+            ReflectionUtils.makeAccessible(hostField);
+            ReflectionUtils.makeAccessible(portField);
             String host = (String) ReflectionUtils.getField(hostField, node);
             int port = (int) ReflectionUtils.getField(portField, node);
             nodes.add(prefix + host + ":" + port);
