@@ -7,7 +7,7 @@
 
 Based on high-performance async and lock-free Java Redis client and [Netty](http://netty.io) framework.  
 Supported JDK:   1.8 ... 20 and Android  
-Supported Redis: 3.0 ... 7.0  
+Supported Redis: 3.0 ... 7.2  
 
 ## Features
 
