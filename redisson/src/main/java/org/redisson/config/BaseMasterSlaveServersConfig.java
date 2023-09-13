@@ -114,11 +114,11 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     }
     
     /**
-     * Interval of Redis Slave reconnection attempt when
-     * it was excluded from internal list of available servers.
+     * When the retry interval <code>failedSlavesReconnectionTimeout<code/>
+     * reached Redisson tries to connect to failed Redis node reported by <code>failedSlaveNodeDetector</code>.
      * <p>
      * On every such timeout event Redisson tries
-     * to connect to disconnected Redis server.
+     * to connect to failed Redis server.
      * <p>
      * Default is 3000
      *
