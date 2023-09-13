@@ -121,8 +121,8 @@ public class RedissonTest extends BaseTest {
         bucket1.set("val1");
         bucket2.set("val2");
 
-        ExecutorService executor1 = Executors.newCachedThreadPool();
-        ExecutorService executor2 = Executors.newCachedThreadPool();
+        ExecutorService executor1 = Executors.newFixedThreadPool(16);
+        ExecutorService executor2 = Executors.newFixedThreadPool(16);
 
         AtomicBoolean hasError = new AtomicBoolean();
         for (int i = 0; i < 100000; i++) {
