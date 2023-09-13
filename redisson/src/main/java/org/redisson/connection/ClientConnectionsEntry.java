@@ -108,21 +108,6 @@ public class ClientConnectionsEntry {
         return nodeType;
     }
 
-    public void resetFirstFail() {
-        client.resetFirstFail();
-    }
-
-    public boolean isFailed() {
-        if (client.getFirstFailTime() != 0 && config.getFailedSlaveCheckInterval() > 0) {
-            return System.currentTimeMillis() - client.getFirstFailTime() > config.getFailedSlaveCheckInterval();
-        }
-        return false;
-    }
-    
-    public void trySetupFistFail() {
-        client.trySetupFirstFail();
-    }
-
     public CompletableFuture<Void> shutdownAsync() {
         idleConnectionWatcher.remove(this);
         return client.shutdownAsync().toCompletableFuture();
@@ -261,7 +246,7 @@ public class ClientConnectionsEntry {
                 + ", freeSubscribeConnectionsCounter=" + freeSubscribeConnectionsCounter
                 + ", freeConnectionsAmount=" + freeConnections.size() + ", freeConnectionsCounter="
                 + freeConnectionsCounter + ", freezeReason=" + freezeReason
-                + ", client=" + client + ", nodeType=" + nodeType + ", firstFail=" + client.getFirstFailTime()
+                + ", client=" + client + ", nodeType=" + nodeType
                 + "]";
     }
 

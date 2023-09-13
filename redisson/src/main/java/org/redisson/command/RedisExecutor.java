@@ -581,22 +581,20 @@ public class RedisExecutor<V, R> {
 
     protected void handleError(CompletableFuture<RedisConnection> connectionFuture, Throwable cause) {
         mainPromise.completeExceptionally(cause);
-    }
-
-    protected void handleSuccess(CompletableFuture<R> promise, CompletableFuture<RedisConnection> connectionFuture, R res) throws ReflectiveOperationException {
-        if (objectBuilder != null) {
-            handleReference(promise, res);
-        } else {
-            promise.complete(res);
+        RedisClient client = connectionFuture.join().getRedisClient();
+        client.getConfig().getFailedNodeDetector().onCommandFailed(cause);
+        if (client.getConfig().getFailedNodeDetector().isNodeFailed()) {
+            entry.shutdownAndReconnectAsync(client, cause);
         }
     }
 
-    private void handleReference(CompletableFuture<R> promise, R res) throws ReflectiveOperationException {
+    protected void handleSuccess(CompletableFuture<R> promise, CompletableFuture<RedisConnection> connectionFuture, R res) throws ReflectiveOperationException {
         if (objectBuilder != null) {
             promise.complete((R) objectBuilder.tryHandleReference(res, referenceType));
         } else {
             promise.complete(res);
         }
+        connectionFuture.join().getRedisClient().getConfig().getFailedNodeDetector().onCommandSuccessful();
     }
 
     protected void sendCommand(CompletableFuture<R> attemptPromise, RedisConnection connection) {

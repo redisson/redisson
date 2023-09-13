@@ -17,11 +17,13 @@ package org.redisson.connection;
 
 import io.netty.channel.ChannelFuture;
 import org.redisson.api.NodeType;
+import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.RedisCommand;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.ReadMode;
 import org.redisson.config.SubscriptionMode;
@@ -38,6 +40,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -210,6 +213,70 @@ public class MasterSlaveEntry {
         return true;
     }
 
+    public void shutdownAndReconnectAsync(RedisClient client, Throwable cause) {
+        ClientConnectionsEntry entry = getEntry(client);
+        slaveDownAsync(entry, FreezeReason.RECONNECT).thenAccept(r -> {
+            if (r) {
+                log.error("Redis node {} has been disconnected", entry.getClient().getAddr(), cause);
+                scheduleCheck(entry);
+            }
+        });
+    }
+
+    private void scheduleCheck(ClientConnectionsEntry entry) {
+        connectionManager.getServiceManager().newTimeout(timeout -> {
+            synchronized (entry) {
+                if (entry.getFreezeReason() != FreezeReason.RECONNECT
+                        || connectionManager.getServiceManager().isShuttingDown()) {
+                    return;
+                }
+            }
+
+            CompletionStage<RedisConnection> connectionFuture = entry.getClient().connectAsync();
+            connectionFuture.whenComplete((c, e) -> {
+                synchronized (entry) {
+                    if (entry.getFreezeReason() != FreezeReason.RECONNECT) {
+                        return;
+                    }
+                }
+
+                if (e != null) {
+                    scheduleCheck(entry);
+                    return;
+                }
+                if (!c.isActive()) {
+                    c.closeAsync();
+                    scheduleCheck(entry);
+                    return;
+                }
+
+                RFuture<String> f = c.async(RedisCommands.PING);
+                f.whenComplete((t, ex) -> {
+                    try {
+                        synchronized (entry) {
+                            if (entry.getFreezeReason() != FreezeReason.RECONNECT) {
+                                return;
+                            }
+                        }
+
+                        if ("PONG".equals(t)) {
+                            CompletableFuture<Boolean> ff = slaveUpAsync(entry, FreezeReason.RECONNECT);
+                            ff.thenAccept(r -> {
+                                if (r) {
+                                    log.info("slave {} has been successfully reconnected", entry.getClient().getAddr());
+                                }
+                            });
+                        } else {
+                            scheduleCheck(entry);
+                        }
+                    } finally {
+                        c.closeAsync();
+                    }
+                });
+            });
+        }, config.getFailedSlaveReconnectionInterval(), TimeUnit.MILLISECONDS);
+    }
+    
     public CompletableFuture<Boolean> slaveDownAsync(ClientConnectionsEntry entry, FreezeReason freezeReason) {
         ClientConnectionsEntry e = slaveBalancer.freeze(entry, freezeReason);
         if (e == null) {

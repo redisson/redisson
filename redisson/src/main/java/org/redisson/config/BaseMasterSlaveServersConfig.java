@@ -15,6 +15,8 @@
  */
 package org.redisson.config;
 
+import org.redisson.client.FailedConnectionDetector;
+import org.redisson.client.FailedNodeDetector;
 import org.redisson.connection.balancer.LoadBalancer;
 import org.redisson.connection.balancer.RoundRobinLoadBalancer;
 
@@ -70,6 +72,8 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     private int subscriptionConnectionPoolSize = 50;
 
     private long dnsMonitoringInterval = 5000;
+
+    private FailedNodeDetector failedSlaveNodeDetector = new FailedConnectionDetector();
     
     public BaseMasterSlaveServersConfig() {
     }
@@ -88,6 +92,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
         setDnsMonitoringInterval(config.getDnsMonitoringInterval());
         setFailedSlaveCheckInterval(config.getFailedSlaveCheckInterval());
         setFailedSlaveReconnectionInterval(config.getFailedSlaveReconnectionInterval());
+        setFailedSlaveNodeDetector(config.getFailedSlaveNodeDetector());
     }
 
     /**
@@ -132,17 +137,15 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
 
     
     /**
-     * Redis Slave node failing to execute commands is excluded from the internal list of available nodes
-     * when the time interval from the moment of first Redis command execution failure
-     * on this server reaches <code>failedSlaveCheckInterval</code> value.
-     * <p>
-     * Default is <code>180000</code>
+     * Use {@link #setFailedSlaveNodeDetector(FailedNodeDetector)} instead.
      *
      * @param slaveFailsInterval - time interval in milliseconds
      * @return config
      */
+    @Deprecated
     public T setFailedSlaveCheckInterval(int slaveFailsInterval) {
         this.failedSlaveCheckInterval = slaveFailsInterval;
+        this.failedSlaveNodeDetector = new FailedConnectionDetector(slaveFailsInterval);
         return (T) this;
     }
     public int getFailedSlaveCheckInterval() {
@@ -314,5 +317,27 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     public long getDnsMonitoringInterval() {
         return dnsMonitoringInterval;
     }
-    
+
+    /**
+     * Defines failed Redis Slave node detector object
+     * which implements failed node detection logic.
+     * <p>
+     * Default is <code>org.redisson.client.FailedConnectionDetector</code>
+     *
+     * @param failedNodeDetector Redis Slave node detector object
+     * @return config
+     *
+     * @see org.redisson.client.FailedConnectionDetector
+     * @see org.redisson.client.FailedCommandsDetector
+     * @see org.redisson.client.FailedCommandsTimeoutDetector
+     *
+     */
+    public T setFailedSlaveNodeDetector(FailedNodeDetector failedNodeDetector) {
+        this.failedSlaveNodeDetector = failedNodeDetector;
+        return (T) this;
+    }
+    public FailedNodeDetector getFailedSlaveNodeDetector() {
+        return failedSlaveNodeDetector;
+    }
+
 }

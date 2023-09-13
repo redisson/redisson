@@ -16,11 +16,9 @@
 package org.redisson.connection.pool;
 
 import org.redisson.api.NodeType;
-import org.redisson.api.RFuture;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
@@ -37,7 +35,6 @@ import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -169,7 +166,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
         List<InetSocketAddress> failed = new LinkedList<>();
         List<InetSocketAddress> freezed = new LinkedList<>();
         for (ClientConnectionsEntry entry : entries) {
-            if (entry.isFailed()) {
+            if (entry.getClient().getConfig().getFailedNodeDetector().isNodeFailed()) {
                 failed.add(entry.getClient().getAddr());
             } else if (entry.isFreezed()) {
                 freezed.add(entry.getClient().getAddr());
@@ -210,8 +207,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
     }
         
     private boolean isHealthy(ClientConnectionsEntry entry) {
-        if (entry.getNodeType() == NodeType.SLAVE && entry.isFailed()) {
-            checkForReconnect(entry, null);
+        if (entry.getNodeType() == NodeType.SLAVE && entry.getClient().getConfig().getFailedNodeDetector().isNodeFailed()) {
             return false;
         }
         return true;
@@ -235,10 +231,6 @@ abstract class ConnectionPool<T extends RedisConnection> {
 
         T conn = poll(entry, command);
         if (conn != null) {
-            if (!conn.isActive() && entry.getNodeType() == NodeType.SLAVE) {
-                entry.trySetupFistFail();
-            }
-
             connectedSuccessful(entry, promise, conn);
             return;
         }
@@ -254,11 +246,6 @@ abstract class ConnectionPool<T extends RedisConnection> {
                 return;
             }
 
-            if (!conn.isActive()) {
-                promiseFailure(entry, promise, conn);
-                return;
-            }
-
             if (changeUsage()) {
                 promise.thenApply(c -> c.incUsage());
             }
@@ -271,8 +258,8 @@ abstract class ConnectionPool<T extends RedisConnection> {
     }
 
     private void connectedSuccessful(ClientConnectionsEntry entry, CompletableFuture<T> promise, T conn) {
-        if (conn.isActive() && entry.getNodeType() == NodeType.SLAVE) {
-            entry.resetFirstFail();
+        if (entry.getNodeType() == NodeType.SLAVE) {
+            entry.getClient().getConfig().getFailedNodeDetector().onConnectSuccessful();
         }
 
         if (!promise.complete(conn)) {
@@ -283,99 +270,15 @@ abstract class ConnectionPool<T extends RedisConnection> {
 
     private void promiseFailure(ClientConnectionsEntry entry, CompletableFuture<T> promise, Throwable cause) {
         if (entry.getNodeType() == NodeType.SLAVE) {
-            entry.trySetupFistFail();
-            if (entry.isFailed()) {
-                checkForReconnect(entry, cause);
+            entry.getClient().getConfig().getFailedNodeDetector().onConnectFailed();
+            if (entry.getClient().getConfig().getFailedNodeDetector().isNodeFailed()) {
+                masterSlaveEntry.shutdownAndReconnectAsync(entry.getClient(), cause);
             }
         }
 
         releaseConnection(entry);
 
         promise.completeExceptionally(cause);
-    }
-
-    private void promiseFailure(ClientConnectionsEntry entry, CompletableFuture<T> promise, T conn) {
-        if (entry.getNodeType() == NodeType.SLAVE) {
-            entry.trySetupFistFail();
-            if (entry.isFailed()) {
-                conn.closeAsync();
-                entry.getAllConnections().remove(conn);
-                checkForReconnect(entry, null);
-            } else {
-                releaseConnection(entry, conn);
-            }
-        } else {
-            releaseConnection(entry, conn);
-        }
-
-        releaseConnection(entry);
-
-        RedisConnectionException cause = new RedisConnectionException(conn + " is not active!");
-        promise.completeExceptionally(cause);
-    }
-
-    private void checkForReconnect(ClientConnectionsEntry entry, Throwable cause) {
-        masterSlaveEntry.slaveDownAsync(entry, FreezeReason.RECONNECT).thenAccept(r -> {
-            if (r) {
-                log.error("slave {} has been disconnected after {} ms interval since moment of the first failed connection",
-                    entry.getClient().getAddr(), config.getFailedSlaveCheckInterval(), cause);
-                scheduleCheck(entry);
-            }
-        });
-    }
-
-    private void scheduleCheck(ClientConnectionsEntry entry) {
-        connectionManager.getServiceManager().newTimeout(timeout -> {
-            synchronized (entry) {
-                if (entry.getFreezeReason() != FreezeReason.RECONNECT
-                        || connectionManager.getServiceManager().isShuttingDown()) {
-                    return;
-                }
-            }
-
-            CompletionStage<RedisConnection> connectionFuture = entry.getClient().connectAsync();
-            connectionFuture.whenComplete((c, e) -> {
-                    synchronized (entry) {
-                        if (entry.getFreezeReason() != FreezeReason.RECONNECT) {
-                            return;
-                        }
-                    }
-
-                    if (e != null) {
-                        scheduleCheck(entry);
-                        return;
-                    }
-                    if (!c.isActive()) {
-                        c.closeAsync();
-                        scheduleCheck(entry);
-                        return;
-                    }
-
-                    RFuture<String> f = c.async(RedisCommands.PING);
-                    f.whenComplete((t, ex) -> {
-                        try {
-                            synchronized (entry) {
-                                if (entry.getFreezeReason() != FreezeReason.RECONNECT) {
-                                    return;
-                                }
-                            }
-
-                            if ("PONG".equals(t)) {
-                                CompletableFuture<Boolean> ff = masterSlaveEntry.slaveUpAsync(entry, FreezeReason.RECONNECT);
-                                ff.thenAccept(r -> {
-                                    if (r) {
-                                        log.info("slave {} has been successfully reconnected", entry.getClient().getAddr());
-                                    }
-                                });
-                            } else {
-                                scheduleCheck(entry);
-                            }
-                        } finally {
-                            c.closeAsync();
-                        }
-                    });
-            });
-        }, config.getFailedSlaveReconnectionInterval(), TimeUnit.MILLISECONDS);
     }
 
     public void returnConnection(ClientConnectionsEntry entry, T connection) {

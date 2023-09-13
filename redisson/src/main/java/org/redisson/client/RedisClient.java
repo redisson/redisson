@@ -135,18 +135,6 @@ public final class RedisClient {
         return bootstrap;
     }
 
-    public void resetFirstFail() {
-        firstFailTime.set(0);
-    }
-
-    public long getFirstFailTime() {
-        return firstFailTime.get();
-    }
-
-    public void trySetupFirstFail() {
-        firstFailTime.compareAndSet(0, System.currentTimeMillis());
-    }
-
     public InetSocketAddress getAddr() {
         return resolvedAddr;
     }

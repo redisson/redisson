@@ -283,6 +283,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
         c.setFailedSlaveCheckInterval(cfg.getFailedSlaveCheckInterval());
         c.setFailedSlaveReconnectionInterval(cfg.getFailedSlaveReconnectionInterval());
+        c.setFailedSlaveNodeDetector(cfg.getFailedSlaveNodeDetector());
         c.setMasterConnectionMinimumIdleSize(cfg.getMasterConnectionMinimumIdleSize());
         c.setSlaveConnectionMinimumIdleSize(cfg.getSlaveConnectionMinimumIdleSize());
         c.setSubscriptionConnectionMinimumIdleSize(cfg.getSubscriptionConnectionMinimumIdleSize());
@@ -350,6 +351,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 .setUsername(config.getUsername())
                 .setPassword(config.getPassword())
                 .setNettyHook(serviceManager.getCfg().getNettyHook())
+                .setFailedNodeDetector(config.getFailedSlaveNodeDetector())
                 .setCommandMapper(config.getCommandMapper())
                 .setCredentialsResolver(config.getCredentialsResolver())
                 .setConnectedListener(addr -> {

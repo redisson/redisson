@@ -162,7 +162,7 @@ public class LoadBalancerManager {
                             return;
                         }
 
-                        entry.resetFirstFail();
+                        entry.getClient().getConfig().getFailedNodeDetector().onConnectSuccessful();
                         entry.setFreezeReason(null);
                         log.debug("Unfreezed entry: {} after {} attempts", entry, retry);
                         f.complete(true);
@@ -186,7 +186,7 @@ public class LoadBalancerManager {
 
     @SuppressWarnings("BooleanExpressionComplexity")
     public ClientConnectionsEntry freeze(ClientConnectionsEntry connectionEntry, FreezeReason freezeReason) {
-        if (connectionEntry == null || (connectionEntry.isFailed() 
+        if (connectionEntry == null || (connectionEntry.getClient().getConfig().getFailedNodeDetector().isNodeFailed()
                 && connectionEntry.getFreezeReason() == FreezeReason.RECONNECT
                     && freezeReason == FreezeReason.RECONNECT)) {
             return null;

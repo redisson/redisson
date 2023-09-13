@@ -29,6 +29,7 @@ import io.netty.channel.EventLoopGroup;
 import org.redisson.api.NameMapper;
 import org.redisson.api.NatMapper;
 import org.redisson.api.RedissonNodeInitializer;
+import org.redisson.client.FailedNodeDetector;
 import org.redisson.client.NettyHook;
 import org.redisson.client.codec.Codec;
 import org.redisson.cluster.ClusterConnectionManager;
@@ -262,7 +263,8 @@ public class ConfigSupport {
         mapper.addMixIn(ExecutorService.class, ClassMixIn.class);
         mapper.addMixIn(KeyManagerFactory.class, IgnoreMixIn.class);
         mapper.addMixIn(TrustManagerFactory.class, IgnoreMixIn.class);
-        mapper.addMixIn(CommandMapper .class, ClassMixIn.class);
+        mapper.addMixIn(CommandMapper.class, ClassMixIn.class);
+        mapper.addMixIn(FailedNodeDetector.class, ClassMixIn.class);
 
         FilterProvider filterProvider = new SimpleFilterProvider()
                 .addFilter("classFilter", SimpleBeanPropertyFilter.filterOutAllExcept());

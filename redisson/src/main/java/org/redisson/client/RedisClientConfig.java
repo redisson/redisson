@@ -79,6 +79,8 @@ public class RedisClientConfig {
 
     private CommandMapper commandMapper = new DefaultCommandMapper();
 
+    private FailedNodeDetector failedNodeDetector = new FailedConnectionDetector();
+
     public RedisClientConfig() {
     }
     
@@ -118,6 +120,7 @@ public class RedisClientConfig {
         this.sslKeyManagerFactory = config.sslKeyManagerFactory;
         this.sslTrustManagerFactory = config.sslTrustManagerFactory;
         this.commandMapper = config.commandMapper;
+        this.failedNodeDetector = config.failedNodeDetector;
     }
 
     public NettyHook getNettyHook() {
@@ -402,6 +405,15 @@ public class RedisClientConfig {
 
     public RedisClientConfig setCommandMapper(CommandMapper commandMapper) {
         this.commandMapper = commandMapper;
+        return this;
+    }
+
+    public FailedNodeDetector getFailedNodeDetector() {
+        return failedNodeDetector;
+    }
+
+    public RedisClientConfig setFailedNodeDetector(FailedNodeDetector failedNodeDetector) {
+        this.failedNodeDetector = failedNodeDetector;
         return this;
     }
 }
