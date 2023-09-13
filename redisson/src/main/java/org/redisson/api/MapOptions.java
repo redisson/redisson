@@ -178,8 +178,8 @@ public class MapOptions<K, V> {
      * @return MapOptions instance
      */
     public MapOptions<K, V> writerRetryAttempts(int writerRetryAttempts) {
-        if (writerRetryAttempts < 0){
-            throw new IllegalArgumentException("writerRetryAttempts must be positive");
+        if (writerRetryAttempts <= 0){
+            throw new IllegalArgumentException("writerRetryAttempts must be bigger than 0");
         }
         this.writerRetryAttempts = writerRetryAttempts;
         return this;
