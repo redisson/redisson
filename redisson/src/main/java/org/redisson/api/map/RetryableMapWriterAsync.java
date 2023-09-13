@@ -60,9 +60,8 @@ public class RetryableMapWriterAsync<K, V> implements MapWriterAsync<K, V> {
                     //only need serviceManager when exception happened
                     Objects.requireNonNull(serviceManager);
                     log.warn("Unable to add keys: {}, will retry after {}ms", addedMap, options.getWriterRetryInterval(), exception);
-                    serviceManager.newTimeout(t -> retryWrite(leftAttempts - 1, addedMap).toCompletableFuture().join()
-                            , options.getWriterRetryInterval()
-                            , TimeUnit.MILLISECONDS);
+                    serviceManager.newTimeout(t -> retryWrite(leftAttempts - 1, addedMap).toCompletableFuture().join(),
+                            options.getWriterRetryInterval(), TimeUnit.MILLISECONDS);
                 }
             }
         });
