@@ -19,6 +19,7 @@ import org.redisson.api.map.MapLoader;
 import org.redisson.api.map.MapLoaderAsync;
 import org.redisson.api.map.MapWriter;
 import org.redisson.api.map.MapWriterAsync;
+import org.redisson.api.map.RetryableMapWriter;
 import org.redisson.api.map.RetryableMapWriterAsync;
 
 import java.util.concurrent.TimeUnit;
@@ -95,7 +96,7 @@ public class MapOptions<K, V> {
      * @return MapOptions instance
      */
     public MapOptions<K, V> writer(MapWriter<K, V> writer) {
-        this.writer = writer;
+        this.writer = new RetryableMapWriter<>(this, writer);
         return this;
     }
     public MapWriter<K, V> getWriter() {
@@ -170,7 +171,16 @@ public class MapOptions<K, V> {
         return writerRetryAttempts;
     }
 
+    /**
+     * Sets max retry attempts for {@link RetryableMapWriter} or {@link RetryableMapWriterAsync}
+     *
+     * @param writerRetryAttempts object
+     * @return MapOptions instance
+     */
     public MapOptions<K, V> writerRetryAttempts(int writerRetryAttempts) {
+        if (writerRetryAttempts < 0){
+            throw new IllegalArgumentException("writerRetryAttempts must be positive");
+        }
         this.writerRetryAttempts = writerRetryAttempts;
         return this;
     }
@@ -179,7 +189,17 @@ public class MapOptions<K, V> {
         return writerRetryInterval;
     }
 
+    /**
+     * Sets retry interval for {@link RetryableMapWriter} or {@link RetryableMapWriterAsync}
+     * 
+     * @param writerRetryInterval object
+     * @param timeUnit {@link TimeUnit}
+     * @return MapOptions instance
+     */
     public MapOptions<K, V> writerRetryInterval(long writerRetryInterval, TimeUnit timeUnit) {
+        if (writerRetryInterval < 0){
+            throw new IllegalArgumentException("writerRetryInterval must be positive");
+        }
         this.writerRetryInterval = timeUnit.toMillis(writerRetryInterval);
         return this;
     }

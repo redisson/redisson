@@ -100,7 +100,7 @@ public class MapWriteBehindTask {
                 if (options.getWriter() != null) {
                     options.getWriter().write(addedMap);
                 } else {
-                    options.getWriterAsync().write(addedMap);
+                    options.getWriterAsync().write(addedMap).toCompletableFuture().join();
                 }
                 addedMap.clear();
             }
