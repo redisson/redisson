@@ -92,6 +92,10 @@ public class RedissonJsonBucketTest extends BaseTest {
         assertThat(s).isEqualTo(JsonType.OBJECT);
         JsonType s1 = al.getType("name");
         assertThat(s1).isEqualTo(JsonType.STRING);
+
+        RJsonBucket<TestType> al2 = redisson.getJsonBucket("test2", new JacksonCodec<>(TestType.class));
+        assertThat(al2.getType()).isNull();
+        assertThat(al2.getType("*")).isNull();
     }
 
     @Test

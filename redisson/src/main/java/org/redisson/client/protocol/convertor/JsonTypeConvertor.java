@@ -27,6 +27,9 @@ public class JsonTypeConvertor implements Convertor<JsonType> {
 
     @Override
     public JsonType convert(Object obj) {
+        if (obj == null) {
+            return null;
+        }
         return JsonType.valueOf(obj.toString().toUpperCase());
     }
 }

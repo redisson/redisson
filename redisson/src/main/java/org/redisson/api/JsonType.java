@@ -23,8 +23,6 @@ package org.redisson.api;
  */
 public enum JsonType {
 
-    NULL,
-
     BOOLEAN,
 
     STRING,
