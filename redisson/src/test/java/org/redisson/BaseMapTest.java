@@ -1525,9 +1525,8 @@ public abstract class BaseMapTest extends BaseTest {
                         keys.forEach(store::remove);
                     }
                 })
-                .writeMode(MapOptions.WriteMode.WRITE_BEHIND)
-                .writerRetryAttempts(expectedRetryAttempts)
-                .writerRetryInterval(100, TimeUnit.MILLISECONDS);
+                .writeMode(MapOptions.WriteMode.WRITE_THROUGH)
+                .writerRetryAttempts(expectedRetryAttempts);
 
         final RMap<String, String> map = redisson.getMap("test", options);
         
