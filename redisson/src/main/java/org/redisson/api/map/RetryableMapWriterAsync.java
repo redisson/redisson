@@ -16,20 +16,27 @@
 package org.redisson.api.map;
 
 import org.redisson.api.MapOptions;
+import org.redisson.connection.ServiceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
 public class RetryableMapWriterAsync<K, V> implements MapWriterAsync<K, V> {
 
     private static final Logger log = LoggerFactory.getLogger(RetryableMapWriterAsync.class);
 
     private final MapOptions<K, V> options;
+
     private final MapWriterAsync<K, V> mapWriterAsync;
+
+    private ServiceManager serviceManager;
 
     public RetryableMapWriterAsync(MapOptions<K, V> options, MapWriterAsync<K, V> mapWriterAsync) {
         this.options = options;
@@ -38,24 +45,24 @@ public class RetryableMapWriterAsync<K, V> implements MapWriterAsync<K, V> {
 
     @Override
     public CompletionStage<Void> write(Map<K, V> addedMap) {
+        return retryWrite(Math.max(1, options.getWriterRetryAttempts()), new LinkedHashMap<>(addedMap));
+    }
+
+    private CompletableFuture<Void> retryWrite(int leftAttempts, Map<K, V> addedMap) {
         return CompletableFuture.runAsync(() -> {
-            //execute at least once
-            int leftAddAttempts = Math.max(1, options.getWriterRetryAttempts());
-            while (leftAddAttempts > 0) {
-                try {
-                    //do write
-                    mapWriterAsync.write(addedMap).toCompletableFuture().join();
-                    break;
-                } catch (Exception exception) {
-                    if (--leftAddAttempts == 0) {
-                        throw exception;
-                    } else {
-                        log.warn("Unable to add keys: {}, will retry after {}ms", addedMap, options.getWriterRetryInterval(), exception);
-                        try {
-                            Thread.sleep(options.getWriterRetryInterval());
-                        } catch (InterruptedException ignore) {
-                        }
-                    }
+            try {
+                //do write
+                mapWriterAsync.write(addedMap).toCompletableFuture().join();
+            } catch (Exception exception) {
+                if (leftAttempts - 1 == 0) {
+                    throw exception;
+                } else {
+                    //only need serviceManager when exception happened
+                    Objects.requireNonNull(serviceManager);
+                    log.warn("Unable to add keys: {}, will retry after {}ms", addedMap, options.getWriterRetryInterval(), exception);
+                    serviceManager.newTimeout(t -> retryWrite(leftAttempts - 1, addedMap).toCompletableFuture().join()
+                            , options.getWriterRetryInterval()
+                            , TimeUnit.MILLISECONDS);
                 }
             }
         });
@@ -84,5 +91,12 @@ public class RetryableMapWriterAsync<K, V> implements MapWriterAsync<K, V> {
                 }
             }
         });
+    }
+
+    public RetryableMapWriterAsync<K, V> withRetryManager(ServiceManager serviceManager) {
+        if (this.serviceManager == null) {
+            this.serviceManager = serviceManager;
+        }
+        return this;
     }
 }

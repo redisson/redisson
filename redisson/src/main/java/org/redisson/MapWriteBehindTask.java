@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.redisson.api.MapOptions;
 import org.redisson.api.RFuture;
 import org.redisson.api.RQueue;
+import org.redisson.api.map.RetryableMapWriterAsync;
 import org.redisson.command.CommandAsyncExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,7 +101,11 @@ public class MapWriteBehindTask {
                 if (options.getWriter() != null) {
                     options.getWriter().write(addedMap);
                 } else {
-                    options.getWriterAsync().write(addedMap).toCompletableFuture().join();
+                    ((RetryableMapWriterAsync<Object, Object>) options.getWriterAsync())
+                            .withRetryManager(commandExecutor.getServiceManager())
+                            .write(addedMap)
+                            .toCompletableFuture()
+                            .join();
                 }
                 addedMap.clear();
             }
