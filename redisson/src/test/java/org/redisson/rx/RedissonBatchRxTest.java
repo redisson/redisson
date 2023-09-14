@@ -129,7 +129,7 @@ public class RedissonBatchRxTest extends BaseRxTest {
         
         BatchOptions batchOptions = BatchOptions.defaults().executionMode(ExecutionMode.REDIS_WRITE_ATOMIC);
         RBatchRx batch = redisson.createBatch(batchOptions);
-        for (int i = 0; i < 25000; i++) {
+        for (int i = 0; i < 100000; i++) {
             batch.getBucket("test").set(123);
         }
         
@@ -193,7 +193,7 @@ public class RedissonBatchRxTest extends BaseRxTest {
         Config config = new Config();
         config.useClusterServers()
         .setTimeout(1000000)
-        .setRetryInterval(1000000)
+        .setRetryInterval(1000)
         .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
         RedissonRxClient redisson = Redisson.create(config).rxJava();
         
