@@ -555,6 +555,7 @@
                         <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
                         <manifestEntries>
                             <Build-Time>${maven.build.timestamp}</Build-Time>
+                            <Automatic-Module-Name>redisson</Automatic-Module-Name>
                         </manifestEntries>
                     </archive>
                 </configuration>
