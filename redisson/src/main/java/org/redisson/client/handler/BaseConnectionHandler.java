@@ -17,10 +17,7 @@ package org.redisson.client.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import org.redisson.client.RedisClient;
-import org.redisson.client.RedisClientConfig;
-import org.redisson.client.RedisConnection;
-import org.redisson.client.RedisLoadingException;
+import org.redisson.client.*;
 import org.redisson.client.protocol.RedisCommands;
 
 import java.net.InetSocketAddress;
@@ -102,7 +99,7 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
         CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
         future.whenComplete((res, e) -> {
             if (e != null) {
-                if (e instanceof RedisLoadingException) {
+                if (e instanceof RedisRetryException) {
                     ctx.executor().schedule(() -> {
                         channelActive(ctx);
                     }, 1, TimeUnit.SECONDS);
