@@ -284,7 +284,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
             if (parts.size() == 2 && "pmessage".equals(parts.get(0))) {
                 return ByteArrayCodec.INSTANCE.getValueDecoder();
             }
-            if (parts.size() == 2 && TYPE_MESSAGES.contains(parts.get(0).toString())) {
+            if (parts.size() == 2 && TYPE_MESSAGES.contains(parts.get(0))) {
                 byte[] channelName = (byte[]) parts.get(1);
                 return getDecoder(null, parts, channelName);
             }
