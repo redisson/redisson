@@ -18,7 +18,6 @@ package org.redisson.connection.balancer;
 import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.misc.RedisURI;
 
-import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
