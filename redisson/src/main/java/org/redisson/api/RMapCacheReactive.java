@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import org.redisson.api.map.MapLoader;
+import org.redisson.api.map.MapWriter;
 import org.redisson.api.map.event.MapEntryListener;
 import reactor.core.publisher.Mono;
 
@@ -163,6 +164,19 @@ public interface RMapCacheReactive<K, V> extends RMapReactive<K, V>, RDestroyabl
      * @return previous associated value
      */
     Mono<V> put(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
+
+    /**
+     * Associates the specified <code>value</code> with the specified <code>key</code>
+     * in batch.
+     * <p>
+     * If {@link MapWriter} is defined then new map entries will be stored in write-through mode.
+     *
+     * @param map - mappings to be stored in this map
+     * @param ttl - time to live for all key\value entries.
+     *              If <code>0</code> then stores infinitely.
+     * @param ttlUnit - time unit
+     */
+    Mono<Void> putAll(java.util.Map<? extends K, ? extends V> map, long ttl, TimeUnit ttlUnit);
 
     /**
      * Stores value mapped by key with specified time to live.

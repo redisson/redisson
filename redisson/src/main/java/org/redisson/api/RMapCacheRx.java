@@ -19,6 +19,7 @@ import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
 import org.redisson.api.map.MapLoader;
+import org.redisson.api.map.MapWriter;
 import org.redisson.api.map.event.MapEntryListener;
 
 import java.time.Duration;
@@ -165,6 +166,19 @@ public interface RMapCacheRx<K, V> extends RMapRx<K, V>, RDestroyable {
      * @return previous associated value
      */
     Maybe<V> put(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
+
+    /**
+     * Associates the specified <code>value</code> with the specified <code>key</code>
+     * in batch.
+     * <p>
+     * If {@link MapWriter} is defined then new map entries will be stored in write-through mode.
+     *
+     * @param map - mappings to be stored in this map
+     * @param ttl - time to live for all key\value entries.
+     *              If <code>0</code> then stores infinitely.
+     * @param ttlUnit - time unit
+     */
+    Completable putAll(java.util.Map<? extends K, ? extends V> map, long ttl, TimeUnit ttlUnit);
 
     /**
      * Stores value mapped by key with specified time to live.
