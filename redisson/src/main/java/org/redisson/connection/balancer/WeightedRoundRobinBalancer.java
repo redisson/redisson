@@ -61,7 +61,7 @@ public class WeightedRoundRobinBalancer implements LoadBalancer {
 
     private final AtomicInteger index = new AtomicInteger(-1);
 
-    private final Map<InetSocketAddress, WeightEntry> weights = new ConcurrentHashMap<>();
+    private final Map<RedisURI, WeightEntry> weights = new ConcurrentHashMap<>();
 
     private final int defaultWeight;
 
@@ -74,11 +74,10 @@ public class WeightedRoundRobinBalancer implements LoadBalancer {
     public WeightedRoundRobinBalancer(Map<String, Integer> weights, int defaultWeight) {
         for (Entry<String, Integer> entry : weights.entrySet()) {
             RedisURI uri = new RedisURI(entry.getKey());
-            InetSocketAddress addr = new InetSocketAddress(uri.getHost(), uri.getPort());
             if (entry.getValue() <= 0) {
                 throw new IllegalArgumentException("Weight can't be less than or equal zero");
             }
-            this.weights.put(addr, new WeightEntry(entry.getValue()));
+            this.weights.put(uri, new WeightEntry(entry.getValue()));
         }
         if (defaultWeight <= 0) {
             throw new IllegalArgumentException("Weight can't be less than or equal zero");
@@ -89,13 +88,15 @@ public class WeightedRoundRobinBalancer implements LoadBalancer {
 
     @Override
     public ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clients) {
-        clients.stream()
-                .map(e -> e.getClient().getAddr())
-                .distinct()
-                .filter(a -> !weights.containsKey(a))
-                .forEach(a -> weights.put(a, new WeightEntry(defaultWeight)));
+        List<ClientConnectionsEntry> usedClients = findClients(clients, weights);
+        for (ClientConnectionsEntry e : clients) {
+            if (usedClients.contains(e)) {
+                continue;
+            }
+            weights.put(e.getClient().getConfig().getAddress(), new WeightEntry(defaultWeight));
+        }
 
-        Map<InetSocketAddress, WeightEntry> weightsCopy = new HashMap<>(weights);
+        Map<RedisURI, WeightEntry> weightsCopy = new HashMap<>(weights);
 
         synchronized (this) {
             weightsCopy.values().removeIf(WeightEntry::isWeightCounterZero);
@@ -124,16 +125,27 @@ public class WeightedRoundRobinBalancer implements LoadBalancer {
 
             int ind = Math.abs(index.incrementAndGet() % clientsCopy.size());
             ClientConnectionsEntry entry = clientsCopy.get(ind);
-            WeightEntry weightEntry = weights.get(entry.getClient().getAddr());
-            weightEntry.decWeightCounter();
+            for (Entry<RedisURI, WeightEntry> weightEntry : weightsCopy.entrySet()) {
+                if (weightEntry.getKey().equals(entry.getClient().getAddr())) {
+                    weightEntry.getValue().decWeightCounter();
+                    break;
+                }
+            }
             return entry;
         }
     }
 
     private List<ClientConnectionsEntry> findClients(List<ClientConnectionsEntry> clients,
-                                                        Map<InetSocketAddress, WeightEntry> weightsCopy) {
+                                                        Map<RedisURI, WeightEntry> weightsCopy) {
         return clients.stream()
-                        .filter(e -> weightsCopy.containsKey(e.getClient().getAddr()))
+                        .filter(e -> {
+                            for (RedisURI redisURI : weightsCopy.keySet()) {
+                                if (redisURI.equals(e.getClient().getAddr())) {
+                                    return true;
+                                }
+                            }
+                            return false;
+                        })
                         .collect(Collectors.toList());
     }
 
