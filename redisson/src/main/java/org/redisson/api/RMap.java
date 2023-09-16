@@ -191,8 +191,18 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     /**
      * Adds the given <code>delta</code> to the current value
      * by mapped <code>key</code>.
-     *
-     * Works only for <b>numeric</b> values!
+     * <p>
+     * Works only with codecs below
+     * <p>
+     * {@link org.redisson.codec.JsonJacksonCodec},
+     * <p>
+     * {@link org.redisson.client.codec.StringCodec},
+     * <p>
+     * {@link org.redisson.client.codec.IntegerCodec},
+     * <p>
+     * {@link org.redisson.client.codec.DoubleCodec}
+     * <p>
+     * {@link org.redisson.client.codec.LongCodec}
      *
      * @param key - map key
      * @param delta the value to add
