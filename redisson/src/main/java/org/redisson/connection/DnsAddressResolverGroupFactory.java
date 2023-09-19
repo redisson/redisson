@@ -35,8 +35,8 @@ public class DnsAddressResolverGroupFactory implements AddressResolverGroupFacto
         dnsResolverBuilder.channelType(channelType)
                 .socketChannelType(socketChannelType)
                 .nameServerProvider(nameServerProvider)
-                .resolveCache(new DefaultDnsCache(0, Integer.MAX_VALUE, 0))
-                .cnameCache(new DefaultDnsCnameCache(0, Integer.MAX_VALUE));
+                .resolveCache(new DefaultDnsCache())
+                .cnameCache(new DefaultDnsCnameCache());
 
         return new DnsAddressResolverGroup(dnsResolverBuilder);
     }
