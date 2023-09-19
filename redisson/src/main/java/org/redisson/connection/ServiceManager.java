@@ -147,7 +147,7 @@ public class ServiceManager {
             if (PlatformDependent.isAndroid()) {
                 this.resolverGroup = DefaultAddressResolverGroup.INSTANCE;
             } else {
-                this.resolverGroup = cfg.getAddressResolverGroupFactory().create(EpollDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
+                this.resolverGroup = cfg.getAddressResolverGroupFactory().create(EpollDatagramChannel.class, socketChannelClass, DnsServerAddressStreamProviders.platformDefault());
             }
         } else if (cfg.getTransportMode() == TransportMode.KQUEUE) {
             if (cfg.getEventLoopGroup() == null) {
@@ -157,7 +157,7 @@ public class ServiceManager {
             }
 
             this.socketChannelClass = KQueueSocketChannel.class;
-            this.resolverGroup = cfg.getAddressResolverGroupFactory().create(KQueueDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
+            this.resolverGroup = cfg.getAddressResolverGroupFactory().create(KQueueDatagramChannel.class, socketChannelClass, DnsServerAddressStreamProviders.platformDefault());
         } else if (cfg.getTransportMode() == TransportMode.IO_URING) {
             if (cfg.getEventLoopGroup() == null) {
                 this.group = createIOUringGroup(cfg);
@@ -166,7 +166,7 @@ public class ServiceManager {
             }
 
             this.socketChannelClass = IOUringSocketChannel.class;
-            this.resolverGroup = cfg.getAddressResolverGroupFactory().create(IOUringDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
+            this.resolverGroup = cfg.getAddressResolverGroupFactory().create(IOUringDatagramChannel.class, socketChannelClass, DnsServerAddressStreamProviders.platformDefault());
         } else {
             if (cfg.getEventLoopGroup() == null) {
                 this.group = new NioEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
@@ -178,7 +178,7 @@ public class ServiceManager {
             if (PlatformDependent.isAndroid()) {
                 this.resolverGroup = DefaultAddressResolverGroup.INSTANCE;
             } else {
-                this.resolverGroup = cfg.getAddressResolverGroupFactory().create(NioDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
+                this.resolverGroup = cfg.getAddressResolverGroupFactory().create(NioDatagramChannel.class, socketChannelClass, DnsServerAddressStreamProviders.platformDefault());
             }
         }
 

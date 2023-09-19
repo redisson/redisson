@@ -16,8 +16,8 @@
 package org.redisson.connection;
 
 import io.netty.channel.socket.DatagramChannel;
-import io.netty.resolver.dns.DnsAddressResolverGroup;
-import io.netty.resolver.dns.DnsServerAddressStreamProvider;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.resolver.dns.*;
 
 /**
  * 
@@ -26,11 +26,19 @@ import io.netty.resolver.dns.DnsServerAddressStreamProvider;
  *
  */
 public class DnsAddressResolverGroupFactory implements AddressResolverGroupFactory {
-    
+
     @Override
     public DnsAddressResolverGroup create(Class<? extends DatagramChannel> channelType,
-            DnsServerAddressStreamProvider nameServerProvider) {
-        return new DnsAddressResolverGroup(channelType, nameServerProvider);
+                                          Class<? extends SocketChannel> socketChannelType,
+                                          DnsServerAddressStreamProvider nameServerProvider) {
+        DnsNameResolverBuilder dnsResolverBuilder = new DnsNameResolverBuilder();
+        dnsResolverBuilder.channelType(channelType)
+                .socketChannelType(socketChannelType)
+                .nameServerProvider(nameServerProvider)
+                .resolveCache(new DefaultDnsCache(0, Integer.MAX_VALUE, 0))
+                .cnameCache(new DefaultDnsCnameCache(0, Integer.MAX_VALUE));
+
+        return new DnsAddressResolverGroup(dnsResolverBuilder);
     }
 
 }
