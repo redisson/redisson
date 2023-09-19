@@ -150,12 +150,13 @@ public class RedissonAutoConfiguration {
             if (b != null) {
                 password = b.getPassword();
                 username = b.getUsername();
-            }
-            if (b.getSentinel() != null) {
-                isSentinel = true;
-            }
-            if (b.getCluster() != null) {
-                isCluster = true;
+
+                if (b.getSentinel() != null) {
+                    isSentinel = true;
+                }
+                if (b.getCluster() != null) {
+                    isCluster = true;
+                }
             }
         }
 
@@ -231,7 +232,7 @@ public class RedissonAutoConfiguration {
             if (hasConnectionDetails()) {
                 ObjectProvider<RedisConnectionDetails> provider = ctx.getBeanProvider(RedisConnectionDetails.class);
                 RedisConnectionDetails b = provider.getIfAvailable();
-                if (b.getSentinel() != null) {
+                if (b != null && b.getSentinel() != null) {
                     database = b.getSentinel().getDatabase();
                     sentinelMaster = b.getSentinel().getMaster();
                     nodes = convertNodes(prefix, (List<Object>) (Object) b.getSentinel().getNodes());
@@ -272,7 +273,7 @@ public class RedissonAutoConfiguration {
             if (hasConnectionDetails()) {
                 ObjectProvider<RedisConnectionDetails> provider = ctx.getBeanProvider(RedisConnectionDetails.class);
                 RedisConnectionDetails b = provider.getIfAvailable();
-                if (b.getCluster() != null) {
+                if (b != null && b.getCluster() != null) {
                     nodes = convertNodes(prefix, (List<Object>) (Object) b.getCluster().getNodes());
                 }
             }
@@ -298,7 +299,7 @@ public class RedissonAutoConfiguration {
             if (hasConnectionDetails()) {
                 ObjectProvider<RedisConnectionDetails> provider = ctx.getBeanProvider(RedisConnectionDetails.class);
                 RedisConnectionDetails b = provider.getIfAvailable();
-                if (b.getStandalone() != null) {
+                if (b != null && b.getStandalone() != null) {
                     database = b.getStandalone().getDatabase();
                     singleAddr = prefix + b.getStandalone().getHost() + ":" + b.getStandalone().getPort();
                 }
