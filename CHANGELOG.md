@@ -3,6 +3,23 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 19-Sep-2023 - 3.23.5 released
+Feature - `failedSlaveNodeDetector` setting added to Cluster, Sentinel, Replicated, Master/Slave modes  
+Feature - module name added to redisson jar (thanks to @KrogerWalt)  
+Feature - `putAll()` method with TTL added to RMapCacheRx and RMapCacheReactive objects  
+Feature - Fallback to TCP in case of a UDP DNS truncation  
+Feature - `RMapCacheV2`, Spring `RedissonSpringCacheV2Manager` and Hibernate `RedissonRegionV2Factory` objects added in [PRO](https://redisson.pro) version  
+
+Fixed - NPE is thrown by `RedissonAutoConfiguration` if Spring Boot 3.1+  
+Fixed - `WeightedRoundRobinBalancer` doesn't support hostnames  
+Fixed - NPE is thrown by CommandPubSubDecoder in rare cases  
+Fixed - during connection initialization a new attempt isn't made for Busy, ClusterDown, TryAgain and Wait Redis errors  
+Fixed - `RJsonBucket.getType()` method throws NPE if type is null  
+Fixed - `IllegalStateException` is thrown if `RedisConnectionDetails` object registered in Spring Context with settings for Cluster or Sentinel  
+Fixed - `RSearch` can not create Vector field  
+Fixed - `RSearch` vector field doesn't support alias  
+
+
 ### 29-Aug-2023 - 3.23.4 released
 
 Feature - methods for multiple permits support added to `RPermitExpirableSemaphore` object (thanks to @ikss)  
