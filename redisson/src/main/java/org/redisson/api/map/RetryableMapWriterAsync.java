@@ -21,9 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -38,6 +36,10 @@ public class RetryableMapWriterAsync<K, V> implements MapWriterAsync<K, V> {
 
     private ServiceManager serviceManager;
 
+    public void setServiceManager(ServiceManager serviceManager) {
+        this.serviceManager = serviceManager;
+    }
+
     public RetryableMapWriterAsync(MapOptions<K, V> options, MapWriterAsync<K, V> mapWriterAsync) {
         this.options = options;
         this.mapWriterAsync = mapWriterAsync;
@@ -45,57 +47,67 @@ public class RetryableMapWriterAsync<K, V> implements MapWriterAsync<K, V> {
 
     @Override
     public CompletionStage<Void> write(Map<K, V> addedMap) {
-        return retryWrite(Math.max(1, options.getWriterRetryAttempts()), new LinkedHashMap<>(addedMap));
+        CompletableFuture<Void> result = new CompletableFuture<>();
+        retryWrite(Math.max(1, options.getWriterRetryAttempts()), addedMap, result);
+        return result;
     }
 
-    private CompletableFuture<Void> retryWrite(int leftAttempts, Map<K, V> addedMap) {
-        return CompletableFuture.runAsync(() -> {
-            try {
-                //do write
-                mapWriterAsync.write(addedMap).toCompletableFuture().join();
-            } catch (Exception exception) {
-                if (leftAttempts - 1 == 0) {
-                    throw exception;
-                } else {
-                    //only need serviceManager when exception happened
-                    Objects.requireNonNull(serviceManager);
-                    log.warn("Unable to add keys: {}, will retry after {}ms", addedMap, options.getWriterRetryInterval(), exception);
-                    serviceManager.newTimeout(t -> retryWrite(leftAttempts - 1, addedMap).toCompletableFuture().join(),
+    private void retryWrite(int leftAttempts, Map<K, V> addedMap, CompletableFuture<Void> result) {
+        mapWriterAsync.write(addedMap).whenComplete((x, e) -> {
+                    if (e == null) {
+                        result.complete(null);
+                        return;
+                    }
+
+                    if (leftAttempts - 1 <= 0) {
+                        result.completeExceptionally(e);
+                        return;
+                    }
+
+                    if (serviceManager == null) {
+                        log.warn("The serviceManager is null so cannot retry writing keys: {}", addedMap);
+                        result.completeExceptionally(e);
+                        return;
+                    }
+
+                    log.warn("Unable to add keys: {}, will retry after {}ms", addedMap, options.getWriterRetryInterval(), e);
+                    serviceManager.newTimeout(t -> retryWrite(leftAttempts - 1, addedMap, result),
                             options.getWriterRetryInterval(), TimeUnit.MILLISECONDS);
                 }
-            }
-        });
+        );
     }
 
     @Override
     public CompletionStage<Void> delete(Collection<K> keys) {
-        return CompletableFuture.runAsync(() -> {
-            //execute at least once
-            int leftDeleteAttempts = Math.max(1, options.getWriterRetryAttempts());
-            while (leftDeleteAttempts > 0) {
-                try {
-                    //do delete
-                    mapWriterAsync.delete(keys).toCompletableFuture().join();
-                    break;
-                } catch (Exception exception) {
-                    if (--leftDeleteAttempts == 0) {
-                        throw exception;
-                    } else {
-                        log.warn("Unable to delete keys: {}, will retry after {}ms", keys, options.getWriterRetryInterval(), exception);
-                        try {
-                            Thread.sleep(options.getWriterRetryInterval());
-                        } catch (InterruptedException ignore) {
-                        }
-                    }
-                }
-            }
-        });
+        CompletableFuture<Void> result = new CompletableFuture<>();
+        retryDelete(Math.max(1, options.getWriterRetryAttempts()), keys, result);
+        return result;
     }
 
-    public RetryableMapWriterAsync<K, V> withRetryManager(ServiceManager serviceManager) {
-        if (this.serviceManager == null) {
-            this.serviceManager = serviceManager;
-        }
-        return this;
+    private void retryDelete(int leftAttempts, Collection<K> keys, CompletableFuture<Void> result) {
+        mapWriterAsync.delete(keys).whenComplete((x, e) -> {
+                    if (e == null) {
+                        result.complete(null);
+                        return;
+                    }
+
+                    if (leftAttempts - 1 <= 0) {
+                        result.completeExceptionally(e);
+                        return;
+                    }
+
+                    if (serviceManager == null) {
+                        log.warn("The serviceManager is null so cannot retry deleting keys: {}", keys);
+                        result.completeExceptionally(e);
+                        return;
+                    }
+
+                    log.warn("Unable to delete keys: {}, will retry after {}ms", keys, options.getWriterRetryInterval(), e);
+                    serviceManager.newTimeout(t -> retryDelete(leftAttempts - 1, keys, result),
+                            options.getWriterRetryInterval(), TimeUnit.MILLISECONDS);
+                }
+        );
     }
+
+
 }

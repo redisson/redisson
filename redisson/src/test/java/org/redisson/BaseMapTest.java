@@ -1477,7 +1477,7 @@ public abstract class BaseMapTest extends BaseTest {
         final RMap<String, String> map = redisson.getMap("test", options);
         //do add
         map.put("1", "11");
-        Thread.sleep(1400);
+        Thread.sleep(2400);
         
         //assert add
         Map<String, String> expectedMap = new HashMap<>();
@@ -1490,7 +1490,7 @@ public abstract class BaseMapTest extends BaseTest {
         //do delete
         actualRetryTimes.set(0);
         map.remove("1");
-        Thread.sleep(1400);
+        Thread.sleep(2400);
 
         //assert delete 
         expectedMap.clear();
