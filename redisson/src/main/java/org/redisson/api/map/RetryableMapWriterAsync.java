@@ -65,7 +65,7 @@ public class RetryableMapWriterAsync<K, V> implements MapWriterAsync<K, V> {
                     }
 
                     if (serviceManager == null) {
-                        log.warn("The serviceManager is null so cannot retry writing keys: {}", addedMap);
+                        log.warn("The serviceManager is null, so cannot retry writing keys: {}", addedMap);
                         result.completeExceptionally(e);
                         return;
                     }
