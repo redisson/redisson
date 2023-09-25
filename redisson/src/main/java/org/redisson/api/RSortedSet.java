@@ -28,7 +28,7 @@ import org.redisson.api.mapreduce.RCollectionMapReduce;
  *
  * @param <V> value type
  */
-public interface RSortedSet<V> extends SortedSet<V>, RObject {
+public interface RSortedSet<V> extends SortedSet<V>, RExpirable {
 
     /**
      * Returns <code>RMapReduce</code> object associated with this object

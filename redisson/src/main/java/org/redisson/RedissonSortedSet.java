@@ -489,22 +489,22 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
 
     @Override
     public RFuture<Boolean> deleteAsync() {
-        return deleteAsync(getRawName(), getComparatorKeyName());
+        return deleteAsync(getRawName(), getComparatorKeyName(), getLockName());
     }
 
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
-        return super.expireAsync(timeToLive, timeUnit, param, getRawName(), getComparatorKeyName());
+        return super.expireAsync(timeToLive, timeUnit, param, getRawName(), getComparatorKeyName(), getLockName());
     }
 
     @Override
     protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
-        return super.expireAtAsync(timestamp, param, getRawName(), getComparatorKeyName());
+        return super.expireAtAsync(timestamp, param, getRawName(), getComparatorKeyName(), getLockName());
     }
 
     @Override
     public RFuture<Boolean> clearExpireAsync() {
-        return clearExpireAsync(getRawName(), getComparatorKeyName());
+        return clearExpireAsync(getRawName(), getComparatorKeyName(), getLockName());
     }
 
 }
