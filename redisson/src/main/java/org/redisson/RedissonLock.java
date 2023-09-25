@@ -57,6 +57,11 @@ public class RedissonLock extends RedissonBaseLock {
         this.pubSub = commandExecutor.getConnectionManager().getSubscribeService().getLockPubSub();
     }
 
+    public RedissonLock(String name, CommandAsyncExecutor commandExecutor) {
+        this(commandExecutor, name);
+        this.name = name;
+    }
+
     String getChannelName() {
         return prefixName("redisson_lock__channel", getRawName());
     }

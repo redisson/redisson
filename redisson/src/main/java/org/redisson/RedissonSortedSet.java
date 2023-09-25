@@ -33,6 +33,7 @@ import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  *
@@ -40,7 +41,7 @@ import java.util.concurrent.CompletableFuture;
  *
  * @param <V> value type
  */
-public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V> {
+public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSet<V> {
 
     public static class BinarySearchResult<V> {
 
@@ -80,16 +81,16 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         super(commandExecutor, name);
         this.redisson = redisson;
 
-        comparatorHolder = redisson.getBucket(getComparatorKeyName(), StringCodec.INSTANCE);
-        lock = redisson.getLock(getLockName());
-        list = (RedissonList<V>) redisson.<V>getList(getName());
+        comparatorHolder = new RedissonBucket<>(getComparatorKeyName(), StringCodec.INSTANCE, commandExecutor);
+        lock = new RedissonLock(getLockName(), commandExecutor);
+        list = (RedissonList<V>) redisson.<V>getList(getName(), codec);
     }
 
     public RedissonSortedSet(Codec codec, CommandAsyncExecutor commandExecutor, String name, Redisson redisson) {
         super(codec, commandExecutor, name);
 
-        comparatorHolder = redisson.getBucket(getComparatorKeyName(), StringCodec.INSTANCE);
-        lock = redisson.getLock(getLockName());
+        comparatorHolder = new RedissonBucket<>(getComparatorKeyName(), StringCodec.INSTANCE, commandExecutor);
+        lock = new RedissonLock(getLockName(), commandExecutor);
         list = (RedissonList<V>) redisson.<V>getList(getName(), codec);
     }
     
@@ -365,11 +366,11 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     }
 
     private String getLockName() {
-        return prefixName("redisson_sortedset_lock", getName());
+        return prefixName("redisson_sortedset_lock", getRawName());
     }
 
     private String getComparatorKeyName() {
-        return prefixName("redisson_sortedset_comparator", getName());
+        return prefixName("redisson_sortedset_comparator", getRawName());
     }
 
     @Override
@@ -484,6 +485,26 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
                 return sb.append(']').toString();
             sb.append(',').append(' ');
         }
+    }
+
+    @Override
+    public RFuture<Boolean> deleteAsync() {
+        return deleteAsync(getRawName(), getComparatorKeyName());
+    }
+
+    @Override
+    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
+        return super.expireAsync(timeToLive, timeUnit, param, getRawName(), getComparatorKeyName());
+    }
+
+    @Override
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
+        return super.expireAtAsync(timestamp, param, getRawName(), getComparatorKeyName());
+    }
+
+    @Override
+    public RFuture<Boolean> clearExpireAsync() {
+        return clearExpireAsync(getRawName(), getComparatorKeyName());
     }
 
 }

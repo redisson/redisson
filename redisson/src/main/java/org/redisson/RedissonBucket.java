@@ -48,6 +48,11 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         super(codec, connectionManager, name);
     }
 
+    public RedissonBucket(String name, Codec codec, CommandAsyncExecutor connectionManager) {
+        super(codec, connectionManager, name);
+        this.name = name;
+    }
+
     @Override
     public boolean compareAndSet(V expect, V update) {
         return get(compareAndSetAsync(expect, update));
