@@ -18,12 +18,46 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.redisson.api.NameMapper;
 import org.redisson.api.RFuture;
 import org.redisson.api.RSortedSet;
+import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.config.Config;
 
 public class RedissonSortedSetTest extends BaseTest {
+
+    @Test
+    public void testNameMapper() {
+        Config config = new Config();
+        config.useSingleServer()
+                .setNameMapper(new NameMapper() {
+                    @Override
+                    public String map(String name) {
+                        return name + ":suffix:";
+                    }
+
+                    @Override
+                    public String unmap(String name) {
+                        return name.replace(":suffix:", "");
+                    }
+                })
+                .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+
+        RedissonClient redisson = Redisson.create(config);
+        RSortedSet<Long> set = redisson.getSortedSet("simple", LongCodec.INSTANCE);
+        set.add(2L);
+        set.add(0L);
+        set.add(1L);
+        set.add(5L);
+
+        assertThat(set.first()).isEqualTo(0L);
+        assertThat(set.last()).isEqualTo(5L);
+
+        assertThat(set.readAll()).containsExactly(0L, 1L, 2L, 5L);
+    }
+
 
     @Test
     public void test1() {

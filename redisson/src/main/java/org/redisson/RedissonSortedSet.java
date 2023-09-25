@@ -81,16 +81,16 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         this.redisson = redisson;
 
         comparatorHolder = redisson.getBucket(getComparatorKeyName(), StringCodec.INSTANCE);
-        lock = redisson.getLock("redisson_sortedset_lock:{" + getRawName() + "}");
-        list = (RedissonList<V>) redisson.<V>getList(getRawName());
+        lock = redisson.getLock(getLockName());
+        list = (RedissonList<V>) redisson.<V>getList(getName());
     }
 
     public RedissonSortedSet(Codec codec, CommandAsyncExecutor commandExecutor, String name, Redisson redisson) {
         super(codec, commandExecutor, name);
 
         comparatorHolder = redisson.getBucket(getComparatorKeyName(), StringCodec.INSTANCE);
-        lock = redisson.getLock("redisson_sortedset_lock:{" + getRawName() + "}");
-        list = (RedissonList<V>) redisson.<V>getList(getRawName(), codec);
+        lock = redisson.getLock(getLockName());
+        list = (RedissonList<V>) redisson.<V>getList(getName(), codec);
     }
     
     @Override
@@ -148,7 +148,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public RFuture<Collection<V>> readAllAsync() {
-        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.LRANGE_SET, getRawName(), 0, -1);
+        return (RFuture<Collection<V>>) (Object) list.readAllAsync();
     }
     
     @Override
@@ -194,14 +194,14 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
                 
                 ByteBuf encodedValue = encode(value);
                 
-                commandExecutor.get(commandExecutor.evalWriteNoRetryAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
+                commandExecutor.get(commandExecutor.evalWriteNoRetryAsync(list.getRawName(), codec, RedisCommands.EVAL_VOID,
                    "local len = redis.call('llen', KEYS[1]);"
                     + "if tonumber(ARGV[1]) < len then "
                         + "local pivot = redis.call('lindex', KEYS[1], ARGV[1]);"
                         + "redis.call('linsert', KEYS[1], 'before', pivot, ARGV[2]);"
                         + "return;"
                     + "end;"
-                    + "redis.call('rpush', KEYS[1], ARGV[2]);", Arrays.<Object>asList(getRawName()), index, encodedValue));
+                    + "redis.call('rpush', KEYS[1], ARGV[2]);", Arrays.<Object>asList(list.getRawName()), index, encodedValue));
                 return true;
             } else {
                 return false;
@@ -364,8 +364,12 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         return res;
     }
 
+    private String getLockName() {
+        return prefixName("redisson_sortedset_lock", getName());
+    }
+
     private String getComparatorKeyName() {
-        return "redisson_sortedset_comparator:{" + getRawName() + "}";
+        return prefixName("redisson_sortedset_comparator", getName());
     }
 
     @Override
@@ -373,14 +377,14 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         String className = comparator.getClass().getName();
         final String comparatorSign = className + ":" + calcClassSign(className);
 
-        Boolean res = commandExecutor.get(commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        Boolean res = commandExecutor.get(commandExecutor.evalWriteAsync(list.getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('llen', KEYS[1]) == 0 then "
                 + "redis.call('set', KEYS[2], ARGV[1]); "
                 + "return 1; "
                 + "else "
                 + "return 0; "
                 + "end",
-                Arrays.asList(getRawName(), getComparatorKeyName()), comparatorSign));
+                Arrays.asList(list.getRawName(), getComparatorKeyName()), comparatorSign));
         if (res) {
             this.comparator = comparator;
         }
@@ -414,7 +418,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     }
 
     private RFuture<ScanResult<Object>> distributedScanIteratorAsync(String iteratorName, int count) {
-        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_SCAN,
+        return commandExecutor.evalWriteAsync(list.getRawName(), codec, RedisCommands.EVAL_SCAN,
                 "local start_index = redis.call('get', KEYS[2]); "
                 + "if start_index ~= false then "
                     + "start_index = tonumber(start_index); "
@@ -432,7 +436,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
                 + "end; "
                 + "redis.call('setex', KEYS[2], 3600, end_index);"
                 + "return {end_index, result};",
-                Arrays.asList(getRawName(), iteratorName), count);
+                Arrays.asList(list.getRawName(), iteratorName), count);
     }
 
     // TODO optimize: get three values each time instead of single
