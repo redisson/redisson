@@ -79,7 +79,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
         this.commandExecutor = commandExecutor;
 
         comparatorHolder = redisson.getBucket(getComparatorKeyName(), StringCodec.INSTANCE);
-        lock = redisson.getLock("redisson_sortedset_lock:{" + getRawName() + "}");
+        lock = redisson.getLock(getLockName());
     }
 
     public RedissonPriorityQueue(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
@@ -87,7 +87,11 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
         this.commandExecutor = commandExecutor;
 
         comparatorHolder = redisson.getBucket(getComparatorKeyName(), StringCodec.INSTANCE);
-        lock = redisson.getLock("redisson_sortedset_lock:{" + getRawName() + "}");
+        lock = redisson.getLock(getLockName());
+    }
+
+    private String getLockName() {
+        return prefixName("redisson_sortedset_lock", getName());
     }
 
     private void loadComparator() {
