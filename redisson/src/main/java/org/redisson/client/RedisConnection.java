@@ -58,7 +58,7 @@ public class RedisConnection implements RedisCommands {
     volatile Channel channel;
 
     private CompletableFuture<?> connectionPromise;
-    private long lastUsageTime;
+    private volatile long lastUsageTime;
     @Deprecated
     private Runnable connectedListener;
     @Deprecated
