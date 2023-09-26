@@ -41,6 +41,23 @@ import org.redisson.eviction.EvictionScheduler;
 public class RedissonMapCacheTest extends BaseMapTest {
 
     @Test
+    public void testExpireEntry() {
+        RMapCache<String, String> testMap = redisson.getMapCache("map");
+        testMap.put("key", "value");
+        testMap.expireEntry("key", Duration.ofMillis(0), Duration.ofMillis(20000));
+        assertThat(testMap.remainTimeToLive("key")).isBetween(19800L, 20000L);
+    }
+
+    @Test
+    public void testExpireEntries() {
+        RMapCache<String, String> testMap = redisson.getMapCache("map");
+        testMap.put("key1", "value");
+        testMap.put("key2", "value");
+        testMap.expireEntries(new HashSet<>(Arrays.asList("key1", "key2")), Duration.ofMillis(0), Duration.ofMillis(20000));
+        assertThat(testMap.remainTimeToLive("key1")).isBetween(19800L, 20000L);
+    }
+
+    @Test
     public void testRemoveEmptyEvictionTask() throws InterruptedException {
         Config config = createConfig();
         config.setMaxCleanUpDelay(2);
