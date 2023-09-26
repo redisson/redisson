@@ -1448,6 +1448,7 @@ public abstract class BaseMapTest extends BaseTest {
         AtomicInteger actualRetryTimes = new AtomicInteger(0);
         Map<String, String> store = new HashMap<>();
         MapOptions<String, String> options = MapOptions.<String, String>defaults()
+                .writerRetryAttempts(expectedRetryAttempts)
                 .writerAsync(new MapWriterAsync<String, String>() {
                     @Override
                     public CompletionStage<Void> write(Map<String, String> map) {
@@ -1471,8 +1472,7 @@ public abstract class BaseMapTest extends BaseTest {
                     }
                 })
                 .writeMode(MapOptions.WriteMode.WRITE_BEHIND)
-                .writerRetryAttempts(expectedRetryAttempts)
-                .writerRetryInterval(100, TimeUnit.MILLISECONDS);
+                .writerRetryInterval(Duration.ofMillis(100));
 
         final RMap<String, String> map = redisson.getMap("test", options);
         //do add
@@ -1508,6 +1508,7 @@ public abstract class BaseMapTest extends BaseTest {
         AtomicInteger actualRetryTimes = new AtomicInteger(0);
         Map<String, String> store = new HashMap<>();
         MapOptions<String, String> options = MapOptions.<String, String>defaults()
+                .writerRetryAttempts(expectedRetryAttempts)
                 .writer(new MapWriter<String, String>() {
                     @Override
                     public void write(Map<String, String> map) {
@@ -1525,8 +1526,7 @@ public abstract class BaseMapTest extends BaseTest {
                         keys.forEach(store::remove);
                     }
                 })
-                .writeMode(MapOptions.WriteMode.WRITE_THROUGH)
-                .writerRetryAttempts(expectedRetryAttempts);
+                .writeMode(MapOptions.WriteMode.WRITE_THROUGH);
 
         final RMap<String, String> map = redisson.getMap("test", options);
         

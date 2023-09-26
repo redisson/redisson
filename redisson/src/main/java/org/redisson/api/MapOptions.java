@@ -22,7 +22,7 @@ import org.redisson.api.map.MapWriterAsync;
 import org.redisson.api.map.RetryableMapWriter;
 import org.redisson.api.map.RetryableMapWriterAsync;
 
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 /**
  * Configuration for RMap object.
@@ -96,7 +96,11 @@ public class MapOptions<K, V> {
      * @return MapOptions instance
      */
     public MapOptions<K, V> writer(MapWriter<K, V> writer) {
-        this.writer = new RetryableMapWriter<>(this, writer);
+        if (writerRetryAttempts ==0) {
+            this.writer = writer;
+        }else {
+            this.writer = new RetryableMapWriter<>(this, writer);
+        } 
         return this;
     }
     public MapWriter<K, V> getWriter() {
@@ -110,7 +114,11 @@ public class MapOptions<K, V> {
      * @return MapOptions instance
      */
     public MapOptions<K, V> writerAsync(MapWriterAsync<K, V> writer) {
-        this.writerAsync = new RetryableMapWriterAsync<>(this, writer);
+        if (writerRetryAttempts ==0) {
+            this.writerAsync = writer;
+        }else {
+            this.writerAsync = new RetryableMapWriterAsync<>(this, writer);
+        }
         return this;
     }
     public MapWriterAsync<K, V> getWriterAsync() {
@@ -192,15 +200,14 @@ public class MapOptions<K, V> {
     /**
      * Sets retry interval for {@link RetryableMapWriter} or {@link RetryableMapWriterAsync}
      * 
-     * @param writerRetryInterval object
-     * @param timeUnit {@link TimeUnit}
+     * @param writerRetryInterval {@link Duration}
      * @return MapOptions instance
      */
-    public MapOptions<K, V> writerRetryInterval(long writerRetryInterval, TimeUnit timeUnit) {
-        if (writerRetryInterval < 0){
+    public MapOptions<K, V> writerRetryInterval(Duration writerRetryInterval) {
+        if (writerRetryInterval.isNegative()) {
             throw new IllegalArgumentException("writerRetryInterval must be positive");
         }
-        this.writerRetryInterval = timeUnit.toMillis(writerRetryInterval);
+        this.writerRetryInterval = writerRetryInterval.toMillis();
         return this;
     }
 
