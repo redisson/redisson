@@ -1170,26 +1170,27 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         }
 
         long maxIdleTimeout = 0;
+        long maxIdleDelta = 0;
         if (maxIdleTime != null && !maxIdleTime.isZero()) {
-            long maxIdleDelta = maxIdleTime.toMillis();
+            maxIdleDelta = maxIdleTime.toMillis();
             maxIdleTimeout = currentTime + maxIdleDelta;
         }
 
         String name = getRawName(key);
         RFuture<Boolean> future = commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_BOOLEAN,
-                        "local value = redis.call('hget', KEYS[1], ARGV[4]); "
+                        "local value = redis.call('hget', KEYS[1], ARGV[5]); "
                         + "local t, val;"
                         + "if value == false then "
                             + "return 0; "
                         + "else "
                             + "t, val = struct.unpack('dLc0', value); "
                             + "local expireDate = 92233720368547758; "
-                            + "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[4]); "
+                            + "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[5]); "
                             + "if expireDateScore ~= false then "
                                 + "expireDate = tonumber(expireDateScore) "
                             + "end; "
                             + "if t ~= 0 then "
-                                + "local expireIdle = redis.call('zscore', KEYS[3], ARGV[4]); "
+                                + "local expireIdle = redis.call('zscore', KEYS[3], ARGV[5]); "
                                 + "if expireIdle ~= false then "
                                     + "expireDate = math.min(expireDate, tonumber(expireIdle)) "
                                 + "end; "
@@ -1200,14 +1201,14 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         + "end; " +
 
                         "if tonumber(ARGV[2]) > 0 then "
-                            + "redis.call('zadd', KEYS[2], ARGV[2], ARGV[4]); "
+                            + "redis.call('zadd', KEYS[2], ARGV[2], ARGV[5]); "
                         + "else "
-                            + "redis.call('zrem', KEYS[2], ARGV[4]); "
+                            + "redis.call('zrem', KEYS[2], ARGV[5]); "
                         + "end; "
                         + "if tonumber(ARGV[3]) > 0 then "
-                            + "redis.call('zadd', KEYS[3], ARGV[3], ARGV[4]); "
+                            + "redis.call('zadd', KEYS[3], ARGV[3], ARGV[5]); "
                         + "else "
-                            + "redis.call('zrem', KEYS[3], ARGV[4]); "
+                            + "redis.call('zrem', KEYS[3], ARGV[5]); "
                         + "end; " +
 
                         // last access time
@@ -1217,16 +1218,20 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                            "local currentTime = tonumber(ARGV[1]); " +
 
                            "if mode == false or mode == 'LRU' then " +
-                               "redis.call('zadd', KEYS[4], currentTime, ARGV[4]); " +
+                               "redis.call('zadd', KEYS[4], currentTime, ARGV[5]); " +
                            "end; " +
                            "if mode == 'LFU' then " +
-                                "redis.call('zincrby', KEYS[4], 1, ARGV[4]); " +
+                                "redis.call('zincrby', KEYS[4], 1, ARGV[5]); " +
                            "end; " +
                         "end; " +
+
+                        "local value = struct.pack('dLc0', ARGV[4], string.len(val), val); " +
+                        "redis.call('hset', KEYS[1], ARGV[5], value); " +
+
                         "return 1;",
                 Arrays.asList(name, getTimeoutSetName(name), getIdleSetName(name),
                               getLastAccessTimeSetName(name), getOptionsName(name)),
-                System.currentTimeMillis(), ttlTimeout, maxIdleTimeout, encodeMapKey(key));
+                System.currentTimeMillis(), ttlTimeout, maxIdleTimeout, maxIdleDelta, encodeMapKey(key));
         return future;
     }
 
@@ -1246,8 +1251,9 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         }
 
         long maxIdleTimeout = 0;
+        long maxIdleDelta = 0;
         if (maxIdleTime != null && !maxIdleTime.isZero()) {
-            long maxIdleDelta = maxIdleTime.toMillis();
+            maxIdleDelta = maxIdleTime.toMillis();
             maxIdleTimeout = currentTime + maxIdleDelta;
         }
 
@@ -1255,11 +1261,12 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         args.add(System.currentTimeMillis());
         args.add(ttlTimeout);
         args.add(maxIdleTimeout);
+        args.add(maxIdleDelta);
         encodeMapKeys(args, keys);
 
         RFuture<Integer> future = commandExecutor.evalWriteAsync(getRawName(), IntegerCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
           "local counter = 0;" +
-                "for i = 4, #ARGV, 1 do " +
+                "for i = 5, #ARGV, 1 do " +
                         "local value = redis.call('hget', KEYS[1], ARGV[i]); "
                         + "local t, val;"
                         + "if value == false then "
@@ -1307,7 +1314,12 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                                "end; " +
                             "end; " +
                             "counter = counter + 1; " +
+
+                            "local value = struct.pack('dLc0', ARGV[4], string.len(val), val); " +
+                            "redis.call('hset', KEYS[1], ARGV[i], value); " +
                           "end;" +
+
+
                     "end;" +
                     "return counter;",
                 Arrays.asList(getRawName(), getTimeoutSetName(), getIdleSetName(),
@@ -1398,10 +1410,11 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                                "end; " +
                             "end; " +
                             "counter = counter + 1; " +
+
+                            "local value = struct.pack('dLc0', ARGV[4], string.len(val), val); " +
+                            "redis.call('hset', KEYS[1], ARGV[i], value); " +
                           "end;" +
 
-                          "local value = struct.pack('dLc0', ARGV[4], string.len(val), val); " +
-                          "redis.call('hset', KEYS[1], ARGV[i], value); " +
 
                     "end;" +
                     "return counter;",
