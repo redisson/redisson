@@ -109,18 +109,18 @@ Used by
 -->
 ## Comparing solutions
 
-## [Redisson vs Jedis](https://redisson.org/feature-comparison-redisson-vs-jedis.html)
-## [Redisson vs Lettuce](https://redisson.org/feature-comparison-redisson-vs-lettuce.html)
-## [Redis vs Apache Ignite](https://redisson.org/feature-comparison-redis-vs-ignite.html)
-## [Redis vs Hazelcast](https://redisson.org/feature-comparison-redis-vs-hazelcast.html)
-## [Redis vs Ehcache](https://redisson.org/feature-comparison-redis-vs-ehcache.html)
+### [Redisson vs Jedis](https://redisson.org/feature-comparison-redisson-vs-jedis.html)
+### [Redisson vs Lettuce](https://redisson.org/feature-comparison-redisson-vs-lettuce.html)
+### [Redis vs Apache Ignite](https://redisson.org/feature-comparison-redis-vs-ignite.html)
+### [Redis vs Hazelcast](https://redisson.org/feature-comparison-redis-vs-hazelcast.html)
+### [Redis vs Ehcache](https://redisson.org/feature-comparison-redis-vs-ehcache.html)
 
 ## Success stories
 
-## [Moving from Hazelcast to Redis  /  Datorama](https://engineering.datorama.com/moving-from-hazelcast-to-redis-b90a0769d1cb)  
-## [Migrating from Hazelcast to Redis  /  Halodoc](https://blogs.halodoc.io/why-and-how-we-move-from-hazelcast-to-redis-2/)
-## [Distributed Locking with Redis (Migration from Hazelcast)  /  ContaAzul](https://carlosbecker.com/posts/distributed-locks-redis/)  
-## [Migrating from Coherence to Redis](https://www.youtube.com/watch?v=JF5R2ucKTEg)  
+### [Moving from Hazelcast to Redis  /  Datorama](https://engineering.datorama.com/moving-from-hazelcast-to-redis-b90a0769d1cb)  
+### [Migrating from Hazelcast to Redis  /  Halodoc](https://blogs.halodoc.io/why-and-how-we-move-from-hazelcast-to-redis-2/)
+### [Distributed Locking with Redis (Migration from Hazelcast)  /  ContaAzul](https://carlosbecker.com/posts/distributed-locks-redis/)  
+### [Migrating from Coherence to Redis](https://www.youtube.com/watch?v=JF5R2ucKTEg)  
 
 
 ## Quick start
