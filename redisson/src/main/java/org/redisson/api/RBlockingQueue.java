@@ -47,6 +47,20 @@ public interface RBlockingQueue<V> extends BlockingQueue<V>, RQueue<V>, RBlockin
     V pollFromAny(long timeout, TimeUnit unit, String... queueNames) throws InterruptedException;
 
     /**
+     * Retrieves and removes first available head element of <b>any</b> queue,
+     * waiting up to the specified wait time if necessary for an element to become available
+     * in any of defined queues <b>including</b> queue itself.
+     *
+     * @param queueNames queue names. Queue name itself is always included
+     * @param timeout how long to wait before giving up, in units of
+     *        {@code unit}
+     * @return the head of this queue, or {@code null} if the
+     *         specified waiting time elapses before an element is available
+     * @throws InterruptedException if interrupted while waiting
+     */
+    Entry<String, V> pollFromAnyWithName(Duration timeout, String... queueNames) throws InterruptedException;
+
+    /**
      * Retrieves and removes first available head elements of <b>any</b> queue,
      * waiting up to the specified wait time if necessary for an element to become available
      * in any of defined queues <b>including</b> queue itself.

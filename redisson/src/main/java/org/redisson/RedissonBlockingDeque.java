@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import org.redisson.api.Entry;
 import org.redisson.api.RBlockingDeque;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
@@ -116,6 +117,16 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
     @Override
     public RFuture<V> pollFromAnyAsync(long timeout, TimeUnit unit, String... queueNames) {
         return blockingQueue.pollFromAnyAsync(timeout, unit);
+    }
+
+    @Override
+    public Entry<String, V> pollFromAnyWithName(Duration timeout, String... queueNames) throws InterruptedException {
+        return blockingQueue.pollFromAnyWithName(timeout, queueNames);
+    }
+
+    @Override
+    public RFuture<Entry<String, V>> pollFromAnyWithNameAsync(Duration timeout, String... queueNames) {
+        return blockingQueue.pollFromAnyWithNameAsync(timeout, queueNames);
     }
 
     @Override

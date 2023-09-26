@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.redisson.ClusterRunner.ClusterProcesses;
 import org.redisson.RedisRunner.RedisProcess;
+import org.redisson.api.Entry;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
@@ -505,6 +506,27 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
         int l = queue1.pollFromAny(4, TimeUnit.SECONDS, "queue:pollany1", "queue:pollany2");
 
         Assertions.assertEquals(2, l);
+        Assertions.assertTrue(System.currentTimeMillis() - s > 2000);
+    }
+
+    @Test
+    public void testPollFromAnyWithName() throws InterruptedException {
+        final RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");
+        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+            RBlockingQueue<Integer> queue2 = redisson.getBlockingQueue("queue:pollany1");
+            RBlockingQueue<Integer> queue3 = redisson.getBlockingQueue("queue:pollany2");
+            Assertions.assertDoesNotThrow(() -> {
+                queue3.put(2);
+                queue1.put(1);
+                queue2.put(3);
+            });
+        }, 3, TimeUnit.SECONDS);
+
+        long s = System.currentTimeMillis();
+        Entry<String, Integer> r = queue1.pollFromAnyWithName(Duration.ofSeconds(4), "queue:pollany1", "queue:pollany2");
+
+        assertThat(r.getKey()).isEqualTo("queue:pollany2");
+        assertThat(r.getValue()).isEqualTo(2);
         Assertions.assertTrue(System.currentTimeMillis() - s > 2000);
     }
 

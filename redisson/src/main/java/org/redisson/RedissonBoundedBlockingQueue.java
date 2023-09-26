@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import org.redisson.api.Entry;
 import org.redisson.api.RBoundedBlockingQueue;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
@@ -216,6 +217,17 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
     @Override
     public RFuture<V> pollFromAnyAsync(long timeout, TimeUnit unit, String... queueNames) {
         RFuture<V> takeFuture = blockingQueue.pollFromAnyAsync(timeout, unit, queueNames);
+        return wrapTakeFuture(takeFuture);
+    }
+
+    @Override
+    public Entry<String, V> pollFromAnyWithName(Duration timeout, String... queueNames) throws InterruptedException {
+        return commandExecutor.getInterrupted(pollFromAnyWithNameAsync(timeout, queueNames));
+    }
+
+    @Override
+    public RFuture<Entry<String, V>> pollFromAnyWithNameAsync(Duration timeout, String... queueNames) {
+        RFuture<Entry<String, V>> takeFuture = blockingQueue.pollFromAnyWithNameAsync(timeout, queueNames);
         return wrapTakeFuture(takeFuture);
     }
 

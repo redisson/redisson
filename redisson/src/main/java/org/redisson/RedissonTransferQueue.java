@@ -18,10 +18,7 @@ package org.redisson;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.Timeout;
 import io.netty.util.concurrent.ImmediateEventExecutor;
-import org.redisson.api.RFuture;
-import org.redisson.api.RRemoteService;
-import org.redisson.api.RTransferQueue;
-import org.redisson.api.RemoteInvocationOptions;
+import org.redisson.api.*;
 import org.redisson.api.annotation.RRemoteAsync;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
@@ -602,6 +599,16 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
 
     @Override
     public V pollFromAny(long timeout, TimeUnit unit, String... queueNames) throws InterruptedException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Entry<String, V> pollFromAnyWithName(Duration timeout, String... queueNames) throws InterruptedException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public RFuture<Entry<String, V>> pollFromAnyWithNameAsync(Duration timeout, String... queueNames) {
         throw new UnsupportedOperationException();
     }
 

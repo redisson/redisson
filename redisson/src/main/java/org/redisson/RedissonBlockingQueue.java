@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import org.redisson.api.Entry;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
@@ -112,6 +113,21 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
     @Override
     public V pollFromAny(long timeout, TimeUnit unit, String... queueNames) throws InterruptedException {
         return commandExecutor.getInterrupted(pollFromAnyAsync(timeout, unit, queueNames));
+    }
+
+    @Override
+    public Entry<String, V> pollFromAnyWithName(Duration timeout, String... queueNames) throws InterruptedException {
+        return commandExecutor.getInterrupted(pollFromAnyWithNameAsync(timeout, queueNames));
+    }
+
+    @Override
+    public RFuture<Entry<String, V>> pollFromAnyWithNameAsync(Duration timeout, String... queueNames) {
+        if (timeout.toMillis() < 0) {
+            return new CompletableFutureWrapper<>((Entry) null);
+        }
+
+        return commandExecutor.pollFromAnyAsync(getRawName(), codec, RedisCommands.BLPOP_NAME,
+                toSeconds(timeout.toMillis(), TimeUnit.MILLISECONDS), queueNames);
     }
 
     /*
