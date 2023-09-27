@@ -23,6 +23,7 @@ import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -196,21 +197,28 @@ public class RedissonSpinLock extends RedissonBaseLock {
     }
 
 
-    protected RFuture<Boolean> unlockInnerAsync(long threadId) {
+    protected RFuture<Boolean> unlockInnerAsync(long threadId, String requestId, int timeout) {
         return evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                "if (redis.call('hexists', KEYS[1], ARGV[2]) == 0) then " +
+                "local val = redis.call('get', KEYS[2]); " +
+                      "if val ~= false then " +
+                        "return tonumber(val);" +
+                      "end; " +
+
+                      "if (redis.call('hexists', KEYS[1], ARGV[2]) == 0) then " +
                         "return nil;" +
-                        "end; " +
-                        "local counter = redis.call('hincrby', KEYS[1], ARGV[2], -1); " +
-                        "if (counter > 0) then " +
+                      "end; " +
+                      "local counter = redis.call('hincrby', KEYS[1], ARGV[2], -1); " +
+                      "if (counter > 0) then " +
                         "redis.call('pexpire', KEYS[1], ARGV[1]); " +
+                        "redis.call('set', KEYS[2], 0, 'px', ARGV[3]); " +
                         "return 0; " +
-                        "else " +
+                      "else " +
                         "redis.call('del', KEYS[1]); " +
+                        "redis.call('set', KEYS[2], 1, 'px', ARGV[3]); " +
                         "return 1; " +
-                        "end; " +
-                        "return nil;",
-                Collections.singletonList(getRawName()), internalLockLeaseTime, getLockName(threadId));
+                      "end; ",
+                Arrays.asList(getRawName(), getUnlockLatchName(requestId)),
+                internalLockLeaseTime, getLockName(threadId), timeout);
     }
 
     @Override

@@ -81,14 +81,20 @@ public class RedissonReadLock extends RedissonLock implements RLock {
     }
 
     @Override
-    protected RFuture<Boolean> unlockInnerAsync(long threadId) {
+    protected RFuture<Boolean> unlockInnerAsync(long threadId, String requestId, int timeout) {
         String timeoutPrefix = getReadWriteTimeoutNamePrefix(threadId);
         String keyPrefix = getKeyPrefix(threadId, timeoutPrefix);
 
-        return commandExecutor.syncedEval(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+          "local val = redis.call('get', KEYS[5]); " +
+                "if val ~= false then " +
+                    "return tonumber(val);" +
+                "end; " +
+
                 "local mode = redis.call('hget', KEYS[1], 'mode'); " +
                 "if (mode == false) then " +
                     "redis.call(ARGV[3], KEYS[2], ARGV[1]); " +
+                    "redis.call('set', KEYS[5], 1, 'px', ARGV[4]); " +
                     "return 1; " +
                 "end; " +
                 "local lockExists = redis.call('hexists', KEYS[1], ARGV[2]); " +
@@ -117,19 +123,22 @@ public class RedissonReadLock extends RedissonLock implements RLock {
                             
                     "if maxRemainTime > 0 then " +
                         "redis.call('pexpire', KEYS[1], maxRemainTime); " +
+                        "redis.call('set', KEYS[5], 0, 'px', ARGV[4]); " +
                         "return 0; " +
                     "end;" + 
                         
-                    "if mode == 'write' then " + 
-                        "return 0;" + 
+                    "if mode == 'write' then " +
+                        "redis.call('set', KEYS[5], 0, 'px', ARGV[4]); " +
+                        "return 0;" +
                     "end; " +
                 "end; " +
                     
                 "redis.call('del', KEYS[1]); " +
                 "redis.call(ARGV[3], KEYS[2], ARGV[1]); " +
+                "redis.call('set', KEYS[5], 1, 'px', ARGV[4]); " +
                 "return 1; ",
-                Arrays.<Object>asList(getRawName(), getChannelName(), timeoutPrefix, keyPrefix),
-                LockPubSub.UNLOCK_MESSAGE, getLockName(threadId), getSubscribeService().getPublishCommand());
+                Arrays.<Object>asList(getRawName(), getChannelName(), timeoutPrefix, keyPrefix, getUnlockLatchName(requestId)),
+                LockPubSub.UNLOCK_MESSAGE, getLockName(threadId), getSubscribeService().getPublishCommand(), timeout);
     }
 
     protected String getKeyPrefix(long threadId, String timeoutPrefix) {

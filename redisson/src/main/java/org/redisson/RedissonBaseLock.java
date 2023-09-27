@@ -27,6 +27,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
 import org.redisson.client.protocol.decoder.MapValueDecoder;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -326,7 +327,23 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
         return get(forceUnlockAsync());
     }
 
-    protected abstract RFuture<Boolean> unlockInnerAsync(long threadId);
+    String getUnlockLatchName(String requestId) {
+        return prefixName("redisson_unlock_latch", getRawName()) + ":" + requestId;
+    }
+
+    protected abstract RFuture<Boolean> unlockInnerAsync(long threadId, String requestId, int timeout);
+
+    protected final RFuture<Boolean> unlockInnerAsync(long threadId) {
+        String id = getServiceManager().generateId();
+        MasterSlaveServersConfig config = getServiceManager().getConfig();
+        int timeout = (config.getTimeout() + config.getRetryInterval()) * config.getRetryAttempts();
+        RFuture<Boolean> r = unlockInnerAsync(threadId, id, timeout);
+        CompletionStage<Boolean> ff = r.thenApply(v -> {
+            commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.DEL, getUnlockLatchName(id));
+            return v;
+        });
+        return new CompletableFutureWrapper<>(ff);
+    }
 
     @Override
     public RFuture<Void> lockAsync() {

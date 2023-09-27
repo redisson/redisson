@@ -76,11 +76,17 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
     }
 
     @Override
-    protected RFuture<Boolean> unlockInnerAsync(long threadId) {
+    protected RFuture<Boolean> unlockInnerAsync(long threadId, String requestId, int timeout) {
         return evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+          "local val = redis.call('get', KEYS[3]); " +
+                "if val ~= false then " +
+                    "return tonumber(val);" +
+                "end; " +
+
                 "local mode = redis.call('hget', KEYS[1], 'mode'); " +
                 "if (mode == false) then " +
                     "redis.call(ARGV[4], KEYS[2], ARGV[1]); " +
+                    "redis.call('set', KEYS[3], 1, 'px', ARGV[5]); " +
                     "return 1; " +
                 "end;" +
                 "if (mode == 'write') then " +
@@ -91,6 +97,7 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
                         "local counter = redis.call('hincrby', KEYS[1], ARGV[3], -1); " +
                         "if (counter > 0) then " +
                             "redis.call('pexpire', KEYS[1], ARGV[2]); " +
+                            "redis.call('set', KEYS[3], 0, 'px', ARGV[5]); " +
                             "return 0; " +
                         "else " +
                             "redis.call('hdel', KEYS[1], ARGV[3]); " +
@@ -101,13 +108,14 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
                                 // has unlocked read-locks
                                 "redis.call('hset', KEYS[1], 'mode', 'read'); " +
                             "end; " +
+                            "redis.call('set', KEYS[3], 1, 'px', ARGV[5]); " +
                             "return 1; "+
                         "end; " +
                     "end; " +
                 "end; "
                 + "return nil;",
-        Arrays.<Object>asList(getRawName(), getChannelName()),
-        LockPubSub.READ_UNLOCK_MESSAGE, internalLockLeaseTime, getLockName(threadId), getSubscribeService().getPublishCommand());
+        Arrays.<Object>asList(getRawName(), getChannelName(), getUnlockLatchName(requestId)),
+        LockPubSub.READ_UNLOCK_MESSAGE, internalLockLeaseTime, getLockName(threadId), getSubscribeService().getPublishCommand(), timeout);
     }
     
     @Override

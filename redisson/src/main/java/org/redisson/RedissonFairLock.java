@@ -234,8 +234,13 @@ public class RedissonFairLock extends RedissonLock implements RLock {
     }
 
     @Override
-    protected RFuture<Boolean> unlockInnerAsync(long threadId) {
+    protected RFuture<Boolean> unlockInnerAsync(long threadId, String requestId, int timeout) {
         return evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+          "local val = redis.call('get', KEYS[5]); " +
+                "if val ~= false then " +
+                    "return tonumber(val);" +
+                "end; " +
+
                 // remove stale threads
                 "while true do "
                 + "local firstThreadId2 = redis.call('lindex', KEYS[2], 0);"
@@ -256,6 +261,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                     "if nextThreadId ~= false then " +
                         "redis.call(ARGV[5], KEYS[4] .. ':' .. nextThreadId, ARGV[1]); " +
                     "end; " +
+                    "redis.call('set', KEYS[5], 1, 'px', ARGV[6]); " +
                     "return 1; " +
                 "end;" +
                 "if (redis.call('hexists', KEYS[1], ARGV[3]) == 0) then " +
@@ -264,18 +270,20 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                 "local counter = redis.call('hincrby', KEYS[1], ARGV[3], -1); " +
                 "if (counter > 0) then " +
                     "redis.call('pexpire', KEYS[1], ARGV[2]); " +
+                    "redis.call('set', KEYS[5], 0, 'px', ARGV[6]); " +
                     "return 0; " +
                 "end; " +
                     
                 "redis.call('del', KEYS[1]); " +
+                "redis.call('set', KEYS[5], 1, 'px', ARGV[6]); " +
                 "local nextThreadId = redis.call('lindex', KEYS[2], 0); " + 
                 "if nextThreadId ~= false then " +
                     "redis.call(ARGV[5], KEYS[4] .. ':' .. nextThreadId, ARGV[1]); " +
                 "end; " +
                 "return 1; ",
-                Arrays.asList(getRawName(), threadsQueueName, timeoutSetName, getChannelName()),
+                Arrays.asList(getRawName(), threadsQueueName, timeoutSetName, getChannelName(), getUnlockLatchName(requestId)),
                     LockPubSub.UNLOCK_MESSAGE, internalLockLeaseTime, getLockName(threadId),
-                    System.currentTimeMillis(), getSubscribeService().getPublishCommand());
+                    System.currentTimeMillis(), getSubscribeService().getPublishCommand(), timeout);
     }
 
     @Override
