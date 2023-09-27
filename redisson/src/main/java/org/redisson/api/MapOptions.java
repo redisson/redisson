@@ -96,11 +96,7 @@ public class MapOptions<K, V> {
      * @return MapOptions instance
      */
     public MapOptions<K, V> writer(MapWriter<K, V> writer) {
-        if (writerRetryAttempts ==0) {
-            this.writer = writer;
-        }else {
-            this.writer = new RetryableMapWriter<>(this, writer);
-        } 
+        this.writer = new RetryableMapWriter<>(this, writer);
         return this;
     }
     public MapWriter<K, V> getWriter() {
@@ -114,11 +110,7 @@ public class MapOptions<K, V> {
      * @return MapOptions instance
      */
     public MapOptions<K, V> writerAsync(MapWriterAsync<K, V> writer) {
-        if (writerRetryAttempts ==0) {
-            this.writerAsync = writer;
-        }else {
-            this.writerAsync = new RetryableMapWriterAsync<>(this, writer);
-        }
+        this.writerAsync = new RetryableMapWriterAsync<>(this, writer);
         return this;
     }
     public MapWriterAsync<K, V> getWriterAsync() {
