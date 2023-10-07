@@ -21,6 +21,7 @@ import org.redisson.api.*;
 import org.redisson.api.MapOptions.WriteMode;
 import org.redisson.api.listener.MapPutListener;
 import org.redisson.api.listener.MapRemoveListener;
+import org.redisson.api.map.RetryableMapWriterAsync;
 import org.redisson.api.mapreduce.RMapReduce;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
@@ -84,6 +85,11 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             this.writeBehindService = null;
             writeBehindTask = null;
         }
+        if (options != null
+                && options.getWriterRetryAttempts()>1
+                && options.getWriterAsync() != null){
+            ((RetryableMapWriterAsync<Object, Object>) options.getWriterAsync()).setServiceManager(commandExecutor.getServiceManager());
+        }
     }
 
     public RedissonMap(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
@@ -107,6 +113,11 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         } else {
             this.writeBehindService = null;
             writeBehindTask = null;
+        }
+        if (options != null
+                && options.getWriterRetryAttempts()>1
+                && options.getWriterAsync() != null){
+            ((RetryableMapWriterAsync<Object, Object>) options.getWriterAsync()).setServiceManager(commandExecutor.getServiceManager());
         }
     }
 

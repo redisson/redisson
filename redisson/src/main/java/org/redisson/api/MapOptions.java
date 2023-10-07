@@ -19,6 +19,10 @@ import org.redisson.api.map.MapLoader;
 import org.redisson.api.map.MapLoaderAsync;
 import org.redisson.api.map.MapWriter;
 import org.redisson.api.map.MapWriterAsync;
+import org.redisson.api.map.RetryableMapWriter;
+import org.redisson.api.map.RetryableMapWriterAsync;
+
+import java.time.Duration;
 
 /**
  * Configuration for RMap object.
@@ -56,7 +60,10 @@ public class MapOptions<K, V> {
     private WriteMode writeMode = WriteMode.WRITE_THROUGH;
     private int writeBehindBatchSize = 50;
     private int writeBehindDelay = 1000;
-    
+    private int writerRetryAttempts = 0;
+    //ms
+    private long writerRetryInterval = 100;
+
     protected MapOptions() {
     }
     
@@ -89,7 +96,7 @@ public class MapOptions<K, V> {
      * @return MapOptions instance
      */
     public MapOptions<K, V> writer(MapWriter<K, V> writer) {
-        this.writer = writer;
+        this.writer = new RetryableMapWriter<>(this, writer);
         return this;
     }
     public MapWriter<K, V> getWriter() {
@@ -103,7 +110,7 @@ public class MapOptions<K, V> {
      * @return MapOptions instance
      */
     public MapOptions<K, V> writerAsync(MapWriterAsync<K, V> writer) {
-        this.writerAsync = writer;
+        this.writerAsync = new RetryableMapWriterAsync<>(this, writer);
         return this;
     }
     public MapWriterAsync<K, V> getWriterAsync() {
@@ -159,7 +166,43 @@ public class MapOptions<K, V> {
     public WriteMode getWriteMode() {
         return writeMode;
     }
-    
+
+    public int getWriterRetryAttempts() {
+        return writerRetryAttempts;
+    }
+
+    /**
+     * Sets max retry attempts for {@link RetryableMapWriter} or {@link RetryableMapWriterAsync}
+     *
+     * @param writerRetryAttempts object
+     * @return MapOptions instance
+     */
+    public MapOptions<K, V> writerRetryAttempts(int writerRetryAttempts) {
+        if (writerRetryAttempts <= 0){
+            throw new IllegalArgumentException("writerRetryAttempts must be bigger than 0");
+        }
+        this.writerRetryAttempts = writerRetryAttempts;
+        return this;
+    }
+
+    public long getWriterRetryInterval() {
+        return writerRetryInterval;
+    }
+
+    /**
+     * Sets retry interval for {@link RetryableMapWriter} or {@link RetryableMapWriterAsync}
+     * 
+     * @param writerRetryInterval {@link Duration}
+     * @return MapOptions instance
+     */
+    public MapOptions<K, V> writerRetryInterval(Duration writerRetryInterval) {
+        if (writerRetryInterval.isNegative()) {
+            throw new IllegalArgumentException("writerRetryInterval must be positive");
+        }
+        this.writerRetryInterval = writerRetryInterval.toMillis();
+        return this;
+    }
+
     /**
      * Sets {@link MapLoader} object.
      * 
