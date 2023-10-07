@@ -1406,7 +1406,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         List<Object> params = new LinkedList<>();
         params.add(getRawName());
 
-        if (pps.getMaxLen() > 0) {
+        if (pps.getMaxLen() != null) {
             params.add("MAXLEN");
             if (!trimStrict) {
                 params.add("~");

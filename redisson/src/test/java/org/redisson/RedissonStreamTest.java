@@ -106,6 +106,10 @@ public class RedissonStreamTest extends BaseTest {
         stream.add(StreamAddArgs.entry("2", "2"));
 
         assertThat(stream.trim(StreamTrimArgs.maxLen(2).noLimit())).isEqualTo(1);
+
+        RStream<String, String> stream2 = redisson.getStream("myStream");
+        StreamTrimArgs trimArgs = StreamTrimArgs.maxLen(0).noLimit();
+        assertThat(stream2.trim(trimArgs)).isZero();
     }
 
     @Test

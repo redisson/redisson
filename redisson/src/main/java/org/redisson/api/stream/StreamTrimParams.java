@@ -26,7 +26,7 @@ public final class StreamTrimParams implements StreamTrimStrategyArgs<StreamTrim
                                          StreamTrimArgs,
                                          StreamTrimLimitArgs<StreamTrimArgs> {
 
-    int maxLen;
+    Integer maxLen;
     StreamMessageId minId;
     int limit;
 
@@ -62,7 +62,7 @@ public final class StreamTrimParams implements StreamTrimStrategyArgs<StreamTrim
         return this;
     }
 
-    public int getMaxLen() {
+    public Integer getMaxLen() {
         return maxLen;
     }
 
