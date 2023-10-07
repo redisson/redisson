@@ -195,9 +195,15 @@ public class RedissonReadLock extends RedissonLock implements RLock {
 
     @Override
     public boolean isLocked() {
-        RFuture<String> future = commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.HGET, getRawName(), "mode");
-        String res = get(future);
-        return "read".equals(res);
+        RFuture<Boolean> future = commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+          "local mode = redis.call('hget', KEYS[1], 'mode'); " +
+                "if (mode == 'read') or (mode == 'write' and redis.call('hlen', KEYS[1]) > 2) then " +
+                    "return 1; " +
+                "end; " +
+                "return 0; ",
+                Arrays.asList(getRawName()));
+
+        return get(future);
     }
 
 }
