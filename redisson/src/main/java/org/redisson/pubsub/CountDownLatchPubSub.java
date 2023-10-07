@@ -42,8 +42,9 @@ public class CountDownLatchPubSub extends PublishSubscribe<RedissonCountDownLatc
     protected void onMessage(RedissonCountDownLatchEntry value, Long message) {
         if (message.equals(ZERO_COUNT_MESSAGE)) {
             Runnable runnableToExecute = value.getListeners().poll();
-            if (runnableToExecute != null) {
+            while (runnableToExecute != null) {
                 runnableToExecute.run();
+                runnableToExecute = value.getListeners().poll();
             }
 
             value.getLatch().open();
