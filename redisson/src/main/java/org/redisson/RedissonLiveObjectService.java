@@ -71,7 +71,9 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         this.classCache = classCache;
         this.commandExecutor = commandExecutor;
         this.seachEngine = new LiveObjectSearch(commandExecutor);
+    }
 
+    private void addExpireListener(CommandAsyncExecutor commandExecutor) {
         if (commandExecutor.getServiceManager().getLiveObjectLatch().compareAndSet(false, true)) {
             String pp = "__keyspace@" + commandExecutor.getServiceManager().getConfig().getDatabase() + "__:redisson_live_object:*";
             String prefix = pp.replace(":redisson_live_object:*", "");
@@ -150,6 +152,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
     @Override
     public <T> T get(Class<T> entityClass, Object id) {
+        addExpireListener(commandExecutor);
         T proxied = createLiveObject(entityClass, id);
         if (asLiveObject(proxied).isExists()) {
             return proxied;
@@ -159,21 +162,24 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
     @Override
     public <T> Collection<T> find(Class<T> entityClass, Condition condition) {
+        addExpireListener(commandExecutor);
         Set<Object> ids = seachEngine.find(entityClass, condition);
 
         return ids.stream()
-                    .map(id -> createLiveObject(entityClass, id))
-                    .collect(Collectors.toList());
+                .map(id -> createLiveObject(entityClass, id))
+                .collect(Collectors.toList());
     }
 
     @Override
     public long count(Class<?> entityClass, Condition condition) {
+        addExpireListener(commandExecutor);
         Set<Object> ids = seachEngine.find(entityClass, condition);
         return ids.size();
     }
 
     @Override
     public <T> T attach(T detachedObject) {
+        addExpireListener(commandExecutor);
         validateDetached(detachedObject);
         Class<T> entityClass = (Class<T>) detachedObject.getClass();
         String idFieldName = getRIdFieldName(detachedObject.getClass());
@@ -211,6 +217,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     }
 
     public <T> List<T> persist(RCascadeType type, T... detachedObjects) {
+        addExpireListener(commandExecutor);
         CommandBatchService batchService = new CommandBatchService(commandExecutor);
 
         Map<Class<?>, Class<?>> classCache = new HashMap<>();
@@ -286,6 +293,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
 
     private <T> T persist(T detachedObject, Map<Object, Object> alreadyPersisted, RCascadeType type) {
+        addExpireListener(commandExecutor);
         validateDetached(detachedObject);
         Object id = getId(detachedObject);
 
@@ -411,6 +419,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     
     @Override
     public <T> T detach(T attachedObject) {
+        addExpireListener(commandExecutor);
         Map<String, Object> alreadyDetached = new HashMap<String, Object>();
         return detach(attachedObject, alreadyDetached);
     }
@@ -544,6 +553,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     
     @Override
     public <T> void delete(T attachedObject) {
+        addExpireListener(commandExecutor);
         Set<String> deleted = new HashSet<String>();
         delete(attachedObject, deleted);
     }
@@ -600,6 +610,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
     @Override
     public <T> long delete(Class<T> entityClass, Object... ids) {
+        addExpireListener(commandExecutor);
         CommandBatchService ce = new CommandBatchService(commandExecutor);
         FieldList<InDefinedShape> fields = Introspectior.getFieldsWithAnnotation(entityClass, RIndex.class);
         Set<String> fieldNames = fields.stream().map(f -> f.getName()).collect(Collectors.toSet());
@@ -695,6 +706,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
     @Override
     public <K> Iterable<K> findIds(Class<?> entityClass, int count) {
+        addExpireListener(commandExecutor);
         NamingScheme namingScheme = commandExecutor.getObjectBuilder().getNamingScheme(entityClass);
         String pattern = namingScheme.getNamePattern(entityClass);
         RedissonKeys keys = new RedissonKeys(commandExecutor);
@@ -730,6 +742,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
     @Override
     public <T> boolean isExists(T instance) {
+        addExpireListener(commandExecutor);
         return instance instanceof RLiveObject && asLiveObject(instance).isExists();
     }
 
