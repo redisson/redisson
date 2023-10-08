@@ -1,6 +1,6 @@
 package org.redisson.spring.starter.lock;
 
-import org.redisson.spring.annotation.RMutexLock;
+import org.redisson.api.annotation.RMutexLock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;

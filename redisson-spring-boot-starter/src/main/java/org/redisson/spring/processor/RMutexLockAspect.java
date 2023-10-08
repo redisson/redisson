@@ -22,14 +22,12 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.redisson.api.RLock;
 import org.redisson.client.RedisException;
-import org.redisson.spring.annotation.RMutexLock;
-import org.redisson.spring.factory.RLockFactory;
+import org.redisson.api.annotation.RMutexLock;
+import org.redisson.api.RLockFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Method;
-
-import static org.redisson.spring.annotation.RMutexLock.placeholder;
+import static org.redisson.api.annotation.RMutexLock.placeholder;
 
 /**
  * @author 985492783@qq.com
@@ -50,7 +48,7 @@ public class RMutexLockAspect {
         this.factory = factory;
     }
 
-    @Pointcut("@annotation(org.redisson.spring.annotation.RMutexLock)")
+    @Pointcut("@annotation(org.redisson.api.annotation.RMutexLock)")
     public void pointcut() {
     }
 

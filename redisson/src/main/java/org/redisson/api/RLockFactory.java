@@ -13,11 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.spring.factory;
-
-import org.redisson.api.RLock;
-import org.redisson.api.RedissonClient;
-import org.redisson.spring.type.LockTypeEnum;
+package org.redisson.api;
 
 /**
  * @author 985492783@qq.com
