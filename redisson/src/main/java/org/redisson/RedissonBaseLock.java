@@ -27,6 +27,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
 import org.redisson.client.protocol.decoder.MapValueDecoder;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.command.CommandBatchService;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.slf4j.Logger;
@@ -339,7 +340,14 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
         int timeout = (config.getTimeout() + config.getRetryInterval()) * config.getRetryAttempts();
         RFuture<Boolean> r = unlockInnerAsync(threadId, id, timeout);
         CompletionStage<Boolean> ff = r.thenApply(v -> {
-            commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.DEL, getUnlockLatchName(id));
+            CommandAsyncExecutor ce = commandExecutor;
+            if (ce instanceof CommandBatchService) {
+                ce = new CommandBatchService(commandExecutor);
+            }
+            ce.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.DEL, getUnlockLatchName(id));
+            if (ce instanceof CommandBatchService) {
+                ((CommandBatchService) ce).executeAsync();
+            }
             return v;
         });
         return new CompletableFutureWrapper<>(ff);
