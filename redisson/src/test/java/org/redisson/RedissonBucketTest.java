@@ -370,6 +370,7 @@ public class RedissonBucketTest extends BaseTest {
         bucket.migrate(runner.getRedisServerBindAddress(), runner.getRedisServerPort(), 0, 5000);
         
         Config config = new Config();
+        config.setCodec(redisson.getConfig().getCodec());
         config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
         RedissonClient r = Redisson.create(config);
         
@@ -392,9 +393,11 @@ public class RedissonBucketTest extends BaseTest {
         bucket.set("someValue");
         
         bucket.copy(runner.getRedisServerBindAddress(), runner.getRedisServerPort(), 0, 5000);
-        
+
         Config config = new Config();
-        config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
+        config.setCodec(redisson.getConfig().getCodec());
+        config.useSingleServer()
+                .setAddress(runner.getRedisServerAddressAndPort());
         RedissonClient r = Redisson.create(config);
         
         RBucket<String> bucket2 = r.getBucket("test");
