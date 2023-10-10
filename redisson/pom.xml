@@ -109,7 +109,7 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.jmockit</groupId>
+            <groupId>com.github.hazendaz.jmockit</groupId>
             <artifactId>jmockit</artifactId>
             <scope>test</scope>
         </dependency>
@@ -542,7 +542,7 @@
                         <forkCount>4</forkCount>
                         <reuseForks>true</reuseForks>
                         <argLine>
-                           -javaagent:"${settings.localRepository}"/org/jmockit/jmockit/1.49/jmockit-1.49.jar
+                           -javaagent:"${settings.localRepository}"/com/github/hazendaz/jmockit/jmockit/1.51.0/jmockit-1.51.0.jar
                         </argLine>
                     </configuration>
             </plugin>

@@ -142,9 +142,9 @@
                 <scope>test</scope>
             </dependency>
             <dependency>
-               <groupId>org.jmockit</groupId>
+               <groupId>com.github.hazendaz.jmockit</groupId>
                <artifactId>jmockit</artifactId>
-               <version>1.49</version>
+               <version>1.51.0</version>
                <scope>test</scope>
             </dependency>
             <dependency>
