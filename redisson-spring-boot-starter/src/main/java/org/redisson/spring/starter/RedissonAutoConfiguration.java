@@ -26,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
 import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.redis.RedisConnectionDetails;
 import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
@@ -54,6 +55,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
+ * Spring configuration used with Spring Boot 2.6 and lower
  *
  * @author Nikita Koksharov
  * @author Nikos Kakavas (https://github.com/nikakis)
@@ -62,6 +64,7 @@ import java.util.List;
  */
 @Configuration
 @ConditionalOnClass({Redisson.class, RedisOperations.class})
+@ConditionalOnMissingClass("org.springframework.boot.autoconfigure.AutoConfiguration")
 @AutoConfigureBefore(RedisAutoConfiguration.class)
 @EnableConfigurationProperties({RedissonProperties.class, RedisProperties.class})
 public class RedissonAutoConfiguration {
