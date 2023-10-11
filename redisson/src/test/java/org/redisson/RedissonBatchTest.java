@@ -5,13 +5,16 @@ import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.redisson.ClusterRunner.ClusterProcesses;
 import org.redisson.RedisRunner.FailedToStartRedisException;
 import org.redisson.api.*;
 import org.redisson.api.BatchOptions.ExecutionMode;
-import org.redisson.client.*;
+import org.redisson.client.RedisClient;
+import org.redisson.client.RedisClientConfig;
+import org.redisson.client.RedisConnection;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.cluster.ClusterNodeInfo;
@@ -237,26 +240,25 @@ public class RedissonBatchTest extends BaseTest {
     
     @ParameterizedTest
     @MethodSource("data")
+    @Timeout(20)
     public void testPerformance() {
-        org.junit.jupiter.api.Assertions.assertTimeout(Duration.ofSeconds(20), () -> {
-            RMap<String, String> map = redisson.getMap("map");
-            Map<String, String> m = new HashMap<String, String>();
-            for (int j = 0; j < 1000; j++) {
-                m.put("" + j, "" + j);
-            }
-            map.putAll(m);
+        RMap<String, String> map = redisson.getMap("map");
+        Map<String, String> m = new HashMap<String, String>();
+        for (int j = 0; j < 1000; j++) {
+            m.put("" + j, "" + j);
+        }
+        map.putAll(m);
 
-            for (int i = 0; i < 10000; i++) {
-                RBatch rBatch = redisson.createBatch();
-                RMapAsync<String, String> m1 = rBatch.getMap("map");
-                m1.getAllAsync(m.keySet());
-                try {
-                    rBatch.execute();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+        for (int i = 0; i < 10000; i++) {
+            RBatch rBatch = redisson.createBatch();
+            RMapAsync<String, String> m1 = rBatch.getMap("map");
+            m1.getAllAsync(m.keySet());
+            try {
+                rBatch.execute();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-        });
+        }
     }
 
     @Test
@@ -670,17 +672,16 @@ public class RedissonBatchTest extends BaseTest {
 
     @ParameterizedTest
     @MethodSource("data")
+    @Timeout(1)
     public void testShutdownTimeout(BatchOptions batchOptions) {
-        org.junit.jupiter.api.Assertions.assertTimeout(Duration.ofMillis(500), () -> {
-            RedissonClient redisson = createInstance();
+        RedissonClient redisson = createInstance();
 
-            RBatch batch = redisson.createBatch(batchOptions);
-            for (int i = 0; i < 10; i++) {
-                RFuture<Void> f = batch.getBucket("test").setAsync(123);
-            }
-            batch.execute();
-            redisson.shutdown();
-        });
+        RBatch batch = redisson.createBatch(batchOptions);
+        for (int i = 0; i < 10; i++) {
+            RFuture<Void> f = batch.getBucket("test").setAsync(123);
+        }
+        batch.execute();
+        redisson.shutdown();
     }
 
     @ParameterizedTest

@@ -4,6 +4,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.redisson.ClusterRunner.ClusterProcesses;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.Entry;
@@ -24,7 +25,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.redisson.RedisRunner.KEYSPACE_EVENTS_OPTIONS.l;
 
 public class RedissonBlockingQueueTest extends RedissonQueueTest {
 
@@ -71,12 +71,11 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
     }
     
     @Test
-    public void testShortPoll() {
-        Assertions.assertTimeout(Duration.ofSeconds(3), () -> {
-            RBlockingQueue<Integer> queue = getQueue();
-            queue.poll(500, TimeUnit.MILLISECONDS);
-            queue.poll(10, TimeUnit.MICROSECONDS);
-        });
+    @Timeout(3)
+    public void testShortPoll() throws InterruptedException {
+        RBlockingQueue<Integer> queue = getQueue();
+        queue.poll(500, TimeUnit.MILLISECONDS);
+        queue.poll(10, TimeUnit.MICROSECONDS);
     }
     
     @Test

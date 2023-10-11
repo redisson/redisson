@@ -1,8 +1,11 @@
 package org.redisson;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.redisson.api.*;
+import org.junit.jupiter.api.Timeout;
+import org.redisson.api.RRateLimiter;
+import org.redisson.api.RScoredSortedSet;
+import org.redisson.api.RateIntervalUnit;
+import org.redisson.api.RateType;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -162,15 +165,14 @@ public class RedissonRateLimiterTest extends BaseTest {
     
     
     @Test
+    @Timeout(2)
     public void testTryAcquire() {
-        Assertions.assertTimeout(Duration.ofMillis(1500), () -> {
-            RRateLimiter rr = redisson.getRateLimiter("acquire");
-            assertThat(rr.trySetRate(RateType.OVERALL, 1, 5, RateIntervalUnit.SECONDS)).isTrue();
+        RRateLimiter rr = redisson.getRateLimiter("acquire");
+        assertThat(rr.trySetRate(RateType.OVERALL, 1, 5, RateIntervalUnit.SECONDS)).isTrue();
 
-            assertThat(rr.tryAcquire(1, 1, TimeUnit.SECONDS)).isTrue();
-            assertThat(rr.tryAcquire(1, 1, TimeUnit.SECONDS)).isFalse();
-            assertThat(rr.tryAcquire()).isFalse();
-        });
+        assertThat(rr.tryAcquire(1, 1, TimeUnit.SECONDS)).isTrue();
+        assertThat(rr.tryAcquire(1, 1, TimeUnit.SECONDS)).isFalse();
+        assertThat(rr.tryAcquire()).isFalse();
     }
     
     @Test

@@ -3,6 +3,7 @@ package org.redisson;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.redisson.api.*;
 import org.redisson.api.map.MapLoader;
 import org.redisson.api.map.MapLoaderAsync;
@@ -615,23 +616,22 @@ public abstract class BaseMapTest extends BaseTest {
     }
 
     @Test
+    @Timeout(5)
     public void testDeserializationErrorReturnsErrorImmediately() {
-        Assertions.assertTimeout(Duration.ofSeconds(5), () -> {
-            RMap<String, SimpleObjectWithoutDefaultConstructor> map = getMap("deserializationFailure", new JsonJacksonCodec());
-            Assumptions.assumeTrue(!(map instanceof RLocalCachedMap));
-            SimpleObjectWithoutDefaultConstructor object = new SimpleObjectWithoutDefaultConstructor("test-val");
+        RMap<String, SimpleObjectWithoutDefaultConstructor> map = getMap("deserializationFailure", new JsonJacksonCodec());
+        Assumptions.assumeTrue(!(map instanceof RLocalCachedMap));
+        SimpleObjectWithoutDefaultConstructor object = new SimpleObjectWithoutDefaultConstructor("test-val");
 
-            assertThat(object.getTestField()).isEqualTo("test-val");
-            map.put("test-key", object);
+        assertThat(object.getTestField()).isEqualTo("test-val");
+        map.put("test-key", object);
 
-            try {
-                map.get("test-key");
-                Assertions.fail("Expected exception from map.get() call");
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            destroy(map);
-        });
+        try {
+            map.get("test-key");
+            Assertions.fail("Expected exception from map.get() call");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        destroy(map);
     }
 
     public static class SimpleObjectWithoutDefaultConstructor {

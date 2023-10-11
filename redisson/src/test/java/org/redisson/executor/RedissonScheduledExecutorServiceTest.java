@@ -4,10 +4,7 @@ import mockit.Invocation;
 import mockit.Mock;
 import mockit.MockUp;
 import org.joor.Reflect;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.redisson.BaseTest;
 import org.redisson.Redisson;
 import org.redisson.RedissonExecutorService;
@@ -258,24 +255,23 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
     }
 
     @Test
-    public void testTaskResume() {
-        Assertions.assertTimeout(Duration.ofSeconds(7), () -> {
-            RScheduledExecutorService executor = redisson.getExecutorService("test");
-            ScheduledFuture<Long> future1 = executor.schedule(new ScheduledCallableTask(), 5, TimeUnit.SECONDS);
-            ScheduledFuture<Long> future2 = executor.schedule(new ScheduledCallableTask(), 5, TimeUnit.SECONDS);
-            ScheduledFuture<Long> future3 = executor.schedule(new ScheduledCallableTask(), 5, TimeUnit.SECONDS);
+    @Timeout(7)
+    public void testTaskResume() throws ExecutionException, InterruptedException {
+        RScheduledExecutorService executor = redisson.getExecutorService("test");
+        ScheduledFuture<Long> future1 = executor.schedule(new ScheduledCallableTask(), 5, TimeUnit.SECONDS);
+        ScheduledFuture<Long> future2 = executor.schedule(new ScheduledCallableTask(), 5, TimeUnit.SECONDS);
+        ScheduledFuture<Long> future3 = executor.schedule(new ScheduledCallableTask(), 5, TimeUnit.SECONDS);
 
-            node.shutdown();
+        node.shutdown();
 
-            RedissonNodeConfig nodeConfig = new RedissonNodeConfig(redisson.getConfig());
-            nodeConfig.setExecutorServiceWorkers(Collections.singletonMap("test", 1));
-            node = RedissonNode.create(nodeConfig);
-            node.start();
+        RedissonNodeConfig nodeConfig = new RedissonNodeConfig(redisson.getConfig());
+        nodeConfig.setExecutorServiceWorkers(Collections.singletonMap("test", 1));
+        node = RedissonNode.create(nodeConfig);
+        node.start();
 
-            assertThat(future1.get()).isEqualTo(100);
-            assertThat(future2.get()).isEqualTo(100);
-            assertThat(future3.get()).isEqualTo(100);
-        });
+        assertThat(future1.get()).isEqualTo(100);
+        assertThat(future2.get()).isEqualTo(100);
+        assertThat(future3.get()).isEqualTo(100);
     }
 
     @Test
@@ -442,15 +438,14 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
     }
 
     @Test
-    public void testCancel2() {
-        Assertions.assertTimeout(Duration.ofSeconds(15), () -> {
-            RScheduledExecutorService e = redisson.getExecutorService("myExecutor");
-            e.registerWorkers(WorkerOptions.defaults());
-            String taskId = redisson.getExecutorService("myExecutor").schedule(new RunnableTask2(), 2000, TimeUnit.MILLISECONDS).getTaskId();
-            Thread.sleep(5500);
+    @Timeout(15)
+    public void testCancel2() throws InterruptedException {
+        RScheduledExecutorService e = redisson.getExecutorService("myExecutor");
+        e.registerWorkers(WorkerOptions.defaults());
+        String taskId = redisson.getExecutorService("myExecutor").schedule(new RunnableTask2(), 2000, TimeUnit.MILLISECONDS).getTaskId();
+        Thread.sleep(5500);
 
-            assertThat(e.cancelTask(taskId)).isFalse();
-        });
+        assertThat(e.cancelTask(taskId)).isFalse();
     }
 
     @Test

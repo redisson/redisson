@@ -1,12 +1,11 @@
 package org.redisson.rx;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.redisson.api.RBlockingDequeRx;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -58,12 +57,11 @@ public class RedissonBlockingDequeRxTest extends BaseRxTest {
     }
     
     @Test
+    @Timeout(3)
     public void testShortPoll() {
-        Assertions.assertTimeout(Duration.ofSeconds(3), () -> {
-            RBlockingDequeRx<Integer> queue = redisson.getBlockingDeque("queue:pollany");
-            sync(queue.pollLast(500, TimeUnit.MILLISECONDS));
-            sync(queue.pollFirst(10, TimeUnit.MICROSECONDS));
-        });
+        RBlockingDequeRx<Integer> queue = redisson.getBlockingDeque("queue:pollany");
+        sync(queue.pollLast(500, TimeUnit.MILLISECONDS));
+        sync(queue.pollFirst(10, TimeUnit.MICROSECONDS));
     }
     
     @Test

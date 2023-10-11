@@ -4,6 +4,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.redisson.api.RBlockingDeque;
 import org.redisson.api.queue.DequeMoveArgs;
 
@@ -76,12 +77,11 @@ public class RedissonBlockingDequeTest extends BaseTest {
     }
     
     @Test
+    @Timeout(3)
     public void testShortPoll() {
-        Assertions.assertTimeout(Duration.ofSeconds(3), () -> {
-            RBlockingDeque<Integer> queue = redisson.getBlockingDeque("queue:pollany");
-            queue.pollLastAsync(500, TimeUnit.MILLISECONDS);
-            queue.pollFirstAsync(10, TimeUnit.MICROSECONDS);
-        });
+        RBlockingDeque<Integer> queue = redisson.getBlockingDeque("queue:pollany");
+        queue.pollLastAsync(500, TimeUnit.MILLISECONDS);
+        queue.pollFirstAsync(10, TimeUnit.MICROSECONDS);
     }
     
     @Test

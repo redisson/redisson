@@ -1,24 +1,22 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.redisson.api.RBlockingDeque;
 
-import java.time.Duration;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-import org.redisson.api.RBlockingDeque;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonPriorityBlockingDequeTest extends BaseTest {
 
     @Test
+    @Timeout(3)
     public void testShortPoll() {
-        Assertions.assertTimeout(Duration.ofSeconds(3), () -> {
-            RBlockingDeque<Integer> queue = redisson.getPriorityBlockingDeque("queue:pollany");
-            queue.pollLastAsync(500, TimeUnit.MILLISECONDS);
-            queue.pollFirstAsync(10, TimeUnit.MICROSECONDS);
-        });
+        RBlockingDeque<Integer> queue = redisson.getPriorityBlockingDeque("queue:pollany");
+        queue.pollLastAsync(500, TimeUnit.MILLISECONDS);
+        queue.pollFirstAsync(10, TimeUnit.MICROSECONDS);
     }
     
     @Test

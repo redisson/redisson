@@ -1,23 +1,12 @@
 package org.redisson.rx;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.IOException;
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Maybe;
+import io.reactivex.rxjava3.core.Single;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.redisson.BaseTest;
@@ -26,25 +15,25 @@ import org.redisson.ClusterRunner.ClusterProcesses;
 import org.redisson.RedisRunner;
 import org.redisson.RedisRunner.FailedToStartRedisException;
 import org.redisson.Redisson;
-import org.redisson.api.BatchOptions;
+import org.redisson.api.*;
 import org.redisson.api.BatchOptions.ExecutionMode;
-import org.redisson.api.BatchResult;
-import org.redisson.api.RBatchRx;
-import org.redisson.api.RBucketRx;
-import org.redisson.api.RListRx;
-import org.redisson.api.RMapCacheRx;
-import org.redisson.api.RMapRx;
-import org.redisson.api.RScoredSortedSetRx;
-import org.redisson.api.RScript;
 import org.redisson.api.RScript.Mode;
-import org.redisson.api.RedissonRxClient;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
 
-import io.reactivex.rxjava3.core.Completable;
-import io.reactivex.rxjava3.core.Maybe;
-import io.reactivex.rxjava3.core.Single;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonBatchRxTest extends BaseRxTest {
 
@@ -98,26 +87,26 @@ public class RedissonBatchRxTest extends BaseRxTest {
     
     @ParameterizedTest
     @MethodSource("data")
+    @Timeout(21)
     public void testPerformance(BatchOptions batchOptions) {
-        Assertions.assertTimeout(Duration.ofSeconds(21), () -> {
-            RMapRx<String, String> map = redisson.getMap("map");
-            Map<String, String> m = new HashMap<String, String>();
-            for (int j = 0; j < 1000; j++) {
-                m.put("" + j, "" + j);
-            }
-            sync(map.putAll(m));
+        RMapRx<String, String> map = redisson.getMap("map");
+        Map<String, String> m = new HashMap<String, String>();
+        for (int j = 0; j < 1000; j++) {
+            m.put("" + j, "" + j);
+        }
+        sync(map.putAll(m));
 
-            for (int i = 0; i < 10000; i++) {
-                RBatchRx batch = redisson.createBatch(batchOptions);
-                RMapRx<String, String> m1 = batch.getMap("map");
-                Single<Map<String, String>> f = m1.getAll(m.keySet());
-                sync(batch.execute());
-                assertThat(sync(f)).hasSize(1000);
-            }
-        });
+        for (int i = 0; i < 10000; i++) {
+            RBatchRx batch = redisson.createBatch(batchOptions);
+            RMapRx<String, String> m1 = batch.getMap("map");
+            Single<Map<String, String>> f = m1.getAll(m.keySet());
+            sync(batch.execute());
+            assertThat(sync(f)).hasSize(1000);
+        }
     }
 
     @Test
+    @Timeout(20)
     public void testConnectionLeakAfterError() {
         Config config = BaseTest.createConfig();
         config.useSingleServer()
@@ -129,7 +118,7 @@ public class RedissonBatchRxTest extends BaseRxTest {
         
         BatchOptions batchOptions = BatchOptions.defaults().executionMode(ExecutionMode.REDIS_WRITE_ATOMIC);
         RBatchRx batch = redisson.createBatch(batchOptions);
-        for (int i = 0; i < 100000; i++) {
+        for (int i = 0; i < 130000; i++) {
             batch.getBucket("test").set(123);
         }
         

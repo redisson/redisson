@@ -1,8 +1,8 @@
 package org.redisson;
 
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.redisson.api.RBlockingDequeReactive;
@@ -59,12 +59,11 @@ public class RedissonBlockingDequeReactiveTest extends BaseReactiveTest {
     }
     
     @Test
+    @Timeout(3)
     public void testShortPoll() {
-        Assertions.assertTimeout(Duration.ofSeconds(3), () -> {
-            RBlockingDequeReactive<Integer> queue = redisson.getBlockingDeque("queue:pollany");
-            sync(queue.pollLast(500, TimeUnit.MILLISECONDS));
-            sync(queue.pollFirst(10, TimeUnit.MICROSECONDS));
-        });
+        RBlockingDequeReactive<Integer> queue = redisson.getBlockingDeque("queue:pollany");
+        sync(queue.pollLast(500, TimeUnit.MILLISECONDS));
+        sync(queue.pollFirst(10, TimeUnit.MICROSECONDS));
     }
     
     @Test
