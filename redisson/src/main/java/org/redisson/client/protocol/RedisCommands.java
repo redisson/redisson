@@ -467,6 +467,8 @@ public interface RedisCommands {
     RedisStrictCommand<Double> INCRBYFLOAT = new RedisStrictCommand<Double>("INCRBYFLOAT", new DoubleNullSafeReplayConvertor());
     RedisStrictCommand<Long> DECR = new RedisStrictCommand<Long>("DECR");
 
+
+    RedisStrictCommand<Map<String, String>> HELLO = new RedisStrictCommand<>("HELLO", new StringMapReplayDecoder());
     RedisStrictCommand<Void> AUTH = new RedisStrictCommand<Void>("AUTH", new VoidReplayConvertor());
     RedisStrictCommand<Void> SELECT = new RedisStrictCommand<Void>("SELECT", new VoidReplayConvertor());
     RedisStrictCommand<Void> CLIENT_SETNAME = new RedisStrictCommand<Void>("CLIENT", "SETNAME", new VoidReplayConvertor());
