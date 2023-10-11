@@ -31,11 +31,13 @@
 */
 package org.redisson.quarkus.client.it;
 
+import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import org.redisson.api.*;
 import org.redisson.api.redisnode.RedisNodes;
+import org.redisson.client.codec.StringCodec;
 
 import java.util.concurrent.ExecutionException;
 
@@ -79,6 +81,22 @@ public class QuarkusRedissonClientResource {
 
         RExecutorFuture<String> r = t.submit(new Task());
         return r.get();
+    }
+
+    @GET
+    @Path("/bucket")
+    public Uni<String> getBucket(){
+        RBucketReactive<String> bucket = redisson.reactive().getBucket("test-bucket", new StringCodec());
+        return Uni.createFrom().future(bucket.set("world").toFuture())
+                .flatMap( unused -> Uni.createFrom().future(bucket.get().toFuture()));
+    }
+
+    @GET
+    @Path("/delBucket")
+    public Uni<Boolean> deleteBucket(){
+        RBucketReactive<String> bucket = redisson.reactive().getBucket("test-bucket", new StringCodec());
+        return Uni.createFrom().future(bucket.set("world").toFuture())
+                .flatMap( unused -> Uni.createFrom().future(bucket.delete().toFuture()));
     }
 
 }
