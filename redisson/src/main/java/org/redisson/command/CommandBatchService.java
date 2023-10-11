@@ -158,7 +158,7 @@ public class CommandBatchService extends CommandAsyncService {
     
     private final BatchOptions options;
     
-    private final Map<RFuture<?>, List<CommandBatchService>> nestedServices = new ConcurrentHashMap<>();
+    private final Map<CompletableFuture<?>, List<CommandBatchService>> nestedServices = new ConcurrentHashMap<>();
 
     private final AtomicBoolean executed = new AtomicBoolean();
 
@@ -203,7 +203,7 @@ public class CommandBatchService extends CommandAsyncService {
         return options;
     }
 
-    public void add(RFuture<?> future, List<CommandBatchService> services) {
+    public void add(CompletableFuture<?> future, List<CommandBatchService> services) {
         nestedServices.put(future, services);
     }
     
@@ -375,106 +375,114 @@ public class CommandBatchService extends CommandAsyncService {
         CompletableFuture<Map<NodeSource, Entry>> future = new CompletableFuture<>();
         resolveCommandsInMemory(attempt, future);
         future.whenComplete((r, ex) -> {
-            if (ex != null) {
-                voidPromise.completeExceptionally(ex);
-                return;
-            }
-
-            AtomicInteger slots = new AtomicInteger(r.size());
-
-            for (Map.Entry<RFuture<?>, List<CommandBatchService>> entry : nestedServices.entrySet()) {
-                slots.incrementAndGet();
-                for (CommandBatchService service : entry.getValue()) {
-                    service.executeAsync();
-                }
-
-                entry.getKey().whenComplete((res, e) -> {
-                    if (e == null) {
-                        if (slots.decrementAndGet() == 0) {
-                            voidPromise.complete(r);
-                        }
-                    } else {
-                        if (entry.getKey().isCancelled()) {
-                            voidPromise.completeExceptionally(e);
-                        } else {
-                            voidPromise.completeExceptionally(e.getCause());
-                        }
-                    }
-                });
-            }
-
-            CompletionStage<Void> f = loadScripts(r);
-            f.whenComplete((res, ex1) -> {
-                if (ex1 != null) {
-                    voidPromise.completeExceptionally(ex1.getCause());
+            try {
+                if (ex != null) {
+                    voidPromise.completeExceptionally(ex);
                     return;
                 }
 
-                for (Map.Entry<NodeSource, Entry> e : r.entrySet()) {
-                    if (this.options.getExecutionMode() != ExecutionMode.IN_MEMORY) {
-                        for (Entry entry : r.values()) {
-                            BatchCommandData<?, ?> multiCommand = new BatchCommandData(RedisCommands.MULTI, new Object[] {}, index.incrementAndGet());
-                            entry.addFirstCommand(multiCommand);
-                            BatchCommandData<?, ?> execCommand = new BatchCommandData(RedisCommands.EXEC, new Object[] {}, index.incrementAndGet());
-                            entry.add(execCommand);
-                        }
+                AtomicInteger slots = new AtomicInteger(r.size());
+
+                for (Map.Entry<CompletableFuture<?>, List<CommandBatchService>> entry : nestedServices.entrySet()) {
+                    slots.incrementAndGet();
+                    for (CommandBatchService service : entry.getValue()) {
+                        service.executeAsync();
                     }
 
-                    if (this.options.isSkipResult()) {
-                        for (Entry entry : r.values()) {
-                            BatchCommandData<?, ?> offCommand = new BatchCommandData(RedisCommands.CLIENT_REPLY, new Object[] { "OFF" }, index.incrementAndGet());
-                            entry.addFirstCommand(offCommand);
-                            BatchCommandData<?, ?> onCommand = new BatchCommandData(RedisCommands.CLIENT_REPLY, new Object[] { "ON" }, index.incrementAndGet());
-                            entry.add(onCommand);
-                        }
-                    }
-
-                    if (this.options.getSyncSlaves() > 0) {
-                        if (this.options.isSyncAOF()) {
-                            for (Entry entry : r.values()) {
-                                BatchCommandData<?, ?> waitCommand = new BatchCommandData(RedisCommands.WAITAOF,
-                                        new Object[] { this.options.getSyncLocals(), this.options.getSyncSlaves(), this.options.getSyncTimeout() }, index.incrementAndGet());
-                                entry.add(waitCommand);
+                    entry.getKey().whenComplete((res, e) -> {
+                        if (e == null) {
+                            if (slots.decrementAndGet() == 0) {
+                                voidPromise.complete(r);
                             }
                         } else {
-                            for (Entry entry : r.values()) {
-                                BatchCommandData<?, ?> waitCommand = new BatchCommandData(RedisCommands.WAIT,
-                                        new Object[] { this.options.getSyncSlaves(), this.options.getSyncTimeout() }, index.incrementAndGet());
-                                entry.add(waitCommand);
+                            if (entry.getKey().isCancelled()) {
+                                voidPromise.completeExceptionally(e);
+                            } else {
+                                voidPromise.completeExceptionally(e.getCause());
                             }
                         }
-                    }
+                    });
+                }
 
-                    BatchOptions options = BatchOptions.defaults()
-                            .executionMode(this.options.getExecutionMode())
-                            .responseTimeout(this.options.getResponseTimeout(), TimeUnit.MILLISECONDS)
-                            .retryAttempts(Math.max(0, retryAttempts - attempt.get()))
-                            .retryInterval(retryInterval, TimeUnit.MILLISECONDS);
-
-                    if (this.options.isSkipResult()) {
-                        options.skipResult();
-                    }
-
-                    if (this.options.isSyncAOF()) {
-                        options.syncAOF(this.options.getSyncLocals(), this.options.getSyncSlaves(), Duration.ofMillis(this.options.getSyncTimeout()));
-                    } else {
-                        options.sync(this.options.getSyncSlaves(), Duration.ofMillis(this.options.getSyncTimeout()));
-                    }
-
-                    CompletableFuture<Void> mainPromise = new CompletableFuture<>();
-                    mainPromise.whenComplete((res1, ex2) -> {
-                        if (ex2 != null) {
-                            voidPromise.completeExceptionally(ex2);
+                CompletionStage<Void> f = loadScripts(r);
+                f.whenComplete((res, ex1) -> {
+                    try {
+                        if (ex1 != null) {
+                            voidPromise.completeExceptionally(ex1.getCause());
                             return;
                         }
 
-                        voidPromise.complete(r);
-                    });
-                    RedisCommonBatchExecutor executor = new RedisCommonBatchExecutor(e.getKey(), mainPromise,
-                            connectionManager, options, e.getValue(), slots, referenceType, false);
-                    executor.execute();
-                }
-            });
+                        for (Map.Entry<NodeSource, Entry> e : r.entrySet()) {
+                            if (this.options.getExecutionMode() != ExecutionMode.IN_MEMORY) {
+                                for (Entry entry : r.values()) {
+                                    BatchCommandData<?, ?> multiCommand = new BatchCommandData<>(RedisCommands.MULTI, new Object[] {}, index.incrementAndGet());
+                                    entry.addFirstCommand(multiCommand);
+                                    BatchCommandData<?, ?> execCommand = new BatchCommandData<>(RedisCommands.EXEC, new Object[] {}, index.incrementAndGet());
+                                    entry.add(execCommand);
+                                }
+                            }
+
+                            if (this.options.isSkipResult()) {
+                                for (Entry entry : r.values()) {
+                                    BatchCommandData<?, ?> offCommand = new BatchCommandData<>(RedisCommands.CLIENT_REPLY, new Object[] { "OFF" }, index.incrementAndGet());
+                                    entry.addFirstCommand(offCommand);
+                                    BatchCommandData<?, ?> onCommand = new BatchCommandData<>(RedisCommands.CLIENT_REPLY, new Object[] { "ON" }, index.incrementAndGet());
+                                    entry.add(onCommand);
+                                }
+                            }
+
+                            if (this.options.getSyncSlaves() > 0) {
+                                if (this.options.isSyncAOF()) {
+                                    for (Entry entry : r.values()) {
+                                        BatchCommandData<?, ?> waitCommand = new BatchCommandData<>(RedisCommands.WAITAOF,
+                                                new Object[] { this.options.getSyncLocals(), this.options.getSyncSlaves(), this.options.getSyncTimeout() }, index.incrementAndGet());
+                                        entry.add(waitCommand);
+                                    }
+                                } else {
+                                    for (Entry entry : r.values()) {
+                                        BatchCommandData<?, ?> waitCommand = new BatchCommandData<>(RedisCommands.WAIT,
+                                                new Object[] { this.options.getSyncSlaves(), this.options.getSyncTimeout() }, index.incrementAndGet());
+                                        entry.add(waitCommand);
+                                    }
+                                }
+                            }
+
+                            BatchOptions options = BatchOptions.defaults()
+                                    .executionMode(this.options.getExecutionMode())
+                                    .responseTimeout(this.options.getResponseTimeout(), TimeUnit.MILLISECONDS)
+                                    .retryAttempts(Math.max(0, retryAttempts - attempt.get()))
+                                    .retryInterval(retryInterval, TimeUnit.MILLISECONDS);
+
+                            if (this.options.isSkipResult()) {
+                                options.skipResult();
+                            }
+
+                            if (this.options.isSyncAOF()) {
+                                options.syncAOF(this.options.getSyncLocals(), this.options.getSyncSlaves(), Duration.ofMillis(this.options.getSyncTimeout()));
+                            } else {
+                                options.sync(this.options.getSyncSlaves(), Duration.ofMillis(this.options.getSyncTimeout()));
+                            }
+
+                            CompletableFuture<Void> mainPromise = new CompletableFuture<>();
+                            mainPromise.whenComplete((res1, ex2) -> {
+                                if (ex2 != null) {
+                                    voidPromise.completeExceptionally(ex2);
+                                    return;
+                                }
+
+                                voidPromise.complete(r);
+                            });
+                            RedisCommonBatchExecutor executor = new RedisCommonBatchExecutor(e.getKey(), mainPromise,
+                                    connectionManager, options, e.getValue(), slots, referenceType, false);
+                            executor.execute();
+                        }
+                    } catch (Exception e) {
+                        voidPromise.completeExceptionally(e);
+                    }
+                });
+            } catch (Exception e) {
+                voidPromise.completeExceptionally(e);
+            }
         });
     }
 
