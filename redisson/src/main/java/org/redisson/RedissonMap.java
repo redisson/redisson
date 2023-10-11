@@ -1220,14 +1220,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         CompletionStage<Void> ff = f.thenCompose(elements -> {
             List<CompletableFuture<V>> futures = new ArrayList<>(elements.size());
             for (K k : elements) {
-                if (replaceExistingValues) {
-                    CompletableFuture<V> vFuture = loadValue(k, true);
-                    futures.add(vFuture);
-                } else {
-                    CompletableFuture<V> vFuture = new CompletableFuture<>();
-                    containsKeyAsync(k, vFuture);
-                    futures.add(vFuture);
-                }
+                CompletableFuture<V> vFuture = loadValue(k, replaceExistingValues);
+                futures.add(vFuture);
             }
 
             CompletableFuture<Void> finalFuture = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
@@ -1270,13 +1264,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                 Stream<K> s = StreamSupport.stream(supplier.get(), true);
                 List<CompletableFuture<?>> r = s.filter(k -> k != null)
                         .map(k -> {
-                            if (replaceExistingValues) {
-                                return loadValue(k, true).thenApply(v -> null);
-                            }
-
-                            CompletableFuture<V> valuePromise = new CompletableFuture<>();
-                            containsKeyAsync(k, valuePromise);
-                            return valuePromise.thenApply(v -> null);
+                            return loadValue(k, replaceExistingValues).thenApply(v -> null);
                         }).collect(Collectors.toList());
 
                 CompletableFuture<Void> ff = CompletableFuture.allOf(r.toArray(new CompletableFuture[0]));
@@ -1301,24 +1289,24 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                 Stream<K> s = StreamSupport.stream(spliterator, true);
                 List<CompletableFuture<?>> r = s.filter(k -> k != null)
                         .map(k -> {
-                            if (replaceExistingValues) {
-                                return loadValue(k, true).thenApply(v -> map.put(k, v));
-                            }
-
-                            CompletableFuture<V> valuePromise = new CompletableFuture<>();
-                            containsKeyAsync(k, valuePromise);
-                            return valuePromise.thenApply(v -> {
-                                if (v == null) {
-                                    return false;
-                                }
-                                return map.put(k, v);
-                            });
+                            return loadValue(k, replaceExistingValues)
+                                    .thenAccept(v -> {
+                                        if (v != null) {
+                                            map.put(k, v);
+                                        }
+                                    });
                         }).collect(Collectors.toList());
 
                 CompletableFuture<Void> ff = CompletableFuture.allOf(r.toArray(new CompletableFuture[0]));
-                ff.thenApply(v -> {
+                ff.whenComplete((v, e) -> {
                     customThreadPool.shutdown();
-                    return result.complete(map);
+
+                    if (e != null) {
+                        result.completeExceptionally(e);
+                        return;
+                    }
+
+                    result.complete(map);
                 });
             } catch (Exception e) {
                 result.completeExceptionally(e);
