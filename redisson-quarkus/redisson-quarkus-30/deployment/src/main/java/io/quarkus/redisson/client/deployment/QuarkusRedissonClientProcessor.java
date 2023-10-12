@@ -113,16 +113,6 @@ class QuarkusRedissonClientProcessor {
         );
 
         reflectiveItems.produce(ReflectiveClassBuildItem.builder(
-                        RBucket.class,
-                        RedissonBucket.class,
-                        RedissonObject.class,
-                        RedissonMultimap.class)
-                .methods(true)
-                .fields(true)
-                .build()
-        );
-
-        reflectiveItems.produce(ReflectiveClassBuildItem.builder(
                         RObjectReactive.class,
                         RExpirable.class,
                         RObject.class)
