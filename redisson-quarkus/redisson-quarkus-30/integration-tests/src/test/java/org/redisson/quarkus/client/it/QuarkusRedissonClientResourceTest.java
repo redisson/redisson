@@ -38,6 +38,24 @@ public class QuarkusRedissonClientResourceTest {
                 .body(is("OK"));
     }
 
+    @Test
+    public void testBucket() {
+        given()
+                .when().get("/quarkus-redisson-client/bucket")
+                .then()
+                .statusCode(200)
+                .body(is("world"));
+    }
+
+    @Test
+    public void testDeleteBucket() {
+        given()
+                .when().get("/quarkus-redisson-client/delBucket")
+                .then()
+                .statusCode(200)
+                .body(is(true));
+    }
+
 //    @Test
 //    public void testExecuteTask() {
 //        given()
