@@ -28,6 +28,17 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.redisson.client.runtime.RedissonClientProducer;
 import io.quarkus.redisson.client.runtime.RedissonClientRecorder;
+import org.redisson.RedissonBucket;
+import org.redisson.RedissonMultimap;
+import org.redisson.RedissonObject;
+import org.redisson.api.RBucket;
+import org.redisson.api.RExpirable;
+import org.redisson.api.RObject;
+import org.redisson.api.RObjectReactive;
+import org.redisson.codec.Kryo5Codec;
+import org.redisson.config.*;
+import org.redisson.executor.RemoteExecutorService;
+import org.redisson.executor.RemoteExecutorServiceAsync;
 
 import java.io.IOException;
 
@@ -64,18 +75,50 @@ class QuarkusRedissonClientProcessor {
         nativeResources.produce(new NativeImageResourceBuildItem("META-INF/services/org.jboss.marshalling.ProviderDescriptor"));
         watchedFiles.produce(new HotDeploymentWatchedFileBuildItem("redisson.yaml"));
 
-        reflectiveItems.produce(new ReflectiveClassBuildItem(false, false, "org.redisson.codec.Kryo5Codec"));
+        reflectiveItems.produce(ReflectiveClassBuildItem.builder(Kryo5Codec.class)
+                .methods(false)
+                .fields(false)
+                .build()
+        );
 
-        reflectiveItems.produce(new ReflectiveClassBuildItem(true, false, "org.redisson.executor.RemoteExecutorService"));
-        reflectiveItems.produce(new ReflectiveClassBuildItem(true, false, "org.redisson.executor.RemoteExecutorServiceAsync"));
+        reflectiveItems.produce(ReflectiveClassBuildItem.builder(
+                        RemoteExecutorService.class,
+                        RemoteExecutorServiceAsync.class)
+                .methods(true)
+                .fields(false)
+                .build()
+        );
 
-        reflectiveItems.produce(new ReflectiveClassBuildItem(true, true, "org.redisson.config.Config"));
-        reflectiveItems.produce(new ReflectiveClassBuildItem(true, true, "org.redisson.config.BaseConfig"));
-        reflectiveItems.produce(new ReflectiveClassBuildItem(true, true, "org.redisson.config.BaseMasterSlaveServersConfig"));
-        reflectiveItems.produce(new ReflectiveClassBuildItem(true, true, "org.redisson.config.SingleServerConfig"));
-        reflectiveItems.produce(new ReflectiveClassBuildItem(true, true, "org.redisson.config.ReplicatedServersConfig"));
-        reflectiveItems.produce(new ReflectiveClassBuildItem(true, true, "org.redisson.config.SentinelServersConfig"));
-        reflectiveItems.produce(new ReflectiveClassBuildItem(true, true, "org.redisson.config.ClusterServersConfig"));
+        reflectiveItems.produce(ReflectiveClassBuildItem.builder(
+                        Config.class,
+                        BaseConfig.class,
+                        BaseMasterSlaveServersConfig.class,
+                        SingleServerConfig.class,
+                        ReplicatedServersConfig.class,
+                        SentinelServersConfig.class,
+                        ClusterServersConfig.class)
+                .methods(true)
+                .fields(true)
+                .build()
+        );
+
+        reflectiveItems.produce(ReflectiveClassBuildItem.builder(
+                        RBucket.class,
+                        RedissonBucket.class,
+                        RedissonObject.class,
+                        RedissonMultimap.class)
+                .methods(true)
+                .fields(true)
+                .build()
+        );
+
+        reflectiveItems.produce(ReflectiveClassBuildItem.builder(
+                        RObjectReactive.class,
+                        RExpirable.class,
+                        RObject.class)
+                .methods(true)
+                .build()
+        );
     }
 
     @BuildStep
