@@ -25,9 +25,11 @@ import org.springframework.cache.support.SimpleValueWrapper;
 
 import java.lang.reflect.Constructor;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 /**
  *
@@ -156,6 +158,55 @@ public class RedissonCache implements Cache {
         long delta = map.fastRemove(key);
         addCacheEvictions(delta);
         return delta > 0;
+    }
+
+    CompletableFuture<?> retrieve(Object key) {
+        RFuture<Object> f = map.getAsync(key);
+        return f.thenApply(value -> {
+            if (value == null) {
+                addCacheMiss();
+            } else {
+                addCacheHit();
+                if (value.getClass().getName().equals(NullValue.class.getName())) {
+                    return null;
+                }
+            }
+            return fromStoreValue(value);
+        }).toCompletableFuture();
+    }
+
+    <T> CompletableFuture<T> retrieve(Object key, Supplier<CompletableFuture<T>> valueLoader) {
+        return retrieve(key).thenCompose(v -> {
+            if (v != null) {
+                return CompletableFuture.completedFuture((T) v);
+            }
+
+            RLock lock = map.getLock(key);
+            return lock.lockAsync().thenCompose(rr -> {
+                return map.getAsync(key)
+                        .thenCompose(r -> {
+                            if (r != null) {
+                                return CompletableFuture.completedFuture((T) r);
+                            }
+
+                            return valueLoader.get()
+                                    .thenCompose(lv -> {
+                                        Object sv = toStoreValue(lv);
+                                        RFuture<Boolean> f;
+                                        if (mapCache != null) {
+                                            f = mapCache.fastPutAsync(key, sv, config.getTTL(), TimeUnit.MILLISECONDS, config.getMaxIdleTime(), TimeUnit.MILLISECONDS);
+                                        } else {
+                                            f = map.fastPutAsync(key, sv);
+                                        }
+                                        return f.thenApply(rs -> {
+                                                    addCachePut();
+                                                    return lv;
+                                                });
+                            });
+                        })
+                        .whenComplete((r1, e) -> lock.unlockAsync());
+            });
+        });
     }
 
     @Override
