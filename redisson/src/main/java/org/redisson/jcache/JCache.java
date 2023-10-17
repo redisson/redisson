@@ -208,7 +208,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return f.handle((r, e) -> {
             if (e != null) {
                 if (e instanceof CompletionException) {
-                    throw (RuntimeException) e.getCause();
+                    e = e.getCause();
                 }
                 throw new CompletionException(new CacheException(e));
             }
@@ -267,7 +267,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                             V val = loadValue(key);
                             result.complete(val);
                         } catch (Exception ex) {
-                            result.completeExceptionally(ex);
+                            result.completeExceptionally(new CacheException(ex));
                         }
                     });
                     return;
@@ -1046,7 +1046,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         CompletableFuture<Map<K, V>> result = new CompletableFuture<>();
         res.whenComplete((r, ex) -> {
             if (ex != null) {
-                result.completeExceptionally(ex);
+                result.completeExceptionally(new CacheException(ex));
                 return;
             }
 
@@ -1095,7 +1095,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         checkKey(key);
 
         String name = getRawName(key);
-        RFuture<Boolean> future = commandExecutor.evalReadAsync(name, codec, RedisCommands.EVAL_BOOLEAN,
+        CompletionStage<Boolean> future = commandExecutor.evalReadAsync(name, codec, RedisCommands.EVAL_BOOLEAN,
                   "if redis.call('hexists', KEYS[1], ARGV[2]) == 0 then "
                     + "return 0;"
                 + "end;"
@@ -1107,7 +1107,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 + "return 1;",
              Arrays.<Object>asList(name, getTimeoutSetName(name)),
              System.currentTimeMillis(), encodeMapKey(key));
-        return future;
+        future = handleException(future);
+        return new CompletableFutureWrapper<>(future);
     }
 
     @Override
@@ -2942,11 +2943,11 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
 
         RFuture<Long> future = removeValues(keys.toArray());
-        CompletionStage<Void> f = future.thenApply(res -> {
+        CompletionStage<Void> f = future.thenAccept(res -> {
             cacheManager.getStatBean(this).addRemovals(res);
             cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
-            return null;
         });
+        f = handleException(f);
         return new CompletableFutureWrapper<>(f);
     }
 
