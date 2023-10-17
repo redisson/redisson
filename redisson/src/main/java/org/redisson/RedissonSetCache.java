@@ -57,8 +57,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     final RedissonClient redisson;
     final EvictionScheduler evictionScheduler;
-    final RedissonScoredSortedSet<V> scoredSortedSet;
-    
+
     public RedissonSetCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name);
         if (evictionScheduler != null) {
@@ -66,7 +65,6 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         }
         this.evictionScheduler = evictionScheduler;
         this.redisson = redisson;
-        this.scoredSortedSet = new RedissonScoredSortedSet<V>(commandExecutor, name, redisson);
     }
 
     public RedissonSetCache(Codec codec, EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
@@ -76,7 +74,6 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         }
         this.evictionScheduler = evictionScheduler;
         this.redisson = redisson;
-        this.scoredSortedSet = new RedissonScoredSortedSet<V>(codec, commandExecutor, name, redisson);
     }
     
     @Override
@@ -86,7 +83,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     @Override
     public int size() {
-        return scoredSortedSet.size();
+        return get(sizeAsync());
     }
 
     @Override
