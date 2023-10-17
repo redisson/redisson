@@ -59,6 +59,10 @@ public class RedisClientConfig {
     private boolean keepPubSubOrder = true;
     private int pingConnectionInterval;
     private boolean keepAlive;
+    private int tcpKeepAliveCount;
+    private int tcpKeepAliveIdle;
+    private int tcpKeepAliveInterval;
+    private int tcpUserTimeout;
     private boolean tcpNoDelay;
     
     private String sslHostname;
@@ -121,6 +125,10 @@ public class RedisClientConfig {
         this.sslTrustManagerFactory = config.sslTrustManagerFactory;
         this.commandMapper = config.commandMapper;
         this.failedNodeDetector = config.failedNodeDetector;
+        this.tcpKeepAliveCount = config.tcpKeepAliveCount;
+        this.tcpKeepAliveIdle = config.tcpKeepAliveIdle;
+        this.tcpKeepAliveInterval = config.tcpKeepAliveInterval;
+        this.tcpUserTimeout = config.tcpUserTimeout;
     }
 
     public NettyHook getNettyHook() {
@@ -312,6 +320,39 @@ public class RedisClientConfig {
     }
     public RedisClientConfig setKeepAlive(boolean keepAlive) {
         this.keepAlive = keepAlive;
+        return this;
+    }
+
+    public int getTcpKeepAliveCount() {
+        return tcpKeepAliveCount;
+    }
+    public RedisClientConfig setTcpKeepAliveCount(int tcpKeepAliveCount) {
+        this.tcpKeepAliveCount = tcpKeepAliveCount;
+        return this;
+    }
+
+    public int getTcpKeepAliveIdle() {
+        return tcpKeepAliveIdle;
+    }
+    public RedisClientConfig setTcpKeepAliveIdle(int tcpKeepAliveIdle) {
+        this.tcpKeepAliveIdle = tcpKeepAliveIdle;
+        return this;
+    }
+
+    public int getTcpKeepAliveInterval() {
+        return tcpKeepAliveInterval;
+    }
+    public RedisClientConfig setTcpKeepAliveInterval(int tcpKeepAliveInterval) {
+        this.tcpKeepAliveInterval = tcpKeepAliveInterval;
+        return this;
+    }
+
+    public int getTcpUserTimeout() {
+        return tcpUserTimeout;
+    }
+
+    public RedisClientConfig setTcpUserTimeout(int tcpUserTimeout) {
+        this.tcpUserTimeout = tcpUserTimeout;
         return this;
     }
 

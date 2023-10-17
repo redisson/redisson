@@ -103,7 +103,15 @@ public class BaseConfig<T extends BaseConfig<T>> {
     private int pingConnectionInterval = 30000;
 
     private boolean keepAlive;
-    
+
+    private int tcpKeepAliveCount;
+
+    private int tcpKeepAliveIdle;
+
+    private int tcpKeepAliveInterval;
+
+    private int tcpUserTimeout;
+
     private boolean tcpNoDelay = true;
 
     private NameMapper nameMapper = NameMapper.direct();
@@ -135,6 +143,10 @@ public class BaseConfig<T extends BaseConfig<T>> {
         setSslTrustManagerFactory(config.getSslTrustManagerFactory());
         setPingConnectionInterval(config.getPingConnectionInterval());
         setKeepAlive(config.isKeepAlive());
+        setTcpKeepAliveCount(config.getTcpKeepAliveCount());
+        setTcpKeepAliveIdle(config.getTcpKeepAliveIdle());
+        setTcpKeepAliveInterval(config.getTcpKeepAliveInterval());
+        setTcpUserTimeout(config.getTcpUserTimeout());
         setTcpNoDelay(config.isTcpNoDelay());
         setNameMapper(config.getNameMapper());
         setCredentialsResolver(config.getCredentialsResolver());
@@ -456,6 +468,70 @@ public class BaseConfig<T extends BaseConfig<T>> {
      */
     public T setKeepAlive(boolean keepAlive) {
         this.keepAlive = keepAlive;
+        return (T) this;
+    }
+
+    public int getTcpKeepAliveCount() {
+        return tcpKeepAliveCount;
+    }
+
+    /**
+     * Defines the maximum number of keepalive probes
+     * TCP should send before dropping the connection.
+     *
+     * @param tcpKeepAliveCount maximum number of keepalive probes
+     * @return config
+     */
+    public T setTcpKeepAliveCount(int tcpKeepAliveCount) {
+        this.tcpKeepAliveCount = tcpKeepAliveCount;
+        return (T) this;
+    }
+
+    public int getTcpKeepAliveIdle() {
+        return tcpKeepAliveIdle;
+    }
+
+    /**
+     * Defines the time in seconds the connection needs to remain idle
+     * before TCP starts sending keepalive probes,
+     *
+     * @param tcpKeepAliveIdle time in seconds
+     * @return config
+     */
+    public T setTcpKeepAliveIdle(int tcpKeepAliveIdle) {
+        this.tcpKeepAliveIdle = tcpKeepAliveIdle;
+        return (T) this;
+    }
+
+    public int getTcpKeepAliveInterval() {
+        return tcpKeepAliveInterval;
+    }
+
+    /**
+     * Defines the time in seconds between individual keepalive probes.
+     *
+     * @param tcpKeepAliveInterval time in seconds
+     * @return config
+     */
+    public T setTcpKeepAliveInterval(int tcpKeepAliveInterval) {
+        this.tcpKeepAliveInterval = tcpKeepAliveInterval;
+        return (T) this;
+    }
+
+    public int getTcpUserTimeout() {
+        return tcpUserTimeout;
+    }
+
+    /**
+     * Defines the maximum amount of time in milliseconds that transmitted data may
+     * remain unacknowledged, or buffered data may remain untransmitted
+     * (due to zero window size) before TCP will forcibly close the connection.
+     *
+     * @param tcpUserTimeout time in milliseconds
+     * @return config
+     */
+    public T setTcpUserTimeout(int tcpUserTimeout) {
+        this.tcpUserTimeout = tcpUserTimeout;
         return (T) this;
     }
 

@@ -17,13 +17,20 @@ package org.redisson.client;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
+import io.netty.channel.epoll.EpollChannelOption;
 import io.netty.channel.epoll.EpollDatagramChannel;
 import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.ChannelGroupFuture;
 import io.netty.channel.group.DefaultChannelGroup;
+import io.netty.channel.kqueue.KQueueDatagramChannel;
+import io.netty.channel.kqueue.KQueueSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.nio.NioChannelOption;
 import io.netty.channel.socket.nio.NioDatagramChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.incubator.channel.uring.IOUringChannelOption;
+import io.netty.incubator.channel.uring.IOUringSocketChannel;
 import io.netty.resolver.AddressResolver;
 import io.netty.resolver.dns.DnsAddressResolverGroup;
 import io.netty.resolver.dns.DnsServerAddressStreamProviders;
@@ -32,6 +39,7 @@ import io.netty.util.NetUtil;
 import io.netty.util.Timer;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import jdk.net.ExtendedSocketOptions;
 import org.redisson.api.RFuture;
 import org.redisson.client.handler.RedisChannelInitializer;
 import org.redisson.client.handler.RedisChannelInitializer.Type;
@@ -40,6 +48,7 @@ import org.redisson.misc.RedisURI;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketOption;
 import java.net.UnknownHostException;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -97,6 +106,8 @@ public final class RedisClient {
         if (copy.getResolverGroup() == null) {
             if (config.getSocketChannelClass() == EpollSocketChannel.class) {
                 copy.setResolverGroup(new DnsAddressResolverGroup(EpollDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault()));
+            } else if (config.getSocketChannelClass() == KQueueSocketChannel.class) {
+                copy.setResolverGroup(new DnsAddressResolverGroup(KQueueDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault()));
             } else {
                 copy.setResolverGroup(new DnsAddressResolverGroup(NioDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault()));
             }
@@ -131,8 +142,62 @@ public final class RedisClient {
         bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, config.getConnectTimeout());
         bootstrap.option(ChannelOption.SO_KEEPALIVE, config.isKeepAlive());
         bootstrap.option(ChannelOption.TCP_NODELAY, config.isTcpNoDelay());
+
+        applyChannelOptions(config, bootstrap);
+
         config.getNettyHook().afterBoostrapInitialization(bootstrap);
         return bootstrap;
+    }
+
+    private void applyChannelOptions(RedisClientConfig config, Bootstrap bootstrap) {
+        if (config.getSocketChannelClass() == EpollSocketChannel.class) {
+            if (config.getTcpKeepAliveCount() > 0) {
+                bootstrap.option(EpollChannelOption.TCP_KEEPCNT, config.getTcpKeepAliveCount());
+            }
+            if (config.getTcpKeepAliveIdle() > 0) {
+                bootstrap.option(EpollChannelOption.TCP_KEEPIDLE, config.getTcpKeepAliveIdle());
+            }
+            if (config.getTcpKeepAliveInterval() > 0) {
+                bootstrap.option(EpollChannelOption.TCP_KEEPINTVL, config.getTcpKeepAliveInterval());
+            }
+            if (config.getTcpUserTimeout() > 0) {
+                bootstrap.option(EpollChannelOption.TCP_USER_TIMEOUT, config.getTcpUserTimeout());
+            }
+        } else if (config.getSocketChannelClass() == IOUringSocketChannel.class) {
+            if (config.getTcpKeepAliveCount() > 0) {
+                bootstrap.option(IOUringChannelOption.TCP_KEEPCNT, config.getTcpKeepAliveCount());
+            }
+            if (config.getTcpKeepAliveIdle() > 0) {
+                bootstrap.option(IOUringChannelOption.TCP_KEEPIDLE, config.getTcpKeepAliveIdle());
+            }
+            if (config.getTcpKeepAliveInterval() > 0) {
+                bootstrap.option(IOUringChannelOption.TCP_KEEPINTVL, config.getTcpKeepAliveInterval());
+            }
+            if (config.getTcpUserTimeout() > 0) {
+                bootstrap.option(IOUringChannelOption.TCP_USER_TIMEOUT, config.getTcpUserTimeout());
+            }
+        } else if (config.getSocketChannelClass() == NioSocketChannel.class) {
+            SocketOption<Integer> countOption = null;
+            SocketOption<Integer> idleOption = null;
+            SocketOption<Integer> intervalOption = null;
+            try {
+                countOption = (SocketOption<Integer>) ExtendedSocketOptions.class.getDeclaredField("TCP_KEEPCOUNT").get(null);
+                idleOption = (SocketOption<Integer>) ExtendedSocketOptions.class.getDeclaredField("TCP_KEEPIDLE").get(null);
+                intervalOption = (SocketOption<Integer>) ExtendedSocketOptions.class.getDeclaredField("TCP_KEEPINTERVAL").get(null);
+            } catch (ReflectiveOperationException e) {
+                // skip
+            }
+
+            if (config.getTcpKeepAliveCount() > 0 && countOption != null) {
+                bootstrap.option(NioChannelOption.of(countOption), config.getTcpKeepAliveCount());
+            }
+            if (config.getTcpKeepAliveIdle() > 0 && idleOption != null) {
+                bootstrap.option(NioChannelOption.of(idleOption), config.getTcpKeepAliveIdle());
+            }
+            if (config.getTcpKeepAliveInterval() > 0 && intervalOption != null) {
+                bootstrap.option(NioChannelOption.of(intervalOption), config.getTcpKeepAliveInterval());
+            }
+        }
     }
 
     public InetSocketAddress getAddr() {

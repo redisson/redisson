@@ -291,6 +291,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         c.setSubscriptionMode(cfg.getSubscriptionMode());
         c.setDnsMonitoringInterval(cfg.getDnsMonitoringInterval());
         c.setKeepAlive(cfg.isKeepAlive());
+        c.setTcpKeepAliveCount(cfg.getTcpKeepAliveCount());
+        c.setTcpKeepAliveIdle(cfg.getTcpKeepAliveIdle());
+        c.setTcpKeepAliveInterval(cfg.getTcpKeepAliveInterval());
+        c.setTcpUserTimeout(cfg.getTcpUserTimeout());
         c.setTcpNoDelay(cfg.isTcpNoDelay());
         c.setNameMapper(cfg.getNameMapper());
         c.setCredentialsResolver(cfg.getCredentialsResolver());
@@ -347,6 +351,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 .setKeepPubSubOrder(serviceManager.getCfg().isKeepPubSubOrder())
                 .setPingConnectionInterval(config.getPingConnectionInterval())
                 .setKeepAlive(config.isKeepAlive())
+                .setTcpKeepAliveCount(config.getTcpKeepAliveCount())
+                .setTcpKeepAliveIdle(config.getTcpKeepAliveIdle())
+                .setTcpKeepAliveInterval(config.getTcpKeepAliveInterval())
+                .setTcpUserTimeout(config.getTcpUserTimeout())
                 .setTcpNoDelay(config.isTcpNoDelay())
                 .setUsername(config.getUsername())
                 .setPassword(config.getPassword())

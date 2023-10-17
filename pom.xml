@@ -322,7 +322,6 @@
                 <configuration>
                     <source>${source.version}</source>
                     <target>${source.version}</target>
-                    <release>${release.version}</release>
                     <showDeprecation>true</showDeprecation>
                 </configuration>
             </plugin>
