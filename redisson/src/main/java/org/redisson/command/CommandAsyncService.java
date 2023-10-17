@@ -690,6 +690,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 }, Collectors.toList())));
 
         List<CompletableFuture<?>> futures = new ArrayList<>();
+        List<CompletableFuture<?>> mainFutures = new ArrayList<>();
         for (Entry<MasterSlaveEntry, Map<Integer, List<Object>>> entry : entry2keys.entrySet()) {
             // executes in batch due to CROSSLOT error
             CommandBatchService executorService;
@@ -715,11 +716,17 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             }
 
             if (!(this instanceof CommandBatchService)) {
-                executorService.executeAsync();
+                RFuture<BatchResult<?>> f = executorService.executeAsync();
+                mainFutures.add(f.toCompletableFuture());
             }
         }
 
-        CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        CompletableFuture<Void> future;
+        if (!mainFutures.isEmpty()) {
+            future = CompletableFuture.allOf(mainFutures.toArray(new CompletableFuture[0]));
+        } else {
+            future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        }
         CompletableFuture<R> result = future.thenApply(r -> {
             futures.forEach(f -> {
                 if (!f.isCompletedExceptionally() && f.getNow(null) != null) {

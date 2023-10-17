@@ -123,77 +123,89 @@ public class RedisExecutor<V, R> {
             return;
         }
 
-        codec = getCodec(codec);
+        try {
+            codec = getCodec(codec);
 
-        CompletableFuture<RedisConnection> connectionFuture = getConnection();
+            CompletableFuture<RedisConnection> connectionFuture = getConnection();
 
-        CompletableFuture<R> attemptPromise = new CompletableFuture<>();
-        mainPromiseListener = (r, e) -> {
-            if (!mainPromise.isCancelled()) {
-                return;
-            }
-
-            if (connectionFuture.cancel(false)) {
-                log.debug("Connection obtaining canceled for {}", command);
-                timeout.ifPresent(Timeout::cancel);
-                if (attemptPromise.cancel(false)) {
-                    free();
+            CompletableFuture<R> attemptPromise = new CompletableFuture<>();
+            mainPromiseListener = (r, e) -> {
+                if (!mainPromise.isCancelled()) {
+                    return;
                 }
-            } else {
-                if (command.isBlockingCommand()) {
-                    RedisConnection c = connectionFuture.getNow(null);
-                    if (writeFuture.cancel(false)) {
-                        attemptPromise.cancel(false);
-                    } else {
-                        c.forceFastReconnectAsync().whenComplete((res, ex) -> {
-                            attemptPromise.cancel(true);
-                        });
+
+                if (connectionFuture.cancel(false)) {
+                    log.debug("Connection obtaining canceled for {}", command);
+                    timeout.ifPresent(Timeout::cancel);
+                    if (attemptPromise.cancel(false)) {
+                        free();
+                    }
+                } else {
+                    if (command.isBlockingCommand()) {
+                        RedisConnection c = connectionFuture.getNow(null);
+                        if (writeFuture.cancel(false)) {
+                            attemptPromise.cancel(false);
+                        } else {
+                            c.forceFastReconnectAsync().whenComplete((res, ex) -> {
+                                attemptPromise.cancel(true);
+                            });
+                        }
                     }
                 }
-            }
-        };
+            };
 
-        if (attempt == 0) {
-            mainPromise.whenComplete((r, e) -> {
-                if (this.mainPromiseListener != null) {
-                    this.mainPromiseListener.accept(r, e);
+            if (attempt == 0) {
+                mainPromise.whenComplete((r, e) -> {
+                    if (this.mainPromiseListener != null) {
+                        this.mainPromiseListener.accept(r, e);
+                    }
+                });
+            }
+
+            scheduleRetryTimeout(connectionFuture, attemptPromise);
+
+            scheduleConnectionTimeout(attemptPromise, connectionFuture);
+
+            connectionFuture.whenComplete((connection, e) -> {
+                if (connectionFuture.isCancelled()) {
+                    connectionManager.getServiceManager().getShutdownLatch().release();
+                    return;
                 }
+
+                if (connectionFuture.isDone() && connectionFuture.isCompletedExceptionally()) {
+                    connectionManager.getServiceManager().getShutdownLatch().release();
+                    exception = convertException(connectionFuture);
+                    if (attempt == attempts) {
+                        attemptPromise.completeExceptionally(exception);
+                    }
+                    return;
+                }
+
+                try {
+                    sendCommand(attemptPromise, connection);
+                } catch (Exception ex) {
+                    free();
+                    handleError(connectionFuture, e);
+                    return;
+                }
+
+                scheduleWriteTimeout(attemptPromise);
+
+                writeFuture.addListener((ChannelFutureListener) future -> {
+                    checkWriteFuture(writeFuture, attemptPromise, connection);
+                });
             });
+
+            attemptPromise.whenComplete((r, e) -> {
+                releaseConnection(attemptPromise, connectionFuture);
+
+                checkAttemptPromise(attemptPromise, connectionFuture);
+            });
+        } catch (Exception e) {
+            free();
+            handleError(connectionFuture, e);
+            throw e;
         }
-
-        scheduleRetryTimeout(connectionFuture, attemptPromise);
-
-        scheduleConnectionTimeout(attemptPromise, connectionFuture);
-
-        connectionFuture.whenComplete((connection, e) -> {
-            if (connectionFuture.isCancelled()) {
-                connectionManager.getServiceManager().getShutdownLatch().release();
-                return;
-            }
-
-            if (connectionFuture.isDone() && connectionFuture.isCompletedExceptionally()) {
-                connectionManager.getServiceManager().getShutdownLatch().release();
-                exception = convertException(connectionFuture);
-                if (attempt == attempts) {
-                    attemptPromise.completeExceptionally(exception);
-                }
-                return;
-            }
-
-            sendCommand(attemptPromise, connection);
-
-            scheduleWriteTimeout(attemptPromise);
-
-            writeFuture.addListener((ChannelFutureListener) future -> {
-                checkWriteFuture(writeFuture, attemptPromise, connection);
-            });
-        });
-
-        attemptPromise.whenComplete((r, e) -> {
-            releaseConnection(attemptPromise, connectionFuture);
-
-            checkAttemptPromise(attemptPromise, connectionFuture);
-        });
     }
 
     private void scheduleConnectionTimeout(CompletableFuture<R> attemptPromise, CompletableFuture<RedisConnection> connectionFuture) {
@@ -499,6 +511,7 @@ public class RedisExecutor<V, R> {
                 CompletableFuture<RedisURI> ipAddrFuture = connectionManager.getServiceManager().resolveIP(ex.getUrl());
                 ipAddrFuture.whenComplete((ip, e) -> {
                     if (e != null) {
+                        free();
                         handleError(connectionFuture, e);
                         return;
                     }
@@ -516,6 +529,7 @@ public class RedisExecutor<V, R> {
                 CompletableFuture<RedisURI> ipAddrFuture = connectionManager.getServiceManager().resolveIP(ex.getUrl());
                 ipAddrFuture.whenComplete((ip, e) -> {
                     if (e != null) {
+                        free();
                         handleError(connectionFuture, e);
                         return;
                     }

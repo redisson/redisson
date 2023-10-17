@@ -66,22 +66,28 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
     
     @Override
     public void execute() {
-        if (source.getEntry() != null) {
-            Entry entry = aggregatedCommands.computeIfAbsent(source.getEntry(), k -> new Entry());
+        try {
+            if (source.getEntry() != null) {
+                Entry entry = aggregatedCommands.computeIfAbsent(source.getEntry(), k -> new Entry());
 
-            if (!readOnlyMode) {
-                entry.setReadOnlyMode(false);
+                if (!readOnlyMode) {
+                    entry.setReadOnlyMode(false);
+                }
+
+                Codec codecToUse = getCodec(codec);
+                BatchCommandData<V, R> commandData = new BatchCommandData<>(mainPromise, codecToUse, command, null, index.incrementAndGet());
+                entry.addCommand(commandData);
+            } else {
+                addBatchCommandData(null);
             }
 
-            Codec codecToUse = getCodec(codec);
-            BatchCommandData<V, R> commandData = new BatchCommandData<>(mainPromise, codecToUse, command, null, index.incrementAndGet());
-            entry.addCommand(commandData);
-        } else {
-            addBatchCommandData(null);
-        }
-
-        if (!readOnlyMode && this.options.getExecutionMode() == ExecutionMode.REDIS_READ_ATOMIC) {
-            throw new IllegalStateException("Data modification commands can't be used with queueStore=REDIS_READ_ATOMIC");
+            if (!readOnlyMode && this.options.getExecutionMode() == ExecutionMode.REDIS_READ_ATOMIC) {
+                throw new IllegalStateException("Data modification commands can't be used with queueStore=REDIS_READ_ATOMIC");
+            }
+        } catch (Exception e) {
+            free();
+            handleError(connectionFuture, e);
+            throw e;
         }
 
         super.execute();

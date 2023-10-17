@@ -323,43 +323,48 @@ public class CommandBatchService extends CommandAsyncService {
                     return;
                 }
 
-                List<BatchCommandData> entries = new ArrayList<BatchCommandData>();
-                for (Entry e : res.values()) {
-                    entries.addAll(e.getCommands());
-                }
-                Collections.sort(entries);
-                List<Object> responses = new ArrayList<Object>(entries.size());
-                int syncedSlaves = 0;
-                for (BatchCommandData<?, ?> commandEntry : entries) {
-                    if (isWaitCommand(commandEntry)) {
-                        if (commandEntry.getCommand().getName().equals(RedisCommands.WAIT.getName())) {
-                            syncedSlaves += ((CompletableFuture<Integer>) commandEntry.getPromise()).getNow(0);
-                        } else {
-                            List<Integer> list = ((CompletableFuture<List<Integer>>) commandEntry.getPromise()).getNow(Arrays.asList(0, 0));
-                            syncedSlaves += list.get(1);
-                        }
-                    } else if (!commandEntry.getCommand().getName().equals(RedisCommands.MULTI.getName())
-                            && !commandEntry.getCommand().getName().equals(RedisCommands.EXEC.getName())
-                            && !this.options.isSkipResult()) {
-
-                        if (commandEntry.getPromise().isCancelled()) {
-                            continue;
-                        }
-
-                        Object entryResult = commandEntry.getPromise().getNow(null);
-                        try {
-                            if (objectBuilder != null) {
-                                entryResult = objectBuilder.tryHandleReference(entryResult, referenceType);
-                            }
-                        } catch (ReflectiveOperationException exc) {
-                            log.error("Unable to handle reference from {}", entryResult, exc);
-                        }
-                        responses.add(entryResult);
+                try {
+                    List<BatchCommandData> entries = new ArrayList<BatchCommandData>();
+                    for (Entry e : res.values()) {
+                        entries.addAll(e.getCommands());
                     }
-                }
+                    Collections.sort(entries);
+                    List<Object> responses = new ArrayList<Object>(entries.size());
+                    int syncedSlaves = 0;
+                    for (BatchCommandData<?, ?> commandEntry : entries) {
+                        if (isWaitCommand(commandEntry)) {
+                            if (commandEntry.getCommand().getName().equals(RedisCommands.WAIT.getName())) {
+                                syncedSlaves += ((CompletableFuture<Integer>) commandEntry.getPromise()).getNow(0);
+                            } else {
+                                List<Integer> list = ((CompletableFuture<List<Integer>>) commandEntry.getPromise()).getNow(Arrays.asList(0, 0));
+                                syncedSlaves += list.get(1);
+                            }
+                        } else if (!commandEntry.getCommand().getName().equals(RedisCommands.MULTI.getName())
+                                && !commandEntry.getCommand().getName().equals(RedisCommands.EXEC.getName())
+                                && !this.options.isSkipResult()) {
 
-                BatchResult<Object> result = new BatchResult<>(responses, syncedSlaves);
-                promise.complete(result);
+                            if (commandEntry.getPromise().isCancelled()) {
+                                continue;
+                            }
+
+                            Object entryResult = commandEntry.getPromise().getNow(null);
+                            try {
+                                if (objectBuilder != null) {
+                                    entryResult = objectBuilder.tryHandleReference(entryResult, referenceType);
+                                }
+                            } catch (ReflectiveOperationException exc) {
+                                log.error("Unable to handle reference from {}", entryResult, exc);
+                            }
+                            responses.add(entryResult);
+                        }
+                    }
+
+                    BatchResult<Object> result = new BatchResult<>(responses, syncedSlaves);
+                    promise.complete(result);
+                } catch (Exception e) {
+                    promise.completeExceptionally(ex);
+                    throw e;
+                }
 
                 commands.clear();
                 nestedServices.clear();

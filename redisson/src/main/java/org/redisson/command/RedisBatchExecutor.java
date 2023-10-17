@@ -49,7 +49,13 @@ public class RedisBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R> {
     
     @Override
     public void execute() {
-        addBatchCommandData(params);
+        try {
+            addBatchCommandData(params);
+        } catch (Exception e) {
+            free();
+            handleError(connectionFuture, e);
+            throw e;
+        }
     }
     
 }
