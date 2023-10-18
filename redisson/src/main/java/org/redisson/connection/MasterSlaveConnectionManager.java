@@ -299,6 +299,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         c.setNameMapper(cfg.getNameMapper());
         c.setCredentialsResolver(cfg.getCredentialsResolver());
         c.setCommandMapper(cfg.getCommandMapper());
+        c.setSubscriptionTimeout(cfg.getSubscriptionTimeout());
 
         return c;
     }

@@ -57,6 +57,8 @@ public class BaseConfig<T extends BaseConfig<T>> {
      */
     private int timeout = 3000;
 
+    private int subscriptionTimeout = 7500;
+
     private int retryAttempts = 3;
 
     private int retryInterval = 1500;
@@ -151,6 +153,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
         setNameMapper(config.getNameMapper());
         setCredentialsResolver(config.getCredentialsResolver());
         setCommandMapper(config.getCommandMapper());
+        setSubscriptionTimeout(config.getSubscriptionTimeout());
     }
 
     /**
@@ -258,6 +261,23 @@ public class BaseConfig<T extends BaseConfig<T>> {
 
     public int getTimeout() {
         return timeout;
+    }
+
+    public int getSubscriptionTimeout() {
+        return subscriptionTimeout;
+    }
+
+    /**
+     * Defines subscription timeout applied per channel subscription.
+     * <p>
+     * Default is <code>7500</code> milliseconds.
+     *
+     * @param subscriptionTimeout timeout in milliseconds
+     * @return config
+     */
+    public T setSubscriptionTimeout(int subscriptionTimeout) {
+        this.subscriptionTimeout = subscriptionTimeout;
+        return (T) this;
     }
 
     /**

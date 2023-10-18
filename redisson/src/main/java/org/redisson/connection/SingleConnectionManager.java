@@ -74,6 +74,7 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
         newconfig.setNameMapper(cfg.getNameMapper());
         newconfig.setCredentialsResolver(cfg.getCredentialsResolver());
         newconfig.setCommandMapper(cfg.getCommandMapper());
+        newconfig.setSubscriptionTimeout(cfg.getSubscriptionTimeout());
 
         return newconfig;
     }

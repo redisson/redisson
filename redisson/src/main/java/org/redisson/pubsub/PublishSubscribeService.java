@@ -267,7 +267,8 @@ public class PublishSubscribeService {
                                                                MasterSlaveEntry entry, ClientConnectionsEntry clientEntry, RedisPubSubListener<?>... listeners) {
         CompletableFuture<PubSubConnectionEntry> promise = new CompletableFuture<>();
         AsyncSemaphore lock = getSemaphore(channelName);
-        int timeout = config.getTimeout() + config.getRetryInterval() * config.getRetryAttempts();
+        int timeout = config.getSubscriptionTimeout();
+        long start = System.nanoTime();
         Timeout lockTimeout = connectionManager.getServiceManager().newTimeout(t -> {
             promise.completeExceptionally(new RedisTimeoutException(
                     "Unable to acquire subscription lock after " + timeout + "ms. " +
@@ -279,8 +280,9 @@ public class PublishSubscribeService {
                 return;
             }
 
+            long newTimeout = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
             subscribeNoTimeout(codec, channelName, entry, clientEntry, promise, type, lock, new AtomicInteger(), listeners);
-            timeout(promise);
+            timeout(promise, newTimeout);
         });
         return promise;
     }
@@ -318,15 +320,14 @@ public class PublishSubscribeService {
     }
 
     public void timeout(CompletableFuture<?> promise) {
-        int timeout = config.getTimeout() + config.getRetryInterval() * config.getRetryAttempts();
-        timeout(promise, timeout);
+        timeout(promise, config.getSubscriptionTimeout());
     }
 
     public void timeout(CompletableFuture<?> promise, long timeout) {
         Timeout task = connectionManager.getServiceManager().newTimeout(t -> {
             promise.completeExceptionally(new RedisTimeoutException(
                     "Unable to acquire subscription lock after " + timeout + "ms. " +
-                            "Try to increase 'timeout', 'subscriptionsPerConnection', 'subscriptionConnectionPoolSize' parameters."));
+                            "Try to increase 'subscriptionTimeout', 'subscriptionsPerConnection', 'subscriptionConnectionPoolSize' parameters."));
         }, timeout, TimeUnit.MILLISECONDS);
         promise.whenComplete((r, e) -> {
             task.cancel();
@@ -852,7 +853,7 @@ public class PublishSubscribeService {
 
         AsyncSemaphore semaphore = getSemaphore(channelName);
         CompletableFuture<Void> sf = semaphore.acquire();
-        int timeout = config.getTimeout() + config.getRetryInterval() * config.getRetryAttempts();
+        int timeout = config.getSubscriptionTimeout();
         connectionManager.getServiceManager().newTimeout(t -> {
             sf.completeExceptionally(new RedisTimeoutException("Remove listeners operation timeout: (" + timeout + "ms) for " + channelName + " topic"));
         }, timeout, TimeUnit.MILLISECONDS);
@@ -897,7 +898,7 @@ public class PublishSubscribeService {
         AsyncSemaphore semaphore = getSemaphore(channelName);
 
         CompletableFuture<Void> sf = semaphore.acquire();
-        int timeout = config.getTimeout() + config.getRetryInterval() * config.getRetryAttempts();
+        int timeout = config.getSubscriptionTimeout();
         connectionManager.getServiceManager().newTimeout(t -> {
             sf.completeExceptionally(new RedisTimeoutException("Remove listeners operation timeout: (" + timeout + "ms) for " + channelName + " topic"));
         }, timeout, TimeUnit.MILLISECONDS);
