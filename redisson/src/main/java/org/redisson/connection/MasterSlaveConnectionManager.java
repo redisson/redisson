@@ -480,6 +480,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (dnsMonitor != null) {
             dnsMonitor.stop();
         }
+        long timeoutInNanos = unit.toNanos(timeout);
 
         serviceManager.getConnectionWatcher().stop();
 
@@ -491,7 +492,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
 
             try {
-                future.get(timeout, unit);
+                long startTime = System.nanoTime();
+                future.get(timeoutInNanos, TimeUnit.NANOSECONDS);
+                timeoutInNanos -= System.nanoTime() - startTime;
             } catch (Exception e) {
                 // skip
             }
@@ -503,7 +506,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (serviceManager.getCfg().getExecutor() == null) {
             serviceManager.getExecutor().shutdown();
             try {
-                serviceManager.getExecutor().awaitTermination(timeout, unit);
+                long startTime = System.nanoTime();
+                serviceManager.getExecutor().awaitTermination(timeoutInNanos, TimeUnit.NANOSECONDS);
+                timeoutInNanos -= System.nanoTime() - startTime;
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
@@ -513,7 +518,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         serviceManager.getShutdownLatch().awaitUninterruptibly();
 
         if (serviceManager.getCfg().getEventLoopGroup() == null) {
-            serviceManager.getGroup().shutdownGracefully(quietPeriod, timeout, unit).syncUninterruptibly();
+            long startTime = System.nanoTime();
+            serviceManager.getGroup().shutdownGracefully(quietPeriod, timeoutInNanos, TimeUnit.NANOSECONDS).syncUninterruptibly();
+            timeoutInNanos -= System.nanoTime() - startTime;
         }
 
         serviceManager.getTimer().stop();
