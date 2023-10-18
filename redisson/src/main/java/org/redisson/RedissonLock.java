@@ -161,11 +161,7 @@ public class RedissonLock extends RedissonBaseLock {
         if (leaseTime > 0) {
             acquiredFuture = tryLockInnerAsync(waitTime, leaseTime, unit, threadId, RedisCommands.EVAL_NULL_BOOLEAN);
         } else {
-            long waitMillis = waitTime;
-            if (unit != null) {
-                waitMillis = unit.toMillis(waitTime);
-            }
-            acquiredFuture = tryLockInnerAsync(waitMillis, internalLockLeaseTime,
+            acquiredFuture = tryLockInnerAsync(waitTime, internalLockLeaseTime,
                     TimeUnit.MILLISECONDS, threadId, RedisCommands.EVAL_NULL_BOOLEAN);
         }
 
@@ -190,11 +186,7 @@ public class RedissonLock extends RedissonBaseLock {
         if (leaseTime > 0) {
             ttlRemainingFuture = tryLockInnerAsync(waitTime, leaseTime, unit, threadId, RedisCommands.EVAL_LONG);
         } else {
-            long waitMillis = waitTime;
-            if (unit != null) {
-                waitMillis = unit.toMillis(waitTime);
-            }
-            ttlRemainingFuture = tryLockInnerAsync(waitMillis, internalLockLeaseTime,
+            ttlRemainingFuture = tryLockInnerAsync(waitTime, internalLockLeaseTime,
                     TimeUnit.MILLISECONDS, threadId, RedisCommands.EVAL_LONG);
         }
         CompletionStage<Long> s = handleNoSync(threadId, ttlRemainingFuture);
