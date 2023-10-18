@@ -185,7 +185,7 @@ public class PubSubConnectionEntry {
 
             serviceManager.newTimeout(t -> {
                 subscribeFuture.completeExceptionally(new RedisTimeoutException(
-                        "Subscription timeout after " + serviceManager.getConfig().getTimeout() + "ms. " +
+                        "Subscription response timeout after " + serviceManager.getConfig().getTimeout() + "ms. " +
                                 "Check network and/or increase 'timeout' parameter."));
             }, serviceManager.getConfig().getTimeout(), TimeUnit.MILLISECONDS);
         });
