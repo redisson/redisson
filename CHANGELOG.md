@@ -3,6 +3,32 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 18-Oct-2023 - 3.24.1 released
+
+Feature - `writerRetryAttempts` and `writerRetryInterval` settings added to `MapOptions` object (thanks to @zzhlhc)  
+Feature - `RSortedSet` implements `RExpirable`  
+Feature - `RBlockingQueue.pollFromAnyWithName()` method added  
+Feature - `org.redisson.codec.LZ4CodecV2` codec based on apache commons-compress added  
+Feature - Redis Cache async methods implementation introduced in Spring 6.1.0  
+Feature - `tcpKeepAliveCount`, `tcpKeepAliveIdle`, `tcpKeepAliveInterval`, `tcpUserTimeout` settings added  
+Feature - `subscriptionTimeout` setting added  
+
+Fixed - `RedissonClient.shutdown()` method should be completed within timeout (thanks @dgolombek)  
+Fixed - `RBuckets.trySet()`, `RBuckets.set()`, `RBuckets.get()`, `RKeys.touch()`, `RKeys.unlink()`, `RKeys.delete()`, `RKeys.countExists()` methods may hang after failover in Redis cluster  
+Fixed - exceptions aren't wrapped in `CacheException` for `containsKey()`, `getAll()` and `removeAll()` methods of `JCache`  
+Fixed - Command execution timeout for command: (PING)  
+Fixed - `RBucketReactive.delete()` method doesn't work in Quarkus Native mode (thanks to @DicksengA)  
+Fixed - auto configuration with Spring Boot 2.7.x+  
+Fixed - `RSortedSet` doesn't work correctly if `NameMapper` object was specified  
+Fixed - `RPriorityQueue` has incorrect lock name if `NameMapper` object was specified  
+Fixed - `RMapCache.expireEntries()` and `expireEntry()` methods don't update `maxIdle` parameter properly  
+Fixed - non-volatile `RedisConnection.lastUsageTime` field may cause incorrect idle time calculation  
+Fixed - `attempt to unlock lock, not locked by current thread` error occurs in rare cases even if `RLock.unlock()` method called by lock owner thread  
+Fixed - `RCountDownLatch` only notifying the first async listener after countdown reaches 0 (thanks to @Sinbios)  
+Fixed - `RStream.trim()` and `trimNonStrict()` methods don't work with Redis 6.2+  
+Fixed - `RReadWriteLock.readLock().isLocked()` method returns incorrect result if acquired by writeLock owner thread  
+Fixed - `RedissonClient.getLiveObjectService()` method causes an attempt to connect to Redis if `lazyInitialization = true`  
+
 ### 19-Sep-2023 - 3.23.5 released
 Feature - `failedSlaveNodeDetector` setting added to Cluster, Sentinel, Replicated, Master/Slave modes  
 Feature - module name added to redisson jar (thanks to @KrogerWalt)  
