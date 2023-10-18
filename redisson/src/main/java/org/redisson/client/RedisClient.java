@@ -150,7 +150,28 @@ public final class RedisClient {
     }
 
     private void applyChannelOptions(RedisClientConfig config, Bootstrap bootstrap) {
-        if (config.getSocketChannelClass() == EpollSocketChannel.class) {
+        if (config.getSocketChannelClass() == NioSocketChannel.class) {
+            SocketOption<Integer> countOption = null;
+            SocketOption<Integer> idleOption = null;
+            SocketOption<Integer> intervalOption = null;
+            try {
+                countOption = (SocketOption<Integer>) ExtendedSocketOptions.class.getDeclaredField("TCP_KEEPCOUNT").get(null);
+                idleOption = (SocketOption<Integer>) ExtendedSocketOptions.class.getDeclaredField("TCP_KEEPIDLE").get(null);
+                intervalOption = (SocketOption<Integer>) ExtendedSocketOptions.class.getDeclaredField("TCP_KEEPINTERVAL").get(null);
+            } catch (ReflectiveOperationException e) {
+                // skip
+            }
+
+            if (config.getTcpKeepAliveCount() > 0 && countOption != null) {
+                bootstrap.option(NioChannelOption.of(countOption), config.getTcpKeepAliveCount());
+            }
+            if (config.getTcpKeepAliveIdle() > 0 && idleOption != null) {
+                bootstrap.option(NioChannelOption.of(idleOption), config.getTcpKeepAliveIdle());
+            }
+            if (config.getTcpKeepAliveInterval() > 0 && intervalOption != null) {
+                bootstrap.option(NioChannelOption.of(intervalOption), config.getTcpKeepAliveInterval());
+            }
+        } else if (config.getSocketChannelClass() == EpollSocketChannel.class) {
             if (config.getTcpKeepAliveCount() > 0) {
                 bootstrap.option(EpollChannelOption.TCP_KEEPCNT, config.getTcpKeepAliveCount());
             }
@@ -175,27 +196,6 @@ public final class RedisClient {
             }
             if (config.getTcpUserTimeout() > 0) {
                 bootstrap.option(IOUringChannelOption.TCP_USER_TIMEOUT, config.getTcpUserTimeout());
-            }
-        } else if (config.getSocketChannelClass() == NioSocketChannel.class) {
-            SocketOption<Integer> countOption = null;
-            SocketOption<Integer> idleOption = null;
-            SocketOption<Integer> intervalOption = null;
-            try {
-                countOption = (SocketOption<Integer>) ExtendedSocketOptions.class.getDeclaredField("TCP_KEEPCOUNT").get(null);
-                idleOption = (SocketOption<Integer>) ExtendedSocketOptions.class.getDeclaredField("TCP_KEEPIDLE").get(null);
-                intervalOption = (SocketOption<Integer>) ExtendedSocketOptions.class.getDeclaredField("TCP_KEEPINTERVAL").get(null);
-            } catch (ReflectiveOperationException e) {
-                // skip
-            }
-
-            if (config.getTcpKeepAliveCount() > 0 && countOption != null) {
-                bootstrap.option(NioChannelOption.of(countOption), config.getTcpKeepAliveCount());
-            }
-            if (config.getTcpKeepAliveIdle() > 0 && idleOption != null) {
-                bootstrap.option(NioChannelOption.of(idleOption), config.getTcpKeepAliveIdle());
-            }
-            if (config.getTcpKeepAliveInterval() > 0 && intervalOption != null) {
-                bootstrap.option(NioChannelOption.of(intervalOption), config.getTcpKeepAliveInterval());
             }
         }
     }
