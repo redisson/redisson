@@ -21,13 +21,10 @@ import org.redisson.api.listener.PatternMessageListener;
 import org.redisson.api.listener.PatternStatusListener;
 import org.redisson.client.ChannelName;
 import org.redisson.client.RedisPubSubListener;
-import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.misc.CompletableFutureWrapper;
-import org.redisson.misc.AsyncSemaphore;
 import org.redisson.pubsub.PubSubConnectionEntry;
 import org.redisson.pubsub.PublishSubscribeService;
 
