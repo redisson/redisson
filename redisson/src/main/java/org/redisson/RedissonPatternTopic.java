@@ -99,14 +99,6 @@ public class RedissonPatternTopic implements RPatternTopic {
         return new CompletableFutureWrapper<>(f);
     }
     
-    protected void acquire(AsyncSemaphore semaphore) {
-        MasterSlaveServersConfig config = commandExecutor.getServiceManager().getConfig();
-        int timeout = config.getTimeout() + config.getRetryInterval() * config.getRetryAttempts();
-        if (!semaphore.tryAcquire(timeout)) {
-            throw new RedisTimeoutException("Remove listeners operation timeout: (" + timeout + "ms) for " + name + " topic");
-        }
-    }
-    
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
         CompletableFuture<Void> f = subscribeService.removeListenerAsync(PubSubType.PUNSUBSCRIBE, channelName, listenerId);
