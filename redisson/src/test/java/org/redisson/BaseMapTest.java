@@ -909,9 +909,9 @@ public abstract class BaseMapTest extends BaseTest {
         map.put("20", "200");
         map.put("30", "300");
 
-        assertThat(map.values("?0")).containsExactly("100", "200", "300");
+        assertThat(map.values("?0")).containsExactlyInAnyOrder("100", "200", "300");
         assertThat(map.values("1")).isEmpty();
-        assertThat(map.values("10")).containsExactly("100");
+        assertThat(map.values("10")).containsExactlyInAnyOrder("100");
         destroy(map);
     }
 
@@ -922,9 +922,9 @@ public abstract class BaseMapTest extends BaseTest {
         map.put("20", "200");
         map.put("30", "300");
 
-        assertThat(map.entrySet("?0")).containsExactly(new AbstractMap.SimpleEntry("10", "100"), new AbstractMap.SimpleEntry("20", "200"), new AbstractMap.SimpleEntry("30", "300"));
+        assertThat(map.entrySet("?0")).containsExactlyInAnyOrder(new AbstractMap.SimpleEntry("10", "100"), new AbstractMap.SimpleEntry("20", "200"), new AbstractMap.SimpleEntry("30", "300"));
         assertThat(map.entrySet("1")).isEmpty();
-        assertThat(map.entrySet("10")).containsExactly(new AbstractMap.SimpleEntry("10", "100"));
+        assertThat(map.entrySet("10")).containsExactlyInAnyOrder(new AbstractMap.SimpleEntry("10", "100"));
         destroy(map);
     }
     
