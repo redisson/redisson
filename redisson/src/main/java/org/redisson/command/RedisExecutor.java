@@ -501,7 +501,8 @@ public class RedisExecutor<V, R> {
             Throwable cause = cause(attemptFuture);
             if (cause instanceof RedisMovedException && !ignoreRedirect) {
                 RedisMovedException ex = (RedisMovedException) cause;
-                if (source.getRedirect() == Redirect.MOVED) {
+                if (source.getRedirect() == Redirect.MOVED
+                        && source.getAddr().equals(ex.getUrl())) {
                     mainPromise.completeExceptionally(new RedisException("MOVED redirection loop detected. Node " + source.getAddr() + " has further redirect to " + ex.getUrl()));
                     return;
                 }
