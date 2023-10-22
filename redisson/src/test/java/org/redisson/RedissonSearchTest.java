@@ -69,10 +69,23 @@ public class RedissonSearchTest extends BaseTest {
         AggregationResult r = s.aggregate("idx", "*", AggregationOptions.defaults()
                                                                                         .withCursor()
                                                                                         .load("t1", "t2"));
-
-        assertThat(r.getTotal()).isEqualTo(2);
+        assertThat(r.getTotal()).isEqualTo(1);
         assertThat(r.getCursorId()).isEqualTo(0);
         assertThat(new HashSet<>(r.getAttributes())).isEqualTo(new HashSet<>(Arrays.asList(m2.readAllMap(), m.readAllMap())));
+
+        AggregationResult r3 = s.aggregate("idx", "*", AggregationOptions.defaults()
+                .withCursor(1).load("t1", "t2"));
+
+        assertThat(r3.getTotal()).isEqualTo(1);
+        assertThat(r3.getCursorId()).isPositive();
+        assertThat(new HashSet<>(r3.getAttributes())).isEqualTo(new HashSet<>(Arrays.asList(m2.readAllMap())));
+
+        AggregationResult r2 = s.readCursor("idx", r3.getCursorId());
+        assertThat(r2.getTotal()).isEqualTo(1);
+        assertThat(r2.getCursorId()).isPositive();
+
+        assertThat(new HashSet<>(r2.getAttributes())).isEqualTo(new HashSet<>(Arrays.asList(m.readAllMap())));
+
     }
 
     @Test

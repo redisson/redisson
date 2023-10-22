@@ -541,7 +541,7 @@ public class RedissonSearch implements RSearch {
                 }
             }
         }
-        if (options.getSortedByFields().isEmpty()) {
+        if (!options.getSortedByFields().isEmpty()) {
             args.add("SORTBY");
             args.add(options.getSortedByFields().size());
             for (SortedField sortedByField : options.getSortedByFields()) {
@@ -570,13 +570,13 @@ public class RedissonSearch implements RSearch {
         }
         if (options.isWithCursor()) {
             args.add("WITHCURSOR");
-            if (options.getCount() != null) {
+            if (options.getCursorCount() != null) {
                 args.add("COUNT");
-                args.add(options.getCount());
+                args.add(options.getCursorCount());
             }
             if (options.getCursorMaxIdle() != null) {
-                args.add("COUNT");
-                args.add(options.getCount());
+                args.add("MAXIDLE");
+                args.add(options.getCursorMaxIdle());
             }
         }
         if (!options.getParams().isEmpty()) {
