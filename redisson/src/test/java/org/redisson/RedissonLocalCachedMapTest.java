@@ -30,6 +30,9 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -141,6 +144,26 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
 
         assertThat(entries.keySet()).containsOnly("v1", "v3");
         assertThat(entries.values()).containsOnly(null, null);
+    }
+
+    @Test
+    public void testSubscriptionTimeout() {
+        Config config = new Config();
+        config.useSingleServer()
+                .setSubscriptionsPerConnection(2)
+                .setSubscriptionConnectionPoolSize(1)
+                .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+
+        RLocalCachedMap<Object, Object> m1 = redisson.getLocalCachedMap("pubsub_test1", LocalCachedMapOptions.defaults());
+        ScheduledExecutorService e = Executors.newSingleThreadScheduledExecutor();
+        e.schedule(() -> {
+            m1.destroy();
+        }, 1, TimeUnit.SECONDS);
+
+        RLocalCachedMap<Object, Object> m2 = redisson.getLocalCachedMap("pubsub_test2", LocalCachedMapOptions.defaults());
+
+        redisson.shutdown();
     }
 
     @Test
@@ -520,10 +543,10 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
                 .cacheSize(5)
                 .syncStrategy(SyncStrategy.INVALIDATE);
         
-        RLocalCachedMap<String, Integer> map1 = redisson.getLocalCachedMap("test", options);
+        RLocalCachedMap<String, Integer> map1 = redisson.getLocalCachedMap("testLocalCacheClear", options);
         Map<String, Integer> cache1 = map1.getCachedMap();
         
-        RLocalCachedMap<String, Integer> map2 = redisson.getLocalCachedMap("test", options);
+        RLocalCachedMap<String, Integer> map2 = redisson.getLocalCachedMap("testLocalCacheClear", options);
         Map<String, Integer> cache2 = map2.getCachedMap();
         
         map1.put("1", 1);

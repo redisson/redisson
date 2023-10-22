@@ -280,7 +280,7 @@ public class PublishSubscribeService {
                 return;
             }
 
-            long newTimeout = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+            long newTimeout = timeout - TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
             subscribeNoTimeout(codec, channelName, entry, clientEntry, promise, type, lock, new AtomicInteger(), listeners);
             timeout(promise, newTimeout);
         });
