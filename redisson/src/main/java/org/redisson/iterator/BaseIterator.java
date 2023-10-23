@@ -20,6 +20,7 @@ import java.util.NoSuchElementException;
 
 import org.redisson.ScanResult;
 import org.redisson.client.RedisClient;
+import org.redisson.client.RedisNodeNotFoundException;
 
 /**
  * 
@@ -38,6 +39,9 @@ public abstract class BaseIterator<V, E> implements Iterator<V> {
     private boolean currentElementRemoved;
     protected E value;
 
+    protected void reset() {
+    }
+
     @Override
     public boolean hasNext() {
         if (lastIter == null || !lastIter.hasNext()) {
@@ -52,7 +56,17 @@ public abstract class BaseIterator<V, E> implements Iterator<V> {
                 finished = false;
             }
             do {
-                ScanResult<E> res = iterator(client, nextIterPos);
+                ScanResult<E> res;
+                try {
+                    res = iterator(client, nextIterPos);
+                } catch (RedisNodeNotFoundException e) {
+                    if (client != null) {
+                        client = null;
+                        nextIterPos = 0;
+                    }
+                    reset();
+                    res = iterator(client, nextIterPos);
+                }
                 
                 client = res.getRedisClient();
                 
