@@ -328,4 +328,8 @@ public class RedissonPriorityDeque<V> extends RedissonPriorityQueue<V> implement
     public RFuture<V> moveAsync(DequeMoveArgs args) {
         throw new UnsupportedOperationException();
     }
+
+    public RedissonPriorityDeque<V> reversed() {
+        throw new UnsupportedOperationException();
+    }
 }

@@ -332,4 +332,8 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
         return remove(o, -1);
     }
 
+    public RedissonDeque<V> reversed() {
+        throw new UnsupportedOperationException();
+    }
+
 }
