@@ -3,6 +3,13 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 22-Oct-2023 - 3.24.2 released
+
+Fixed - `IllegalArgument timeout...` error is throw during Redisson shutdown  
+Fixed - Intermittent Exception when creating `RLocalCachedMap` (regression since 3.24.1)  
+Fixed - `RSearch.aggregate()` doesn't apply `withCursor()` and `sortBy()` options correctly  
+Fixed - `MOVED redirection loop detected` error should be thrown only if both source and target addresses are equal
+
 ### 18-Oct-2023 - 3.24.1 released
 
 Feature - `writerRetryAttempts` and `writerRetryInterval` settings added to `MapOptions` object (thanks to @zzhlhc)  
