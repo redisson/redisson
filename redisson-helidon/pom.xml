@@ -16,6 +16,7 @@
     <modules>
         <module>redisson-helidon-20</module>
         <module>redisson-helidon-30</module>
+        <module>redisson-helidon-40</module>
     </modules>
 
 </project>
