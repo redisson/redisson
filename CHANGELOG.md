@@ -3,6 +3,12 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 24-Oct-2023 - 3.24.3 released
+
+Feature - Helidon 4.0 integration
+
+Fixed - `ERR invalid expire time` error is thrown during `RLock.unlock()` call if `retryAttempts = 0`  
+
 ### 22-Oct-2023 - 3.24.2 released
 
 Fixed - `IllegalArgument timeout...` error is throw during Redisson shutdown  
