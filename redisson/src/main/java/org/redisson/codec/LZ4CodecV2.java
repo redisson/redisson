@@ -19,6 +19,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
+import org.apache.commons.compress.compressors.lz4.BlockLZ4CompressorInputStream;
+import org.apache.commons.compress.compressors.lz4.BlockLZ4CompressorOutputStream;
 import org.apache.commons.compress.compressors.lz4.FramedLZ4CompressorInputStream;
 import org.apache.commons.compress.compressors.lz4.FramedLZ4CompressorOutputStream;
 import org.redisson.client.codec.BaseCodec;
@@ -66,10 +68,11 @@ public class LZ4CodecV2 extends BaseCodec {
     private final Decoder<Object> decoder = new Decoder<Object>() {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
-            ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
+            int decompressionSize = buf.readInt();
+            ByteBuf out = ByteBufAllocator.DEFAULT.buffer(decompressionSize);
             try {
                 ByteBufInputStream ios = new ByteBufInputStream(buf);
-                FramedLZ4CompressorInputStream in = new FramedLZ4CompressorInputStream(ios);
+                BlockLZ4CompressorInputStream in = new BlockLZ4CompressorInputStream(ios);
                 out.writeBytes(in, buf.readableBytes());
                 in.close();
                 return innerCodec.getValueDecoder().decode(out, state);
@@ -86,9 +89,10 @@ public class LZ4CodecV2 extends BaseCodec {
             ByteBuf bytes = null;
             try {
                 ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
-                ByteBufOutputStream baos = new ByteBufOutputStream(out);
-                FramedLZ4CompressorOutputStream compressor = new FramedLZ4CompressorOutputStream(baos);
                 bytes = innerCodec.getValueEncoder().encode(in);
+                out.writeInt(bytes.readableBytes());
+                ByteBufOutputStream baos = new ByteBufOutputStream(out);
+                BlockLZ4CompressorOutputStream compressor = new BlockLZ4CompressorOutputStream(baos);
                 bytes.getBytes(bytes.readerIndex(), compressor, bytes.readableBytes());
                 compressor.close();
                 return out;
