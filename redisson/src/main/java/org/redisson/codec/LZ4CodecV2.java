@@ -21,8 +21,6 @@ import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
 import org.apache.commons.compress.compressors.lz4.BlockLZ4CompressorInputStream;
 import org.apache.commons.compress.compressors.lz4.BlockLZ4CompressorOutputStream;
-import org.apache.commons.compress.compressors.lz4.FramedLZ4CompressorInputStream;
-import org.apache.commons.compress.compressors.lz4.FramedLZ4CompressorOutputStream;
 import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
