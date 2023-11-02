@@ -49,7 +49,7 @@ public class LongSlotCallback implements SlotCallback<Long, Long> {
 
     @Override
     public Object[] createParams(List<Object> params) {
-        if (params == null && this.params != null) {
+        if (this.params != null) {
             return this.params;
         }
         return SlotCallback.super.createParams(params);

@@ -32,10 +32,11 @@ public interface SlotCallback<T, R> {
         return null;
     }
 
+    default Object[] createKeys(List<Object> params) {
+        return params.toArray();
+    }
+
     default Object[] createParams(List<Object> params) {
-        if (params == null) {
-            return new Object[]{};
-        }
         return params.toArray();
     }
 

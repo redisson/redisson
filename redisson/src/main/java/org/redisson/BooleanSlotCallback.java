@@ -36,7 +36,7 @@ public class BooleanSlotCallback implements SlotCallback<Boolean, Boolean> {
 
     @Override
     public Object[] createParams(List<Object> params) {
-        if (params == null && this.params != null) {
+        if (this.params != null) {
             return this.params;
         }
         return SlotCallback.super.createParams(params);

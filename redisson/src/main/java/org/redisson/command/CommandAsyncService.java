@@ -588,8 +588,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     private <T, R> RFuture<R> evalWriteBatchedAsync(boolean readOnly, Codec codec, RedisCommand<T> command, String script, List<Object> keys, SlotCallback<T, R> callback) {
         if (!connectionManager.isClusterMode()) {
-            Object[] keysArray = callback.createParams(keys);
-            Object[] paramsArray = callback.createParams(null);
+            Object[] keysArray = callback.createKeys(keys);
+            Object[] paramsArray = callback.createParams(Collections.emptyList());
             if (readOnly) {
                 return evalReadAsync((String) null, codec, command, script, Arrays.asList(keysArray), paramsArray);
             }
@@ -640,8 +640,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 if (newCommand != null) {
                     c = newCommand;
                 }
-                Object[] keysArray = callback.createParams(groupedKeys);
-                Object[] paramsArray = callback.createParams(null);
+                Object[] keysArray = callback.createKeys(groupedKeys);
+                Object[] paramsArray = callback.createParams(Collections.emptyList());
                 if (readOnly) {
                     RFuture<T> f = executorService.evalReadAsync(entry.getKey(), codec, c, script, Arrays.asList(keysArray), paramsArray);
                     futures.add(f.toCompletableFuture());
@@ -714,11 +714,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 if (newCommand != null) {
                     c = newCommand;
                 }
+                Object[] params = callback.createParams(groupedKeys);
                 if (readOnly) {
-                    RFuture<T> f = executorService.readAsync(entry.getKey(), codec, c, callback.createParams(groupedKeys));
+                    RFuture<T> f = executorService.readAsync(entry.getKey(), codec, c, params);
                     futures.add(f.toCompletableFuture());
                 } else {
-                    RFuture<T> f = executorService.writeAsync(entry.getKey(), codec, c, callback.createParams(groupedKeys));
+                    RFuture<T> f = executorService.writeAsync(entry.getKey(), codec, c, params);
                     futures.add(f.toCompletableFuture());
                 }
             }
