@@ -36,7 +36,7 @@ public final class ReducerParams implements Reducer {
 
     @Override
     public Reducer as(String alias) {
-        this.as = as;
+        this.as = alias;
         return this;
     }
 
