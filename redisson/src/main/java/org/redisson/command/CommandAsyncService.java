@@ -46,6 +46,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -595,26 +596,33 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             return evalWriteAsync((String) null, codec, command, script, Arrays.asList(keysArray), paramsArray);
         }
 
-        Map<MasterSlaveEntry, Map<Integer, List<Object>>> entry2keys = keys.stream().collect(
-                Collectors.groupingBy(k -> {
-                    int slot;
-                    if (k instanceof String) {
-                        slot = connectionManager.calcSlot((String) k);
-                    } else if (k instanceof ByteBuf) {
-                        slot = connectionManager.calcSlot((ByteBuf) k);
-                    } else {
-                        throw new IllegalArgumentException();
-                    }
-                    return connectionManager.getWriteEntry(slot);
-                }, Collectors.groupingBy(k -> {
-                    if (k instanceof String) {
-                        return connectionManager.calcSlot((String) k);
-                    } else if (k instanceof ByteBuf) {
-                        return connectionManager.calcSlot((ByteBuf) k);
-                    } else {
-                        throw new IllegalArgumentException();
-                    }
-                }, Collectors.toList())));
+        Map<MasterSlaveEntry, Map<Integer, List<Object>>> entry2keys;
+        if (keys.isEmpty()) {
+            entry2keys = connectionManager.getEntrySet().stream()
+                    .collect(Collectors.toMap(Function.identity(),
+                            e -> Collections.singletonMap(0, Collections.emptyList())));
+        } else {
+            entry2keys = keys.stream().collect(
+                    Collectors.groupingBy(k -> {
+                        int slot;
+                        if (k instanceof String) {
+                            slot = connectionManager.calcSlot((String) k);
+                        } else if (k instanceof ByteBuf) {
+                            slot = connectionManager.calcSlot((ByteBuf) k);
+                        } else {
+                            throw new IllegalArgumentException();
+                        }
+                        return connectionManager.getWriteEntry(slot);
+                    }, Collectors.groupingBy(k -> {
+                        if (k instanceof String) {
+                            return connectionManager.calcSlot((String) k);
+                        } else if (k instanceof ByteBuf) {
+                            return connectionManager.calcSlot((ByteBuf) k);
+                        } else {
+                            throw new IllegalArgumentException();
+                        }
+                    }, Collectors.toList())));
+        }
 
         List<CompletableFuture<?>> futures = new ArrayList<>();
         for (Entry<MasterSlaveEntry, Map<Integer, List<Object>>> entry : entry2keys.entrySet()) {

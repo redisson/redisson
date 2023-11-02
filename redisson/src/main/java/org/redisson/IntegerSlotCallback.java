@@ -16,34 +16,34 @@
 package org.redisson;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  *
  * @author Nikita Koksharov
  *
  */
-public class LongSlotCallback implements SlotCallback<Long, Long> {
+public class IntegerSlotCallback implements SlotCallback<Integer, Integer> {
 
-    private final AtomicLong results = new AtomicLong();
+    private final AtomicInteger results = new AtomicInteger();
 
     private final Object[] params;
 
-    public LongSlotCallback() {
+    public IntegerSlotCallback() {
         this(null);
     }
 
-    public LongSlotCallback(Object[] params) {
+    public IntegerSlotCallback(Object[] params) {
         this.params = params;
     }
 
     @Override
-    public void onSlotResult(Long result) {
+    public void onSlotResult(Integer result) {
         results.addAndGet(result);
     }
 
     @Override
-    public Long onFinish() {
+    public Integer onFinish() {
         return results.get();
     }
 

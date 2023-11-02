@@ -33,6 +33,9 @@ public interface SlotCallback<T, R> {
     }
 
     default Object[] createParams(List<Object> params) {
+        if (params == null) {
+            return new Object[]{};
+        }
         return params.toArray();
     }
 
