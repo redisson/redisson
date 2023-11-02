@@ -34,6 +34,15 @@ Gradle
 |redisson-spring-data-2x     |2.x.y              |
 |redisson-spring-data-3x     |3.x.y              |
 
+For gradle, you can downgrade the to `redisson-spring-data-27` this way:
+
+```groovy
+    implementation ("org.redisson:redisson-spring-boot-starter:3.23.2") {
+        exclude group: 'org.redisson', module: 'redisson-spring-data-31'
+    }
+    implementation "org.redisson:redisson-spring-data-27:3.23.2"
+```
+
 ### 2. Add settings into `application.settings` file
 
 Using common Spring Boot 3.x+ settings:
