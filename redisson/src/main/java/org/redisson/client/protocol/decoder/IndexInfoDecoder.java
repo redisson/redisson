@@ -57,14 +57,14 @@ public class IndexInfoDecoder implements MultiDecoder<Object> {
             ii.setDocTableSize(Double.valueOf(result.get("doc_table_size_mb").toString()));
             ii.setSortableValuesSize(Double.valueOf(result.get("sortable_values_size_mb").toString()));
             ii.setKeyTableSize(Double.valueOf(result.get("key_table_size_mb").toString()));
-            ii.setRecordsPerDocAverage(toLong(result, "records_per_doc_avg"));
+            ii.setRecordsPerDocAverage(Double.valueOf(result.get("records_per_doc_avg").toString()));
             ii.setBytesPerRecordAverage(toLong(result, "bytes_per_record_avg"));
             ii.setOffsetsPerTermAverage(toLong(result, "offsets_per_term_avg"));
             ii.setOffsetBitsPerRecordAverage(toLong(result, "offset_bits_per_record_avg"));
             ii.setHashIndexingFailures(toLong(result, "hash_indexing_failures"));
             ii.setTotalIndexingTime(Double.valueOf(result.get("total_indexing_time").toString()));
             ii.setIndexing(toLong(result, "indexing"));
-            ii.setPercentIndexed(toLong(result, "percent_indexed"));
+            ii.setPercentIndexed(Double.valueOf(result.get("percent_indexed").toString()));
             ii.setNumberOfUses(toLong(result, "number_of_uses"));
             ii.setGcStats((Map<String, Object>) result.get("gc_stats"));
             ii.setCursorStats((Map<String, Object>) result.get("cursor_stats"));

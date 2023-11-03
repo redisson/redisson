@@ -90,12 +90,11 @@ public class RedissonSearchTest extends BaseTest {
 
     @Test
     public void testInfo() {
-        RMap<String, SimpleObject> m = redisson.getMap("doc:1", new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
-        m.put("t1", new SimpleObject("name1"));
-        m.put("t2", new SimpleObject("name2"));
-        RMap<String, SimpleObject> m2 = redisson.getMap("doc:2", new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
-        m2.put("t1", new SimpleObject("name3"));
-        m2.put("t2", new SimpleObject("name4"));
+        for (int i = 0; i < 1000; i++) {
+            RMap<String, SimpleObject> m = redisson.getMap("doc:" +i, new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
+            m.put("t1", new SimpleObject("name1"));
+            m.put("t2", new SimpleObject("name2"));
+        }
 
 
         RSearch s = redisson.getSearch();

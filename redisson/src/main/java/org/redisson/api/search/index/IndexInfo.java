@@ -61,7 +61,7 @@ public class IndexInfo {
 
     private Double keyTableSize;
 
-    private Long recordsPerDocAverage;
+    private Double recordsPerDocAverage;
 
     private Long bytesPerRecordAverage;
 
@@ -74,7 +74,7 @@ public class IndexInfo {
 
     private Long indexing;
 
-    private Long percentIndexed;
+    private Double percentIndexed;
 
     private Long numberOfUses;
 
@@ -240,11 +240,11 @@ public class IndexInfo {
         return this;
     }
 
-    public Long getRecordsPerDocAverage() {
+    public Double getRecordsPerDocAverage() {
         return recordsPerDocAverage;
     }
 
-    public IndexInfo setRecordsPerDocAverage(Long recordsPerDocAverage) {
+    public IndexInfo setRecordsPerDocAverage(Double recordsPerDocAverage) {
         this.recordsPerDocAverage = recordsPerDocAverage;
         return this;
     }
@@ -303,11 +303,11 @@ public class IndexInfo {
         return this;
     }
 
-    public Long getPercentIndexed() {
+    public Double getPercentIndexed() {
         return percentIndexed;
     }
 
-    public IndexInfo setPercentIndexed(Long percentIndexed) {
+    public IndexInfo setPercentIndexed(Double percentIndexed) {
         this.percentIndexed = percentIndexed;
         return this;
     }
