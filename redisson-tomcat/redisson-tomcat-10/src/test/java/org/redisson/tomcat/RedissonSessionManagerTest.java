@@ -84,7 +84,7 @@ public class RedissonSessionManagerTest {
         TomcatServer server3 = new TomcatServer("myapp", 8082, "src/test/");
         server3.start();
 
-        invalidate(executor);
+        invalidate(8080, executor);
 
         Thread.sleep(500);
 
@@ -152,6 +152,34 @@ public class RedissonSessionManagerTest {
         server2.stop();
     }
 
+
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testInvalidateListener(String contextName) throws Exception {
+        prepare(contextName);
+        TomcatServer server1 = new TomcatServer("myapp", 8080, "src/test/");
+        server1.start();
+        TomcatServer server2 = new TomcatServer("myapp", 8081, "src/test/");
+        server2.start();
+
+        server1.getSessionManager().getRedisson().getKeys().flushall();
+
+        Executor executor = Executor.newInstance();
+        BasicCookieStore cookieStore = new BasicCookieStore();
+        executor.use(cookieStore);
+
+        write(8080, executor, "test", "1234");
+        read(8081, executor, "test", "1234");
+
+        TestHttpSessionListener.DESTROYED_INVOCATION_COUNTER = 0;
+        invalidate(8081, executor);
+
+        Executor.closeIdleConnections();
+        server1.stop();
+        server2.stop();
+
+        Assertions.assertEquals(2, TestHttpSessionListener.DESTROYED_INVOCATION_COUNTER);
+    }
 
     @ParameterizedTest
     @MethodSource("data")
@@ -276,14 +304,13 @@ public class RedissonSessionManagerTest {
     @MethodSource("data")
     public void testInvalidate(String contextName) throws Exception {
         prepare(contextName);
-        File f = Paths.get("").toAbsolutePath().resolve("src/test/webapp/WEB-INF/redisson.yaml").toFile();
-        Config config = Config.fromYAML(f);
-        RedissonClient r = Redisson.create(config);
-        r.getKeys().flushall();
 
         // start the server at http://localhost:8080/myapp
         TomcatServer server = new TomcatServer("myapp", 8080, "src/test/");
         server.start();
+
+        RedissonClient r = server.getSessionManager().getRedisson();
+        r.getKeys().flushall();
 
         Executor executor = Executor.newInstance();
         BasicCookieStore cookieStore = new BasicCookieStore();
@@ -291,7 +318,7 @@ public class RedissonSessionManagerTest {
         
         write(8080, executor, "test", "1234");
         Cookie cookie = cookieStore.getCookies().get(0);
-        invalidate(executor);
+        invalidate(8080, executor);
 
         Executor.closeIdleConnections();
         
@@ -300,7 +327,7 @@ public class RedissonSessionManagerTest {
         cookieStore.addCookie(cookie);
         executor.use(cookieStore);
         read(8080, executor, "test", "null");
-        invalidate(executor);
+        invalidate(8080, executor);
         
         Executor.closeIdleConnections();
         server.stop();
@@ -327,8 +354,8 @@ public class RedissonSessionManagerTest {
         Assertions.assertEquals(value, response);
     }
     
-    private void invalidate(Executor executor) throws IOException {
-        String url = "http://localhost:8080/myapp/invalidate";
+    private void invalidate(int port, Executor executor) throws IOException {
+        String url = "http://localhost:" + port + "/myapp/invalidate";
         String response = executor.execute(Request.Get(url)).returnContent().asString();
         Assertions.assertEquals("OK", response);
     }

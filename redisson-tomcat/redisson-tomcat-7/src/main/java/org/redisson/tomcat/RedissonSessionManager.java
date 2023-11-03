@@ -134,14 +134,6 @@ public class RedissonSessionManager extends ManagerBase {
         
         if (broadcastSessionEvents) {
             getTopic().publish(new SessionCreatedMessage(getNodeId(), session.getId()));
-            session.addSessionListener(new SessionListener() {
-                @Override
-                public void sessionEvent(SessionEvent event) {
-                    if (event.getType().equals(Session.SESSION_DESTROYED_EVENT)) {
-                        getTopic().publish(new SessionDestroyedMessage(getNodeId(), session.getId()));
-                    }
-                }
-            });
         }
         return session;
     }
@@ -205,10 +197,19 @@ public class RedissonSessionManager extends ManagerBase {
         
         return result;
     }
-    
+
     @Override
     public Session createEmptySession() {
-        return new RedissonSession(this, readMode, updateMode, broadcastSessionEvents, this.broadcastSessionUpdates);
+        Session session = new RedissonSession(this, readMode, updateMode, broadcastSessionEvents, this.broadcastSessionUpdates);
+
+        if (broadcastSessionEvents) {
+            session.addSessionListener(event -> {
+                if (event.getType().equals(Session.SESSION_DESTROYED_EVENT)) {
+                    getTopic().publish(new SessionDestroyedMessage(getNodeId(), session.getId()));
+                }
+            });
+        }
+        return session;
     }
     
     @Override
