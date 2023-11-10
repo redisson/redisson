@@ -233,13 +233,27 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 return new CompletableFutureWrapper<>(f);
             }
 
-            CompletableFuture<V> promise = new CompletableFuture<>();
-            promise.thenAccept(value -> {
-                if (storeCacheMiss || value != null) {
-                    cachePut(cacheKey, key, value);
+            String name = getRawName(key);
+            RFuture<Boolean> future = containsKeyOperationAsync(name, key);
+            CompletionStage<Boolean> result = future.thenCompose(res -> {
+                if (hasNoLoader()) {
+                    if (!res && storeCacheMiss) {
+                        cachePut(cacheKey, key, null);
+                    }
+                    return CompletableFuture.completedFuture(res);
                 }
+                if (!res) {
+                    CompletableFuture<V> f = loadValue((K) key, false);
+                    return f.thenApply(value -> {
+                        if (storeCacheMiss || value != null) {
+                            cachePut(cacheKey, key, value);
+                        }
+                        return value != null;
+                    });
+                }
+                return CompletableFuture.completedFuture(res);
             });
-            return containsKeyAsync(key, promise);
+            return new CompletableFutureWrapper<>(result);
         }
 
         return new CompletableFutureWrapper<>(cacheValue.getValue() != null);
