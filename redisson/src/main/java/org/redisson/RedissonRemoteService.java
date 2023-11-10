@@ -364,6 +364,13 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                     } else {
                         executeMethod(remoteInterface, requestQueue, executor, request, bean);
                     }
+                })
+                .exceptionally(exc -> {
+                    if (exc instanceof RedissonShutdownException) {
+                        return null;
+                    }
+                    log.error("Can't process the remote service request with id {}", requestId, exc);
+                    return null;
                 });
         });
     }
