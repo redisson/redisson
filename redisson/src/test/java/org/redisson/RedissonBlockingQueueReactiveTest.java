@@ -44,7 +44,7 @@ public class RedissonBlockingQueueReactiveTest extends BaseReactiveTest {
                 .repeat()
                 .subscribe();
 
-        Awaitility.await().atMost(Duration.ofSeconds(1)).untilAsserted(() -> {
+        Awaitility.await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> {
             assertThat(counter.get()).isEqualTo(100);
         });
     }

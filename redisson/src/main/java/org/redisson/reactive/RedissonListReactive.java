@@ -15,17 +15,16 @@
  */
 package org.redisson.reactive;
 
-import java.util.function.Consumer;
-import java.util.function.LongConsumer;
-
 import org.reactivestreams.Publisher;
+import org.redisson.BaseRedissonList;
 import org.redisson.RedissonList;
 import org.redisson.api.RFuture;
-import org.redisson.api.RListAsync;
 import org.redisson.client.codec.Codec;
-
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
+
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.List}
@@ -36,9 +35,9 @@ import reactor.core.publisher.FluxSink;
  */
 public class RedissonListReactive<V> {
 
-    private final RListAsync<V> instance;
+    private final BaseRedissonList<V> instance;
     
-    public RedissonListReactive(RListAsync<V> instance) {
+    public RedissonListReactive(BaseRedissonList<V> instance) {
         this.instance = instance;
     }
 

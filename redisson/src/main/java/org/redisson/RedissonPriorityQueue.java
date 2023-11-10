@@ -38,7 +38,7 @@ import java.util.function.Supplier;
  *
  * @param <V> value type
  */
-public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriorityQueue<V> {
+public class RedissonPriorityQueue<V> extends BaseRedissonList<V> implements RPriorityQueue<V> {
 
     public static class BinarySearchResult<V> {
 
