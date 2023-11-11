@@ -378,7 +378,11 @@ public class RedisExecutor<V, R> {
                     }
                 }
             } else {
-                popTimeout = Long.valueOf(params[params.length - 1].toString()) * 1000;
+                if (RedisCommands.BZMPOP.getName().equals(command.getName())) {
+                    popTimeout = Long.valueOf(params[0].toString()) * 1000;
+                } else {
+                    popTimeout = Long.valueOf(params[params.length - 1].toString()) * 1000;
+                }
             }
 
             handleBlockingOperations(attemptPromise, connection, popTimeout);
