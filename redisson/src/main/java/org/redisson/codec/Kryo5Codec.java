@@ -51,7 +51,7 @@ import static com.esotericsoftware.kryo.util.Util.className;
  */
 public class Kryo5Codec extends BaseCodec {
 
-    private static class SimpleInstantiatorStrategy implements org.objenesis.strategy.InstantiatorStrategy {
+    private static final class SimpleInstantiatorStrategy implements org.objenesis.strategy.InstantiatorStrategy {
 
         private final StdInstantiatorStrategy ss = new StdInstantiatorStrategy();
 

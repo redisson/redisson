@@ -183,7 +183,7 @@ public class ProtobufCodec extends BaseCodec {
         };
     }
 
-    private static class ProtostuffUtils {
+    private static final class ProtostuffUtils {
 
         @SuppressWarnings("unchecked")
         public static <T> byte[] serialize(T obj) {
