@@ -184,7 +184,6 @@ public class RedissonBucketTest extends BaseTest {
     
     @Test
     public void testSizeInMemory() {
-        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("4.0.0") > 0);
         RBucket<Integer> al = redisson.getBucket("test");
         al.set(1234);
         assertThat(al.sizeInMemory()).isEqualTo(51);
