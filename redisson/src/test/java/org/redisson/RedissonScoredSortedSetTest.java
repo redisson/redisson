@@ -34,6 +34,10 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         set.add(1.2, "v2");
         set.add(1.3, "v3");
 
+        RScoredSortedSet<String> set2 = redisson.getScoredSortedSet("test2");
+
+        ScoredEntry<String> s3 = set2.firstEntry();
+        assertThat(s3).isNull();
         ScoredEntry<String> s = set.firstEntry();
         assertThat(s).isEqualTo(new ScoredEntry<>(1.1, "v1"));
         ScoredEntry<String> s2 = set.lastEntry();
