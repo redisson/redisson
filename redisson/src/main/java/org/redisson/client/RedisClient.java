@@ -80,11 +80,6 @@ public final class RedisClient {
     private boolean hasOwnResolver;
     private volatile boolean shutdown;
 
-    private final AtomicLong firstFailTime = new AtomicLong(0);
-
-    private Runnable connectedListener;
-    private Runnable disconnectedListener;
-
     public static RedisClient create(RedisClientConfig config) {
         return new RedisClient(config);
     }
