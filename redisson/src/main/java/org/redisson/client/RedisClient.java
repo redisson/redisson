@@ -51,7 +51,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketOption;
 import java.net.UnknownHostException;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
