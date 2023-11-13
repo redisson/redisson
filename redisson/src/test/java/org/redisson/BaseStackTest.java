@@ -22,10 +22,15 @@ public class BaseStackTest {
 
     @BeforeAll
     public static void beforeAll() {
+        Config config = createConfig();
+        redisson = Redisson.create(config);
+    }
+
+    protected static Config createConfig() {
         Config config = new Config();
         config.useSingleServer()
                 .setAddress("redis://127.0.0.1:" + REDIS.getFirstMappedPort());
-        redisson = Redisson.create(config);
+        return config;
     }
 
     @BeforeEach
