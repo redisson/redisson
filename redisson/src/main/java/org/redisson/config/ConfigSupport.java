@@ -217,11 +217,7 @@ public class ConfigSupport {
             throw new IllegalArgumentException("server(s) address(es) not defined!");
         }
         if (!configCopy.isLazyInitialization()) {
-            try {
-                cm.connect();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+            cm.connect();
         }
         return cm;
     }

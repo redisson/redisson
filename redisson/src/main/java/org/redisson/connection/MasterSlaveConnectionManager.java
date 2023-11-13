@@ -173,8 +173,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         try {
             connect();
             f.complete(null);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
         } catch (Exception e) {
             f.completeExceptionally(e);
             lazyConnectLatch.set(null);
@@ -183,7 +181,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public final void connect() throws InterruptedException {
+    public final void connect() {
         int attempts = config.getRetryAttempts() + 1;
         for (int i = 0; i < attempts; i++) {
             try {

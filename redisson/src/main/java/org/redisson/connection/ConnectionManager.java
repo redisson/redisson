@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
  */
 public interface ConnectionManager {
 
-    void connect() throws InterruptedException;
+    void connect();
 
     PublishSubscribeService getSubscribeService();
     
