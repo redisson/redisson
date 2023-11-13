@@ -359,6 +359,13 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                                         }
                                         
                                         executeMethod(remoteInterface, requestQueue, executor, request, bean);
+                                    })
+                                    .exceptionally(exack -> {
+                                        if (exack instanceof RedissonShutdownException) {
+                                            return null;
+                                        }
+                                        log.error("Can't send ack for request: {}", request, exack);
+                                        return null;
                                     });
                                 });
                     } else {
