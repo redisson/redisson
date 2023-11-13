@@ -204,7 +204,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
                 });
             }
         } else {
-            if (data != null && data.getCommand().getName().equals("PING")) {
+            if (data != null) {
                 super.decodeResult(data, parts, channel, result);
             }
         }

@@ -19,6 +19,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.redisson.client.*;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.config.Protocol;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -79,8 +80,10 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
                 });
         futures.add(f.toCompletableFuture());
 
-//        CompletionStage<Object> f1 = connection.async(RedisCommands.HELLO, "3");
-//        futures.add(f1.toCompletableFuture());
+        if (redisClient.getConfig().getProtocol() == Protocol.RESP3) {
+            CompletionStage<Object> f1 = connection.async(RedisCommands.HELLO, "3");
+            futures.add(f1.toCompletableFuture());
+        }
 
         if (config.getDatabase() != 0) {
             CompletionStage<Object> future = connection.async(RedisCommands.SELECT, config.getDatabase());

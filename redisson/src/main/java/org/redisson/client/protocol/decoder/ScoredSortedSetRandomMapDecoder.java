@@ -20,6 +20,10 @@ import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 /**
  * 
  * @author Nikita Koksharov
@@ -35,4 +39,15 @@ public class ScoredSortedSetRandomMapDecoder extends ObjectMapReplayDecoder<Obje
         return DoubleCodec.INSTANCE.getValueDecoder();
     }
 
+    @Override
+    public Map<Object, Object> decode(List<Object> parts, State state) {
+        if (!parts.isEmpty() && parts.get(0) instanceof Map) {
+            return ((List<Map<Object, Object>>) (Object) parts)
+                    .stream()
+                    .flatMap(v -> v.entrySet().stream())
+                    .collect(Collectors.toMap(v -> v.getKey(), v -> v.getValue()));
+        }
+
+        return super.decode(parts, state);
+    }
 }

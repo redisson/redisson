@@ -20,10 +20,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.resolver.AddressResolverGroup;
 import io.netty.util.Timer;
-import org.redisson.config.CommandMapper;
-import org.redisson.config.CredentialsResolver;
-import org.redisson.config.DefaultCommandMapper;
-import org.redisson.config.SslProvider;
+import org.redisson.config.*;
 import org.redisson.misc.RedisURI;
 
 import javax.net.ssl.KeyManagerFactory;
@@ -85,6 +82,8 @@ public class RedisClientConfig {
 
     private FailedNodeDetector failedNodeDetector = new FailedConnectionDetector();
 
+    private Protocol protocol = Protocol.RESP2;
+
     public RedisClientConfig() {
     }
     
@@ -129,6 +128,7 @@ public class RedisClientConfig {
         this.tcpKeepAliveIdle = config.tcpKeepAliveIdle;
         this.tcpKeepAliveInterval = config.tcpKeepAliveInterval;
         this.tcpUserTimeout = config.tcpUserTimeout;
+        this.protocol = config.protocol;
     }
 
     public NettyHook getNettyHook() {
@@ -455,6 +455,15 @@ public class RedisClientConfig {
 
     public RedisClientConfig setFailedNodeDetector(FailedNodeDetector failedNodeDetector) {
         this.failedNodeDetector = failedNodeDetector;
+        return this;
+    }
+
+    public Protocol getProtocol() {
+        return protocol;
+    }
+
+    public RedisClientConfig setProtocol(Protocol protocol) {
+        this.protocol = protocol;
         return this;
     }
 }

@@ -22,13 +22,17 @@ import org.redisson.api.search.aggregate.*;
 import org.redisson.api.search.index.*;
 import org.redisson.api.search.query.*;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
+import org.redisson.client.protocol.convertor.EmptyMapConvertor;
 import org.redisson.client.protocol.decoder.*;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.config.Protocol;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -151,7 +155,7 @@ public class RedissonSearch implements RSearch {
             }
             args.add("VECTOR");
             args.add("HNSW");
-            args.add(params.getCount());
+            args.add(params.getCount()*2);
             args.add("TYPE");
             args.add(params.getType());
             args.add("DIM");
@@ -473,12 +477,25 @@ public class RedissonSearch implements RSearch {
             args.add(options.getDialect());
         }
 
-        RedisStrictCommand<SearchResult> command = new RedisStrictCommand<>("FT.SEARCH",
-                new ListMultiDecoder2(new SearchResultDecoder(),
-                                        new ObjectMapReplayDecoder(new CompositeCodec(StringCodec.INSTANCE, codec)),
-                                        new ObjectListReplayDecoder()));
+        RedisStrictCommand<SearchResult> command;
+        if (isResp3()) {
+            command = new RedisStrictCommand<>("FT.SEARCH",
+                    new ListMultiDecoder2(new SearchResultDecoderV2(),
+                            new ObjectListReplayDecoder(),
+                            new ObjectMapReplayDecoder(),
+                            new ObjectMapReplayDecoder(new CompositeCodec(StringCodec.INSTANCE, codec))));
+        } else {
+            command = new RedisStrictCommand<>("FT.SEARCH",
+                    new ListMultiDecoder2(new SearchResultDecoder(),
+                                            new ObjectMapReplayDecoder(new CompositeCodec(StringCodec.INSTANCE, codec)),
+                                            new ObjectListReplayDecoder()));
+        }
 
         return commandExecutor.writeAsync(indexName, StringCodec.INSTANCE, command, args.toArray());
+    }
+
+    private boolean isResp3() {
+        return commandExecutor.getServiceManager().getCfg().getProtocol() == Protocol.RESP3;
     }
 
     private String value(double score, boolean exclusive) {
@@ -593,18 +610,34 @@ public class RedissonSearch implements RSearch {
         }
 
         RedisStrictCommand<AggregationResult> command;
-        if (options.isWithCursor()) {
-            command = new RedisStrictCommand<>("FT.AGGREGATE",
-                    new ListMultiDecoder2(new AggregationCursorResultDecoder(),
-                            new ObjectListReplayDecoder(),
-                            new ObjectMapReplayDecoder(new CompositeCodec(StringCodec.INSTANCE, codec))));
+        if (isResp3()) {
+            if (options.isWithCursor()) {
+                command = new RedisStrictCommand<>("FT.AGGREGATE",
+                        new ListMultiDecoder2(new AggregationCursorResultDecoderV2(),
+                                new ObjectListReplayDecoder(),
+                                new ObjectListReplayDecoder(),
+                                new ObjectMapReplayDecoder(),
+                                new ObjectMapReplayDecoder(new CompositeCodec(StringCodec.INSTANCE, codec))));
+            } else {
+                command = new RedisStrictCommand<>("FT.AGGREGATE",
+                        new ListMultiDecoder2(new AggregationResultDecoderV2(),
+                                new ObjectListReplayDecoder(),
+                                new ObjectMapReplayDecoder(),
+                                new ObjectMapReplayDecoder(new CompositeCodec(StringCodec.INSTANCE, codec))));
+            }
         } else {
-            command = new RedisStrictCommand<>("FT.AGGREGATE",
-                    new ListMultiDecoder2(new AggregationResultDecoder(),
-                            new ObjectMapReplayDecoder(new CompositeCodec(StringCodec.INSTANCE, codec)),
-                            new ObjectListReplayDecoder()));
+            if (options.isWithCursor()) {
+                command = new RedisStrictCommand<>("FT.AGGREGATE",
+                        new ListMultiDecoder2(new AggregationCursorResultDecoder(),
+                                new ObjectListReplayDecoder(),
+                                new ObjectMapReplayDecoder(new CompositeCodec(StringCodec.INSTANCE, codec))));
+            } else {
+                command = new RedisStrictCommand<>("FT.AGGREGATE",
+                        new ListMultiDecoder2(new AggregationResultDecoder(),
+                                new ObjectMapReplayDecoder(new CompositeCodec(StringCodec.INSTANCE, codec)),
+                                new ObjectListReplayDecoder()));
+            }
         }
-
 
         return commandExecutor.writeAsync(indexName, StringCodec.INSTANCE, command, args.toArray());
     }
@@ -703,10 +736,20 @@ public class RedissonSearch implements RSearch {
 
     @Override
     public RFuture<AggregationResult> readCursorAsync(String indexName, long cursorId) {
-        RedisStrictCommand command = new RedisStrictCommand<>("FT.CURSOR", "READ",
-                new ListMultiDecoder2(new AggregationCursorResultDecoder(),
-                        new ObjectListReplayDecoder(),
-                        new ObjectMapReplayDecoder(new CompositeCodec(StringCodec.INSTANCE, codec))));
+        RedisStrictCommand command;
+        if (isResp3()) {
+            command = new RedisStrictCommand<>("FT.CURSOR", "READ",
+                    new ListMultiDecoder2(new AggregationCursorResultDecoderV2(),
+                            new ObjectListReplayDecoder(),
+                            new ObjectListReplayDecoder(),
+                            new ObjectMapReplayDecoder(),
+                            new ObjectMapReplayDecoder(new CompositeCodec(StringCodec.INSTANCE, codec))));
+        } else {
+            command = new RedisStrictCommand<>("FT.CURSOR", "READ",
+                    new ListMultiDecoder2(new AggregationCursorResultDecoder(),
+                            new ObjectListReplayDecoder(),
+                            new ObjectMapReplayDecoder(new CompositeCodec(StringCodec.INSTANCE, codec))));
+        }
 
         return commandExecutor.writeAsync(indexName, StringCodec.INSTANCE, command, indexName, cursorId);
     }
@@ -824,7 +867,17 @@ public class RedissonSearch implements RSearch {
             args.add(options.getDialect());
         }
 
-        return commandExecutor.readAsync(indexName, StringCodec.INSTANCE, RedisCommands.FT_SPELLCHECK, args.toArray());
+        RedisCommand<Map<String, Map<String, Object>>> command = RedisCommands.FT_SPELLCHECK;
+        if (isResp3()) {
+            command = new RedisCommand<>("FT.SPELLCHECK",
+                    new ListMultiDecoder2(
+                            new ListObjectDecoder(1),
+                            new ObjectMapReplayDecoder(),
+                            new ListFirstObjectDecoder(new EmptyMapConvertor()),
+                            new ObjectMapReplayDecoder(new CompositeCodec(StringCodec.INSTANCE, DoubleCodec.INSTANCE))));
+        }
+
+        return commandExecutor.readAsync(indexName, StringCodec.INSTANCE, command, args.toArray());
     }
 
     @Override

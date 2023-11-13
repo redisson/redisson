@@ -361,6 +361,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 .setPassword(config.getPassword())
                 .setNettyHook(serviceManager.getCfg().getNettyHook())
                 .setFailedNodeDetector(config.getFailedSlaveNodeDetector())
+                .setProtocol(serviceManager.getCfg().getProtocol())
                 .setCommandMapper(config.getCommandMapper())
                 .setCredentialsResolver(config.getCredentialsResolver())
                 .setConnectedListener(addr -> {
