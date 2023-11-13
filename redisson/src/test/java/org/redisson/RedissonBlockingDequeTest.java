@@ -15,12 +15,10 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedissonBlockingDequeTest extends BaseTest {
+public class RedissonBlockingDequeTest extends RedisDockerTest {
 
     @Test
     public void testMove() {
-        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
-
         RBlockingDeque<Integer> deque1 = redisson.getBlockingDeque("deque1");
         RBlockingDeque<Integer> deque2 = redisson.getBlockingDeque("deque2");
 
