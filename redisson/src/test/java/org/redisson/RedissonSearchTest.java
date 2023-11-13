@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedissonSearchTest extends BaseStackTest {
+public class RedissonSearchTest extends DockerRedisStackTest {
 
     public static class SimpleObject {
 

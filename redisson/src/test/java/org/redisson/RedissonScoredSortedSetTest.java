@@ -1,7 +1,6 @@
 package org.redisson;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
 import org.redisson.api.listener.ScoredSortedSetAddListener;
@@ -25,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class RedissonScoredSortedSetTest extends BaseStackTest {
+public class RedissonScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     public void testEntries() {

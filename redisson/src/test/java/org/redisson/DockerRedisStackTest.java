@@ -10,8 +10,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
-public class BaseStackTest {
-
+public class DockerRedisStackTest {
 
     @Container
     private static final GenericContainer<?> REDIS =

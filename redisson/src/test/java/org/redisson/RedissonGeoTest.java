@@ -1,19 +1,16 @@
 package org.redisson;
 
-import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
 import org.redisson.api.geo.GeoSearchArgs;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedissonGeoTest extends BaseStackTest {
+public class RedissonGeoTest extends RedisDockerTest {
 
     @Test
     public void testAdd() {

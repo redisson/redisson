@@ -1,28 +1,15 @@
 package org.redisson;
 
-import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
-import org.redisson.config.Config;
-import org.redisson.connection.balancer.RandomLoadBalancer;
-import org.redisson.misc.RedisURI;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.startupcheck.MinimumDurationRunningStartupCheckStrategy;
 
-import java.time.Duration;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedissonFunctionTest extends BaseTest {
-
-    @BeforeAll
-    public static void check() {
-        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("7.0.0") > 0);
-    }
+public class RedissonFunctionTest extends RedisDockerTest {
 
     @Test
     public void testEmpty() {
@@ -54,58 +41,41 @@ public class RedissonFunctionTest extends BaseTest {
     }
 
     @Test
-    public void testCluster() throws InterruptedException {
-        GenericContainer<?> redisClusterContainer =
-                new GenericContainer<>("vishnunair/docker-redis-cluster")
-                        .withExposedPorts(6379, 6380, 6381, 6382, 6383, 6384)
-                        .withStartupCheckStrategy(new MinimumDurationRunningStartupCheckStrategy(Duration.ofSeconds(7)));
-        redisClusterContainer.start();
+    public void testCluster() {
+        testInCluster(r -> {
+            Map<String, Object> testMap = new HashMap<>();
+            testMap.put("a", "b");
+            testMap.put("c", "d");
+            testMap.put("e", "f");
+            testMap.put("g", "h");
+            testMap.put("i", "j");
+            testMap.put("k", "l");
 
-        Config config = new Config();
-        config.useClusterServers()
-                .setNatMapper(new NatMapper() {
-                    @Override
-                    public RedisURI map(RedisURI uri) {
-                        if (redisClusterContainer.getMappedPort(uri.getPort()) == null) {
-                            return uri;
-                        }
-                        return new RedisURI(uri.getScheme(), redisClusterContainer.getHost(), redisClusterContainer.getMappedPort(uri.getPort()));
-                    }
-                })
-                .addNodeAddress("redis://127.0.0.1:" + redisClusterContainer.getFirstMappedPort());
-        RedissonClient redisson = Redisson.create(config);
+            RFunction f = redisson.getFunction();
+            f.flush();
+            f.load("lib", "redis.register_function('myfun', function(keys, args) return args[1] end)");
 
-        Map<String, Object> testMap = new HashMap<>();
-        testMap.put("a", "b");
-        testMap.put("c", "d");
-        testMap.put("e", "f");
-        testMap.put("g", "h");
-        testMap.put("i", "j");
-        testMap.put("k", "l");
+            // waiting for the function replication to all nodes
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
 
-        RFunction f = redisson.getFunction();
-        f.flush();
-        f.load("lib", "redis.register_function('myfun', function(keys, args) return args[1] end)");
-
-        // waiting for the function replication to all nodes
-        Thread.sleep(5000);
-
-        RBatch batch = redisson.createBatch();
-        RFunctionAsync function = batch.getFunction();
-        for (Map.Entry<String, Object> property : testMap.entrySet()) {
-            List<Object> key = Collections.singletonList(property.getKey());
-            function.callAsync(
-                    FunctionMode.READ,
-                    "myfun",
-                    FunctionResult.VALUE,
-                    key,
-                    property.getValue());
-        }
-        List<String> results = (List<String>) batch.execute().getResponses();
-        assertThat(results).containsExactly("b", "d", "f", "h", "j", "l");
-
-        redisson.shutdown();
-        redisClusterContainer.stop();
+            RBatch batch = redisson.createBatch();
+            RFunctionAsync function = batch.getFunction();
+            for (Map.Entry<String, Object> property : testMap.entrySet()) {
+                List<Object> key = Collections.singletonList(property.getKey());
+                function.callAsync(
+                        FunctionMode.READ,
+                        "myfun",
+                        FunctionResult.VALUE,
+                        key,
+                        property.getValue());
+            }
+            List<String> results = (List<String>) batch.execute().getResponses();
+            assertThat(results).containsExactly("b", "d", "f", "h", "j", "l");
+        });
     }
 
     @Test
