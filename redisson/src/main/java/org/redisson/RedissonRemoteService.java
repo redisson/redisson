@@ -226,6 +226,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
         return tryExecuteAsync(remoteInterface, object, -1, null);
     }
     
+    @SuppressWarnings("MethodLength")
     private <T> void subscribe(Class<T> remoteInterface, RBlockingQueue<String> requestQueue,
             ExecutorService executor, Object bean) {
         Entry entry = remoteMap.get(remoteInterface);
