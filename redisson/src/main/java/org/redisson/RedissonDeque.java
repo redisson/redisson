@@ -15,8 +15,6 @@
  */
 package org.redisson;
 
-import java.util.*;
-
 import org.redisson.api.RDeque;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
@@ -27,6 +25,8 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.ListFirstObjectDecoder;
 import org.redisson.command.CommandAsyncExecutor;
+
+import java.util.*;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.Queue}
@@ -330,10 +330,6 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
     @Override
     public boolean removeLastOccurrence(Object o) {
         return remove(o, -1);
-    }
-
-    public RedissonDeque<V> reversed() {
-        throw new UnsupportedOperationException();
     }
 
 }

@@ -18,6 +18,7 @@ package org.redisson.client.protocol.decoder;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
+import org.redisson.client.protocol.ScoredEntry;
 import org.redisson.client.protocol.convertor.Convertor;
 
 import java.util.List;
@@ -54,7 +55,7 @@ public class ListFirstObjectDecoder implements MultiDecoder<Object> {
 
     @Override
     public Object decode(List<Object> parts, State state) {
-        if (inner != null) {
+        if (inner != null && !parts.isEmpty() && !(parts.get(0) instanceof ScoredEntry)) {
             parts = (List) inner.decode(parts, state);
         }
         if (!parts.isEmpty()) {

@@ -22,6 +22,7 @@ import org.redisson.client.protocol.Decoder;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * 
@@ -57,6 +58,13 @@ public class ObjectMapReplayDecoder<K, V> implements MultiDecoder<Map<K, V>> {
 
     @Override
     public Map<K, V> decode(List<Object> parts, State state) {
+        if (!parts.isEmpty() && parts.get(0) instanceof Map) {
+            return ((List<Map<K, V>>) (Object) parts)
+                    .stream()
+                    .flatMap(v -> v.entrySet().stream())
+                    .collect(Collectors.toMap(v -> v.getKey(), v -> v.getValue()));
+        }
+
         Map<K, V> result = MultiDecoder.newLinkedHashMap(parts.size()/2);
         for (int i = 0; i < parts.size(); i++) {
             if (i % 2 != 0) {

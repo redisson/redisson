@@ -43,7 +43,7 @@ public class ObjectFirstScoreReplayDecoder implements MultiDecoder<Double> {
         if (parts.isEmpty()) {
             return null;
         }
-        return (Double) parts.get(1);
+        return (Double) parts.get(parts.size()-1);
     }
 
 }

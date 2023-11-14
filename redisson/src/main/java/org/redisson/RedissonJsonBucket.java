@@ -22,11 +22,18 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.RedisStrictCommand;
+import org.redisson.client.protocol.convertor.JsonTypeConvertor;
+import org.redisson.client.protocol.convertor.LongNumberConvertor;
 import org.redisson.client.protocol.convertor.NumberConvertor;
+import org.redisson.client.protocol.decoder.ListFirstObjectDecoder;
+import org.redisson.client.protocol.decoder.ListMultiDecoder2;
 import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
+import org.redisson.client.protocol.decoder.StringListListReplayDecoder;
 import org.redisson.codec.JsonCodec;
 import org.redisson.codec.JsonCodecWrapper;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.config.Protocol;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -87,6 +94,9 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
 
     @Override
     public RFuture<V> getAsync() {
+        if (getServiceManager().getCfg().getProtocol() == Protocol.RESP3) {
+            return commandExecutor.readAsync(getRawName(), codec, RedisCommands.JSON_GET, getRawName(), ".");
+        }
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.JSON_GET, getRawName());
     }
 
@@ -97,6 +107,12 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
 
     @Override
     public <T> RFuture<T> getAsync(JsonCodec<T> codec, String... paths) {
+        if (getServiceManager().getCfg().getProtocol() == Protocol.RESP3) {
+            if (paths.length == 0) {
+                paths = new String[]{"."};
+            }
+        }
+
         List<Object> args = new ArrayList<>();
         args.add(getRawName());
         args.addAll(Arrays.asList(paths));
@@ -761,7 +777,13 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
 
     @Override
     public <T extends Number> RFuture<T> incrementAndGetAsync(String path, T delta) {
-        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, new RedisCommand<>("JSON.NUMINCRBY", new NumberConvertor(delta.getClass())),
+        RedisCommand command;
+        if (getServiceManager().getCfg().getProtocol() == Protocol.RESP3) {
+            command = new RedisCommand<>("JSON.NUMINCRBY", new ListFirstObjectDecoder(), new LongNumberConvertor(delta.getClass()));
+        } else {
+            command = new RedisCommand<>("JSON.NUMINCRBY", new NumberConvertor(delta.getClass()));
+        }
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, command,
                                             getRawName(), path, new BigDecimal(delta.toString()).toPlainString());
     }
 
@@ -784,7 +806,12 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
 
     @Override
     public RFuture<Long> countKeysAsync() {
-        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.JSON_OBJLEN, getRawName());
+        RedisStrictCommand command = RedisCommands.JSON_OBJLEN;
+        if (getServiceManager().getCfg().getProtocol() == Protocol.RESP3) {
+            command = new RedisStrictCommand("JSON.OBJLEN", new ListFirstObjectDecoder());
+        }
+
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, command, getRawName());
     }
 
     @Override
@@ -814,7 +841,12 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
 
     @Override
     public RFuture<List<String>> getKeysAsync() {
-        return commandExecutor.readAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.JSON_OBJKEYS, getRawName());
+        RedisCommand command = RedisCommands.JSON_OBJKEYS;
+        if (getServiceManager().getCfg().getProtocol() == Protocol.RESP3) {
+            command = new RedisCommand("JSON.OBJKEYS",
+                    new ListMultiDecoder2(new ListFirstObjectDecoder(), new StringListListReplayDecoder()));
+        }
+        return commandExecutor.readAsync(getRawName(), LongCodec.INSTANCE, command, getRawName());
     }
 
     @Override
@@ -864,7 +896,12 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
 
     @Override
     public RFuture<JsonType> getTypeAsync() {
-        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.JSON_TYPE, getRawName());
+        RedisCommand command = RedisCommands.JSON_TYPE;
+        if (getServiceManager().getCfg().getProtocol() == Protocol.RESP3) {
+            command = new RedisCommand("JSON.TYPE", new ListFirstObjectDecoder(), new JsonTypeConvertor());
+        }
+
+        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, command, getRawName());
     }
 
     @Override
@@ -874,7 +911,12 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
 
     @Override
     public RFuture<JsonType> getTypeAsync(String path) {
-        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.JSON_TYPE, getRawName(), path);
+        RedisCommand command = RedisCommands.JSON_TYPE;
+        if (getServiceManager().getCfg().getProtocol() == Protocol.RESP3) {
+            command = new RedisCommand("JSON.TYPE", new ListFirstObjectDecoder(), new JsonTypeConvertor());
+        }
+
+        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, command, getRawName(), path);
     }
 
     @Override

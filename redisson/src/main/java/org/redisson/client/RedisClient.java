@@ -51,7 +51,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketOption;
 import java.net.UnknownHostException;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -79,11 +78,6 @@ public final class RedisClient {
     private boolean hasOwnGroup;
     private boolean hasOwnResolver;
     private volatile boolean shutdown;
-
-    private final AtomicLong firstFailTime = new AtomicLong(0);
-
-    private Runnable connectedListener;
-    private Runnable disconnectedListener;
 
     public static RedisClient create(RedisClientConfig config) {
         return new RedisClient(config);

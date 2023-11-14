@@ -164,7 +164,11 @@ public class CommandDecoder extends ReplayingDecoder<State> {
     
     protected void skipDecode(ByteBuf in) throws IOException{
         int code = in.readByte();
-        if (code == '+') {
+        if (code == '_') {
+            in.skipBytes(2);
+        } else if (code == ',') {
+            skipString(in);
+        } else if (code == '+') {
             skipString(in);
         } else if (code == '-') {
             skipString(in);
@@ -172,7 +176,14 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             skipString(in);
         } else if (code == '$') {
             skipBytes(in);
-        } else if (code == '*') {
+        } else if (code == '=') {
+            skipBytes(in);
+        } else if (code == '%') {
+            long size = readLong(in);
+            for (int i = 0; i < size * 2; i++) {
+                skipDecode(in);
+            }
+        } else if (code == '*' || code == '>' || code == '~') {
             long size = readLong(in);
             for (int i = 0; i < size; i++) {
                 skipDecode(in);
@@ -335,8 +346,20 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
     protected void decode(ByteBuf in, CommandData<Object, Object> data, List<Object> parts, Channel channel, boolean skipConvertor, List<CommandData<?, ?>> commandsData) throws IOException {
         int code = in.readByte();
-        if (code == '+') {
+        if (code == '_') {
+            readCRLF(in);
+            Object result = null;
+            handleResult(data, parts, result, false);
+        } else if (code == '+') {
             String result = readString(in);
+
+            handleResult(data, parts, result, skipConvertor);
+        } else if (code == ',') {
+            String str = readString(in);
+            Double result = Double.NaN;
+            if (!"nan".equals(str)) {
+                result = Double.valueOf(str);
+            }
 
             handleResult(data, parts, result, skipConvertor);
         } else if (code == '-') {
@@ -386,6 +409,15 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         } else if (code == ':') {
             Long result = readLong(in);
             handleResult(data, parts, result, false);
+        } else if (code == '=') {
+            ByteBuf buf = readBytes(in);
+            Object result = null;
+            if (buf != null) {
+                buf.skipBytes(3);
+                Decoder<Object> decoder = selectDecoder(data, parts);
+                result = decoder.decode(buf, state());
+            }
+            handleResult(data, parts, result, false);
         } else if (code == '$') {
             ByteBuf buf = readBytes(in);
             Object result = null;
@@ -394,7 +426,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 result = decoder.decode(buf, state());
             }
             handleResult(data, parts, result, false);
-        } else if (code == '*') {
+        } else if (code == '*' || code == '>' || code == '~') {
             long size = readLong(in);
             List<Object> respParts = new ArrayList<Object>(Math.max((int) size, 0));
             
@@ -403,7 +435,16 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             decodeList(in, data, parts, channel, size, respParts, skipConvertor, commandsData);
             
             state().decLevel();
-            
+
+        } else if (code == '%') {
+            long size = readLong(in) * 2;
+            List<Object> respParts = new ArrayList<Object>(Math.max((int) size, 0));
+
+            state().incLevel();
+
+            decodeList(in, data, parts, channel, size, respParts, skipConvertor, commandsData);
+
+            state().decLevel();
         } else {
             String dataStr = in.toString(0, in.writerIndex(), CharsetUtil.UTF_8);
             throw new IllegalStateException("Can't decode replay: " + dataStr);
@@ -420,7 +461,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         in.skipBytes(len + 2);
         return result;
     }
-    
+
     @SuppressWarnings("unchecked")
     private void decodeList(ByteBuf in, CommandData<Object, Object> data, List<Object> parts,
             Channel channel, long size, List<Object> respParts, boolean skipConvertor, List<CommandData<?, ?>> commandsData)
@@ -512,6 +553,10 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             throw new IOException("Improper line ending: " + cr + ", " + lf);
         }
         return buffer;
+    }
+
+    private void readCRLF(ByteBuf is) {
+        is.skipBytes(2);
     }
 
     private long readLong(ByteBuf is) throws IOException {

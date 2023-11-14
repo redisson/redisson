@@ -96,6 +96,8 @@ public class Config {
 
     private boolean lazyInitialization;
 
+    private Protocol protocol = Protocol.RESP2;
+
     public Config() {
     }
 
@@ -127,6 +129,7 @@ public class Config {
         setAddressResolverGroupFactory(oldConf.getAddressResolverGroupFactory());
         setReliableTopicWatchdogTimeout(oldConf.getReliableTopicWatchdogTimeout());
         setLazyInitialization(oldConf.isLazyInitialization());
+        setProtocol(oldConf.getProtocol());
 
         if (oldConf.getSingleServerConfig() != null) {
             setSingleServerConfig(new SingleServerConfig(oldConf.getSingleServerConfig()));
@@ -879,10 +882,27 @@ public class Config {
      *
      * @param lazyInitialization <code>true</code> connects to Redis only when first Redis call is made,
      *                           <code>false</code> connects to Redis during Redisson instance creation.
-     * @return
+     * @return config
      */
     public Config setLazyInitialization(boolean lazyInitialization) {
         this.lazyInitialization = lazyInitialization;
+        return this;
+    }
+
+    public Protocol getProtocol() {
+        return protocol;
+    }
+
+    /**
+     * Defines Redis protocol version.
+     * <p>
+     * Default value is <code>RESP2</code>
+     *
+     * @param protocol Redis protocol version
+     * @return config
+     */
+    public Config setProtocol(Protocol protocol) {
+        this.protocol = protocol;
         return this;
     }
 }

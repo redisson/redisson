@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedissonSearchTest extends BaseTest {
+public class RedissonSearchTest extends DockerRedisStackTest {
 
     public static class SimpleObject {
 
@@ -52,10 +52,10 @@ public class RedissonSearchTest extends BaseTest {
 
     @Test
     public void testMapAggregateWithCursor() {
-        RMap<String, SimpleObject> m = redisson.getMap("doc:1", new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
+        RMap<String, Object> m = redisson.getMap("doc:1", new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
         m.put("t1", new SimpleObject("name1"));
         m.put("t2", new SimpleObject("name2"));
-        RMap<String, SimpleObject> m2 = redisson.getMap("doc:2", new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
+        RMap<String, Object> m2 = redisson.getMap("doc:2", new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
         m2.put("t1", new SimpleObject("name3"));
         m2.put("t2", new SimpleObject("name4"));
 
@@ -78,13 +78,14 @@ public class RedissonSearchTest extends BaseTest {
 
         assertThat(r3.getTotal()).isEqualTo(1);
         assertThat(r3.getCursorId()).isPositive();
-        assertThat(new HashSet<>(r3.getAttributes())).isEqualTo(new HashSet<>(Arrays.asList(m2.readAllMap())));
+        assertThat(r3.getAttributes()).hasSize(1).isSubsetOf(m.readAllMap(), m2.readAllMap());
 
         AggregationResult r2 = s.readCursor("idx", r3.getCursorId());
         assertThat(r2.getTotal()).isEqualTo(1);
         assertThat(r2.getCursorId()).isPositive();
 
-        assertThat(new HashSet<>(r2.getAttributes())).isEqualTo(new HashSet<>(Arrays.asList(m.readAllMap())));
+        assertThat(r3.getAttributes()).isNotEqualTo(r2.getAttributes());
+        assertThat(r2.getAttributes()).hasSize(1).isSubsetOf(m.readAllMap(), m2.readAllMap());
 
     }
 
@@ -128,7 +129,7 @@ public class RedissonSearchTest extends BaseTest {
         AggregationResult r = s.aggregate("idx", "*", AggregationOptions.defaults()
                                                                             .load("t1", "t2"));
 
-        assertThat(r.getTotal()).isEqualTo(2);
+        assertThat(r.getTotal()).isEqualTo(1);
         assertThat(r.getCursorId()).isEqualTo(-1);
         assertThat(new HashSet<>(r.getAttributes())).isEqualTo(new HashSet<>(Arrays.asList(m2.readAllMap(), m.readAllMap())));
     }

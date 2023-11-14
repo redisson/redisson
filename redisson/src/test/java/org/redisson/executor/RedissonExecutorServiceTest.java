@@ -1,7 +1,20 @@
 package org.redisson.executor;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
+import mockit.Invocation;
+import mockit.Mock;
+import mockit.MockUp;
+import org.junit.jupiter.api.*;
+import org.redisson.BaseTest;
+import org.redisson.RedisRunner;
+import org.redisson.Redisson;
+import org.redisson.RedissonNode;
+import org.redisson.api.*;
+import org.redisson.api.annotation.RInject;
+import org.redisson.api.executor.TaskFinishedListener;
+import org.redisson.api.executor.TaskStartedListener;
+import org.redisson.config.Config;
+import org.redisson.config.RedissonNodeConfig;
+import org.redisson.connection.balancer.RandomLoadBalancer;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -12,22 +25,8 @@ import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.redisson.*;
-import org.redisson.api.*;
-import org.redisson.api.annotation.RInject;
-import org.redisson.api.executor.TaskFinishedListener;
-import org.redisson.api.executor.TaskStartedListener;
-import org.redisson.config.Config;
-import org.redisson.config.RedissonNodeConfig;
-import org.redisson.connection.balancer.RandomLoadBalancer;
-
-import mockit.Invocation;
-import mockit.Mock;
-import mockit.MockUp;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 public class RedissonExecutorServiceTest extends BaseTest {
 
@@ -455,6 +454,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
     }
     
     @Test
+    @Timeout(1)
     public void testRejectExecute() {
         Assertions.assertThrows(RejectedExecutionException.class, () -> {
             RExecutorService e = redisson.getExecutorService("test");

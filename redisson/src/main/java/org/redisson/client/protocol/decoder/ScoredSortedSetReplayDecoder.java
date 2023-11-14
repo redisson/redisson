@@ -17,6 +17,7 @@ package org.redisson.client.protocol.decoder;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.DoubleCodec;
@@ -42,6 +43,9 @@ public class ScoredSortedSetReplayDecoder<T> implements MultiDecoder<List<Scored
     
     @Override
     public List<ScoredEntry<T>> decode(List<Object> parts, State state) {
+        if (!parts.isEmpty() && parts.get(0) instanceof List) {
+            return ((List<List<ScoredEntry<T>>>) (Object) parts).stream().flatMap(v -> v.stream()).collect(Collectors.toList());
+        }
         List<ScoredEntry<T>> result = new ArrayList<>();
         for (int i = 0; i < parts.size(); i += 2) {
             result.add(new ScoredEntry<T>(((Number) parts.get(i+1)).doubleValue(), (T) parts.get(i)));

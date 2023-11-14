@@ -79,6 +79,10 @@ public class IndexInfoDecoder implements MultiDecoder<Object> {
         if (result.get(prop).toString().contains("nan")) {
             return 0L;
         }
+        if (result.get(prop) instanceof Double) {
+            Double d = (Double) result.get(prop);
+            return d.longValue();
+        }
         return Long.valueOf(result.get(prop).toString());
     }
 }

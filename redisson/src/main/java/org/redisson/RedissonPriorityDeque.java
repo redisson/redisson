@@ -329,7 +329,4 @@ public class RedissonPriorityDeque<V> extends RedissonPriorityQueue<V> implement
         throw new UnsupportedOperationException();
     }
 
-    public RedissonPriorityDeque<V> reversed() {
-        throw new UnsupportedOperationException();
-    }
 }

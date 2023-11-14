@@ -85,7 +85,7 @@
         <dependency>
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-core</artifactId>
-            <version>3.5.3</version>
+            <version>3.5.11</version>
         </dependency>
         <dependency>
             <groupId>org.reactivestreams</groupId>
@@ -489,7 +489,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>3.2.1</version>
+                <version>3.3.1</version>
                 <executions>
                     <execution>
                         <phase>verify</phase>
@@ -500,7 +500,6 @@
                 </executions>
                 <configuration>
                     <consoleOutput>true</consoleOutput>
-                    <enableRSS>false</enableRSS>
                     <configLocation>/checkstyle.xml</configLocation>
                     <propertyExpansion>checkstyle.config.path=${basedir}</propertyExpansion>
                 </configuration>
@@ -508,7 +507,7 @@
                     <dependency>
                        <groupId>com.puppycrawl.tools</groupId>
                        <artifactId>checkstyle</artifactId>
-                       <version>10.8.0</version>
+                       <version>10.12.4</version>
                   </dependency>
                 </dependencies>
             </plugin>
@@ -599,7 +598,7 @@
             <plugin>
                 <groupId>com.mycila</groupId>
                 <artifactId>license-maven-plugin</artifactId>
-                <version>2.11</version>
+                <version>4.3</version>
                 <configuration>
                     <basedir>${basedir}</basedir>
                     <header>${basedir}/../header.txt</header>

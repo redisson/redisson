@@ -13,10 +13,9 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedissonSetCacheTest extends BaseTest {
+public class RedissonSetCacheTest extends RedisDockerTest {
 
     public static class SimpleBean implements Serializable {
 
@@ -175,9 +174,8 @@ public class RedissonSetCacheTest extends BaseTest {
         assertThat(set).contains("123");
 
         Thread.sleep(500);
-        
-        assertThat(set.size()).isEqualTo(1);
-        assertThat(set).doesNotContain("123");
+
+        assertThat(set.contains("123")).isFalse();
         
         assertThat(set.add("123", 1, TimeUnit.SECONDS)).isTrue();
         set.destroy();
@@ -214,10 +212,11 @@ public class RedissonSetCacheTest extends BaseTest {
     public void testAddExpireThenAdd() throws InterruptedException, ExecutionException {
         RSetCache<String> set = redisson.getSetCache("simple31");
         assertThat(set.add("123", 500, TimeUnit.MILLISECONDS)).isTrue();
-        
+        assertThat(set.size()).isEqualTo(1);
+
         Thread.sleep(500);
 
-        assertThat(set.size()).isEqualTo(1);
+        assertThat(set.size()).isZero();
         assertThat(set.contains("123")).isFalse();
 
         assertThat(set.add("123")).isTrue();

@@ -583,10 +583,15 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     @Override
     public <T, R> RFuture<R> evalWriteBatchedAsync(Codec codec, RedisCommand<T> command, String script, List<Object> keys, SlotCallback<T, R> callback) {
-        return evalWriteBatchedAsync(false, codec, command, script, keys, callback);
+        return evalBatchedAsync(false, codec, command, script, keys, callback);
     }
 
-    private <T, R> RFuture<R> evalWriteBatchedAsync(boolean readOnly, Codec codec, RedisCommand<T> command, String script, List<Object> keys, SlotCallback<T, R> callback) {
+    @Override
+    public <T, R> RFuture<R> evalReadBatchedAsync(Codec codec, RedisCommand<T> command, String script, List<Object> keys, SlotCallback<T, R> callback) {
+        return evalBatchedAsync(true, codec, command, script, keys, callback);
+    }
+
+    private <T, R> RFuture<R> evalBatchedAsync(boolean readOnly, Codec codec, RedisCommand<T> command, String script, List<Object> keys, SlotCallback<T, R> callback) {
         if (!connectionManager.isClusterMode()) {
             Object[] keysArray = callback.createKeys(keys);
             Object[] paramsArray = callback.createParams(Collections.emptyList());

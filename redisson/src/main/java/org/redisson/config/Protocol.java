@@ -13,29 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.rx;
-
-import io.reactivex.rxjava3.core.Flowable;
-import org.redisson.BaseRedissonList;
-import org.redisson.api.RBlockingQueueAsync;
+package org.redisson.config;
 
 /**
- * 
+ * Redis protocol version
+ *
  * @author Nikita Koksharov
  *
- * @param <V> - value type
  */
-public class RedissonBlockingQueueRx<V> extends RedissonListRx<V> {
+public enum Protocol {
 
-    private final RBlockingQueueAsync<V> queue;
-    
-    public RedissonBlockingQueueRx(RBlockingQueueAsync<V> queue) {
-        super((BaseRedissonList<V>) queue);
-        this.queue = queue;
-    }
+    RESP2,
 
-    public Flowable<V> takeElements() {
-        return ElementsStream.takeElements(queue::takeAsync);
-    }
-    
+    RESP3
+
 }
