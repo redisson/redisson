@@ -25,7 +25,7 @@
     </appender>
 
     <logger name="org.redisson" additivity="true">
-        <level value="trace"/>
+        <level value="info"/>
     </logger>
 
     <root>

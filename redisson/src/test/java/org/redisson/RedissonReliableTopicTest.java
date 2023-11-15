@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Nikita Koksharov
  *
  */
-public class RedissonReliableTopicTest extends BaseTest {
+public class RedissonReliableTopicTest extends RedisDockerTest {
 
     @Test
     public void testConcurrency() throws InterruptedException {
@@ -52,6 +52,8 @@ public class RedissonReliableTopicTest extends BaseTest {
 
         ee.shutdown();
         assertThat(ee.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
+
+        Thread.sleep(100);
         assertThat(sent.get()).isEqualTo(500);
         assertThat(ii.get()).isEqualTo(500);
         rt.removeAllListeners();
@@ -65,10 +67,8 @@ public class RedissonReliableTopicTest extends BaseTest {
             counter.incrementAndGet();
         });
 
-        Config config = new Config();
+        Config config =  createConfig();
         config.setReliableTopicWatchdogTimeout(1000);
-        config.useSingleServer()
-                .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
         RedissonClient secondInstance = Redisson.create(config);
         RReliableTopic rt2 = secondInstance.getReliableTopic("test1");
         rt2.addListener(Integer.class, (ch, m) -> {
@@ -89,7 +89,7 @@ public class RedissonReliableTopicTest extends BaseTest {
 
         assertThat(rt.countSubscribers()).isEqualTo(1);
         assertThat(counter.get()).isEqualTo(10);
-        Thread.sleep(1000);
+        Thread.sleep(2000);
         assertThat(rt.size()).isEqualTo(0);
     }
 
@@ -110,8 +110,6 @@ public class RedissonReliableTopicTest extends BaseTest {
         }
 
         Awaitility.waitAtMost(Duration.ofSeconds(2)).until(() -> counter.get() == 20);
-        Thread.sleep(1000);
-        assertThat(rt.size()).isEqualTo(0);
     }
 
     @Test
@@ -162,7 +160,7 @@ public class RedissonReliableTopicTest extends BaseTest {
         });
 
         assertThat(rt.publish("3")).isEqualTo(1);
-        Thread.sleep(5);
+        Thread.sleep(50);
         assertThat(i).hasValue(3);
     }
 

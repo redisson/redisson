@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedissonStreamTest extends BaseTest {
+public class RedissonStreamTest extends RedisDockerTest {
 
     @Test
     public void testEmptyMap() {
@@ -61,7 +61,7 @@ public class RedissonStreamTest extends BaseTest {
     }
 
     @Test
-    public void testPendingIdle() {
+    public void testPendingIdle() throws InterruptedException {
         RStream<String, String> stream = redisson.getStream("test");
 
         stream.add(StreamAddArgs.entry("0", "0"));
@@ -79,6 +79,8 @@ public class RedissonStreamTest extends BaseTest {
 
         Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup", "consumer2", StreamReadGroupArgs.neverDelivered());
         assertThat(s2.size()).isEqualTo(2);
+
+        Thread.sleep(5);
 
         List<PendingEntry> list = stream.listPending("testGroup", StreamMessageId.MIN, StreamMessageId.MAX, 1, TimeUnit.MILLISECONDS, 10);
         assertThat(list.size()).isEqualTo(4);
@@ -299,7 +301,9 @@ public class RedissonStreamTest extends BaseTest {
         
         Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup3", "consumer2", StreamReadGroupArgs.neverDelivered());
         assertThat(s2.size()).isEqualTo(2);
-        
+
+        Thread.sleep(5);
+
         List<StreamMessageId> res = stream.fastClaim("testGroup3", "consumer1", 1, TimeUnit.MILLISECONDS, id3, id4);
         assertThat(res.size()).isEqualTo(2);
         assertThat(res).containsExactly(id3, id4);

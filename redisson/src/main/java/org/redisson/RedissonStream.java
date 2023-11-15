@@ -260,9 +260,9 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         }
 
         if (rp.getTimeout() != null) {
-            return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.XREADGROUP_BLOCKING, params.toArray());
+            return commandExecutor.writeAsync(getRawName(), codec, getServiceManager().getXReadGroupBlockingCommand(), params.toArray());
         }
-        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.XREADGROUP, params.toArray());
+        return commandExecutor.writeAsync(getRawName(), codec, getServiceManager().getXReadGroupCommand(), params.toArray());
     }
 
     @Override
@@ -298,9 +298,9 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         }
 
         if (rp.getTimeout() != null) {
-            return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.XREADGROUP_BLOCKING_SINGLE, params.toArray());
+            return commandExecutor.writeAsync(getRawName(), codec, getServiceManager().getXReadGroupBlockingSingleCommand(), params.toArray());
         }
-        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.XREADGROUP_SINGLE, params.toArray());
+        return commandExecutor.writeAsync(getRawName(), codec, getServiceManager().getXReadGroupSingleCommand(), params.toArray());
     }
 
     @Override
@@ -386,9 +386,9 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         }
 
         if (timeout > 0) {
-            return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.XREADGROUP_BLOCKING_SINGLE, params.toArray());
+            return commandExecutor.writeAsync(getRawName(), codec, getServiceManager().getXReadGroupBlockingSingleCommand(), params.toArray());
         }
-        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.XREADGROUP_SINGLE, params.toArray());
+        return commandExecutor.writeAsync(getRawName(), codec, getServiceManager().getXReadGroupSingleCommand(), params.toArray());
     }
     
     @Override
@@ -562,9 +562,9 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         }
 
         if (timeout > 0) {
-            return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.XREADGROUP_BLOCKING, params.toArray());
+            return commandExecutor.writeAsync(getRawName(), codec, getServiceManager().getXReadGroupBlockingCommand(), params.toArray());
         }
-        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.XREADGROUP, params.toArray());
+        return commandExecutor.writeAsync(getRawName(), codec, getServiceManager().getXReadGroupCommand(), params.toArray());
     }
 
 
@@ -701,9 +701,9 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         }
 
         if (rp.getTimeout() != null) {
-            return commandExecutor.readAsync(getRawName(), codec, RedisCommands.XREAD_BLOCKING, params.toArray());
+            return commandExecutor.readAsync(getRawName(), codec, getServiceManager().getXReadBlockingCommand(), params.toArray());
         }
-        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.XREAD, params.toArray());
+        return commandExecutor.readAsync(getRawName(), codec, getServiceManager().getXReadCommand(), params.toArray());
     }
 
     @Override
@@ -731,9 +731,9 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         params.add(rp.getId1());
 
         if (rp.getTimeout() != null) {
-            return commandExecutor.readAsync(getRawName(), codec, RedisCommands.XREAD_BLOCKING_SINGLE, params.toArray());
+            return commandExecutor.readAsync(getRawName(), codec, getServiceManager().getXReadBlockingSingleCommand(), params.toArray());
         }
-        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.XREAD_SINGLE, params.toArray());
+        return commandExecutor.readAsync(getRawName(), codec, getServiceManager().getXReadSingleCommand(), params.toArray());
     }
 
     @Override
@@ -898,9 +898,9 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         }
 
         if (timeout > 0) {
-            return commandExecutor.readAsync(getRawName(), codec, RedisCommands.XREAD_BLOCKING, params.toArray());
+            return commandExecutor.readAsync(getRawName(), codec, getServiceManager().getXReadBlockingCommand(), params.toArray());
         }
-        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.XREAD, params.toArray());
+        return commandExecutor.readAsync(getRawName(), codec, getServiceManager().getXReadCommand(), params.toArray());
     }
 
     @Override
@@ -1080,9 +1080,9 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         }
 
         if (timeout > 0) {
-            return commandExecutor.readAsync(getRawName(), codec, RedisCommands.XREAD_BLOCKING_SINGLE, params.toArray());
+            return commandExecutor.readAsync(getRawName(), codec, getServiceManager().getXReadBlockingSingleCommand(), params.toArray());
         }
-        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.XREAD_SINGLE, params.toArray());
+        return commandExecutor.readAsync(getRawName(), codec, getServiceManager().getXReadSingleCommand(), params.toArray());
     }
 
     @Override

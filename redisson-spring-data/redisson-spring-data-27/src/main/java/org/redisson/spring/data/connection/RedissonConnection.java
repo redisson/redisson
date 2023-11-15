@@ -2285,7 +2285,7 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     @Override
     public RedisStreamCommands streamCommands() {
-        return new RedissonStreamCommands(this);
+        return new RedissonStreamCommands(this, executorService);
     }
 
     private static final RedisStrictCommand<List<Object>> BITFIELD = new RedisStrictCommand<>("BITFIELD", new ObjectListReplayDecoder<>());
@@ -2629,20 +2629,18 @@ public class RedissonConnection extends AbstractRedisConnection {
         return zUnionWithScores(null, (Weights) null, sets);
     }
 
-    private static final RedisCommand<Object> HRANDFIELD = new RedisCommand<>("HRANDFIELD");
-
-    @Override
-    public byte[] hRandField(byte[] key) {
-        Assert.notNull(key, "Key must not be null!");
-
-        return read(key, ByteArrayCodec.INSTANCE, HRANDFIELD, key);
-    }
+    private static final RedisCommand<Entry<Object, Object>> HRANDFIELD_SINGLE_V2 = new RedisCommand("HRANDFIELD",
+            new ListMultiDecoder2(new ListFirstObjectDecoder(), new SingleMapEntryDecoder()));
 
     private static final RedisCommand<Entry<Object, Object>> HRANDFIELD_SINGLE = new RedisCommand("HRANDFIELD", new SingleMapEntryDecoder());
 
     @Override
     public Entry<byte[], byte[]> hRandFieldWithValues(byte[] key) {
         Assert.notNull(key, "Key must not be null!");
+
+        if (executorService.getServiceManager().isResp3()) {
+            return read(key, ByteArrayCodec.INSTANCE, HRANDFIELD_SINGLE_V2, key, 1, "WITHVALUES");
+        }
 
         return read(key, ByteArrayCodec.INSTANCE, HRANDFIELD_SINGLE, key, 1, "WITHVALUES");
     }
@@ -2656,11 +2654,20 @@ public class RedissonConnection extends AbstractRedisConnection {
         return read(key, ByteArrayCodec.INSTANCE, HRANDFIELD_LIST, key, count);
     }
 
+    private static final RedisCommand<List<Entry<Object, Object>>> HRANDFIELD_VALUES_V2 = new RedisCommand("HRANDFIELD",
+            new ListMultiDecoder2(new ListMergeDecoder(), new ObjectMapEntryReplayDecoder()),
+            new EmptyListConvertor());
+
     private static final RedisCommand<List<Entry<Object, Object>>> HRANDFIELD_VALUES = new RedisCommand("HRANDFIELD",
             new ObjectMapEntryReplayDecoder(), new EmptyListConvertor());
+
     @Override
     public List<Entry<byte[], byte[]>> hRandFieldWithValues(byte[] key, long count) {
         Assert.notNull(key, "Key must not be null!");
+
+        if (executorService.getServiceManager().isResp3()) {
+            return read(key, ByteArrayCodec.INSTANCE, HRANDFIELD_VALUES_V2, key, count, "WITHVALUES");
+        }
 
         return read(key, ByteArrayCodec.INSTANCE, HRANDFIELD_VALUES, key, count, "WITHVALUES");
     }

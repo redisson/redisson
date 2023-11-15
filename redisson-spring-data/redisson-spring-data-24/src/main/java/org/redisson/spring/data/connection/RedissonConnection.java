@@ -2121,7 +2121,7 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     @Override
     public RedisStreamCommands streamCommands() {
-        return new RedissonStreamCommands(this);
+        return new RedissonStreamCommands(this, executorService);
     }
 
     private static final RedisStrictCommand<List<Object>> BITFIELD = new RedisStrictCommand<>("BITFIELD", new ObjectListReplayDecoder<>());
