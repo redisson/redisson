@@ -89,9 +89,11 @@ public class RedisDockerTest {
         redisson.shutdown();
         if (redissonCluster != null) {
             redissonCluster.shutdown();
+            redissonCluster = null;
         }
         if (REDIS_CLUSTER != null) {
             REDIS_CLUSTER.stop();
+            REDIS_CLUSTER = null;
         }
     }
 
