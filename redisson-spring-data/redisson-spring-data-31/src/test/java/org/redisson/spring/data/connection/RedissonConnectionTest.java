@@ -1,13 +1,12 @@
 package org.redisson.spring.data.connection;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import org.junit.Test;
 import org.springframework.data.domain.Range;
 import org.springframework.data.geo.Circle;
 import org.springframework.data.geo.GeoResults;
 import org.springframework.data.geo.Point;
 import org.springframework.data.redis.connection.Limit;
+import org.springframework.data.redis.connection.ReactiveRedisConnection;
 import org.springframework.data.redis.connection.RedisGeoCommands;
 import org.springframework.data.redis.connection.RedisStringCommands.SetOption;
 import org.springframework.data.redis.connection.RedisZSetCommands;
@@ -15,11 +14,77 @@ import org.springframework.data.redis.connection.zset.Tuple;
 import org.springframework.data.redis.core.*;
 import org.springframework.data.redis.core.types.Expiration;
 
+import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class RedissonConnectionTest extends BaseConnectionTest {
+
+    @Test
+    public void testZRandMemberScore() {
+        StringRedisTemplate redisTemplate = new StringRedisTemplate();
+        redisTemplate.setConnectionFactory(new RedissonConnectionFactory(redisson));
+        redisTemplate.afterPropertiesSet();
+
+        redisTemplate.boundZSetOps("test").add("1", 10);
+        redisTemplate.boundZSetOps("test").add("2", 20);
+        redisTemplate.boundZSetOps("test").add("3", 30);
+
+        RedissonConnectionFactory factory = new RedissonConnectionFactory(redisson);
+        ReactiveRedisConnection cc = factory.getReactiveConnection();
+
+        Tuple b = cc.zSetCommands().zRandMemberWithScore(ByteBuffer.wrap("test".getBytes())).block();
+        assertThat(b.getScore()).isNotNaN();
+        assertThat(new String(b.getValue())).isIn("1", "2", "3");
+    }
+
+    @Test
+    public void testBZPop() {
+        StringRedisTemplate redisTemplate = new StringRedisTemplate();
+        redisTemplate.setConnectionFactory(new RedissonConnectionFactory(redisson));
+        redisTemplate.afterPropertiesSet();
+
+        redisTemplate.boundZSetOps("test").add("1", 10);
+        redisTemplate.boundZSetOps("test").add("2", 20);
+        redisTemplate.boundZSetOps("test").add("3", 30);
+
+        ZSetOperations.TypedTuple<String> r = redisTemplate.boundZSetOps("test").popMin(Duration.ofSeconds(1));
+        assertThat(r.getValue()).isEqualTo("1");
+        assertThat(r.getScore()).isEqualTo(10);
+
+        RedissonConnectionFactory factory = new RedissonConnectionFactory(redisson);
+        ReactiveRedisConnection cc = factory.getReactiveConnection();
+
+        Tuple r2 = cc.zSetCommands().bZPopMin(ByteBuffer.wrap("test".getBytes()), Duration.ofSeconds(1)).block();
+        assertThat(r2.getValue()).isEqualTo("2".getBytes());
+        assertThat(r2.getScore()).isEqualTo(20);
+    }
+
+    @Test
+    public void testZPop() {
+        StringRedisTemplate redisTemplate = new StringRedisTemplate();
+        redisTemplate.setConnectionFactory(new RedissonConnectionFactory(redisson));
+        redisTemplate.afterPropertiesSet();
+
+        redisTemplate.boundZSetOps("test").add("1", 10);
+        redisTemplate.boundZSetOps("test").add("2", 20);
+        redisTemplate.boundZSetOps("test").add("3", 30);
+
+        ZSetOperations.TypedTuple<String> r = redisTemplate.boundZSetOps("test").popMin();
+        assertThat(r.getValue()).isEqualTo("1");
+        assertThat(r.getScore()).isEqualTo(10);
+
+        RedissonConnectionFactory factory = new RedissonConnectionFactory(redisson);
+        ReactiveRedisConnection cc = factory.getReactiveConnection();
+
+        Tuple r2 = cc.zSetCommands().zPopMin(ByteBuffer.wrap("test".getBytes())).block();
+        assertThat(r2.getValue()).isEqualTo("2".getBytes());
+        assertThat(r2.getScore()).isEqualTo(20);
+    }
 
     @Test
     public void testZRangeWithScores() {

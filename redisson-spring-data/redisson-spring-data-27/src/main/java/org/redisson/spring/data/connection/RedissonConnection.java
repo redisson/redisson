@@ -2490,7 +2490,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return write(key, ByteArrayCodec.INSTANCE, ZPOPMIN, key, count);
     }
 
-    private static final RedisCommand<Tuple> BZPOPMIN = new RedisCommand<>("BZPOPMIN", new ScoredSortedSingleReplayDecoder());
+    private static final RedisCommand<Tuple> BZPOPMIN = new RedisCommand<>("BZPOPMIN", new ScoredSortedSingleBlockingReplayDecoder());
 
     @Override
     public Tuple bZPopMin(byte[] key, long timeout, TimeUnit unit) {
@@ -2516,7 +2516,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return write(key, ByteArrayCodec.INSTANCE, ZPOPMAX, key, count);
     }
 
-    private static final RedisCommand<Tuple> BZPOPMAX = new RedisCommand<>("BZPOPMAX", new ScoredSortedSingleReplayDecoder());
+    private static final RedisCommand<Tuple> BZPOPMAX = new RedisCommand<>("BZPOPMAX", new ScoredSortedSingleBlockingReplayDecoder());
 
     @Override
     public Tuple bZPopMax(byte[] key, long timeout, TimeUnit unit) {
