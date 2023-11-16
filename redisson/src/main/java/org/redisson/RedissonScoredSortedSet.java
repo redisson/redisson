@@ -132,6 +132,18 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
                 Collections.<Object>singletonList(name), from, to);
     }
 
+    private <T> RFuture<T> pollEntries(int from, int to, RedisCommand<?> command) {
+        return commandExecutor.evalWriteAsync(getRawName(), codec, command,
+                "local v = redis.call('zrange', KEYS[1], ARGV[1], ARGV[2], 'WITHSCORES'); "
+                + "if #v > 0 then "
+                    + "redis.call('zremrangebyrank', KEYS[1], ARGV[1], ARGV[2]); "
+                    + "return v; "
+                + "end "
+                + "return v;",
+                Collections.singletonList(name), from, to);
+    }
+
+
     @Override
     public ScoredEntry<V> pollFirstEntry() {
         return get(pollFirstEntryAsync());
@@ -168,7 +180,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
             return new CompletableFutureWrapper<>(Collections.emptyList());
         }
 
-        return poll(0, count-1, RedisCommands.EVAL_LIST_ENTRY);
+        return pollEntries(0, count-1, RedisCommands.EVAL_LIST_ENTRY);
     }
 
     @Override
@@ -176,7 +188,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         if (count <= 0) {
             return new CompletableFutureWrapper<>(Collections.emptyList());
         }
-        return poll(-count, -1, RedisCommands.EVAL_LIST_ENTRY);
+        return pollEntries(-count, -1, RedisCommands.EVAL_LIST_ENTRY);
     }
 
     private <T> RFuture<T> pollEntry(int from, int to, RedisCommand<?> command) {
@@ -569,6 +581,9 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public RFuture<ScoredEntry<V>> firstEntryAsync() {
+        if (getServiceManager().isResp3()) {
+            return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZRANGE_SINGLE_ENTRY_V2, getRawName(), 0, 0, "WITHSCORES");
+        }
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZRANGE_SINGLE_ENTRY, getRawName(), 0, 0, "WITHSCORES");
     }
 
@@ -589,6 +604,9 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public RFuture<ScoredEntry<V>> lastEntryAsync() {
+        if (getServiceManager().isResp3()) {
+            return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZRANGE_SINGLE_ENTRY_V2, getRawName(), -1, -1, "WITHSCORES");
+        }
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZRANGE_SINGLE_ENTRY, getRawName(), -1, -1, "WITHSCORES");
     }
 
@@ -1198,6 +1216,9 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public RFuture<Collection<ScoredEntry<V>>> entryRangeAsync(int startIndex, int endIndex) {
+        if (getServiceManager().isResp3()) {
+            return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZRANGE_ENTRY_V2, getRawName(), startIndex, endIndex, "WITHSCORES");
+        }
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZRANGE_ENTRY, getRawName(), startIndex, endIndex, "WITHSCORES");
     }
 
@@ -1208,6 +1229,9 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     
     @Override
     public RFuture<Collection<ScoredEntry<V>>> entryRangeReversedAsync(int startIndex, int endIndex) {
+        if (getServiceManager().isResp3()) {
+            return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZREVRANGE_ENTRY_V2, getRawName(), startIndex, endIndex, "WITHSCORES");
+        }
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZREVRANGE_ENTRY, getRawName(), startIndex, endIndex, "WITHSCORES");
     }
 
@@ -1288,6 +1312,9 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     public RFuture<Collection<ScoredEntry<V>>> entryRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
         String startValue = value(startScore, startScoreInclusive);
         String endValue = value(endScore, endScoreInclusive);
+        if (getServiceManager().isResp3()) {
+            return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZRANGEBYSCORE_ENTRY_V2, getRawName(), startValue, endValue, "WITHSCORES", "LIMIT", offset, count);
+        }
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZRANGEBYSCORE_ENTRY, getRawName(), startValue, endValue, "WITHSCORES", "LIMIT", offset, count);
     }
 
@@ -1302,6 +1329,9 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
             double endScore, boolean endScoreInclusive) {
         String startValue = value(startScore, startScoreInclusive);
         String endValue = value(endScore, endScoreInclusive);
+        if (getServiceManager().isResp3()) {
+            return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZREVRANGEBYSCORE_ENTRY_V2, getRawName(), endValue, startValue, "WITHSCORES");
+        }
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZREVRANGEBYSCORE_ENTRY, getRawName(), endValue, startValue, "WITHSCORES");
     }
     
@@ -1309,6 +1339,9 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     public RFuture<Collection<ScoredEntry<V>>> entryRangeReversedAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
         String startValue = value(startScore, startScoreInclusive);
         String endValue = value(endScore, endScoreInclusive);
+        if (getServiceManager().isResp3()) {
+            return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZREVRANGEBYSCORE_ENTRY_V2, getRawName(), endValue, startValue, "WITHSCORES", "LIMIT", offset, count);
+        }
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZREVRANGEBYSCORE_ENTRY, getRawName(), endValue, startValue, "WITHSCORES", "LIMIT", offset, count);
     }
 

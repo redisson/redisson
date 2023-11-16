@@ -892,6 +892,19 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
     }
 
     @Test
+    public void testPollFirstEntries() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        Assertions.assertNull(set.pollFirst());
+
+        set.add(0.1, "a");
+        set.add(0.2, "b");
+        set.add(0.3, "c");
+
+        List<ScoredEntry<String>> r = set.pollFirstEntries(2);
+        assertThat(r).containsExactlyInAnyOrder(new ScoredEntry<>(0.1, "a"), new ScoredEntry<>(0.2, "b"));
+    }
+
+    @Test
     public void testFirstLast() {
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
         set.add(0.1, "a");
