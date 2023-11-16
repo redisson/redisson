@@ -525,4 +525,11 @@ public class ServiceManager {
         return RedisCommands.XREAD;
     }
 
+    public RedisCommand<Map<Object, Object>> getHRandomFieldCommand() {
+        if (isResp3()) {
+            return RedisCommands.HRANDFIELD_V2;
+        }
+        return RedisCommands.HRANDFIELD;
+    }
+
 }

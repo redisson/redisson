@@ -510,6 +510,9 @@ public interface RedisCommands {
                                 new ObjectMapReplayDecoder()));
     RedisCommand<Map<Object, Object>> HRANDFIELD = new RedisCommand<>("HRANDFIELD",
                         new ObjectMapReplayDecoder(), new EmptyMapConvertor());
+
+    RedisCommand<Map<Object, Object>> HRANDFIELD_V2 = new RedisCommand("HRANDFIELD",
+                        new ListMultiDecoder2<>(new MapMergeDecoder(), new ObjectMapReplayDecoder()), new EmptyMapConvertor());
     RedisCommand<Set<Object>> HRANDFIELD_KEYS = new RedisCommand<>("HRANDFIELD",
                         new MapKeyDecoder(new ObjectSetReplayDecoder<>()), new EmptySetConvertor());
     RedisCommand<Map<Object, Object>> HGETALL = new RedisCommand<Map<Object, Object>>("HGETALL",
