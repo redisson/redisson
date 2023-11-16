@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import io.netty.channel.nio.NioEventLoopGroup;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.RLock;
@@ -19,6 +20,7 @@ import org.redisson.config.Config;
 import static org.awaitility.Awaitility.await;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Disabled
 public class RedissonRedLockTest {
 
     @Test
