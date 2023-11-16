@@ -922,9 +922,14 @@ public class RedissonConnection extends AbstractRedisConnection {
     }
 
     private static final RedisCommand<Set<Tuple>> ZRANGE_ENTRY = new RedisCommand<Set<Tuple>>("ZRANGE", new ScoredSortedSetReplayDecoder());
-    
+
+    private static final RedisCommand<Set<Tuple>> ZRANGE_ENTRY_V2 = new RedisCommand<Set<Tuple>>("ZRANGE",
+            new ListMultiDecoder2(new ObjectSetReplayDecoder(), new ScoredSortedSetReplayDecoderV2()));
     @Override
     public Set<Tuple> zRangeWithScores(byte[] key, long start, long end) {
+        if (executorService.getServiceManager().isResp3()) {
+            return read(key, ByteArrayCodec.INSTANCE, ZRANGE_ENTRY_V2, key, start, end, "WITHSCORES");
+        }
         return read(key, ByteArrayCodec.INSTANCE, ZRANGE_ENTRY, key, start, end, "WITHSCORES");
     }
 
@@ -985,6 +990,9 @@ public class RedissonConnection extends AbstractRedisConnection {
     
     private static final RedisCommand<Set<Tuple>> ZRANGEBYSCORE = new RedisCommand<Set<Tuple>>("ZRANGEBYSCORE", new ScoredSortedSetReplayDecoder());
 
+    private static final RedisCommand<Set<Tuple>> ZRANGEBYSCORE_V2 = new RedisCommand<Set<Tuple>>("ZRANGEBYSCORE",
+            new ListMultiDecoder2(new ObjectSetReplayDecoder(), new ScoredSortedSetReplayDecoderV2()));
+
     @Override
     public Set<Tuple> zRangeByScoreWithScores(byte[] key, Range range, Limit limit) {
         String min = value(range.getMin(), "-inf");
@@ -1001,7 +1009,10 @@ public class RedissonConnection extends AbstractRedisConnection {
             args.add(limit.getOffset());
             args.add(limit.getCount());
         }
-        
+
+        if (executorService.getServiceManager().isResp3()) {
+            return read(key, ByteArrayCodec.INSTANCE, ZRANGEBYSCORE_V2, args.toArray());
+        }
         return read(key, ByteArrayCodec.INSTANCE, ZRANGEBYSCORE, args.toArray());
     }
 
@@ -1013,9 +1024,15 @@ public class RedissonConnection extends AbstractRedisConnection {
     }
 
     private static final RedisCommand<Set<Tuple>> ZREVRANGE_ENTRY = new RedisCommand<Set<Tuple>>("ZREVRANGE", new ScoredSortedSetReplayDecoder());
-    
+
+    private static final RedisCommand<Set<Tuple>> ZREVRANGE_ENTRY_V2 = new RedisCommand("ZREVRANGE",
+            new ListMultiDecoder2(new ObjectSetReplayDecoder(), new ScoredSortedSetReplayDecoderV2()));
+
     @Override
     public Set<Tuple> zRevRangeWithScores(byte[] key, long start, long end) {
+        if (executorService.getServiceManager().isResp3()) {
+            return read(key, ByteArrayCodec.INSTANCE, ZREVRANGE_ENTRY_V2, key, start, end, "WITHSCORES");
+        }
         return read(key, ByteArrayCodec.INSTANCE, ZREVRANGE_ENTRY, key, start, end, "WITHSCORES");
     }
 
@@ -1026,6 +1043,9 @@ public class RedissonConnection extends AbstractRedisConnection {
     
     private static final RedisCommand<Set<byte[]>> ZREVRANGEBYSCORE = new RedisCommand<Set<byte[]>>("ZREVRANGEBYSCORE", new ObjectSetReplayDecoder<byte[]>());
     private static final RedisCommand<Set<Tuple>> ZREVRANGEBYSCOREWITHSCORES = new RedisCommand<Set<Tuple>>("ZREVRANGEBYSCORE", new ScoredSortedSetReplayDecoder());
+
+    private static final RedisCommand<Set<Tuple>> ZREVRANGEBYSCOREWITHSCORES_V2 = new RedisCommand<Set<Tuple>>("ZREVRANGEBYSCORE",
+            new ListMultiDecoder2(new ObjectSetReplayDecoder(), new ScoredSortedSetReplayDecoderV2()));
 
     @Override
     public Set<byte[]> zRevRangeByScore(byte[] key, Range range) {
@@ -1089,7 +1109,10 @@ public class RedissonConnection extends AbstractRedisConnection {
             args.add(limit.getOffset());
             args.add(limit.getCount());
         }
-        
+
+        if (executorService.getServiceManager().isResp3()) {
+            return read(key, ByteArrayCodec.INSTANCE, ZREVRANGEBYSCOREWITHSCORES_V2, args.toArray());
+        }
         return read(key, ByteArrayCodec.INSTANCE, ZREVRANGEBYSCOREWITHSCORES, args.toArray());
     }
 

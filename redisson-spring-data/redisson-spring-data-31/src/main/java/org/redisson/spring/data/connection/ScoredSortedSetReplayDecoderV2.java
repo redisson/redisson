@@ -13,25 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.protocol.decoder;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
+package org.redisson.spring.data.connection;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
-import org.redisson.client.protocol.ScoredEntry;
+import org.redisson.client.protocol.decoder.MultiDecoder;
+import org.springframework.data.redis.connection.zset.DefaultTuple;
+import org.springframework.data.redis.connection.zset.Tuple;
+
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * 
  * @author Nikita Koksharov
  *
- * @param <T> type
  */
-public class ScoredSortedSetReplayDecoder<T> implements MultiDecoder<List<ScoredEntry<T>>> {
+public class ScoredSortedSetReplayDecoderV2 implements MultiDecoder<Tuple> {
 
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
@@ -42,12 +43,8 @@ public class ScoredSortedSetReplayDecoder<T> implements MultiDecoder<List<Scored
     }
     
     @Override
-    public List<ScoredEntry<T>> decode(List<Object> parts, State state) {
-        List<ScoredEntry<T>> result = new ArrayList<>();
-        for (int i = 0; i < parts.size(); i += 2) {
-            result.add(new ScoredEntry<T>(((Number) parts.get(i+1)).doubleValue(), (T) parts.get(i)));
-        }
-        return result;
+    public Tuple decode(List<Object> parts, State state) {
+        return new DefaultTuple((byte[])parts.get(0), ((Number)parts.get(1)).doubleValue());
     }
 
 }

@@ -982,8 +982,13 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private static final RedisCommand<Set<Tuple>> ZRANGE_ENTRY = new RedisCommand<Set<Tuple>>("ZRANGE", new ScoredSortedSetReplayDecoder());
     
+    private static final RedisCommand<Set<Tuple>> ZRANGE_ENTRY_V2 = new RedisCommand<Set<Tuple>>("ZRANGE",
+            new ListMultiDecoder2(new ObjectSetReplayDecoder(), new ScoredSortedSetReplayDecoderV2()));
     @Override
     public Set<Tuple> zRangeWithScores(byte[] key, long start, long end) {
+        if (executorService.getServiceManager().isResp3()) {
+            return read(key, ByteArrayCodec.INSTANCE, ZRANGE_ENTRY_V2, key, start, end, "WITHSCORES");
+        }
         return read(key, ByteArrayCodec.INSTANCE, ZRANGE_ENTRY, key, start, end, "WITHSCORES");
     }
 
@@ -1014,7 +1019,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         }
         return element.toString();
     }
-    
+
     @Override
     public Set<byte[]> zRangeByScore(byte[] key, double min, double max) {
         return zRangeByScore(key, new Range().gte(min).lte(max));
@@ -1041,40 +1046,52 @@ public class RedissonConnection extends AbstractRedisConnection {
         return zRangeByScoreWithScores(key, new Range().gte(min).lte(max),
                 new Limit().offset(Long.valueOf(offset).intValue()).count(Long.valueOf(count).intValue()));
     }
-    
+
     private static final RedisCommand<Set<Tuple>> ZRANGEBYSCORE = new RedisCommand<Set<Tuple>>("ZRANGEBYSCORE", new ScoredSortedSetReplayDecoder());
+
+    private static final RedisCommand<Set<Tuple>> ZRANGEBYSCORE_V2 = new RedisCommand<Set<Tuple>>("ZRANGEBYSCORE",
+            new ListMultiDecoder2(new ObjectSetReplayDecoder(), new ScoredSortedSetReplayDecoderV2()));
 
     @Override
     public Set<Tuple> zRangeByScoreWithScores(byte[] key, Range range, Limit limit) {
         String min = value(range.getMin(), "-inf");
         String max = value(range.getMax(), "+inf");
-        
+
         List<Object> args = new ArrayList<Object>();
         args.add(key);
         args.add(min);
         args.add(max);
         args.add("WITHSCORES");
-        
+
         if (limit != null) {
             args.add("LIMIT");
             args.add(limit.getOffset());
             args.add(limit.getCount());
         }
-        
+
+        if (executorService.getServiceManager().isResp3()) {
+            return read(key, ByteArrayCodec.INSTANCE, ZRANGEBYSCORE_V2, args.toArray());
+        }
         return read(key, ByteArrayCodec.INSTANCE, ZRANGEBYSCORE, args.toArray());
     }
 
     private static final RedisCommand<Set<Object>> ZREVRANGE = new RedisCommand<Set<Object>>("ZREVRANGE", new ObjectSetReplayDecoder<Object>());
-    
+
     @Override
     public Set<byte[]> zRevRange(byte[] key, long start, long end) {
         return read(key, ByteArrayCodec.INSTANCE, ZREVRANGE, key, start, end);
     }
 
     private static final RedisCommand<Set<Tuple>> ZREVRANGE_ENTRY = new RedisCommand<Set<Tuple>>("ZREVRANGE", new ScoredSortedSetReplayDecoder());
-    
+
+    private static final RedisCommand<Set<Tuple>> ZREVRANGE_ENTRY_V2 = new RedisCommand("ZREVRANGE",
+            new ListMultiDecoder2(new ObjectSetReplayDecoder(), new ScoredSortedSetReplayDecoderV2()));
+
     @Override
     public Set<Tuple> zRevRangeWithScores(byte[] key, long start, long end) {
+        if (executorService.getServiceManager().isResp3()) {
+            return read(key, ByteArrayCodec.INSTANCE, ZREVRANGE_ENTRY_V2, key, start, end, "WITHSCORES");
+        }
         return read(key, ByteArrayCodec.INSTANCE, ZREVRANGE_ENTRY, key, start, end, "WITHSCORES");
     }
 
@@ -1082,9 +1099,12 @@ public class RedissonConnection extends AbstractRedisConnection {
     public Set<byte[]> zRevRangeByScore(byte[] key, double min, double max) {
         return zRevRangeByScore(key, new Range().gte(min).lte(max));
     }
-    
+
     private static final RedisCommand<Set<byte[]>> ZREVRANGEBYSCORE = new RedisCommand<Set<byte[]>>("ZREVRANGEBYSCORE", new ObjectSetReplayDecoder<byte[]>());
     private static final RedisCommand<Set<Tuple>> ZREVRANGEBYSCOREWITHSCORES = new RedisCommand<Set<Tuple>>("ZREVRANGEBYSCORE", new ScoredSortedSetReplayDecoder());
+
+    private static final RedisCommand<Set<Tuple>> ZREVRANGEBYSCOREWITHSCORES_V2 = new RedisCommand<Set<Tuple>>("ZREVRANGEBYSCORE",
+            new ListMultiDecoder2(new ObjectSetReplayDecoder(), new ScoredSortedSetReplayDecoderV2()));
 
     @Override
     public Set<byte[]> zRevRangeByScore(byte[] key, Range range) {
@@ -1106,18 +1126,18 @@ public class RedissonConnection extends AbstractRedisConnection {
     public Set<byte[]> zRevRangeByScore(byte[] key, Range range, Limit limit) {
         String min = value(range.getMin(), "-inf");
         String max = value(range.getMax(), "+inf");
-        
+
         List<Object> args = new ArrayList<Object>();
         args.add(key);
         args.add(max);
         args.add(min);
-        
+
         if (limit != null) {
             args.add("LIMIT");
             args.add(limit.getOffset());
             args.add(limit.getCount());
         }
-        
+
         return read(key, ByteArrayCodec.INSTANCE, ZREVRANGEBYSCORE, args.toArray());
     }
 
@@ -1136,19 +1156,22 @@ public class RedissonConnection extends AbstractRedisConnection {
     public Set<Tuple> zRevRangeByScoreWithScores(byte[] key, Range range, Limit limit) {
         String min = value(range.getMin(), "-inf");
         String max = value(range.getMax(), "+inf");
-        
+
         List<Object> args = new ArrayList<Object>();
         args.add(key);
         args.add(max);
         args.add(min);
         args.add("WITHSCORES");
-        
+
         if (limit != null) {
             args.add("LIMIT");
             args.add(limit.getOffset());
             args.add(limit.getCount());
         }
-        
+
+        if (executorService.getServiceManager().isResp3()) {
+            return read(key, ByteArrayCodec.INSTANCE, ZREVRANGEBYSCOREWITHSCORES_V2, args.toArray());
+        }
         return read(key, ByteArrayCodec.INSTANCE, ZREVRANGEBYSCOREWITHSCORES, args.toArray());
     }
 

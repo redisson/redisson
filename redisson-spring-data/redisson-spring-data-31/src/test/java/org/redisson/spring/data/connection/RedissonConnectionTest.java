@@ -22,6 +22,43 @@ import java.util.Set;
 public class RedissonConnectionTest extends BaseConnectionTest {
 
     @Test
+    public void testZRangeWithScores() {
+        StringRedisTemplate redisTemplate = new StringRedisTemplate();
+        redisTemplate.setConnectionFactory(new RedissonConnectionFactory(redisson));
+        redisTemplate.afterPropertiesSet();
+
+        redisTemplate.boundZSetOps("test").add("1", 10);
+        redisTemplate.boundZSetOps("test").add("2", 20);
+        redisTemplate.boundZSetOps("test").add("3", 30);
+
+        Set<ZSetOperations.TypedTuple<String>> objs = redisTemplate.boundZSetOps("test").rangeWithScores(0, 100);
+        assertThat(objs).hasSize(3);
+        assertThat(objs).containsExactlyInAnyOrder(ZSetOperations.TypedTuple.of("1", 10D),
+                ZSetOperations.TypedTuple.of("2", 20D),
+                ZSetOperations.TypedTuple.of("3", 30D));
+    }
+
+    @Test
+    public void testZDiff() {
+        StringRedisTemplate redisTemplate = new StringRedisTemplate();
+        redisTemplate.setConnectionFactory(new RedissonConnectionFactory(redisson));
+        redisTemplate.afterPropertiesSet();
+
+        redisTemplate.boundZSetOps("test").add("1", 10);
+        redisTemplate.boundZSetOps("test").add("2", 20);
+        redisTemplate.boundZSetOps("test").add("3", 30);
+        redisTemplate.boundZSetOps("test").add("4", 30);
+
+        redisTemplate.boundZSetOps("test2").add("5", 50);
+        redisTemplate.boundZSetOps("test2").add("2", 20);
+        redisTemplate.boundZSetOps("test2").add("3", 30);
+        redisTemplate.boundZSetOps("test2").add("6", 60);
+
+        Set<String> objs = redisTemplate.boundZSetOps("test").difference("test2");
+        assertThat(objs).hasSize(2);
+    }
+
+    @Test
     public void testZLexCount() {
         StringRedisTemplate redisTemplate = new StringRedisTemplate();
         redisTemplate.setConnectionFactory(new RedissonConnectionFactory(redisson));

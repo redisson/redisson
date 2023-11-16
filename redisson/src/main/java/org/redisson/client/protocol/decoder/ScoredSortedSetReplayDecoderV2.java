@@ -16,10 +16,10 @@
 package org.redisson.client.protocol.decoder;
 
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.ScoredEntry;
-import org.redisson.client.protocol.convertor.Convertor;
 
 import java.util.List;
 
@@ -27,44 +27,21 @@ import java.util.List;
  * 
  * @author Nikita Koksharov
  *
+ * @param <T> type
  */
-public class ListFirstObjectDecoder implements MultiDecoder<Object> {
-
-    private MultiDecoder<Object> inner;
-    private Convertor<?> convertor;
-
-    public ListFirstObjectDecoder() {
-        this((Convertor<?>) null);
-    }
-
-    public ListFirstObjectDecoder(Convertor<?> convertor) {
-        this.convertor = convertor;
-    }
-
-    public ListFirstObjectDecoder(MultiDecoder<Object> inner) {
-        this.inner = inner;
-    }
+public class ScoredSortedSetReplayDecoderV2<T> implements MultiDecoder<ScoredEntry<T>> {
 
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
-        if (inner != null) {
-            return inner.getDecoder(codec, paramNum, state);
+        if (paramNum % 2 != 0) {
+            return DoubleCodec.INSTANCE.getValueDecoder();
         }
         return MultiDecoder.super.getDecoder(codec, paramNum, state);
     }
-
+    
     @Override
-    public Object decode(List<Object> parts, State state) {
-        if (inner != null) {
-            parts = (List) inner.decode(parts, state);
-        }
-        if (!parts.isEmpty()) {
-            return parts.get(0);
-        }
-        if (convertor != null) {
-            return convertor.convert(null);
-        }
-        return null;
+    public ScoredEntry<T> decode(List<Object> parts, State state) {
+        return new ScoredEntry<T>(((Number) parts.get(1)).doubleValue(), (T) parts.get(0));
     }
 
 }

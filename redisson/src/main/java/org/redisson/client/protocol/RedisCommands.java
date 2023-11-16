@@ -114,6 +114,8 @@ public interface RedisCommands {
     RedisCommand<RankedEntry<?>> ZREVRANK_ENTRY = new RedisCommand<>("ZREVRANK", new RankedEntryDecoder());
     RedisCommand<Object> ZRANGE_SINGLE = new RedisCommand<Object>("ZRANGE", new ListFirstObjectDecoder());
     RedisCommand<Object> ZRANGE_SINGLE_ENTRY = new RedisCommand<>("ZRANGE", new ListFirstObjectDecoder(new ScoredSortedSetReplayDecoder()));
+    RedisCommand<Object> ZRANGE_SINGLE_ENTRY_V2 = new RedisCommand<>("ZRANGE",
+        new ListMultiDecoder2<>(new ListFirstObjectDecoder(), new ScoredSortedSetReplayDecoderV2()));
     RedisStrictCommand<Double> ZRANGE_SINGLE_SCORE = new RedisStrictCommand<Double>("ZRANGE", new ObjectFirstScoreReplayDecoder());
     RedisCommand<List<Object>> ZRANGE = new RedisCommand<List<Object>>("ZRANGE", new ObjectListReplayDecoder<Object>());
     RedisCommand<Integer> ZRANGESTORE = new RedisCommand<>("ZRANGESTORE", new IntegerReplayConvertor());
@@ -204,10 +206,18 @@ public interface RedisCommands {
     RedisCommand<List<Object>> ZRANGEBYSCORE_LIST = new RedisCommand<List<Object>>("ZRANGEBYSCORE", new ObjectListReplayDecoder<Object>());
     RedisCommand<List<Object>> ZREVRANGE = new RedisCommand<List<Object>>("ZREVRANGE", new ObjectListReplayDecoder<Object>());
     RedisCommand<Set<Object>> ZREVRANGEBYSCORE = new RedisCommand<Set<Object>>("ZREVRANGEBYSCORE", new ObjectSetReplayDecoder<Object>());
-    RedisCommand<List<ScoredEntry<Object>>> ZREVRANGE_ENTRY = new RedisCommand<List<ScoredEntry<Object>>>("ZREVRANGE", new ScoredSortedSetReplayDecoder<Object>());
-    RedisCommand<List<ScoredEntry<Object>>> ZREVRANGEBYSCORE_ENTRY = new RedisCommand<List<ScoredEntry<Object>>>("ZREVRANGEBYSCORE", new ScoredSortedSetReplayDecoder<Object>());
-    RedisCommand<List<ScoredEntry<Object>>> ZRANGE_ENTRY = new RedisCommand<List<ScoredEntry<Object>>>("ZRANGE", new ScoredSortedSetReplayDecoder<Object>());
-    RedisCommand<List<ScoredEntry<Object>>> ZRANGEBYSCORE_ENTRY = new RedisCommand<List<ScoredEntry<Object>>>("ZRANGEBYSCORE", new ScoredSortedSetReplayDecoder<Object>());
+    RedisCommand<List<ScoredEntry<Object>>> ZREVRANGE_ENTRY = new RedisCommand("ZREVRANGE", new ScoredSortedSetReplayDecoder<Object>());
+    RedisCommand<List<ScoredEntry<Object>>> ZREVRANGE_ENTRY_V2 = new RedisCommand("ZREVRANGE",
+            new ListMultiDecoder2(new CodecDecoder(), new ScoredSortedSetReplayDecoderV2<>()));
+    RedisCommand<List<ScoredEntry<Object>>> ZREVRANGEBYSCORE_ENTRY = new RedisCommand("ZREVRANGEBYSCORE", new ScoredSortedSetReplayDecoder<Object>());
+    RedisCommand<List<ScoredEntry<Object>>> ZREVRANGEBYSCORE_ENTRY_V2 = new RedisCommand("ZREVRANGEBYSCORE",
+            new ListMultiDecoder2(new CodecDecoder(), new ScoredSortedSetReplayDecoderV2<>()));
+    RedisCommand<List<ScoredEntry<Object>>> ZRANGE_ENTRY = new RedisCommand("ZRANGE", new ScoredSortedSetReplayDecoder<Object>());
+    RedisCommand<List<ScoredEntry<Object>>> ZRANGE_ENTRY_V2 = new RedisCommand("ZRANGE",
+            new ListMultiDecoder2(new CodecDecoder(), new ScoredSortedSetReplayDecoderV2<>()));
+    RedisCommand<List<ScoredEntry<Object>>> ZRANGEBYSCORE_ENTRY = new RedisCommand("ZRANGEBYSCORE", new ScoredSortedSetReplayDecoder<Object>());
+    RedisCommand<List<ScoredEntry<Object>>> ZRANGEBYSCORE_ENTRY_V2 = new RedisCommand("ZRANGEBYSCORE",
+            new ListMultiDecoder2(new CodecDecoder(), new ScoredSortedSetReplayDecoderV2<>()));
     RedisCommand<ListScanResult<Object>> ZSCAN = new RedisCommand<ListScanResult<Object>>("ZSCAN", new ListMultiDecoder2(new ScoredSortedSetScanReplayDecoder(), new ScoredSortedSetScanDecoder<Object>()));
     RedisCommand<ListScanResult<Object>> ZSCAN_ENTRY = new RedisCommand<ListScanResult<Object>>("ZSCAN", new ListMultiDecoder2(new ScoredEntryScanDecoder<>(), new ScoredSortedSetScanDecoder<>()));
     RedisStrictCommand<Double> ZINCRBY = new RedisStrictCommand<Double>("ZINCRBY", new DoubleNullSafeReplayConvertor());

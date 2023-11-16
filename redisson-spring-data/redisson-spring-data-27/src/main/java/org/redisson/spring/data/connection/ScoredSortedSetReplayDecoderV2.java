@@ -13,13 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.protocol.decoder;
+package org.redisson.spring.data.connection;
 
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
-import org.redisson.client.protocol.ScoredEntry;
-import org.redisson.client.protocol.convertor.Convertor;
+import org.redisson.client.protocol.decoder.MultiDecoder;
+import org.springframework.data.redis.connection.DefaultTuple;
+import org.springframework.data.redis.connection.RedisZSetCommands;
 
 import java.util.List;
 
@@ -28,43 +30,19 @@ import java.util.List;
  * @author Nikita Koksharov
  *
  */
-public class ListFirstObjectDecoder implements MultiDecoder<Object> {
-
-    private MultiDecoder<Object> inner;
-    private Convertor<?> convertor;
-
-    public ListFirstObjectDecoder() {
-        this((Convertor<?>) null);
-    }
-
-    public ListFirstObjectDecoder(Convertor<?> convertor) {
-        this.convertor = convertor;
-    }
-
-    public ListFirstObjectDecoder(MultiDecoder<Object> inner) {
-        this.inner = inner;
-    }
+public class ScoredSortedSetReplayDecoderV2 implements MultiDecoder<RedisZSetCommands.Tuple> {
 
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
-        if (inner != null) {
-            return inner.getDecoder(codec, paramNum, state);
+        if (paramNum % 2 != 0) {
+            return DoubleCodec.INSTANCE.getValueDecoder();
         }
         return MultiDecoder.super.getDecoder(codec, paramNum, state);
     }
-
+    
     @Override
-    public Object decode(List<Object> parts, State state) {
-        if (inner != null) {
-            parts = (List) inner.decode(parts, state);
-        }
-        if (!parts.isEmpty()) {
-            return parts.get(0);
-        }
-        if (convertor != null) {
-            return convertor.convert(null);
-        }
-        return null;
+    public RedisZSetCommands.Tuple decode(List<Object> parts, State state) {
+        return new DefaultTuple((byte[])parts.get(0), ((Number)parts.get(1)).doubleValue());
     }
 
 }
