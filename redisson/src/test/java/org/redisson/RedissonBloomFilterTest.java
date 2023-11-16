@@ -10,7 +10,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedissonBloomFilterTest extends BaseTest {
+public class RedissonBloomFilterTest extends RedisDockerTest {
 
     @Test
     public void testContainsAll() {
