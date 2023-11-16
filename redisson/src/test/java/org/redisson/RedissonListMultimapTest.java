@@ -13,7 +13,7 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class RedissonListMultimapTest extends BaseTest {
+public class RedissonListMultimapTest extends RedisDockerTest {
 
     public static class SimpleKey implements Serializable {
 
@@ -121,10 +121,10 @@ public class RedissonListMultimapTest extends BaseTest {
     public void testSizeInMemory() {
         RListMultimap<String, String> list = redisson.getListMultimap("test");
         list.put("1", "2");
-        assertThat(list.sizeInMemory()).isEqualTo(159);
+        assertThat(list.sizeInMemory()).isEqualTo(88);
 
         list.put("1", "3");
-        assertThat(list.sizeInMemory()).isEqualTo(164);
+        assertThat(list.sizeInMemory()).isEqualTo(96);
     }
 
     @Test

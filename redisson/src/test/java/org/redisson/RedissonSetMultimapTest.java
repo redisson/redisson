@@ -15,7 +15,7 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class RedissonSetMultimapTest extends BaseTest {
+public class RedissonSetMultimapTest extends RedisDockerTest {
 
     public static class SimpleKey implements Serializable {
 
@@ -223,10 +223,10 @@ public class RedissonSetMultimapTest extends BaseTest {
     public void testSizeInMemory() {
         RSetMultimap<String, String> set = redisson.getSetMultimap("test");
         set.put("1", "2");
-        assertThat(set.sizeInMemory()).isEqualTo(228);
+        assertThat(set.sizeInMemory()).isEqualTo(88);
 
         set.put("1", "3");
-        assertThat(set.sizeInMemory()).isEqualTo(257);
+        assertThat(set.sizeInMemory()).isEqualTo(96);
     }
     
     @Test

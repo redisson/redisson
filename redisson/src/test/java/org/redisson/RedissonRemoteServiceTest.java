@@ -38,7 +38,7 @@ import io.reactivex.rxjava3.core.Single;
 import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
 
-public class RedissonRemoteServiceTest extends BaseTest {
+public class RedissonRemoteServiceTest extends RedisDockerTest {
 
     public static class Pojo {
 

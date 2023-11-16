@@ -12,7 +12,7 @@ import java.util.Deque;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedissonDequeTest extends BaseTest {
+public class RedissonDequeTest extends RedisDockerTest {
 
     @Test
     public void testAddIfExists() {
@@ -28,8 +28,6 @@ public class RedissonDequeTest extends BaseTest {
 
     @Test
     public void testMove() {
-        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
-
         RDeque<Integer> deque1 = redisson.getDeque("deque1");
         RDeque<Integer> deque2 = redisson.getDeque("deque2");
 

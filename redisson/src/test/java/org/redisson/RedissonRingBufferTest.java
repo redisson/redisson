@@ -8,7 +8,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RRingBuffer;
 
-public class RedissonRingBufferTest extends BaseTest {
+public class RedissonRingBufferTest extends RedisDockerTest {
 
     @Test
     public void testSetCapacity() {

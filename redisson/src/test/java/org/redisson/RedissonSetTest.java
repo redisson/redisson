@@ -32,7 +32,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
 import org.redisson.connection.balancer.RandomLoadBalancer;
 
-public class RedissonSetTest extends BaseTest {
+public class RedissonSetTest extends RedisDockerTest {
 
     public static class SimpleBean implements Serializable {
 
@@ -569,45 +569,21 @@ public class RedissonSetTest extends BaseTest {
     }
 
     @Test
-    public void testClusteredIterator() throws FailedToStartRedisException, IOException, InterruptedException {
-        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave1 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave2 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave3 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave4 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave5 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave6 = new RedisRunner().randomPort().randomDir().nosave();
-        
-        ClusterRunner clusterRunner = new ClusterRunner()
-                .addNode(master1, slave1, slave4)
-                .addNode(master2, slave2, slave5)
-                .addNode(master3, slave3, slave6);
+    public void testClusteredIterator() throws FailedToStartRedisException {
+        testInCluster(redisson -> {
+            int size = 10000;
+            RSet<String> set = redisson.getSet("{test");
+            for (int i = 0; i < size; i++) {
+                set.add("" + i);
+            }
 
-        ClusterProcesses process = clusterRunner.run();
-        
-        Config config = new Config();
-        config.useClusterServers()
-        .setLoadBalancer(new RandomLoadBalancer())
-        .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
-        RedissonClient redisson = Redisson.create(config);
+            Set<String> keys = new HashSet<>();
+            for (String key : set) {
+                keys.add(key);
+            }
 
-        int size = 10000;
-        RSet<String> set = redisson.getSet("{test");
-        for (int i = 0; i < size; i++) {
-            set.add("" + i);
-        }
-        
-        Set<String> keys = new HashSet<>();
-        for (String key : set) {
-            keys.add(key);
-        }
-        
-        assertThat(keys).hasSize(size);
-
-        redisson.shutdown();
-        process.shutdown();
+            assertThat(keys).hasSize(size);
+        });
     }
     
     @Test

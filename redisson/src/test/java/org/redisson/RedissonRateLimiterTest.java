@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedissonRateLimiterTest extends BaseTest {
+public class RedissonRateLimiterTest extends RedisDockerTest {
 
     @Test
     public void testExpire2() throws InterruptedException {

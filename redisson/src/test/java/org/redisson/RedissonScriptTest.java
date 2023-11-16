@@ -16,13 +16,13 @@ import org.redisson.api.RScript.Mode;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.StringCodec;
 
-public class RedissonScriptTest extends BaseTest {
+public class RedissonScriptTest extends RedisDockerTest {
 
     @Test
     public void testMulti() {
         RLexSortedSet idx2 = redisson.getLexSortedSet("ABCD17436");
         
-        Long l = new Long("1506524856000");
+        Long l = Long.valueOf("1506524856000");
         for (int i = 0; i < 100; i++) {
             String s = "DENY" + "\t" + "TESTREDISSON" + "\t"
                     + Long.valueOf(l) + "\t" + "helloworld_hongqin";

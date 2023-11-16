@@ -8,7 +8,7 @@ import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedissonLexSortedSetTest extends BaseTest {
+public class RedissonLexSortedSetTest extends RedisDockerTest {
 
     @Test
     public void testAll() {

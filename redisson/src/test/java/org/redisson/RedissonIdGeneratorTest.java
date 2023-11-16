@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Nikita Koksharov
  *
  */
-public class RedissonIdGeneratorTest extends BaseTest {
+public class RedissonIdGeneratorTest extends RedisDockerTest {
 
     @Test
     public void testEmpty() {

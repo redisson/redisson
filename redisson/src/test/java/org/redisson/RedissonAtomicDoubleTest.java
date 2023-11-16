@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedissonAtomicDoubleTest extends BaseTest {
+public class RedissonAtomicDoubleTest extends RedisDockerTest {
 
     @Test
     public void testGetAndSet() {

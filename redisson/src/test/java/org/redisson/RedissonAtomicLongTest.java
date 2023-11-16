@@ -6,7 +6,7 @@ import org.redisson.api.RAtomicLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedissonAtomicLongTest extends BaseTest {
+public class RedissonAtomicLongTest extends RedisDockerTest {
 
     @Test
     public void testGetAndSet() {

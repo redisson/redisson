@@ -13,7 +13,7 @@ import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedissonKeysTest extends BaseTest {
+public class RedissonKeysTest extends RedisDockerTest {
 
     @Test
     public void testReadKeys() {
@@ -62,45 +62,22 @@ public class RedissonKeysTest extends BaseTest {
     }
 
     @Test
-    public void testExistsInCluster() throws FailedToStartRedisException, IOException, InterruptedException {
-        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave1 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave2 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave3 = new RedisRunner().randomPort().randomDir().nosave();
+    public void testExistsInCluster() throws FailedToStartRedisException {
+        testInCluster(redisson -> {
+            int size = 10000;
+            List<String> list = new ArrayList<>();
+            for (int i = 0; i < size; i++) {
+                list.add("test" + i);
+                redisson.getBucket("test" + i).set(i);
+            }
 
+            assertThat(redisson.getKeys().countExists("test1", "test2", "test34", "test45", "asdfl;jasf")).isEqualTo(4);
+            long deletedSize = redisson.getKeys().delete(list.toArray(new String[list.size()]));
 
-        ClusterRunner clusterRunner = new ClusterRunner()
-                .addNode(master1, slave1)
-                .addNode(master2, slave2)
-                .addNode(master3, slave3);
-        ClusterProcesses process = clusterRunner.run();
-
-        Config config = new Config();
-        config.useClusterServers()
-                .setLoadBalancer(new RandomLoadBalancer())
-                .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
-        RedissonClient redisson = Redisson.create(config);
-
-        int size = 10000;
-        List<String> list = new ArrayList<>();
-        for (int i = 0; i < size; i++) {
-            list.add("test" + i);
-            redisson.getBucket("test" + i).set(i);
-        }
-
-        assertThat(redisson.getKeys().countExists("test1", "test2", "test34", "test45", "asdfl;jasf")).isEqualTo(4);
-        long deletedSize = redisson.getKeys().delete(list.toArray(new String[list.size()]));
-
-        assertThat(deletedSize).isEqualTo(size);
-
-        redisson.shutdown();
-        process.shutdown();
+            assertThat(deletedSize).isEqualTo(size);
+        });
     }
 
-
-    
     @Test
     public void testExists() {
         redisson.getSet("test").add("1");
@@ -127,35 +104,16 @@ public class RedissonKeysTest extends BaseTest {
     }
     
     @Test
-    public void testKeysByPattern() throws FailedToStartRedisException, IOException, InterruptedException {
-        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave1 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave2 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave3 = new RedisRunner().randomPort().randomDir().nosave();
+    public void testKeysByPattern() throws FailedToStartRedisException {
+        testInCluster(redisson -> {
+            int size = 10000;
+            for (int i = 0; i < size; i++) {
+                redisson.getBucket("test" + i).set(i);
+            }
 
-        
-        ClusterRunner clusterRunner = new ClusterRunner()
-                .addNode(master1, slave1)
-                .addNode(master2, slave2)
-                .addNode(master3, slave3);
-        ClusterProcesses process = clusterRunner.run();
-        
-        Config config = new Config();
-        config.useClusterServers()
-        .setLoadBalancer(new RandomLoadBalancer())
-        .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
-        RedissonClient redisson = Redisson.create(config);
-        
-        int size = 10000;
-        for (int i = 0; i < size; i++) {
-            redisson.getBucket("test" + i).set(i);
-        }
-        
-        assertThat(redisson.getKeys().count()).isEqualTo(size);
-        
-        Long noOfKeysDeleted = 0L;
+            assertThat(redisson.getKeys().count()).isEqualTo(size);
+
+            Long noOfKeysDeleted = 0L;
             int chunkSize = 20;
             Iterable<String> keysIterator = redisson.getKeys().getKeysByPattern("test*", chunkSize);
             Set<String> keys = new HashSet<>();
@@ -173,11 +131,9 @@ public class RedissonKeysTest extends BaseTest {
             if (!keys.isEmpty()) {
                 noOfKeysDeleted += redisson.getKeys().delete(keys.toArray(new String[keys.size()]));
             }
-        
-        assertThat(noOfKeysDeleted).isEqualTo(size);
-        
-        redisson.shutdown();
-        process.shutdown();
+
+            assertThat(noOfKeysDeleted).isEqualTo(size);
+        });
     }
 
     
@@ -231,40 +187,19 @@ public class RedissonKeysTest extends BaseTest {
     }
 
     @Test
-    public void testDeleteInCluster() throws FailedToStartRedisException, IOException, InterruptedException {
-        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave1 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave2 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave3 = new RedisRunner().randomPort().randomDir().nosave();
+    public void testDeleteInCluster() throws FailedToStartRedisException {
+        testInCluster(redisson -> {
+            int size = 10000;
+            List<String> list = new ArrayList<>();
+            for (int i = 0; i < size; i++) {
+                list.add("test" + i);
+                redisson.getBucket("test" + i).set(i);
+            }
 
-        
-        ClusterRunner clusterRunner = new ClusterRunner()
-                .addNode(master1, slave1)
-                .addNode(master2, slave2)
-                .addNode(master3, slave3);
-        ClusterProcesses process = clusterRunner.run();
-        
-        Config config = new Config();
-        config.useClusterServers()
-        .setLoadBalancer(new RandomLoadBalancer())
-        .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
-        RedissonClient redisson = Redisson.create(config);
-        
-        int size = 10000;
-        List<String> list = new ArrayList<>();
-        for (int i = 0; i < size; i++) {
-            list.add("test" + i);
-            redisson.getBucket("test" + i).set(i);
-        }
-        
-        long deletedSize = redisson.getKeys().delete(list.toArray(new String[list.size()]));
-        
-        assertThat(deletedSize).isEqualTo(size);
-        
-        redisson.shutdown();
-        process.shutdown();
+            long deletedSize = redisson.getKeys().delete(list.toArray(new String[list.size()]));
+
+            assertThat(deletedSize).isEqualTo(size);
+        });
     }
     
     @Test
