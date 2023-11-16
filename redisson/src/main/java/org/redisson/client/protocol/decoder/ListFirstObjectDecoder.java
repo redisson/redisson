@@ -18,7 +18,6 @@ package org.redisson.client.protocol.decoder;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
-import org.redisson.client.protocol.ScoredEntry;
 import org.redisson.client.protocol.convertor.Convertor;
 
 import java.util.List;

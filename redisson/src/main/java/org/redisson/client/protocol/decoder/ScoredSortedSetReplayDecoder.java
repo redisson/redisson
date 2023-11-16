@@ -15,15 +15,14 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.ScoredEntry;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 
