@@ -24,7 +24,7 @@ public class RedissonFunctionTest extends RedisDockerTest {
     public void testStats() {
         RFunction f = redisson.getFunction();
         f.flush();
-        f.load("lib", "redis.register_function('myfun', function(keys, args) for i = 1, 8829381983, 1 do end return args[1] end)" +
+        f.load("lib", "redis.register_function('myfun', function(keys, args) for i = 1, 88293819831, 1 do end return args[1] end)" +
                 "redis.register_function('myfun2', function(keys, args) return 'test' end)" +
                 "redis.register_function('myfun3', function(keys, args) return 123 end)");
         f.callAsync(FunctionMode.READ, "myfun", FunctionResult.VALUE, Collections.emptyList(), "test");

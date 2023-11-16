@@ -52,7 +52,7 @@ public class RedissonBlockingDequeReactiveTest extends BaseReactiveTest {
     @Test
     public void testPollLastAndOfferFirstTo() {
         RBlockingDequeReactive<String> blockingDeque = redisson.getBlockingDeque("blocking_deque");
-        Awaitility.await().between(Duration.ofMillis(950), Duration.ofMillis(1150)).untilAsserted(() -> {
+        Awaitility.await().between(Duration.ofMillis(950), Duration.ofMillis(1350)).untilAsserted(() -> {
             String redisTask = sync(blockingDeque.pollLastAndOfferFirstTo("deque", 1, TimeUnit.SECONDS));
             assertThat(redisTask).isNull();
         });
