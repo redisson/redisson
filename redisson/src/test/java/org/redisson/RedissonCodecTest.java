@@ -24,13 +24,11 @@ import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedissonCodecTest extends BaseTest {
+public class RedissonCodecTest extends RedisDockerTest {
     private Codec smileCodec = new SmileJacksonCodec();
     private Codec codec = new SerializationCodec();
-    private Codec kryoCodec = new KryoCodec();
     private Codec jsonCodec = new JsonJacksonCodec();
     private Codec cborCodec = new CborJacksonCodec();
-    private Codec fstCodec = new FstCodec();
     private Codec snappyCodec = new SnappyCodec();
     private Codec snappyCodecV2 = new SnappyCodecV2();
     //    private Codec msgPackCodec = new MsgPackJacksonCodec();
@@ -92,15 +90,6 @@ public class RedissonCodecTest extends BaseTest {
         b.set(new TestObject("1", "2"));
         
         assertThat(b.get()).isEqualTo(new TestObject("1", "2"));
-    }
-
-    @Test
-    public void testFst() {
-        Config config = createConfig();
-        config.setCodec(fstCodec);
-        RedissonClient redisson = Redisson.create(config);
-
-        test(redisson);
     }
 
     @Test
@@ -231,15 +220,6 @@ public class RedissonCodecTest extends BaseTest {
         redisson.shutdown();
     }
 
-
-    @Test
-    public void testKryo() {
-        Config config = createConfig();
-        config.setCodec(kryoCodec);
-        RedissonClient redisson = Redisson.create(config);
-
-        test(redisson);
-    }
 
     @Test
     public void testCbor() {
