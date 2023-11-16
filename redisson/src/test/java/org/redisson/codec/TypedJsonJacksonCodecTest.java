@@ -10,6 +10,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.redisson.BaseTest;
+import org.redisson.RedisDockerTest;
 import org.redisson.api.RBucket;
 import org.redisson.api.RMap;
 import org.redisson.client.handler.State;
@@ -21,7 +22,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.util.CharsetUtil;
 
-public class TypedJsonJacksonCodecTest extends BaseTest {
+public class TypedJsonJacksonCodecTest extends RedisDockerTest {
 
     public static class Simple {
         
