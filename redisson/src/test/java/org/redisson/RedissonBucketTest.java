@@ -1,17 +1,16 @@
 package org.redisson;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.redisson.RedisRunner.FailedToStartRedisException;
-import org.redisson.RedisRunner.KEYSPACE_EVENTS_OPTIONS;
-import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.DeletedObjectListener;
 import org.redisson.api.ExpiredObjectListener;
 import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.SetObjectListener;
 import org.redisson.config.Config;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.Network;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -20,15 +19,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedissonBucketTest extends BaseTest {
+public class RedissonBucketTest extends RedisDockerTest {
 
     @Test
     public void testGetAndClearExpire() {
-        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
-
         RBucket<Integer> al = redisson.getBucket("test");
         al.set(1, Duration.ofSeconds(1));
         assertThat(al.getAndClearExpire()).isEqualTo(1);
@@ -37,8 +35,6 @@ public class RedissonBucketTest extends BaseTest {
 
     @Test
     public void testGetAndExpire() throws InterruptedException {
-        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
-
         RBucket<Integer> al = redisson.getBucket("test");
         al.set(1);
         assertThat(al.getAndExpire(Duration.ofSeconds(1))).isEqualTo(1);
@@ -57,8 +53,6 @@ public class RedissonBucketTest extends BaseTest {
 
     @Test
     public void testExpireTime() {
-        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("7.0.0") > 0);
-
         RBucket<Integer> al = redisson.getBucket("test");
         al.set(1);
         assertThat(al.getExpireTime()).isEqualTo(-1);
@@ -69,8 +63,6 @@ public class RedissonBucketTest extends BaseTest {
 
     @Test
     public void testKeepTTL() {
-        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.0.0") > 0);
-
         RBucket<Integer> al = redisson.getBucket("test");
         al.set(1234, Duration.ofSeconds(10));
         al.setAndKeepTTL(222);
@@ -89,104 +81,74 @@ public class RedissonBucketTest extends BaseTest {
     }
 
     @Test
-    public void testDeletedListener() throws FailedToStartRedisException, IOException, InterruptedException {
-        RedisProcess instance = new RedisRunner()
-                .nosave()
-                .randomPort()
-                .randomDir()
-                .notifyKeyspaceEvents( 
-                                    KEYSPACE_EVENTS_OPTIONS.E,
-                                    KEYSPACE_EVENTS_OPTIONS.g)
-                .run();
-        
-        Config config = new Config();
-        config.useSingleServer().setAddress(instance.getRedisServerAddressAndPort());
-        RedissonClient redisson = Redisson.create(config);
-        
-        RBucket<Integer> al = redisson.getBucket("test");
-        al.set(1);
-        CountDownLatch latch = new CountDownLatch(1);
-        al.addListener(new DeletedObjectListener() {
-            @Override
-            public void onDeleted(String name) {
-                latch.countDown();
+    public void testDeletedListener() throws FailedToStartRedisException {
+        testWithParams(redisson -> {
+            RBucket<Integer> al = redisson.getBucket("test");
+            al.set(1);
+            CountDownLatch latch = new CountDownLatch(1);
+            al.addListener(new DeletedObjectListener() {
+                @Override
+                public void onDeleted(String name) {
+                    latch.countDown();
+                }
+            });
+            al.delete();
+
+            try {
+                assertThat(latch.await(1, TimeUnit.SECONDS)).isTrue();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
-        });
-        al.delete();
-        
-        assertThat(latch.await(1, TimeUnit.SECONDS)).isTrue();
-        
-        redisson.shutdown();
-        instance.stop();
+        }, NOTIFY_KEYSPACE_EVENTS, "Eg");
     }
     
     @Test
     public void testSetListener() throws FailedToStartRedisException, IOException, InterruptedException {
-        RedisProcess instance = new RedisRunner()
-                .nosave()
-                .randomPort()
-                .randomDir()
-                .notifyKeyspaceEvents(
-                                    KEYSPACE_EVENTS_OPTIONS.E,
-                                    KEYSPACE_EVENTS_OPTIONS.$)
-                .run();
+        testWithParams(redisson -> {
+            RBucket<Integer> al = redisson.getBucket("test");
+            CountDownLatch latch = new CountDownLatch(1);
+            al.addListener(new SetObjectListener() {
+                @Override
+                public void onSet(String name) {
+                    latch.countDown();
+                }
+            });
+            al.set(1);
 
-        Config config = new Config();
-        config.useSingleServer().setAddress(instance.getRedisServerAddressAndPort());
-        RedissonClient redisson = Redisson.create(config);
-
-        RBucket<Integer> al = redisson.getBucket("test");
-        CountDownLatch latch = new CountDownLatch(1);
-        al.addListener(new SetObjectListener() {
-            @Override
-            public void onSet(String name) {
-                latch.countDown();
+            try {
+                assertThat(latch.await(1, TimeUnit.SECONDS)).isTrue();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
-        });
-        al.set(1);
-
-        assertThat(latch.await(1, TimeUnit.SECONDS)).isTrue();
-
-        redisson.shutdown();
-        instance.stop();    }
-
+        }, NOTIFY_KEYSPACE_EVENTS, "E$");
+    }
     
     @Test
     public void testExpiredListener() throws FailedToStartRedisException, IOException, InterruptedException {
-        RedisProcess instance = new RedisRunner()
-                .nosave()
-                .randomPort()
-                .randomDir()
-                .notifyKeyspaceEvents( 
-                                    KEYSPACE_EVENTS_OPTIONS.E,
-                                    KEYSPACE_EVENTS_OPTIONS.x)
-                .run();
-        
-        Config config = new Config();
-        config.useSingleServer().setAddress(instance.getRedisServerAddressAndPort());
-        RedissonClient redisson = Redisson.create(config);
-        
-        RBucket<Integer> al = redisson.getBucket("test");
-        al.set(1, Duration.ofSeconds(3));
-        CountDownLatch latch = new CountDownLatch(1);
-        al.addListener(new ExpiredObjectListener() {
-            @Override
-            public void onExpired(String name) {
-                latch.countDown();
+        testWithParams(redisson -> {
+            RBucket<Integer> al = redisson.getBucket("test");
+            al.set(1, Duration.ofSeconds(3));
+            CountDownLatch latch = new CountDownLatch(1);
+            al.addListener(new ExpiredObjectListener() {
+                @Override
+                public void onExpired(String name) {
+                    latch.countDown();
+                }
+            });
+
+            try {
+                assertThat(latch.await(4, TimeUnit.SECONDS)).isTrue();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
-        });
-        
-        assertThat(latch.await(4, TimeUnit.SECONDS)).isTrue();
-        
-        redisson.shutdown();
-        instance.stop();
+        }, NOTIFY_KEYSPACE_EVENTS, "Ex");
     }
     
     @Test
     public void testSizeInMemory() {
         RBucket<Integer> al = redisson.getBucket("test");
         al.set(1234);
-        assertThat(al.sizeInMemory()).isEqualTo(51);
+        assertThat(al.sizeInMemory()).isEqualTo(56);
     }
     
     @Test
@@ -354,56 +316,65 @@ public class RedissonBucketTest extends BaseTest {
         Assertions.assertEquals("value1", newBucket.get());
         Assertions.assertFalse(newBucket.renamenx("test2"));
     }
-    
-    @Test
-    public void testMigrate() throws FailedToStartRedisException, IOException, InterruptedException {
-        RedisProcess runner = new RedisRunner()
-                .appendonly(true)
-                .randomDir()
-                .randomPort()
-                .run();
-        
-        RBucket<String> bucket = redisson.getBucket("test");
-        bucket.set("someValue");
-        
-        bucket.migrate(runner.getRedisServerBindAddress(), runner.getRedisServerPort(), 0, 5000);
-        
+
+    private void testTwoInstances(BiConsumer<RedissonClient, RedissonClient> consumer) {
+        Network network = Network.newNetwork();
+
+        GenericContainer<?> redis =
+                new GenericContainer<>("redis:7.2")
+                        .withNetwork(network)
+                        .withNetworkAliases("foo1")
+                        .withExposedPorts(6379);
+        redis.start();
+
+        GenericContainer<?> redis2 =
+                new GenericContainer<>("redis:7.2")
+                        .withNetwork(network)
+                        .withNetworkAliases("foo2")
+                        .withExposedPorts(6379);
+        redis2.start();
+
+        Config config2 = new Config();
+        config2.useSingleServer().setAddress("redis://" + redis.getHost() + ":" + redis.getFirstMappedPort());
+        RedissonClient r2 = Redisson.create(config2);
+
         Config config = new Config();
-        config.setCodec(redisson.getConfig().getCodec());
-        config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
+        config.useSingleServer().setAddress("redis://" + redis2.getHost() + ":" + redis2.getFirstMappedPort());
         RedissonClient r = Redisson.create(config);
-        
-        RBucket<String> bucket2 = r.getBucket("test");
-        assertThat(bucket2.get()).isEqualTo("someValue");
-        assertThat(bucket.isExists()).isFalse();
-        
-        runner.stop();
+
+        consumer.accept(r2, r);
+
+        r.shutdown();
+        r2.shutdown();
+        redis.stop();
+        redis2.stop();
+        network.close();
+    }
+
+    @Test
+    public void testMigrate() throws FailedToStartRedisException {
+        testTwoInstances((r2, r) -> {
+            RBucket<String> bucket = r2.getBucket("test");
+            bucket.set("someValue");
+            bucket.migrate("foo2", 6379, 0, 5000);
+
+            RBucket<String> bucket2 = r.getBucket("test");
+            assertThat(bucket2.get()).isEqualTo("someValue");
+            assertThat(bucket.isExists()).isFalse();
+        });
     }
 
     @Test
     public void testCopy() throws FailedToStartRedisException, IOException, InterruptedException {
-        RedisProcess runner = new RedisRunner()
-                .appendonly(true)
-                .randomDir()
-                .randomPort()
-                .run();
-        
-        RBucket<String> bucket = redisson.getBucket("test");
-        bucket.set("someValue");
-        
-        bucket.copy(runner.getRedisServerBindAddress(), runner.getRedisServerPort(), 0, 5000);
+        testTwoInstances((r2, r) -> {
+            RBucket<String> bucket = r2.getBucket("test");
+            bucket.set("someValue");
+            bucket.copy("foo2", 6379, 0, 5000);
 
-        Config config = new Config();
-        config.setCodec(redisson.getConfig().getCodec());
-        config.useSingleServer()
-                .setAddress(runner.getRedisServerAddressAndPort());
-        RedissonClient r = Redisson.create(config);
-        
-        RBucket<String> bucket2 = r.getBucket("test");
-        assertThat(bucket2.get()).isEqualTo("someValue");
-        assertThat(bucket.get()).isEqualTo("someValue");
-        
-        runner.stop();
+            RBucket<String> bucket2 = r.getBucket("test");
+            assertThat(bucket2.get()).isEqualTo("someValue");
+            assertThat(bucket.get()).isEqualTo("someValue");
+        });
     }
 
     @Test

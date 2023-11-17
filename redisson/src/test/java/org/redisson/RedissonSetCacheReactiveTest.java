@@ -40,7 +40,7 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
         Config config = new Config();
         config.setUseScriptCache(true);
         config.useSingleServer()
-                .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+                .setAddress(redisson.getConfig().useSingleServer().getAddress());
         RedissonReactiveClient client = Redisson.create(config).reactive();
 
         RBatchReactive batch = client.createBatch();

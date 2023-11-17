@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public abstract class RedissonBaseMultimapCacheTest extends BaseTest {
+public abstract class RedissonBaseMultimapCacheTest extends RedisDockerTest {
 
     abstract RMultimapCache<String, String> getMultimapCache(String name);
     

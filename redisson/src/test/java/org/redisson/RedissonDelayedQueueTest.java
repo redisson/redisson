@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedissonDelayedQueueTest extends BaseTest {
+public class RedissonDelayedQueueTest extends RedisDockerTest {
 
     @Test
     public void testRemove() throws InterruptedException {

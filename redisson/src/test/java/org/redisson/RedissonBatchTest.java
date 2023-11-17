@@ -419,7 +419,7 @@ public class RedissonBatchTest extends BaseTest {
 
     @ParameterizedTest
     @MethodSource("data")
-    @Timeout(20)
+    @Timeout(value = 20, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
     public void testSyncSlaves(BatchOptions batchOptions) throws FailedToStartRedisException, IOException, InterruptedException {
         RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
         RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave();

@@ -20,14 +20,15 @@ import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Testcontainers
 public class RedisDockerTest {
 
     protected static final String NOTIFY_KEYSPACE_EVENTS = "--notify-keyspace-events";
 
-    @Container
     private static final GenericContainer<?> REDIS =
             new GenericContainer<>("redis:7.2")
+                    .withCreateContainerCmdModifier(cmd -> {
+                        cmd.withCmd("redis-server", "--save", "''");
+                    })
                     .withExposedPorts(6379);
 
     protected static RedissonClient redisson;
@@ -38,8 +39,24 @@ public class RedisDockerTest {
 
     @BeforeAll
     public static void beforeAll() {
-        Config config = createConfig();
-        redisson = Redisson.create(config);
+        if (redisson == null) {
+            REDIS.start();
+            Config config = createConfig();
+            redisson = Redisson.create(config);
+
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                redisson.shutdown();
+                REDIS.stop();
+                if (redissonCluster != null) {
+                    redissonCluster.shutdown();
+                    redissonCluster = null;
+                }
+                if (REDIS_CLUSTER != null) {
+                    REDIS_CLUSTER.stop();
+                    REDIS_CLUSTER = null;
+                }
+            }));
+        }
     }
 
     protected static Config createConfig() {
@@ -111,19 +128,6 @@ public class RedisDockerTest {
         redisson.getKeys().flushall();
         if (redissonCluster != null) {
             redissonCluster.getKeys().flushall();
-        }
-    }
-
-    @AfterAll
-    public static void afterAll() {
-        redisson.shutdown();
-        if (redissonCluster != null) {
-            redissonCluster.shutdown();
-            redissonCluster = null;
-        }
-        if (REDIS_CLUSTER != null) {
-            REDIS_CLUSTER.stop();
-            REDIS_CLUSTER = null;
         }
     }
 

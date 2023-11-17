@@ -28,16 +28,18 @@ public class RedissonFunctionTest extends RedisDockerTest {
                 "redis.register_function('myfun2', function(keys, args) return 'test' end)" +
                 "redis.register_function('myfun3', function(keys, args) return 123 end)");
         f.callAsync(FunctionMode.READ, "myfun", FunctionResult.VALUE, Collections.emptyList(), "test");
-        FunctionStats stats = f.stats();
-        FunctionStats.RunningFunction func = stats.getRunningFunction();
-        assertThat(func.getName()).isEqualTo("myfun");
-        FunctionStats.Engine engine = stats.getEngines().get("LUA");
-        assertThat(engine.getLibraries()).isEqualTo(1);
-        assertThat(engine.getFunctions()).isEqualTo(3);
-
-        f.kill();
-        FunctionStats stats2 = f.stats();
-        assertThat(stats2.getRunningFunction()).isNull();
+        try {
+            FunctionStats stats = f.stats();
+            FunctionStats.RunningFunction func = stats.getRunningFunction();
+            assertThat(func.getName()).isEqualTo("myfun");
+            FunctionStats.Engine engine = stats.getEngines().get("LUA");
+            assertThat(engine.getLibraries()).isEqualTo(1);
+            assertThat(engine.getFunctions()).isEqualTo(3);
+        } finally {
+            f.kill();
+            FunctionStats stats2 = f.stats();
+            assertThat(stats2.getRunningFunction()).isNull();
+        }
     }
 
     @Test

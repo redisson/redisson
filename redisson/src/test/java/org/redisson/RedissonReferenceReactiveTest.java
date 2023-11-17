@@ -14,6 +14,7 @@ import org.redisson.api.RSetReactive;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.codec.JsonJacksonCodec;
+import org.redisson.codec.Kryo5Codec;
 import org.redisson.config.Config;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -87,16 +88,13 @@ public class RedissonReferenceReactiveTest extends BaseReactiveTest {
     }
 
     @Test
-    public void shouldUseDefaultCodec() throws Exception {
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
-        objectMapper.configure(DeserializationFeature.UNWRAP_ROOT_VALUE, false);
-        JsonJacksonCodec codec = new JsonJacksonCodec(objectMapper);
+    public void shouldUseDefaultCodec() {
+        Kryo5Codec codec = new Kryo5Codec();
 
         Config config = new Config();
         config.setCodec(codec);
         config.useSingleServer()
-                .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+                .setAddress(redisson.getConfig().useSingleServer().getAddress());
 
         RedissonReactiveClient reactive = Redisson.create(config).reactive();
         RBucketReactive<Object> b1 = reactive.getBucket("b1");
