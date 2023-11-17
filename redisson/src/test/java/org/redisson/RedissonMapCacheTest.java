@@ -278,8 +278,6 @@ public class RedissonMapCacheTest extends BaseMapTest {
 
     @Test
     public void testSizeInMemory() {
-        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("4.0.0") > 0);
-        
         RMapCache<Integer, Integer> map = redisson.getMapCache("test");
         for (int i = 0; i < 10; i++) {
             map.put(i, i, 5, TimeUnit.SECONDS);
@@ -384,7 +382,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
     @Test
     public void testExpirationWithMaxSize() throws InterruptedException {
         Config config = new Config();
-        config.useSingleServer().setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+        config.useSingleServer().setAddress(redisson.getConfig().useSingleServer().getAddress());
         config.setMaxCleanUpDelay(2);
         config.setMinCleanUpDelay(1);
         RedissonClient redisson = Redisson.create(config);

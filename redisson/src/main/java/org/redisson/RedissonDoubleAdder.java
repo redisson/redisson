@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.DoubleAdder;
 
 import org.redisson.api.RDoubleAdder;
@@ -70,7 +71,7 @@ public class RedissonDoubleAdder extends RedissonBaseAdder<Double> implements RD
     
     @Override
     public double sum() {
-        return get(sumAsync());
+        return get(sumAsync(60, TimeUnit.SECONDS));
     }
 
 }

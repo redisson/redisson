@@ -152,7 +152,7 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         config.useSingleServer()
                 .setSubscriptionsPerConnection(2)
                 .setSubscriptionConnectionPoolSize(1)
-                .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+                .setAddress(redisson.getConfig().useSingleServer().getAddress());
         RedissonClient redisson = Redisson.create(config);
 
         RLocalCachedMap<Object, Object> m1 = redisson.getLocalCachedMap("pubsub_test1", LocalCachedMapOptions.defaults());
@@ -167,31 +167,20 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
     }
 
     @Test
-    public void testExpiration() throws IOException, InterruptedException {
-        RedisRunner.RedisProcess instance = new RedisRunner()
-                .nosave()
-                .randomPort()
-                .randomDir()
-                .notifyKeyspaceEvents(
-                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
-                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.K,
-                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.x)
-                .run();
-
-        Config config = new Config();
-        config.useSingleServer().setAddress(instance.getRedisServerAddressAndPort());
-        RedissonClient redisson = Redisson.create(config);
-
-        RLocalCachedMap<String, String> m = redisson.getLocalCachedMap("test", LocalCachedMapOptions.defaults());
-        m.put("12", "32");
-        assertThat(m.cachedEntrySet()).hasSize(1);
-        m.expire(Duration.ofSeconds(1));
-        Thread.sleep(1500);
-        assertThat(m.cachedEntrySet()).hasSize(0);
-        assertThat(m.get("12")).isNull();
-
-        redisson.shutdown();
-        instance.stop();
+    public void testExpiration() {
+        testWithParams(redisson -> {
+            RLocalCachedMap<String, String> m = redisson.getLocalCachedMap("test", LocalCachedMapOptions.defaults());
+            m.put("12", "32");
+            assertThat(m.cachedEntrySet()).hasSize(1);
+            m.expire(Duration.ofSeconds(1));
+            try {
+                Thread.sleep(1500);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            assertThat(m.cachedEntrySet()).hasSize(0);
+            assertThat(m.get("12")).isNull();
+        }, NOTIFY_KEYSPACE_EVENTS, "EKx");
     }
 
     @Test
@@ -427,7 +416,7 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
                 })
               .setConnectionMinimumIdleSize(3)
               .setConnectionPoolSize(3)
-              .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+              .setAddress(redisson.getConfig().useSingleServer().getAddress());
 
         RedissonClient redisson = Redisson.create(config);
 
@@ -460,7 +449,7 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         assertThat(redisson.getKeys().getKeys()).containsOnly("test");
 
         RedisClientConfig destinationCfg = new RedisClientConfig();
-        destinationCfg.setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+        destinationCfg.setAddress(redisson.getConfig().useSingleServer().getAddress());
         RedisClient client = RedisClient.create(destinationCfg);
         RedisConnection destinationConnection = client.connect();
 

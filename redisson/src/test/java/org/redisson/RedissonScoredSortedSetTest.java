@@ -1765,33 +1765,23 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     public void testAddListener() throws RedisRunner.FailedToStartRedisException, IOException, InterruptedException {
-        RedisRunner.RedisProcess instance = new RedisRunner()
-                .nosave()
-                .randomPort()
-                .randomDir()
-                .notifyKeyspaceEvents(
-                                    RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
-                                    RedisRunner.KEYSPACE_EVENTS_OPTIONS.z)
-                .run();
+        testWithParams(redisson -> {
+            RScoredSortedSet<Integer> ss = redisson.getScoredSortedSet("test");
+            CountDownLatch latch = new CountDownLatch(1);
+            ss.addListener(new ScoredSortedSetAddListener() {
+                @Override
+                public void onAdd(String name) {
+                    latch.countDown();
+                }
+            });
+            ss.add(1, 1);
 
-        Config config = new Config();
-        config.useSingleServer().setAddress(instance.getRedisServerAddressAndPort());
-        RedissonClient redisson = Redisson.create(config);
-
-        RScoredSortedSet<Integer> ss = redisson.getScoredSortedSet("test");
-        CountDownLatch latch = new CountDownLatch(1);
-        ss.addListener(new ScoredSortedSetAddListener() {
-            @Override
-            public void onAdd(String name) {
-                latch.countDown();
+            try {
+                assertThat(latch.await(1, TimeUnit.SECONDS)).isTrue();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
-        });
-        ss.add(1, 1);
-
-        assertThat(latch.await(1, TimeUnit.SECONDS)).isTrue();
-
-        redisson.shutdown();
-        instance.stop();
+        }, NOTIFY_KEYSPACE_EVENTS, "Ez");
     }
 
 

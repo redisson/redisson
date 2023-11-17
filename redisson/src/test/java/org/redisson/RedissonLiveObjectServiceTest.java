@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
-public class RedissonLiveObjectServiceTest extends BaseTest {
+public class RedissonLiveObjectServiceTest extends RedisDockerTest {
 
     @REntity
     public static class TestEnum implements Serializable {
@@ -731,35 +731,22 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     }
 
     @Test
-    public void testIndexUpdateCluster() throws IOException, InterruptedException {
-        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slot1 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slot2 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slot3 = new RedisRunner().randomPort().randomDir().nosave();
+    public void testIndexUpdateCluster() {
+        testInCluster(redisson -> {
+            RLiveObjectService s = redisson.getLiveObjectService();
+            TestIndexed t1 = new TestIndexed("1");
+            t1.setName1("test1");
+            t1 = s.persist(t1);
 
-        ClusterRunner clusterRunner = new ClusterRunner()
-                .addNode(master1, slot1)
-                .addNode(master2, slot2)
-                .addNode(master3, slot3);
-        ClusterRunner.ClusterProcesses process = clusterRunner.run();
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
 
-        Config config = new Config();
-        config.useClusterServers()
-        .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
-        RedissonClient redisson = Redisson.create(config);
-
-        RLiveObjectService s = redisson.getLiveObjectService();
-        TestIndexed t1 = new TestIndexed("1");
-        t1.setName1("test1");
-        t1 = s.persist(t1);
-
-        Collection<TestIndexed> objects0 = s.find(TestIndexed.class, Conditions.eq("name1", "test1"));
-        assertThat(objects0.iterator().next().getId()).isEqualTo(t1.getId());
-
-        redisson.shutdown();
-        process.shutdown();
+            Collection<TestIndexed> objects0 = s.find(TestIndexed.class, Conditions.eq("name1", "test1"));
+            assertThat(objects0.iterator().next().getId()).isEqualTo(t1.getId());
+        });
     }
 
     @Test
@@ -1153,9 +1140,9 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         t = service.persist(t);
         assertTrue(Objects.equals(new ObjectId(9090909), t.getId()));
 
-        t = new TestClass(new Byte("0"));
+        t = new TestClass(Byte.valueOf("0"));
         t = service.persist(t);
-        assertEquals(new Byte("0"), Byte.valueOf(t.getId().toString()));
+        assertEquals(Byte.valueOf("0"), Byte.valueOf(t.getId().toString()));
 
         t = new TestClass((byte)90);
         assertEquals((byte) 90, Byte.parseByte(t.getId().toString()));
@@ -1437,10 +1424,10 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
 
         TestClassID1 tc1 = new TestClassID1();
         tc1 = service.persist(tc1);
-        assertEquals(new Long(1), tc1.getName());
+        assertEquals(Long.valueOf(1), tc1.getName());
         TestClassID2 tc2 = new TestClassID2();
         tc2 = service.persist(tc2);
-        assertEquals(new Long(1), tc2.getName());
+        assertEquals(Long.valueOf(1), tc2.getName());
     }
 
     @REntity
@@ -1722,34 +1709,24 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     }
 
     @Test
-    public void testExpirable() throws InterruptedException, IOException {
-        RedisRunner.RedisProcess instance = new RedisRunner()
-                .nosave()
-                .randomPort()
-                .randomDir()
-                .notifyKeyspaceEvents(
-                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.K,
-                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.x)
-                .run();
-
-        Config config = new Config();
-        config.useSingleServer().setAddress(instance.getRedisServerAddressAndPort());
-        RedissonClient redisson = Redisson.create(config);
-
-        RLiveObjectService service = redisson.getLiveObjectService();
-        TestIndexed myObject = new TestIndexed("123");
-        myObject = service.persist(myObject);
-        myObject.setName1("123345");
-        myObject.setNum1(455);
-        myObject.setColl(Arrays.asList(1L, 2L));
-        assertThat(redisson.getKeys().count()).isEqualTo(6);
-        assertTrue(service.asLiveObject(myObject).isExists());
-        service.asRMap(myObject).expire(Duration.ofSeconds(1));
-        Thread.sleep(2000);
-        assertThat(redisson.getKeys().count()).isZero();
-
-        redisson.shutdown();
-        instance.stop();
+    public void testExpirable() {
+        testWithParams(redisson -> {
+            RLiveObjectService service = redisson.getLiveObjectService();
+            TestIndexed myObject = new TestIndexed("123");
+            myObject = service.persist(myObject);
+            myObject.setName1("123345");
+            myObject.setNum1(455);
+            myObject.setColl(Arrays.asList(1L, 2L));
+            assertThat(redisson.getKeys().count()).isEqualTo(6);
+            assertTrue(service.asLiveObject(myObject).isExists());
+            service.asRMap(myObject).expire(Duration.ofSeconds(1));
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            assertThat(redisson.getKeys().count()).isZero();
+        }, NOTIFY_KEYSPACE_EVENTS, "Kx");
     }
 
     @Test

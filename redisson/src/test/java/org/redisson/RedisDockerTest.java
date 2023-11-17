@@ -13,12 +13,17 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Testcontainers
 public class RedisDockerTest {
+
+    protected static final String NOTIFY_KEYSPACE_EVENTS = "--notify-keyspace-events";
 
     @Container
     private static final GenericContainer<?> REDIS =
@@ -48,6 +53,31 @@ public class RedisDockerTest {
     protected static RedissonClient createInstance() {
         Config config = createConfig();
         return Redisson.create(config);
+    }
+
+    protected void testWithParams(Consumer<RedissonClient> redissonCallback, String... params) {
+        GenericContainer<?> redis =
+                new GenericContainer<>("redis:7.2")
+                        .withCreateContainerCmdModifier(cmd -> {
+                            List<String> args = new ArrayList<>();
+                            args.add("redis-server");
+                            args.addAll(Arrays.asList(params));
+                            cmd.withCmd(args);
+                        })
+                        .withExposedPorts(6379);
+        redis.start();
+
+        Config config = new Config();
+        config.useSingleServer().setAddress("redis://127.0.0.1:" + redis.getFirstMappedPort());
+        RedissonClient redisson = Redisson.create(config);
+
+        try {
+            redissonCallback.accept(redisson);
+        } finally {
+            redisson.shutdown();
+            redis.stop();
+        }
+
     }
 
     protected void testInCluster(Consumer<RedissonClient> redissonCallback) {

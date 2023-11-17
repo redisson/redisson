@@ -521,36 +521,13 @@
                         <excludes>
                             <exclude>LRUCacheMapTest</exclude>
                             <exclude>SoftCacheMapTest</exclude>
-                            <exclude>SpringNamespaceTest</exclude>
-                            <exclude>SpringNamespaceWikiTest</exclude>
-                            <exclude>SpringNamespaceObjectTest</exclude>
                             <exclude>RedissonFairLockTest</exclude>
-                            <exclude>RedissonStreamTest</exclude>
                             <exclude>RedissonLockHeavyTest</exclude>
 
-                            <exclude>RedissonDoubleAdderTest</exclude>
-                            <exclude>RedissonListReactiveTest</exclude>
+                            <include>RedissonPriorityBlockingQueueTest</include>
                             <exclude>RedissonLocalCachedMapSerializationCodecTest</exclude>
-                            <exclude>RedissonLocalCachedMapTest</exclude>
-                            <exclude>RedissonLongAdderTest</exclude>
-                            <exclude>RedissonPriorityBlockingQueueTest</exclude>
-                            <exclude>RedissonCodecTest</exclude>
-                            <exclude>RedissonTest</exclude>
-                            <exclude>RedissonSetReactiveTest</exclude>
-                            <exclude>RedissonSetTest</exclude>
-                            <exclude>RedissonRedLockTest</exclude>
-                            <exclude>RedissonMapCacheReactiveTest</exclude>
-
-    <!--
-
-                            <exclude>RedissonMapReactiveTest</exclude>
-                            <exclude>RedissonGeoTest</exclude>
-                            <exclude>RedissonScoredSortedSetTest</exclude>
-                            <exclude>RedissonScheduledExecutorServiceTest</exclude>
-                            <exclude>RedissonBlockingQueueTest</exclude>
-                            <exclude>RedissonExecutorServiceTest</exclude>
-    -->
                         </excludes>
+
                         <forkCount>4</forkCount>
                         <reuseForks>true</reuseForks>
                         <argLine>

@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public abstract class BaseMapTest extends BaseTest {
+public abstract class BaseMapTest extends RedisDockerTest {
 
     public static class SimpleKey implements Serializable {
 
@@ -140,8 +140,6 @@ public abstract class BaseMapTest extends BaseTest {
 
     @Test
     public void testRandomKeys() {
-        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("6.2.0") > 0);
-
         RMap<Integer, Integer> map = getMap("map");
         Set<Integer> e1 = map.randomKeys(1);
         assertThat(e1).isEmpty();
@@ -1064,7 +1062,6 @@ public abstract class BaseMapTest extends BaseTest {
     
     @Test
     public void testValueSize() {
-        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("3.2.0") > 0);
         RMap<String, String> map = getMap("getAll");
         Assumptions.assumeTrue(!(map instanceof RMapCache));
         map.put("1", "1234");

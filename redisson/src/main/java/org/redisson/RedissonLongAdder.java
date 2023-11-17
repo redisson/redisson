@@ -20,6 +20,7 @@ import org.redisson.api.RLongAdder;
 import org.redisson.api.RedissonClient;
 import org.redisson.command.CommandAsyncExecutor;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 
 /**
@@ -70,7 +71,7 @@ public class RedissonLongAdder extends RedissonBaseAdder<Long> implements RLongA
 
     @Override
     public long sum() {
-        return get(sumAsync());
+        return get(sumAsync(60, TimeUnit.SECONDS));
     }
     
 }

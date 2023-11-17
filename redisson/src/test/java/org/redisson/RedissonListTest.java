@@ -10,6 +10,7 @@ import org.redisson.client.RedisException;
 import org.redisson.client.codec.IntegerCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
+import org.testcontainers.containers.GenericContainer;
 
 import java.io.IOException;
 import java.util.*;
@@ -21,37 +22,27 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class RedissonListTest extends BaseTest {
+public class RedissonListTest extends RedisDockerTest {
 
     @Test
-    public void testAddListener() throws RedisRunner.FailedToStartRedisException, IOException, InterruptedException {
-        RedisRunner.RedisProcess instance = new RedisRunner()
-                .nosave()
-                .randomPort()
-                .randomDir()
-                .notifyKeyspaceEvents(
-                                    RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
-                                    RedisRunner.KEYSPACE_EVENTS_OPTIONS.l)
-                .run();
+    public void testAddListener() throws RedisRunner.FailedToStartRedisException {
+        testWithParams(redisson -> {
+            RList<Integer> al = redisson.getList("name");
+            CountDownLatch latch = new CountDownLatch(1);
+            al.addListener(new ListAddListener() {
+                @Override
+                public void onListAdd(String name) {
+                    latch.countDown();
+                }
+            });
+            al.add(1);
 
-        Config config = new Config();
-        config.useSingleServer().setAddress(instance.getRedisServerAddressAndPort());
-        RedissonClient redisson = Redisson.create(config);
-
-        RList<Integer> al = redisson.getList("name");
-        CountDownLatch latch = new CountDownLatch(1);
-        al.addListener(new ListAddListener() {
-            @Override
-            public void onListAdd(String name) {
-                latch.countDown();
+            try {
+                assertThat(latch.await(1, TimeUnit.SECONDS)).isTrue();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
-        });
-        al.add(1);
-
-        assertThat(latch.await(1, TimeUnit.SECONDS)).isTrue();
-
-        redisson.shutdown();
-        instance.stop();
+        }, NOTIFY_KEYSPACE_EVENTS, "El");
     }
 
     @Test
