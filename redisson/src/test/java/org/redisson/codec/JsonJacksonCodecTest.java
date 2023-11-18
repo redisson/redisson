@@ -2,6 +2,7 @@ package org.redisson.codec;
 
 import java.io.IOException;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -35,6 +36,17 @@ public class JsonJacksonCodecTest {
             JsonJacksonCodec codec = new JsonJacksonCodec();
             codec.getObjectMapper().readValue(JSON, Bean1599.class);
         });
+    }
+
+    @Test
+    public void shouldSerializeAndDeserializeThrowable() throws JsonProcessingException {
+        //given
+        ObjectMapper objectMapper = JsonJacksonCodec.INSTANCE.getObjectMapper();
+        //when
+        String serialized = objectMapper.writeValueAsString(new RuntimeException("Example message"));
+        RuntimeException deserialized = objectMapper.readValue(serialized, RuntimeException.class);
+        //then
+        Assertions.assertEquals("Example message", deserialized.getMessage());
     }
 
     @Test

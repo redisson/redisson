@@ -65,7 +65,7 @@ public class JsonJacksonCodec extends BaseCodec {
     public static final JsonJacksonCodec INSTANCE = new JsonJacksonCodec();
 
     @JsonIdentityInfo(generator=ObjectIdGenerators.IntSequenceGenerator.class, property="@id")
-    @JsonAutoDetect(fieldVisibility = Visibility.ANY, 
+    @JsonAutoDetect(fieldVisibility = Visibility.NON_PRIVATE,
                     getterVisibility = Visibility.PUBLIC_ONLY, 
                     setterVisibility = Visibility.NONE, 
                     isGetterVisibility = Visibility.NONE)
