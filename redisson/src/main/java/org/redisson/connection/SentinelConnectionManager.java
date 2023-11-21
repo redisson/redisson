@@ -623,7 +623,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
     private boolean isUseSameMaster(RedisURI slaveAddr, RedisURI slaveMasterAddr) {
         RedisURI master = currentMaster.get();
-        if (!master.equals(slaveMasterAddr)) {
+        if (!master.equals(slaveMasterAddr) && !slaveAddr.equals(master)) {
             log.warn("Skipped slave up {} for master {} differs from current {}", slaveAddr, slaveMasterAddr, master);
             return false;
         }
