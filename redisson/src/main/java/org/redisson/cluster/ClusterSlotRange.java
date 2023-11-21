@@ -15,6 +15,8 @@
  */
 package org.redisson.cluster;
 
+import java.util.Objects;
+
 /**
  *
  * @author Nikita Koksharov
@@ -48,28 +50,16 @@ public class ClusterSlotRange {
     }
 
     @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + endSlot;
-        result = prime * result + startSlot;
-        return result;
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ClusterSlotRange that = (ClusterSlotRange) o;
+        return startSlot == that.startSlot && endSlot == that.endSlot;
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        ClusterSlotRange other = (ClusterSlotRange) obj;
-        if (endSlot != other.endSlot)
-            return false;
-        if (startSlot != other.startSlot)
-            return false;
-        return true;
+    public int hashCode() {
+        return Objects.hash(startSlot, endSlot);
     }
 
     @Override
