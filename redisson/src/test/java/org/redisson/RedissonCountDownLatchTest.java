@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedissonCountDownLatchTest extends BaseTest {
+public class RedissonCountDownLatchTest extends RedisDockerTest {
 
     @Test
     public void testAwaitTimeout() throws InterruptedException {
