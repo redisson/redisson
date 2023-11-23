@@ -240,7 +240,7 @@ public class RedisExecutor<V, R> {
         TimerTask task = timeout -> {
             if (writeFuture.cancel(false)) {
                 exception = new RedisTimeoutException("Command still hasn't been written into connection! " +
-                        "Check CPU load on the application side. Check connection with Redis node: " + connectionFuture.join().getRedisClient().getAddr() +
+                        "Check CPU usage of the JVM. Check connection with Redis node: " + connectionFuture.join().getRedisClient().getAddr() +
                         " for TCP packet drops. Try to increase nettyThreads setting. "
                         + " Node source: " + source + ", connection: " + connectionFuture.join()
                         + ", command: " + LogHelper.toString(command, params)
@@ -278,7 +278,7 @@ public class RedisExecutor<V, R> {
                                 if (writeFuture != null && writeFuture.cancel(false)) {
                                     if (exception == null) {
                                         exception = new RedisTimeoutException("Command still hasn't been written into connection! " +
-                                                "Check CPU load on the application side. Check connection with Redis node: " + getNow(connectionFuture).getRedisClient().getAddr() +
+                                                "Check CPU usage of the JVM. Check connection with Redis node: " + getNow(connectionFuture).getRedisClient().getAddr() +
                                                 " for TCP packet drops. Try to increase nettyThreads setting. "
                                                 + " Node source: " + source + ", connection: " + getNow(connectionFuture)
                                                 + ", command: " + LogHelper.toString(command, params)
@@ -351,7 +351,7 @@ public class RedisExecutor<V, R> {
 
         if (!future.isSuccess()) {
             exception = new WriteRedisConnectionException(
-                    "Unable to write command into connection! Increase nettyThreads setting. Node source: "
+                    "Unable to write command into connection! Check CPU usage of the JVM. Try to increase nettyThreads setting. Node source: "
                     + source + ", connection: " + connection +
                     ", command: " + LogHelper.toString(command, params)
                     + " after " + attempt + " retry attempts", future.cause());
