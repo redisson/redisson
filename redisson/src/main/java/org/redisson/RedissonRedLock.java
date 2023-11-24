@@ -28,6 +28,7 @@ import org.redisson.api.RLock;
  * @author Nikita Koksharov
  *
  */
+@Deprecated
 public class RedissonRedLock extends RedissonMultiLock {
 
     /**
