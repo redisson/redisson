@@ -903,7 +903,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 if (getServiceManager().getCfg().isCheckLockSyncedSlaves()
                         && res.getSyncedSlaves() == 0 && availableSlaves > 0) {
                     throw new CompletionException(
-                            new IllegalStateException("None of slaves were synced"));
+                            new IllegalStateException("None of slaves were synced. Try to increase slavesSyncTimeout setting."));
                 }
 
                 return getNow(result.toCompletableFuture());
