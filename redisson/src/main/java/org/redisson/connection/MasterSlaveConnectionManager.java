@@ -213,11 +213,23 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 masterSlaveEntry = new MasterSlaveEntry(this, serviceManager.getConnectionWatcher(), config);
             }
             CompletableFuture<RedisClient> masterFuture = masterSlaveEntry.setupMasterEntry(new RedisURI(config.getMasterAddress()));
-            masterFuture.join();
+            try {
+                masterFuture.get(config.getConnectTimeout(), TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } catch (ExecutionException | TimeoutException e) {
+                throw new RedisConnectionException(e);
+            }
 
             if (!config.isSlaveNotUsed()) {
                 CompletableFuture<Void> fs = masterSlaveEntry.initSlaveBalancer(getDisconnectedNodes());
-                fs.join();
+                try {
+                    fs.get(config.getConnectTimeout(), TimeUnit.MILLISECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } catch (ExecutionException | TimeoutException e) {
+                    throw new RedisConnectionException(e);
+                }
             }
 
             startDNSMonitoring(masterFuture.getNow(null));
