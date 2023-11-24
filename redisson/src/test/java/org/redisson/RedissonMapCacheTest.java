@@ -1,15 +1,19 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
+import org.awaitility.Awaitility;
+import org.joor.Reflect;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.redisson.api.*;
+import org.redisson.api.MapOptions.WriteMode;
+import org.redisson.api.map.event.*;
+import org.redisson.client.codec.*;
+import org.redisson.codec.CompositeCodec;
+import org.redisson.config.Config;
+import org.redisson.eviction.EvictionScheduler;
 
 import java.time.Duration;
-import java.util.AbstractMap;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -17,26 +21,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-import org.awaitility.Awaitility;
-import org.joor.Reflect;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Test;
-import org.redisson.api.*;
-import org.redisson.api.MapOptions.WriteMode;
-import org.redisson.api.map.event.EntryCreatedListener;
-import org.redisson.api.map.event.EntryEvent;
-import org.redisson.api.map.event.EntryExpiredListener;
-import org.redisson.api.map.event.EntryRemovedListener;
-import org.redisson.api.map.event.EntryUpdatedListener;
-import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.DoubleCodec;
-import org.redisson.client.codec.IntegerCodec;
-import org.redisson.client.codec.LongCodec;
-import org.redisson.client.codec.StringCodec;
-import org.redisson.codec.CompositeCodec;
-import org.redisson.config.Config;
-import org.redisson.eviction.EvictionScheduler;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 public class RedissonMapCacheTest extends BaseMapTest {
 
@@ -870,6 +856,23 @@ public class RedissonMapCacheTest extends BaseMapTest {
         SimpleValue val1 = map.get(new SimpleKey("1"));
         Assertions.assertEquals("3", val1.getValue());
         map.destroy();
+    }
+
+    @Test
+    public void testExpirationInCluster() {
+        testInCluster(r -> {
+            AtomicBoolean executed = new AtomicBoolean();
+            RMapCache<String, String> map = r.getMapCache("simple");
+            map.addListener(new EntryExpiredListener() {
+                @Override
+                public void onExpired(EntryEvent event) {
+                    executed.set(true);
+                }
+            });
+            map.put("1", "2", 1, TimeUnit.SECONDS);
+
+            Awaitility.await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(executed.get()).isTrue());
+        });
     }
 
     @Test

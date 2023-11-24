@@ -44,6 +44,8 @@ public class MapCacheEvictionTask extends EvictionTask {
 
     private EvictionScheduler evictionScheduler;
 
+    private String publishCommand;
+
     public MapCacheEvictionTask(String name, String timeoutSetName, String maxIdleSetName,
                                 String expiredChannelName, String lastAccessTimeSetName, CommandAsyncExecutor executor,
                                 boolean removeEmpty, EvictionScheduler evictionScheduler) {
@@ -56,6 +58,7 @@ public class MapCacheEvictionTask extends EvictionTask {
         this.executeTaskOnceLatchName = RedissonObject.prefixName("redisson__execute_task_once_latch", name);
         this.removeEmpty = removeEmpty;
         this.evictionScheduler = evictionScheduler;
+        this.publishCommand = executor.getConnectionManager().getSubscribeService().getPublishCommand();
     }
 
     @Override
@@ -77,7 +80,7 @@ public class MapCacheEvictionTask extends EvictionTask {
                     + "if v ~= false then "
                         + "local t, val = struct.unpack('dLc0', v); "
                         + "local msg = struct.pack('Lc0Lc0', string.len(key), key, string.len(val), val); "
-                        + "local listeners = redis.call('publish', KEYS[4], msg); "
+                        + "local listeners = redis.call(ARGV[5], KEYS[4], msg); "
                         + "if (listeners == 0) then "
                             + "break;"
                         + "end; "
@@ -95,7 +98,7 @@ public class MapCacheEvictionTask extends EvictionTask {
                   + "if v ~= false then "
                       + "local t, val = struct.unpack('dLc0', v); "
                       + "local msg = struct.pack('Lc0Lc0', string.len(key), key, string.len(val), val); "
-                      + "local listeners = redis.call('publish', KEYS[4], msg); "
+                      + "local listeners = redis.call(ARGV[5], KEYS[4], msg); "
                       + "if (listeners == 0) then "
                           + "break;"
                       + "end; "
@@ -109,7 +112,7 @@ public class MapCacheEvictionTask extends EvictionTask {
               + "end; "
               + "return #expiredKeys1 + #expiredKeys2;",
               Arrays.asList(name, timeoutSetName, maxIdleSetName, expiredChannelName, lastAccessTimeSetName, executeTaskOnceLatchName),
-              System.currentTimeMillis(), keysLimit, latchExpireTime, 1);
+              System.currentTimeMillis(), keysLimit, latchExpireTime, 1, publishCommand);
 
         if (removeEmpty) {
             CompletionStage<Integer> r = expiredFuture.thenCompose(removed -> {
