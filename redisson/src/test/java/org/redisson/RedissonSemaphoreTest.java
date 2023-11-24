@@ -1,17 +1,16 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Test;
+import org.redisson.api.RSemaphore;
 
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.awaitility.Awaitility;
-import org.junit.jupiter.api.Test;
-import org.redisson.api.RSemaphore;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonSemaphoreTest extends BaseConcurrentTest {
 

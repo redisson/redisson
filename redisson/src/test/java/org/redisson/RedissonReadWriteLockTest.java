@@ -3,11 +3,8 @@ package org.redisson;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.redisson.ClusterRunner.ClusterProcesses;
 import org.redisson.api.RLock;
 import org.redisson.api.RReadWriteLock;
-import org.redisson.api.RedissonClient;
-import org.redisson.config.Config;
 
 import java.security.SecureRandom;
 import java.time.Duration;

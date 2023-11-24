@@ -10,7 +10,6 @@ import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisException;
 import org.redisson.config.Config;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ExecutionException;

@@ -1,6 +1,9 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.*;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.redisson.api.RSortedSet;
+
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -9,10 +12,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-import org.redisson.api.RSortedSet;
-import org.redisson.api.RedissonClient;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class ConcurrentRedissonSortedSetTest extends BaseConcurrentTest {
 

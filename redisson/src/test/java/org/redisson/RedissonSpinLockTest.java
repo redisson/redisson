@@ -8,10 +8,8 @@ import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.config.Config;
-import org.redisson.connection.balancer.RandomLoadBalancer;
 import org.testcontainers.containers.GenericContainer;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
