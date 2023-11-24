@@ -8,6 +8,9 @@ import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -18,39 +21,25 @@ import java.util.concurrent.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedisClientTest {
+@Testcontainers
+public class RedisClientTest  {
 
-    private RedisClient redisClient;
+    @Container
+    private static final GenericContainer<?> REDIS =
+            new GenericContainer<>("redis:7.2")
+                    .withExposedPorts(6379);
+
+    private static RedisClient redisClient;
     
     @BeforeAll
-    public static void beforeClass() throws IOException, InterruptedException {
-        if (!RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisServerInstance();
-        }
-    }
-
-    @AfterAll
-    public static void afterClass() throws IOException, InterruptedException {
-        if (!RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.shutDownDefaultRedisServerInstance();
-        }
-    }
-
-    @BeforeEach
-    public void before() throws IOException, InterruptedException {
-        if (RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisServerInstance();
-        }
+    public static void beforeAll() {
         RedisClientConfig config = new RedisClientConfig();
-        config.setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+        config.setAddress("redis://127.0.0.1:" + REDIS.getFirstMappedPort());
         redisClient = RedisClient.create(config);
     }
 
-    @AfterEach
-    public void after() throws InterruptedException {
-        if (RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.shutDownDefaultRedisServerInstance();
-        }
+    @AfterAll
+    public static void afterAll() {
         redisClient.shutdown();
     }
 
