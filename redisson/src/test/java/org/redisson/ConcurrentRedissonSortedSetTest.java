@@ -20,12 +20,11 @@ public class ConcurrentRedissonSortedSetTest extends BaseConcurrentTest {
     public void testAdd_SingleInstance() throws InterruptedException {
         final String name = "testAdd_SingleInstance";
 
-        RedissonClient r = BaseTest.createInstance();
-        RSortedSet<Integer> map = r.getSortedSet(name);
+        RSortedSet<Integer> map = redisson.getSortedSet(name);
         map.clear();
 
         int length = 5000;
-        final List<Integer> elements = new ArrayList<Integer>();
+        final List<Integer> elements = new ArrayList<>();
         for (int i = 1; i < length + 1; i++) {
             elements.add(i);
         }
@@ -43,15 +42,13 @@ public class ConcurrentRedissonSortedSetTest extends BaseConcurrentTest {
         assertThat(map).containsExactly(p);
 
         map.clear();
-        r.shutdown();
     }
 
     @Test
     public void testAddRemove_SingleInstance() throws InterruptedException, NoSuchAlgorithmException {
         final String name = "testAddNegative_SingleInstance";
 
-        RedissonClient r = BaseTest.createInstance();
-        RSortedSet<Integer> map = r.getSortedSet(name);
+        RSortedSet<Integer> map = redisson.getSortedSet(name);
         map.clear();
         int length = 1000;
         for (int i = 0; i < length; i++) {
@@ -79,8 +76,6 @@ public class ConcurrentRedissonSortedSetTest extends BaseConcurrentTest {
                 Assertions.fail();
             }
         }
-        
-        r.shutdown();
     }
 
 }

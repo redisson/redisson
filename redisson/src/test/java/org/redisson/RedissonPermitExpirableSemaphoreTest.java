@@ -23,43 +23,35 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
 
     @Test
-    public void testGetInClusterNameMapper() throws RedisRunner.FailedToStartRedisException, IOException, InterruptedException {
-        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave1 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave2 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave3 = new RedisRunner().randomPort().randomDir().nosave();
+    public void testGetInClusterNameMapper() throws RedisRunner.FailedToStartRedisException, InterruptedException {
+        testInCluster(client -> {
+            Config config = client.getConfig();
+            config.useClusterServers()
+                    .setNameMapper(new NameMapper() {
+                        @Override
+                        public String map(String name) {
+                            return "test::" + name;
+                        }
 
-        ClusterRunner clusterRunner = new ClusterRunner()
-                .addNode(master1, slave1)
-                .addNode(master2, slave2)
-                .addNode(master3, slave3);
-        ClusterRunner.ClusterProcesses process = clusterRunner.run();
+                        @Override
+                        public String unmap(String name) {
+                            return name.replace("test::", "");
+                        }
+                    });
+            RedissonClient redisson = Redisson.create(config);
 
-        Config config = new Config();
-        config.useClusterServers()
-                .setNameMapper(new NameMapper() {
-                    @Override
-                    public String map(String name) {
-                        return "test::" + name;
-                    }
+            RPermitExpirableSemaphore s = redisson.getPermitExpirableSemaphore("semaphore");
+            s.trySetPermits(1);
+            try {
+                String v = s.acquire();
+                s.release(v);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
 
-                    @Override
-                    public String unmap(String name) {
-                        return name.replace("test::", "");
-                    }
-                })
-                .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
-        RedissonClient redisson = Redisson.create(config);
+            redisson.shutdown();
 
-        RPermitExpirableSemaphore s = redisson.getPermitExpirableSemaphore("semaphore");
-        s.trySetPermits(1);
-        String v = s.acquire();
-        s.release(v);
-
-        redisson.shutdown();
-        process.shutdown();
+        });
     }
 
     @Test

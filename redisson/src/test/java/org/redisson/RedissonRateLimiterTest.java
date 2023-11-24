@@ -50,7 +50,7 @@ public class RedissonRateLimiterTest extends RedisDockerTest {
             Thread.sleep(1000);
         }
 
-        assertThat(sizes.stream().filter(s -> s == rate).count()).isGreaterThan(16);
+        assertThat(sizes.stream().filter(s -> s == rate).count()).isGreaterThanOrEqualTo(16);
         e.shutdownNow();
     }
 

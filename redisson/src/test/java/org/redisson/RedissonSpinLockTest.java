@@ -9,6 +9,7 @@ import org.redisson.api.RedissonClient;
 import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.config.Config;
 import org.redisson.connection.balancer.RandomLoadBalancer;
+import org.testcontainers.containers.GenericContainer;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -56,24 +57,26 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
     }
 
     @Test
-    public void testRedisFailed() throws IOException, InterruptedException {
-        RedisRunner.RedisProcess master = new RedisRunner()
-                .port(6377)
-                .nosave()
-                .randomDir()
-                .run();
+    public void testRedisFailed() {
+        GenericContainer<?> redis =
+                new GenericContainer<>("redis:7.2")
+                        .withExposedPorts(6379);
+        redis.start();
 
         Config config = new Config();
-        config.useSingleServer().setAddress("redis://127.0.0.1:6377");
+        config.useSingleServer().setAddress("redis://127.0.0.1:" + redis.getFirstMappedPort());
         RedissonClient redisson = Redisson.create(config);
 
         Assertions.assertThrows(WriteRedisConnectionException.class, () -> {
+
             RLock lock = redisson.getSpinLock("myLock");
             // kill RedisServer while main thread is sleeping.
-            master.stop();
+            redis.stop();
             Thread.sleep(3000);
             lock.tryLock(5, 10, TimeUnit.SECONDS);
         });
+
+        redisson.shutdown();
     }
 
     @Test
@@ -144,37 +147,19 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
 
     @Test
     public void testInCluster() throws Exception {
-        RedisRunner master1 = new RedisRunner().port(6890).randomDir().nosave();
-        RedisRunner master2 = new RedisRunner().port(6891).randomDir().nosave();
-        RedisRunner master3 = new RedisRunner().port(6892).randomDir().nosave();
-        RedisRunner slave1 = new RedisRunner().port(6900).randomDir().nosave();
-        RedisRunner slave2 = new RedisRunner().port(6901).randomDir().nosave();
-        RedisRunner slave3 = new RedisRunner().port(6902).randomDir().nosave();
+        testInCluster(client -> {
+            Config config = client.getConfig();
+            config.setSlavesSyncTimeout(3000);
 
-        ClusterRunner clusterRunner = new ClusterRunner()
-                .addNode(master1, slave1)
-                .addNode(master2, slave2)
-                .addNode(master3, slave3);
-        ClusterRunner.ClusterProcesses process = clusterRunner.run();
-
-        Thread.sleep(5000);
-
-        Config config = new Config();
-        config.useClusterServers()
-                .setLoadBalancer(new RandomLoadBalancer())
-                .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
-        RedissonClient redisson = Redisson.create(config);
-
-        RLock lock = redisson.getSpinLock("myLock");
-        lock.lock();
-        assertThat(lock.isLocked()).isTrue();
-        lock.unlock();
-        assertThat(lock.isLocked()).isFalse();
-
-        redisson.shutdown();
-        process.shutdown();
+            RedissonClient redisson = Redisson.create(config);
+            RLock lock = redisson.getSpinLock("myLock");
+            lock.lock();
+            assertThat(lock.isLocked()).isTrue();
+            lock.unlock();
+            assertThat(lock.isLocked()).isFalse();
+            redisson.shutdown();
+        });
     }
-
 
     @Test
     public void testAutoExpire() throws InterruptedException {
