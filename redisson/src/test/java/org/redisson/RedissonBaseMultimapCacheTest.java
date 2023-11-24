@@ -122,7 +122,7 @@ public abstract class RedissonBaseMultimapCacheTest extends RedisDockerTest {
         
         assertThat(cache.size()).isEqualTo(6);
         
-        Thread.sleep(10000);
+        Thread.sleep(12000);
 
         assertThat(cache.size()).isZero();
 
