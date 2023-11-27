@@ -6,12 +6,10 @@ import org.junit.jupiter.api.Timeout;
 import org.redisson.api.*;
 import org.redisson.api.annotation.*;
 import org.redisson.api.condition.Conditions;
-import org.redisson.config.Config;
 import org.redisson.liveobject.resolver.DefaultNamingScheme;
 import org.redisson.liveobject.resolver.LongGenerator;
 import org.redisson.liveobject.resolver.UUIDGenerator;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.time.Duration;
 import java.util.*;
@@ -23,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  *
  * @author Rui Gu (https://github.com/jackygurui)
+ * @author Nikita Koksharov
  */
 public class RedissonLiveObjectServiceTest extends RedisDockerTest {
 
@@ -728,6 +727,21 @@ public class RedissonLiveObjectServiceTest extends RedisDockerTest {
 
         long ids3 = s.count(TestIndexed.class, Conditions.eq("num1", 100));
         assertThat(ids3).isEqualTo(2);
+    }
+
+    @Test
+    public void testPersistInCluster() {
+        testInCluster(redisson -> {
+            RLiveObjectService liveObjectService = redisson.getLiveObjectService();
+            TestIndexed item1 = new TestIndexed("1");
+            item1.setName1("name1");
+            item1.setName2("name2");
+            item1.setNum1(123);
+
+            TestIndexed item2 = new TestIndexed("2");
+
+            liveObjectService.persist(item1, item2);
+        });
     }
 
     @Test

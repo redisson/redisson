@@ -38,6 +38,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 
 /**
@@ -204,15 +205,23 @@ public class AccessorInterceptor {
         } else {
             if (ClassUtils.isAnnotationPresent(field.getType(), REntity.class)
                     || commandExecutor.getConnectionManager().isClusterMode()) {
-                Object value = liveMap.remove(field.getName());
-                if (value != null) {
-                    RMultimapAsync<Object, Object> map = new RedissonSetMultimap<>(namingScheme.getCodec(), ce, indexName);
-                    Object k = value;
-                    if (ClassUtils.isAnnotationPresent(field.getType(), REntity.class)) {
-                        k = ((RLiveObject) value).getLiveObjectId();
-                    }
-                    map.removeAsync(k, ((RLiveObject) me).getLiveObjectId());
+                CompletableFuture<Object> f;
+                if (commandExecutor instanceof CommandBatchService) {
+                    f = liveMap.removeAsync(field.getName()).toCompletableFuture();
+                } else {
+                    Object value = liveMap.remove(field.getName());
+                    f = CompletableFuture.completedFuture(value);
                 }
+                f.thenAccept(value -> {
+                    if (value != null) {
+                        RMultimapAsync<Object, Object> map = new RedissonSetMultimap<>(namingScheme.getCodec(), ce, indexName);
+                        Object k = value;
+                        if (ClassUtils.isAnnotationPresent(field.getType(), REntity.class)) {
+                            k = ((RLiveObject) value).getLiveObjectId();
+                        }
+                        map.removeAsync(k, ((RLiveObject) me).getLiveObjectId());
+                    }
+                });
             } else {
                 removeAsync(ce, indexName, ((RedissonObject) liveMap).getRawName(),
                         namingScheme.getCodec(), ((RLiveObject) me).getLiveObjectId(), field.getName());
