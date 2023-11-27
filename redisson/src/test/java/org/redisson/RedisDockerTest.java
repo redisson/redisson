@@ -1,24 +1,20 @@
 package org.redisson;
 
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.redisson.api.*;
+import org.redisson.api.NatMapper;
+import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 import org.redisson.config.Protocol;
 import org.redisson.misc.RedisURI;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.startupcheck.MinimumDurationRunningStartupCheckStrategy;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedisDockerTest {
 
