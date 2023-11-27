@@ -26,8 +26,10 @@ import org.redisson.client.protocol.pubsub.PubSubType;
  */
 public interface RedisPubSubListener<V> extends MessageListener<V> {
 
-    void onStatus(PubSubType type, CharSequence channel);
+    default void onStatus(PubSubType type, CharSequence channel) {
+    }
 
-    void onPatternMessage(CharSequence pattern, CharSequence channel, V message);
+    default void onPatternMessage(CharSequence pattern, CharSequence channel, V message) {
+    }
 
 }

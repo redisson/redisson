@@ -82,30 +82,23 @@ public class CommandPubSubDecoder extends CommandDecoder {
 
     @Override
     protected void decodeCommand(Channel channel, ByteBuf in, QueueCommand data, int endIndex) throws Exception {
-        if (data == null) {
-            try {
-                while (in.writerIndex() > in.readerIndex()) {
-                    decode(in, null, null, channel, false, null);
+        try {
+            while (in.writerIndex() > in.readerIndex()) {
+                if (data != null) {
+                    if (((CommandData<Object, Object>) data).getPromise().isDone()) {
+                        data = null;
+                    }
                 }
-                sendNext(channel);
-            } catch (Exception e) {
-                log.error("Unable to decode data. channel: {}, reply: {}", channel, LogHelper.toString(in), e);
-                sendNext(channel);
-                throw e;
+                decode(in, (CommandData<Object, Object>) data, null, channel, false, null);
             }
-        } else if (data instanceof CommandData) {
-            CommandData<Object, Object> cmd = (CommandData<Object, Object>) data;
-            try {
-                while (in.writerIndex() > in.readerIndex()) {
-                    decode(in, cmd, null, channel, false, null);
-                }
-                sendNext(channel, data);
-            } catch (Exception e) {
-                log.error("Unable to decode data. channel: {}, reply: {}", channel, LogHelper.toString(in), e);
-                cmd.tryFailure(e);
-                sendNext(channel);
-                throw e;
+            sendNext(channel, data);
+        } catch (Exception e) {
+            log.error("Unable to decode data. channel: {}, reply: {}", channel, LogHelper.toString(in), e);
+            if (data != null) {
+                data.tryFailure(e);
             }
+            sendNext(channel);
+            throw e;
         }
     }
 
@@ -204,9 +197,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
                 });
             }
         } else {
-            if (data != null) {
-                super.decodeResult(data, parts, channel, result);
-            }
+            super.decodeResult(data, parts, channel, result);
         }
     }
 
@@ -249,6 +240,12 @@ public class CommandPubSubDecoder extends CommandDecoder {
         if (parts.isEmpty() || parts.get(0) == null) {
             return null;
         }
+
+        if ("invalidate".equals(parts.get(0))) {
+            parts.set(0, "message");
+            parts.add(1, "__redis__:invalidate".getBytes());
+        }
+
         String command = parts.get(0).toString();
         if (MESSAGES.contains(command)) {
             ChannelName channelName = new ChannelName((byte[]) parts.get(1));
@@ -265,7 +262,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
                 return null;
             }
             return entry.getDecoder();
-        } else if ("pong".equals(command)) {
+        } else if ("pong".equals(command) || data == null) {
             return new ListObjectDecoder<>(0);
         }
 

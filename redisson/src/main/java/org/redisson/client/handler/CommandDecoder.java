@@ -495,9 +495,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
     protected void decodeResult(CommandData<Object, Object> data, List<Object> parts, Channel channel,
             Object result) throws IOException {
-        if (data != null) {
-            handleResult(data, parts, result, true);
-        }
+        handleResult(data, parts, result, true);
     }
 
     private void handleResult(CommandData<Object, Object> data, List<Object> parts, Object result, boolean skipConvertor) {
