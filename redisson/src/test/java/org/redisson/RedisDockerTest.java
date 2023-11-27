@@ -27,7 +27,7 @@ public class RedisDockerTest {
                     })
                     .withExposedPorts(6379);
 
-    protected static final Protocol protocol = Protocol.RESP3;
+    protected static final Protocol protocol = Protocol.RESP2;
 
     protected static RedissonClient redisson;
 
