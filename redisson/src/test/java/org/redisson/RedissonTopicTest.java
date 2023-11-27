@@ -94,6 +94,7 @@ public class RedissonTopicTest extends RedisDockerTest {
         redisCluster.start();
 
         Config config = new Config();
+        config.setProtocol(protocol);
         config.useClusterServers()
                 .setNatMapper(new NatMapper() {
                     @Override
@@ -729,6 +730,7 @@ public class RedissonTopicTest extends RedisDockerTest {
         redis.start();
 
         Config config = new Config();
+        config.setProtocol(protocol);
         config.useSingleServer()
                 .setAddress("redis://127.0.0.1:" + redis.getFirstMappedPort());
         RedissonClient redisson = Redisson.create(config);
@@ -778,6 +780,7 @@ public class RedissonTopicTest extends RedisDockerTest {
         redis.start();
 
         Config config = new Config();
+        config.setProtocol(protocol);
         config.useSingleServer()
                 .setAddress("redis://127.0.0.1:" + redis.getFirstMappedPort());
         RedissonClient redisson = Redisson.create(config);
@@ -1002,6 +1005,7 @@ public class RedissonTopicTest extends RedisDockerTest {
         Thread.sleep(5000);
 
         Config config = new Config();
+        config.setProtocol(protocol);
         config.useSentinelServers()
                 .setNatMapper(new NatMapper() {
 
@@ -1515,6 +1519,7 @@ public class RedissonTopicTest extends RedisDockerTest {
         redisCluster.start();
 
         Config config = new Config();
+        config.setProtocol(protocol);
         config.useClusterServers()
                 .setNatMapper(new NatMapper() {
                     @Override

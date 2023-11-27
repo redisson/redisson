@@ -82,6 +82,7 @@ public class RedissonLockTest extends BaseConcurrentTest {
     @Test
     public void testSubscriptionsPerConnection() throws InterruptedException {
         Config config = new Config();
+        config.setProtocol(protocol);
         config.useSingleServer()
                 .setSubscriptionConnectionPoolSize(1)
                 .setSubscriptionConnectionMinimumIdleSize(1)

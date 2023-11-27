@@ -335,10 +335,12 @@ public class RedissonBucketTest extends RedisDockerTest {
         redis2.start();
 
         Config config2 = new Config();
+        config2.setProtocol(protocol);
         config2.useSingleServer().setAddress("redis://" + redis.getHost() + ":" + redis.getFirstMappedPort());
         RedissonClient r2 = Redisson.create(config2);
 
         Config config = new Config();
+        config.setProtocol(protocol);
         config.useSingleServer().setAddress("redis://" + redis2.getHost() + ":" + redis2.getFirstMappedPort());
         RedissonClient r = Redisson.create(config);
 

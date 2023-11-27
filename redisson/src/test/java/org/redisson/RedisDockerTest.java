@@ -31,6 +31,8 @@ public class RedisDockerTest {
                     })
                     .withExposedPorts(6379);
 
+    protected static final Protocol protocol = Protocol.RESP3;
+
     protected static RedissonClient redisson;
 
     protected static RedissonClient redissonCluster;
@@ -61,7 +63,7 @@ public class RedisDockerTest {
 
     protected static Config createConfig() {
         Config config = new Config();
-        config.setProtocol(Protocol.RESP2);
+        config.setProtocol(protocol);
         config.useSingleServer()
                 .setAddress("redis://127.0.0.1:" + REDIS.getFirstMappedPort());
         return config;
@@ -85,6 +87,7 @@ public class RedisDockerTest {
         redis.start();
 
         Config config = new Config();
+        config.setProtocol(protocol);
         config.useSingleServer().setAddress("redis://127.0.0.1:" + redis.getFirstMappedPort());
         RedissonClient redisson = Redisson.create(config);
 
@@ -105,7 +108,7 @@ public class RedisDockerTest {
             REDIS_CLUSTER.start();
 
             Config config = new Config();
-            config.setProtocol(Protocol.RESP2);
+            config.setProtocol(protocol);
             config.useClusterServers()
                     .setNatMapper(new NatMapper() {
                         @Override
