@@ -482,13 +482,13 @@ public class RedissonTopicTest extends RedisDockerTest {
             }
 
             try {
-                Thread.sleep(1000);
+                Thread.sleep(2000);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
 
             topic.publish("mymessage");
-            Awaitility.waitAtMost(Duration.ofSeconds(1)).until(() -> reference.get().equals("mymessage"));
+            Awaitility.waitAtMost(Duration.ofSeconds(1)).until(() -> "mymessage".equals(reference.get()));
 
             List<String> sourceList2 = sourceConnection.sync(RedisCommands.PUBSUB_CHANNELS);
             assertThat(sourceList2).isEmpty();
@@ -1470,6 +1470,8 @@ public class RedissonTopicTest extends RedisDockerTest {
                 .addNode(master3, slave3);
         ClusterProcesses process = clusterRunner.run();
 
+        Thread.sleep(5000);
+
         Config config = new Config();
         config.useClusterServers()
                 .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
@@ -1620,6 +1622,8 @@ public class RedissonTopicTest extends RedisDockerTest {
                 .addNode(master2, slave2)
                 .addNode(master3, slave3);
         ClusterProcesses process = clusterRunner.run();
+
+        Thread.sleep(5000);
 
         Config config = new Config();
         config.useClusterServers()
