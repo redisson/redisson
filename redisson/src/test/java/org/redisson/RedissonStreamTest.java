@@ -2,7 +2,6 @@ package org.redisson;
 
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
 import org.redisson.api.stream.*;
@@ -33,7 +32,7 @@ public class RedissonStreamTest extends RedisDockerTest {
     }
 
     @Test
-    public void testAutoClaim() {
+    public void testAutoClaim() throws InterruptedException {
         RStream<String, String> stream = redisson.getStream("test");
 
         stream.add(StreamAddArgs.entry("0", "0"));
@@ -51,6 +50,8 @@ public class RedissonStreamTest extends RedisDockerTest {
 
         Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup", "consumer2", StreamReadGroupArgs.neverDelivered());
         assertThat(s2.size()).isEqualTo(2);
+
+        Thread.sleep(5);
 
         AutoClaimResult<String, String> res = stream.autoClaim("testGroup", "consumer1", 1, TimeUnit.MILLISECONDS, id3, 2);
         assertThat(res.getMessages().size()).isEqualTo(2);

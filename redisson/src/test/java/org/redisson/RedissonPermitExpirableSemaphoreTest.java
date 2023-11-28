@@ -25,6 +25,7 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
     public void testGetInClusterNameMapper() throws RedisRunner.FailedToStartRedisException, InterruptedException {
         testInCluster(client -> {
             Config config = client.getConfig();
+            config.setSlavesSyncTimeout(2000);
             config.useClusterServers()
                     .setNameMapper(new NameMapper() {
                         @Override

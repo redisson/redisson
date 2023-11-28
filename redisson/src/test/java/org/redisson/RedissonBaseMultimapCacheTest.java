@@ -1,5 +1,6 @@
 package org.redisson;
 
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RMultimapCache;
 
@@ -107,7 +108,7 @@ public abstract class RedissonBaseMultimapCacheTest extends RedisDockerTest {
     }
 
     @Test
-    public void testScheduler() throws InterruptedException {
+    public void testScheduler() {
         RMultimapCache<String, String> cache = getMultimapCache("simple33");
         assertThat(cache.put("1", "1")).isTrue();
         assertThat(cache.put("1", "2")).isTrue();
@@ -121,11 +122,8 @@ public abstract class RedissonBaseMultimapCacheTest extends RedisDockerTest {
         assertThat(cache.expireKey("3", 3, TimeUnit.SECONDS)).isFalse();
         
         assertThat(cache.size()).isEqualTo(6);
-        
-        Thread.sleep(12000);
 
-        assertThat(cache.size()).isZero();
-
+        Awaitility.await().atMost(Duration.ofSeconds(13)).untilAsserted(() -> assertThat(cache.size()).isZero());
     }
 
     @Test
