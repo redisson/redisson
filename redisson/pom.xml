@@ -530,9 +530,7 @@
 
                         <forkCount>4</forkCount>
                         <reuseForks>true</reuseForks>
-                        <argLine>
-                           -javaagent:"${settings.localRepository}"/com/github/hazendaz/jmockit/jmockit/1.51.0/jmockit-1.51.0.jar
-                        </argLine>
+                        <argLine>${argLine} -javaagent:"${settings.localRepository}"/com/github/hazendaz/jmockit/jmockit/1.51.0/jmockit-1.51.0.jar</argLine>
                     </configuration>
             </plugin>
 
