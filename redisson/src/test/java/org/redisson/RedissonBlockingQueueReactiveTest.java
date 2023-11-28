@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class RedissonBlockingQueueReactiveTest extends BaseReactiveTest {
 
     @Test
-    public void testTakeElements2() throws InterruptedException {
+    public void testTakeElements2() {
         RBlockingDequeReactive<Long> queue = redisson.getBlockingDeque("test");
 
         Mono<Void> mono = Flux.range(1, 100)
@@ -44,7 +44,7 @@ public class RedissonBlockingQueueReactiveTest extends BaseReactiveTest {
                 .repeat()
                 .subscribe();
 
-        Awaitility.await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> {
+        Awaitility.await().atMost(Duration.ofSeconds(3)).untilAsserted(() -> {
             assertThat(counter.get()).isEqualTo(100);
         });
     }

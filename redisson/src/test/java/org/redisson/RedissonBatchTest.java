@@ -8,8 +8,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.redisson.ClusterRunner.ClusterProcesses;
-import org.redisson.RedisRunner.FailedToStartRedisException;
 import org.redisson.api.*;
 import org.redisson.api.BatchOptions.ExecutionMode;
 import org.redisson.client.RedisClient;
@@ -26,7 +24,6 @@ import org.redisson.misc.RedisURI;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.startupcheck.MinimumDurationRunningStartupCheckStrategy;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
@@ -37,7 +34,7 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedissonBatchTest extends BaseTest {
+public class RedissonBatchTest extends RedisDockerTest {
 
     public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][] {
@@ -146,62 +143,46 @@ public class RedissonBatchTest extends BaseTest {
 
     @ParameterizedTest
     @MethodSource("data")
-    public void testConnectionLeak(BatchOptions batchOptions) throws Exception {
+    public void testConnectionLeak(BatchOptions batchOptions) {
         Assumptions.assumeTrue(batchOptions.getExecutionMode() == ExecutionMode.IN_MEMORY);
 
-        RedisRunner master1 = new RedisRunner().port(6890).randomDir().nosave();
-        RedisRunner master2 = new RedisRunner().port(6891).randomDir().nosave();
-        RedisRunner master3 = new RedisRunner().port(6892).randomDir().nosave();
-        RedisRunner slave1 = new RedisRunner().port(6900).randomDir().nosave();
-        RedisRunner slave2 = new RedisRunner().port(6901).randomDir().nosave();
-        RedisRunner slave3 = new RedisRunner().port(6902).randomDir().nosave();
+        testInCluster(client -> {
+            Config config = client.getConfig();
+            config.useClusterServers()
+                    .setConnectTimeout(500).setPingConnectionInterval(2000)
+                    .setMasterConnectionMinimumIdleSize(1)
+                    .setMasterConnectionPoolSize(1)
+                    .setSlaveConnectionMinimumIdleSize(1)
+                    .setSlaveConnectionPoolSize(1)
+                    .setTimeout(100)
+                    .setRetryAttempts(0)
+                    .setRetryInterval(20);
+            RedissonClient redisson = Redisson.create(config);
 
-        ClusterRunner clusterRunner = new ClusterRunner()
-                .addNode(master1, slave1)
-                .addNode(master2, slave2)
-                .addNode(master3, slave3);
-        ClusterRunner.ClusterProcesses process = clusterRunner.run();
+            ExecutorService executorService = Executors.newFixedThreadPool(5);
+            AtomicInteger counter = new AtomicInteger(5*15);
+            AtomicBoolean hasErrors = new AtomicBoolean();
+            for (int i = 0; i < 5; i++) {
+                executorService.submit(() -> {
+                    for (int j = 0 ; j < 15; j++) {
+                        executeBatch(redisson, batchOptions).whenComplete((r, e) -> {
+                            if (e != null) {
+                                hasErrors.set(true);
+                            }
+                            counter.decrementAndGet();
+                        });
+                    }
+                });
+            }
 
-        Thread.sleep(1000);
+            Awaitility.await().atMost(13, TimeUnit.SECONDS).until(() -> {
+                return counter.get() == 0;
+            });
+            Assertions.assertThat(hasErrors).isTrue();
 
-        Config config = new Config();
-        config.useClusterServers()
-				.setConnectTimeout(500).setPingConnectionInterval(2000)
-                .setMasterConnectionMinimumIdleSize(1)
-                .setMasterConnectionPoolSize(1)
-                .setSlaveConnectionMinimumIdleSize(1)
-                .setSlaveConnectionPoolSize(1)
-                .setTimeout(100)
-                .setRetryAttempts(0)
-                .setRetryInterval(20)
-        .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
-        RedissonClient redisson = Redisson.create(config);
-
-		ExecutorService executorService = Executors.newFixedThreadPool(5);
-		AtomicInteger counter = new AtomicInteger(5*15);
-		AtomicBoolean hasErrors = new AtomicBoolean();
-		for (int i = 0; i < 5; i++) {
-			executorService.submit(() -> {
-				for (int j = 0 ; j < 15; j++) {
-					executeBatch(redisson, batchOptions).whenComplete((r, e) -> {
-                        if (e != null) {
-                            hasErrors.set(true);
-                        }
-                        counter.decrementAndGet();
-					});
-				}
-			});
-		}
-
-		Awaitility.await().atMost(13, TimeUnit.SECONDS).until(() -> {
-            return counter.get() == 0;
+            executeBatch(redisson, batchOptions).toCompletableFuture().join();
+            redisson.shutdown();
         });
-		Assertions.assertThat(hasErrors).isTrue();
-
-		executeBatch(redisson, batchOptions).toCompletableFuture().join();
-
-        redisson.shutdown();
-        process.shutdown();
     }
 
 	public RFuture<BatchResult<?>> executeBatch(RedissonClient client, BatchOptions batchOptions) {
@@ -223,25 +204,25 @@ public class RedissonBatchTest extends BaseTest {
         batch.execute();
         assertThat(f1.get()).isEqualTo(1d);
         assertThat(f2.get()).isNull();
-        
+
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("myZKey");
         assertThat(set.getScore("abc")).isEqualTo(1d);
         RBucket<String> bucket = redisson.getBucket("test");
         assertThat(bucket.get()).isEqualTo("1");
-        
+
         RBatch batch2 = redisson.createBatch(batchOptions);
         RFuture<Double> b2f1 = batch2.getScoredSortedSet("myZKey2").addScoreAsync("abc", 1d);
         RFuture<Double> b2f2 = batch2.getScoredSortedSet("myZKey2").addScoreAsync("abc", 1d);
         batch2.execute();
-        
+
         assertThat(b2f1.get()).isEqualTo(1d);
         assertThat(b2f2.get()).isEqualTo(2d);
     }
-    
+
     @ParameterizedTest
     @MethodSource("data")
-    @Timeout(20)
-    public void testPerformance() {
+    @Timeout(40)
+    public void testPerformance(BatchOptions batchOptions) {
         RMap<String, String> map = redisson.getMap("map");
         Map<String, String> m = new HashMap<String, String>();
         for (int j = 0; j < 1000; j++) {
@@ -250,7 +231,7 @@ public class RedissonBatchTest extends BaseTest {
         map.putAll(m);
 
         for (int i = 0; i < 10000; i++) {
-            RBatch rBatch = redisson.createBatch();
+            RBatch rBatch = redisson.createBatch(batchOptions);
             RMapAsync<String, String> m1 = rBatch.getMap("map");
             m1.getAllAsync(m.keySet());
             try {
@@ -304,7 +285,7 @@ public class RedissonBatchTest extends BaseTest {
                 .setConnectionMinimumIdleSize(1).setConnectionPoolSize(1);
 
         RedissonClient redisson = Redisson.create(config);
-        
+
         BatchOptions batchOptions = BatchOptions.defaults().executionMode(ExecutionMode.REDIS_WRITE_ATOMIC);
         RBatch batch1 = redisson.createBatch(batchOptions);
         for (int i = 0; i < 150000; i++) {
@@ -320,18 +301,18 @@ public class RedissonBatchTest extends BaseTest {
 
         redisson.getBucket("test3").set(4);
         assertThat(redisson.getBucket("test3").get()).isEqualTo(4);
-        
+
         RBatch batch = redisson.createBatch(batchOptions);
         batch.getBucket("test1").setAsync(1);
         batch.getBucket("test2").setAsync(2);
         batch.execute();
-        
+
         assertThat(redisson.getBucket("test1").get()).isEqualTo(1);
         assertThat(redisson.getBucket("test2").get()).isEqualTo(2);
-        
+
         redisson.shutdown();
     }
-    
+
     @ParameterizedTest
     @MethodSource("data")
     public void testBigRequestAtomic(BatchOptions batchOptions) {
@@ -340,13 +321,13 @@ public class RedissonBatchTest extends BaseTest {
                     .responseTimeout(15, TimeUnit.SECONDS)
                     .retryInterval(1, TimeUnit.SECONDS)
                     .retryAttempts(5);
-        
+
         RBatch batch = redisson.createBatch(batchOptions);
         for (int i = 0; i < 100; i++) {
             batch.getBucket("" + i).setAsync(i);
             batch.getBucket("" + i).getAsync();
         }
-        
+
         BatchResult<?> s = batch.execute();
         assertThat(s.getResponses().size()).isEqualTo(200);
     }
@@ -420,43 +401,29 @@ public class RedissonBatchTest extends BaseTest {
     @ParameterizedTest
     @MethodSource("data")
     @Timeout(value = 20, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
-    public void testSyncSlaves(BatchOptions batchOptions) throws FailedToStartRedisException, IOException, InterruptedException {
-        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave1 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave2 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave3 = new RedisRunner().randomPort().randomDir().nosave();
+    public void testSyncSlaves(BatchOptions batchOptions) {
+        testInCluster(client -> {
+            Config config = client.getConfig();
+            config.useClusterServers()
+                    .setTimeout(1000000)
+                    .setRetryInterval(1000000);
+            RedissonClient redisson = Redisson.create(config);
 
-        
-        ClusterRunner clusterRunner = new ClusterRunner()
-                .addNode(master1, slave1)
-                .addNode(master2, slave2)
-                .addNode(master3, slave3);
-        ClusterProcesses process = clusterRunner.run();
-        
-        Config config = new Config();
-        config.useClusterServers()
-        .setTimeout(1000000)
-        .setRetryInterval(1000000)
-        .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
-        RedissonClient redisson = Redisson.create(config);
-        
-        batchOptions
-                .sync(1, Duration.ofSeconds(1));
-        
-        RBatch batch = redisson.createBatch(batchOptions);
-        for (int i = 0; i < 100; i++) {
-            RMapAsync<String, String> map = batch.getMap("test");
-            map.putAsync("" + i, "" + i);
-        }
+            batchOptions
+                    .sync(1, Duration.ofSeconds(1));
 
-        BatchResult<?> result = batch.execute();
-        assertThat(result.getResponses()).hasSize(100);
-        assertThat(result.getSyncedSlaves()).isEqualTo(1);
-        
-        process.shutdown();
-        redisson.shutdown();
+            RBatch batch = redisson.createBatch(batchOptions);
+            for (int i = 0; i < 100; i++) {
+                RMapAsync<String, String> map = batch.getMap("test");
+                map.putAsync("" + i, "" + i);
+            }
+
+            BatchResult<?> result = batch.execute();
+            assertThat(result.getResponses()).hasSize(100);
+            assertThat(result.getSyncedSlaves()).isEqualTo(1);
+
+            redisson.shutdown();
+        });
     }
 
     @ParameterizedTest
@@ -475,7 +442,7 @@ public class RedissonBatchTest extends BaseTest {
                 ((BatchPromise)f.toCompletableFuture()).getSentPromise().join();
             }
         }
-        
+
         long s = System.currentTimeMillis();
         batch.execute();
         long executionTime = System.currentTimeMillis() - s;
@@ -487,14 +454,11 @@ public class RedissonBatchTest extends BaseTest {
         assertThat(redisson.getMapCache("test").size()).isEqualTo(total);
         redisson.shutdown();
     }
-    
+
     @ParameterizedTest
     @MethodSource("data")
     public void testSkipResult(BatchOptions batchOptions) {
-        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("3.2.0") > 0);
-        
-        batchOptions
-                                            .skipResult();
+        batchOptions.skipResult();
 
         RBatch batch = redisson.createBatch(batchOptions);
         batch.getBucket("A1").setAsync("001");
@@ -503,11 +467,11 @@ public class RedissonBatchTest extends BaseTest {
         batch.getKeys().deleteAsync("A1");
         batch.getKeys().deleteAsync("A2");
         batch.execute();
-        
+
         assertThat(redisson.getBucket("A1").isExists()).isFalse();
         assertThat(redisson.getBucket("A3").isExists()).isTrue();
     }
-    
+
     @ParameterizedTest
     @MethodSource("data")
     public void testBatchNPE(BatchOptions batchOptions) {
@@ -525,14 +489,14 @@ public class RedissonBatchTest extends BaseTest {
     public void testAtomic(BatchOptions batchOptions) {
         batchOptions
                                             .executionMode(ExecutionMode.IN_MEMORY_ATOMIC);
-        
+
         RBatch batch = redisson.createBatch(batchOptions);
         RFuture<Long> f1 = batch.getAtomicLong("A1").addAndGetAsync(1);
         RFuture<Long> f2 = batch.getAtomicLong("A2").addAndGetAsync(2);
         RFuture<Long> f3 = batch.getAtomicLong("A3").addAndGetAsync(3);
         RFuture<Long> d1 = batch.getKeys().deleteAsync("A1", "A2");
         BatchResult<?> f = batch.execute();
-        
+
         List<Object> list = (List<Object>) f.getResponses();
         assertThat(list).containsExactly(1L, 2L, 3L, 2L);
         assertThat(f1.toCompletableFuture().getNow(null)).isEqualTo(1);
@@ -540,52 +504,37 @@ public class RedissonBatchTest extends BaseTest {
         assertThat(f3.toCompletableFuture().getNow(null)).isEqualTo(3);
         assertThat(d1.toCompletableFuture().getNow(null)).isEqualTo(2);
     }
-    
+
     @ParameterizedTest
-@MethodSource("data")
+    @MethodSource("data")
+    public void testAtomicSyncSlaves(BatchOptions batchOptions) {
+        testInCluster(client -> {
+            Config config = client.getConfig();
+            config.useClusterServers()
+                    .setTimeout(123000);
+            RedissonClient redisson = Redisson.create(config);
 
-    public void testAtomicSyncSlaves(BatchOptions batchOptions) throws FailedToStartRedisException, IOException, InterruptedException {
-        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave1 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave2 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave3 = new RedisRunner().randomPort().randomDir().nosave();
+            batchOptions
+                    .executionMode(ExecutionMode.IN_MEMORY_ATOMIC)
+                    .sync(1, Duration.ofSeconds(1));
 
-        
-        ClusterRunner clusterRunner = new ClusterRunner()
-                .addNode(master1, slave1)
-                .addNode(master2, slave2)
-                .addNode(master3, slave3);
-        ClusterProcesses process = clusterRunner.run();
-        
-        Config config = new Config();
-        config.useClusterServers()
-        .setTimeout(123000)
-        .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
-        RedissonClient redisson = Redisson.create(config);
-        
-        batchOptions
-                                            .executionMode(ExecutionMode.IN_MEMORY_ATOMIC)
-                                            .sync(1, Duration.ofSeconds(1));
+            RBatch batch = redisson.createBatch(batchOptions);
+            for (int i = 0; i < 10; i++) {
+                batch.getAtomicLong("{test}" + i).addAndGetAsync(i);
+            }
 
-        RBatch batch = redisson.createBatch(batchOptions);
-        for (int i = 0; i < 10; i++) {
-            batch.getAtomicLong("{test}" + i).addAndGetAsync(i);
-        }
+            BatchResult<?> result = batch.execute();
+            assertThat(result.getSyncedSlaves()).isEqualTo(1);
+            int i = 0;
+            for (Object res : result.getResponses()) {
+                assertThat((Long)res).isEqualTo(i++);
+            }
 
-        BatchResult<?> result = batch.execute();
-        assertThat(result.getSyncedSlaves()).isEqualTo(1);
-        int i = 0;
-        for (Object res : result.getResponses()) {
-            assertThat((Long)res).isEqualTo(i++);
-        }
-        
-        process.shutdown();
-        redisson.shutdown();
+            redisson.shutdown();
+        });
     }
 
-    
+
     @ParameterizedTest
     @MethodSource("data")
     public void testDifferentCodecs(BatchOptions batchOptions) {
@@ -613,7 +562,7 @@ public class RedissonBatchTest extends BaseTest {
         org.junit.jupiter.api.Assertions.assertEquals("2", val1.toCompletableFuture().getNow(null));
         org.junit.jupiter.api.Assertions.assertEquals("3", val2.toCompletableFuture().getNow(null));
     }
-    
+
     @ParameterizedTest
     @MethodSource("data")
     public void testBatchList(BatchOptions batchOptions) {
@@ -630,17 +579,17 @@ public class RedissonBatchTest extends BaseTest {
     @MethodSource("data")
     public void testBatchCancel() {
         RedissonClient redisson = createInstance();
-        
+
         BatchOptions batchOptions = BatchOptions.defaults().executionMode(ExecutionMode.IN_MEMORY);
         RBatch batch = redisson.createBatch(batchOptions);
         for (int i = 0; i < 10; i++) {
             RFuture<Void> f = batch.getBucket("test").setAsync(123);
             assertThat(f.cancel(true)).isTrue();
         }
-        
+
         BatchResult<?> res = batch.execute();
         org.junit.jupiter.api.Assertions.assertEquals(0, res.getResponses().size());
-        
+
         RBatch b2 = redisson.createBatch(batchOptions);
         RListAsync<Integer> listAsync2 = b2.getList("list");
         for (int i = 0; i < 6; i++) {
@@ -651,7 +600,7 @@ public class RedissonBatchTest extends BaseTest {
         RFuture<BatchResult<?>> res2 = b2.executeAsync();
         assertThat(res2.cancel(true)).isFalse();
         org.junit.jupiter.api.Assertions.assertEquals(0, res.getResponses().size());
-        
+
         redisson.shutdown();
     }
 
@@ -702,7 +651,7 @@ public class RedissonBatchTest extends BaseTest {
         }
         BatchResult<?> res = batch.execute();
         org.junit.jupiter.api.Assertions.assertEquals(210*5, res.getResponses().size());
-        
+
         redisson.shutdown();
     }
 
@@ -733,7 +682,7 @@ public class RedissonBatchTest extends BaseTest {
         RBatch batch = redisson.createBatch(batchOptions);
         batch.execute();
     }
-    
+
     @ParameterizedTest
 @MethodSource("data")
 
@@ -762,7 +711,7 @@ public class RedissonBatchTest extends BaseTest {
         e.shutdown();
         org.junit.jupiter.api.Assertions.assertTrue(e.awaitTermination(30, TimeUnit.SECONDS));
         BatchResult<?> s = batch.execute();
-        
+
         int i = 0;
         for (Object element : s.getResponses()) {
             RFuture<Long> a = futures.get(i);
