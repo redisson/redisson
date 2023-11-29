@@ -45,24 +45,24 @@ import java.util.concurrent.TimeUnit;
  * @author Nikita Koksharov
  *
  */
-public class Redisson implements RedissonClient {
+public final class Redisson implements RedissonClient {
 
     static {
         RedissonReference.warmUp();
     }
 
-    protected final QueueTransferService queueTransferService = new QueueTransferService();
-    protected final EvictionScheduler evictionScheduler;
-    protected final WriteBehindService writeBehindService;
-    protected final ConnectionManager connectionManager;
-    protected final CommandAsyncExecutor commandExecutor;
+    private final QueueTransferService queueTransferService = new QueueTransferService();
+    private final EvictionScheduler evictionScheduler;
+    private final WriteBehindService writeBehindService;
+    private final ConnectionManager connectionManager;
+    private final CommandAsyncExecutor commandExecutor;
 
-    protected final ConcurrentMap<Class<?>, Class<?>> liveObjectClassCache = new ConcurrentHashMap<>();
-    protected final Config config;
+    private final ConcurrentMap<Class<?>, Class<?>> liveObjectClassCache = new ConcurrentHashMap<>();
+    private final Config config;
 
-    protected final ConcurrentMap<String, ResponseEntry> responses = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, ResponseEntry> responses = new ConcurrentHashMap<>();
 
-    protected Redisson(Config config) {
+    Redisson(Config config) {
         this.config = config;
         Config configCopy = new Config(config);
 

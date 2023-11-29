@@ -253,7 +253,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         long leaseTime = 30_000;
 
         // we're testing interaction of various internal methods, so create a Redisson instance for protected access
-        Redisson redisson = new Redisson(createConfig());
+        RedissonClient redisson = Redisson.create(createConfig());
 
         RedissonFairLock lock = (RedissonFairLock) redisson.getFairLock("testAcquireFailedTimeoutDrift_Descrete");
 
@@ -332,10 +332,10 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         long leaseTime = 500;
 
         // we're testing interaction of various internal methods, so create a Redisson instance for protected access
-        Redisson redisson = new Redisson(createConfig());
+        RedissonClient redisson = Redisson.create(createConfig());
 
         RedissonFairLock lock = new RedissonFairLock(
-            redisson.getCommandExecutor(),
+                ((Redisson) redisson).getCommandExecutor(),
             "testLockAcquiredTimeoutDrift_Descrete",
             100);
 
@@ -390,10 +390,10 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         long leaseTime = 300_000;
 
         // we're testing interaction of various internal methods, so create a Redisson instance for protected access
-        Redisson redisson = new Redisson(createConfig());
+        RedissonClient redisson = Redisson.create(createConfig());
 
         RedissonFairLock lock = new RedissonFairLock(
-                redisson.getCommandExecutor(),
+                ((Redisson) redisson).getCommandExecutor(),
                 "testLockAcquiredTimeoutDrift_Descrete");
 
         // clear out any prior state
@@ -446,10 +446,10 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         long threadWaitTime = 100;
 
         // we're testing interaction of various internal methods, so create a Redisson instance for protected access
-        Redisson redisson = new Redisson(createConfig());
+        RedissonClient redisson = Redisson.create(createConfig());
 
         RedissonFairLock lock = new RedissonFairLock(
-                redisson.getCommandExecutor(),
+                ((Redisson) redisson).getCommandExecutor(),
                 "testAbandonedTimeoutDrift_Descrete",
                 threadWaitTime);
 
