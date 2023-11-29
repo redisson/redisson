@@ -91,7 +91,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             RedisURI addr = new RedisURI(address);
             CompletionStage<RedisConnection> connectionFuture = connectToNode(cfg, addr, addr.getHost());
             try {
-                RedisConnection connection = connectionFuture.toCompletableFuture().join();
+                RedisConnection connection = connectionFuture.toCompletableFuture()
+                        .get(config.getConnectTimeout(), TimeUnit.MILLISECONDS);
 
                 connection.async(RedisCommands.SPUBLISH, "", "").thenAccept(r -> {
                     subscribeService.setShardingSupported(true);
