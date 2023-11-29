@@ -7,6 +7,7 @@ import org.redisson.api.RedissonClient;
 import org.redisson.client.*;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.Config;
+import org.redisson.connection.balancer.RandomLoadBalancer;
 import org.testcontainers.containers.GenericContainer;
 
 import java.util.List;
@@ -81,8 +82,7 @@ public class RedissonLockTest extends BaseConcurrentTest {
 
     @Test
     public void testSubscriptionsPerConnection() throws InterruptedException {
-        Config config = new Config();
-        config.setProtocol(protocol);
+        Config config = createConfig();
         config.useSingleServer()
                 .setSubscriptionConnectionPoolSize(1)
                 .setSubscriptionConnectionMinimumIdleSize(1)
@@ -130,9 +130,8 @@ public class RedissonLockTest extends BaseConcurrentTest {
 
     @Test
     public void testSinglePubSub() throws InterruptedException, ExecutionException {
-        Config config = new Config();
+        Config config = createConfig();
         config.useSingleServer()
-            .setAddress(redisson.getConfig().useSingleServer().getAddress())
             .setSubscriptionConnectionPoolSize(1)
             .setSubscriptionsPerConnection(1);
         ExecutorService executorService = Executors.newFixedThreadPool(4);
@@ -361,6 +360,103 @@ public class RedissonLockTest extends BaseConcurrentTest {
 
         t2.start();
         t2.join();
+    }
+
+    @Test
+    public void testFailoverInSentinel() throws Exception {
+        RedisRunner.RedisProcess master = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .run();
+        RedisRunner.RedisProcess slave1 = new RedisRunner()
+                .port(6380)
+                .nosave()
+                .randomDir()
+                .slaveof("127.0.0.1", 6379)
+                .run();
+        RedisRunner.RedisProcess slave2 = new RedisRunner()
+                .port(6381)
+                .nosave()
+                .randomDir()
+                .slaveof("127.0.0.1", 6379)
+                .run();
+        RedisRunner.RedisProcess sentinel1 = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(26379)
+                .sentinel()
+                .sentinelMonitor("myMaster", "127.0.0.1", 6379, 2)
+                .run();
+        RedisRunner.RedisProcess sentinel2 = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(26380)
+                .sentinel()
+                .sentinelMonitor("myMaster", "127.0.0.1", 6379, 2)
+                .run();
+        RedisRunner.RedisProcess sentinel3 = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(26381)
+                .sentinel()
+                .sentinelMonitor("myMaster", "127.0.0.1", 6379, 2)
+                .run();
+
+        Thread.sleep(5000);
+
+        Config config = new Config();
+        config.useSentinelServers()
+                .setLoadBalancer(new RandomLoadBalancer())
+                .addSentinelAddress(sentinel3.getRedisServerAddressAndPort()).setMasterName("myMaster");
+        RedissonClient redisson = Redisson.create(config);
+
+        ExecutorService service = Executors.newFixedThreadPool(5);
+        for (int i = 0; i < 5; i++) {
+            service.execute(() -> {
+                while (true) {
+                    RLock lock = redisson.getLock("lock");
+                    try {
+                        boolean locked = lock.tryLock(3, 2, TimeUnit.SECONDS);
+                        if (!locked) {
+                            System.out.println("not locked!");
+                            continue;
+                        }
+                        Thread.sleep(1000);
+                        lock.unlock();
+                        Thread.sleep(1000);
+                    } catch (Exception e) {
+                        System.out.println("error during execution: " + e.getMessage());
+                    }
+                }
+            });
+        }
+
+        Thread.sleep(60000);
+
+        master.stop();
+        System.out.println("master " + master.getRedisServerAddressAndPort() + " stopped!");
+
+        Thread.sleep(TimeUnit.SECONDS.toMillis(70));
+
+        master = new RedisRunner()
+                .port(master.getRedisServerPort())
+                .nosave()
+                .randomDir()
+                .run();
+
+        System.out.println("master " + master.getRedisServerAddressAndPort() + " started!");
+
+
+        Thread.sleep(60000);
+
+        service.shutdown();
+        redisson.shutdown();
+        sentinel1.stop();
+        sentinel2.stop();
+        sentinel3.stop();
+        master.stop();
+        slave1.stop();
+        slave2.stop();
     }
 
     @Test
