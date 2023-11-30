@@ -91,10 +91,8 @@ public class RedissonReferenceReactiveTest extends BaseReactiveTest {
     public void shouldUseDefaultCodec() {
         Kryo5Codec codec = new Kryo5Codec();
 
-        Config config = new Config();
+        Config config = createConfig();
         config.setCodec(codec);
-        config.useSingleServer()
-                .setAddress(redisson.getConfig().useSingleServer().getAddress());
 
         RedissonReactiveClient reactive = Redisson.create(config).reactive();
         RBucketReactive<Object> b1 = reactive.getBucket("b1");
