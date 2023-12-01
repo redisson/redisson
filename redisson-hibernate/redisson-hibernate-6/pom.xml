@@ -56,7 +56,8 @@
                         <forkCount>2</forkCount>
                         <reuseForks>true</reuseForks>
                         <argLine>
-			   --add-opens=java.base/java.util=ALL-UNNAMED
+                           ${argLine}
+                           --add-opens=java.base/java.util=ALL-UNNAMED
                            -javaagent:"${settings.localRepository}"/org/jmockit/jmockit/1.49/jmockit-1.49.jar
                         </argLine>
                     </configuration>
