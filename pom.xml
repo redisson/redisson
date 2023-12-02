@@ -18,11 +18,10 @@
 
     <properties>
         <maven.test.skip>true</maven.test.skip>
-        <source.version>1.8</source.version>
-        <javadoc.version>8</javadoc.version>
-        <release.version>8</release.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
 
     <scm>
@@ -329,7 +328,7 @@
             <plugin>
          	<groupId>org.apache.maven.plugins</groupId>
          	<artifactId>maven-javadoc-plugin</artifactId>
-         	<version>3.5.0</version>
+         	<version>3.6.2</version>
          	<executions>
                    <execution>
                      <id>attach-javadocs</id>
@@ -339,7 +338,6 @@
                    </execution>
          	</executions>
                 <configuration>
-                    <source>${javadoc.version}</source>
                     <level>public</level>
                     <doclint>none</doclint>
                     <quiet>true</quiet>
