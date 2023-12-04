@@ -5,10 +5,7 @@ import mockit.Mock;
 import mockit.MockUp;
 import org.joor.Reflect;
 import org.junit.jupiter.api.*;
-import org.redisson.BaseTest;
-import org.redisson.Redisson;
-import org.redisson.RedissonExecutorService;
-import org.redisson.RedissonNode;
+import org.redisson.*;
 import org.redisson.api.*;
 import org.redisson.api.annotation.RInject;
 import org.redisson.config.Config;
@@ -27,14 +24,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedissonScheduledExecutorServiceTest extends BaseTest {
+public class RedissonScheduledExecutorServiceTest extends RedisDockerTest {
 
     private static RedissonNode node;
     
     @BeforeEach
-    @Override
     public void before() throws IOException, InterruptedException {
-        super.before();
         Config config = createConfig();
         RedissonNodeConfig nodeConfig = new RedissonNodeConfig(config);
         nodeConfig.setExecutorServiceWorkers(Collections.singletonMap("test", 5));
