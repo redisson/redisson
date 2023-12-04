@@ -123,8 +123,9 @@ public class RedisURI {
     }
     
     public boolean equals(InetSocketAddress entryAddr) {
-        if (((entryAddr.getHostName() != null && entryAddr.getHostName().equals(trimIpv6Brackets(getHost())))
-                || entryAddr.getAddress().getHostAddress().equals(trimIpv6Brackets(getHost())))
+        String ip = trimIpv6Brackets(getHost());
+        if (((entryAddr.getHostName() != null && entryAddr.getHostName().equals(ip))
+                || entryAddr.getAddress().getHostAddress().equals(ip))
                 && entryAddr.getPort() == getPort()) {
             return true;
         }
