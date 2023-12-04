@@ -179,7 +179,7 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
         SslContext sslContext = sslContextBuilder.build();
         String hostname = config.getSslHostname();
         if (hostname == null || NetUtil.createByteArrayFromIpAddressString(hostname) != null) {
-            hostname = config.getAddress().getHost();
+            hostname = redisClient.getAddr().getHostName();
         }
         
         SSLEngine sslEngine = sslContext.newEngine(ch.alloc(), hostname, config.getAddress().getPort());

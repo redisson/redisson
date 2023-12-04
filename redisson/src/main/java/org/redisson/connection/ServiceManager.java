@@ -356,6 +356,34 @@ public class ServiceManager {
         return result;
     }
 
+    public CompletableFuture<InetSocketAddress> resolve(RedisURI address) {
+        if (address.isIP()) {
+            try {
+                InetAddress ip = InetAddress.getByName(address.getHost());
+                InetSocketAddress addr = new InetSocketAddress(InetAddress.getByAddress(address.getHost(), ip.getAddress()), address.getPort());
+                return CompletableFuture.completedFuture(addr);
+            } catch (UnknownHostException e) {
+                throw new IllegalArgumentException(e);
+            }
+        }
+
+        CompletableFuture<InetSocketAddress> result = new CompletableFuture<>();
+        AddressResolver<InetSocketAddress> resolver = resolverGroup.getResolver(group.next());
+        InetSocketAddress addr = InetSocketAddress.createUnresolved(address.getHost(), address.getPort());
+        Future<InetSocketAddress> future = resolver.resolve(addr);
+        future.addListener((FutureListener<InetSocketAddress>) f -> {
+            if (!f.isSuccess()) {
+                log.error("Unable to resolve {}", address, f.cause());
+                result.completeExceptionally(f.cause());
+                return;
+            }
+
+            InetSocketAddress s = f.getNow();
+            result.complete(s);
+        });
+        return result;
+    }
+
     public RedisURI toURI(String scheme, String host, String port) {
         // convert IPv6 address to unified compressed format
         if (NetUtil.isValidIpV6Address(host)) {

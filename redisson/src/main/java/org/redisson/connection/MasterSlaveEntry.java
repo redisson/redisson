@@ -552,6 +552,11 @@ public class MasterSlaveEntry {
         return slaveBalancer.unfreezeAsync(address, freezeReason);
     }
 
+    public CompletableFuture<Boolean> slaveUpNoMasterExclusionAsync(InetSocketAddress address, FreezeReason freezeReason) {
+        noPubSubSlaves.set(false);
+        return slaveBalancer.unfreezeAsync(address, freezeReason);
+    }
+
     public CompletableFuture<Boolean> slaveUpAsync(InetSocketAddress address, FreezeReason freezeReason) {
         noPubSubSlaves.set(false);
         CompletableFuture<Boolean> f = slaveBalancer.unfreezeAsync(address, freezeReason);
