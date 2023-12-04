@@ -39,7 +39,6 @@ import io.netty.util.NetUtil;
 import io.netty.util.Timer;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import jdk.net.ExtendedSocketOptions;
 import org.redisson.api.RFuture;
 import org.redisson.client.handler.RedisChannelInitializer;
 import org.redisson.client.handler.RedisChannelInitializer.Type;
@@ -149,9 +148,12 @@ public final class RedisClient {
             SocketOption<Integer> idleOption = null;
             SocketOption<Integer> intervalOption = null;
             try {
-                countOption = (SocketOption<Integer>) ExtendedSocketOptions.class.getDeclaredField("TCP_KEEPCOUNT").get(null);
-                idleOption = (SocketOption<Integer>) ExtendedSocketOptions.class.getDeclaredField("TCP_KEEPIDLE").get(null);
-                intervalOption = (SocketOption<Integer>) ExtendedSocketOptions.class.getDeclaredField("TCP_KEEPINTERVAL").get(null);
+                // fixes Intellij compilation issue with JDK 1.8
+                Class<?> options = Class.forName("jdk.net.ExtendedSocketOptions");
+
+                countOption = (SocketOption<Integer>) options.getDeclaredField("TCP_KEEPCOUNT").get(null);
+                idleOption = (SocketOption<Integer>) options.getDeclaredField("TCP_KEEPIDLE").get(null);
+                intervalOption = (SocketOption<Integer>) options.getDeclaredField("TCP_KEEPINTERVAL").get(null);
             } catch (ReflectiveOperationException e) {
                 // skip
             }
