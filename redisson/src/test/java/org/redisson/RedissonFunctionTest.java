@@ -21,7 +21,7 @@ public class RedissonFunctionTest extends RedisDockerTest {
     }
 
     @Test
-    public void testStats() {
+    public void testStats() throws InterruptedException {
         RFunction f = redisson.getFunction();
         f.flush();
         f.load("lib", "redis.register_function('myfun', function(keys, args) for i = 1, 88293819831, 1 do end return args[1] end)" +
@@ -29,6 +29,7 @@ public class RedissonFunctionTest extends RedisDockerTest {
                 "redis.register_function('myfun3', function(keys, args) return 123 end)");
         f.callAsync(FunctionMode.READ, "myfun", FunctionResult.VALUE, Collections.emptyList(), "test");
         try {
+            Thread.sleep(500);
             FunctionStats stats = f.stats();
             FunctionStats.RunningFunction func = stats.getRunningFunction();
             assertThat(func.getName()).isEqualTo("myfun");
