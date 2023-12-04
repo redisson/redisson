@@ -53,7 +53,7 @@ public class QuarkusRedissonClientResourceTest {
                 .when().get("/quarkus-redisson-client/delBucket")
                 .then()
                 .statusCode(200)
-                .body(is(true));
+                .body(is("true"));
     }
 
 //    @Test
