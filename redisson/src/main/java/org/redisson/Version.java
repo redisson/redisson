@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.io.InputStream;
 import java.net.URL;
 import java.util.Enumeration;
 import java.util.jar.Attributes;
@@ -31,7 +32,8 @@ public class Version {
         try {
             Enumeration<URL> resources = Version.class.getClassLoader().getResources("META-INF/MANIFEST.MF");
             while (resources.hasMoreElements()) {
-                    Manifest manifest = new Manifest(resources.nextElement().openStream());
+                try (InputStream inputStream = resources.nextElement().openStream()) {
+                    Manifest manifest = new Manifest(inputStream);
                     Attributes attrs = manifest.getMainAttributes();
                     if (attrs == null) {
                         continue;
@@ -41,6 +43,7 @@ public class Version {
                         log.info("Redisson {}", attrs.getValue("Bundle-Version"));
                         break;
                     }
+                }
             }
         } catch (Exception E) {
             // skip it
