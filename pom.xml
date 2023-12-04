@@ -314,17 +314,6 @@
                 </executions>
             </plugin>
 -->
-
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.11.0</version>
-                <configuration>
-                    <source>${source.version}</source>
-                    <target>${source.version}</target>
-                    <showDeprecation>true</showDeprecation>
-                </configuration>
-            </plugin>
-
             <plugin>
          	<groupId>org.apache.maven.plugins</groupId>
          	<artifactId>maven-javadoc-plugin</artifactId>

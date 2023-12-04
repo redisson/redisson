@@ -13,6 +13,11 @@
 
     <name>Redisson/Helidon integration</name>
 
+    <properties>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -50,15 +55,6 @@
 
             <plugin>
                 <artifactId>maven-javadoc-plugin</artifactId>
-            </plugin>
-
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>21</source>
-                    <target>21</target>
-                    <showDeprecation>true</showDeprecation>
-                </configuration>
             </plugin>
         </plugins>
     </build>

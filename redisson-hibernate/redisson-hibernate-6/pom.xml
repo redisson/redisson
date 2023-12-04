@@ -13,18 +13,23 @@
 
     <name>Redisson/Hibernate-6.0.2+</name>
 
+    <properties>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+    </properties>
+
     <dependencies>
        <dependency>
          <groupId>org.hibernate.orm</groupId>
          <artifactId>hibernate-core</artifactId>
-         <version>6.3.1.Final</version>
+         <version>6.4.0.Final</version>
          <optional>true</optional>
        </dependency>
 
        <dependency>
          <groupId>org.hibernate.orm</groupId>
          <artifactId>hibernate-testing</artifactId>
-         <version>6.3.1.Final</version>
+         <version>6.4.0.Final</version>
          <scope>test</scope>
        </dependency>
 
