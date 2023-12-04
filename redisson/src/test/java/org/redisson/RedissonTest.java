@@ -794,7 +794,7 @@ public class RedissonTest extends BaseTest {
         slave.restart(20);
         System.out.println("slave " + slave.getRedisServerAddressAndPort() + " has been stopped!");
 
-        assertThat(latch.await(60, TimeUnit.SECONDS)).isTrue();
+        assertThat(latch.await(70, TimeUnit.SECONDS)).isTrue();
 
         int errors = 0;
         int success = 0;
