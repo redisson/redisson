@@ -77,19 +77,25 @@ public class RedissonScript implements RScript {
 
     @Override
     public <R> R eval(Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values) {
+        String key = getKey(keys);
+        return eval(key, mode, luaScript, returnType, keys, values);
+    }
+
+    private static String getKey(List<Object> keys) {
         String key = null;
         if (!keys.isEmpty()) {
-            key = (String) keys.get(0);
+            if (keys.get(0) instanceof byte[]) {
+                key = new String((byte[]) keys.get(0));
+            } else {
+                key = keys.get(0).toString();
+            }
         }
-        return eval(key, mode, luaScript, returnType, keys, values);
+        return key;
     }
 
     @Override
     public <R> RFuture<R> evalAsync(Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values) {
-        String key = null;
-        if (!keys.isEmpty()) {
-            key = (String) keys.get(0);
-        }
+        String key = getKey(keys);
         return evalAsync(key, mode, luaScript, returnType, keys, values);
     }
 
@@ -201,9 +207,14 @@ public class RedissonScript implements RScript {
     public <R> RFuture<R> evalShaAsync(String key, Mode mode, String shaDigest, ReturnType returnType,
             List<Object> keys, Object... values) {
         RedisCommand command = new RedisCommand(returnType.getCommand(), "EVALSHA");
-        String mappedKey = commandExecutor.getServiceManager().getConfig().getNameMapper().map((String) key);
+        String mappedKey = commandExecutor.getServiceManager().getConfig().getNameMapper().map(key);
         List<Object> mappedKeys = keys.stream()
-                                        .map(k -> commandExecutor.getServiceManager().getConfig().getNameMapper().map((String) k))
+                                        .map(k -> {
+                                            if (k instanceof String) {
+                                                return commandExecutor.getServiceManager().getConfig().getNameMapper().map(k.toString());
+                                            }
+                                            return k;
+                                        })
                                         .collect(Collectors.toList());
         if (mode == Mode.READ_ONLY && commandExecutor.isEvalShaROSupported()) {
             RedisCommand cmd = new RedisCommand(returnType.getCommand(), "EVALSHA_RO");
@@ -226,10 +237,15 @@ public class RedissonScript implements RScript {
     @Override
     public <R> RFuture<R> evalAsync(String key, Mode mode, String luaScript, ReturnType returnType, List<Object> keys,
             Object... values) {
-        String mappedKey = commandExecutor.getServiceManager().getConfig().getNameMapper().map((String) key);
+        String mappedKey = commandExecutor.getServiceManager().getConfig().getNameMapper().map(key);
         List<Object> mappedKeys = keys.stream()
-                .map(k -> commandExecutor.getServiceManager().getConfig().getNameMapper().map((String) k))
-                .collect(Collectors.toList());
+                                        .map(k -> {
+                                            if (k instanceof String) {
+                                                return commandExecutor.getServiceManager().getConfig().getNameMapper().map(k.toString());
+                                            }
+                                            return k;
+                                        })
+                                        .collect(Collectors.toList());
         if (mode == Mode.READ_ONLY) {
             return commandExecutor.evalReadAsync(mappedKey, codec, returnType.getCommand(), luaScript, mappedKeys, encode(Arrays.asList(values), codec).toArray());
         }

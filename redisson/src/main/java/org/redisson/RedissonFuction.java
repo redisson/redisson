@@ -199,9 +199,14 @@ public class RedissonFuction implements RFunction {
         List<Object> args = new ArrayList<>();
         args.add(name);
         args.add(keys.size());
-        if (keys.size() > 0) {
-            args.addAll(keys.stream().map(k -> commandExecutor.getServiceManager().getConfig().getNameMapper().map((String) k))
-                    .collect(Collectors.toList()));
+        if (!keys.isEmpty()) {
+            args.addAll(keys.stream().map(k -> {
+                                         if (k instanceof String) {
+                                             return commandExecutor.getServiceManager().getConfig().getNameMapper().map(k.toString());
+                                         }
+                                         return k;
+                                     })
+                                     .collect(Collectors.toList()));
         }
         args.addAll(encode(Arrays.asList(values), codec));
         if (mode == FunctionMode.READ) {
@@ -213,8 +218,13 @@ public class RedissonFuction implements RFunction {
     @Override
     public <R> RFuture<R> callAsync(FunctionMode mode, String name, FunctionResult returnType, List<Object> keys, Object... values) {
         String key = null;
-        if (keys.size() > 0) {
-            key = commandExecutor.getServiceManager().getConfig().getNameMapper().map((String) keys.get(0));
+        if (!keys.isEmpty()) {
+            if (keys.get(0) instanceof byte[]) {
+                key = new String((byte[]) keys.get(0));
+            } else {
+                key = keys.get(0).toString();
+            }
+            key = commandExecutor.getServiceManager().getConfig().getNameMapper().map(key);
         }
         return callAsync(key, mode, name, returnType, keys, values);
     }
