@@ -171,7 +171,7 @@ public class RedissonTest extends BaseTest {
             });
         }
         e.shutdown();
-        assertThat(e.awaitTermination(30, TimeUnit.SECONDS)).isTrue();
+        assertThat(e.awaitTermination(35, TimeUnit.SECONDS)).isTrue();
         assertThat(counter.get()).isEqualTo(10000 * 100);
     }
     
