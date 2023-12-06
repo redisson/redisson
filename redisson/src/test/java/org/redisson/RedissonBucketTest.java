@@ -320,18 +320,14 @@ public class RedissonBucketTest extends RedisDockerTest {
     private void testTwoInstances(BiConsumer<RedissonClient, RedissonClient> consumer) {
         Network network = Network.newNetwork();
 
-        GenericContainer<?> redis =
-                new GenericContainer<>("redis:7.2")
-                        .withNetwork(network)
-                        .withNetworkAliases("foo1")
-                        .withExposedPorts(6379);
+        GenericContainer<?> redis = createRedis()
+                                        .withNetwork(network)
+                                        .withNetworkAliases("foo1");
         redis.start();
 
-        GenericContainer<?> redis2 =
-                new GenericContainer<>("redis:7.2")
-                        .withNetwork(network)
-                        .withNetworkAliases("foo2")
-                        .withExposedPorts(6379);
+        GenericContainer<?> redis2 = createRedis()
+                                        .withNetwork(network)
+                                        .withNetworkAliases("foo2");
         redis2.start();
 
         Config config2 = new Config();
