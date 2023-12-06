@@ -332,4 +332,10 @@ public class RedissonTransactionalMapCache<K, V> extends RedissonMapCache<K, V> 
         throw new UnsupportedOperationException("getReadWriteLock method is not supported in transaction");
     }
 
+    @Override
+    public Set<K> keySet(String pattern, int count) {
+        checkState();
+        return transactionalMap.keySet(pattern, count);
+    }
+
 }

@@ -211,7 +211,13 @@ public class RedissonTransactionalMap<K, V> extends RedissonMap<K, V> {
         checkState();
         return transactionalMap.removeOperationAsync(key);
     }
-    
+
+    @Override
+    public Set<K> keySet(String pattern, int count) {
+        checkState();
+        return transactionalMap.keySet(pattern, count);
+    }
+
     @Override
     protected RFuture<Boolean> removeOperationAsync(Object key, Object value) {
         checkState();

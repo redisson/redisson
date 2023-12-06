@@ -14,13 +14,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class RedissonTransactionalMapCacheTest extends RedissonBaseTransactionalMapTest {
 
     @Test
-    public void testSyncWait() throws IOException, InterruptedException {
+    public void testSyncWait() {
         String mapCacheName = "map";
         String dataKey = "key";
 
         Config redisConfig = new Config();
         redisConfig.useReplicatedServers()
-                .addNodeAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+                .addNodeAddress(redisson.getConfig().useSingleServer().getAddress());
         RedissonClient client = Redisson.create(redisConfig);
 
         RTransaction transaction = client.createTransaction(TransactionOptions.defaults());

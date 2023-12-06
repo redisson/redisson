@@ -2,7 +2,7 @@ package org.redisson.transaction;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.redisson.BaseTest;
+import org.redisson.RedisDockerTest;
 import org.redisson.api.RMap;
 import org.redisson.api.RTransaction;
 import org.redisson.api.TransactionOptions;
@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public abstract class RedissonBaseTransactionalMapTest extends BaseTest {
+public abstract class RedissonBaseTransactionalMapTest extends RedisDockerTest {
 
     protected abstract RMap<String, String> getMap();
     
