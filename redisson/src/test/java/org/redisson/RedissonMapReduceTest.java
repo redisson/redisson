@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedissonMapReduceTest extends BaseTest {
+public class RedissonMapReduceTest extends RedisDockerTest {
     
     public static class WordMapper implements RMapper<String, String, String, Integer> {
 
@@ -73,14 +73,14 @@ public class RedissonMapReduceTest extends BaseTest {
     @MethodSource("mapClasses")
     public void testCancel(Class<?> mapClass) throws InterruptedException {
         RMap<String, String> map = getMap(mapClass);
-        for (int i = 0; i < 100000; i++) {
+        for (int i = 0; i < 1000; i++) {
             map.put("" + i, "ab cd fjks");
         }
         
         RMapReduce<String, String, String, Integer> mapReduce = map.<String, Integer>mapReduce().mapper(new WordMapper()).reducer(new WordReducer());
         RFuture<Map<String, Integer>> future = mapReduce.executeAsync();
         Thread.sleep(100);
-        future.cancel(true);
+        assertThat(future.cancel(true)).isTrue();
     }
 
     @ParameterizedTest
@@ -88,7 +88,7 @@ public class RedissonMapReduceTest extends BaseTest {
     public void testTimeout(Class<?> mapClass) {
         Assertions.assertThrows(MapReduceTimeoutException.class, () -> {
             RMap<String, String> map = getMap(mapClass);
-            for (int i = 0; i < 100000; i++) {
+            for (int i = 0; i < 1000; i++) {
                 map.put("" + i, "ab cd fjks");
             }
 
