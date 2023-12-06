@@ -20,12 +20,7 @@ public class RedisDockerTest {
 
     protected static final String NOTIFY_KEYSPACE_EVENTS = "--notify-keyspace-events";
 
-    private static final GenericContainer<?> REDIS =
-            new GenericContainer<>("redis:7.2")
-                    .withCreateContainerCmdModifier(cmd -> {
-                        cmd.withCmd("redis-server", "--save", "''");
-                    })
-                    .withExposedPorts(6379);
+    private static final GenericContainer<?> REDIS = createRedis();
 
     protected static final Protocol protocol = Protocol.RESP2;
 
@@ -34,6 +29,14 @@ public class RedisDockerTest {
     protected static RedissonClient redissonCluster;
 
     private static GenericContainer<?> REDIS_CLUSTER;
+
+    protected static GenericContainer<?> createRedis() {
+        return new GenericContainer<>("redis:7.2")
+                .withCreateContainerCmdModifier(cmd -> {
+                    cmd.withCmd("redis-server", "--save", "''");
+                })
+                .withExposedPorts(6379);
+    }
 
     @BeforeAll
     public static void beforeAll() {

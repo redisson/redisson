@@ -248,6 +248,10 @@ public class RedissonMultiLock implements RLock {
                 }
             }
 
+            if (leaseTime > 0) {
+                leaseTime = unit.toMillis(leaseTime);
+            }
+
             if (tryLock(waitTime, leaseTime, TimeUnit.MILLISECONDS)) {
                 return;
             }
