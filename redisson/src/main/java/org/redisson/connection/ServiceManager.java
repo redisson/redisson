@@ -221,9 +221,7 @@ public class ServiceManager {
     }
 
     public void initTimer() {
-        int[] timeouts = new int[]{config.getRetryInterval(), config.getTimeout()};
-        Arrays.sort(timeouts);
-        int minTimeout = timeouts[0];
+        int minTimeout = Math.min(config.getRetryInterval(), config.getTimeout());
         if (minTimeout % 100 != 0) {
             minTimeout = (minTimeout % 100) / 2;
         } else if (minTimeout == 100) {
