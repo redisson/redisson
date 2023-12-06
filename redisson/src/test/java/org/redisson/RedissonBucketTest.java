@@ -1,5 +1,7 @@
 package org.redisson;
 
+import net.bytebuddy.utility.RandomString;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.RedisRunner.FailedToStartRedisException;
@@ -15,8 +17,10 @@ import org.testcontainers.containers.Network;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
@@ -347,6 +351,41 @@ public class RedissonBucketTest extends RedisDockerTest {
         redis.stop();
         redis2.stop();
         network.close();
+    }
+
+    @Test
+    public void testFailoverTimeout() {
+        GenericContainer<?> redis = createRedis();
+        redis.start();
+
+        Config config = new Config();
+        config.setProtocol(protocol);
+        config.useSingleServer()
+                .setRetryAttempts(3)
+                .setRetryInterval(0)
+                .setAddress("redis://127.0.0.1:" + redis.getFirstMappedPort());
+        RedissonClient rc = Redisson.create(config);
+
+        List<String> args = new ArrayList<>();
+        for (int i = 0; i < 100; i++) {
+            args.add("" + i);
+        }
+
+        redis.stop();
+
+        Assertions.assertTimeout(Duration.ofMillis(100), () -> {
+            Assertions.assertThrows(Exception.class, () -> {
+                rc.getBuckets().get(args.toArray(new String[0]));
+            });
+        });
+
+        Assertions.assertTimeout(Duration.ofMillis(100), () -> {
+            Assertions.assertThrows(Exception.class, () -> {
+                rc.getBucket("test").get();
+            });
+        });
+
+        rc.shutdown();
     }
 
     @Test

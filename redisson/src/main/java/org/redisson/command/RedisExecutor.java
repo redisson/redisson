@@ -175,9 +175,7 @@ public class RedisExecutor<V, R> {
                 if (connectionFuture.isDone() && connectionFuture.isCompletedExceptionally()) {
                     connectionManager.getServiceManager().getShutdownLatch().release();
                     exception = convertException(connectionFuture);
-                    if (attempt == attempts) {
-                        attemptPromise.completeExceptionally(exception);
-                    }
+                    tryComplete(attemptPromise, exception);
                     return;
                 }
 
@@ -355,13 +353,27 @@ public class RedisExecutor<V, R> {
                     + source + ", connection: " + connection +
                     ", command: " + LogHelper.toString(command, params)
                     + " after " + attempt + " retry attempts", future.cause());
-            if (attempt == attempts) {
-                attemptPromise.completeExceptionally(exception);
-            }
+            tryComplete(attemptPromise, exception);
             return;
         }
 
         scheduleResponseTimeout(attemptPromise, connection);
+    }
+
+    private void tryComplete(CompletableFuture<R> attemptPromise, RedisException exception) {
+        if (attempt == attempts) {
+            attemptPromise.completeExceptionally(exception);
+        } else if (retryInterval == 0) {
+            attempt++;
+
+            if (log.isDebugEnabled()) {
+                log.debug("attempt {} for command {} and params {} to {}",
+                        attempt, command, LogHelper.toString(params), source);
+            }
+
+            mainPromiseListener = null;
+            execute();
+        }
     }
 
     private void scheduleResponseTimeout(CompletableFuture<R> attemptPromise, RedisConnection connection) {
