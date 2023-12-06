@@ -1,19 +1,16 @@
 package org.redisson.transaction;
 
-import static org.assertj.core.api.Assertions.*;
 import org.junit.jupiter.api.Test;
-import org.redisson.BaseTest;
-import org.redisson.api.LocalCachedMapOptions;
-import org.redisson.api.RLocalCachedMap;
-import org.redisson.api.RMap;
-import org.redisson.api.RTransaction;
-import org.redisson.api.TransactionOptions;
+import org.redisson.RedisDockerTest;
+import org.redisson.api.*;
 import org.redisson.api.map.MapLoader;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class RedissonTransactionalLocalCachedMapTest extends BaseTest {
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class RedissonTransactionalLocalCachedMapTest extends RedisDockerTest {
 
 
     // reproducer for https://github.com/redisson/redisson/issues/5198
