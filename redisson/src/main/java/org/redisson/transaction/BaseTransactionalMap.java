@@ -619,16 +619,14 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
     protected Set<K> keySet(String pattern, int count) {
         Set<K> keys = map.keySet(pattern, count);
         return keys.stream()
-                .map(k -> Collections.singletonMap(k, toKeyHash(k)))
                 .filter(k -> {
-                    HashValue hash = k.values().iterator().next();
+                    HashValue hash = toKeyHash(k);
                     if (state.get(hash) == null
                             || state.get(hash) != BaseTransactionalMap.MapEntry.NULL) {
                         return true;
                     }
                     return false;
                 })
-                .map(m -> m.keySet().iterator().next())
                 .collect(Collectors.toSet());
     }
 
