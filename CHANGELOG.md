@@ -3,6 +3,32 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 05-Dec-2023 - 3.25.0 released
+Feature - RESP3 protocol support. [protocol](https://github.com/redisson/redisson/wiki/2.-Configuration#protocol) setting added  
+Feature - Spring Data Redis 3.2.0 implementation  
+Feature - `RSetCacheV2`, `RSetV2` objects with more effecient partitioning in Cluster added in [PRO](https://redisson.pro) version  
+
+Improvement - SLF4j updated to 2.0.9 version  
+
+Fixed - RFunction/RScript keys parameter accepts only String values  
+Fixed - IP address instead of hostname is used in sentinel mode with SSL connection  
+Fixed - Resources leak in `Version.logVersion()` method  
+Fixed - `RLiveObjectService.persist()` method with varargs hangs in cluster mode  
+Fixed - Redisson connection process may hang at start in some cases  
+Fixed - `EntryExpiredListener` isn't invoked by RMapCache instance in Redis Cluster 7+  
+Fixed - slave node in sentinel mode can't be recovered if it's a master node  
+Fixed - `JsonJacksonCodec` fails to serialize Throwable on Java17 (thanks to @tomjankes)  
+Fixed - `RBlockingDeque.move()` throws an exception for empty result  
+Fixed - `RScoredSortedSet.pollFirstEntries(count)` and `pollLastEntries(count)` methods return wrong result  
+Fixed - `BZMPOP` command timeout isn't applied  
+Fixed - `getBlockingDeque()`, `getDeque()`, `getPriorityDeque()`, `getPriorityBlockingDeque()` throw `NoClassDefFoundError` if JDK version < 21  
+Fixed - `RLocalCachedMap.containsKey()` method does not work properly if `storeCacheMiss = true`  
+Fixed - `RedissonRemoteService` exceptions handling (thanks to @mrmx)  
+Fixed - `RSearch.info()` method throws `NumberFormatException`  
+Fixed - `HttpSessionListener.sessionDestroyed()` method isn't called if Tomcat Session deleted by the node which didn't create it  
+Fixed - `LZ4CodecV2` isn't compatible with `LZ4Codec`  
+Fixed - `RSearch` GroupBy.reduce alias isn't applied (thanks to @arjunE1395)  
+
 ### 24-Oct-2023 - 3.24.3 released
 
 Feature - Helidon 4.0 integration
@@ -47,7 +73,7 @@ Feature - `failedSlaveNodeDetector` setting added to Cluster, Sentinel, Replicat
 Feature - module name added to redisson jar (thanks to @KrogerWalt)  
 Feature - `putAll()` method with TTL added to RMapCacheRx and RMapCacheReactive objects  
 Feature - Fallback to TCP in case of a UDP DNS truncation  
-Feature - `RMapCacheV2`, Spring `RedissonSpringCacheV2Manager` and Hibernate `RedissonRegionV2Factory` objects added in [PRO](https://redisson.pro) version  
+Feature - `RMapCacheV2`, Spring `RedissonSpringCacheV2Manager` and Hibernate `RedissonRegionV2Factory` objects with more effecient partitioning in Cluster added in [PRO](https://redisson.pro) version  
 
 Fixed - NPE is thrown by `RedissonAutoConfiguration` if Spring Boot 3.1+  
 Fixed - `WeightedRoundRobinBalancer` doesn't support hostnames  
