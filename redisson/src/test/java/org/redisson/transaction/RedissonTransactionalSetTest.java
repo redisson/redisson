@@ -2,6 +2,7 @@ package org.redisson.transaction;
 
 import org.junit.jupiter.api.Test;
 import org.redisson.BaseTest;
+import org.redisson.RedisDockerTest;
 import org.redisson.api.RSet;
 import org.redisson.api.RTransaction;
 import org.redisson.api.TransactionOptions;
@@ -12,7 +13,7 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedissonTransactionalSetTest extends BaseTest {
+public class RedissonTransactionalSetTest extends RedisDockerTest {
 
     @Test
     public void testRemoveAll() {
