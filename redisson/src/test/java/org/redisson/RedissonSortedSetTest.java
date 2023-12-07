@@ -28,55 +28,41 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
 import org.redisson.connection.balancer.RandomLoadBalancer;
 
-public class RedissonSortedSetTest extends BaseTest {
+public class RedissonSortedSetTest extends RedisDockerTest {
 
     @Test
-    public void testNameMapper() throws InterruptedException, IOException {
-        RedisRunner master1 = new RedisRunner().port(6890).randomDir().nosave();
-        RedisRunner master2 = new RedisRunner().port(6891).randomDir().nosave();
-        RedisRunner master3 = new RedisRunner().port(6892).randomDir().nosave();
-        RedisRunner slave1 = new RedisRunner().port(6900).randomDir().nosave();
-        RedisRunner slave2 = new RedisRunner().port(6901).randomDir().nosave();
-        RedisRunner slave3 = new RedisRunner().port(6902).randomDir().nosave();
+    public void testNameMapper() {
+        testInCluster(client -> {
+            Config config = client.getConfig();
+            config.useClusterServers()
+                    .setNameMapper(new NameMapper() {
+                        @Override
+                        public String map(String name) {
+                            return name + ":suffix:";
+                        }
 
-        ClusterRunner clusterRunner = new ClusterRunner()
-                .addNode(master1, slave1)
-                .addNode(master2, slave2)
-                .addNode(master3, slave3);
-        ClusterRunner.ClusterProcesses process = clusterRunner.run();
+                        @Override
+                        public String unmap(String name) {
+                            return name.replace(":suffix:", "");
+                        }
+                    });
+            RedissonClient redisson = Redisson.create(config);
 
-        Thread.sleep(5000);
+            RSortedSet<Long> set = redisson.getSortedSet("simple", LongCodec.INSTANCE);
+            set.add(2L);
+            set.add(0L);
+            set.add(1L);
+            set.add(5L);
 
-        Config config = new Config();
-        config.useClusterServers()
-                .setNameMapper(new NameMapper() {
-                    @Override
-                    public String map(String name) {
-                        return name + ":suffix:";
-                    }
+            assertThat(set.first()).isEqualTo(0L);
+            assertThat(set.last()).isEqualTo(5L);
 
-                    @Override
-                    public String unmap(String name) {
-                        return name.replace(":suffix:", "");
-                    }
-                })
-                .setLoadBalancer(new RandomLoadBalancer())
-                .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
-        RedissonClient redisson = Redisson.create(config);
+            assertThat(set.readAll()).containsExactly(0L, 1L, 2L, 5L);
+            set.delete();
 
-        RSortedSet<Long> set = redisson.getSortedSet("simple", LongCodec.INSTANCE);
-        set.add(2L);
-        set.add(0L);
-        set.add(1L);
-        set.add(5L);
-
-        assertThat(set.first()).isEqualTo(0L);
-        assertThat(set.last()).isEqualTo(5L);
-
-        assertThat(set.readAll()).containsExactly(0L, 1L, 2L, 5L);
-        set.delete();
-
-        assertThat(redisson.getKeys().count()).isZero();
+            assertThat(redisson.getKeys().count()).isZero();
+            redisson.shutdown();
+        });
     }
 
 
