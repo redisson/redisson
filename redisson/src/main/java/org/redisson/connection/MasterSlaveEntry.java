@@ -43,6 +43,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 
 /**
  *
@@ -85,15 +86,12 @@ public class MasterSlaveEntry {
         return config;
     }
 
-    public CompletableFuture<Void> initSlaveBalancer(Collection<RedisURI> disconnectedNodes) {
-        return initSlaveBalancer(disconnectedNodes, null);
-    }
-
-    public CompletableFuture<Void> initSlaveBalancer(Collection<RedisURI> disconnectedNodes, String slaveSSLHostname) {
+    public CompletableFuture<Void> initSlaveBalancer(Collection<RedisURI> disconnectedNodes, Function<RedisURI, String> hostnameMapper) {
         List<CompletableFuture<Void>> result = new ArrayList<>(config.getSlaveAddresses().size());
         for (String address : config.getSlaveAddresses()) {
             RedisURI uri = new RedisURI(address);
-            CompletableFuture<Void> f = addSlave(uri, disconnectedNodes.contains(uri), NodeType.SLAVE, slaveSSLHostname);
+            String hostname = hostnameMapper.apply(uri);
+            CompletableFuture<Void> f = addSlave(uri, disconnectedNodes.contains(uri), NodeType.SLAVE, hostname);
             result.add(f);
         }
 

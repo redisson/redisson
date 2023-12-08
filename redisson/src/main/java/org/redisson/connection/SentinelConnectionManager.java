@@ -40,6 +40,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -55,7 +56,6 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     private final ConcurrentMap<RedisURI, RedisClient> sentinels = new ConcurrentHashMap<>();
     private final AtomicReference<RedisURI> currentMaster = new AtomicReference<>();
 
-    private final Set<RedisURI> disconnectedSlaves = new HashSet<>();
     private ScheduledFuture<?> monitorFuture;
     private final Set<RedisURI> disconnectedSentinels = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
@@ -80,7 +80,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     @Override
-    public void doConnect() {
+    public void doConnect(Set<RedisURI> disconnectedSlaves, Function<RedisURI, String> hostnameMapper) {
         checkAuth(cfg);
 
         if ("redis".equals(scheme)) {
@@ -89,6 +89,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             masterHostCommand = RedisCommands.SENTINEL_GET_MASTER_ADDR_BY_NAME_SSL;
         }
 
+        Map<RedisURI, String> uri2hostname = new HashMap<>();
         Throwable lastException = null;
         for (String address : cfg.getSentinelAddresses()) {
             RedisURI addr = new RedisURI(address);
@@ -111,9 +112,13 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     throw new RedisConnectionException("Master node is undefined! SENTINEL GET-MASTER-ADDR-BY-NAME command returns empty result!");
                 }
 
-                this.config.setMasterAddress(master.toString());
                 InetSocketAddress masterHost = serviceManager.resolve(master).join();
-                currentMaster.set(toURI(masterHost));
+                RedisURI masterUri = toURI(masterHost);
+                if (!master.isIP()) {
+                    uri2hostname.put(masterUri, master.getHost());
+                }
+                this.config.setMasterAddress(masterUri.toString());
+                currentMaster.set(masterUri);
                 log.info("master: {} added", masterHost);
 
                 List<Map<String, String>> sentinelSlaves = connection.sync(StringCodec.INSTANCE, RedisCommands.SENTINEL_SLAVES, cfg.getMasterName());
@@ -127,15 +132,18 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     String flags = map.getOrDefault("flags", "");
                     String masterLinkStatus = map.getOrDefault("master-link-status", "");
 
-                    RedisURI uri = serviceManager.toURI(scheme, host, port);
-
+                    InetSocketAddress slaveAddr = resolveIP(host, port).join();
+                    RedisURI uri = toURI(slaveAddr);
+                    if (isHostname(host)) {
+                        uri2hostname.put(uri, host);
+                    }
                     this.config.addSlaveAddress(uri.toString());
-                    log.debug("slave {} state: {}", uri, map);
-                    log.info("slave: {} added", uri);
+                    log.debug("slave {} state: {}", slaveAddr, map);
+                    log.info("slave: {} added", slaveAddr);
 
                     if (isSlaveDown(flags, masterLinkStatus)) {
                         disconnectedSlaves.add(uri);
-                        log.warn("slave: {} is down", uri);
+                        log.warn("slave: {} is down", slaveAddr);
                     }
                 }
 
@@ -197,7 +205,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             log.warn("ReadMode = {}, but slave nodes are not found!", this.config.getReadMode());
         }
 
-        super.doConnect();
+        super.doConnect(disconnectedSlaves, uri2hostname::get);
 
         scheduleChangeCheck(cfg, null);
     }
@@ -551,11 +559,6 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                         log.warn("sentinel: {} is down", uri);
                     }
                 });
-    }
-
-    @Override
-    protected Collection<RedisURI> getDisconnectedNodes() {
-        return disconnectedSlaves;
     }
 
     private CompletionStage<Void> registerSentinel(InetSocketAddress addr) {

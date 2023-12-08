@@ -40,6 +40,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -72,7 +73,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
     }
 
     @Override
-    public void doConnect() {
+    public void doConnect(Set<RedisURI> disconnectedSlaves, Function<RedisURI, String> hostnameMapper) {
         for (String address : cfg.getNodeAddresses()) {
             RedisURI addr = new RedisURI(address);
             CompletionStage<RedisConnection> connectionFuture = connectToNode(cfg, addr, addr.getHost());
@@ -105,7 +106,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
             log.warn("ReadMode = {}, but slave nodes are not found! Please specify all nodes in replicated mode.", this.config.getReadMode());
         }
 
-        super.doConnect();
+        super.doConnect(disconnectedSlaves, hostnameMapper);
 
         scheduleMasterChangeCheck(cfg);
     }

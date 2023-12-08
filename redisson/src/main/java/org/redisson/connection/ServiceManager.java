@@ -357,8 +357,9 @@ public class ServiceManager {
     public CompletableFuture<InetSocketAddress> resolve(RedisURI address) {
         if (address.isIP()) {
             try {
-                InetAddress ip = InetAddress.getByName(address.getHost());
-                InetSocketAddress addr = new InetSocketAddress(InetAddress.getByAddress(address.getHost(), ip.getAddress()), address.getPort());
+                RedisURI uri = natMapper.map(address);
+                InetAddress ip = InetAddress.getByName(uri.getHost());
+                InetSocketAddress addr = new InetSocketAddress(InetAddress.getByAddress(uri.getHost(), ip.getAddress()), uri.getPort());
                 return CompletableFuture.completedFuture(addr);
             } catch (UnknownHostException e) {
                 throw new IllegalArgumentException(e);
@@ -377,6 +378,14 @@ public class ServiceManager {
             }
 
             InetSocketAddress s = f.getNow();
+            // apply natMapper
+            RedisURI uri = toURI(address.getScheme(), s.getAddress().getHostAddress(), "" + address.getPort());
+            if (!uri.getHost().equals(s.getAddress().getHostAddress())) {
+                InetAddress ip = InetAddress.getByName(uri.getHost());
+                InetSocketAddress mappedAddr = new InetSocketAddress(InetAddress.getByAddress(s.getAddress().getHostAddress(), ip.getAddress()), uri.getPort());
+                result.complete(mappedAddr);
+                return;
+            }
             result.complete(s);
         });
         return result;

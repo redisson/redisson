@@ -32,6 +32,7 @@ import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -188,7 +189,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 if (i == attempts - 1) {
                     lastAttempt = true;
                 }
-                doConnect();
+                doConnect(new HashSet<>(), RedisURI::toString);
                 return;
             } catch (Exception e) {
                 if (i == attempts - 1) {
@@ -205,14 +206,17 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     }
 
-    protected void doConnect() {
+    protected void doConnect(Set<RedisURI> disconnectedSlaves, Function<RedisURI, String> hostnameMapper) {
         try {
             if (config.isSlaveNotUsed()) {
                 masterSlaveEntry = new SingleEntry(this, serviceManager.getConnectionWatcher(), config);
             } else {
                 masterSlaveEntry = new MasterSlaveEntry(this, serviceManager.getConnectionWatcher(), config);
             }
-            CompletableFuture<RedisClient> masterFuture = masterSlaveEntry.setupMasterEntry(new RedisURI(config.getMasterAddress()));
+
+            RedisURI uri = new RedisURI(config.getMasterAddress());
+            String hostname = hostnameMapper.apply(uri);
+            CompletableFuture<RedisClient> masterFuture = masterSlaveEntry.setupMasterEntry(uri, hostname);
             try {
                 masterFuture.get(config.getConnectTimeout(), TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
@@ -222,7 +226,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
 
             if (!config.isSlaveNotUsed()) {
-                CompletableFuture<Void> fs = masterSlaveEntry.initSlaveBalancer(getDisconnectedNodes());
+                CompletableFuture<Void> fs = masterSlaveEntry.initSlaveBalancer(disconnectedSlaves, hostnameMapper);
                 try {
                     fs.get(config.getConnectTimeout(), TimeUnit.MILLISECONDS);
                 } catch (InterruptedException e) {
@@ -256,10 +260,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                                             slaveAddresses, config.getDnsMonitoringInterval(), serviceManager.getResolverGroup());
             dnsMonitor.start();
         }
-    }
-
-    protected Collection<RedisURI> getDisconnectedNodes() {
-        return Collections.emptySet();
     }
 
     protected MasterSlaveServersConfig create(BaseMasterSlaveServersConfig<?> cfg) {
