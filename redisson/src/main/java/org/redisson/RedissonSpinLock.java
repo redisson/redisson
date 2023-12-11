@@ -198,7 +198,7 @@ public class RedissonSpinLock extends RedissonBaseLock {
 
 
     protected RFuture<Boolean> unlockInnerAsync(long threadId, String requestId, int timeout) {
-        return evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return evalWriteSyncedAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local val = redis.call('get', KEYS[2]); " +
                       "if val ~= false then " +
                         "return tonumber(val);" +
