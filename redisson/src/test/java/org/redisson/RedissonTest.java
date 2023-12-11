@@ -15,6 +15,7 @@ import org.redisson.api.redisnode.RedisClusterMaster;
 import org.redisson.api.redisnode.RedisMaster;
 import org.redisson.api.redisnode.RedisNodes;
 import org.redisson.api.redisnode.RedisSingle;
+import org.redisson.api.stream.StreamCreateGroupArgs;
 import org.redisson.client.*;
 import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.codec.StringCodec;
@@ -72,7 +73,7 @@ public class RedissonTest extends BaseTest {
     }
 
     @Test
-    public void testLazyInitialization() {
+    public void testLazyInitialization() throws IOException, InterruptedException {
         Config config = new Config();
         config.setLazyInitialization(true);
         config.useSingleServer()
@@ -80,7 +81,23 @@ public class RedissonTest extends BaseTest {
 
         RedissonClient redisson = Redisson.create(config);
         assertThat(redisson).isNotNull();
+        Assertions.assertThrows(RedisConnectionException.class, () -> {
+            redisson.getStream("test").createGroup(StreamCreateGroupArgs.name("test").makeStream());
+        });
+        Assertions.assertThrows(RedisConnectionException.class, () -> {
+            redisson.getStream("test").createGroup(StreamCreateGroupArgs.name("test").makeStream());
+        });
+
+        RedisProcess pp = new RedisRunner()
+                .nosave()
+                .port(4431)
+                .randomDir()
+                .run();
+
+        redisson.getStream("test").createGroup(StreamCreateGroupArgs.name("test").makeStream());
+
         redisson.shutdown();
+        pp.stop();
     }
 
     @Test

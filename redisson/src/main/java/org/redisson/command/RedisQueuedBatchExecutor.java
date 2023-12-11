@@ -215,13 +215,13 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
     }
 
     @Override
-    protected CompletableFuture<RedisConnection> getConnection() {
+    protected CompletableFuture<RedisConnection> getConnection(CompletableFuture<R> attemptPromise) {
         MasterSlaveEntry msEntry = getEntry();
         ConnectionEntry entry = connections.computeIfAbsent(msEntry, k -> {
             if (this.options.getExecutionMode() == ExecutionMode.REDIS_WRITE_ATOMIC) {
-                connectionFuture = connectionWriteOp(null);
+                connectionFuture = connectionWriteOp(null, attemptPromise);
             } else {
-                connectionFuture = connectionReadOp(null);
+                connectionFuture = connectionReadOp(null, attemptPromise);
             }
 
             ConnectionEntry ce = new ConnectionEntry(connectionFuture);

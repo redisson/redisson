@@ -289,9 +289,11 @@ public final class RedisClient {
                                         if (!r.complete(c)) {
                                             c.closeAsync();
                                         } else {
-                                            if (config.getConnectedListener() != null) {
-                                                config.getConnectedListener().accept(getAddr());
-                                            }
+                                            executor.execute(() -> {
+                                                if (config.getConnectedListener() != null) {
+                                                    config.getConnectedListener().accept(getAddr());
+                                                }
+                                            });
                                         }
                                     } else {
                                         r.completeExceptionally(e);

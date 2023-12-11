@@ -47,10 +47,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.function.BiConsumer;
 
 /**
@@ -126,9 +123,8 @@ public class RedisExecutor<V, R> {
         try {
             codec = getCodec(codec);
 
-            CompletableFuture<RedisConnection> connectionFuture = getConnection();
-
             CompletableFuture<R> attemptPromise = new CompletableFuture<>();
+            CompletableFuture<RedisConnection> connectionFuture = getConnection(attemptPromise);
             mainPromiseListener = (r, e) -> {
                 if (!mainPromise.isCancelled()) {
                     return;
@@ -694,11 +690,11 @@ public class RedisExecutor<V, R> {
         return getNow(connectionFuture).getRedisClient();
     }
 
-    protected CompletableFuture<RedisConnection> getConnection() {
+    protected CompletableFuture<RedisConnection> getConnection(CompletableFuture<R> attemptPromise) {
         if (readOnlyMode) {
-            connectionFuture = connectionReadOp(command);
+            connectionFuture = connectionReadOp(command, attemptPromise);
         } else {
-            connectionFuture = connectionWriteOp(command);
+            connectionFuture = connectionWriteOp(command, attemptPromise);
         }
         return connectionFuture;
     }
@@ -757,8 +753,16 @@ public class RedisExecutor<V, R> {
         return new RedisException("Unexpected exception while processing command", cause);
     }
 
-    final CompletableFuture<RedisConnection> connectionReadOp(RedisCommand<?> command) {
-        entry = getEntry(true);
+    final CompletableFuture<RedisConnection> connectionReadOp(RedisCommand<?> command, CompletableFuture<R> attemptPromise) {
+        try {
+            // TODO make the method async
+            entry = getEntry(true);
+        } catch (Exception e) {
+            attemptPromise.completeExceptionally(e);
+            CompletableFuture<RedisConnection> f = new CompletableFuture<>();
+            f.completeExceptionally(e);
+            return f;
+        }
         if (entry == null) {
             CompletableFuture<RedisConnection> f = new CompletableFuture<>();
             f.completeExceptionally(connectionManager.getServiceManager().createNodeNotFoundException(source));
@@ -775,8 +779,16 @@ public class RedisExecutor<V, R> {
         return entry.connectionReadOp(command);
     }
 
-    final CompletableFuture<RedisConnection> connectionWriteOp(RedisCommand<?> command) {
-        entry = getEntry(false);
+    final CompletableFuture<RedisConnection> connectionWriteOp(RedisCommand<?> command, CompletableFuture<R> attemptPromise) {
+        try {
+            // TODO make the method async
+            entry = getEntry(false);
+        } catch (Exception e) {
+            attemptPromise.completeExceptionally(e);
+            CompletableFuture<RedisConnection> f = new CompletableFuture<>();
+            f.completeExceptionally(e);
+            return f;
+        }
         if (entry == null) {
             CompletableFuture<RedisConnection> f = new CompletableFuture<>();
             f.completeExceptionally(connectionManager.getServiceManager().createNodeNotFoundException(source));

@@ -60,8 +60,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     private final Map<RedisURI, RedisConnection> nodeConnections = new ConcurrentHashMap<>();
 
-    protected volatile boolean isConnected;
-
     protected final AtomicReference<CompletableFuture<Void>> lazyConnectLatch = new AtomicReference<>();
 
     private boolean lastAttempt;
@@ -160,23 +158,29 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     protected final void lazyConnect() {
-        if (!serviceManager.getCfg().isLazyInitialization()
-                || isConnected) {
+        if (isInitialized()) {
             return;
         }
 
-        CompletableFuture<Void> f = new CompletableFuture<>();
-        if (!lazyConnectLatch.compareAndSet(null, f)) {
-            lazyConnectLatch.get().join();
-            return;
+        CompletableFuture<Void> newFuture = new CompletableFuture<>();
+        if (!lazyConnectLatch.compareAndSet(null, newFuture)) {
+            CompletableFuture<Void> currentFuture = lazyConnectLatch.get();
+            if (currentFuture.isCompletedExceptionally()) {
+                if (!lazyConnectLatch.compareAndSet(currentFuture, newFuture)) {
+                    lazyConnectLatch.get().join();
+                    return;
+                }
+            } else {
+                lazyConnectLatch.get().join();
+                return;
+            }
         }
 
         try {
             connect();
-            f.complete(null);
+            newFuture.complete(null);
         } catch (Exception e) {
-            f.completeExceptionally(e);
-            lazyConnectLatch.set(null);
+            newFuture.completeExceptionally(e);
             throw e;
         }
     }
@@ -375,7 +379,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 .setCommandMapper(config.getCommandMapper())
                 .setCredentialsResolver(config.getCredentialsResolver())
                 .setConnectedListener(addr -> {
-                    isConnected = true;
                     if (!serviceManager.isShuttingDown()) {
                         NodeType nt = getNodeType(type, addr);
                         serviceManager.getConnectionEventsHub().fireConnect(addr, nt);
@@ -496,7 +499,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
         serviceManager.getConnectionWatcher().stop();
 
-        if (isConnected) {
+        if (isInitialized()) {
             List<CompletableFuture<Void>> futures = new ArrayList<>();
             for (MasterSlaveEntry entry : getEntrySet()) {
                 futures.add(entry.shutdownAsync());
@@ -537,6 +540,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
 
         serviceManager.getTimer().stop();
+    }
+
+    private boolean isInitialized() {
+        return !serviceManager.getCfg().isLazyInitialization()
+                    || (lazyConnectLatch.get() != null
+                            && lazyConnectLatch.get().isDone()
+                                && !lazyConnectLatch.get().isCompletedExceptionally());
     }
 
     @Override
