@@ -15,6 +15,8 @@
  */
 package org.redisson.cache;
 
+import org.redisson.misc.WrappedLock;
+
 /**
  * Created by jribble on 2/20/17.
  */
@@ -23,4 +25,6 @@ public interface CachedValue<K, V> extends ExpirableValue {
     K getKey();
 
     V getValue();
+
+    WrappedLock getLock();
 }

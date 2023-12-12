@@ -17,6 +17,8 @@ package org.redisson.cache;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * LRU (least recently used) cache.
@@ -29,15 +31,16 @@ import java.util.concurrent.atomic.AtomicLong;
 public class LRUCacheMap<K, V> extends AbstractCacheMap<K, V> {
 
     private final AtomicLong index = new AtomicLong();
-    private final List<Collection<CachedValue<K, V>>> queues = 
-                        new ArrayList<Collection<CachedValue<K, V>>>();
-    
+    private final List<Collection<CachedValue<K, V>>> queues = new ArrayList<>();
+    private final Map<Collection<CachedValue<K, V>>, Lock> queueLocks = new IdentityHashMap<>();
+
     public LRUCacheMap(int size, long timeToLiveInMillis, long maxIdleInMillis) {
         super(size, timeToLiveInMillis, maxIdleInMillis);
         
         for (int i = 0; i < Runtime.getRuntime().availableProcessors()*2; i++) {
-            Set<CachedValue<K, V>> instance = Collections.synchronizedSet(new LinkedHashSet<CachedValue<K, V>>());
+            Set<CachedValue<K, V>> instance = Collections.synchronizedSet(new LinkedHashSet<>());
             queues.add(instance);
+            queueLocks.put(instance, new ReentrantLock());
         }
     }
 
@@ -60,7 +63,7 @@ public class LRUCacheMap<K, V> extends AbstractCacheMap<K, V> {
     @Override
     protected void onValueRead(CachedValue<K, V> value) {
         Collection<CachedValue<K, V>> queue = getQueue(value);
-        // move value to tail of queue 
+        // move value to the tail of the queue
         if (queue.remove(value)) {
             queue.add(value);
         }
@@ -80,12 +83,16 @@ public class LRUCacheMap<K, V> extends AbstractCacheMap<K, V> {
 
             Collection<CachedValue<K, V>> queue = queues.get(queueIndex);
             CachedValue<K, V> removedValue = null;
-            synchronized (queue) {
+            Lock lock = queueLocks.get(queue);
+            lock.lock();
+            try {
                 Iterator<CachedValue<K, V>> iter = queue.iterator();
                 if (iter.hasNext()) {
                     removedValue = iter.next();
                     iter.remove();
                 }
+            } finally {
+                lock.unlock();
             }
 
             if (removedValue != null) {
