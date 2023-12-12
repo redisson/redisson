@@ -171,7 +171,7 @@ public class LoadBalancerManager {
                 }
             }
             return CompletableFuture.completedFuture(false);
-        }).join();
+        });
     }
 
     public ClientConnectionsEntry freeze(RedisURI address, FreezeReason freezeReason) {
@@ -207,7 +207,7 @@ public class LoadBalancerManager {
                 return connectionEntry;
             }
             return connectionEntry;
-        }).join();
+        });
     }
 
     public CompletableFuture<RedisPubSubConnection> nextPubSubConnection() {

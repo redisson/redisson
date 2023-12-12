@@ -23,6 +23,7 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.ReadMode;
 import org.redisson.misc.AsyncSemaphore;
+import org.redisson.misc.WrappedLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,7 +63,7 @@ public class ClientConnectionsEntry {
 
     private volatile boolean initialized = false;
 
-    private final AsyncSemaphore lock = new AsyncSemaphore(1);
+    private final WrappedLock lock = new WrappedLock();
 
     public ClientConnectionsEntry(RedisClient client, int poolMinSize, int poolMaxSize,
                                   IdleConnectionWatcher idleConnectionWatcher, NodeType nodeType, MasterSlaveServersConfig config) {
@@ -242,7 +243,7 @@ public class ClientConnectionsEntry {
         freeSubscribeConnectionsCounter.release();
     }
 
-    public AsyncSemaphore getLock() {
+    public WrappedLock getLock() {
         return lock;
     }
 

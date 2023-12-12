@@ -229,7 +229,7 @@ public class MasterSlaveEntry {
                     return false;
                 }
                 return true;
-            }).join();
+            });
             if (!res) {
                 return;
             }
@@ -241,7 +241,7 @@ public class MasterSlaveEntry {
                         return false;
                     }
                     return true;
-                }).join();
+                });
                 if (!res2) {
                     return;
                 }
@@ -264,7 +264,7 @@ public class MasterSlaveEntry {
                                 return false;
                             }
                             return true;
-                        }).join();
+                        });
                         if (!res3) {
                             return;
                         }
@@ -461,7 +461,7 @@ public class MasterSlaveEntry {
             if (freezed) {
                 entry.getLock().execute(() -> {
                     entry.setFreezeReason(FreezeReason.SYSTEM);
-                }).join();
+                });
             }
             return slaveBalancer.add(entry);
         }).whenComplete((r, ex) -> {
@@ -618,7 +618,7 @@ public class MasterSlaveEntry {
 
             oldMaster.getLock().execute(() -> {
                 oldMaster.setFreezeReason(FreezeReason.MANAGER);
-            }).join();
+            });
             nodeDown(oldMaster);
 
             slaveBalancer.changeType(oldMaster.getClient().getAddr(), NodeType.SLAVE);
