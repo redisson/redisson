@@ -42,6 +42,7 @@ import io.netty.util.concurrent.*;
 import io.netty.util.internal.PlatformDependent;
 import org.redisson.ElementsSubscribeService;
 import org.redisson.QueueTransferService;
+import org.redisson.RedissonShutdownException;
 import org.redisson.Version;
 import org.redisson.api.NatMapper;
 import org.redisson.api.RFuture;
@@ -127,8 +128,6 @@ public class ServiceManager {
     private HashedWheelTimer timer;
 
     private IdleConnectionWatcher connectionWatcher;
-
-    private final Promise<Void> shutdownPromise = ImmediateEventExecutor.INSTANCE.newPromise();
 
     private final InfinitySemaphoreLatch shutdownLatch = new InfinitySemaphoreLatch();
 
@@ -305,8 +304,18 @@ public class ServiceManager {
         return socketChannelClass;
     }
 
-    public Promise<Void> getShutdownPromise() {
-        return shutdownPromise;
+    private final Set<CompletableFuture<?>> futures = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+    public void addFuture(CompletableFuture<?> future) {
+        futures.add(future);
+    }
+
+    public void removeFuture(CompletableFuture<?> future) {
+        futures.remove(future);
+    }
+
+    public void shutdownFutures() {
+        futures.forEach(f -> f.completeExceptionally(new RedissonShutdownException("Redisson is shutdown")));
     }
 
     public InfinitySemaphoreLatch getShutdownLatch() {

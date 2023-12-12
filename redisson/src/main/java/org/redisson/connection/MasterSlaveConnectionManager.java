@@ -529,7 +529,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
         }
 
-        serviceManager.getShutdownPromise().trySuccess(null);
+        serviceManager.shutdownFutures();
         serviceManager.getShutdownLatch().awaitUninterruptibly();
 
         if (serviceManager.getCfg().getEventLoopGroup() == null) {

@@ -20,7 +20,6 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
-import io.netty.util.concurrent.FutureListener;
 import org.redisson.RedissonShutdownException;
 import org.redisson.ScanResult;
 import org.redisson.api.NodeType;
@@ -47,7 +46,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.*;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 
 /**
@@ -441,10 +443,6 @@ public class RedisExecutor<V, R> {
     }
 
     private void handleBlockingOperations(CompletableFuture<R> attemptPromise, RedisConnection connection, long popTimeout) {
-        FutureListener<Void> listener = f -> {
-            mainPromise.completeExceptionally(new RedissonShutdownException("Redisson is shutdown"));
-        };
-
         Timeout scheduledFuture;
         if (popTimeout != 0) {
             // handling cases when connection has been lost
@@ -457,14 +455,13 @@ public class RedisExecutor<V, R> {
             scheduledFuture = null;
         }
 
+        connectionManager.getServiceManager().addFuture(mainPromise);
         mainPromise.whenComplete((res, e) -> {
             if (scheduledFuture != null) {
                 scheduledFuture.cancel();
             }
 
-            synchronized (listener) {
-                connectionManager.getServiceManager().getShutdownPromise().removeListener(listener);
-            }
+            connectionManager.getServiceManager().removeFuture(mainPromise);
 
             // handling cancel operation for blocking commands
             if ((mainPromise.isCancelled()
@@ -481,12 +478,6 @@ public class RedisExecutor<V, R> {
                 attemptPromise.completeExceptionally(e);
             }
         });
-
-        synchronized (listener) {
-            if (!mainPromise.isDone()) {
-                connectionManager.getServiceManager().getShutdownPromise().addListener(listener);
-            }
-        }
     }
 
     protected Throwable cause(CompletableFuture<?> future) {
