@@ -23,13 +23,9 @@ import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
-import org.redisson.misc.WrappedLock;
-import org.redisson.remote.ResponseEntry;
 import org.redisson.rx.*;
 
 import java.util.Arrays;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * Main infrastructure class allows to get access
@@ -44,9 +40,7 @@ public class RedissonRx implements RedissonRxClient {
     protected final EvictionScheduler evictionScheduler;
     protected final CommandRxExecutor commandExecutor;
     protected final ConnectionManager connectionManager;
-    protected final ConcurrentMap<String, ResponseEntry> responses;
-    private final WrappedLock responsesLock = new WrappedLock();
-    
+
     protected RedissonRx(Config config) {
         Config configCopy = new Config(config);
 
@@ -58,11 +52,9 @@ public class RedissonRx implements RedissonRxClient {
         commandExecutor = new CommandRxService(connectionManager, objectBuilder);
         evictionScheduler = new EvictionScheduler(commandExecutor);
         writeBehindService = new WriteBehindService(commandExecutor);
-        responses = new ConcurrentHashMap<>();
     }
 
-    protected RedissonRx(ConnectionManager connectionManager, EvictionScheduler evictionScheduler,
-                         WriteBehindService writeBehindService, ConcurrentMap<String, ResponseEntry> responses) {
+    protected RedissonRx(ConnectionManager connectionManager, EvictionScheduler evictionScheduler, WriteBehindService writeBehindService) {
         this.connectionManager = connectionManager;
         RedissonObjectBuilder objectBuilder = null;
         if (connectionManager.getServiceManager().getCfg().isReferenceEnabled()) {
@@ -71,7 +63,6 @@ public class RedissonRx implements RedissonRxClient {
         commandExecutor = new CommandRxService(connectionManager, objectBuilder);
         this.evictionScheduler = evictionScheduler;
         this.writeBehindService = writeBehindService;
-        this.responses = responses;
     }
 
     public CommandRxExecutor getCommandExecutor() {
@@ -515,7 +506,7 @@ public class RedissonRx implements RedissonRxClient {
         if (codec != connectionManager.getServiceManager().getCfg().getCodec()) {
             executorId = executorId + ":" + name;
         }
-        return new RedissonRemoteService(codec, name, commandExecutor, executorId, responses, responsesLock);
+        return new RedissonRemoteService(codec, name, commandExecutor, executorId);
     }
 
     @Override

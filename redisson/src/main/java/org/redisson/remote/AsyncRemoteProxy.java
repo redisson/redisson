@@ -15,7 +15,6 @@
  */
 package org.redisson.remote;
 
-import org.redisson.misc.WrappedLock;
 import org.redisson.RedissonBucket;
 import org.redisson.RedissonList;
 import org.redisson.RedissonMap;
@@ -40,7 +39,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -53,9 +51,8 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
     protected final String cancelRequestMapName;
     
     public AsyncRemoteProxy(CommandAsyncExecutor commandExecutor, String name, String responseQueueName,
-            ConcurrentMap<String, ResponseEntry> responses, Codec codec, String executorId, String cancelRequestMapName,
-                            BaseRemoteService remoteService, WrappedLock locked) {
-        super(commandExecutor, name, responseQueueName, responses, codec, executorId, remoteService, locked);
+                            Codec codec, String executorId, String cancelRequestMapName, BaseRemoteService remoteService) {
+        super(commandExecutor, name, responseQueueName, codec, executorId, remoteService);
         this.cancelRequestMapName = cancelRequestMapName;
     }
     

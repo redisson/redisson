@@ -35,12 +35,11 @@ import java.util.concurrent.TimeUnit;
  */
 public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelayedQueue<V> {
 
-    private final QueueTransferService queueTransferService;
     private final String channelName;
     private final String queueName;
     private final String timeoutSetName;
     
-    protected RedissonDelayedQueue(QueueTransferService queueTransferService, Codec codec, final CommandAsyncExecutor commandExecutor, String name) {
+    protected RedissonDelayedQueue(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
         channelName = prefixName("redisson_delay_queue_channel", getRawName());
         queueName = prefixName("redisson_delay_queue", getRawName());
@@ -75,10 +74,8 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
                 return RedissonTopic.createRaw(LongCodec.INSTANCE, commandExecutor, channelName);
             }
         };
-        
-        queueTransferService.schedule(queueName, task);
-        
-        this.queueTransferService = queueTransferService;
+
+        commandExecutor.getServiceManager().getQueueTransferService().schedule(queueName, task);
     }
 
     @Override
@@ -524,7 +521,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
 
     @Override
     public void destroy() {
-        queueTransferService.remove(queueName);
+        commandExecutor.getServiceManager().getQueueTransferService().remove(queueName);
     }
     
 }

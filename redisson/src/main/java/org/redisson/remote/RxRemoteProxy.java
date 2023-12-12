@@ -15,21 +15,18 @@
  */
 package org.redisson.remote;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.ConcurrentMap;
-
-import org.redisson.misc.WrappedLock;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Maybe;
+import io.reactivex.rxjava3.core.Single;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.executor.RemotePromise;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.rx.CommandRxExecutor;
 
-import io.reactivex.rxjava3.core.Completable;
-import io.reactivex.rxjava3.core.Flowable;
-import io.reactivex.rxjava3.core.Maybe;
-import io.reactivex.rxjava3.core.Single;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * 
@@ -39,10 +36,8 @@ import io.reactivex.rxjava3.core.Single;
 public class RxRemoteProxy extends AsyncRemoteProxy {
 
     public RxRemoteProxy(CommandAsyncExecutor commandExecutor, String name, String responseQueueName,
-            ConcurrentMap<String, ResponseEntry> responses, Codec codec, String executorId,
-            String cancelRequestMapName, BaseRemoteService remoteService, WrappedLock locked) {
-        super(commandExecutor, name, responseQueueName, responses, codec, executorId, cancelRequestMapName,
-                remoteService, locked);
+                        Codec codec, String executorId, String cancelRequestMapName, BaseRemoteService remoteService) {
+        super(commandExecutor, name, responseQueueName, codec, executorId, cancelRequestMapName, remoteService);
     }
 
     @Override

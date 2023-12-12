@@ -23,15 +23,11 @@ import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
-import org.redisson.misc.WrappedLock;
 import org.redisson.reactive.*;
-import org.redisson.remote.ResponseEntry;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * Main infrastructure class allows to get access
@@ -46,8 +42,6 @@ public class RedissonReactive implements RedissonReactiveClient {
     protected final EvictionScheduler evictionScheduler;
     protected final CommandReactiveExecutor commandExecutor;
     protected final ConnectionManager connectionManager;
-    protected final ConcurrentMap<String, ResponseEntry> responses;
-    private final WrappedLock responsesLock = new WrappedLock();
 
     protected RedissonReactive(Config config) {
         Config configCopy = new Config(config);
@@ -60,11 +54,10 @@ public class RedissonReactive implements RedissonReactiveClient {
         commandExecutor = new CommandReactiveService(connectionManager, objectBuilder);
         evictionScheduler = new EvictionScheduler(commandExecutor);
         writeBehindService = new WriteBehindService(commandExecutor);
-        responses = new ConcurrentHashMap<>();
     }
 
     protected RedissonReactive(ConnectionManager connectionManager, EvictionScheduler evictionScheduler,
-                               WriteBehindService writeBehindService, ConcurrentMap<String, ResponseEntry> responses) {
+                               WriteBehindService writeBehindService) {
         this.connectionManager = connectionManager;
         RedissonObjectBuilder objectBuilder = null;
         if (connectionManager.getServiceManager().getCfg().isReferenceEnabled()) {
@@ -73,7 +66,6 @@ public class RedissonReactive implements RedissonReactiveClient {
         commandExecutor = new CommandReactiveService(connectionManager, objectBuilder);
         this.evictionScheduler = evictionScheduler;
         this.writeBehindService = writeBehindService;
-        this.responses = responses;
     }
 
     public EvictionScheduler getEvictionScheduler() {
@@ -536,7 +528,7 @@ public class RedissonReactive implements RedissonReactiveClient {
         if (codec != connectionManager.getServiceManager().getCfg().getCodec()) {
             executorId = executorId + ":" + name;
         }
-        return new RedissonRemoteService(codec, name, commandExecutor, executorId, responses, responsesLock);
+        return new RedissonRemoteService(codec, name, commandExecutor, executorId);
     }
 
     @Override

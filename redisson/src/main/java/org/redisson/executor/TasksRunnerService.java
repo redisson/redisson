@@ -17,7 +17,6 @@ package org.redisson.executor;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import org.redisson.misc.WrappedLock;
 import org.redisson.RedissonExecutorService;
 import org.redisson.RedissonShutdownException;
 import org.redisson.api.RFuture;
@@ -35,7 +34,6 @@ import org.redisson.executor.params.*;
 import org.redisson.misc.Hash;
 import org.redisson.misc.HashValue;
 import org.redisson.misc.Injector;
-import org.redisson.remote.ResponseEntry;
 
 import java.io.ByteArrayInputStream;
 import java.io.ObjectInput;
@@ -44,7 +42,6 @@ import java.util.Date;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -74,17 +71,11 @@ public class TasksRunnerService implements RemoteExecutorService {
     private String tasksExpirationTimeName;
 
     private TasksInjector tasksInjector;
-    private ConcurrentMap<String, ResponseEntry> responses;
-    private WrappedLock locked;
-    
-    public TasksRunnerService(CommandAsyncExecutor commandExecutor, RedissonClient redisson, Codec codec, String name,
-                              ConcurrentMap<String, ResponseEntry> responses, WrappedLock locked) {
+
+    public TasksRunnerService(CommandAsyncExecutor commandExecutor, RedissonClient redisson, Codec codec, String name) {
         this.commandExecutor = commandExecutor;
         this.name = name;
         this.redisson = redisson;
-        this.responses = responses;
-        this.locked = locked;
-        
         this.codec = codec;
     }
 
@@ -161,7 +152,7 @@ public class TasksRunnerService implements RemoteExecutorService {
      * @return
      */
     private RemoteExecutorServiceAsync asyncScheduledServiceAtFixed(String executorId, String requestId) {
-        ScheduledTasksService scheduledRemoteService = new ScheduledTasksService(codec, name, commandExecutor, executorId, responses, locked);
+        ScheduledTasksService scheduledRemoteService = new ScheduledTasksService(codec, name, commandExecutor, executorId);
         scheduledRemoteService.setTerminationTopicName(terminationTopicName);
         scheduledRemoteService.setTasksCounterName(tasksCounterName);
         scheduledRemoteService.setStatusName(statusName);

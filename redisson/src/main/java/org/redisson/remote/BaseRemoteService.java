@@ -20,7 +20,6 @@ import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
-import org.redisson.misc.WrappedLock;
 import org.redisson.RedissonBlockingQueue;
 import org.redisson.RedissonMap;
 import org.redisson.api.RBlockingQueue;
@@ -66,20 +65,15 @@ public abstract class BaseRemoteService {
     protected final String cancelRequestMapName;
     protected final String cancelResponseMapName;
     protected final String responseQueueName;
-    private final ConcurrentMap<String, ResponseEntry> responses;
-    private final WrappedLock locked;
 
-    public BaseRemoteService(Codec codec, String name, CommandAsyncExecutor commandExecutor, String executorId,
-                             ConcurrentMap<String, ResponseEntry> responses, WrappedLock locked) {
+    public BaseRemoteService(Codec codec, String name, CommandAsyncExecutor commandExecutor, String executorId) {
         this.codec = codec;
         this.name = commandExecutor.getServiceManager().getConfig().getNameMapper().map(name);
         this.commandExecutor = commandExecutor;
         this.executorId = executorId;
-        this.responses = responses;
         this.cancelRequestMapName = "{" + name + ":remote" + "}:cancel-request";
         this.cancelResponseMapName = "{" + name + ":remote" + "}:cancel-response";
         this.responseQueueName = getResponseQueueName(executorId);
-        this.locked = locked;
     }
 
     public String getResponseQueueName(String executorId) {
@@ -121,27 +115,27 @@ public abstract class BaseRemoteService {
         for (Annotation annotation : remoteInterface.getAnnotations()) {
             if (annotation.annotationType() == RRemoteAsync.class) {
                 Class<T> syncInterface = (Class<T>) ((RRemoteAsync) annotation).value();
-                AsyncRemoteProxy proxy = new AsyncRemoteProxy(commandExecutor, name, responseQueueName, responses,
-                        codec, executorId, cancelRequestMapName, this, locked);
+                AsyncRemoteProxy proxy = new AsyncRemoteProxy(commandExecutor, name, responseQueueName,
+                        codec, executorId, cancelRequestMapName, this);
                 return proxy.create(remoteInterface, options, syncInterface);
             }
 
             if (annotation.annotationType() == RRemoteReactive.class) {
                 Class<T> syncInterface = (Class<T>) ((RRemoteReactive) annotation).value();
-                ReactiveRemoteProxy proxy = new ReactiveRemoteProxy(commandExecutor, name, responseQueueName, responses,
-                        codec, executorId, cancelRequestMapName, this, locked);
+                ReactiveRemoteProxy proxy = new ReactiveRemoteProxy(commandExecutor, name, responseQueueName,
+                        codec, executorId, cancelRequestMapName, this);
                 return proxy.create(remoteInterface, options, syncInterface);
             }
 
             if (annotation.annotationType() == RRemoteRx.class) {
                 Class<T> syncInterface = (Class<T>) ((RRemoteRx) annotation).value();
-                RxRemoteProxy proxy = new RxRemoteProxy(commandExecutor, name, responseQueueName, responses,
-                        codec, executorId, cancelRequestMapName, this, locked);
+                RxRemoteProxy proxy = new RxRemoteProxy(commandExecutor, name, responseQueueName,
+                        codec, executorId, cancelRequestMapName, this);
                 return proxy.create(remoteInterface, options, syncInterface);
             }
         }
 
-        SyncRemoteProxy proxy = new SyncRemoteProxy(commandExecutor, name, responseQueueName, responses, codec, executorId, this, locked);
+        SyncRemoteProxy proxy = new SyncRemoteProxy(commandExecutor, name, responseQueueName, codec, executorId, this);
         return proxy.create(remoteInterface, options);
     }
 

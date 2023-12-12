@@ -16,7 +16,6 @@
 package org.redisson.remote;
 
 import io.netty.util.concurrent.ScheduledFuture;
-import org.redisson.misc.WrappedLock;
 import org.redisson.RedissonBlockingQueue;
 import org.redisson.RedissonShutdownException;
 import org.redisson.api.RBlockingQueue;
@@ -26,6 +25,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.misc.WrappedLock;
 import org.redisson.remote.ResponseEntry.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,18 +54,18 @@ public abstract class BaseRemoteProxy {
     final String executorId;
     final BaseRemoteService remoteService;
     final WrappedLock locked;
-    
+
     BaseRemoteProxy(CommandAsyncExecutor commandExecutor, String name, String responseQueueName,
-                    Map<String, ResponseEntry> responses, Codec codec, String executorId, BaseRemoteService remoteService, WrappedLock locked) {
+                    Codec codec, String executorId, BaseRemoteService remoteService) {
         super();
         this.commandExecutor = commandExecutor;
         this.name = name;
         this.responseQueueName = responseQueueName;
-        this.responses = responses;
+        this.responses = commandExecutor.getServiceManager().getResponses();
         this.codec = codec;
         this.executorId = executorId;
         this.remoteService = remoteService;
-        this.locked = locked;
+        this.locked = commandExecutor.getServiceManager().getResponsesLock();
     }
 
     private final Map<Class<?>, String> requestQueueNameCache = new ConcurrentHashMap<>();

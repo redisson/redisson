@@ -41,6 +41,7 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.*;
 import io.netty.util.internal.PlatformDependent;
 import org.redisson.ElementsSubscribeService;
+import org.redisson.QueueTransferService;
 import org.redisson.Version;
 import org.redisson.api.NatMapper;
 import org.redisson.api.RFuture;
@@ -56,6 +57,8 @@ import org.redisson.config.TransportMode;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.InfinitySemaphoreLatch;
 import org.redisson.misc.RedisURI;
+import org.redisson.misc.WrappedLock;
+import org.redisson.remote.ResponseEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -136,6 +139,12 @@ public class ServiceManager {
     private static final Map<InetSocketAddress, Set<String>> SCRIPT_SHA_CACHE = new ConcurrentHashMap<>();
 
     private static final Map<String, String> SHA_CACHE = new LRUCacheMap<>(500, 0, 0);
+
+    private final Map<String, ResponseEntry> responses = new ConcurrentHashMap<>();
+
+    private final WrappedLock responsesLock = new WrappedLock();
+
+    private final QueueTransferService queueTransferService = new QueueTransferService();
 
     public ServiceManager(Config cfg) {
         Version.logVersion();
@@ -570,4 +579,15 @@ public class ServiceManager {
         return RedisCommands.HRANDFIELD;
     }
 
+    public Map<String, ResponseEntry> getResponses() {
+        return responses;
+    }
+
+    public WrappedLock getResponsesLock() {
+        return responsesLock;
+    }
+
+    public QueueTransferService getQueueTransferService() {
+        return queueTransferService;
+    }
 }

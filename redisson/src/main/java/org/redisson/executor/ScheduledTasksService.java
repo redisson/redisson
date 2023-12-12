@@ -15,7 +15,6 @@
  */
 package org.redisson.executor;
 
-import org.redisson.misc.WrappedLock;
 import org.redisson.RedissonExecutorService;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
@@ -25,11 +24,9 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.executor.params.ScheduledParameters;
 import org.redisson.remote.RemoteServiceRequest;
-import org.redisson.remote.ResponseEntry;
 
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * 
@@ -40,9 +37,8 @@ public class ScheduledTasksService extends TasksService {
 
     private String requestId;
     
-    public ScheduledTasksService(Codec codec, String name, CommandAsyncExecutor commandExecutor, String redissonId,
-                                 ConcurrentMap<String, ResponseEntry> responses, WrappedLock locked) {
-        super(codec, name, commandExecutor, redissonId, responses, locked);
+    public ScheduledTasksService(Codec codec, String name, CommandAsyncExecutor commandExecutor, String redissonId) {
+        super(codec, name, commandExecutor, redissonId);
     }
     
     public void setRequestId(String requestId) {

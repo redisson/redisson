@@ -27,12 +27,10 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.ServiceManager;
 import org.redisson.eviction.EvictionScheduler;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
-import org.redisson.misc.WrappedLock;
 import org.redisson.redisnode.RedissonClusterNodes;
 import org.redisson.redisnode.RedissonMasterSlaveNodes;
 import org.redisson.redisnode.RedissonSentinelMasterSlaveNodes;
 import org.redisson.redisnode.RedissonSingleNode;
-import org.redisson.remote.ResponseEntry;
 import org.redisson.transaction.RedissonTransaction;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -52,7 +50,6 @@ public final class Redisson implements RedissonClient {
         RedissonReference.warmUp();
     }
 
-    private final QueueTransferService queueTransferService = new QueueTransferService();
     private final EvictionScheduler evictionScheduler;
     private final WriteBehindService writeBehindService;
     private final ConnectionManager connectionManager;
@@ -60,10 +57,6 @@ public final class Redisson implements RedissonClient {
 
     private final ConcurrentMap<Class<?>, Class<?>> liveObjectClassCache = new ConcurrentHashMap<>();
     private final Config config;
-
-    private final ConcurrentMap<String, ResponseEntry> responses = new ConcurrentHashMap<>();
-
-    private final WrappedLock responsesLock = new WrappedLock();
 
     Redisson(Config config) {
         this.config = config;
@@ -137,7 +130,7 @@ public final class Redisson implements RedissonClient {
 
     @Override
     public RedissonRxClient rxJava() {
-        return new RedissonRx(connectionManager, evictionScheduler, writeBehindService, responses);
+        return new RedissonRx(connectionManager, evictionScheduler, writeBehindService);
     }
 
     /*
@@ -160,7 +153,7 @@ public final class Redisson implements RedissonClient {
 
     @Override
     public RedissonReactiveClient reactive() {
-        return new RedissonReactive(connectionManager, evictionScheduler, writeBehindService, responses);
+        return new RedissonReactive(connectionManager, evictionScheduler, writeBehindService);
     }
 
     @Override
@@ -447,7 +440,7 @@ public final class Redisson implements RedissonClient {
 
     @Override
     public RScheduledExecutorService getExecutorService(String name, Codec codec, ExecutorOptions options) {
-        return new RedissonExecutorService(codec, commandExecutor, this, name, queueTransferService, responses, responsesLock, options);
+        return new RedissonExecutorService(codec, commandExecutor, this, name, options);
     }
 
     @Override
@@ -471,7 +464,7 @@ public final class Redisson implements RedissonClient {
         if (codec != connectionManager.getServiceManager().getCfg().getCodec()) {
             executorId = executorId + ":" + name;
         }
-        return new RedissonRemoteService(codec, name, commandExecutor, executorId, responses, responsesLock);
+        return new RedissonRemoteService(codec, name, commandExecutor, executorId);
     }
 
     @Override
@@ -544,7 +537,7 @@ public final class Redisson implements RedissonClient {
         if (destinationQueue == null) {
             throw new NullPointerException();
         }
-        return new RedissonDelayedQueue<V>(queueTransferService, destinationQueue.getCodec(), commandExecutor, destinationQueue.getName());
+        return new RedissonDelayedQueue<V>(destinationQueue.getCodec(), commandExecutor, destinationQueue.getName());
     }
 
     @Override
