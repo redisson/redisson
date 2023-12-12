@@ -17,6 +17,7 @@ package org.redisson.executor;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import org.redisson.misc.WrappedLock;
 import org.redisson.RedissonExecutorService;
 import org.redisson.RedissonShutdownException;
 import org.redisson.api.RFuture;
@@ -74,12 +75,15 @@ public class TasksRunnerService implements RemoteExecutorService {
 
     private TasksInjector tasksInjector;
     private ConcurrentMap<String, ResponseEntry> responses;
+    private WrappedLock locked;
     
-    public TasksRunnerService(CommandAsyncExecutor commandExecutor, RedissonClient redisson, Codec codec, String name, ConcurrentMap<String, ResponseEntry> responses) {
+    public TasksRunnerService(CommandAsyncExecutor commandExecutor, RedissonClient redisson, Codec codec, String name,
+                              ConcurrentMap<String, ResponseEntry> responses, WrappedLock locked) {
         this.commandExecutor = commandExecutor;
         this.name = name;
         this.redisson = redisson;
         this.responses = responses;
+        this.locked = locked;
         
         this.codec = codec;
     }
@@ -157,7 +161,7 @@ public class TasksRunnerService implements RemoteExecutorService {
      * @return
      */
     private RemoteExecutorServiceAsync asyncScheduledServiceAtFixed(String executorId, String requestId) {
-        ScheduledTasksService scheduledRemoteService = new ScheduledTasksService(codec, name, commandExecutor, executorId, responses);
+        ScheduledTasksService scheduledRemoteService = new ScheduledTasksService(codec, name, commandExecutor, executorId, responses, locked);
         scheduledRemoteService.setTerminationTopicName(terminationTopicName);
         scheduledRemoteService.setTasksCounterName(tasksCounterName);
         scheduledRemoteService.setStatusName(statusName);

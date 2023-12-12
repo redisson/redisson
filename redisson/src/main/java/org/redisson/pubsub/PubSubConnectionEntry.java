@@ -17,6 +17,7 @@ package org.redisson.pubsub;
 
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import org.redisson.misc.WrappedLock;
 import org.redisson.PubSubMessageListener;
 import org.redisson.PubSubPatternMessageListener;
 import org.redisson.client.*;
@@ -27,8 +28,12 @@ import org.redisson.connection.ServiceManager;
 
 import java.util.EventListener;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -42,8 +47,9 @@ public class PubSubConnectionEntry {
     private final AtomicInteger subscribedChannelsAmount;
     private final RedisPubSubConnection conn;
 
-    private final ConcurrentMap<ChannelName, SubscribeListener> subscribeChannelListeners = new ConcurrentHashMap<ChannelName, SubscribeListener>();
-    private final ConcurrentMap<ChannelName, Queue<RedisPubSubListener<?>>> channelListeners = new ConcurrentHashMap<ChannelName, Queue<RedisPubSubListener<?>>>();
+    private final Map<ChannelName, SubscribeListener> subscribeChannelListeners = new ConcurrentHashMap<>();
+    private final Map<ChannelName, Queue<RedisPubSubListener<?>>> channelListeners = new ConcurrentHashMap<>();
+    private final Map<ChannelName, WrappedLock> channelLocks = new ConcurrentHashMap<>();
 
     private static final Queue<RedisPubSubListener<?>> EMPTY_QUEUE = new LinkedList<>();
 
@@ -72,24 +78,17 @@ public class PubSubConnectionEntry {
         if (listener == null) {
             return;
         }
-        
-        Queue<RedisPubSubListener<?>> queue = channelListeners.get(channelName);
-        if (queue == null) {
-            queue = new ConcurrentLinkedQueue<RedisPubSubListener<?>>();
-            Queue<RedisPubSubListener<?>> oldQueue = channelListeners.putIfAbsent(channelName, queue);
-            if (oldQueue != null) {
-                queue = oldQueue;
-            }
-        }
 
-        boolean deleted = false;
-        synchronized (queue) {
+        Queue<RedisPubSubListener<?>> queue = channelListeners.computeIfAbsent(channelName, k -> new ConcurrentLinkedQueue<>());
+        WrappedLock lock = channelLocks.computeIfAbsent(channelName, k -> new WrappedLock());
+        boolean deleted = lock.execute(() -> {
             if (channelListeners.get(channelName) != queue) {
-                deleted = true;
+                return true;
             } else {
                 queue.add(listener);
             }
-        }
+            return false;
+        });
         if (deleted) {
             addListener(channelName, listener);
             return;
@@ -131,11 +130,13 @@ public class PubSubConnectionEntry {
 
     public void removeListener(ChannelName channelName, RedisPubSubListener<?> listener) {
         Queue<RedisPubSubListener<?>> queue = channelListeners.get(channelName);
-        synchronized (queue) {
+        WrappedLock lock = channelLocks.get(channelName);
+        lock.execute(() -> {
             if (queue.remove(listener) && queue.isEmpty()) {
                 channelListeners.remove(channelName);
+                channelLocks.remove(channelName);
             }
-        }
+        });
         conn.removeListener(listener);
     }
 
@@ -192,17 +193,11 @@ public class PubSubConnectionEntry {
     }
 
     public SubscribeListener getSubscribeFuture(ChannelName channel, PubSubType type) {
-        SubscribeListener listener = subscribeChannelListeners.get(channel);
-        if (listener == null) {
-            listener = new SubscribeListener(channel, type);
-            SubscribeListener oldSubscribeListener = subscribeChannelListeners.putIfAbsent(channel, listener);
-            if (oldSubscribeListener != null) {
-                listener = oldSubscribeListener;
-            } else {
-                conn.addListener(listener);
-            }
-        }
-        return listener;
+        return subscribeChannelListeners.computeIfAbsent(channel, k -> {
+            SubscribeListener listener = new SubscribeListener(channel, type);
+            conn.addListener(listener);
+            return listener;
+        });
     }
     
     public void unsubscribe(PubSubType commandType, ChannelName channel, RedisPubSubListener<?> listener) {
@@ -243,9 +238,11 @@ public class PubSubConnectionEntry {
         conn.removeListener(s);
         Queue<RedisPubSubListener<?>> queue = channelListeners.get(channel);
         if (queue != null) {
-            synchronized (queue) {
+            WrappedLock lock = channelLocks.get(channel);
+            lock.execute(() -> {
                 channelListeners.remove(channel);
-            }
+                channelLocks.remove(channel);
+            });
             for (RedisPubSubListener<?> listener : queue) {
                 conn.removeListener(listener);
             }

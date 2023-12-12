@@ -54,6 +54,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
@@ -75,7 +76,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
 
     private CacheLoader<K, V> cacheLoader;
     private CacheWriter<K, V> cacheWriter;
-    private boolean closed;
+    private AtomicBoolean closed = new AtomicBoolean();
     private boolean hasOwnRedisson;
 
     /*
@@ -114,7 +115,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
     }
 
     void checkNotClosed() {
-        if (closed) {
+        if (closed.get()) {
             throw new IllegalStateException();
         }
     }
@@ -3116,24 +3117,20 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
             return;
         }
 
-        synchronized (cacheManager) {
-            if (!isClosed()) {
-                if (hasOwnRedisson) {
-                    redisson.shutdown();
-                }
-                cacheManager.closeCache(this);
-                for (CacheEntryListenerConfiguration<K, V> config : listeners.keySet()) {
-                    deregisterCacheEntryListener(config);
-                }
-
-                closed = true;
+        if (closed.compareAndSet(false, true)) {
+            if (hasOwnRedisson) {
+                redisson.shutdown();
+            }
+            cacheManager.closeCache(this);
+            for (CacheEntryListenerConfiguration<K, V> config : listeners.keySet()) {
+                deregisterCacheEntryListener(config);
             }
         }
     }
 
     @Override
     public boolean isClosed() {
-        return closed;
+        return closed.get();
     }
 
     @Override

@@ -23,6 +23,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.executor.RemotePromise;
 import org.redisson.misc.CompletableFutureWrapper;
+import org.redisson.misc.WrappedLock;
 import org.redisson.remote.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,8 +68,9 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
 
     private final Map<Class<?>, Entry> remoteMap = new ConcurrentHashMap<>();
 
-    public RedissonRemoteService(Codec codec, String name, CommandAsyncExecutor commandExecutor, String executorId, ConcurrentMap<String, ResponseEntry> responses) {
-        super(codec, name, commandExecutor, executorId, responses);
+    public RedissonRemoteService(Codec codec, String name, CommandAsyncExecutor commandExecutor, String executorId,
+                                 ConcurrentMap<String, ResponseEntry> responses, WrappedLock locked) {
+        super(codec, name, commandExecutor, executorId, responses, locked);
     }
 
     public String getRequestTasksMapName(Class<?> remoteInterface) {

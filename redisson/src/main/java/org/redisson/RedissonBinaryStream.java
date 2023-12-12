@@ -66,8 +66,8 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
     
     class RedissonInputStream extends InputStream {
 
-        private long index;
-        private long mark;
+        private volatile long index;
+        private volatile long mark;
         
         @Override
         public long skip(long n) throws IOException {
@@ -84,12 +84,12 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
         }
         
         @Override
-        public synchronized void mark(int readlimit) {
+        public void mark(int readlimit) {
             mark = index;
         }
         
         @Override
-        public synchronized void reset() throws IOException {
+        public void reset() {
             index = mark;
         }
         

@@ -15,6 +15,7 @@
  */
 package org.redisson.executor;
 
+import org.redisson.misc.WrappedLock;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
@@ -33,8 +34,9 @@ public class TasksBatchService extends TasksService {
 
     private final CommandBatchService batchCommandService;
     
-    public TasksBatchService(Codec codec, String name, CommandAsyncExecutor commandExecutor, String executorId, ConcurrentMap<String, ResponseEntry> responses) {
-        super(codec, name, commandExecutor, executorId, responses);
+    public TasksBatchService(Codec codec, String name, CommandAsyncExecutor commandExecutor, String executorId,
+                             ConcurrentMap<String, ResponseEntry> responses, WrappedLock locked) {
+        super(codec, name, commandExecutor, executorId, responses, locked);
         batchCommandService = new CommandBatchService(commandExecutor);
     }
     

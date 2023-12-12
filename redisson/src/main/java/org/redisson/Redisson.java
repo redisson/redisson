@@ -27,6 +27,7 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.ServiceManager;
 import org.redisson.eviction.EvictionScheduler;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
+import org.redisson.misc.WrappedLock;
 import org.redisson.redisnode.RedissonClusterNodes;
 import org.redisson.redisnode.RedissonMasterSlaveNodes;
 import org.redisson.redisnode.RedissonSentinelMasterSlaveNodes;
@@ -61,6 +62,8 @@ public final class Redisson implements RedissonClient {
     private final Config config;
 
     private final ConcurrentMap<String, ResponseEntry> responses = new ConcurrentHashMap<>();
+
+    private final WrappedLock responsesLock = new WrappedLock();
 
     Redisson(Config config) {
         this.config = config;
@@ -444,7 +447,7 @@ public final class Redisson implements RedissonClient {
 
     @Override
     public RScheduledExecutorService getExecutorService(String name, Codec codec, ExecutorOptions options) {
-        return new RedissonExecutorService(codec, commandExecutor, this, name, queueTransferService, responses, options);
+        return new RedissonExecutorService(codec, commandExecutor, this, name, queueTransferService, responses, responsesLock, options);
     }
 
     @Override
@@ -468,7 +471,7 @@ public final class Redisson implements RedissonClient {
         if (codec != connectionManager.getServiceManager().getCfg().getCodec()) {
             executorId = executorId + ":" + name;
         }
-        return new RedissonRemoteService(codec, name, commandExecutor, executorId, responses);
+        return new RedissonRemoteService(codec, name, commandExecutor, executorId, responses, responsesLock);
     }
 
     @Override

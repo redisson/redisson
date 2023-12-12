@@ -129,7 +129,7 @@ public class LoadBalancerManager {
     }
 
     private CompletableFuture<Boolean> unfreezeAsync(ClientConnectionsEntry entry, FreezeReason freezeReason, int retry) {
-        synchronized (entry) {
+        return entry.getLock().execute(() -> {
             if (!entry.isFreezed()) {
                 return CompletableFuture.completedFuture(false);
             }
@@ -170,8 +170,8 @@ public class LoadBalancerManager {
                     return f;
                 }
             }
-        }
-        return CompletableFuture.completedFuture(false);
+            return CompletableFuture.completedFuture(false);
+        }).join();
     }
 
     public ClientConnectionsEntry freeze(RedisURI address, FreezeReason freezeReason) {
@@ -192,7 +192,7 @@ public class LoadBalancerManager {
             return null;
         }
 
-        synchronized (connectionEntry) {
+        return connectionEntry.getLock().execute(() -> {
             if (connectionEntry.isFreezed()) {
                 return null;
             }
@@ -200,15 +200,14 @@ public class LoadBalancerManager {
             // only RECONNECT freeze reason could be replaced
             if (connectionEntry.getFreezeReason() == null
                     || connectionEntry.getFreezeReason() == FreezeReason.RECONNECT
-                        || (freezeReason == FreezeReason.MANAGER 
-                                && connectionEntry.getFreezeReason() != FreezeReason.MANAGER 
-                                    && connectionEntry.getNodeType() == NodeType.SLAVE)) {
+                    || (freezeReason == FreezeReason.MANAGER
+                    && connectionEntry.getFreezeReason() != FreezeReason.MANAGER
+                    && connectionEntry.getNodeType() == NodeType.SLAVE)) {
                 connectionEntry.setFreezeReason(freezeReason);
                 return connectionEntry;
             }
-        }
-
-        return connectionEntry;
+            return connectionEntry;
+        }).join();
     }
 
     public CompletableFuture<RedisPubSubConnection> nextPubSubConnection() {

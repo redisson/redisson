@@ -18,6 +18,7 @@ package org.redisson.misc;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 /**
  * 
@@ -63,8 +64,24 @@ public class AsyncSemaphore {
         return future;
     }
 
-    public void acquire(Runnable listener) {
-        acquire().thenAccept(r -> listener.run());
+    public CompletableFuture<Void> execute(Runnable listener) {
+        return acquire().thenAccept(r -> {
+            try {
+                listener.run();
+            } finally {
+                release();
+            }
+        });
+    }
+
+    public <T> CompletableFuture<T> execute(Supplier<T> listener) {
+        return acquire().thenApply(r -> {
+            try {
+                return listener.get();
+            } finally {
+                release();
+            }
+        });
     }
 
     private void tryRun() {

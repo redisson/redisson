@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 
+import org.redisson.misc.WrappedLock;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.executor.RemotePromise;
@@ -39,9 +40,9 @@ public class RxRemoteProxy extends AsyncRemoteProxy {
 
     public RxRemoteProxy(CommandAsyncExecutor commandExecutor, String name, String responseQueueName,
             ConcurrentMap<String, ResponseEntry> responses, Codec codec, String executorId,
-            String cancelRequestMapName, BaseRemoteService remoteService) {
+            String cancelRequestMapName, BaseRemoteService remoteService, WrappedLock locked) {
         super(commandExecutor, name, responseQueueName, responses, codec, executorId, cancelRequestMapName,
-                remoteService);
+                remoteService, locked);
     }
 
     @Override

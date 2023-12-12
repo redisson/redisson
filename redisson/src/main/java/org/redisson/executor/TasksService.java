@@ -15,6 +15,7 @@
  */
 package org.redisson.executor;
 
+import org.redisson.misc.WrappedLock;
 import org.redisson.RedissonExecutorService;
 import org.redisson.api.RBlockingQueueAsync;
 import org.redisson.api.RFuture;
@@ -50,8 +51,9 @@ public class TasksService extends BaseRemoteService {
     protected String tasksExpirationTimeName;
     protected long tasksRetryInterval;
     
-    public TasksService(Codec codec, String name, CommandAsyncExecutor commandExecutor, String executorId, ConcurrentMap<String, ResponseEntry> responses) {
-        super(codec, name, commandExecutor, executorId, responses);
+    public TasksService(Codec codec, String name, CommandAsyncExecutor commandExecutor, String executorId,
+                        ConcurrentMap<String, ResponseEntry> responses, WrappedLock locked) {
+        super(codec, name, commandExecutor, executorId, responses, locked);
     }
 
     public void setTasksExpirationTimeName(String tasksExpirationTimeName) {

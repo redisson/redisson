@@ -223,19 +223,27 @@ public class MasterSlaveEntry {
 
     private void scheduleCheck(ClientConnectionsEntry entry) {
         connectionManager.getServiceManager().newTimeout(timeout -> {
-            synchronized (entry) {
+            boolean res = entry.getLock().execute(() -> {
                 if (entry.getFreezeReason() != FreezeReason.RECONNECT
                         || connectionManager.getServiceManager().isShuttingDown()) {
-                    return;
+                    return false;
                 }
+                return true;
+            }).join();
+            if (!res) {
+                return;
             }
 
             CompletionStage<RedisConnection> connectionFuture = entry.getClient().connectAsync();
             connectionFuture.whenComplete((c, e) -> {
-                synchronized (entry) {
+                boolean res2 = entry.getLock().execute(() -> {
                     if (entry.getFreezeReason() != FreezeReason.RECONNECT) {
-                        return;
+                        return false;
                     }
+                    return true;
+                }).join();
+                if (!res2) {
+                    return;
                 }
 
                 if (e != null) {
@@ -251,10 +259,14 @@ public class MasterSlaveEntry {
                 RFuture<String> f = c.async(RedisCommands.PING);
                 f.whenComplete((t, ex) -> {
                     try {
-                        synchronized (entry) {
+                        boolean res3 = entry.getLock().execute(() -> {
                             if (entry.getFreezeReason() != FreezeReason.RECONNECT) {
-                                return;
+                                return false;
                             }
+                            return true;
+                        }).join();
+                        if (!res3) {
+                            return;
                         }
 
                         if ("PONG".equals(t)) {
@@ -447,9 +459,9 @@ public class MasterSlaveEntry {
                     nodeType,
                     config);
             if (freezed) {
-                synchronized (entry) {
+                entry.getLock().execute(() -> {
                     entry.setFreezeReason(FreezeReason.SYSTEM);
-                }
+                }).join();
             }
             return slaveBalancer.add(entry);
         }).whenComplete((r, ex) -> {
@@ -604,9 +616,9 @@ public class MasterSlaveEntry {
             writeConnectionPool.remove(oldMaster);
             pubSubConnectionPool.remove(oldMaster);
 
-            synchronized (oldMaster) {
+            oldMaster.getLock().execute(() -> {
                 oldMaster.setFreezeReason(FreezeReason.MANAGER);
-            }
+            }).join();
             nodeDown(oldMaster);
 
             slaveBalancer.changeType(oldMaster.getClient().getAddr(), NodeType.SLAVE);

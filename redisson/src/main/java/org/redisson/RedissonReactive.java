@@ -23,6 +23,7 @@ import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
+import org.redisson.misc.WrappedLock;
 import org.redisson.reactive.*;
 import org.redisson.remote.ResponseEntry;
 
@@ -46,6 +47,7 @@ public class RedissonReactive implements RedissonReactiveClient {
     protected final CommandReactiveExecutor commandExecutor;
     protected final ConnectionManager connectionManager;
     protected final ConcurrentMap<String, ResponseEntry> responses;
+    private final WrappedLock responsesLock = new WrappedLock();
 
     protected RedissonReactive(Config config) {
         Config configCopy = new Config(config);
@@ -534,7 +536,7 @@ public class RedissonReactive implements RedissonReactiveClient {
         if (codec != connectionManager.getServiceManager().getCfg().getCodec()) {
             executorId = executorId + ":" + name;
         }
-        return new RedissonRemoteService(codec, name, commandExecutor, executorId, responses);
+        return new RedissonRemoteService(codec, name, commandExecutor, executorId, responses, responsesLock);
     }
 
     @Override

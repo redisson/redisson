@@ -16,6 +16,7 @@
 package org.redisson.remote;
 
 import io.netty.util.concurrent.ScheduledFuture;
+import org.redisson.misc.WrappedLock;
 import org.redisson.RedissonBlockingQueue;
 import org.redisson.RedissonShutdownException;
 import org.redisson.api.RBlockingQueue;
@@ -52,9 +53,10 @@ public abstract class BaseRemoteProxy {
     final Codec codec;
     final String executorId;
     final BaseRemoteService remoteService;
+    final WrappedLock locked;
     
     BaseRemoteProxy(CommandAsyncExecutor commandExecutor, String name, String responseQueueName,
-            Map<String, ResponseEntry> responses, Codec codec, String executorId, BaseRemoteService remoteService) {
+                    Map<String, ResponseEntry> responses, Codec codec, String executorId, BaseRemoteService remoteService, WrappedLock locked) {
         super();
         this.commandExecutor = commandExecutor;
         this.name = name;
@@ -63,6 +65,7 @@ public abstract class BaseRemoteProxy {
         this.codec = codec;
         this.executorId = executorId;
         this.remoteService = remoteService;
+        this.locked = locked;
     }
 
     private final Map<Class<?>, String> requestQueueNameCache = new ConcurrentHashMap<>();
@@ -93,9 +96,8 @@ public abstract class BaseRemoteProxy {
                                                                                          String requestId, boolean insertFirst) {
         CompletableFuture<T> responseFuture = new CompletableFuture<T>();
 
-        ResponseEntry entry;
-        synchronized (responses) {
-            entry = responses.computeIfAbsent(responseQueueName, k -> new ResponseEntry());
+        ResponseEntry e = locked.execute(() -> {
+            ResponseEntry entry = responses.computeIfAbsent(responseQueueName, k -> new ResponseEntry());
 
             addCancelHandling(requestId, responseFuture);
 
@@ -110,10 +112,10 @@ public abstract class BaseRemoteProxy {
             } else {
                 list.add(res);
             }
+            return entry;
+        });
 
-        }
-
-        if (entry.getStarted().compareAndSet(false, true)) {
+        if (e.getStarted().compareAndSet(false, true)) {
             pollResponse();
         }
 
@@ -124,7 +126,7 @@ public abstract class BaseRemoteProxy {
         return commandExecutor.getServiceManager().getGroup().schedule(new Runnable() {
                     @Override
                     public void run() {
-                        synchronized (responses) {
+                        locked.execute(() -> {
                             ResponseEntry entry = responses.get(responseQueueName);
                             if (entry == null) {
                                 return;
@@ -143,7 +145,7 @@ public abstract class BaseRemoteProxy {
                             if (entry.getResponses().isEmpty()) {
                                 responses.remove(responseQueueName, entry);
                             }
-                        }
+                        });
                     }
                 }, timeout, TimeUnit.MILLISECONDS);
     }
@@ -154,7 +156,7 @@ public abstract class BaseRemoteProxy {
                 return;
             }
 
-            synchronized (responses) {
+            locked.execute(() -> {
                 ResponseEntry e = responses.get(responseQueueName);
                 List<Result> list = e.getResponses().get(requestId);
                 if (list == null) {
@@ -175,7 +177,7 @@ public abstract class BaseRemoteProxy {
                 if (e.getResponses().isEmpty()) {
                     responses.remove(responseQueueName, e);
                 }
-            }
+            });
         });
     }
 
@@ -196,23 +198,22 @@ public abstract class BaseRemoteProxy {
                 return;
             }
 
-            CompletableFuture<RRemoteServiceResponse> promise;
-            synchronized (responses) {
+            CompletableFuture<RRemoteServiceResponse> future = locked.execute(() -> {
                 ResponseEntry entry = responses.get(responseQueueName);
                 if (entry == null) {
-                    return;
+                    return null;
                 }
 
                 if (response == null) {
                     pollResponse();
-                    return;
+                    return null;
                 }
 
                 String key = response.getId();
                 List<Result> list = entry.getResponses().get(key);
                 if (list == null) {
                     pollResponse();
-                    return;
+                    return null;
                 }
                 
                 Result res = list.remove(0);
@@ -220,7 +221,7 @@ public abstract class BaseRemoteProxy {
                     entry.getResponses().remove(key);
                 }
 
-                promise = res.getPromise();
+                CompletableFuture<RRemoteServiceResponse> f = res.getPromise();
                 res.getResponseTimeoutFuture().cancel(true);
                 
                 if (entry.getResponses().isEmpty()) {
@@ -228,10 +229,11 @@ public abstract class BaseRemoteProxy {
                 } else {
                     pollResponse();
                 }
-            }
+                return f;
+            });
 
-            if (promise != null) {
-                promise.complete(response);
+            if (future != null) {
+                future.complete(response);
             }
         };
     }

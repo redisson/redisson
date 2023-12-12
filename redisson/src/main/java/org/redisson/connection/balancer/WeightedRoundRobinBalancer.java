@@ -15,6 +15,7 @@
  */
 package org.redisson.connection.balancer;
 
+import org.redisson.misc.WrappedLock;
 import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.misc.RedisURI;
 
@@ -64,6 +65,8 @@ public class WeightedRoundRobinBalancer implements LoadBalancer {
 
     private final int defaultWeight;
 
+    private final WrappedLock lock = new WrappedLock();
+
     /**
      * Creates weighted round robin balancer.
      *
@@ -95,9 +98,8 @@ public class WeightedRoundRobinBalancer implements LoadBalancer {
             weights.put(e.getClient().getConfig().getAddress(), new WeightEntry(defaultWeight));
         }
 
-        Map<RedisURI, WeightEntry> weightsCopy = new HashMap<>(weights);
-
-        synchronized (this) {
+        return lock.execute(() -> {
+            Map<RedisURI, WeightEntry> weightsCopy = new HashMap<>(weights);
             weightsCopy.values().removeIf(WeightEntry::isWeightCounterZero);
 
             if (weightsCopy.isEmpty()) {
@@ -131,7 +133,7 @@ public class WeightedRoundRobinBalancer implements LoadBalancer {
                 }
             }
             return entry;
-        }
+        });
     }
 
     private List<ClientConnectionsEntry> findClients(List<ClientConnectionsEntry> clients,

@@ -62,6 +62,8 @@ public class ClientConnectionsEntry {
 
     private volatile boolean initialized = false;
 
+    private final AsyncSemaphore lock = new AsyncSemaphore(1);
+
     public ClientConnectionsEntry(RedisClient client, int poolMinSize, int poolMaxSize,
                                   IdleConnectionWatcher idleConnectionWatcher, NodeType nodeType, MasterSlaveServersConfig config) {
         this.client = client;
@@ -238,6 +240,10 @@ public class ClientConnectionsEntry {
 
     public void releaseSubscribeConnection() {
         freeSubscribeConnectionsCounter.release();
+    }
+
+    public AsyncSemaphore getLock() {
+        return lock;
     }
 
     @Override

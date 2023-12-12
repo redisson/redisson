@@ -15,8 +15,8 @@
  */
 package org.redisson;
 
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * 
@@ -25,25 +25,31 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class QueueTransferService {
 
-    private final ConcurrentMap<String, QueueTransferTask> tasks = new ConcurrentHashMap<>();
+    private final Map<String, QueueTransferTask> tasks = new ConcurrentHashMap<>();
     
-    public synchronized void schedule(String name, QueueTransferTask task) {
+    public void schedule(String name, QueueTransferTask task) {
         QueueTransferTask oldTask = tasks.putIfAbsent(name, task);
         if (oldTask == null) {
             task.start();
         } else {
-            oldTask.incUsage();
+            oldTask.getLock().execute(() -> {
+                oldTask.incUsage();
+            });
         }
     }
     
-    public synchronized void remove(String name) {
+    public void remove(String name) {
         QueueTransferTask task = tasks.get(name);
-        if (task != null) {
+        if (task == null) {
+            return;
+        }
+
+        task.getLock().execute(() -> {
             if (task.decUsage() == 0) {
                 tasks.remove(name, task);
                 task.stop();
             }
-        }
+        });
     }
     
     

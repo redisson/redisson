@@ -15,6 +15,7 @@
  */
 package org.redisson.remote;
 
+import org.redisson.misc.WrappedLock;
 import org.redisson.RedissonBucket;
 import org.redisson.api.RemoteInvocationOptions;
 import org.redisson.client.RedisException;
@@ -36,8 +37,8 @@ import java.util.concurrent.*;
 public class SyncRemoteProxy extends BaseRemoteProxy {
 
     public SyncRemoteProxy(CommandAsyncExecutor commandExecutor, String name, String responseQueueName,
-            ConcurrentMap<String, ResponseEntry> responses, Codec codec, String executorId, BaseRemoteService remoteService) {
-        super(commandExecutor, name, responseQueueName, responses, codec, executorId, remoteService);
+            ConcurrentMap<String, ResponseEntry> responses, Codec codec, String executorId, BaseRemoteService remoteService, WrappedLock locked) {
+        super(commandExecutor, name, responseQueueName, responses, codec, executorId, remoteService, locked);
     }
 
     public <T> T create(Class<T> remoteInterface, RemoteInvocationOptions options) {

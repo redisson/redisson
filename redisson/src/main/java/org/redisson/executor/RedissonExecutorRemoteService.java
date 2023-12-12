@@ -15,16 +15,14 @@
  */
 package org.redisson.executor;
 
-import org.redisson.RedissonExecutorService;
-import org.redisson.RedissonObject;
-import org.redisson.RedissonRemoteService;
-import org.redisson.RedissonShutdownException;
+import org.redisson.*;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
 import org.redisson.api.executor.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.misc.WrappedLock;
 import org.redisson.remote.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,8 +57,9 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
     private List<TaskSuccessListener> successListeners;
 
     public RedissonExecutorRemoteService(Codec codec, String name,
-                                         CommandAsyncExecutor commandExecutor, String executorId, ConcurrentMap<String, ResponseEntry> responses) {
-        super(codec, name, commandExecutor, executorId, responses);
+                                         CommandAsyncExecutor commandExecutor, String executorId,
+                                         ConcurrentMap<String, ResponseEntry> responses, WrappedLock locked) {
+        super(codec, name, commandExecutor, executorId, responses, locked);
     }
 
     @Override

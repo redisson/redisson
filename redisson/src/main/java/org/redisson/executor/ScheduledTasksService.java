@@ -15,6 +15,7 @@
  */
 package org.redisson.executor;
 
+import org.redisson.misc.WrappedLock;
 import org.redisson.RedissonExecutorService;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
@@ -39,8 +40,9 @@ public class ScheduledTasksService extends TasksService {
 
     private String requestId;
     
-    public ScheduledTasksService(Codec codec, String name, CommandAsyncExecutor commandExecutor, String redissonId, ConcurrentMap<String, ResponseEntry> responses) {
-        super(codec, name, commandExecutor, redissonId, responses);
+    public ScheduledTasksService(Codec codec, String name, CommandAsyncExecutor commandExecutor, String redissonId,
+                                 ConcurrentMap<String, ResponseEntry> responses, WrappedLock locked) {
+        super(codec, name, commandExecutor, redissonId, responses, locked);
     }
     
     public void setRequestId(String requestId) {
