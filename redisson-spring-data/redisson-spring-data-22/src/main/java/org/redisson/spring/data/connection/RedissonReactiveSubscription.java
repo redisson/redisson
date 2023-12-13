@@ -33,11 +33,12 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
- * 
+ *
  * @author Nikita Koksharov
  *
  */
@@ -45,19 +46,16 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
 
     public static class ListenableCounter {
 
-        private int state;
+        private final AtomicInteger state = new AtomicInteger();
         private Runnable r;
 
-        public synchronized void acquire() {
-            state++;
+        public void acquire() {
+            state.incrementAndGet();
         }
 
         public void release() {
-            synchronized (this) {
-                state--;
-                if (state != 0) {
-                    return;
-                }
+            if (state.decrementAndGet() != 0) {
+                return;
             }
 
             if (r != null) {
@@ -66,12 +64,10 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
             }
         }
 
-        public synchronized void addListener(Runnable r) {
-            synchronized (this) {
-                if (state != 0) {
-                    this.r = r;
-                    return;
-                }
+        public void addListener(Runnable r) {
+            if (state.get() != 0) {
+                this.r = r;
+                return;
             }
 
             r.run();
@@ -85,7 +81,7 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
     private final ListenableCounter monosListener = new ListenableCounter();
 
     private final PublishSubscribeService subscribeService;
-    
+
     public RedissonReactiveSubscription(ConnectionManager connectionManager) {
         this.subscribeService = connectionManager.getSubscribeService();
     }
@@ -148,17 +144,13 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
                 ChannelName cn = toChannelName(channel);
                 CompletableFuture<Codec> f = subscribeService.unsubscribe(cn, PubSubType.UNSUBSCRIBE);
                 f = f.whenComplete((res, e) -> {
-                    synchronized (RedissonReactiveSubscription.this.channels) {
-                        Collection<PubSubConnectionEntry> entries = RedissonReactiveSubscription.this.channels.get(cn);
-                        for (PubSubConnectionEntry entry : entries) {
-                            if (!entry.hasListeners(cn)) {
-                                entries.remove(entry);
-                                if (entries.isEmpty()) {
-                                    RedissonReactiveSubscription.this.channels.remove(cn);
-                                }
-                            }
+                    RedissonReactiveSubscription.this.channels.computeIfPresent(cn, (key, entries) -> {
+                        entries.removeIf(entry -> !entry.hasListeners(cn));
+                        if (entries.isEmpty()) {
+                            return null;
                         }
-                    }
+                        return entries;
+                    });
                 });
                 futures.add(f);
             }
@@ -185,12 +177,13 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
                 ChannelName cn = toChannelName(channel);
                 CompletableFuture<Codec> f = subscribeService.unsubscribe(cn, PubSubType.PUNSUBSCRIBE);
                 f = f.whenComplete((res, e) -> {
-                    synchronized (RedissonReactiveSubscription.this.patterns) {
-                        Collection<PubSubConnectionEntry> entries = RedissonReactiveSubscription.this.patterns.get(cn);
-                        entries.stream()
-                                .filter(en -> en.hasListeners(cn))
-                                .forEach(ee -> RedissonReactiveSubscription.this.patterns.remove(cn));
-                    }
+                    RedissonReactiveSubscription.this.patterns.computeIfPresent(cn, (key, entries) -> {
+                        entries.removeIf(entry -> !entry.hasListeners(cn));
+                        if (entries.isEmpty()) {
+                            return null;
+                        }
+                        return entries;
+                    });
                 });
                 futures.add(f);
             }
