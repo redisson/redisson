@@ -28,9 +28,12 @@ import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.data.redis.connection.SubscriptionListener;
 import org.springframework.data.redis.connection.util.AbstractSubscription;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * 
@@ -52,6 +55,7 @@ public class RedissonSubscription extends AbstractSubscription {
     protected void doSubscribe(byte[]... channels) {
         List<CompletableFuture<?>> list = new ArrayList<>();
         Queue<byte[]> subscribed = new ConcurrentLinkedQueue<>();
+        CountDownLatch latch = new CountDownLatch(1);
         for (byte[] channel : channels) {
             if (subscribeService.hasEntry(new ChannelName(channel))) {
                 continue;
@@ -79,6 +83,10 @@ public class RedissonSubscription extends AbstractSubscription {
                         subscribed.add(channel);
                     }
                     super.onStatus(type, ch);
+
+                    if (type == PubSubType.UNSUBSCRIBE) {
+                        latch.countDown();
+                    }
                 }
 
             });
@@ -89,6 +97,22 @@ public class RedissonSubscription extends AbstractSubscription {
         }
         for (byte[] channel : subscribed) {
             ((SubscriptionListener) getListener()).onChannelSubscribed(channel, 1);
+        }
+
+        // hack for RedisMessageListenerContainer
+        if (getListener().getClass().getName().equals("org.springframework.data.redis.listener.SynchronizingMessageListener")) {
+            StringWriter sw = new StringWriter();
+            new Exception().printStackTrace(new PrintWriter(sw));
+            String[] r = sw.toString().split("\n");
+            if (r.length != 7) {
+                return;
+            }
+
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 
@@ -110,6 +134,7 @@ public class RedissonSubscription extends AbstractSubscription {
     protected void doPsubscribe(byte[]... patterns) {
         List<CompletableFuture<?>> list = new ArrayList<>();
         Queue<byte[]> subscribed = new ConcurrentLinkedQueue<>();
+        CountDownLatch latch = new CountDownLatch(1);
         for (byte[] channel : patterns) {
             if (subscribeService.hasEntry(new ChannelName(channel))) {
                 continue;
@@ -137,6 +162,9 @@ public class RedissonSubscription extends AbstractSubscription {
                         subscribed.add(channel);
                     }
                     super.onStatus(type, pattern);
+                    if (type == PubSubType.PUNSUBSCRIBE) {
+                        latch.countDown();
+                    }
                 }
             });
             list.add(f);
@@ -146,6 +174,22 @@ public class RedissonSubscription extends AbstractSubscription {
         }
         for (byte[] channel : subscribed) {
             ((SubscriptionListener) getListener()).onPatternSubscribed(channel, 1);
+        }
+
+        // hack for RedisMessageListenerContainer
+        if (getListener().getClass().getName().equals("org.springframework.data.redis.listener.SynchronizingMessageListener")) {
+            StringWriter sw = new StringWriter();
+            new Exception().printStackTrace(new PrintWriter(sw));
+            String[] r = sw.toString().split("\n");
+            if (r.length != 7) {
+                return;
+            }
+
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 

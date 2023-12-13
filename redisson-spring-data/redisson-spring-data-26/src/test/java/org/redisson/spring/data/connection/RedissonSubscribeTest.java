@@ -27,6 +27,64 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class RedissonSubscribeTest extends BaseConnectionTest {
 
     @Test
+    public void testContainer() {
+        RedissonConnectionFactory f = new RedissonConnectionFactory(redisson);
+        RedisMessageListenerContainer container = new RedisMessageListenerContainer();
+        container.setConnectionFactory(f);
+        container.afterPropertiesSet();
+        container.start();
+
+//        for (int i = 0; i < 2; i++) {
+//            container.addMessageListener(new MessageListener() {
+//                @Override
+//                public void onMessage(Message message, byte[] pattern) {
+//                }
+//            }, ChannelTopic.of("test"));
+//        }
+//
+//        container.stop();
+//
+//        container = new RedisMessageListenerContainer();
+//        container.setConnectionFactory(f);
+//        container.afterPropertiesSet();
+//        container.start();
+//        for (int i = 0; i < 2; i++) {
+//            container.addMessageListener(new MessageListener() {
+//                @Override
+//                public void onMessage(Message message, byte[] pattern) {
+//                }
+//            }, PatternTopic.of("*"));
+//        }
+//        container.stop();
+//
+//        container= new RedisMessageListenerContainer();
+//        container.setConnectionFactory(f);
+//        container.afterPropertiesSet();
+//        container.start();
+        for (int i = 0; i < 2; i++) {
+            container.addMessageListener(new MessageListener() {
+                @Override
+                public void onMessage(Message message, byte[] pattern) {
+                }
+            }, ChannelTopic.of("test"+i));
+        }
+        container.stop();
+
+        container= new RedisMessageListenerContainer();
+        container.setConnectionFactory(f);
+        container.afterPropertiesSet();
+        container.start();
+        for (int i = 0; i < 2; i++) {
+            container.addMessageListener(new MessageListener() {
+                @Override
+                public void onMessage(Message message, byte[] pattern) {
+                }
+            }, PatternTopic.of("*" + i));
+        }
+        container.stop();
+    }
+
+    @Test
     public void testListenersDuplication() throws InterruptedException {
         Queue<byte[]> msg = new ConcurrentLinkedQueue<>();
         MessageListener aListener = (message, pattern) -> {
