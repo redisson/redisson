@@ -15,10 +15,10 @@
  */
 package org.redisson.misc;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 
 /**
  * 
@@ -34,21 +34,6 @@ public class AsyncSemaphore {
         counter = new AtomicInteger(permits);
     }
     
-    public boolean tryAcquire(long timeoutMillis) {
-        CompletableFuture<Void> f = acquire();
-        try {
-            f.get(timeoutMillis, TimeUnit.MILLISECONDS);
-            return true;
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return false;
-        } catch (ExecutionException e) {
-            throw new IllegalStateException(e);
-        } catch (TimeoutException e) {
-            return false;
-        }
-    }
-
     public int queueSize() {
         return listeners.size();
     }
@@ -62,26 +47,6 @@ public class AsyncSemaphore {
         listeners.add(future);
         tryRun();
         return future;
-    }
-
-    public CompletableFuture<Void> execute(Runnable listener) {
-        return acquire().thenAccept(r -> {
-            try {
-                listener.run();
-            } finally {
-                release();
-            }
-        });
-    }
-
-    public <T> CompletableFuture<T> execute(Supplier<T> listener) {
-        return acquire().thenApply(r -> {
-            try {
-                return listener.get();
-            } finally {
-                release();
-            }
-        });
     }
 
     private void tryRun() {
