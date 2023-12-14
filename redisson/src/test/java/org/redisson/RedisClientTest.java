@@ -9,6 +9,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.config.Protocol;
 import org.testcontainers.containers.GenericContainer;
@@ -37,7 +38,7 @@ public class RedisClientTest  {
     @BeforeAll
     public static void beforeAll() {
         RedisClientConfig config = new RedisClientConfig();
-        config.setProtocol(Protocol.RESP3);
+        config.setProtocol(Protocol.RESP2);
         config.setAddress("redis://127.0.0.1:" + REDIS.getFirstMappedPort());
         redisClient = RedisClient.create(config);
     }
@@ -45,6 +46,22 @@ public class RedisClientTest  {
     @AfterAll
     public static void afterAll() {
         redisClient.shutdown();
+    }
+
+    @Test
+    public void testUsername() {
+        RedisClientConfig cc = redisClient.getConfig();
+
+        RedisConnection c = redisClient.connect();
+        c.sync(new RedisStrictCommand<Void>("ACL"), "SETUSER", "testuser", "on", ">123456", "~*", "allcommands");
+        c.close();
+
+        cc.setUsername("testuser");
+        cc.setPassword("123456");
+        RedisClient client = RedisClient.create(cc);
+        RedisConnection c2 = client.connect();
+        assertThat(c2.sync(RedisCommands.PING)).isEqualTo("PONG");
+        client.shutdown();
     }
 
     @Test
