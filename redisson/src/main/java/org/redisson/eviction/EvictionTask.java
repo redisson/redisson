@@ -15,7 +15,8 @@
  */
 package org.redisson.eviction;
 
-import io.netty.util.concurrent.ScheduledFuture;
+import io.netty.util.Timeout;
+import io.netty.util.TimerTask;
 import org.redisson.api.RFuture;
 import org.redisson.command.CommandAsyncExecutor;
 import org.slf4j.Logger;
@@ -30,11 +31,11 @@ import java.util.concurrent.TimeUnit;
  * @author Nikita Koksharov
  *
  */
-abstract class EvictionTask implements Runnable {
+abstract class EvictionTask implements TimerTask {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
     
-    final Deque<Integer> sizeHistory = new LinkedList<Integer>();
+    final Deque<Integer> sizeHistory = new LinkedList<>();
     final int minDelay;
     final int maxDelay;
     final int keysLimit;
@@ -43,8 +44,8 @@ abstract class EvictionTask implements Runnable {
 
     final CommandAsyncExecutor executor;
 
-    ScheduledFuture<?> scheduledFuture;
-    
+    volatile Timeout timeout;
+
     EvictionTask(CommandAsyncExecutor executor) {
         super();
         this.executor = executor;
@@ -54,11 +55,11 @@ abstract class EvictionTask implements Runnable {
     }
 
     public void schedule() {
-        scheduledFuture = executor.getServiceManager().getGroup().schedule(this, delay, TimeUnit.SECONDS);
+        timeout = executor.getServiceManager().newTimeout(this, delay, TimeUnit.SECONDS);
     }
 
-    public ScheduledFuture<?> getScheduledFuture() {
-        return scheduledFuture;
+    public void cancel() {
+        timeout.cancel();
     }
 
     abstract RFuture<Integer> execute();
@@ -66,7 +67,7 @@ abstract class EvictionTask implements Runnable {
     abstract String getName();
     
     @Override
-    public void run() {
+    public void run(Timeout timeout) {
         if (executor.getServiceManager().isShuttingDown()) {
             return;
         }

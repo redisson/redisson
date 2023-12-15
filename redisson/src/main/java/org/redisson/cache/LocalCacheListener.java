@@ -329,12 +329,9 @@ public abstract class LocalCacheListener {
             cache.remove(key);
         }
         
-        commandExecutor.getServiceManager().getGroup().schedule(new Runnable() {
-            @Override
-            public void run() {
-                for (CacheKey cacheKey : keys) {
-                    disabledKeys.remove(cacheKey, requestId);
-                }
+        commandExecutor.getServiceManager().newTimeout(t -> {
+            for (CacheKey cacheKey : keys) {
+                disabledKeys.remove(cacheKey, requestId);
             }
         }, timeout, TimeUnit.MILLISECONDS);
     }

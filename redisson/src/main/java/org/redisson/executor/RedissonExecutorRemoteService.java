@@ -97,7 +97,7 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
         startedListeners.forEach(l -> l.onStarted(request.getId()));
 
         if (taskTimeout > 0) {
-            commandExecutor.getServiceManager().getGroup().schedule(() -> {
+            commandExecutor.getServiceManager().newTimeout(t -> {
                 cancelRequestFuture.complete(new RemoteServiceCancelRequest(true, false));
             }, taskTimeout, TimeUnit.MILLISECONDS);
         }

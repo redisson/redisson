@@ -17,9 +17,9 @@ package org.redisson.connection;
 
 import io.netty.resolver.AddressResolver;
 import io.netty.resolver.AddressResolverGroup;
+import io.netty.util.Timeout;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.ScheduledFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.RedisURI;
@@ -47,7 +47,7 @@ public class DNSMonitor {
     private final Map<RedisURI, InetSocketAddress> masters = new HashMap<>();
     private final Map<RedisURI, InetSocketAddress> slaves = new HashMap<>();
     
-    private ScheduledFuture<?> dnsMonitorFuture;
+    private volatile Timeout dnsMonitorFuture;
     private long dnsMonitoringInterval;
 
     public DNSMonitor(ConnectionManager connectionManager, RedisClient masterHost, Collection<RedisURI> slaveHosts, long dnsMonitoringInterval, AddressResolverGroup<InetSocketAddress> resolverGroup) {
@@ -72,12 +72,12 @@ public class DNSMonitor {
     
     public void stop() {
         if (dnsMonitorFuture != null) {
-            dnsMonitorFuture.cancel(true);
+            dnsMonitorFuture.cancel();
         }
     }
     
     private void monitorDnsChange() {
-        dnsMonitorFuture = connectionManager.getServiceManager().getGroup().schedule(() -> {
+        dnsMonitorFuture = connectionManager.getServiceManager().newTimeout(t -> {
             if (connectionManager.getServiceManager().isShuttingDown()) {
                 return;
             }

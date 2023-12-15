@@ -15,11 +15,12 @@
  */
 package org.redisson.remote;
 
+import io.netty.util.Timeout;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -32,9 +33,9 @@ public class ResponseEntry {
     public static class Result {
 
         private final CompletableFuture<? extends RRemoteServiceResponse> promise;
-        private final ScheduledFuture<?> responseTimeoutFuture;
+        private final Timeout responseTimeoutFuture;
         
-        public Result(CompletableFuture<? extends RRemoteServiceResponse> promise, ScheduledFuture<?> responseTimeoutFuture) {
+        public Result(CompletableFuture<? extends RRemoteServiceResponse> promise, Timeout responseTimeoutFuture) {
             super();
             this.promise = promise;
             this.responseTimeoutFuture = responseTimeoutFuture;
@@ -44,8 +45,8 @@ public class ResponseEntry {
             return (CompletableFuture<T>) promise;
         }
         
-        public ScheduledFuture<?> getResponseTimeoutFuture() {
-            return responseTimeoutFuture;
+        public void cancelResponseTimeout() {
+            responseTimeoutFuture.cancel();
         }
         
     }

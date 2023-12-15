@@ -15,7 +15,7 @@
  */
 package org.redisson.remote;
 
-import io.netty.util.concurrent.ScheduledFuture;
+import io.netty.util.Timeout;
 import org.redisson.RedissonBlockingQueue;
 import org.redisson.RedissonShutdownException;
 import org.redisson.api.RBlockingQueue;
@@ -101,7 +101,7 @@ public abstract class BaseRemoteProxy {
 
             addCancelHandling(requestId, responseFuture);
 
-            ScheduledFuture<?> responseTimeoutFuture = createResponseTimeout(timeout, requestId, responseFuture);
+            Timeout responseTimeoutFuture = createResponseTimeout(timeout, requestId, responseFuture);
 
             Map<String, List<Result>> entryResponses = entry.getResponses();
             List<Result> list = entryResponses.computeIfAbsent(requestId, k -> new ArrayList<>(3));
@@ -122,31 +122,28 @@ public abstract class BaseRemoteProxy {
         return responseFuture;
     }
 
-    private <T extends RRemoteServiceResponse> ScheduledFuture<?> createResponseTimeout(long timeout, String requestId, CompletableFuture<T> responseFuture) {
-        return commandExecutor.getServiceManager().getGroup().schedule(new Runnable() {
-                    @Override
-                    public void run() {
-                        locked.execute(() -> {
-                            ResponseEntry entry = responses.get(responseQueueName);
-                            if (entry == null) {
-                                return;
-                            }
+    private <T extends RRemoteServiceResponse> Timeout createResponseTimeout(long timeout, String requestId, CompletableFuture<T> responseFuture) {
+        return commandExecutor.getServiceManager().newTimeout(t -> {
+                    locked.execute(() -> {
+                        ResponseEntry entry = responses.get(responseQueueName);
+                        if (entry == null) {
+                            return;
+                        }
 
-                            RemoteServiceTimeoutException ex = new RemoteServiceTimeoutException("No response after " + timeout + "ms");
-                            if (!responseFuture.completeExceptionally(ex)) {
-                                return;
-                            }
+                        RemoteServiceTimeoutException ex = new RemoteServiceTimeoutException("No response after " + timeout + "ms");
+                        if (!responseFuture.completeExceptionally(ex)) {
+                            return;
+                        }
 
-                            List<Result> list = entry.getResponses().get(requestId);
-                            list.remove(0);
-                            if (list.isEmpty()) {
-                                entry.getResponses().remove(requestId);
-                            }
-                            if (entry.getResponses().isEmpty()) {
-                                responses.remove(responseQueueName, entry);
-                            }
-                        });
-                    }
+                        List<Result> list = entry.getResponses().get(requestId);
+                        list.remove(0);
+                        if (list.isEmpty()) {
+                            entry.getResponses().remove(requestId);
+                        }
+                        if (entry.getResponses().isEmpty()) {
+                            responses.remove(responseQueueName, entry);
+                        }
+                    });
                 }, timeout, TimeUnit.MILLISECONDS);
     }
 
@@ -166,7 +163,7 @@ public abstract class BaseRemoteProxy {
                 for (Iterator<Result> iterator = list.iterator(); iterator.hasNext();) {
                     Result result = iterator.next();
                     if (result.getPromise() == responseFuture) {
-                        result.getResponseTimeoutFuture().cancel(true);
+                        result.cancelResponseTimeout();
                         iterator.remove();
                     }
                 }
@@ -222,7 +219,7 @@ public abstract class BaseRemoteProxy {
                 }
 
                 CompletableFuture<RRemoteServiceResponse> f = res.getPromise();
-                res.getResponseTimeoutFuture().cancel(true);
+                res.cancelResponseTimeout();
                 
                 if (entry.getResponses().isEmpty()) {
                     responses.remove(responseQueueName, entry);

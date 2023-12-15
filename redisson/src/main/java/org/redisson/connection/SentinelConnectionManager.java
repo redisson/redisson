@@ -16,9 +16,9 @@
 package org.redisson.connection;
 
 import io.netty.util.NetUtil;
+import io.netty.util.Timeout;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.ScheduledFuture;
 import io.netty.util.internal.StringUtil;
 import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
@@ -56,7 +56,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     private final ConcurrentMap<RedisURI, RedisClient> sentinels = new ConcurrentHashMap<>();
     private final AtomicReference<RedisURI> currentMaster = new AtomicReference<>();
 
-    private ScheduledFuture<?> monitorFuture;
+    private volatile Timeout monitorFuture;
     private final Set<RedisURI> disconnectedSentinels = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     private RedisStrictCommand<RedisURI> masterHostCommand;
@@ -276,16 +276,13 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void scheduleSentinelDNSCheck() {
-        monitorFuture = serviceManager.getGroup().schedule(new Runnable() {
-            @Override
-            public void run() {
-                AtomicInteger sentinelsCounter = new AtomicInteger(sentinelHosts.size());
-                performSentinelDNSCheck(future -> {
-                    if (sentinelsCounter.decrementAndGet() == 0) {
-                        scheduleSentinelDNSCheck();
-                    }
-                });
-            }
+        monitorFuture = serviceManager.newTimeout(t -> {
+            AtomicInteger sentinelsCounter = new AtomicInteger(sentinelHosts.size());
+            performSentinelDNSCheck(future -> {
+                if (sentinelsCounter.decrementAndGet() == 0) {
+                    scheduleSentinelDNSCheck();
+                }
+            });
         }, config.getDnsMonitoringInterval(), TimeUnit.MILLISECONDS);
     }
 
@@ -312,19 +309,16 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
     
     private void scheduleChangeCheck(SentinelServersConfig cfg, Iterator<RedisClient> iterator) {
-        monitorFuture = serviceManager.getGroup().schedule(new Runnable() {
-            @Override
-            public void run() {
-                AtomicReference<Throwable> lastException = new AtomicReference<Throwable>();
-                Iterator<RedisClient> iter = iterator;
-                if (iter == null) {
-                    // Shuffle the list so all clients don't prefer the same sentinel
-                    List<RedisClient> clients = new ArrayList<>(sentinels.values());
-                    Collections.shuffle(clients);
-                    iter = clients.iterator();
-                }
-                checkState(cfg, iter, lastException);
+        monitorFuture = serviceManager.newTimeout(t -> {
+            AtomicReference<Throwable> lastException = new AtomicReference<Throwable>();
+            Iterator<RedisClient> iter = iterator;
+            if (iter == null) {
+                // Shuffle the list so all clients don't prefer the same sentinel
+                List<RedisClient> clients = new ArrayList<>(sentinels.values());
+                Collections.shuffle(clients);
+                iter = clients.iterator();
             }
+            checkState(cfg, iter, lastException);
         }, cfg.getScanInterval(), TimeUnit.MILLISECONDS);
     }
 
@@ -682,7 +676,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     @Override
     public void shutdown(long quietPeriod, long timeout, TimeUnit unit) {
         if (monitorFuture != null) {
-            monitorFuture.cancel(true);
+            monitorFuture.cancel();
         }
 
         sentinels.values().stream()

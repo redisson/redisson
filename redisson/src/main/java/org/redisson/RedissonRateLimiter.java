@@ -134,7 +134,7 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
             
             if (timeoutInMillis == -1) {
                 CompletableFuture<Boolean> f = new CompletableFuture<>();
-                getServiceManager().getGroup().schedule(() -> {
+                getServiceManager().newTimeout(t -> {
                     CompletableFuture<Boolean> r = tryAcquireAsync(permits, timeoutInMillis);
                     commandExecutor.transfer(r, f);
                 }, delay, TimeUnit.MILLISECONDS);
@@ -149,12 +149,12 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
 
             CompletableFuture<Boolean> f = new CompletableFuture<>();
             if (remains < delay) {
-                getServiceManager().getGroup().schedule(() -> {
+                getServiceManager().newTimeout(t -> {
                     f.complete(false);
                 }, remains, TimeUnit.MILLISECONDS);
             } else {
                 long start = System.currentTimeMillis();
-                getServiceManager().getGroup().schedule(() -> {
+                getServiceManager().newTimeout(t -> {
                     long elapsed = System.currentTimeMillis() - start;
                     if (remains <= elapsed) {
                         f.complete(false);

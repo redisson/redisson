@@ -74,7 +74,7 @@ public class RedissonPriorityBlockingQueue<V> extends RedissonPriorityQueue<V> i
 
     protected <T> void takeAsync(CompletableFuture<V> result, long delay, long timeoutInMicro, RedisCommand<T> command, Object... params) {
         long start = System.currentTimeMillis();
-        commandExecutor.getServiceManager().getGroup().schedule(() -> {
+        commandExecutor.getServiceManager().newTimeout(t -> {
             RFuture<V> future = wrapLockedAsync(command, params);
             future.whenComplete((res, e) -> {
                     if (e != null && !(e instanceof RedisConnectionException)) {

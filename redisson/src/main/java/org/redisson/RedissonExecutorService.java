@@ -806,7 +806,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             List<Result> list = entry.getResponses().remove(requestId);
             if (list != null) {
                 for (Result result : list) {
-                    result.getResponseTimeoutFuture().cancel(true);
+                    result.cancelResponseTimeout();
                 }
             }
             if (entry.getResponses().isEmpty()) {

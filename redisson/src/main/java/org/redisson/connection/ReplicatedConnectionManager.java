@@ -15,7 +15,7 @@
  */
 package org.redisson.connection;
 
-import io.netty.util.concurrent.ScheduledFuture;
+import io.netty.util.Timeout;
 import org.redisson.api.NodeType;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
@@ -59,7 +59,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
 
     private final AtomicReference<InetSocketAddress> currentMaster = new AtomicReference<>();
 
-    private ScheduledFuture<?> monitorFuture;
+    private volatile Timeout monitorFuture;
 
     private enum Role {
         master,
@@ -129,7 +129,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
             return;
         }
         
-        monitorFuture = serviceManager.getGroup().schedule(() -> {
+        monitorFuture = serviceManager.newTimeout(t -> {
             if (serviceManager.isShuttingDown()) {
                 return;
             }
@@ -260,7 +260,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
     @Override
     public void shutdown(long quietPeriod, long timeout, TimeUnit unit) {
         if (monitorFuture != null) {
-            monitorFuture.cancel(true);
+            monitorFuture.cancel();
         }
         
         closeNodeConnections();
