@@ -2,6 +2,7 @@ package org.redisson;
 
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.redisson.api.RSemaphore;
 
 import java.time.Duration;
@@ -123,6 +124,7 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
     }
 
     @Test
+    @Timeout(120)
     public void testBlockingNAcquire() throws InterruptedException {
         RSemaphore s = redisson.getSemaphore("test");
         s.trySetPermits(5);
