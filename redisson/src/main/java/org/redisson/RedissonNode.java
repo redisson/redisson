@@ -61,11 +61,13 @@ public final class RedissonNode {
     public RedissonClient getRedisson() {
         return redisson;
     }
-    
+
+    @Deprecated
     public InetSocketAddress getLocalAddress() {
         return localAddress;
     }
-    
+
+    @Deprecated
     public InetSocketAddress getRemoteAddress() {
         return remoteAddress;
     }
