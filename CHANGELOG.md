@@ -5,7 +5,7 @@ Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and
 
 ### 18-Dec-2023 - 3.25.1 released
 
-Improvement - Virtual Threads compatibility  
+Improvement - JDK21 Virtual Threads compatibility  
 
 Fixed - EvictionTask keeps running even after `destroy()` method called  
 Fixed - Sprint Data Redis throws `Subscription registration timeout exceeded`  
