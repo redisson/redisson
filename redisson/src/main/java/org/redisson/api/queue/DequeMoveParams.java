@@ -24,7 +24,7 @@ public class DequeMoveParams implements DequeMoveDestination {
 
     public enum Direction {LEFT, RIGHT};
 
-    private Direction sourceDirection;
+    private final Direction sourceDirection;
     private Direction destDirection;
     private String destName;
 
