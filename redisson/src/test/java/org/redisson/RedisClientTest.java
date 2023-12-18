@@ -38,7 +38,7 @@ public class RedisClientTest  {
     @BeforeAll
     public static void beforeAll() {
         RedisClientConfig config = new RedisClientConfig();
-        config.setProtocol(Protocol.RESP2);
+        config.setProtocol(Protocol.RESP3);
         config.setAddress("redis://127.0.0.1:" + REDIS.getFirstMappedPort());
         redisClient = RedisClient.create(config);
     }
