@@ -85,6 +85,12 @@ public class SequentialDnsAddressResolverFactory implements AddressResolverGroup
         this(6);
     }
 
+    /**
+     * Creates DNS resolver factory with the specified number of requests
+     * to DNS servers which can be executed at the same moment.
+     *
+     * @param concurrencyLevel number of requests can be executed at the same moment.
+     */
     public SequentialDnsAddressResolverFactory(int concurrencyLevel) {
         asyncSemaphore = new AsyncSemaphore(concurrencyLevel);
     }
