@@ -193,7 +193,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 if (i == attempts - 1) {
                     lastAttempt = true;
                 }
-                doConnect(new HashSet<>(), RedisURI::toString);
+                doConnect(new HashSet<>(), u -> u.getHost());
                 return;
             } catch (Exception e) {
                 if (i == attempts - 1) {
