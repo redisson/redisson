@@ -193,7 +193,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 if (i == attempts - 1) {
                     lastAttempt = true;
                 }
-                doConnect(new HashSet<>(), u -> u.getHost());
+                doConnect(new HashSet<>(), u -> null);
                 return;
             } catch (Exception e) {
                 if (i == attempts - 1) {
