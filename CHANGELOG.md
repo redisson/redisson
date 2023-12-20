@@ -3,6 +3,21 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 18-Dec-2023 - 3.25.1 released
+
+Improvement - JDK21 Virtual Threads compatibility  
+
+Fixed - EvictionTask keeps running even after `destroy()` method called  
+Fixed - Sprint Data Redis throws `Subscription registration timeout exceeded`  
+Fixed - Sprint Data Redis `RedisMessageListenerContainer.addMessageListener()` method hangs if called after container start  
+Fixed - NPE is thrown if `lazyInitialization = true`  
+Fixed - `PriorityQueue` methods may hang due to unreleased lock after exception  
+Fixed - `RMap.getAll()` method throws `IndexOutOfBoundsException`  
+Fixed - natMapper isn't applied to slaves and master nodes at start in Sentinel mode  
+Fixed - method invocation hangs after failover if `retryInterval = 0`  
+Fixed - transactional Map and MapCache keySet method returns inconsistent state  
+Fixed - Multilock lock method doesn't work properly with non-MILLISECONDS TimeUnit  
+
 ### 05-Dec-2023 - 3.25.0 released
 Feature - RESP3 protocol support. [protocol](https://github.com/redisson/redisson/wiki/2.-Configuration#protocol) setting added  
 Feature - Spring Data Redis 3.2.0 implementation  
