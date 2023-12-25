@@ -67,6 +67,7 @@ import org.slf4j.LoggerFactory;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.*;
 import java.util.concurrent.*;
@@ -453,7 +454,7 @@ public class ServiceManager {
         return SHA_CACHE.computeIfAbsent(script, k -> {
             try {
                 MessageDigest mdigest = MessageDigest.getInstance("SHA-1");
-                byte[] s = mdigest.digest(script.getBytes());
+                byte[] s = mdigest.digest(script.getBytes(StandardCharsets.UTF_8));
                 return ByteBufUtil.hexDump(s);
             } catch (Exception e) {
                 throw new IllegalStateException(e);
