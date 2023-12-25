@@ -3,6 +3,10 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 20-Dec-2023 - 3.25.2 released
+
+Fixed - SSL connection can't be established  
+
 ### 18-Dec-2023 - 3.25.1 released
 
 Improvement - JDK21 Virtual Threads compatibility  
