@@ -20,6 +20,8 @@ import io.reactivex.rxjava3.functions.Action;
 import io.reactivex.rxjava3.functions.LongConsumer;
 import io.reactivex.rxjava3.processors.ReplayProcessor;
 import org.redisson.api.RFuture;
+import org.redisson.api.options.ObjectParams;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandAsyncService;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
@@ -36,6 +38,10 @@ public class CommandRxService extends CommandAsyncService implements CommandRxEx
 
     public CommandRxService(ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder) {
         super(connectionManager, objectBuilder, RedissonObjectBuilder.ReferenceType.RXJAVA);
+    }
+
+    public CommandRxService(CommandAsyncExecutor executor, ObjectParams objectParams) {
+        super(executor, objectParams);
     }
 
     @Override

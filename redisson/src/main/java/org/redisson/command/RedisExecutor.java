@@ -73,6 +73,9 @@ public class RedisExecutor<V, R> {
     final ConnectionManager connectionManager;
     final RedissonObjectBuilder.ReferenceType referenceType;
     final boolean noRetry;
+    final int attempts;
+    final int retryInterval;
+    final int responseTimeout;
 
     CompletableFuture<RedisConnection> connectionFuture;
     NodeSource source;
@@ -84,14 +87,11 @@ public class RedisExecutor<V, R> {
     volatile ChannelFuture writeFuture;
     volatile RedisException exception;
 
-    int attempts;
-    long retryInterval;
-    long responseTimeout;
-
     public RedisExecutor(boolean readOnlyMode, NodeSource source, Codec codec, RedisCommand<V> command,
                          Object[] params, CompletableFuture<R> mainPromise, boolean ignoreRedirect,
                          ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder,
-                         RedissonObjectBuilder.ReferenceType referenceType, boolean noRetry) {
+                         RedissonObjectBuilder.ReferenceType referenceType, boolean noRetry,
+                         int retryAttempts, int retryInterval, int responseTimeout) {
         super();
         this.readOnlyMode = readOnlyMode;
         this.source = source;
@@ -104,9 +104,9 @@ public class RedisExecutor<V, R> {
         this.objectBuilder = objectBuilder;
         this.noRetry = noRetry;
 
-        this.attempts = connectionManager.getServiceManager().getConfig().getRetryAttempts();
-        this.retryInterval = connectionManager.getServiceManager().getConfig().getRetryInterval();
-        this.responseTimeout = connectionManager.getServiceManager().getConfig().getTimeout();
+        this.attempts = retryAttempts;
+        this.retryInterval = retryInterval;
+        this.responseTimeout = responseTimeout;
         this.referenceType = referenceType;
     }
 

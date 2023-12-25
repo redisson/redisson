@@ -24,6 +24,7 @@ import org.redisson.api.BatchOptions;
 import org.redisson.api.BatchResult;
 import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
+import org.redisson.api.options.ObjectParams;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
@@ -63,12 +64,44 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     final ConnectionManager connectionManager;
     final RedissonObjectBuilder objectBuilder;
     final RedissonObjectBuilder.ReferenceType referenceType;
+    private final int retryAttempts;
+    private final int retryInterval;
+    private final int responseTimeout;
 
-    public CommandAsyncService(ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder, RedissonObjectBuilder.ReferenceType referenceType) {
+    public CommandAsyncService(CommandAsyncExecutor executor,
+                               ObjectParams objectParams) {
+        CommandAsyncService service = (CommandAsyncService) executor;
+        this.codec = service.codec;
+        this.connectionManager = service.connectionManager;
+        this.objectBuilder = service.objectBuilder;
+        this.referenceType = service.referenceType;
+
+        if (objectParams.getRetryAttempts() >= 0) {
+            this.retryAttempts = objectParams.getRetryAttempts();
+        } else {
+            this.retryAttempts = connectionManager.getServiceManager().getConfig().getRetryAttempts();
+        }
+        if (objectParams.getRetryInterval() > 0) {
+            this.retryInterval = objectParams.getRetryInterval();
+        } else {
+            this.retryInterval = connectionManager.getServiceManager().getConfig().getRetryInterval();
+        }
+        if (objectParams.getTimeout() > 0) {
+            this.responseTimeout = objectParams.getTimeout();
+        } else {
+            this.responseTimeout = connectionManager.getServiceManager().getConfig().getTimeout();
+        }
+    }
+
+    public CommandAsyncService(ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder,
+                               RedissonObjectBuilder.ReferenceType referenceType) {
         this.connectionManager = connectionManager;
         this.objectBuilder = objectBuilder;
         this.referenceType = referenceType;
         this.codec = connectionManager.getServiceManager().getCfg().getCodec();
+        this.retryAttempts = connectionManager.getServiceManager().getConfig().getRetryAttempts();
+        this.retryInterval = connectionManager.getServiceManager().getConfig().getRetryInterval();
+        this.responseTimeout = connectionManager.getServiceManager().getConfig().getTimeout();
     }
 
     @Override
@@ -459,7 +492,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
             RedisExecutor<T, R> executor = new RedisExecutor<>(readOnlyMode, nodeSource, codec, cmd,
                                                         args.toArray(), promise, false,
-                                                        connectionManager, objectBuilder, referenceType, noRetry);
+                                                        connectionManager, objectBuilder, referenceType, noRetry,
+                                                        retryAttempts, retryInterval, responseTimeout);
             executor.execute();
 
             promise.whenComplete((res, e) -> {
@@ -543,7 +577,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             RedisCommand cmd = new RedisCommand("SORT_RO", command.getReplayMultiDecoder());
             CompletableFuture<R> mainPromise = createPromise();
             RedisExecutor<V, R> executor = new RedisExecutor<>(readOnlyMode, source, codec, cmd, params, mainPromise,
-                    ignoreRedirect, connectionManager, objectBuilder, referenceType, noRetry);
+                    ignoreRedirect, connectionManager, objectBuilder, referenceType, noRetry,
+                    retryAttempts, retryInterval, responseTimeout);
             executor.execute();
             CompletableFuture<R> result = new CompletableFuture<>();
             mainPromise.whenComplete((r, e) -> {
@@ -560,7 +595,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
         CompletableFuture<R> mainPromise = createPromise();
         RedisExecutor<V, R> executor = new RedisExecutor<>(readOnlyMode, source, codec, command, params, mainPromise,
-                                                    ignoreRedirect, connectionManager, objectBuilder, referenceType, noRetry);
+                                                    ignoreRedirect, connectionManager, objectBuilder, referenceType, noRetry,
+                                                    retryAttempts, retryInterval, responseTimeout);
         executor.execute();
         return new CompletableFutureWrapper<>(mainPromise);
     }

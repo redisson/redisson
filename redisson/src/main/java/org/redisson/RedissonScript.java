@@ -45,7 +45,7 @@ public class RedissonScript implements RScript {
     
     public RedissonScript(CommandAsyncExecutor commandExecutor, Codec codec) {
         this.commandExecutor = commandExecutor;
-        this.codec = codec;
+        this.codec = commandExecutor.getServiceManager().getCodec(codec);
     }
 
     @Override

@@ -44,7 +44,7 @@ public class RedissonFuction implements RFunction {
 
     public RedissonFuction(CommandAsyncExecutor commandExecutor, Codec codec) {
         this.commandExecutor = commandExecutor;
-        this.codec = codec;
+        this.codec = commandExecutor.getServiceManager().getCodec(codec);
     }
 
     @Override

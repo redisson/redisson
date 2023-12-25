@@ -13,34 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api;
+package org.redisson.api.options;
 
-import java.util.concurrent.TimeUnit;
+import org.redisson.api.IdGenerator;
+import org.redisson.client.codec.Codec;
+
+import java.time.Duration;
 
 /**
- * Configuration for ExecutorService.
- * 
+ * {@link org.redisson.api.RExecutorService} instance options
+ *
  * @author Nikita Koksharov
  *
  */
-@Deprecated
-public final class ExecutorOptions {
-    
-    private long taskRetryInterval = 5 * 60000;
+public interface ExecutorOptions extends CodecOptions<ExecutorOptions, Codec> {
 
-    private IdGenerator idGenerator = IdGenerator.random();
+    /**
+     * Creates options with the name of object instance
+     *
+     * @param name of object instance
+     * @return options instance
+     */
+    static ExecutorOptions name(String name) {
+        return new ExecutorParams(name);
+    }
 
-    private ExecutorOptions() {
-    }
-    
-    public static ExecutorOptions defaults() {
-        return new ExecutorOptions();
-    }
-    
-    public long getTaskRetryInterval() {
-        return taskRetryInterval;
-    }
-    
     /**
      * Defines task retry interval at the end of which task
      * is executed again by ExecutorService worker.
@@ -52,29 +49,18 @@ public final class ExecutorOptions {
      * Set <code>0</code> to disable.
      * <p>
      * Default is <code>5 minutes</code>
-     * 
-     * @param timeout value
-     * @param unit value
-     * @return self instance
+     *
+     * @param interval value
+     * @return options instance
      */
-    public ExecutorOptions taskRetryInterval(long timeout, TimeUnit unit) {
-        this.taskRetryInterval = unit.toMillis(timeout);
-        return this;
-    }
-
-    public IdGenerator getIdGenerator() {
-        return idGenerator;
-    }
+    ExecutorOptions taskRetryInterval(Duration interval);
 
     /**
      * Defines identifier generator
      *
      * @param idGenerator identifier generator
-     * @return self instance
+     * @return options instance
      */
-    public ExecutorOptions idGenerator(IdGenerator idGenerator) {
-        this.idGenerator = idGenerator;
-        return this;
-    }
+    ExecutorOptions idGenerator(IdGenerator idGenerator);
 
 }

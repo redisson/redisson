@@ -47,13 +47,12 @@ public class RedissonPriorityBlockingDeque<V> extends RedissonPriorityDeque<V> i
     
     protected RedissonPriorityBlockingDeque(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name, redisson);
-        blockingQueue = (RedissonPriorityBlockingQueue<V>) redisson.getPriorityBlockingQueue(name);
+        blockingQueue = new RedissonPriorityBlockingQueue<V>(commandExecutor, name, redisson);
     }
 
     protected RedissonPriorityBlockingDeque(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(codec, commandExecutor, name, redisson);
-        
-        blockingQueue = (RedissonPriorityBlockingQueue<V>) redisson.getPriorityBlockingQueue(name, codec);
+        blockingQueue = new RedissonPriorityBlockingQueue<V>(codec, commandExecutor, name, redisson);
     }
 
     @Override

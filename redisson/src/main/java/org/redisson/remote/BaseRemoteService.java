@@ -67,7 +67,7 @@ public abstract class BaseRemoteService {
     protected final String responseQueueName;
 
     public BaseRemoteService(Codec codec, String name, CommandAsyncExecutor commandExecutor, String executorId) {
-        this.codec = codec;
+        this.codec = commandExecutor.getServiceManager().getCodec(codec);
         this.name = commandExecutor.getServiceManager().getConfig().getNameMapper().map(name);
         this.commandExecutor = commandExecutor;
         this.executorId = executorId;

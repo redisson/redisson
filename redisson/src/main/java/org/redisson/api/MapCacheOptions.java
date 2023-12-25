@@ -20,6 +20,8 @@ import org.redisson.api.map.MapLoaderAsync;
 import org.redisson.api.map.MapWriter;
 import org.redisson.api.map.MapWriterAsync;
 
+import java.time.Duration;
+
 /**
  * Configuration for RMapCache object.
  *
@@ -69,6 +71,16 @@ public class MapCacheOptions<K, V> extends MapOptions<K, V> {
     @Override
     public MapCacheOptions<K, V> loaderAsync(MapLoaderAsync<K, V> loaderAsync) {
         return (MapCacheOptions<K, V>) super.loaderAsync(loaderAsync);
+    }
+
+    @Override
+    public MapCacheOptions<K, V> writerRetryAttempts(int writerRetryAttempts) {
+        return (MapCacheOptions<K, V>) super.writerRetryAttempts(writerRetryAttempts);
+    }
+
+    @Override
+    public MapCacheOptions<K, V> writerRetryInterval(Duration writerRetryInterval) {
+        return (MapCacheOptions<K, V>) super.writerRetryInterval(writerRetryInterval);
     }
 
     public boolean isRemoveEmptyEvictionTask() {

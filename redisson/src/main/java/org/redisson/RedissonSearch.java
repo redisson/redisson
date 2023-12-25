@@ -51,11 +51,7 @@ public class RedissonSearch implements RSearch {
     private final CommandAsyncExecutor commandExecutor;
 
     public RedissonSearch(Codec codec, CommandAsyncExecutor commandExecutor) {
-        if (codec == null) {
-            this.codec = commandExecutor.getServiceManager().getCfg().getCodec();
-        } else {
-            this.codec = codec;
-        }
+        this.codec = commandExecutor.getServiceManager().getCodec(codec);
         this.commandExecutor = commandExecutor;
     }
 

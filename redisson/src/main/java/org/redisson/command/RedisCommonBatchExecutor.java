@@ -56,23 +56,36 @@ public class RedisCommonBatchExecutor extends RedisExecutor<Object, Void> {
                                     ConnectionManager connectionManager, BatchOptions options, Entry entry,
                                     AtomicInteger slots, RedissonObjectBuilder.ReferenceType referenceType, boolean noRetry) {
         super(entry.isReadOnlyMode(), source, null, null, null,
-                mainPromise, false, connectionManager, null, referenceType, noRetry);
+                mainPromise, false, connectionManager, null, referenceType, noRetry,
+                retryAttempts(connectionManager, options), retryInterval(connectionManager, options), timeout(connectionManager, options));
         this.options = options;
         this.entry = entry;
         this.slots = slots;
-        
-        if (options.getRetryAttempts() >= 0) {
-            this.attempts = options.getRetryAttempts();
-        }
-        if (options.getRetryInterval() > 0) {
-            this.retryInterval  = options.getRetryInterval();
-        }
+    }
+
+    private static int timeout(ConnectionManager connectionManager, BatchOptions options) {
+        int result = connectionManager.getServiceManager().getConfig().getTimeout();
         if (options.getResponseTimeout() > 0) {
-            this.responseTimeout = options.getResponseTimeout();
+            result = (int) options.getResponseTimeout();
         }
         if (options.getSyncSlaves() > 0) {
-            this.responseTimeout += options.getSyncTimeout();
+            result += options.getSyncTimeout();
         }
+        return result;
+    }
+
+    private static int retryInterval(ConnectionManager connectionManager, BatchOptions options) {
+        if (options.getRetryInterval() > 0) {
+            return (int) options.getRetryInterval();
+        }
+        return connectionManager.getServiceManager().getConfig().getRetryInterval();
+    }
+
+    private static int retryAttempts(ConnectionManager connectionManager, BatchOptions options) {
+        if (options.getRetryAttempts() >= 0) {
+            return options.getRetryAttempts();
+        }
+        return connectionManager.getServiceManager().getConfig().getRetryAttempts();
     }
 
     @Override

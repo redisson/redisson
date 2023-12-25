@@ -1,7 +1,6 @@
 package org.redisson;
 
 import net.bytebuddy.utility.RandomString;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.RedisRunner.FailedToStartRedisException;
@@ -10,6 +9,8 @@ import org.redisson.api.ExpiredObjectListener;
 import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.SetObjectListener;
+import org.redisson.api.options.PlainOptions;
+import org.redisson.client.RedisResponseTimeoutException;
 import org.redisson.config.Config;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
@@ -20,7 +21,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
@@ -28,6 +28,26 @@ import java.util.function.BiConsumer;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonBucketTest extends RedisDockerTest {
+
+    @Test
+    public void testOptions() {
+        Config c = createConfig();
+        c.useSingleServer().setTimeout(10);
+
+        RedissonClient r = Redisson.create(c);
+
+        String val = RandomString.make(1048 * 10000);
+        Assertions.assertThrows(RedisResponseTimeoutException.class, () -> {
+            RBucket<String> al = r.getBucket("test");
+            al.set(val);
+        });
+
+        RBucket<String> al = r.getBucket(PlainOptions.name("test")
+                                                    .timeout(Duration.ofSeconds(1)));
+        al.set(val);
+
+        r.shutdown();
+    }
 
     @Test
     public void testGetAndClearExpire() {

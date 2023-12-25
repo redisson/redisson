@@ -50,7 +50,7 @@ public abstract class RedissonObject implements RObject {
     protected final Codec codec;
 
     public RedissonObject(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
-        this.codec = codec;
+        this.codec = commandExecutor.getServiceManager().getCodec(codec);
         this.commandExecutor = commandExecutor;
         if (name == null) {
             throw new NullPointerException("name can't be null");

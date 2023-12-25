@@ -49,7 +49,7 @@ public class RedissonBuckets implements RBuckets {
     
     public RedissonBuckets(Codec codec, CommandAsyncExecutor commandExecutor) {
         super();
-        this.codec = codec;
+        this.codec = commandExecutor.getServiceManager().getCodec(codec);
         this.commandExecutor = commandExecutor;
     }
 

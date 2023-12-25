@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.map.MapLoader;
@@ -30,6 +31,7 @@ import org.redisson.api.map.MapWriter;
  * @param <K> key type
  * @param <V> value type
  */
+@Deprecated
 public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     
     /**
@@ -427,5 +429,15 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     @Override
     public LocalCachedMapOptions<K, V> loaderAsync(MapLoaderAsync<K, V> loaderAsync) {
         return (LocalCachedMapOptions<K, V>) super.loaderAsync(loaderAsync);
+    }
+
+    @Override
+    public LocalCachedMapOptions<K, V> writerRetryAttempts(int writerRetryAttempts) {
+        return (LocalCachedMapOptions<K, V>) super.writerRetryAttempts(writerRetryAttempts);
+    }
+
+    @Override
+    public LocalCachedMapOptions<K, V> writerRetryInterval(Duration writerRetryInterval) {
+        return (LocalCachedMapOptions<K, V>) super.writerRetryInterval(writerRetryInterval);
     }
 }

@@ -103,7 +103,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     public RedissonExecutorService(Codec codec, CommandAsyncExecutor commandExecutor, Redisson redisson,
                                    String name, ExecutorOptions options) {
         super();
-        this.codec = codec;
+        this.codec = commandExecutor.getServiceManager().getCodec(codec);
         this.commandExecutor = commandExecutor;
         this.name = commandExecutor.getServiceManager().getConfig().getNameMapper().map(name);
         this.redisson = redisson;

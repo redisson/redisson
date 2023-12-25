@@ -71,7 +71,7 @@ public class RedissonTopic implements RTopic {
         this.commandExecutor = commandExecutor;
         this.name = nameMapper.map(name);
         this.channelName = new ChannelName(this.name);
-        this.codec = codec;
+        this.codec = commandExecutor.getServiceManager().getCodec(codec);
         this.subscribeService = commandExecutor.getConnectionManager().getSubscribeService();
     }
 

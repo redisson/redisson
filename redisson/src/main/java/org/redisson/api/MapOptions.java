@@ -32,6 +32,7 @@ import java.time.Duration;
  * @param <K> key type
  * @param <V> value type
  */
+@Deprecated
 public class MapOptions<K, V> {
     
     public enum WriteMode {

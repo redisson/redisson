@@ -49,6 +49,7 @@ import org.redisson.api.RFuture;
 import org.redisson.api.StreamMessageId;
 import org.redisson.cache.LRUCacheMap;
 import org.redisson.client.RedisNodeNotFoundException;
+import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.Config;
@@ -599,4 +600,12 @@ public class ServiceManager {
     public QueueTransferService getQueueTransferService() {
         return queueTransferService;
     }
+
+    public Codec getCodec(Codec codec) {
+        if (codec == null) {
+            return cfg.getCodec();
+        }
+        return codec;
+    }
+
 }
