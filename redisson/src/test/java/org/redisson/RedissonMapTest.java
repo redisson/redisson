@@ -27,9 +27,9 @@ public class RedissonMapTest extends BaseMapTest {
     }
 
     @Override
-    protected <K, V> RMap<K, V> getLoaderTestMap(String name, Map<K, V> map) {
+    protected <K, V, M extends RMap<K, V>> M getLoaderTestMap(String name, Map<K, V> map) {
         MapOptions<K, V> options = MapOptions.<K, V>defaults().loader(createMapLoader(map));
-        return redisson.getMap("test", options);        
+        return (M) redisson.getMap("test", options);
     }
 
     @Override

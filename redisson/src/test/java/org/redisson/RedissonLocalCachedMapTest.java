@@ -116,6 +116,29 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
     }
 
     @Test
+    public void testLoadAllCache() {
+        Map<String, String> cache = new HashMap<String, String>();
+        for (int i = 0; i < 100; i++) {
+            cache.put("" + i, "" + (i*10 + i));
+        }
+
+        RLocalCachedMap<String, String> map = getLoaderTestMap("test", cache);
+
+        assertThat(map.size()).isEqualTo(0);
+        map.loadAll(false, 2);
+        assertThat(map.size()).isEqualTo(100);
+
+
+
+        for (int i = 0; i < 100; i++) {
+            assertThat(map).containsKey("" + i);
+            assertThat(map.getCachedMap()).containsKey("" + i);
+        }
+
+        destroy(map);
+    }
+
+    @Test
     public void testPutAfterDelete() {
         RMap<String, String> map = redisson.getLocalCachedMap("test", LocalCachedMapOptions.defaults());
 
@@ -248,9 +271,9 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
     }
 
     @Override
-    protected <K, V> RMap<K, V> getLoaderTestMap(String name, Map<K, V> map) {
+    protected <K, V, M extends RMap<K, V>> M getLoaderTestMap(String name, Map<K, V> map) {
         LocalCachedMapOptions<K, V> options = LocalCachedMapOptions.<K, V>defaults().loader(createMapLoader(map));
-        return redisson.getLocalCachedMap(name, options);        
+        return (M) redisson.getLocalCachedMap(name, options);
     }
 
     @Override

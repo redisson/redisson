@@ -251,9 +251,9 @@ public class RedissonMapCacheTest extends BaseMapTest {
     }
 
     @Override
-    protected <K, V> RMap<K, V> getLoaderTestMap(String name, Map<K, V> map) {
+    protected <K, V, M extends RMap<K, V>> M getLoaderTestMap(String name, Map<K, V> map) {
         MapCacheOptions<K, V> options = MapCacheOptions.<K, V>defaults().loader(createMapLoader(map));
-        return redisson.getMapCache("test", options);        
+        return (M) redisson.getMapCache("test", options);
     }
 
     @Override

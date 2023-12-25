@@ -1160,7 +1160,7 @@ public abstract class BaseMapTest extends RedisDockerTest {
 
     protected abstract <K, V> RMap<K, V> getWriteBehindAsyncTestMap(String name, Map<K, V> map);
     
-    protected abstract <K, V> RMap<K, V> getLoaderTestMap(String name, Map<K, V> map);
+    protected abstract <K, V, M extends RMap<K, V>> M getLoaderTestMap(String name, Map<K, V> map);
 
     protected abstract <K, V> RMap<K, V> getLoaderAsyncTestMap(String name, Map<K, V> map);
 
