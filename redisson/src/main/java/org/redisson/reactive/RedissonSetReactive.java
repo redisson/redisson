@@ -60,7 +60,7 @@ public class RedissonSetReactive<V> {
     public Publisher<V> iterator(String pattern, int count) {
         return Flux.create(new SetReactiveIterator<V>() {
             @Override
-            protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
+            protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, String nextIterPos) {
                 return ((ScanIterator) instance).scanIteratorAsync(((RedissonObject) instance).getRawName(), client, nextIterPos, pattern, count);
             }
         });

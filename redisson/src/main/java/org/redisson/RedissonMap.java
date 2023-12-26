@@ -1474,17 +1474,17 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return get(fastRemoveAsync(keys));
     }
 
-    public ScanResult<Map.Entry<Object, Object>> scanIterator(String name, RedisClient client, long startPos, String pattern, int count) {
+    public ScanResult<Map.Entry<Object, Object>> scanIterator(String name, RedisClient client, String startPos, String pattern, int count) {
         RFuture<ScanResult<Map.Entry<Object, Object>>> f = scanIteratorAsync(name, client, startPos, pattern, count);
         return get(f);
     }
 
-    public ScanResult<Object> scanKeyIterator(String name, RedisClient client, long startPos, String pattern, int count) {
+    public ScanResult<Object> scanKeyIterator(String name, RedisClient client, String startPos, String pattern, int count) {
         RFuture<ScanResult<Object>> f = scanKeyIteratorAsync(name, client, startPos, pattern, count);
         return get(f);
     }
 
-    public RFuture<ScanResult<Object>> scanKeyIteratorAsync(String name, RedisClient client, long startPos, String pattern, int count) {
+    public RFuture<ScanResult<Object>> scanKeyIteratorAsync(String name, RedisClient client, String startPos, String pattern, int count) {
         List<Object> params = new ArrayList<>();
         params.add(startPos);
         if (pattern != null) {
@@ -1514,7 +1514,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                 params.toArray());
     }
     
-    public RFuture<ScanResult<Map.Entry<Object, Object>>> scanIteratorAsync(String name, RedisClient client, long startPos, String pattern, int count) {
+    public RFuture<ScanResult<Map.Entry<Object, Object>>> scanIteratorAsync(String name, RedisClient client, String startPos, String pattern, int count) {
         if (pattern == null) {
             RFuture<ScanResult<Map.Entry<Object, Object>>> f
                                     = commandExecutor.readAsync(client, name, codec, RedisCommands.HSCAN, name, startPos, "COUNT", count);

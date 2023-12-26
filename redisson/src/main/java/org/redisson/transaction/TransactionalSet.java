@@ -48,7 +48,7 @@ public class TransactionalSet<V> extends BaseTransactionalSet<V> {
     }
 
     @Override
-    protected ScanResult<Object> scanIteratorSource(String name, RedisClient client, long startPos,
+    protected ScanResult<Object> scanIteratorSource(String name, RedisClient client, String startPos,
                                                     String pattern, int count) {
         return ((ScanIterator) set).scanIterator(name, client, startPos, pattern, count);
     }

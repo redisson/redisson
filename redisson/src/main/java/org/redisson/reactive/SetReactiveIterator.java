@@ -39,7 +39,7 @@ public abstract class SetReactiveIterator<V> implements Consumer<FluxSink<V>> {
             }
 
             @Override
-            protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
+            protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, String nextIterPos) {
                 return SetReactiveIterator.this.scanIterator(client, nextIterPos);
             }
         });
@@ -49,6 +49,6 @@ public abstract class SetReactiveIterator<V> implements Consumer<FluxSink<V>> {
         return false;
     }
     
-    protected abstract RFuture<ScanResult<Object>> scanIterator(RedisClient client, long nextIterPos);
+    protected abstract RFuture<ScanResult<Object>> scanIterator(RedisClient client, String nextIterPos);
 
 }

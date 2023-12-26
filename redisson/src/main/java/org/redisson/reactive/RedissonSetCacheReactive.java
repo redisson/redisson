@@ -42,7 +42,7 @@ public class RedissonSetCacheReactive<V> {
     public Publisher<V> iterator() {
         return Flux.create(new SetReactiveIterator<V>() {
             @Override
-            protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
+            protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, String nextIterPos) {
                 return ((ScanIterator) instance).scanIteratorAsync(((RedissonObject) instance).getRawName(), client, nextIterPos, null, 10);
             }
         });

@@ -2952,7 +2952,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return new CompletableFutureWrapper<>(f);
     }
 
-    MapScanResult<Object, Object> scanIterator(String name, RedisClient client, long startPos) {
+    MapScanResult<Object, Object> scanIterator(String name, RedisClient client, String startPos) {
         RFuture<MapScanResult<Object, Object>> f
             = commandExecutor.readAsync(client, name, codec, RedisCommands.HSCAN, name, startPos, "COUNT", 50);
         try {
@@ -2981,7 +2981,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
 
             @Override
             protected ScanResult<Map.Entry<Object, Object>> iterator(RedisClient client,
-                                                                     long nextIterPos) {
+                                                                     String nextIterPos) {
                 return JCache.this.scanIterator(JCache.this.getRawName(), client, nextIterPos);
             }
         };
@@ -3343,7 +3343,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
 
             @Override
             protected ScanResult<Map.Entry<Object, Object>> iterator(RedisClient client,
-                                                                     long nextIterPos) {
+                                                                     String nextIterPos) {
                 return JCache.this.scanIterator(JCache.this.getRawName(), client, nextIterPos);
             }
 

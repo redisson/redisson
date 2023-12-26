@@ -73,7 +73,7 @@ abstract class RedissonMultiMapIterator<K, V, M> implements Iterator<M> {
 
         while (true) {
             if (!keysFinished && (keysIter == null || !keysIter.hasNext())) {
-                MapScanResult<Object, Object> res = map.scanIterator(client, keysIterPos);
+                MapScanResult<Object, Object> res = map.scanIterator(client, Long.toUnsignedString(keysIterPos));
                 client = res.getRedisClient();
                 keysIter = res.getMap().entrySet().iterator();
                 keysIterPos = res.getPos();

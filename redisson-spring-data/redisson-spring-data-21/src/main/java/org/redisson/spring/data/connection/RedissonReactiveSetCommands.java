@@ -268,7 +268,7 @@ public class RedissonReactiveSetCommands extends RedissonBaseReactive implements
             byte[] keyBuf = toByteArray(command.getKey());
             Flux<byte[]> flux = Flux.create(new SetReactiveIterator<byte[]>() {
                 @Override
-                protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
+                protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, String nextIterPos) {
                     if (command.getOptions().getPattern() == null) {
                         return executorService.readAsync(client, keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.SSCAN, 
                                 keyBuf, nextIterPos, "COUNT", Optional.ofNullable(command.getOptions().getCount()).orElse(10L));

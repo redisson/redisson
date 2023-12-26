@@ -403,7 +403,7 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
         return new RedissonBaseIterator<V>() {
 
             @Override
-            protected ScanResult<Object> iterator(RedisClient client, long nextIterPos) {
+            protected ScanResult<Object> iterator(RedisClient client, String nextIterPos) {
                 return distributedScanIterator(iteratorName, count);
             }
 

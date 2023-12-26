@@ -1919,7 +1919,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-    public RFuture<ScanResult<Object>> scanKeyIteratorAsync(String name, RedisClient client, long startPos, String pattern, int count) {
+    public RFuture<ScanResult<Object>> scanKeyIteratorAsync(String name, RedisClient client, String startPos, String pattern, int count) {
         List<Object> params = new ArrayList<>();
         params.add(System.currentTimeMillis());
         params.add(startPos);
@@ -2013,7 +2013,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         new ObjectMapDecoder(true)));
 
     @Override
-    public RFuture<ScanResult<Map.Entry<Object, Object>>> scanIteratorAsync(String name, RedisClient client, long startPos, String pattern, int count) {
+    public RFuture<ScanResult<Map.Entry<Object, Object>>> scanIteratorAsync(String name, RedisClient client, String startPos, String pattern, int count) {
         List<Object> params = new ArrayList<Object>();
         params.add(System.currentTimeMillis());
         params.add(startPos);

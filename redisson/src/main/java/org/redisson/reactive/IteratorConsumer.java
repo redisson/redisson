@@ -47,7 +47,7 @@ public abstract class IteratorConsumer<V> implements LongConsumer {
     }
 
     protected void nextValues() {
-        scanIterator(client, nextIterPos).whenComplete((res, e) -> {
+        scanIterator(client, Long.toUnsignedString(nextIterPos)).whenComplete((res, e) -> {
             if (e != null) {
                 emitter.error(e);
                 return;
@@ -77,6 +77,6 @@ public abstract class IteratorConsumer<V> implements LongConsumer {
 
     protected abstract boolean tryAgain();
 
-    protected abstract RFuture<ScanResult<Object>> scanIterator(RedisClient client, long nextIterPos);
+    protected abstract RFuture<ScanResult<Object>> scanIterator(RedisClient client, String nextIterPos);
 
 }

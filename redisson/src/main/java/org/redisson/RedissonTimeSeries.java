@@ -889,12 +889,12 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
     }
 
 
-    public ListScanResult<Object> scanIterator(String name, RedisClient client, long startPos, int count) {
+    public ListScanResult<Object> scanIterator(String name, RedisClient client, String startPos, int count) {
         RFuture<ListScanResult<Object>> f = scanIteratorAsync(name, client, startPos, count);
         return get(f);
     }
 
-    public RFuture<ListScanResult<Object>> scanIteratorAsync(String name, RedisClient client, long startPos, int count) {
+    public RFuture<ListScanResult<Object>> scanIteratorAsync(String name, RedisClient client, String startPos, int count) {
         List<Object> params = new ArrayList<>();
         params.add(startPos);
         params.add(System.currentTimeMillis());
@@ -926,7 +926,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
         return new RedissonBaseIterator<V>() {
 
             @Override
-            protected ListScanResult<Object> iterator(RedisClient client, long nextIterPos) {
+            protected ListScanResult<Object> iterator(RedisClient client, String nextIterPos) {
                 return scanIterator(getRawName(), client, nextIterPos, count);
             }
 

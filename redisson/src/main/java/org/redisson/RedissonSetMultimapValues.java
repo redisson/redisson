@@ -175,7 +175,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
          System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(o));
     }
 
-    private ListScanResult<Object> scanIterator(RedisClient client, long startPos, String pattern, int count) {
+    private ListScanResult<Object> scanIterator(RedisClient client, String startPos, String pattern, int count) {
         List<Object> params = new ArrayList<Object>();
         params.add(System.currentTimeMillis());
         params.add(startPos);
@@ -235,7 +235,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         return new RedissonBaseIterator<V>() {
 
             @Override
-            protected ScanResult<Object> iterator(RedisClient client, long nextIterPos) {
+            protected ScanResult<Object> iterator(RedisClient client, String nextIterPos) {
                 return distributedScanIterator(iteratorName, pattern, count);
             }
 
@@ -300,7 +300,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         return new RedissonBaseIterator<V>() {
 
             @Override
-            protected ListScanResult<Object> iterator(RedisClient client, long nextIterPos) {
+            protected ListScanResult<Object> iterator(RedisClient client, String nextIterPos) {
                 return scanIterator(client, nextIterPos, pattern, count);
             }
 

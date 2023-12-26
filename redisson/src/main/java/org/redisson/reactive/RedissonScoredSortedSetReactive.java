@@ -73,7 +73,7 @@ public class RedissonScoredSortedSetReactive<V>  {
     private Flux<V> scanIteratorReactive(String pattern, int count) {
         return Flux.create(new SetReactiveIterator<V>() {
             @Override
-            protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
+            protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, String nextIterPos) {
                 return ((RedissonScoredSortedSet<V>) instance).scanIteratorAsync(client, nextIterPos, pattern, count);
             }
         });
@@ -102,7 +102,7 @@ public class RedissonScoredSortedSetReactive<V>  {
     private Flux<ScoredEntry<V>> entryScanIteratorReactive(String pattern, int count) {
         return Flux.create(new SetReactiveIterator<ScoredEntry<V>>() {
             @Override
-            protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
+            protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, String nextIterPos) {
                 return ((RedissonScoredSortedSet<V>) instance).entryScanIteratorAsync(client, nextIterPos, pattern, count);
             }
         });

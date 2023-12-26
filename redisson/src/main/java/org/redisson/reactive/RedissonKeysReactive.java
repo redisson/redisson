@@ -63,7 +63,7 @@ public class RedissonKeysReactive {
         return Flux.merge(publishers);
     }
 
-    private Flux<String> createKeysIterator(final MasterSlaveEntry entry, final String pattern, final int count) {
+    private Flux<String> createKeysIterator(MasterSlaveEntry entry, String pattern, int count) {
         return Flux.create(emitter -> emitter.onRequest(new IteratorConsumer<String>(emitter) {
 
             @Override
@@ -72,7 +72,7 @@ public class RedissonKeysReactive {
             }
 
             @Override
-            protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
+            protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, String nextIterPos) {
                 return instance.scanIteratorAsync(client, entry, nextIterPos, pattern, count);
             }
         }));

@@ -61,7 +61,7 @@ public class RedissonSetRx<V> {
     public Flowable<V> iterator(String pattern, int count) {
         return new SetRxIterator<V>() {
             @Override
-            protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
+            protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, String nextIterPos) {
                 return ((ScanIterator) instance).scanIteratorAsync(((RedissonObject) instance).getRawName(), client, nextIterPos, pattern, count);
             }
         }.create();

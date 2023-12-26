@@ -396,7 +396,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     }
     
     
-    MapScanResult<Object, Object> scanIterator(RedisClient client, long startPos) {
+    MapScanResult<Object, Object> scanIterator(RedisClient client, String startPos) {
         RFuture<MapScanResult<Object, Object>> f = commandExecutor.readAsync(client, getRawName(), new CompositeCodec(codec, StringCodec.INSTANCE, codec), RedisCommands.HSCAN, getRawName(), startPos);
         return get(f);
     }
@@ -421,7 +421,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
                 }
 
                 @Override
-                protected ScanResult<Entry<Object, Object>> iterator(RedisClient client, long nextIterPos) {
+                protected ScanResult<Entry<Object, Object>> iterator(RedisClient client, String nextIterPos) {
                     return RedissonMultimap.this.scanIterator(client, nextIterPos);
                 }
 

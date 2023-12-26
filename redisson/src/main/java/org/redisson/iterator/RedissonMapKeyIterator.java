@@ -38,7 +38,7 @@ public class RedissonMapKeyIterator<M> extends BaseIterator<M, M> {
     }
 
     @Override
-    protected ScanResult<M> iterator(RedisClient client, long nextIterPos) {
+    protected ScanResult<M> iterator(RedisClient client, String nextIterPos) {
         return map.scanKeyIterator(map.getRawName(), client, nextIterPos, pattern, count);
     }
 

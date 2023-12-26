@@ -83,7 +83,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
     }
 
     @Override
-    public ScanResult<Object> scanIterator(String name, RedisClient client, long startPos, String pattern, int count) {
+    public ScanResult<Object> scanIterator(String name, RedisClient client, String startPos, String pattern, int count) {
         return get(scanIteratorAsync(name, client, startPos, pattern, count));
     }
 
@@ -98,11 +98,11 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
     }
     
     @Override
-    public Iterator<V> iterator(final String pattern, final int count) {
+    public Iterator<V> iterator(String pattern, int count) {
         return new RedissonBaseIterator<V>() {
 
             @Override
-            protected ScanResult<Object> iterator(RedisClient client, long nextIterPos) {
+            protected ScanResult<Object> iterator(RedisClient client, String nextIterPos) {
                 return scanIterator(getRawName(), client, nextIterPos, pattern, count);
             }
 
@@ -131,7 +131,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
         return new RedissonBaseIterator<V>() {
 
             @Override
-            protected ScanResult<Object> iterator(RedisClient client, long nextIterPos) {
+            protected ScanResult<Object> iterator(RedisClient client, String nextIterPos) {
                 return distributedScanIterator(iteratorName, pattern, count);
             }
 
@@ -812,7 +812,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
     }
 
     @Override
-    public RFuture<ScanResult<Object>> scanIteratorAsync(String name, RedisClient client, long startPos,
+    public RFuture<ScanResult<Object>> scanIteratorAsync(String name, RedisClient client, String startPos,
             String pattern, int count) {
         if (pattern == null) {
             return commandExecutor.readAsync(client, name, codec, RedisCommands.SSCAN, name, startPos, "COUNT", count);

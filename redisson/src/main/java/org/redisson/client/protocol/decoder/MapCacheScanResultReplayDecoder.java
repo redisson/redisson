@@ -15,13 +15,13 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import java.util.List;
-import java.util.Map;
-
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.LongCodec;
+import org.redisson.client.codec.UnsignedLongCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * 
@@ -40,7 +40,7 @@ public class MapCacheScanResultReplayDecoder implements MultiDecoder<MapCacheSca
 
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
-        return LongCodec.INSTANCE.getValueDecoder();
+        return UnsignedLongCodec.INSTANCE.getValueDecoder();
     }
 
 }

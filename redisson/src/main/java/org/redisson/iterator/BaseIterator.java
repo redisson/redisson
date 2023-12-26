@@ -58,14 +58,14 @@ public abstract class BaseIterator<V, E> implements Iterator<V> {
             do {
                 ScanResult<E> res;
                 try {
-                    res = iterator(client, nextIterPos);
+                    res = iterator(client, Long.toUnsignedString(nextIterPos));
                 } catch (RedisNodeNotFoundException e) {
                     if (client != null) {
                         client = null;
                         nextIterPos = 0;
                     }
                     reset();
-                    res = iterator(client, nextIterPos);
+                    res = iterator(client, Long.toUnsignedString(nextIterPos));
                 }
                 
                 client = res.getRedisClient();
@@ -96,7 +96,7 @@ public abstract class BaseIterator<V, E> implements Iterator<V> {
         return false;
     }
 
-    protected abstract ScanResult<E> iterator(RedisClient client, long nextIterPos);
+    protected abstract ScanResult<E> iterator(RedisClient client, String nextIterPos);
 
     @Override
     public V next() {

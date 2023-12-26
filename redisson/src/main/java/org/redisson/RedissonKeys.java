@@ -143,7 +143,7 @@ public class RedissonKeys implements RKeys {
         return getKeysByPattern(null, count);
     }
 
-    private RFuture<ScanResult<Object>> scanIteratorAsync(RedisClient client, MasterSlaveEntry entry, RedisCommand<?> command, long startPos,
+    private RFuture<ScanResult<Object>> scanIteratorAsync(RedisClient client, MasterSlaveEntry entry, RedisCommand<?> command, String startPos,
                                                              String pattern, int count) {
         if (pattern == null) {
             return commandExecutor.readAsync(client, entry, StringCodec.INSTANCE, command, startPos, "COUNT",
@@ -155,7 +155,7 @@ public class RedissonKeys implements RKeys {
                 pattern, "COUNT", count);
     }
 
-    public RFuture<ScanResult<Object>> scanIteratorAsync(RedisClient client, MasterSlaveEntry entry, long startPos,
+    public RFuture<ScanResult<Object>> scanIteratorAsync(RedisClient client, MasterSlaveEntry entry, String startPos,
             String pattern, int count) {
         return scanIteratorAsync(client, entry, scan, startPos, pattern, count);
     }
@@ -164,7 +164,7 @@ public class RedissonKeys implements RKeys {
         return new RedissonBaseIterator<T>() {
 
             @Override
-            protected ScanResult<Object> iterator(RedisClient client, long nextIterPos) {
+            protected ScanResult<Object> iterator(RedisClient client, String nextIterPos) {
                 return commandExecutor
                         .get(RedissonKeys.this.scanIteratorAsync(client, entry, command, nextIterPos, pattern, count));
             }

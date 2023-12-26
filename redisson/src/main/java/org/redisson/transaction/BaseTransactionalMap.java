@@ -148,7 +148,7 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
     }
     
     protected ScanResult<Map.Entry<Object, Object>> scanIterator(String name, RedisClient client,
-            long startPos, String pattern, int count) {
+                                                                 String startPos, String pattern, int count) {
         ScanResult<Map.Entry<Object, Object>> res = ((RedissonMap<?, ?>) map).scanIterator(name, client, startPos, pattern, count);
         Map<HashValue, MapEntry> newstate = new HashMap<>(state);
         Map<Object, Object> newres = null;
@@ -172,7 +172,7 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
             }
         }
         
-        if (startPos == 0) {
+        if ("0".equals(startPos)) {
             for (Entry<HashValue, MapEntry> entry : newstate.entrySet()) {
                 if (entry.getValue() == MapEntry.NULL) {
                     continue;

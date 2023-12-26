@@ -148,7 +148,7 @@ public class RedissonTransactionalMapCache<K, V> extends RedissonMapCache<K, V> 
     
     @Override
     public ScanResult<Entry<Object, Object>> scanIterator(String name, RedisClient client,
-                                                          long startPos, String pattern, int count) {
+                                                          String startPos, String pattern, int count) {
         checkState();
         return transactionalMap.scanIterator(name, client, startPos, pattern, count);
     }

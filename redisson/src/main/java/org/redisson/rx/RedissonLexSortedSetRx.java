@@ -49,7 +49,7 @@ public class RedissonLexSortedSetRx {
     private Flowable<String> scanIteratorReactive(String pattern, int count) {
         return new SetRxIterator<String>() {
             @Override
-            protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
+            protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, String nextIterPos) {
                 return ((RedissonScoredSortedSet<String>) instance).scanIteratorAsync(client, nextIterPos, pattern, count);
             }
         }.create();

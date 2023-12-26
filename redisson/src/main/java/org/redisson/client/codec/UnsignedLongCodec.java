@@ -13,31 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.protocol.decoder;
+package org.redisson.client.codec;
 
-import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.UnsignedLongCodec;
+import io.netty.buffer.ByteBuf;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
-import java.util.List;
-import java.util.Map;
+import java.io.IOException;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class MapScanResultReplayDecoder implements MultiDecoder<MapScanResult<Object, Object>> {
+public class UnsignedLongCodec extends StringCodec {
+
+    public static final UnsignedLongCodec INSTANCE = new UnsignedLongCodec();
+
+    private final Decoder<Object> decoder = new Decoder<Object>() {
+        @Override
+        public Object decode(ByteBuf buf, State state) throws IOException {
+            String str = (String) UnsignedLongCodec.super.getValueDecoder().decode(buf, state);
+            return Long.parseUnsignedLong(str);
+        }
+    };
 
     @Override
-    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
-        return UnsignedLongCodec.INSTANCE.getValueDecoder();
-    }
-    
-    @Override
-    public MapScanResult<Object, Object> decode(List<Object> parts, State state) {
-        return new MapScanResult<Object, Object>((Long) parts.get(0), (Map<Object, Object>) parts.get(1));
+    public Decoder<Object> getValueDecoder() {
+        return decoder;
     }
 
 }

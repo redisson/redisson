@@ -140,10 +140,10 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
     }
     
     protected abstract ScanResult<Object> scanIteratorSource(String name, RedisClient client,
-                                                             long startPos, String pattern, int count);
+                                                             String startPos, String pattern, int count);
     
     protected ScanResult<Object> scanIterator(String name, RedisClient client,
-            long startPos, String pattern, int count) {
+                                              String startPos, String pattern, int count) {
         ScanResult<Object> res = scanIteratorSource(name, client, startPos, pattern, count);
         Map<HashValue, Object> newstate = new HashMap<>(state);
         for (Iterator<Object> iterator = res.getValues().iterator(); iterator.hasNext();) {
@@ -154,7 +154,7 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
             }
         }
         
-        if (startPos == 0) {
+        if ("0".equals(startPos)) {
             for (Entry<HashValue, Object> entry : newstate.entrySet()) {
                 if (entry.getValue() == NULL) {
                     continue;

@@ -909,12 +909,12 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         return commandExecutor.readAsync(name, codec, RedisCommands.ZRANK_ENTRY, name, encode(o), "WITHSCORE");
     }
 
-    private ScanResult<Object> scanIterator(RedisClient client, long startPos, String pattern, int count) {
+    private ScanResult<Object> scanIterator(RedisClient client, String startPos, String pattern, int count) {
         RFuture<ScanResult<Object>> f = scanIteratorAsync(client, startPos, pattern, count);
         return get(f);
     }
 
-    public RFuture<ScanResult<Object>> scanIteratorAsync(RedisClient client, long startPos, String pattern, int count) {
+    public RFuture<ScanResult<Object>> scanIteratorAsync(RedisClient client, String startPos, String pattern, int count) {
         if (pattern == null) {
             RFuture<ScanResult<Object>> f = commandExecutor.readAsync(client, getRawName(), codec, RedisCommands.ZSCAN, getRawName(), startPos, "COUNT", count);
             return f;
@@ -943,7 +943,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         return new RedissonBaseIterator<V>() {
 
             @Override
-            protected ScanResult<Object> iterator(RedisClient client, long nextIterPos) {
+            protected ScanResult<Object> iterator(RedisClient client, String nextIterPos) {
                 return scanIterator(client, nextIterPos, pattern, count);
             }
 
@@ -974,7 +974,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         return new RedissonBaseIterator<ScoredEntry<V>>() {
 
             @Override
-            protected ScanResult<Object> iterator(RedisClient client, long nextIterPos) {
+            protected ScanResult<Object> iterator(RedisClient client, String nextIterPos) {
                 return entryScanIterator(client, nextIterPos, pattern, count);
             }
 
@@ -986,12 +986,12 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         };
     }
 
-    private ScanResult<Object> entryScanIterator(RedisClient client, long startPos, String pattern, int count) {
+    private ScanResult<Object> entryScanIterator(RedisClient client, String startPos, String pattern, int count) {
         RFuture<ScanResult<Object>> f = entryScanIteratorAsync(client, startPos, pattern, count);
         return get(f);
     }
 
-    public RFuture<ScanResult<Object>> entryScanIteratorAsync(RedisClient client, long startPos, String pattern, int count) {
+    public RFuture<ScanResult<Object>> entryScanIteratorAsync(RedisClient client, String startPos, String pattern, int count) {
         if (pattern == null) {
             RFuture<ScanResult<Object>> f = commandExecutor.readAsync(client, getRawName(), codec, RedisCommands.ZSCAN_ENTRY, getRawName(), startPos, "COUNT", count);
             return f;
@@ -1017,7 +1017,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         return new RedissonBaseIterator<V>() {
 
             @Override
-            protected ScanResult<Object> iterator(RedisClient client, long nextIterPos) {
+            protected ScanResult<Object> iterator(RedisClient client, String nextIterPos) {
                 return distributedScanIterator(iteratorName, pattern, count);
             }
 
