@@ -30,7 +30,7 @@ public interface ScanResult<R> {
 
     RedisClient getRedisClient();
     
-    long getPos();
+    String getPos();
     
     Collection<R> getValues();
 

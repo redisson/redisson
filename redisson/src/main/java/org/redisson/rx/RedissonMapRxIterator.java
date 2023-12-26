@@ -50,7 +50,7 @@ public class RedissonMapRxIterator<K, V, M> {
         ReplayProcessor<M> p = ReplayProcessor.create();
         return p.doOnRequest(new LongConsumer() {
 
-            private long nextIterPos;
+            private String nextIterPos;
             private RedisClient client;
             private AtomicLong elementsRead = new AtomicLong();
             
@@ -68,7 +68,7 @@ public class RedissonMapRxIterator<K, V, M> {
             }
             
             protected void nextValues() {
-                map.scanIteratorAsync(map.getRawName(), client, Long.toUnsignedString(nextIterPos), pattern, count).whenComplete((res, e) -> {
+                map.scanIteratorAsync(map.getRawName(), client, nextIterPos, pattern, count).whenComplete((res, e) -> {
                     if (e != null) {
                         p.onError(e);
                         return;
@@ -76,7 +76,7 @@ public class RedissonMapRxIterator<K, V, M> {
 
                     if (finished) {
                         client = null;
-                        nextIterPos = 0;
+                        nextIterPos = "0";
                         return;
                     }
 
@@ -95,7 +95,7 @@ public class RedissonMapRxIterator<K, V, M> {
                         completed = true;
                         return;
                     }
-                    if (res.getPos() == 0 && !tryAgain()) {
+                    if ("0".equals(res.getPos()) && !tryAgain()) {
                         finished = true;
                         p.onComplete();
                     }

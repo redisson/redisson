@@ -16,7 +16,7 @@
 package org.redisson.client.protocol.decoder;
 
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.UnsignedLongCodec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
@@ -31,7 +31,7 @@ public class ScoredSortedSetScanReplayDecoder implements MultiDecoder<ListScanRe
 
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
-        return UnsignedLongCodec.INSTANCE.getValueDecoder();
+        return StringCodec.INSTANCE.getValueDecoder();
     }
     
     @Override
@@ -40,7 +40,7 @@ public class ScoredSortedSetScanReplayDecoder implements MultiDecoder<ListScanRe
         for (int i = 1; i < values.size(); i++) {
             values.remove(i);
         }
-        return new ListScanResult<Object>((Long) parts.get(0), values);
+        return new ListScanResult<>((String) parts.get(0), values);
     }
 
 }

@@ -16,7 +16,7 @@
 package org.redisson.client.protocol.decoder;
 
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.UnsignedLongCodec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
@@ -32,12 +32,12 @@ public class MapScanResultReplayDecoder implements MultiDecoder<MapScanResult<Ob
 
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
-        return UnsignedLongCodec.INSTANCE.getValueDecoder();
+        return StringCodec.INSTANCE.getValueDecoder();
     }
     
     @Override
     public MapScanResult<Object, Object> decode(List<Object> parts, State state) {
-        return new MapScanResult<Object, Object>((Long) parts.get(0), (Map<Object, Object>) parts.get(1));
+        return new MapScanResult<>((String) parts.get(0), (Map<Object, Object>) parts.get(1));
     }
 
 }

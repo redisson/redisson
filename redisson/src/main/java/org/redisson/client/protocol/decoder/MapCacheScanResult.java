@@ -29,7 +29,7 @@ public class MapCacheScanResult<K, V> extends MapScanResult<K, V> {
 
     private final List<K> idleKeys;
 
-    public MapCacheScanResult(Long pos, Map<K, V> values, List<K> idleKeys) {
+    public MapCacheScanResult(String pos, Map<K, V> values, List<K> idleKeys) {
         super(pos, values);
         this.idleKeys = idleKeys;
     };

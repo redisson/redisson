@@ -36,7 +36,7 @@ public abstract class SetRxIterator<V> {
         ReplayProcessor<V> p = ReplayProcessor.create();
         return p.doOnRequest(new LongConsumer() {
             
-            private long nextIterPos;
+            private String nextIterPos;
             private RedisClient client;
             private AtomicLong elementsRead = new AtomicLong();
             
@@ -54,7 +54,7 @@ public abstract class SetRxIterator<V> {
             }
             
             protected void nextValues() {
-                scanIterator(client, Long.toUnsignedString(nextIterPos)).whenComplete((res, e) -> {
+                scanIterator(client, nextIterPos).whenComplete((res, e) -> {
                     if (e != null) {
                         p.onError(e);
                         return;
@@ -62,7 +62,7 @@ public abstract class SetRxIterator<V> {
                     
                     if (finished) {
                         client = null;
-                        nextIterPos = 0;
+                        nextIterPos = "0";
                         return;
                     }
 
@@ -80,7 +80,7 @@ public abstract class SetRxIterator<V> {
                         completed = true;
                         return;
                     }
-                    if (res.getPos() == 0 && !tryAgain()) {
+                    if ("0".equals(res.getPos()) && !tryAgain()) {
                         finished = true;
                         p.onComplete();
                     }

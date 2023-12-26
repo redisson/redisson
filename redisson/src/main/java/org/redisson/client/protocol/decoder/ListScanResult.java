@@ -28,17 +28,17 @@ import org.redisson.client.RedisClient;
  */
 public class ListScanResult<V> implements ScanResult<V> {
 
-    private final long pos;
+    private final String pos;
     private final List<V> values;
     private RedisClient client;
 
-    public ListScanResult(long pos, List<V> values) {
+    public ListScanResult(String pos, List<V> values) {
         this.pos = pos;
         this.values = values;
     }
 
     @Override
-    public long getPos() {
+    public String getPos() {
         return pos;
     }
 

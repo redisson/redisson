@@ -37,7 +37,7 @@ import org.redisson.command.CommandAsyncExecutor;
 abstract class RedissonMultiMapIterator<K, V, M> implements Iterator<M> {
 
     private Iterator<Map.Entry<Object, Object>> keysIter;
-    protected long keysIterPos = 0;
+    protected String keysIterPos = "0";
 
     private K currentKey;
     private Iterator<V> valuesIter;
@@ -73,12 +73,12 @@ abstract class RedissonMultiMapIterator<K, V, M> implements Iterator<M> {
 
         while (true) {
             if (!keysFinished && (keysIter == null || !keysIter.hasNext())) {
-                MapScanResult<Object, Object> res = map.scanIterator(client, Long.toUnsignedString(keysIterPos));
+                MapScanResult<Object, Object> res = map.scanIterator(client, keysIterPos);
                 client = res.getRedisClient();
                 keysIter = res.getMap().entrySet().iterator();
                 keysIterPos = res.getPos();
-                
-                if (res.getPos() == 0) {
+
+                if ("0".equals(res.getPos())) {
                     keysFinished = true;
                 }
             }
@@ -93,7 +93,7 @@ abstract class RedissonMultiMapIterator<K, V, M> implements Iterator<M> {
                 }
             }
             
-            if (keysIterPos == 0) {
+            if ("0".equals(keysIterPos)) {
                 finished = true;
                 return false;
             }

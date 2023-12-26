@@ -32,7 +32,7 @@ import org.redisson.client.RedisNodeNotFoundException;
 public abstract class BaseIterator<V, E> implements Iterator<V> {
 
     private Iterator<E> lastIter;
-    protected long nextIterPos;
+    protected String nextIterPos;
     protected RedisClient client;
 
     private boolean finished;
@@ -48,7 +48,7 @@ public abstract class BaseIterator<V, E> implements Iterator<V> {
             if (finished) {
                 currentElementRemoved = false;
                 client = null;
-                nextIterPos = 0;
+                nextIterPos = "0";
 
                 if (!tryAgain()) {
                     return false;
@@ -58,14 +58,14 @@ public abstract class BaseIterator<V, E> implements Iterator<V> {
             do {
                 ScanResult<E> res;
                 try {
-                    res = iterator(client, Long.toUnsignedString(nextIterPos));
+                    res = iterator(client, nextIterPos);
                 } catch (RedisNodeNotFoundException e) {
                     if (client != null) {
                         client = null;
-                        nextIterPos = 0;
+                        nextIterPos = "0";
                     }
                     reset();
-                    res = iterator(client, Long.toUnsignedString(nextIterPos));
+                    res = iterator(client, nextIterPos);
                 }
                 
                 client = res.getRedisClient();
@@ -73,13 +73,13 @@ public abstract class BaseIterator<V, E> implements Iterator<V> {
                 lastIter = res.getValues().iterator();
                 nextIterPos = res.getPos();
 
-                if (res.getPos() == 0) {
+                if ("0".equals(res.getPos())) {
                     finished = true;
                     if (res.getValues().isEmpty()) {
                         currentElementRemoved = false;
                         
                         client = null;
-                        nextIterPos = 0;
+                        nextIterPos = "0";
                         if (tryAgain()) {
                             continue;
                         }

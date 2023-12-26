@@ -30,11 +30,11 @@ import java.util.List;
 public class MapCacheKeyScanResult<K> implements ScanResult<K> {
 
     private final List<K> idleKeys;
-    private final long pos;
+    private final String pos;
     private final List<K> keys;
     private RedisClient client;
 
-    public MapCacheKeyScanResult(long pos, List<K> keys, List<K> idleKeys) {
+    public MapCacheKeyScanResult(String pos, List<K> keys, List<K> idleKeys) {
         super();
         this.pos = pos;
         this.keys = keys;
@@ -47,7 +47,7 @@ public class MapCacheKeyScanResult<K> implements ScanResult<K> {
     }
 
     @Override
-    public long getPos() {
+    public String getPos() {
         return pos;
     }
 

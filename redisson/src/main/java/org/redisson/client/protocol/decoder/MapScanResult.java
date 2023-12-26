@@ -30,11 +30,11 @@ import org.redisson.client.RedisClient;
  */
 public class MapScanResult<K, V> implements ScanResult<Map.Entry<K, V>> {
 
-    private final long pos;
+    private final String pos;
     private final Map<K, V> values;
     private RedisClient client;
 
-    public MapScanResult(long pos, Map<K, V> values) {
+    public MapScanResult(String pos, Map<K, V> values) {
         super();
         this.pos = pos;
         this.values = values;
@@ -50,7 +50,7 @@ public class MapScanResult<K, V> implements ScanResult<Map.Entry<K, V>> {
     }
     
     @Override
-    public long getPos() {
+    public String getPos() {
         return pos;
     }
 

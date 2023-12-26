@@ -16,7 +16,7 @@
 package org.redisson.client.protocol.decoder;
 
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.UnsignedLongCodec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
@@ -31,7 +31,7 @@ public class MapCacheKeyScanResultDecoder implements MultiDecoder<MapCacheKeySca
 
     @Override
     public MapCacheKeyScanResult<Object> decode(List<Object> parts, State state) {
-        Long pos = (Long) parts.get(0);
+        String pos = (String) parts.get(0);
         List<Object> values = (List<Object>) parts.get(1);
         List<Object> idleKeys = (List<Object>) parts.get(2);
         return new MapCacheKeyScanResult<>(pos, values, idleKeys);
@@ -39,7 +39,7 @@ public class MapCacheKeyScanResultDecoder implements MultiDecoder<MapCacheKeySca
 
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
-        return UnsignedLongCodec.INSTANCE.getValueDecoder();
+        return StringCodec.INSTANCE.getValueDecoder();
     }
 
 }

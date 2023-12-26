@@ -30,7 +30,7 @@ public abstract class IteratorConsumer<V> implements LongConsumer {
 
     private final FluxSink<V> emitter;
 
-    private long nextIterPos = 0;
+    private String nextIterPos = "0";
     private RedisClient client;
 
     private final AtomicLong requested = new AtomicLong();
@@ -47,7 +47,7 @@ public abstract class IteratorConsumer<V> implements LongConsumer {
     }
 
     protected void nextValues() {
-        scanIterator(client, Long.toUnsignedString(nextIterPos)).whenComplete((res, e) -> {
+        scanIterator(client, nextIterPos).whenComplete((res, e) -> {
             if (e != null) {
                 emitter.error(e);
                 return;
@@ -62,7 +62,7 @@ public abstract class IteratorConsumer<V> implements LongConsumer {
                 requested.decrementAndGet();
             }
 
-            if (nextIterPos == 0 && !tryAgain()) {
+            if ("0".equals(nextIterPos) && !tryAgain()) {
                 emitter.complete();
                 return;
             }

@@ -68,7 +68,7 @@ public class RedissonKeysRx {
 
             private RedisClient client;
             private List<String> firstValues;
-            private long nextIterPos;
+            private String nextIterPos;
             
             private long currentIndex;
             
@@ -79,15 +79,15 @@ public class RedissonKeysRx {
             }
             
             protected void nextValues() {
-                instance.scanIteratorAsync(client, entry, Long.toUnsignedString(nextIterPos), pattern, count).whenComplete((res, e) -> {
+                instance.scanIteratorAsync(client, entry, nextIterPos, pattern, count).whenComplete((res, e) -> {
                     if (e != null) {
                         p.onError(e);
                         return;
                     }
                     
                     client = res.getRedisClient();
-                    long prevIterPos = nextIterPos;
-                    if (nextIterPos == 0 && firstValues == null) {
+                    String prevIterPos = nextIterPos;
+                    if ("0".equals(nextIterPos) && firstValues == null) {
                         firstValues = (List<String>) (Object) res.getValues();
                     } else if (res.getValues().equals(firstValues)) {
                         p.onComplete();
@@ -96,8 +96,8 @@ public class RedissonKeysRx {
                     }
 
                     nextIterPos = res.getPos();
-                    if (prevIterPos == nextIterPos) {
-                        nextIterPos = -1;
+                    if (prevIterPos.equals(nextIterPos)) {
+                        nextIterPos = "-1";
                     }
                     for (Object val : res.getValues()) {
                         p.onNext((String) val);
@@ -107,7 +107,7 @@ public class RedissonKeysRx {
                             return;
                         }
                     }
-                    if (nextIterPos == -1) {
+                    if ("-1".equals(nextIterPos)) {
                         p.onComplete();
                         currentIndex = 0;
                     }

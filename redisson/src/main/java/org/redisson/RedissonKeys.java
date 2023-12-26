@@ -100,7 +100,7 @@ public class RedissonKeys implements RKeys {
                                                                                 new ListScanResultReplayDecoder() {
                                                                                     @Override
                                                                                     public ListScanResult<Object> decode(List<Object> parts, State state) {
-                                                                                        return new ListScanResult<>((Long) parts.get(0), (List<Object>) (Object) unmap((List<String>) parts.get(1)));
+                                                                                        return new ListScanResult<>((String) parts.get(0), (List<Object>) (Object) unmap((List<String>) parts.get(1)));
                                                                                     }
                                                                                 }, new ObjectListReplayDecoder<String>()));
 

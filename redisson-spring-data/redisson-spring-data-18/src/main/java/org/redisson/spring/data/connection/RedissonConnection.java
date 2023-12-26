@@ -270,11 +270,12 @@ public class RedissonConnection extends AbstractRedisConnection {
                 if (entry == null) {
                     return null;
                 }
-                
+
                 List<Object> args = new ArrayList<Object>();
-                // to avoid negative value
-                cursorId = Math.max(cursorId, 0);
-                args.add(cursorId);
+                if (cursorId == 101010101010101010L) {
+                    cursorId = 0;
+                }
+                args.add(Long.toUnsignedString(cursorId));
                 if (options.getPattern() != null) {
                     args.add("MATCH");
                     args.add(options.getPattern());
@@ -286,11 +287,11 @@ public class RedissonConnection extends AbstractRedisConnection {
                 
                 RFuture<ListScanResult<byte[]>> f = executorService.readAsync(client, entry, ByteArrayCodec.INSTANCE, RedisCommands.SCAN, args.toArray());
                 ListScanResult<byte[]> res = syncFuture(f);
-                long pos = res.getPos();
+                String pos = res.getPos();
                 client = res.getRedisClient();
-                if (pos == 0) {
+                if ("0".equals(pos)) {
                     if (entries.hasNext()) {
-                        pos = -1;
+                        pos = "101010101010101010";
                         entry = entries.next();
                         client = null;
                     } else {
@@ -298,7 +299,7 @@ public class RedissonConnection extends AbstractRedisConnection {
                     }
                 }
                 
-                return new ScanIteration<byte[]>(pos, res.getValues());
+                return new ScanIteration<byte[]>(Long.parseUnsignedLong(pos), res.getValues());
             }
         }.open();
     }
@@ -912,7 +913,7 @@ public class RedissonConnection extends AbstractRedisConnection {
 
                 List<Object> args = new ArrayList<Object>();
                 args.add(key);
-                args.add(cursorId);
+                args.add(Long.toUnsignedString(cursorId));
                 if (options.getPattern() != null) {
                     args.add("MATCH");
                     args.add(options.getPattern());
@@ -925,7 +926,7 @@ public class RedissonConnection extends AbstractRedisConnection {
                 RFuture<ListScanResult<byte[]>> f = executorService.readAsync(client, key, ByteArrayCodec.INSTANCE, RedisCommands.SSCAN, args.toArray());
                 ListScanResult<byte[]> res = syncFuture(f);
                 client = res.getRedisClient();
-                return new ScanIteration<byte[]>(res.getPos(), res.getValues());
+                return new ScanIteration<byte[]>(Long.parseUnsignedLong(res.getPos()), res.getValues());
             }
         }.open();
     }
@@ -1282,7 +1283,7 @@ public class RedissonConnection extends AbstractRedisConnection {
 
                 List<Object> args = new ArrayList<Object>();
                 args.add(key);
-                args.add(cursorId);
+                args.add(Long.toUnsignedString(cursorId));
                 if (options.getPattern() != null) {
                     args.add("MATCH");
                     args.add(options.getPattern());
@@ -1295,7 +1296,7 @@ public class RedissonConnection extends AbstractRedisConnection {
                 RFuture<ListScanResult<Tuple>> f = executorService.readAsync(client, key, ByteArrayCodec.INSTANCE, ZSCAN, args.toArray());
                 ListScanResult<Tuple> res = syncFuture(f);
                 client = res.getRedisClient();
-                return new ScanIteration<Tuple>(res.getPos(), res.getValues());
+                return new ScanIteration<Tuple>(Long.parseUnsignedLong(res.getPos()), res.getValues());
             }
         }.open();
     }
@@ -1481,7 +1482,7 @@ public class RedissonConnection extends AbstractRedisConnection {
 
                 List<Object> args = new ArrayList<Object>();
                 args.add(key);
-                args.add(cursorId);
+                args.add(Long.toUnsignedString(cursorId));
                 if (options.getPattern() != null) {
                     args.add("MATCH");
                     args.add(options.getPattern());
@@ -1494,7 +1495,7 @@ public class RedissonConnection extends AbstractRedisConnection {
                 RFuture<MapScanResult<byte[], byte[]>> f = executorService.readAsync(client, key, ByteArrayCodec.INSTANCE, RedisCommands.HSCAN, args.toArray());
                 MapScanResult<byte[], byte[]> res = syncFuture(f);
                 client = res.getRedisClient();
-                return new ScanIteration<Entry<byte[], byte[]>>(res.getPos(), res.getValues());
+                return new ScanIteration<Entry<byte[], byte[]>>(Long.parseUnsignedLong(res.getPos()), res.getValues());
             }
         }.open();
     }

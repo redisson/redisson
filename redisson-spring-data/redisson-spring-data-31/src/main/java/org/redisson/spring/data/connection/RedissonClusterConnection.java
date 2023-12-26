@@ -396,11 +396,12 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
                 if (entry == null) {
                     return null;
                 }
-                
+
                 List<Object> args = new ArrayList<Object>();
-                // to avoid negative value
-                cursorId = Math.max(cursorId, 0);
-                args.add(cursorId);
+                if (cursorId == 101010101010101010L) {
+                    cursorId = 0;
+                }
+                args.add(Long.toUnsignedString(cursorId));
                 if (options.getPattern() != null) {
                     args.add("MATCH");
                     args.add(options.getPattern());
@@ -412,13 +413,13 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
                 
                 RFuture<ListScanResult<byte[]>> f = executorService.readAsync(client, entry, ByteArrayCodec.INSTANCE, RedisCommands.SCAN, args.toArray());
                 ListScanResult<byte[]> res = syncFuture(f);
-                long pos = res.getPos();
+                String pos = res.getPos();
                 client = res.getRedisClient();
-                if (pos == 0) {
+                if ("0".equals(pos)) {
                     entry = null;
                 }
                 
-                return new ScanIteration<byte[]>(pos, res.getValues());
+                return new ScanIteration<byte[]>(Long.parseUnsignedLong(pos), res.getValues());
             }
         }.open();
     }
