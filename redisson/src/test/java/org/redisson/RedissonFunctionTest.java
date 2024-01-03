@@ -27,7 +27,7 @@ public class RedissonFunctionTest extends RedisDockerTest {
         f.load("lib", "redis.register_function('myfun', function(keys, args) for i = 1, 88293819831, 1 do end return args[1] end)" +
                 "redis.register_function('myfun2', function(keys, args) return 'test' end)" +
                 "redis.register_function('myfun3', function(keys, args) return 123 end)");
-        f.callAsync(FunctionMode.READ, "myfun", FunctionResult.VALUE, Collections.emptyList(), "test");
+        f.callAsync(FunctionMode.WRITE, "myfun", FunctionResult.VALUE, Collections.emptyList(), "test");
         try {
             Thread.sleep(500);
             FunctionStats stats = f.stats();
@@ -56,7 +56,7 @@ public class RedissonFunctionTest extends RedisDockerTest {
 
             RFunction f = r.getFunction();
             f.flush();
-            f.load("lib", "redis.register_function('myfun', function(keys, args) return args[1] end)");
+            f.load("lib", "redis.register_function{function_name='myfun', callback=function(keys, args) return args[1] end, flags={ 'no-writes' }}");
 
             // waiting for the function replication to all nodes
             try {
@@ -85,8 +85,8 @@ public class RedissonFunctionTest extends RedisDockerTest {
     public void testCall() {
         RFunction f = redisson.getFunction();
         f.flush();
-        f.load("lib", "redis.register_function('myfun', function(keys, args) return args[1] end)" +
-                                        "redis.register_function('myfun2', function(keys, args) return 'test' end)" +
+        f.load("lib", "redis.register_function{function_name='myfun', callback=function(keys, args) return args[1] end, flags={ 'no-writes' }}" +
+                                        "redis.register_function{function_name='myfun2', callback=function(keys, args) return 'test' end, flags={ 'no-writes' }}" +
                                         "redis.register_function('myfun3', function(keys, args) return 123 end)");
         String s = f.call(FunctionMode.READ, "myfun", FunctionResult.VALUE, Collections.emptyList(), "test");
         assertThat(s).isEqualTo("test");
@@ -96,7 +96,7 @@ public class RedissonFunctionTest extends RedisDockerTest {
         assertThat(s2).isEqualTo("test");
 
         RFunction f3 = redisson.getFunction(LongCodec.INSTANCE);
-        Long s3 = f3.call(FunctionMode.READ, "myfun3", FunctionResult.LONG, Collections.emptyList());
+        Long s3 = f3.call(FunctionMode.WRITE, "myfun3", FunctionResult.LONG, Collections.emptyList());
         assertThat(s3).isEqualTo(123L);
 
         f.loadAndReplace("lib", "redis.register_function('myfun', function(keys, args) return args[1] end)" +
@@ -104,7 +104,7 @@ public class RedissonFunctionTest extends RedisDockerTest {
                 "redis.register_function('myfun3', function(keys, args) return 123 end)");
 
         RFunction f4 = redisson.getFunction(StringCodec.INSTANCE);
-        String s4 = f4.call(FunctionMode.READ, "myfun2", FunctionResult.STRING, Collections.emptyList());
+        String s4 = f4.call(FunctionMode.WRITE, "myfun2", FunctionResult.STRING, Collections.emptyList());
         assertThat(s4).isEqualTo("test2");
 
     }
@@ -113,16 +113,16 @@ public class RedissonFunctionTest extends RedisDockerTest {
     public void testKeysLoadAsExpected() {
         RFunction f = redisson.getFunction();
         f.flush();
-        f.load("lib", "redis.register_function('myfun', function(keys, args) return keys[1] end)" +
+        f.load("lib", "redis.register_function{function_name='myfun', callback=function(keys, args) return keys[1] end, flags={ 'no-writes' }}" +
                         "redis.register_function('myfun2', function(keys, args) return args[1] end)");
         String s = f.call(FunctionMode.READ, "myfun", FunctionResult.STRING, Arrays.asList("testKey"), "arg1");
         assertThat(s).isEqualTo("testKey");
 
         RFunction f2 = redisson.getFunction(StringCodec.INSTANCE);
-        String s2 = f2.call(FunctionMode.READ, "myfun2", FunctionResult.STRING, Arrays.asList("testKey1", "testKey2"), "arg1");
+        String s2 = f2.call(FunctionMode.WRITE, "myfun2", FunctionResult.STRING, Arrays.asList("testKey1", "testKey2"), "arg1");
         assertThat(s2).isEqualTo("arg1");
 
-        String s3 = f.call(FunctionMode.READ, "myfun2", FunctionResult.VALUE, Arrays.asList("testKey"), "argv1");
+        String s3 = f.call(FunctionMode.WRITE, "myfun2", FunctionResult.VALUE, Arrays.asList("testKey"), "argv1");
         assertThat(s3).isEqualTo("argv1");
     }
 

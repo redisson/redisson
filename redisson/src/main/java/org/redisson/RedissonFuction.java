@@ -19,6 +19,7 @@ import org.redisson.api.*;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
@@ -210,7 +211,8 @@ public class RedissonFuction implements RFunction {
         }
         args.addAll(encode(Arrays.asList(values), codec));
         if (mode == FunctionMode.READ) {
-            return commandExecutor.readAsync(key, codec, returnType.getCommand(), args.toArray());
+            RedisCommand cmd = new RedisCommand("FCALL_RO", returnType.getCommand().getReplayMultiDecoder(), returnType.getCommand().getConvertor());
+            return commandExecutor.readAsync(key, codec, cmd, args.toArray());
         }
         return commandExecutor.writeAsync(key, codec, returnType.getCommand(), args.toArray());
     }
