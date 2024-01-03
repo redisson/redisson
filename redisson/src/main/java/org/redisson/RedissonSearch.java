@@ -379,13 +379,18 @@ public class RedissonSearch implements RSearch {
         if (!options.getReturnAttributes().isEmpty()) {
             args.add("RETURN");
             args.add(options.getReturnAttributes().size());
+            int pos = args.size() - 1;
+            int amount = 0;
             for (ReturnAttribute attr : options.getReturnAttributes()) {
                 args.add(attr.getIdentifier());
+                amount++;
                 if (attr.getProperty() != null) {
                     args.add("AS");
                     args.add(attr.getProperty());
+                    amount += 2;
                 }
             }
+            args.set(pos, amount);
         }
         if (options.getSummarize() != null) {
             args.add("SUMMARIZE");

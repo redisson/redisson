@@ -313,7 +313,9 @@ public class RedissonSearchTest extends DockerRedisStackTest {
                         .distance(VectorDistParam.DistanceMetric.COSINE),
                 FieldIndex.text("$.content").as("content"));
 
-        SearchResult r = s.search("text_index", "*", QueryOptions.defaults());
+        SearchResult r = s.search("text_index", "*", QueryOptions.defaults()
+                                                                            .returnAttributes(new ReturnAttribute("vector", "vector11"),
+                                                                                                new ReturnAttribute("vector2", "vector22")));
         assertThat(r.getTotal()).isEqualTo(1);
     }
 
