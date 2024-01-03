@@ -48,7 +48,7 @@ public class ClientConnectionsEntry {
     private final AsyncSemaphore freeSubscribeConnectionsCounter;
 
     private final Queue<RedisConnection> allConnections = new ConcurrentLinkedQueue<>();
-    private final Deque<RedisConnection> freeConnections = new ConcurrentLinkedDeque<>();
+    private final Queue<RedisConnection> freeConnections = new ConcurrentLinkedQueue<>();
     private final AsyncSemaphore freeConnectionsCounter;
 
     public enum FreezeReason {MANAGER, RECONNECT, SYSTEM}
