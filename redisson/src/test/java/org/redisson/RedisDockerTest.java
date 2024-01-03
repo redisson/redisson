@@ -103,7 +103,7 @@ public class RedisDockerTest {
         if (redissonCluster == null) {
             REDIS_CLUSTER = new GenericContainer<>("vishnunair/docker-redis-cluster")
                             .withExposedPorts(6379, 6380, 6381, 6382, 6383, 6384)
-                            .withStartupCheckStrategy(new MinimumDurationRunningStartupCheckStrategy(Duration.ofSeconds(10)));
+                            .withStartupCheckStrategy(new MinimumDurationRunningStartupCheckStrategy(Duration.ofSeconds(15)));
             REDIS_CLUSTER.start();
 
             Config config = new Config();
