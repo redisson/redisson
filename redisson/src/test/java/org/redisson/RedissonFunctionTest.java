@@ -54,7 +54,7 @@ public class RedissonFunctionTest extends RedisDockerTest {
             testMap.put("i", "j");
             testMap.put("k", "l");
 
-            RFunction f = redisson.getFunction();
+            RFunction f = r.getFunction();
             f.flush();
             f.load("lib", "redis.register_function('myfun', function(keys, args) return args[1] end)");
 
@@ -65,7 +65,7 @@ public class RedissonFunctionTest extends RedisDockerTest {
                 throw new RuntimeException(e);
             }
 
-            RBatch batch = redisson.createBatch();
+            RBatch batch = r.createBatch();
             RFunctionAsync function = batch.getFunction();
             for (Map.Entry<String, Object> property : testMap.entrySet()) {
                 List<Object> key = Collections.singletonList(property.getKey());
