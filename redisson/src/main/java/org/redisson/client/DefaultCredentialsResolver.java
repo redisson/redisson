@@ -27,7 +27,7 @@ import java.util.concurrent.CompletionStage;
  * @author Nikita Koksharov
  *
  */
-public class DefaultCredentialsResolver implements CredentialsResolver {
+public final class DefaultCredentialsResolver implements CredentialsResolver {
 
     private final CompletionStage<Credentials> future = CompletableFuture.completedFuture(new Credentials());
 
