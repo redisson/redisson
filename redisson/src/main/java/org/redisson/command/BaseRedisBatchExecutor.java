@@ -67,7 +67,7 @@ public class BaseRedisBatchExecutor<V, R> extends RedisExecutor<V, R> {
             result = (int) options.getResponseTimeout();
         }
         if (options.getSyncSlaves() > 0) {
-            result += options.getSyncTimeout();
+            result += (int) options.getSyncTimeout();
         }
         return result;
     }
