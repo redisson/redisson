@@ -222,7 +222,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             String hostname = hostnameMapper.apply(uri);
             CompletableFuture<RedisClient> masterFuture = masterSlaveEntry.setupMasterEntry(uri, hostname);
             try {
-                masterFuture.get(config.getConnectTimeout(), TimeUnit.MILLISECONDS);
+                masterFuture.get(config.getConnectTimeout()*config.getMasterConnectionMinimumIdleSize(), TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             } catch (ExecutionException | TimeoutException e) {
@@ -232,7 +232,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             if (!config.isSlaveNotUsed()) {
                 CompletableFuture<Void> fs = masterSlaveEntry.initSlaveBalancer(disconnectedSlaves, hostnameMapper);
                 try {
-                    fs.get(config.getConnectTimeout(), TimeUnit.MILLISECONDS);
+                    fs.get(config.getConnectTimeout()*config.getSlaveConnectionMinimumIdleSize(), TimeUnit.MILLISECONDS);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 } catch (ExecutionException | TimeoutException e) {
