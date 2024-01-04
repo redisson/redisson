@@ -69,7 +69,7 @@ public class RedisCommonBatchExecutor extends RedisExecutor<Object, Void> {
             result = (int) options.getResponseTimeout();
         }
         if (options.getSyncSlaves() > 0) {
-            result += options.getSyncTimeout();
+            result += (int) options.getSyncTimeout();
         }
         return result;
     }
