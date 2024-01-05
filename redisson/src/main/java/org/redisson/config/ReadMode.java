@@ -23,7 +23,8 @@ package org.redisson.config;
 public enum ReadMode {
 
     /**
-     * Read from slave nodes
+     * Read from slave nodes.
+     * Node is selected using specified <code>loadBalancer</code> in Redisson configuration.
      */
     SLAVE,
 
@@ -33,7 +34,8 @@ public enum ReadMode {
     MASTER,
 
     /**
-     * Read from master and slave nodes
+     * Read from master and slave nodes.
+     * Node is selected using specified <code>loadBalancer</code> in Redisson configuration.
      */
     MASTER_SLAVE,
 
