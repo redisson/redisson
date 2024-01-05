@@ -75,7 +75,7 @@
                     <archive>  
                         <manifestEntries>
                             <Build-Time>${maven.build.timestamp}</Build-Time>
-                            <Automatic-Module-Name>redisson.hibernate53</Automatic-Module-Name>
+                            <Automatic-Module-Name>redisson.hibernate6</Automatic-Module-Name>
                         </manifestEntries>
                     </archive> 
                 </configuration>
