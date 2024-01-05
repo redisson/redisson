@@ -33,10 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Deque;
 import java.util.Queue;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -311,8 +308,8 @@ public class RedisConnection implements RedisCommands {
         }
     }
     
-    public CompletableFuture<Void> forceFastReconnectAsync() {
-        CompletableFuture<Void> promise = new CompletableFuture<Void>();
+    public CompletionStage<Void> forceFastReconnectAsync() {
+        CompletableFuture<Void> promise = new CompletableFuture<>();
         fastReconnect = promise;
         closeInternal();
         return promise;
