@@ -879,5 +879,23 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @return list of info objects
      */
     RFuture<List<StreamConsumer>> listConsumersAsync(String groupName);
-    
+
+    /**
+     * Adds object event listener
+     *
+     * @see org.redisson.api.listener.StreamAddListener
+     * @see org.redisson.api.listener.StreamRemoveListener
+     * @see org.redisson.api.listener.StreamCreateGroupListener
+     * @see org.redisson.api.listener.StreamRemoveGroupListener
+     * @see org.redisson.api.listener.StreamCreateConsumerListener
+     * @see org.redisson.api.listener.StreamRemoveConsumerListener
+     * @see org.redisson.api.listener.StreamTrimListener
+     * @see org.redisson.api.ExpiredObjectListener
+     * @see org.redisson.api.DeletedObjectListener
+     *
+     * @param listener object event listener
+     * @return listener id
+     */
+    RFuture<Integer> addListenerAsync(ObjectListener listener);
+
 }

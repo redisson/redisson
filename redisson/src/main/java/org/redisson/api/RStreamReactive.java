@@ -15,12 +15,12 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.stream.*;
+import reactor.core.publisher.Mono;
+
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
-import org.redisson.api.stream.*;
-import reactor.core.publisher.Mono;
 
 /**
  * Reactive interface for Redis Stream object.
@@ -817,5 +817,23 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @return map
      */
     Mono<Map<StreamMessageId, Map<K, V>>> pendingRange(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, int count);
-    
+
+    /**
+     * Adds object event listener
+     *
+     * @see org.redisson.api.listener.StreamAddListener
+     * @see org.redisson.api.listener.StreamRemoveListener
+     * @see org.redisson.api.listener.StreamCreateGroupListener
+     * @see org.redisson.api.listener.StreamRemoveGroupListener
+     * @see org.redisson.api.listener.StreamCreateConsumerListener
+     * @see org.redisson.api.listener.StreamRemoveConsumerListener
+     * @see org.redisson.api.listener.StreamTrimListener
+     * @see org.redisson.api.ExpiredObjectListener
+     * @see org.redisson.api.DeletedObjectListener
+     *
+     * @param listener object event listener
+     * @return listener id
+     */
+    Mono<Integer> addListener(ObjectListener listener);
+
 }

@@ -19,6 +19,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.*;
+import org.redisson.api.listener.*;
 import org.redisson.api.stream.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
@@ -1396,6 +1397,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         return get(trimAsync(args));
     }
 
+    @Override
     public RFuture<Long> trimAsync(StreamTrimArgs args) {
         return trimAsync(args, true);
     }
@@ -1434,8 +1436,57 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         return get(trimNonStrictAsync(args));
     }
 
+    @Override
     public RFuture<Long> trimNonStrictAsync(StreamTrimArgs args) {
         return trimAsync(args, false);
     }
 
+    @Override
+    public RFuture<Integer> addListenerAsync(ObjectListener listener) {
+        if (listener instanceof StreamAddListener) {
+            return addListenerAsync("__keyevent@*:xadd", (StreamAddListener) listener, StreamAddListener::onAdd);
+        }
+        if (listener instanceof StreamRemoveListener) {
+            return addListenerAsync("__keyevent@*:xdel", (StreamRemoveListener) listener, StreamRemoveListener::onRemove);
+        }
+        if (listener instanceof StreamCreateConsumerListener) {
+            return addListenerAsync("__keyevent@*:xgroup-createconsumer", (StreamCreateConsumerListener) listener, StreamCreateConsumerListener::onCreate);
+        }
+        if (listener instanceof StreamRemoveConsumerListener) {
+            return addListenerAsync("__keyevent@*:xgroup-delconsumer", (StreamRemoveConsumerListener) listener, StreamRemoveConsumerListener::onRemove);
+        }
+        if (listener instanceof StreamCreateGroupListener) {
+            return addListenerAsync("__keyevent@*:xgroup-create", (StreamCreateGroupListener) listener, StreamCreateGroupListener::onCreate);
+        }
+        if (listener instanceof StreamRemoveGroupListener) {
+            return addListenerAsync("__keyevent@*:xgroup-destroy", (StreamRemoveGroupListener) listener, StreamRemoveGroupListener::onRemove);
+        }
+        return super.addListenerAsync(listener);
+    }
+
+    @Override
+    public int addListener(ObjectListener listener) {
+        if (listener instanceof StreamAddListener) {
+            return addListener("__keyevent@*:xadd", (StreamAddListener) listener, StreamAddListener::onAdd);
+        }
+        if (listener instanceof StreamRemoveListener) {
+            return addListener("__keyevent@*:xdel", (StreamRemoveListener) listener, StreamRemoveListener::onRemove);
+        }
+        if (listener instanceof StreamCreateConsumerListener) {
+            return addListener("__keyevent@*:xgroup-createconsumer", (StreamCreateConsumerListener) listener, StreamCreateConsumerListener::onCreate);
+        }
+        if (listener instanceof StreamRemoveConsumerListener) {
+            return addListener("__keyevent@*:xgroup-delconsumer", (StreamRemoveConsumerListener) listener, StreamRemoveConsumerListener::onRemove);
+        }
+        if (listener instanceof StreamCreateGroupListener) {
+            return addListener("__keyevent@*:xgroup-create", (StreamCreateGroupListener) listener, StreamCreateGroupListener::onCreate);
+        }
+        if (listener instanceof StreamRemoveGroupListener) {
+            return addListener("__keyevent@*:xgroup-destroy", (StreamRemoveGroupListener) listener, StreamRemoveGroupListener::onRemove);
+        }
+        if (listener instanceof StreamTrimListener) {
+            return addListener("__keyevent@*:xtrim", (StreamTrimListener) listener, StreamTrimListener::onTrim);
+        }
+        return super.addListener(listener);
+    }
 }

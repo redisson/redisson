@@ -15,13 +15,13 @@
  */
 package org.redisson.api;
 
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 import org.redisson.api.stream.*;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Reactive interface for Redis Stream object.
@@ -818,5 +818,23 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * @return map
      */
     Single<Map<StreamMessageId, Map<K, V>>> pendingRange(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, int count);
-    
+
+    /**
+     * Adds object event listener
+     *
+     * @see org.redisson.api.listener.StreamAddListener
+     * @see org.redisson.api.listener.StreamRemoveListener
+     * @see org.redisson.api.listener.StreamCreateGroupListener
+     * @see org.redisson.api.listener.StreamRemoveGroupListener
+     * @see org.redisson.api.listener.StreamCreateConsumerListener
+     * @see org.redisson.api.listener.StreamRemoveConsumerListener
+     * @see org.redisson.api.listener.StreamTrimListener
+     * @see org.redisson.api.ExpiredObjectListener
+     * @see org.redisson.api.DeletedObjectListener
+     *
+     * @param listener object event listener
+     * @return listener id
+     */
+    Single<Integer> addListener(ObjectListener listener);
+
 }

@@ -4,16 +4,40 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
+import org.redisson.api.listener.StreamAddListener;
 import org.redisson.api.stream.*;
 import org.redisson.client.RedisException;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonStreamTest extends RedisDockerTest {
+
+    @Test
+    public void testAddListener() {
+        testWithParams(redisson -> {
+            RStream<String, String> ss = redisson.getStream("test");
+            ss.createGroup(StreamCreateGroupArgs.name("test-group").makeStream());
+            CountDownLatch latch = new CountDownLatch(1);
+            ss.addListener(new StreamAddListener() {
+                @Override
+                public void onAdd(String name) {
+                    latch.countDown();
+                }
+            });
+            ss.add(StreamAddArgs.entry("test1", "test2"));
+
+            try {
+                assertThat(latch.await(1, TimeUnit.SECONDS)).isTrue();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }, NOTIFY_KEYSPACE_EVENTS, "Et");
+    }
 
     @Test
     public void testEmptyMap() {
