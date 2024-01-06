@@ -115,14 +115,6 @@ public class PublishSubscribeService {
 
     private boolean shardingSupported = false;
 
-    public static final Map<PubSubType, PubSubType> SUBSCRIBE2UNSUBSCRIBE = new HashMap<>();
-
-    static {
-        SUBSCRIBE2UNSUBSCRIBE.put(PubSubType.SUBSCRIBE, PubSubType.UNSUBSCRIBE);
-        SUBSCRIBE2UNSUBSCRIBE.put(PubSubType.SSUBSCRIBE, PubSubType.SUNSUBSCRIBE);
-        SUBSCRIBE2UNSUBSCRIBE.put(PubSubType.PSUBSCRIBE, PubSubType.PUNSUBSCRIBE);
-    }
-
     public PublishSubscribeService(ConnectionManager connectionManager) {
         super();
         this.connectionManager = connectionManager;
