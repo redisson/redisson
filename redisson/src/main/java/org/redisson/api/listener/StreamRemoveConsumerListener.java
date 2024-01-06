@@ -32,6 +32,6 @@ public interface StreamRemoveConsumerListener extends ObjectListener {
      *
      * @param name object name
      */
-    void onRemove(String name);
+    void onRemoveConsumer(String name);
 
 }

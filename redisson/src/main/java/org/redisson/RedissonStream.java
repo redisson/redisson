@@ -1450,16 +1450,16 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
             return addListenerAsync("__keyevent@*:xdel", (StreamRemoveListener) listener, StreamRemoveListener::onRemove);
         }
         if (listener instanceof StreamCreateConsumerListener) {
-            return addListenerAsync("__keyevent@*:xgroup-createconsumer", (StreamCreateConsumerListener) listener, StreamCreateConsumerListener::onCreate);
+            return addListenerAsync("__keyevent@*:xgroup-createconsumer", (StreamCreateConsumerListener) listener, StreamCreateConsumerListener::onCreateConsumer);
         }
         if (listener instanceof StreamRemoveConsumerListener) {
-            return addListenerAsync("__keyevent@*:xgroup-delconsumer", (StreamRemoveConsumerListener) listener, StreamRemoveConsumerListener::onRemove);
+            return addListenerAsync("__keyevent@*:xgroup-delconsumer", (StreamRemoveConsumerListener) listener, StreamRemoveConsumerListener::onRemoveConsumer);
         }
         if (listener instanceof StreamCreateGroupListener) {
-            return addListenerAsync("__keyevent@*:xgroup-create", (StreamCreateGroupListener) listener, StreamCreateGroupListener::onCreate);
+            return addListenerAsync("__keyevent@*:xgroup-create", (StreamCreateGroupListener) listener, StreamCreateGroupListener::onCreateGroup);
         }
         if (listener instanceof StreamRemoveGroupListener) {
-            return addListenerAsync("__keyevent@*:xgroup-destroy", (StreamRemoveGroupListener) listener, StreamRemoveGroupListener::onRemove);
+            return addListenerAsync("__keyevent@*:xgroup-destroy", (StreamRemoveGroupListener) listener, StreamRemoveGroupListener::onRemoveGroup);
         }
         return super.addListenerAsync(listener);
     }
@@ -1473,16 +1473,16 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
             return addListener("__keyevent@*:xdel", (StreamRemoveListener) listener, StreamRemoveListener::onRemove);
         }
         if (listener instanceof StreamCreateConsumerListener) {
-            return addListener("__keyevent@*:xgroup-createconsumer", (StreamCreateConsumerListener) listener, StreamCreateConsumerListener::onCreate);
+            return addListener("__keyevent@*:xgroup-createconsumer", (StreamCreateConsumerListener) listener, StreamCreateConsumerListener::onCreateConsumer);
         }
         if (listener instanceof StreamRemoveConsumerListener) {
-            return addListener("__keyevent@*:xgroup-delconsumer", (StreamRemoveConsumerListener) listener, StreamRemoveConsumerListener::onRemove);
+            return addListener("__keyevent@*:xgroup-delconsumer", (StreamRemoveConsumerListener) listener, StreamRemoveConsumerListener::onRemoveConsumer);
         }
         if (listener instanceof StreamCreateGroupListener) {
-            return addListener("__keyevent@*:xgroup-create", (StreamCreateGroupListener) listener, StreamCreateGroupListener::onCreate);
+            return addListener("__keyevent@*:xgroup-create", (StreamCreateGroupListener) listener, StreamCreateGroupListener::onCreateGroup);
         }
         if (listener instanceof StreamRemoveGroupListener) {
-            return addListener("__keyevent@*:xgroup-destroy", (StreamRemoveGroupListener) listener, StreamRemoveGroupListener::onRemove);
+            return addListener("__keyevent@*:xgroup-destroy", (StreamRemoveGroupListener) listener, StreamRemoveGroupListener::onRemoveGroup);
         }
         if (listener instanceof StreamTrimListener) {
             return addListener("__keyevent@*:xtrim", (StreamTrimListener) listener, StreamTrimListener::onTrim);

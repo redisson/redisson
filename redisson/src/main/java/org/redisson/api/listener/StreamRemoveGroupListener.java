@@ -32,6 +32,6 @@ public interface StreamRemoveGroupListener extends ObjectListener {
      *
      * @param name object name
      */
-    void onRemove(String name);
+    void onRemoveGroup(String name);
 
 }

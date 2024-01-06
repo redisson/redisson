@@ -32,6 +32,6 @@ public interface StreamCreateGroupListener extends ObjectListener {
      *
      * @param name object name
      */
-    void onCreate(String name);
+    void onCreateGroup(String name);
 
 }

@@ -32,6 +32,6 @@ public interface StreamCreateConsumerListener extends ObjectListener {
      *
      * @param name object name
      */
-    void onCreate(String name);
+    void onCreateConsumer(String name);
 
 }
