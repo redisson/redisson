@@ -1,5 +1,6 @@
 package org.redisson;
 
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
@@ -17,6 +18,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -1767,20 +1769,30 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
     public void testAddListener() {
         testWithParams(redisson -> {
             RScoredSortedSet<Integer> ss = redisson.getScoredSortedSet("test");
-            CountDownLatch latch = new CountDownLatch(1);
-            ss.addListener(new ScoredSortedSetAddListener() {
+            AtomicInteger latch = new AtomicInteger();
+            int id = ss.addListener(new ScoredSortedSetAddListener() {
                 @Override
                 public void onAdd(String name) {
-                    latch.countDown();
+                    latch.incrementAndGet();
                 }
             });
             ss.add(1, 1);
 
+            Awaitility.await().atMost(Duration.ofSeconds(1)).untilAsserted(() -> {
+                assertThat(latch.get()).isEqualTo(1);
+            });
+
+            ss.removeListener(id);
+
+            ss.add(1, 1);
+
             try {
-                assertThat(latch.await(1, TimeUnit.SECONDS)).isTrue();
+                Thread.sleep(1000);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
+
+            assertThat(latch.get()).isEqualTo(1);
         }, NOTIFY_KEYSPACE_EVENTS, "Ez");
     }
 

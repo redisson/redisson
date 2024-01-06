@@ -896,5 +896,17 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
         return super.addListenerAsync(listener);
     }
 
+    @Override
+    public void removeListener(int listenerId) {
+        removeListener(listenerId, "__keyevent@*:sadd", "__keyevent@*:srem", "__keyevent@*:spop");
+        super.removeListener(listenerId);
+    }
+
+    @Override
+    public RFuture<Void> removeListenerAsync(int listenerId) {
+        return removeListenerAsync(super.removeListenerAsync(listenerId), listenerId,
+                "__keyevent@*:sadd", "__keyevent@*:srem", "__keyevent@*:spop");
+    }
+
 
 }

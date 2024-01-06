@@ -34,7 +34,6 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -2066,19 +2065,14 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public void removeListener(int listenerId) {
-        RPatternTopic expiredTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:zadd");
-        expiredTopic.removeListener(listenerId);
-
+        removeListener(listenerId, "__keyevent@*:zadd", "__keyevent@*:zrem");
         super.removeListener(listenerId);
     }
 
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
-        RPatternTopic setTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:zadd");
-        RFuture<Void> f1 = setTopic.removeListenerAsync(listenerId);
-        RFuture<Void> f2 = super.removeListenerAsync(listenerId);
-        CompletableFuture<Void> f = CompletableFuture.allOf(f1.toCompletableFuture(), f2.toCompletableFuture());
-        return new CompletableFutureWrapper<>(f);
+        return removeListenerAsync(super.removeListenerAsync(listenerId), listenerId,
+                "__keyevent@*:zadd", "__keyevent@*:zrem");
     }
 
 }
