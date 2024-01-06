@@ -18,18 +18,14 @@ package org.redisson;
 import org.redisson.api.ObjectListener;
 import org.redisson.api.RBucket;
 import org.redisson.api.RFuture;
-import org.redisson.api.RPatternTopic;
 import org.redisson.api.listener.SetObjectListener;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.CompletableFutureWrapper;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
