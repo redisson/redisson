@@ -849,46 +849,15 @@ public class BaseRedissonList<V> extends RedissonExpirable {
 
     @Override
     public void removeListener(int listenerId) {
-        RPatternTopic addTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:rpush");
-        addTopic.removeListener(listenerId);
-
-        RPatternTopic remTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:lrem");
-        remTopic.removeListener(listenerId);
-
-        RPatternTopic trimTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:ltrim");
-        trimTopic.removeListener(listenerId);
-
-        RPatternTopic setTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:lset");
-        setTopic.removeListener(listenerId);
-
-        RPatternTopic insertTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:linsert");
-        insertTopic.removeListener(listenerId);
-
+        removeListener(listenerId, "__keyevent@*:rpush", "__keyevent@*:lrem",
+                "__keyevent@*:ltrim", "__keyevent@*:lset", "__keyevent@*:linsert");
         super.removeListener(listenerId);
     }
 
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
-        RPatternTopic addTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:rpush");
-        RFuture<Void> f1 = addTopic.removeListenerAsync(listenerId);
-
-        RPatternTopic remTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:lrem");
-        RFuture<Void> f2 = remTopic.removeListenerAsync(listenerId);
-
-        RPatternTopic trimTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:ltrim");
-        RFuture<Void> f3 = trimTopic.removeListenerAsync(listenerId);
-
-        RPatternTopic setTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:lset");
-        RFuture<Void> f4 = setTopic.removeListenerAsync(listenerId);
-
-        RPatternTopic insertTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:linsert");
-        RFuture<Void> f5 = insertTopic.removeListenerAsync(listenerId);
-
-        RFuture<Void> f6 = super.removeListenerAsync(listenerId);
-
-        CompletableFuture<Void> f = CompletableFuture.allOf(f1.toCompletableFuture(), f2.toCompletableFuture(), f3.toCompletableFuture(),
-                f4.toCompletableFuture(), f5.toCompletableFuture(), f5.toCompletableFuture(), f6.toCompletableFuture());
-        return new CompletableFutureWrapper<>(f);
+        return removeListenerAsync(super.removeListenerAsync(listenerId), listenerId,
+                "__keyevent@*:rpush", "__keyevent@*:lrem", "__keyevent@*:ltrim", "__keyevent@*:lset", "__keyevent@*:linsert");
     }
 
     public boolean removeIf(Predicate<? super V> filter) {

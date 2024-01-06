@@ -420,6 +420,25 @@ public abstract class RedissonObject implements RObject {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.OBJECT_IDLETIME, getRawName());
     }
 
+    protected final void removeListener(int listenerId, String... names) {
+        for (String name : names) {
+            RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, name);
+            topic.removeListener(listenerId);
+        }
+    }
+
+    protected final RFuture<Void> removeListenerAsync(RFuture<Void> future, int listenerId, String... names) {
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        futures.add(future.toCompletableFuture());
+        for (String name : names) {
+            RPatternTopic setTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, name);
+            RFuture<Void> f1 = setTopic.removeListenerAsync(listenerId);
+            futures.add(f1.toCompletableFuture());
+        }
+        CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        return new CompletableFutureWrapper<>(f);
+    }
+
     protected final <T extends ObjectListener> int addListener(String name, T listener, BiConsumer<T, String> consumer) {
         RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, name);
         return topic.addListener(String.class, (pattern, channel, msg) -> {

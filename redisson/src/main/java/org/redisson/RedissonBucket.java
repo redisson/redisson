@@ -376,19 +376,13 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
 
     @Override
     public void removeListener(int listenerId) {
-        RPatternTopic expiredTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:set");
-        expiredTopic.removeListener(listenerId);
-
+        removeListener(listenerId, "__keyevent@*:set");
         super.removeListener(listenerId);
     }
 
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
-        RPatternTopic setTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:set");
-        RFuture<Void> f1 = setTopic.removeListenerAsync(listenerId);
-        RFuture<Void> f2 = super.removeListenerAsync(listenerId);
-        CompletableFuture<Void> f = CompletableFuture.allOf(f1.toCompletableFuture(), f2.toCompletableFuture());
-        return new CompletableFutureWrapper<>(f);
+        return removeListenerAsync(super.removeListenerAsync(listenerId), listenerId, "__keyevent@*:set");
     }
 
 }
