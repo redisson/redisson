@@ -17,14 +17,16 @@ package org.redisson.pubsub;
 
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
-import org.redisson.misc.WrappedLock;
 import org.redisson.PubSubMessageListener;
 import org.redisson.PubSubPatternMessageListener;
 import org.redisson.client.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 import org.redisson.client.protocol.pubsub.PubSubType;
+import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.ServiceManager;
+import org.redisson.misc.AsyncSemaphore;
+import org.redisson.misc.WrappedLock;
 
 import java.util.EventListener;
 import java.util.LinkedList;
@@ -54,11 +56,13 @@ public class PubSubConnectionEntry {
     private static final Queue<RedisPubSubListener<?>> EMPTY_QUEUE = new LinkedList<>();
 
     private final ServiceManager serviceManager;
+    private final PublishSubscribeService subscribeService;
 
-    public PubSubConnectionEntry(RedisPubSubConnection conn, ServiceManager serviceManager) {
+    public PubSubConnectionEntry(RedisPubSubConnection conn, ConnectionManager connectionManager) {
         super();
         this.conn = conn;
-        this.serviceManager = serviceManager;
+        this.serviceManager = connectionManager.getServiceManager();
+        this.subscribeService = connectionManager.getSubscribeService();
         this.subscribedChannelsAmount = new AtomicInteger(serviceManager.getConfig().getSubscriptionsPerConnection());
     }
 
@@ -161,9 +165,31 @@ public class PubSubConnectionEntry {
         return subscribedChannelsAmount.get() == serviceManager.getConfig().getSubscriptionsPerConnection();
     }
 
-    public void subscribe(Codec codec, PubSubType type, ChannelName channelName, CompletableFuture<Void> subscribeFuture) {
-        ChannelFuture future;
+    public void subscribe(Codec codec, ChannelName channelName, CompletableFuture<PubSubConnectionEntry> pm,
+                          PubSubType type, AsyncSemaphore lock, RedisPubSubListener<?>[] listeners) {
+        CompletableFuture<PubSubConnectionEntry> pp = new CompletableFuture<>();
+        pp.whenComplete((r, e) -> {
+            if (e != null) {
+                PubSubType unsubscribeType = PublishSubscribeService.SUBSCRIBE2UNSUBSCRIBE.get(type);
+                CompletableFuture<Codec> f = subscribeService.unsubscribe(channelName, unsubscribeType);
+                f.whenComplete((rr, ee) -> {
+                    pm.completeExceptionally(e);
+                });
+                return;
+            }
+
+            pm.complete(r);
+        });
+
+        CompletableFuture<Void> subscribeFuture = addListeners(channelName, pp, type, lock, listeners);
         CompletableFuture<Void> promise = new CompletableFuture<>();
+        promise.whenComplete((r, ex) -> {
+            if (ex != null) {
+                subscribeFuture.completeExceptionally(ex);
+            }
+        });
+
+        ChannelFuture future;
         if (PubSubType.SUBSCRIBE == type) {
             future = conn.subscribe(promise, codec, channelName);
         } else if (PubSubType.SSUBSCRIBE == type) {
@@ -171,13 +197,6 @@ public class PubSubConnectionEntry {
         } else {
             future = conn.psubscribe(promise, codec, channelName);
         }
-
-        promise.whenComplete((r, ex) -> {
-            if (ex != null) {
-                subscribeFuture.completeExceptionally(ex);
-            }
-        });
-
         future.addListener((ChannelFutureListener) future1 -> {
             if (!future1.isSuccess()) {
                 subscribeFuture.completeExceptionally(future1.cause());
@@ -192,7 +211,7 @@ public class PubSubConnectionEntry {
         });
     }
 
-    public SubscribeListener getSubscribeFuture(ChannelName channel, PubSubType type) {
+    private SubscribeListener getSubscribeFuture(ChannelName channel, PubSubType type) {
         return subscribeChannelListeners.computeIfAbsent(channel, k -> {
             SubscribeListener listener = new SubscribeListener(channel, type);
             conn.addListener(listener);
@@ -257,4 +276,41 @@ public class PubSubConnectionEntry {
     public String toString() {
         return "PubSubConnectionEntry [subscribedChannelsAmount=" + subscribedChannelsAmount + ", conn=" + conn + "]";
     }
+
+    public CompletableFuture<Void> addListeners(ChannelName channelName,
+                                                 CompletableFuture<PubSubConnectionEntry> promise,
+                                                 PubSubType type, AsyncSemaphore lock,
+                                                 RedisPubSubListener<?>... listeners) {
+        for (RedisPubSubListener<?> listener : listeners) {
+            addListener(channelName, listener);
+        }
+        SubscribeListener list = getSubscribeFuture(channelName, type);
+        CompletableFuture<Void> subscribeFuture = list.getSuccessFuture();
+
+        subscribeFuture.whenComplete((res, e) -> {
+            if (e != null) {
+                promise.completeExceptionally(e);
+                lock.release();
+                return;
+            }
+
+            if (!promise.complete(this)) {
+                for (RedisPubSubListener<?> listener : listeners) {
+                    removeListener(channelName, listener);
+                }
+                if (!hasListeners(channelName)) {
+                    subscribeService.unsubscribeLocked(type, channelName)
+                            .whenComplete((r, ex) -> {
+                                lock.release();
+                            });
+                } else {
+                    lock.release();
+                }
+            } else {
+                lock.release();
+            }
+        });
+        return subscribeFuture;
+    }
+
 }

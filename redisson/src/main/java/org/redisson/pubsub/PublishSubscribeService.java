@@ -115,7 +115,13 @@ public class PublishSubscribeService {
 
     private boolean shardingSupported = false;
 
-    private final Map<PubSubType, PubSubType> subscribe2unsubscribe = new HashMap<>();
+    public static final Map<PubSubType, PubSubType> SUBSCRIBE2UNSUBSCRIBE = new HashMap<>();
+
+    static {
+        SUBSCRIBE2UNSUBSCRIBE.put(PubSubType.SUBSCRIBE, PubSubType.UNSUBSCRIBE);
+        SUBSCRIBE2UNSUBSCRIBE.put(PubSubType.SSUBSCRIBE, PubSubType.SUNSUBSCRIBE);
+        SUBSCRIBE2UNSUBSCRIBE.put(PubSubType.PSUBSCRIBE, PubSubType.PUNSUBSCRIBE);
+    }
 
     public PublishSubscribeService(ConnectionManager connectionManager) {
         super();
@@ -124,10 +130,6 @@ public class PublishSubscribeService {
         for (int i = 0; i < locks.length; i++) {
             locks[i] = new AsyncSemaphore(1);
         }
-
-        subscribe2unsubscribe.put(PubSubType.SUBSCRIBE, PubSubType.UNSUBSCRIBE);
-        subscribe2unsubscribe.put(PubSubType.SSUBSCRIBE, PubSubType.SUNSUBSCRIBE);
-        subscribe2unsubscribe.put(PubSubType.PSUBSCRIBE, PubSubType.PUNSUBSCRIBE);
     }
 
     public LockPubSub getLockPubSub() {
@@ -370,7 +372,7 @@ public class PublishSubscribeService {
                                     PubSubType type, AsyncSemaphore lock, AtomicInteger attempts, RedisPubSubListener<?>... listeners) {
         PubSubConnectionEntry connEntry = name2PubSubConnection.get(new PubSubKey(channelName, entry));
         if (connEntry != null) {
-            addListeners(channelName, promise, type, lock, connEntry, listeners);
+            connEntry.addListeners(channelName, promise, type, lock, listeners);
             return;
         }
 
@@ -401,7 +403,7 @@ public class PublishSubscribeService {
                 freeEntry.release();
                 freePubSubLock.release();
 
-                addListeners(channelName, promise, type, lock, oldEntry, listeners);
+                oldEntry.addListeners(channelName, promise, type, lock, listeners);
                 return;
             }
 
@@ -413,62 +415,13 @@ public class PublishSubscribeService {
             }
             freePubSubLock.release();
 
-            CompletableFuture<PubSubConnectionEntry> pp = new CompletableFuture<>();
-            pp.whenComplete((r, e) -> {
-                if (e != null) {
-                    PubSubType unsubscribeType = subscribe2unsubscribe.get(type);
-                    CompletableFuture<Codec> f = unsubscribe(channelName, unsubscribeType);
-                    f.whenComplete((rr, ee) -> {
-                        promise.completeExceptionally(e);
-                    });
-                    return;
-                }
-
-                promise.complete(r);
-            });
-            CompletableFuture<Void> subscribeFuture = addListeners(channelName, pp, type, lock, freeEntry, listeners);
-            freeEntry.subscribe(codec, type, channelName, subscribeFuture);
+            freeEntry.subscribe(codec, channelName, promise, type, lock, listeners);
         });
     }
 
     private MasterSlaveEntry getEntry(ChannelName channelName) {
         int slot = connectionManager.calcSlot(channelName.getName());
         return connectionManager.getWriteEntry(slot);
-    }
-
-    private CompletableFuture<Void> addListeners(ChannelName channelName, CompletableFuture<PubSubConnectionEntry> promise,
-            PubSubType type, AsyncSemaphore lock, PubSubConnectionEntry connEntry,
-            RedisPubSubListener<?>... listeners) {
-        for (RedisPubSubListener<?> listener : listeners) {
-            connEntry.addListener(channelName, listener);
-        }
-        SubscribeListener list = connEntry.getSubscribeFuture(channelName, type);
-        CompletableFuture<Void> subscribeFuture = list.getSuccessFuture();
-
-        subscribeFuture.whenComplete((res, e) -> {
-            if (e != null) {
-                promise.completeExceptionally(e);
-                lock.release();
-                return;
-            }
-
-            if (!promise.complete(connEntry)) {
-                for (RedisPubSubListener<?> listener : listeners) {
-                    connEntry.removeListener(channelName, listener);
-                }
-                if (!connEntry.hasListeners(channelName)) {
-                    unsubscribeLocked(type, channelName)
-                        .whenComplete((r, ex) -> {
-                            lock.release();
-                        });
-                } else {
-                    lock.release();
-                }
-            } else {
-                lock.release();
-            }
-        });
-        return subscribeFuture;
     }
 
     private void connect(Codec codec, ChannelName channelName,
@@ -495,17 +448,17 @@ public class PublishSubscribeService {
 
         connFuture.thenAccept(conn -> {
             freePubSubLock.acquire().thenAccept(c -> {
-                PubSubConnectionEntry entry = new PubSubConnectionEntry(conn, connectionManager.getServiceManager());
+                PubSubConnectionEntry entry = new PubSubConnectionEntry(conn, connectionManager);
                 int remainFreeAmount = entry.tryAcquire();
 
                 PubSubKey key = new PubSubKey(channelName, msEntry);
                 PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(key, entry);
                 if (oldEntry != null) {
-                    msEntry.returnPubSubConnection(conn);
+                    msEntry.returnPubSubConnection(entry.getConnection());
 
                     freePubSubLock.release();
 
-                    addListeners(channelName, promise, type, lock, oldEntry, listeners);
+                    oldEntry.addListeners(channelName, promise, type, lock, listeners);
                     return;
                 }
 
@@ -518,21 +471,7 @@ public class PublishSubscribeService {
                 }
                 freePubSubLock.release();
 
-                CompletableFuture<PubSubConnectionEntry> pp = new CompletableFuture<>();
-                pp.whenComplete((r, e) -> {
-                    if (e != null) {
-                        PubSubType unsubscribeType = subscribe2unsubscribe.get(type);
-                        CompletableFuture<Codec> f = unsubscribe(channelName, unsubscribeType);
-                        f.whenComplete((rr, ee) -> {
-                            promise.completeExceptionally(e);
-                        });
-                        return;
-                    }
-
-                    promise.complete(r);
-                });
-                CompletableFuture<Void> subscribeFuture = addListeners(channelName, pp, type, lock, entry, listeners);
-                entry.subscribe(codec, type, channelName, subscribeFuture);
+                entry.subscribe(codec, channelName, promise, type, lock, listeners);
             });
         });
     }
