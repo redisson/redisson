@@ -1489,4 +1489,20 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         }
         return super.addListener(listener);
     }
+
+    @Override
+    public void removeListener(int listenerId) {
+        removeListener(listenerId, "__keyevent@*:xadd", "__keyevent@*:xdel", "__keyevent@*:xgroup-createconsumer",
+                            "__keyevent@*:xgroup-delconsumer", "__keyevent@*:xgroup-create", "__keyevent@*:xgroup-destroy", "__keyevent@*:xtrim");
+        super.removeListener(listenerId);
+    }
+
+    @Override
+    public RFuture<Void> removeListenerAsync(int listenerId) {
+        return removeListenerAsync(super.removeListenerAsync(listenerId), listenerId,
+                "__keyevent@*:xadd", "__keyevent@*:xdel", "__keyevent@*:xgroup-createconsumer",
+                        "__keyevent@*:xgroup-delconsumer", "__keyevent@*:xgroup-create", "__keyevent@*:xgroup-destroy", "__keyevent@*:xtrim");
+    }
+
+
 }
