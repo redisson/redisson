@@ -390,6 +390,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             } else if (error.startsWith("NOAUTH")) {
                 data.tryFailure(new RedisAuthRequiredException(error
                         + ". channel: " + channel + " data: " + data));
+            } else if (error.startsWith("WRONGPASS")) {
+                data.tryFailure(new RedisWrongPasswordException(error
+                        + ". channel: " + channel + " data: " + data));
             } else if (error.startsWith("CLUSTERDOWN")) {
                 data.tryFailure(new RedisClusterDownException(error
                         + ". channel: " + channel + " data: " + data));
