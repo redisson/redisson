@@ -429,10 +429,12 @@ public abstract class RedissonObject implements RObject {
 
     protected final RFuture<Void> removeListenerAsync(RFuture<Void> future, int listenerId, String... names) {
         List<CompletableFuture<Void>> futures = new ArrayList<>();
-        futures.add(future.toCompletableFuture());
+        if (future != null) {
+            futures.add(future.toCompletableFuture());
+        }
         for (String name : names) {
-            RPatternTopic setTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, name);
-            RFuture<Void> f1 = setTopic.removeListenerAsync(listenerId);
+            RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, name);
+            RFuture<Void> f1 = topic.removeListenerAsync(listenerId);
             futures.add(f1.toCompletableFuture());
         }
         CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
@@ -481,22 +483,12 @@ public abstract class RedissonObject implements RObject {
     
     @Override
     public void removeListener(int listenerId) {
-        RPatternTopic expiredTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:expired");
-        expiredTopic.removeListener(listenerId);
-
-        RPatternTopic deletedTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:del");
-        deletedTopic.removeListener(listenerId);
+        removeListener(listenerId, "__keyevent@*:expired", "__keyevent@*:del");
     }
     
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
-        RPatternTopic expiredTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:expired");
-        RFuture<Void> f1 = expiredTopic.removeListenerAsync(listenerId);
-
-        RPatternTopic deletedTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:del");
-        RFuture<Void> f2 = deletedTopic.removeListenerAsync(listenerId);
-        CompletableFuture<Void> f = CompletableFuture.allOf(f1.toCompletableFuture(), f2.toCompletableFuture());
-        return new CompletableFutureWrapper<>(f);
+        return removeListenerAsync(null, listenerId, "__keyevent@*:expired", "__keyevent@*:del");
     }
 
     protected final List<String> map(String[] keys) {
