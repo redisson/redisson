@@ -428,7 +428,7 @@ public abstract class RedissonObject implements RObject {
     }
 
     protected final RFuture<Void> removeListenerAsync(RFuture<Void> future, int listenerId, String... names) {
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        List<CompletableFuture<Void>> futures = new ArrayList<>(names.length + 1);
         if (future != null) {
             futures.add(future.toCompletableFuture());
         }
