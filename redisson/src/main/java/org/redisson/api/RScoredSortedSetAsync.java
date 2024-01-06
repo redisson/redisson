@@ -1210,4 +1210,17 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      */
     RFuture<Integer> diffAsync(String... names);
 
+    /**
+     * Adds object event listener
+     *
+     * @see org.redisson.api.listener.ScoredSortedSetAddListener
+     * @see org.redisson.api.listener.ScoredSortedSetRemoveListener
+     * @see org.redisson.api.ExpiredObjectListener
+     * @see org.redisson.api.DeletedObjectListener
+     *
+     * @param listener object event listener
+     * @return listener id
+     */
+    RFuture<Integer> addListenerAsync(ObjectListener listener);
+
 }

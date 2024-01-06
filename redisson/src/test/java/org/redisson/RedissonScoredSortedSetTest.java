@@ -1764,7 +1764,7 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
     }
 
     @Test
-    public void testAddListener() throws RedisRunner.FailedToStartRedisException, IOException, InterruptedException {
+    public void testAddListener() {
         testWithParams(redisson -> {
             RScoredSortedSet<Integer> ss = redisson.getScoredSortedSet("test");
             CountDownLatch latch = new CountDownLatch(1);
