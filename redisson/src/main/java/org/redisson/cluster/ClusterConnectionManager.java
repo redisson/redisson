@@ -271,7 +271,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                         e.getClient().getAddr().getAddress().getHostAddress(),
                         e.getClient().getAddr().getPort());
                 disconnectNode(uri);
-                entry.nodeDown(e);
+                e.nodeDown();
             });
             entry.masterDown();
             entry.shutdownAsync();

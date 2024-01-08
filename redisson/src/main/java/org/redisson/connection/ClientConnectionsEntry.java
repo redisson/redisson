@@ -15,10 +15,12 @@
  */
 package org.redisson.connection;
 
+import io.netty.channel.ChannelFuture;
 import org.redisson.api.NodeType;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
+import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.ReadMode;
@@ -31,6 +33,7 @@ import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 
@@ -56,6 +59,7 @@ public class ClientConnectionsEntry {
 
     private volatile NodeType nodeType;
     private final IdleConnectionWatcher idleConnectionWatcher;
+    private final ConnectionManager connectionManager;
 
     private final MasterSlaveServersConfig config;
 
@@ -64,10 +68,11 @@ public class ClientConnectionsEntry {
     private final WrappedLock lock = new WrappedLock();
 
     public ClientConnectionsEntry(RedisClient client, int poolMinSize, int poolMaxSize,
-                                  IdleConnectionWatcher idleConnectionWatcher, NodeType nodeType, MasterSlaveServersConfig config) {
+                                  ConnectionManager connectionManager, NodeType nodeType, MasterSlaveServersConfig config) {
         this.client = client;
         this.freeConnectionsCounter = new AsyncSemaphore(poolMaxSize);
-        this.idleConnectionWatcher = idleConnectionWatcher;
+        this.idleConnectionWatcher = connectionManager.getServiceManager().getConnectionWatcher();
+        this.connectionManager = connectionManager;
         this.nodeType = nodeType;
         this.config = config;
         this.freeSubscribeConnectionsCounter = new AsyncSemaphore(config.getSubscriptionConnectionPoolSize());
@@ -131,14 +136,6 @@ public class ClientConnectionsEntry {
 
     public FreezeReason getFreezeReason() {
         return freezeReason;
-    }
-
-    public void resetConnectionsSemaphore() {
-        freeConnectionsCounter.removeListeners();
-    }
-
-    public void resetPubSubConnectionsSemaphore() {
-        freeSubscribeConnectionsCounter.removeListeners();
     }
 
     public CompletableFuture<Void> acquireConnection(RedisCommand<?> command) {
@@ -219,16 +216,6 @@ public class ClientConnectionsEntry {
         return freeSubscribeConnections.poll();
     }
 
-    public void clearSubscribeConnections() {
-        freeSubscribeConnections.clear();
-        allSubscribeConnections.clear();
-    }
-
-    public void clearConnections() {
-        freeConnections.clear();
-        allConnections.clear();
-    }
-
     public void releaseSubscribeConnection(RedisPubSubConnection connection) {
         if (connection.isClosed()) {
             return;
@@ -264,6 +251,81 @@ public class ClientConnectionsEntry {
                 + ", client=" + client + ", nodeType=" + nodeType
                 + "]";
     }
+
+    public void reattachPubSub() {
+        freeSubscribeConnectionsCounter.removeListeners();
+
+        for (RedisPubSubConnection connection : allSubscribeConnections) {
+            connection.closeAsync();
+            connectionManager.getSubscribeService().reattachPubSub(connection);
+        }
+        freeSubscribeConnections.clear();
+        allSubscribeConnections.clear();
+    }
+
+    public void nodeDown() {
+        freeConnectionsCounter.removeListeners();
+
+        for (RedisConnection connection : allConnections) {
+            connection.closeAsync();
+            reattachBlockingQueue(connection.getCurrentCommand());
+        }
+        freeConnections.clear();
+        allConnections.clear();
+
+        reattachPubSub();
+    }
+
+    private void reattachBlockingQueue(CommandData<?, ?> commandData) {
+        if (commandData == null
+                || !commandData.isBlockingCommand()
+                || commandData.getPromise().isDone()) {
+            return;
+        }
+
+        String key = null;
+        for (int i = 0; i < commandData.getParams().length; i++) {
+            Object param = commandData.getParams()[i];
+            if ("STREAMS".equals(param)) {
+                key = (String) commandData.getParams()[i+1];
+                break;
+            }
+        }
+        if (key == null) {
+            key = (String) commandData.getParams()[0];
+        }
+
+        MasterSlaveEntry entry = connectionManager.getEntry(key);
+        if (entry == null) {
+            connectionManager.getServiceManager().newTimeout(timeout ->
+                    reattachBlockingQueue(commandData), 1, TimeUnit.SECONDS);
+            return;
+        }
+
+        CompletableFuture<RedisConnection> newConnectionFuture = entry.connectionWriteOp(commandData.getCommand());
+        newConnectionFuture.whenComplete((newConnection, e) -> {
+            if (e != null) {
+                connectionManager.getServiceManager().newTimeout(timeout ->
+                        reattachBlockingQueue(commandData), 1, TimeUnit.SECONDS);
+                return;
+            }
+
+            commandData.getPromise().whenComplete((r, ex) -> {
+                entry.releaseWrite(newConnection);
+            });
+
+            ChannelFuture channelFuture = newConnection.send(commandData);
+            channelFuture.addListener(future -> {
+                if (!future.isSuccess()) {
+                    connectionManager.getServiceManager().newTimeout(timeout ->
+                            reattachBlockingQueue(commandData), 1, TimeUnit.SECONDS);
+                    return;
+                }
+                log.info("command '{}' has been resent to '{}'", commandData, newConnection.getRedisClient());
+            });
+        });
+    }
+
 
 }
 

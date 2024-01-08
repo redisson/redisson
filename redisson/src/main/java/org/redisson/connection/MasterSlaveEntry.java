@@ -15,13 +15,11 @@
  */
 package org.redisson.connection;
 
-import io.netty.channel.ChannelFuture;
 import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
-import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.MasterSlaveServersConfig;
@@ -127,7 +125,7 @@ public class MasterSlaveEntry {
                     client,
                     config.getMasterConnectionMinimumIdleSize(),
                     config.getMasterConnectionPoolSize(),
-                    connectionManager.getServiceManager().getConnectionWatcher(),
+                    connectionManager,
                     NodeType.MASTER,
                     config);
 
@@ -204,7 +202,7 @@ public class MasterSlaveEntry {
             });
         }
 
-        nodeDown(entry);
+        entry.nodeDown();
         return true;
     }
 
@@ -308,95 +306,19 @@ public class MasterSlaveEntry {
                     log.info("master {} used as slave", masterEntry.getClient().getAddr());
                 }
 
-                nodeDown(entry);
+                entry.nodeDown();
                 return value;
             });
         }
 
-        nodeDown(entry);
+        entry.nodeDown();
         return CompletableFuture.completedFuture(true);
     }
 
     public void masterDown() {
-        nodeDown(masterEntry);
+        masterEntry.nodeDown();
     }
 
-    private void reattachPubSub(ClientConnectionsEntry entry) {
-        entry.resetPubSubConnectionsSemaphore();
-
-        for (RedisPubSubConnection connection : entry.getAllSubscribeConnections()) {
-            connection.closeAsync();
-            connectionManager.getSubscribeService().reattachPubSub(connection);
-        }
-        entry.clearSubscribeConnections();
-    }
-
-    public void nodeDown(ClientConnectionsEntry entry) {
-        entry.resetConnectionsSemaphore();
-        
-        for (RedisConnection connection : entry.getAllConnections()) {
-            connection.closeAsync();
-            reattachBlockingQueue(connection.getCurrentCommand());
-        }
-        entry.clearConnections();
-
-        reattachPubSub(entry);
-    }
-
-    private void reattachBlockingQueue(CommandData<?, ?> commandData) {
-        if (commandData == null
-                || !commandData.isBlockingCommand()
-                    || commandData.getPromise().isDone()) {
-            return;
-        }
-
-        String key = null;
-        for (int i = 0; i < commandData.getParams().length; i++) {
-            Object param = commandData.getParams()[i];
-            if ("STREAMS".equals(param)) {
-                key = (String) commandData.getParams()[i+1];
-                break;
-            }
-        }
-        if (key == null) {
-            key = (String) commandData.getParams()[0];
-        }
-
-        MasterSlaveEntry entry = connectionManager.getEntry(key);
-        if (entry == null) {
-            connectionManager.getServiceManager().newTimeout(timeout ->
-                    reattachBlockingQueue(commandData), 1, TimeUnit.SECONDS);
-            return;
-        }
-
-        CompletableFuture<RedisConnection> newConnectionFuture = entry.connectionWriteOp(commandData.getCommand());
-        newConnectionFuture.whenComplete((newConnection, e) -> {
-            if (e != null) {
-                connectionManager.getServiceManager().newTimeout(timeout ->
-                        reattachBlockingQueue(commandData), 1, TimeUnit.SECONDS);
-                return;
-            }
-
-            if (commandData.getPromise().isDone()) {
-                entry.releaseWrite(newConnection);
-                return;
-            }
-
-            ChannelFuture channelFuture = newConnection.send(commandData);
-            channelFuture.addListener(future -> {
-                if (!future.isSuccess()) {
-                    connectionManager.getServiceManager().newTimeout(timeout ->
-                            reattachBlockingQueue(commandData), 1, TimeUnit.SECONDS);
-                    return;
-                }
-                log.info("command '{}' has been resent to '{}'", commandData, newConnection.getRedisClient());
-            });
-            commandData.getPromise().whenComplete((r, ex) -> {
-                entry.releaseWrite(newConnection);
-            });
-        });
-    }
-    
     public boolean hasSlave(RedisClient redisClient) {
         return slaveBalancer.contains(redisClient);
     }
@@ -440,7 +362,7 @@ public class MasterSlaveEntry {
             ClientConnectionsEntry entry = new ClientConnectionsEntry(client,
                     config.getSlaveConnectionMinimumIdleSize(),
                     config.getSlaveConnectionPoolSize(),
-                    connectionManager.getServiceManager().getConnectionWatcher(),
+                    connectionManager,
                     nodeType,
                     config);
             if (freezed) {
@@ -517,7 +439,7 @@ public class MasterSlaveEntry {
         return downFuture.thenApply(r -> {
             if (r) {
                 if (config.getSubscriptionMode() == SubscriptionMode.SLAVE) {
-                    reattachPubSub(masterEntry);
+                    masterEntry.reattachPubSub();
                 }
                 log.info("master {} excluded from slaves", addr);
             }
@@ -534,7 +456,7 @@ public class MasterSlaveEntry {
         return downFuture.thenApply(r -> {
             if (r) {
                 if (config.getSubscriptionMode() == SubscriptionMode.SLAVE) {
-                    reattachPubSub(masterEntry);
+                    masterEntry.reattachPubSub();
                 }
                 log.info("master {} excluded from slaves", addr);
             }
@@ -604,7 +526,7 @@ public class MasterSlaveEntry {
             oldMaster.getLock().execute(() -> {
                 oldMaster.setFreezeReason(FreezeReason.MANAGER);
             });
-            nodeDown(oldMaster);
+            oldMaster.nodeDown();
 
             slaveBalancer.changeType(oldMaster.getClient().getAddr(), NodeType.SLAVE);
             slaveBalancer.changeType(newMasterClient.getAddr(), NodeType.MASTER);
