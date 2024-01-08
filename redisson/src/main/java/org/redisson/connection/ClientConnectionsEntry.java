@@ -221,10 +221,12 @@ public class ClientConnectionsEntry {
 
     public void clearSubscribeConnections() {
         freeSubscribeConnections.clear();
+        allSubscribeConnections.clear();
     }
 
     public void clearConnections() {
         freeConnections.clear();
+        allConnections.clear();
     }
 
     public void releaseSubscribeConnection(RedisPubSubConnection connection) {

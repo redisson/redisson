@@ -332,7 +332,6 @@ public class MasterSlaveEntry {
             connectionManager.getSubscribeService().reattachPubSub(connection);
         }
         entry.clearSubscribeConnections();
-        entry.getAllSubscribeConnections().clear();
     }
 
     public void nodeDown(ClientConnectionsEntry entry) {
@@ -343,7 +342,6 @@ public class MasterSlaveEntry {
             reattachBlockingQueue(connection.getCurrentCommand());
         }
         entry.clearConnections();
-        entry.getAllConnections().clear();
 
         reattachPubSub(entry);
     }
