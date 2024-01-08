@@ -200,7 +200,19 @@ abstract class ConnectionPool<T extends RedisConnection> {
         });
         result.whenComplete((r, e) -> {
             if (e != null) {
+                if (entry.getNodeType() == NodeType.SLAVE) {
+                    entry.getClient().getConfig().getFailedNodeDetector().onConnectFailed();
+                    if (entry.getClient().getConfig().getFailedNodeDetector().isNodeFailed()) {
+                        masterSlaveEntry.shutdownAndReconnectAsync(entry.getClient(), e);
+                    }
+                }
+
                 f.completeExceptionally(e);
+                return;
+            }
+
+            if (entry.getNodeType() == NodeType.SLAVE) {
+                entry.getClient().getConfig().getFailedNodeDetector().onConnectSuccessful();
             }
         });
         return result;
@@ -258,10 +270,6 @@ abstract class ConnectionPool<T extends RedisConnection> {
     }
 
     private void connectedSuccessful(ClientConnectionsEntry entry, CompletableFuture<T> promise, T conn) {
-        if (entry.getNodeType() == NodeType.SLAVE) {
-            entry.getClient().getConfig().getFailedNodeDetector().onConnectSuccessful();
-        }
-
         if (!promise.complete(conn)) {
             releaseConnection(entry, conn);
             releaseConnection(entry);
@@ -269,13 +277,6 @@ abstract class ConnectionPool<T extends RedisConnection> {
     }
 
     private void promiseFailure(ClientConnectionsEntry entry, CompletableFuture<T> promise, Throwable cause) {
-        if (entry.getNodeType() == NodeType.SLAVE) {
-            entry.getClient().getConfig().getFailedNodeDetector().onConnectFailed();
-            if (entry.getClient().getConfig().getFailedNodeDetector().isNodeFailed()) {
-                masterSlaveEntry.shutdownAndReconnectAsync(entry.getClient(), cause);
-            }
-        }
-
         releaseConnection(entry);
 
         promise.completeExceptionally(cause);
