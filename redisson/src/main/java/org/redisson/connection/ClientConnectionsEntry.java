@@ -219,6 +219,14 @@ public class ClientConnectionsEntry {
         return freeSubscribeConnections.poll();
     }
 
+    public void clearSubscribeConnections() {
+        freeSubscribeConnections.clear();
+    }
+
+    public void clearConnections() {
+        freeConnections.clear();
+    }
+
     public void releaseSubscribeConnection(RedisPubSubConnection connection) {
         if (connection.isClosed()) {
             return;

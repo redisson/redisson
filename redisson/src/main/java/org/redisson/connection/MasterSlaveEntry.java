@@ -331,12 +331,7 @@ public class MasterSlaveEntry {
             connection.closeAsync();
             connectionManager.getSubscribeService().reattachPubSub(connection);
         }
-        while (true) {
-            RedisConnection connection = entry.pollSubscribeConnection();
-            if (connection == null) {
-                break;
-            }
-        }
+        entry.clearSubscribeConnections();
         entry.getAllSubscribeConnections().clear();
     }
 
@@ -347,12 +342,7 @@ public class MasterSlaveEntry {
             connection.closeAsync();
             reattachBlockingQueue(connection.getCurrentCommand());
         }
-        while (true) {
-            RedisConnection connection = entry.pollConnection(null);
-            if (connection == null) {
-                break;
-            }
-        }
+        entry.clearConnections();
         entry.getAllConnections().clear();
 
         reattachPubSub(entry);
