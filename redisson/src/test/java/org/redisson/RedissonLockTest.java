@@ -178,9 +178,7 @@ public class RedissonLockTest extends BaseConcurrentTest {
 
     @Test
     public void testRedisFailed() {
-        GenericContainer<?> redis =
-                new GenericContainer<>("redis:7.2")
-                        .withExposedPorts(6379);
+        GenericContainer<?> redis = createRedis();
         redis.start();
 
         Config config = new Config();
