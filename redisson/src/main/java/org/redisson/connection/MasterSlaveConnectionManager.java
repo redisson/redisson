@@ -213,9 +213,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected void doConnect(Set<RedisURI> disconnectedSlaves, Function<RedisURI, String> hostnameMapper) {
         try {
             if (config.isSlaveNotUsed()) {
-                masterSlaveEntry = new SingleEntry(this, serviceManager.getConnectionWatcher(), config);
+                masterSlaveEntry = new SingleEntry(this, config);
             } else {
-                masterSlaveEntry = new MasterSlaveEntry(this, serviceManager.getConnectionWatcher(), config);
+                masterSlaveEntry = new MasterSlaveEntry(this, config);
             }
 
             RedisURI uri = new RedisURI(config.getMasterAddress());

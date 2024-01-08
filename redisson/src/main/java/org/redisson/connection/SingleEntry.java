@@ -29,8 +29,8 @@ import java.util.concurrent.CompletableFuture;
  */
 public class SingleEntry extends MasterSlaveEntry {
 
-    public SingleEntry(ConnectionManager connectionManager, IdleConnectionWatcher idleConnectionWatcher, MasterSlaveServersConfig config) {
-        super(connectionManager, idleConnectionWatcher, config);
+    public SingleEntry(ConnectionManager connectionManager, MasterSlaveServersConfig config) {
+        super(connectionManager, config);
     }
 
     @Override

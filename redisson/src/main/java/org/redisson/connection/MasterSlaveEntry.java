@@ -67,15 +67,12 @@ public class MasterSlaveEntry {
     final MasterPubSubConnectionPool pubSubConnectionPool;
 
     final AtomicBoolean active = new AtomicBoolean(true);
-    final IdleConnectionWatcher idleConnectionWatcher;
 
     final AtomicBoolean noPubSubSlaves = new AtomicBoolean();
 
-    public MasterSlaveEntry(ConnectionManager connectionManager, IdleConnectionWatcher idleConnectionWatcher,
-                            MasterSlaveServersConfig config) {
+    public MasterSlaveEntry(ConnectionManager connectionManager, MasterSlaveServersConfig config) {
         this.connectionManager = connectionManager;
         this.config = config;
-        this.idleConnectionWatcher = idleConnectionWatcher;
 
         slaveBalancer = new LoadBalancerManager(config, connectionManager, this);
         writeConnectionPool = new MasterConnectionPool(config, connectionManager, this);
@@ -130,7 +127,7 @@ public class MasterSlaveEntry {
                     client,
                     config.getMasterConnectionMinimumIdleSize(),
                     config.getMasterConnectionPoolSize(),
-                    idleConnectionWatcher,
+                    connectionManager.getServiceManager().getConnectionWatcher(),
                     NodeType.MASTER,
                     config);
 
@@ -443,7 +440,7 @@ public class MasterSlaveEntry {
             ClientConnectionsEntry entry = new ClientConnectionsEntry(client,
                     config.getSlaveConnectionMinimumIdleSize(),
                     config.getSlaveConnectionPoolSize(),
-                    idleConnectionWatcher,
+                    connectionManager.getServiceManager().getConnectionWatcher(),
                     nodeType,
                     config);
             if (freezed) {

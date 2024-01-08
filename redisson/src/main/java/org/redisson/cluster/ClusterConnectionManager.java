@@ -320,12 +320,12 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
             MasterSlaveEntry entry;
             if (config.isSlaveNotUsed()) {
-                entry = new SingleEntry(this, serviceManager.getConnectionWatcher(), config);
+                entry = new SingleEntry(this, config);
             } else {
                 Set<String> slaveAddresses = partition.getSlaveAddresses().stream().map(r -> r.toString()).collect(Collectors.toSet());
                 config.setSlaveAddresses(slaveAddresses);
 
-                entry = new MasterSlaveEntry(ClusterConnectionManager.this, serviceManager.getConnectionWatcher(), config);
+                entry = new MasterSlaveEntry(ClusterConnectionManager.this, config);
             }
 
             CompletableFuture<RedisClient> f = entry.setupMasterEntry(new RedisURI(config.getMasterAddress()), configEndpointHostName);
