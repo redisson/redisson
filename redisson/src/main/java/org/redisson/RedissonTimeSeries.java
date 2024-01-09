@@ -916,7 +916,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
                     "nextPos = 0;" +
                   "end;"
 
-                + "return {nextPos, result};",
+                + "return {tostring(nextPos), result};",
                 Arrays.asList(name, getTimeoutSetName()),
                 params.toArray());
     }

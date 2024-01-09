@@ -32,7 +32,7 @@ import org.redisson.client.RedisNodeNotFoundException;
 public abstract class BaseIterator<V, E> implements Iterator<V> {
 
     private Iterator<E> lastIter;
-    protected String nextIterPos;
+    protected String nextIterPos = "0";
     protected RedisClient client;
 
     private boolean finished;
