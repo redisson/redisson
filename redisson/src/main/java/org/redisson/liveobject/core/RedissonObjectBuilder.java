@@ -196,9 +196,11 @@ public class RedissonObjectBuilder {
                 }
                 CodecMethodRef builder = map.get(cls);
                 if (method.getParameterTypes().length == 2 //first param is name, second param is codec.
-                        && Codec.class.isAssignableFrom(method.getParameterTypes()[1])) {
+                        && String.class == method.getParameterTypes()[0]
+                            && Codec.class.isAssignableFrom(method.getParameterTypes()[1])) {
                     builder.customCodecMethod = method;
-                } else if (method.getParameterTypes().length == 1) {
+                } else if (method.getParameterTypes().length == 1
+                            && String.class == method.getParameterTypes()[0]) {
                     builder.defaultCodecMethod = method;
                 }
             }
@@ -249,7 +251,8 @@ public class RedissonObjectBuilder {
     }
     
     private boolean isDefaultCodec(RedissonReference rr) {
-        return rr.getCodec() == null;
+        return rr.getCodec() == null
+                || rr.getCodec().equals(config.getCodec().getClass().getName());
     }
 
     private Object fromReference(RedissonRxClient redisson, RedissonReference rr) throws ReflectiveOperationException {
