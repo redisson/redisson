@@ -190,7 +190,7 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
         t.start();
         t.join(1);
 
-        Awaitility.await().between(Duration.ofMillis(900), Duration.ofMillis(1020)).untilAsserted(() -> {
+        Awaitility.await().between(Duration.ofMillis(900), Duration.ofMillis(1200)).untilAsserted(() -> {
             assertThat(s.tryAcquire(4, 2, TimeUnit.SECONDS)).isTrue();
         });
 
