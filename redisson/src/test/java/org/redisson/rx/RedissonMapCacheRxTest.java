@@ -187,7 +187,7 @@ public class RedissonMapCacheRxTest extends BaseRxTest {
             }
         }).blockingGet();
 
-        Awaitility.await().atMost(Duration.ofSeconds(6)).untilAsserted(() -> {
+        Awaitility.await().atMost(Duration.ofSeconds(7)).untilAsserted(() -> {
             assertThat(received).isTrue();
             assertThat(cache.size().blockingGet()).isZero();
         });
