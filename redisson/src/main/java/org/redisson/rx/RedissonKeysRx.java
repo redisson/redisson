@@ -68,7 +68,7 @@ public class RedissonKeysRx {
 
             private RedisClient client;
             private List<String> firstValues;
-            private String nextIterPos;
+            private String nextIterPos = "0";
             
             private long currentIndex;
             

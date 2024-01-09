@@ -36,7 +36,7 @@ public abstract class SetRxIterator<V> {
         ReplayProcessor<V> p = ReplayProcessor.create();
         return p.doOnRequest(new LongConsumer() {
             
-            private String nextIterPos;
+            private String nextIterPos = "0";
             private RedisClient client;
             private AtomicLong elementsRead = new AtomicLong();
             
