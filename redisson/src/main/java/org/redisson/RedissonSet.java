@@ -161,7 +161,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
                     + "cursor = 0;"
                 + "end;"
                 + "if cursor == -1 then "
-                    + "return {0, {}}; "
+                    + "return {'0', {}}; "
                 + "end;"
                 + "local result; "
                 + "if (#ARGV == 2) then "

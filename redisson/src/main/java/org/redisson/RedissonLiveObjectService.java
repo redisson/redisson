@@ -713,9 +713,11 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
         RedisCommand<ListScanResult<String>> command = new RedisCommand<>("SCAN",
                 new ListMultiDecoder2(new ListScanResultReplayDecoder(), new ObjectListReplayDecoder<Object>()), new Convertor<Object>() {
+            int index;
             @Override
             public Object convert(Object obj) {
-                if (!(obj instanceof String)) {
+                index++;
+                if (index == 1) {
                     return obj;
                 }
                 return namingScheme.resolveId(obj.toString());
