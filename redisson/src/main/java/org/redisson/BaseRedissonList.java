@@ -308,7 +308,7 @@ public class BaseRedissonList<V> extends RedissonExpirable {
                     + "start_index = 0;"
                 + "end;"
                 + "if start_index == -1 then "
-                    + "return {0, {}};"
+                    + "return {'0', {}};"
                 + "end;"
                 + "local end_index = start_index + ARGV[1];"
                 + "local result; "
@@ -317,8 +317,8 @@ public class BaseRedissonList<V> extends RedissonExpirable {
                     + "end_index = -1;"
                 + "end; "
                 + "redis.call('setex', KEYS[2], 3600, end_index);"
-                + "return {end_index, result};",
-                Arrays.<Object>asList(getRawName(), iteratorName), count);
+                + "return {tostring(end_index), result};",
+                Arrays.asList(getRawName(), iteratorName), count);
     }
 
     public RFuture<List<V>> getAsync(int... indexes) {

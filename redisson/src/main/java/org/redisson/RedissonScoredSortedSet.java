@@ -1046,7 +1046,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
                     + "cursor = 0;"
                 + "end;"
                 + "if cursor == -1 then "
-                    + "return {0, {}}; "
+                    + "return {'0', {}}; "
                 + "end;"
                 + "local result; "
                 + "if (#ARGV == 2) then "
@@ -1066,8 +1066,8 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
                         + "table.insert(res, result[2][i-1]); "
                     + "end; "
                 + "end;"
-                + "return {result[1], res};",
-                Arrays.<Object>asList(getRawName(), iteratorName), args.toArray());
+                + "return {tostring(result[1]), res};",
+                Arrays.asList(getRawName(), iteratorName), args.toArray());
     }
 
     @Override
