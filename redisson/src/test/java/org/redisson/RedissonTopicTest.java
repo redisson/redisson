@@ -1470,7 +1470,7 @@ public class RedissonTopicTest extends RedisDockerTest {
                 .addNode(master3, slave3);
         ClusterProcesses process = clusterRunner.run();
 
-        Thread.sleep(5000);
+        Thread.sleep(7000);
 
         Config config = new Config();
         config.useClusterServers()
