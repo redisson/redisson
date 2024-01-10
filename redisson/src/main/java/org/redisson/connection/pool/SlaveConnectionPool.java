@@ -19,6 +19,7 @@ import org.redisson.client.RedisConnection;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.ConnectionsHolder;
 import org.redisson.connection.MasterSlaveEntry;
 
 /**
@@ -34,8 +35,9 @@ public class SlaveConnectionPool extends ConnectionPool<RedisConnection> {
         super(config, connectionManager, masterSlaveEntry);
     }
 
-    protected int getMinimumIdleSize(ClientConnectionsEntry entry) {
-        return config.getSlaveConnectionMinimumIdleSize();
+    @Override
+    protected ConnectionsHolder<RedisConnection> getConnectionHolder(ClientConnectionsEntry entry) {
+        return entry.getConnectionsHolder();
     }
 
 }

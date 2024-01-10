@@ -140,11 +140,11 @@ public class MasterSlaveEntry {
                 return CompletableFuture.completedFuture(null);
             }
 
-            CompletableFuture<Void> writeFuture = writeConnectionPool.initConnections(masterEntry);
+            CompletableFuture<Void> writeFuture = masterEntry.initConnections(config.getMasterConnectionMinimumIdleSize());
             futures.add(writeFuture);
 
             if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
-                CompletableFuture<Void> pubSubFuture = pubSubConnectionPool.initConnections(masterEntry);
+                CompletableFuture<Void> pubSubFuture = masterEntry.initPubSubConnections(config.getSubscriptionConnectionMinimumIdleSize());
                 futures.add(pubSubFuture);
             }
             return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));

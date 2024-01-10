@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class IdleConnectionWatcher {
@@ -43,18 +42,18 @@ public class IdleConnectionWatcher {
 
         private final int minimumAmount;
         private final int maximumAmount;
+
+        private final ConnectionsHolder<? extends RedisConnection> holder;
         private final AsyncSemaphore freeConnectionsCounter;
         private final Collection<? extends RedisConnection> connections;
-        private final Function<RedisConnection, Boolean> deleteHandler;
 
-        public Entry(int minimumAmount, int maximumAmount, Collection<? extends RedisConnection> connections,
-                     AsyncSemaphore freeConnectionsCounter, Function<RedisConnection, Boolean> deleteHandler) {
+        public Entry(int minimumAmount, int maximumAmount, ConnectionsHolder<? extends RedisConnection> holder) {
             super();
             this.minimumAmount = minimumAmount;
             this.maximumAmount = maximumAmount;
-            this.connections = connections;
-            this.freeConnectionsCounter = freeConnectionsCounter;
-            this.deleteHandler = deleteHandler;
+            this.connections = holder.getFreeConnections();
+            this.freeConnectionsCounter = holder.getFreeConnectionsCounter();
+            this.holder = holder;
         }
 
     };
@@ -82,7 +81,7 @@ public class IdleConnectionWatcher {
 
                     if (timeInPool > config.getIdleConnectionTimeout()
                             && validateAmount(entry)
-                                && entry.deleteHandler.apply(c)) {
+                                && entry.holder.remove(c)) {
                         ChannelFuture future = c.closeIdleAsync();
                         future.addListener((FutureListener<Void>) f ->
                                 log.debug("Connection {} has been closed due to idle timeout. Not used for {} ms", c.getChannel(), timeInPool));
@@ -100,10 +99,9 @@ public class IdleConnectionWatcher {
         entries.remove(entry);
     }
 
-    public void add(ClientConnectionsEntry entry, int minimumAmount, int maximumAmount, Collection<? extends RedisConnection> connections,
-                    AsyncSemaphore freeConnectionsCounter, Function<RedisConnection, Boolean> deleteHandler) {
+    public void add(ClientConnectionsEntry entry, int minimumAmount, int maximumAmount, ConnectionsHolder<? extends RedisConnection> holder) {
         List<Entry> list = entries.computeIfAbsent(entry, k -> new ArrayList<>(2));
-        list.add(new Entry(minimumAmount, maximumAmount, connections, freeConnectionsCounter, deleteHandler));
+        list.add(new Entry(minimumAmount, maximumAmount, holder));
     }
     
     public void stop() {

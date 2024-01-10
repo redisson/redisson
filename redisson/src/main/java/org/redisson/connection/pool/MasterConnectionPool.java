@@ -20,6 +20,7 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.ConnectionsHolder;
 import org.redisson.connection.MasterSlaveEntry;
 
 import java.util.concurrent.CompletableFuture;
@@ -38,17 +39,17 @@ public class MasterConnectionPool extends ConnectionPool<RedisConnection> {
     }
 
     @Override
+    protected ConnectionsHolder<RedisConnection> getConnectionHolder(ClientConnectionsEntry entry) {
+        return entry.getConnectionsHolder();
+    }
+
+    @Override
     public CompletableFuture<RedisConnection> get(RedisCommand<?> command) {
         return acquireConnection(command, entries.peek());
     }
     
     public void remove(ClientConnectionsEntry entry) {
         entries.remove(entry);
-    }
-
-    @Override
-    protected int getMinimumIdleSize(ClientConnectionsEntry entry) {
-        return config.getMasterConnectionMinimumIdleSize();
     }
 
 }

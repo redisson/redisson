@@ -16,15 +16,14 @@
 package org.redisson.connection.pool;
 
 import org.redisson.client.RedisPubSubConnection;
-import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.ConnectionsHolder;
 import org.redisson.connection.MasterSlaveEntry;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 /**
  * Connection pool for Publish / Subscribe
@@ -47,37 +46,8 @@ public class PubSubConnectionPool extends ConnectionPool<RedisPubSubConnection> 
     }
 
     @Override
-    protected RedisPubSubConnection poll(ClientConnectionsEntry entry, RedisCommand<?> command) {
-        return entry.pollSubscribeConnection();
+    protected ConnectionsHolder<RedisPubSubConnection> getConnectionHolder(ClientConnectionsEntry entry) {
+        return entry.getPubSubConnectionsHolder();
     }
 
-    @Override
-    protected int getMinimumIdleSize(ClientConnectionsEntry entry) {
-        return config.getSubscriptionConnectionMinimumIdleSize();
-    }
-
-    @Override
-    protected CompletionStage<RedisPubSubConnection> connect(ClientConnectionsEntry entry) {
-        return entry.connectPubSub();
-    }
-
-    @Override
-    protected CompletableFuture<Void> acquireConnection(ClientConnectionsEntry entry, RedisCommand<?> command) {
-        return entry.acquireSubscribeConnection();
-    }
-    
-    @Override
-    protected void releaseConnection(ClientConnectionsEntry entry) {
-        entry.releaseSubscribeConnection();
-    }
-
-    @Override
-    protected void releaseConnection(ClientConnectionsEntry entry, RedisPubSubConnection conn) {
-        entry.releaseSubscribeConnection(conn);
-    }
-
-    @Override
-    protected boolean changeUsage() {
-        return false;
-    }
 }

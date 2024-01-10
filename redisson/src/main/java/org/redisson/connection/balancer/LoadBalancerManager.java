@@ -54,8 +54,11 @@ public class LoadBalancerManager {
     
     private final Map<RedisClient, ClientConnectionsEntry> client2Entry = new ConcurrentHashMap<>();
 
+    private final MasterSlaveServersConfig config;
+
     public LoadBalancerManager(MasterSlaveServersConfig config, ConnectionManager connectionManager, MasterSlaveEntry entry) {
         this.connectionManager = connectionManager;
+        this.config = config;
         slaveConnectionPool = new SlaveConnectionPool(config, connectionManager, entry);
         pubSubConnectionPool = new PubSubConnectionPool(config, connectionManager, entry);
     }
@@ -73,8 +76,8 @@ public class LoadBalancerManager {
     public CompletableFuture<Void> add(ClientConnectionsEntry entry) {
         CompletableFuture<Void> future = CompletableFuture.completedFuture(null);
         if (!entry.isFreezed()) {
-            CompletableFuture<Void> slaveFuture = slaveConnectionPool.initConnections(entry);
-            CompletableFuture<Void> pubSubFuture = pubSubConnectionPool.initConnections(entry);
+            CompletableFuture<Void> slaveFuture = entry.initConnections(config.getSlaveConnectionMinimumIdleSize());
+            CompletableFuture<Void> pubSubFuture = entry.initPubSubConnections(config.getSubscriptionConnectionMinimumIdleSize());
             future = CompletableFuture.allOf(slaveFuture, pubSubFuture);
         }
         return future.thenAccept(r -> {
@@ -140,8 +143,8 @@ public class LoadBalancerManager {
                     entry.setInitialized(true);
 
                     List<CompletableFuture<Void>> futures = new ArrayList<>(2);
-                    futures.add(slaveConnectionPool.initConnections(entry));
-                    futures.add(pubSubConnectionPool.initConnections(entry));
+                    futures.add(entry.initConnections(config.getSlaveConnectionMinimumIdleSize()));
+                    futures.add(entry.initPubSubConnections(config.getSubscriptionConnectionMinimumIdleSize()));
 
                     CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
                     CompletableFuture<Boolean> f = new CompletableFuture<>();
