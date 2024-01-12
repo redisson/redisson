@@ -112,7 +112,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     throw new RedisConnectionException("Master node is undefined! SENTINEL GET-MASTER-ADDR-BY-NAME command returns empty result!");
                 }
 
-                InetSocketAddress masterHost = serviceManager.resolve(master).join();
+                InetSocketAddress masterHost = resolveIP(master.getHost(), String.valueOf(master.getPort())).join();
                 RedisURI masterUri = toURI(masterHost);
                 if (!master.isIP()) {
                     uri2hostname.put(masterUri, master.getHost());
