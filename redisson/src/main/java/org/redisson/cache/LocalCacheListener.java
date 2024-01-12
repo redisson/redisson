@@ -145,7 +145,7 @@ public abstract class LocalCacheListener {
         this.cache = cache;
 
         if (isSharded) {
-            invalidationTopic = new RedissonShardedTopic(LocalCachedMessageCodec.INSTANCE, commandExecutor, getInvalidationTopicName());
+            invalidationTopic = RedissonShardedTopic.createRaw(LocalCachedMessageCodec.INSTANCE, commandExecutor, getInvalidationTopicName());
         } else {
             invalidationTopic = RedissonTopic.createRaw(LocalCachedMessageCodec.INSTANCE, commandExecutor, getInvalidationTopicName());
         }

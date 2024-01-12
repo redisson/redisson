@@ -50,6 +50,10 @@ public class RedissonShardedTopic extends RedissonTopic implements RShardedTopic
         super(codec, commandExecutor, nameMapper, name);
     }
 
+    public static RedissonTopic createRaw(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
+        return new RedissonShardedTopic(codec, commandExecutor, NameMapper.direct(), name);
+    }
+
     @Override
     protected RFuture<Integer> addListenerAsync(RedisPubSubListener<?> pubSubListener) {
         CompletableFuture<PubSubConnectionEntry> future = subscribeService.ssubscribe(codec, channelName, pubSubListener);

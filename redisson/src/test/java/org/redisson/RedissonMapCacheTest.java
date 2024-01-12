@@ -860,9 +860,24 @@ public class RedissonMapCacheTest extends BaseMapTest {
 
     @Test
     public void testExpirationInCluster() {
-        testInCluster(r -> {
+        testInCluster(client -> {
+            Config config = client.getConfig();
+            config.useClusterServers()
+                    .setNameMapper(new NameMapper() {
+                        @Override
+                        public String map(String name) {
+                            return name + "-namemapper-";
+                        }
+
+                        @Override
+                        public String unmap(String name) {
+                            return name.replace("-namemapper-", "");
+                        }
+                    });
+            RedissonClient redisson = Redisson.create(config);
+
             AtomicBoolean executed = new AtomicBoolean();
-            RMapCache<String, String> map = r.getMapCache("simple");
+            RMapCache<String, String> map = redisson.getMapCache("simple");
             map.addListener(new EntryExpiredListener() {
                 @Override
                 public void onExpired(EntryEvent event) {
@@ -872,6 +887,8 @@ public class RedissonMapCacheTest extends BaseMapTest {
             map.put("1", "2", 1, TimeUnit.SECONDS);
 
             Awaitility.await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(executed.get()).isTrue());
+
+            redisson.shutdown();
         });
     }
 

@@ -2822,7 +2822,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     protected RTopic getTopic(String name) {
         if (getSubscribeService().isShardingSupported()) {
-            return new RedissonShardedTopic(topicCodec, commandExecutor, name);
+            return RedissonShardedTopic.createRaw(topicCodec, commandExecutor, name);
         }
         return RedissonTopic.createRaw(topicCodec, commandExecutor, name);
     }
