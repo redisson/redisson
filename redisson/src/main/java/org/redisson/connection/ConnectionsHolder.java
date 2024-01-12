@@ -225,7 +225,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
         }
     }
 
-    public final CompletableFuture<T> acquireConnection(RedisCommand<?> command) {
+    public CompletableFuture<T> acquireConnection(RedisCommand<?> command) {
         CompletableFuture<T> result = new CompletableFuture<>();
 
         CompletableFuture<Void> f = acquireConnection();
