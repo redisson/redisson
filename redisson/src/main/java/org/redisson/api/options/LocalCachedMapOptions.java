@@ -125,6 +125,25 @@ public interface LocalCachedMapOptions<K, V> extends ExMapOptions<LocalCachedMap
 
     }
 
+    enum ExpirationEventPolicy {
+
+        /**
+         * Don't subscribe on expire event.
+         */
+        DONT_SUBSCRIBE,
+
+        /**
+         * Subscribe on expire event using __keyevent@*:expired pattern
+         */
+        SUBSCRIBE_WITH_KEYEVENT_PATTERN,
+
+        /**
+         * Subscribe on expire event using __keyspace@N__:name channel
+         */
+        SUBSCRIBE_WITH_KEYSPACE_CHANNEL
+
+    }
+
     /**
      * Creates options with the name of object instance
      *
@@ -227,11 +246,20 @@ public interface LocalCachedMapOptions<K, V> extends ExMapOptions<LocalCachedMap
     LocalCachedMapOptions<K, V> storeCacheMiss(boolean storeCacheMiss);
 
     /**
-     * Defines whether to use __keyevent pattern topic to listen for expired events.
+     * Use {@link #expirationEventPolicy(ExpirationEventPolicy)} instead
      *
      * @param useKeyEventsPattern - whether to use __keyevent pattern topic
      * @return LocalCachedMapOptions instance
      */
+    @Deprecated
     LocalCachedMapOptions<K, V> useKeyEventsPattern(boolean useKeyEventsPattern);
+
+    /**
+     * Defines how to listen expired event sent by Redis upon this instance deletion.
+     *
+     * @param expirationEventPolicy expiration policy value
+     * @return LocalCachedMapOptions instance
+     */
+    LocalCachedMapOptions<K, V> expirationEventPolicy(ExpirationEventPolicy expirationEventPolicy);
 
 }

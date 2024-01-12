@@ -150,14 +150,14 @@ public abstract class LocalCacheListener {
             invalidationTopic = RedissonTopic.createRaw(LocalCachedMessageCodec.INSTANCE, commandExecutor, getInvalidationTopicName());
         }
 
-        if (options.isUseKeyEventsPattern()) {
+        if (options.getExpirationEventPolicy() == LocalCachedMapOptions.ExpirationEventPolicy.SUBSCRIBE_WITH_KEYEVENT_PATTERN) {
             RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:expired");
             expireListenerId = topic.addListener(String.class, (pattern, channel, msg) -> {
                 if (msg.equals(name)) {
                     cache.clear();
                 }
             });
-        } else {
+        } else if (options.getExpirationEventPolicy() == LocalCachedMapOptions.ExpirationEventPolicy.SUBSCRIBE_WITH_KEYSPACE_CHANNEL) {
             RTopic topic = new RedissonTopic(StringCodec.INSTANCE, commandExecutor, keyeventPattern);
             expireListenerId = topic.addListener(String.class, (channel, msg) -> {
                 if (msg.equals("expired")) {
@@ -346,10 +346,10 @@ public abstract class LocalCacheListener {
         }
         invalidationTopic.removeListenerAsync(ids.toArray(new Integer[0]));
 
-        if (options.isUseKeyEventsPattern()) {
+        if (options.getExpirationEventPolicy() == LocalCachedMapOptions.ExpirationEventPolicy.SUBSCRIBE_WITH_KEYEVENT_PATTERN) {
             RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:expired");
             topic.removeListenerAsync(expireListenerId);
-        } else {
+        } else if (options.getExpirationEventPolicy() == LocalCachedMapOptions.ExpirationEventPolicy.SUBSCRIBE_WITH_KEYSPACE_CHANNEL) {
             RTopic topic = new RedissonTopic(StringCodec.INSTANCE, commandExecutor, keyeventPattern);
             topic.removeListenerAsync(expireListenerId);
         }

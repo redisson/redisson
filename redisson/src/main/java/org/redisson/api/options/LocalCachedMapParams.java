@@ -37,7 +37,8 @@ public final class LocalCachedMapParams<K, V> extends BaseMapOptions<LocalCached
     private CacheProvider cacheProvider = CacheProvider.REDISSON;
     private StoreMode storeMode = StoreMode.LOCALCACHE_REDIS;
     private boolean storeCacheMiss;
-    private boolean useKeyEventsPattern = true;
+
+    private ExpirationEventPolicy expirationEventPolicy = ExpirationEventPolicy.SUBSCRIBE_WITH_KEYEVENT_PATTERN;
 
     LocalCachedMapParams(String name) {
         this.name = name;
@@ -210,10 +211,6 @@ public final class LocalCachedMapParams<K, V> extends BaseMapOptions<LocalCached
         return this;
     }
 
-    public boolean isUseKeyEventsPattern() {
-        return useKeyEventsPattern;
-    }
-
     /**
      * Defines whether to use __keyevent pattern topic to listen for expired events.
      *
@@ -221,8 +218,22 @@ public final class LocalCachedMapParams<K, V> extends BaseMapOptions<LocalCached
      * @return LocalCachedMapOptions instance
      */
     public LocalCachedMapParams<K, V> useKeyEventsPattern(boolean useKeyEventsPattern) {
-        this.useKeyEventsPattern = useKeyEventsPattern;
+        if (useKeyEventsPattern) {
+            this.expirationEventPolicy = ExpirationEventPolicy.SUBSCRIBE_WITH_KEYEVENT_PATTERN;
+        } else {
+            this.expirationEventPolicy = ExpirationEventPolicy.SUBSCRIBE_WITH_KEYSPACE_CHANNEL;
+        }
         return this;
+    }
+
+    @Override
+    public LocalCachedMapOptions<K, V> expirationEventPolicy(ExpirationEventPolicy expirationEventPolicy) {
+        this.expirationEventPolicy = expirationEventPolicy;
+        return this;
+    }
+
+    public ExpirationEventPolicy getExpirationEventPolicy() {
+        return expirationEventPolicy;
     }
 
     public String getName() {

@@ -132,6 +132,25 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
 
     }
 
+    public enum ExpirationEventPolicy {
+
+        /**
+         * Don't subscribe on expire event.
+         */
+        DONT_SUBSCRIBE,
+
+        /**
+         * Subscribe on expire event using __keyevent@*:expired pattern
+         */
+        SUBSCRIBE_WITH_KEYEVENT_PATTERN,
+
+        /**
+         * Subscribe on expire event using __keyspace@N__:name channel
+         */
+        SUBSCRIBE_WITH_KEYSPACE_CHANNEL
+
+    }
+
     private ReconnectionStrategy reconnectionStrategy;
     private SyncStrategy syncStrategy;
     private EvictionPolicy evictionPolicy;
@@ -141,8 +160,8 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     private CacheProvider cacheProvider;
     private StoreMode storeMode;
     private boolean storeCacheMiss;
-    private boolean useKeyEventsPattern;
-    
+    private ExpirationEventPolicy expirationEventPolicy;
+
     protected LocalCachedMapOptions() {
     }
     
@@ -187,7 +206,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
                     .storeMode(StoreMode.LOCALCACHE_REDIS)
                     .syncStrategy(SyncStrategy.INVALIDATE)
                     .storeCacheMiss(false)
-                    .useKeyEventsPattern(true);
+                    .expirationEventPolicy(ExpirationEventPolicy.SUBSCRIBE_WITH_KEYEVENT_PATTERN);
     }
 
     public CacheProvider getCacheProvider() {
@@ -381,19 +400,35 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
         return this;
     }
 
-    public boolean isUseKeyEventsPattern() {
-        return useKeyEventsPattern;
-    }
-
     /**
-     * Defines whether to use __keyevent pattern topic to listen for expired events.
+     * Use {@link #expirationEventPolicy(ExpirationEventPolicy)} instead
      *
      * @param useKeyEventsPattern - whether to use __keyevent pattern topic
      * @return LocalCachedMapOptions instance
      */
+    @Deprecated
     public LocalCachedMapOptions<K, V> useKeyEventsPattern(boolean useKeyEventsPattern) {
-        this.useKeyEventsPattern = useKeyEventsPattern;
+        if (useKeyEventsPattern) {
+            this.expirationEventPolicy = ExpirationEventPolicy.SUBSCRIBE_WITH_KEYEVENT_PATTERN;
+        } else {
+            this.expirationEventPolicy = ExpirationEventPolicy.SUBSCRIBE_WITH_KEYSPACE_CHANNEL;
+        }
         return this;
+    }
+
+    /**
+     * Defines how to listen expired event sent by Redis upon this instance deletion.
+     *
+     * @param expirationEventPolicy expiration policy value
+     * @return LocalCachedMapOptions instance
+     */
+    public LocalCachedMapOptions<K, V> expirationEventPolicy(ExpirationEventPolicy expirationEventPolicy) {
+        this.expirationEventPolicy = expirationEventPolicy;
+        return this;
+    }
+
+    public ExpirationEventPolicy getExpirationEventPolicy() {
+        return expirationEventPolicy;
     }
 
     @Override
