@@ -564,9 +564,11 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             currentPart.removeSlaveAddress(uri);
 
             CompletableFuture<Boolean> slaveDownFuture = entry.slaveDownAsync(uri, FreezeReason.MANAGER);
-            slaveDownFuture.thenApply(r -> {
-                log.info("slave {} removed for slot ranges: {}", uri, currentPart.getSlotRanges());
-                return r;
+            slaveDownFuture.thenAccept(r -> {
+                if (r) {
+                    disconnectNode(uri);
+                    log.info("slave {} removed for slot ranges: {}", uri, currentPart.getSlotRanges());
+                }
             });
             futures.add(slaveDownFuture);
         }
