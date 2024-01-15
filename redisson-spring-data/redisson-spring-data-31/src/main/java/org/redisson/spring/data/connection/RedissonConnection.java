@@ -2915,7 +2915,7 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     @Override
     public RedisSetCommands setCommands() {
-        return null;
+        return this;
     }
 
     @Override
