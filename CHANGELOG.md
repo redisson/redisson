@@ -5,7 +5,7 @@ Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and
 
 ### 20-Dec-2023 - 3.26.0 released
 
-Feature - ability to specify `retryInterval`, `retryAttempts`, `timeout` settings per Redisson object  
+Feature - ability to specify `retryInterval`, `retryAttempts`, `timeout` settings per Redisson object. Please refer to the [documentation](https://github.com/redisson/redisson/wiki/3.-operations-execution)  
 Feature - `LocalCachedMapOptions.expirationEventPolicy` setting added  
 Feature - `StreamAddListener`, `StreamCreateConsumerListener`, `StreamCreateGroupListener`, `StreamRemoveConsumerListener`, `StreamRemoveGroupListener`, `StreamRemoveListener`, `StreamTrimListener` listeners added for `RStream` object  
 
