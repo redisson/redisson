@@ -48,7 +48,7 @@ public class MapCacheEvictionTask extends EvictionTask {
 
     public MapCacheEvictionTask(String name, String timeoutSetName, String maxIdleSetName,
                                 String expiredChannelName, String lastAccessTimeSetName, CommandAsyncExecutor executor,
-                                boolean removeEmpty, EvictionScheduler evictionScheduler) {
+                                boolean removeEmpty, EvictionScheduler evictionScheduler, String publishCommand) {
         super(executor);
         this.name = name;
         this.timeoutSetName = timeoutSetName;
@@ -58,7 +58,7 @@ public class MapCacheEvictionTask extends EvictionTask {
         this.executeTaskOnceLatchName = RedissonObject.prefixName("redisson__execute_task_once_latch", name);
         this.removeEmpty = removeEmpty;
         this.evictionScheduler = evictionScheduler;
-        this.publishCommand = executor.getConnectionManager().getSubscribeService().getPublishCommand();
+        this.publishCommand = publishCommand;
     }
 
     @Override

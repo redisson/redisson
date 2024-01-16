@@ -72,14 +72,15 @@ public class EvictionScheduler {
     }
 
     public void schedule(String name, String timeoutSetName, String maxIdleSetName,
-                         String expiredChannelName, String lastAccessTimeSetName, MapCacheOptions<?, ?> options) {
+                         String expiredChannelName, String lastAccessTimeSetName, MapCacheOptions<?, ?> options,
+                         String publishCommand) {
         boolean removeEmpty = false;
         if (options != null) {
             removeEmpty = options.isRemoveEmptyEvictionTask();
         }
 
         EvictionTask task = new MapCacheEvictionTask(name, timeoutSetName, maxIdleSetName, expiredChannelName, lastAccessTimeSetName,
-                executor, removeEmpty, this);
+                executor, removeEmpty, this, publishCommand);
         EvictionTask prevTask = tasks.putIfAbsent(name, task);
         if (prevTask == null) {
             task.schedule();

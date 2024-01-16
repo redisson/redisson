@@ -71,7 +71,9 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             String name, RedissonClient redisson, MapCacheOptions<K, V> options, WriteBehindService writeBehindService) {
         super(commandExecutor, name, redisson, options, writeBehindService);
         if (evictionScheduler != null) {
-            evictionScheduler.schedule(getRawName(), getTimeoutSetName(), getIdleSetName(), getExpiredChannelName(), getLastAccessTimeSetName(), options);
+            evictionScheduler.schedule(getRawName(), getTimeoutSetName(), getIdleSetName(),
+                    getExpiredChannelName(), getLastAccessTimeSetName(), options,
+                    commandExecutor.getConnectionManager().getSubscribeService().getPublishCommand());
         }
         this.evictionScheduler = evictionScheduler;
         this.publishCommand = commandExecutor.getConnectionManager().getSubscribeService().getPublishCommand();
@@ -81,7 +83,9 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             String name, RedissonClient redisson, MapCacheOptions<K, V> options, WriteBehindService writeBehindService) {
         super(codec, commandExecutor, name, redisson, options, writeBehindService);
         if (evictionScheduler != null) {
-            evictionScheduler.schedule(getRawName(), getTimeoutSetName(), getIdleSetName(), getExpiredChannelName(), getLastAccessTimeSetName(), options);
+            evictionScheduler.schedule(getRawName(), getTimeoutSetName(), getIdleSetName(),
+                    getExpiredChannelName(), getLastAccessTimeSetName(), options,
+                    commandExecutor.getConnectionManager().getSubscribeService().getPublishCommand());
         }
         this.evictionScheduler = evictionScheduler;
         this.publishCommand = commandExecutor.getConnectionManager().getSubscribeService().getPublishCommand();
