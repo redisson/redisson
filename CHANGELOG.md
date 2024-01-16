@@ -13,7 +13,7 @@ Fixed - Spring Data Redis `RedissonConnection.setCommands()` method returns null
 Fixed - continuously reconnecting to a removed slave node in cluster mode  
 Fixed - `EntryExpiredListener` isn't invoked by `RMapCache` instance in Redis Cluster 7+ and if `nameMapper` is defined  
 Fixed - `Skipped slave up ...` error is thrown in Sentinel mode if nodes use IPv6  
-Fixed - NPE when adding or removing shards in ElastiCache  
+Fixed - NPE is thrown when adding or removing shards in ElastiCache  
 Fixed - `RAtomicDouble`, `RAtomicLong`, `RMap`, `RScoredSortedSet`, `RSet` listeners aren't removed properly  
 Fixed - connection isn't reconnected on `WRONGPASS` Redis error  
 Fixed - connection timeout during Redisson start ignores connections amount  
