@@ -262,7 +262,7 @@ public class LoadBalancerManager {
         if (entry != null) {
             return slaveConnectionPool.get(command, entry);
         }
-        RedisConnectionException exception = new RedisConnectionException("Can't find entry for " + addr);
+        RedisConnectionException exception = new RedisConnectionException("Can't find entry for " + addr + " command " + command);
         CompletableFuture<RedisConnection> f = new CompletableFuture<>();
         f.completeExceptionally(exception);
         return f;
@@ -273,7 +273,7 @@ public class LoadBalancerManager {
         if (entry != null) {
             return slaveConnectionPool.get(command, entry);
         }
-        RedisConnectionException exception = new RedisConnectionException("Can't find entry for " + client);
+        RedisConnectionException exception = new RedisConnectionException("Can't find entry for " + client + " command " + command);
         CompletableFuture<RedisConnection> f = new CompletableFuture<>();
         f.completeExceptionally(exception);
         return f;
