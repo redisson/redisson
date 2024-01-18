@@ -3,6 +3,26 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 20-Dec-2023 - 3.26.0 released
+
+Feature - ability to specify `retryInterval`, `retryAttempts`, `timeout` settings per Redisson object. Please refer to the [documentation](https://github.com/redisson/redisson/wiki/3.-operations-execution)  
+Feature - `LocalCachedMapOptions.expirationEventPolicy` setting added  
+Feature - `StreamAddListener`, `StreamCreateConsumerListener`, `StreamCreateGroupListener`, `StreamRemoveConsumerListener`, `StreamRemoveGroupListener`, `StreamRemoveListener`, `StreamTrimListener` listeners added for `RStream` object  
+
+Fixed - Spring Data Redis `RedissonConnection.setCommands()` method returns null  
+Fixed - continuously reconnecting to a removed slave node in cluster mode  
+Fixed - `EntryExpiredListener` isn't invoked by `RMapCache` instance in Redis Cluster 7+ and if `nameMapper` is defined  
+Fixed - `Skipped slave up ...` error is thrown in Sentinel mode if nodes use IPv6  
+Fixed - NPE is thrown when adding or removing shards in ElastiCache  
+Fixed - `RAtomicDouble`, `RAtomicLong`, `RMap`, `RScoredSortedSet`, `RSet` listeners aren't removed properly  
+Fixed - connection isn't reconnected on `WRONGPASS` Redis error  
+Fixed - connection timeout during Redisson start ignores connections amount  
+Fixed - `RSearch.search()` method doesn't execute query with aliases properly  
+Fixed - `FCALL_RO` command isn't used when `RFunction` method called with `FunctionMode.READ` parameter  
+Fixed - `IllegalReferenceCountException` is thrown when canceling a method call  
+Fixed - Redis scan cursor exceed `Long.MAX_VALUE` in AWS Elasticache  
+Fixed - internal `ServiceManager.calcSHA()` method should use UTF-8 encoding by default  
+
 ### 20-Dec-2023 - 3.25.2 released
 
 Fixed - SSL connection can't be established  
