@@ -185,7 +185,7 @@ public class RedissonLockTest extends BaseConcurrentTest {
         config.useSingleServer().setAddress("redis://127.0.0.1:" + redis.getFirstMappedPort());
         RedissonClient redisson = Redisson.create(config);
 
-        Assertions.assertThrows(WriteRedisConnectionException.class, () -> {
+        Assertions.assertThrows(RedisException.class, () -> {
 
             RLock lock = redisson.getLock("myLock");
             // kill RedisServer while main thread is sleeping.

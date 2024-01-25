@@ -473,7 +473,8 @@ public class ServiceManager {
         CompletionStage<T> future = supplier.get();
         future.whenComplete((r, e) -> {
             if (e != null) {
-                if (e.getCause().getMessage().equals("None of slaves were synced")) {
+                if (e.getCause().getMessage() != null
+                        && e.getCause().getMessage().equals("None of slaves were synced")) {
                     if (attempts.decrementAndGet() < 0) {
                         result.completeExceptionally(e);
                         return;
