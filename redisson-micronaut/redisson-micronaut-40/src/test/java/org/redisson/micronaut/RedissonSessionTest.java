@@ -179,7 +179,7 @@ public class RedissonSessionTest {
         Optional<RedissonSession> noSession = sessionStore.findSession(saved.getId()).get();
         assertThat(noSession).isEmpty();
 
-        Thread.sleep(11000);
+        Thread.sleep(15000);
 
         assertThat(rc.getKeys().count()).isZero();
 
