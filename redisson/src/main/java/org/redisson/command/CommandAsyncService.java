@@ -41,6 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.*;
@@ -951,7 +952,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     protected CommandBatchService createCommandBatchService(int availableSlaves) {
         BatchOptions options = BatchOptions.defaults()
-                                            .syncSlaves(availableSlaves, getServiceManager().getCfg().getSlavesSyncTimeout(), TimeUnit.MILLISECONDS);
+                                            .sync(availableSlaves, Duration.ofMillis(getServiceManager().getCfg().getSlavesSyncTimeout()));
         return new CommandBatchService(this, options);
     }
 
