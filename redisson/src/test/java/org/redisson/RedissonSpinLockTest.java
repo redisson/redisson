@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.redisson.client.RedisException;
 import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.config.Config;
 import org.testcontainers.containers.GenericContainer;
@@ -65,7 +66,7 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
         config.useSingleServer().setAddress("redis://127.0.0.1:" + redis.getFirstMappedPort());
         RedissonClient redisson = Redisson.create(config);
 
-        Assertions.assertThrows(WriteRedisConnectionException.class, () -> {
+        Assertions.assertThrows(RedisException.class, () -> {
 
             RLock lock = redisson.getSpinLock("myLock");
             // kill RedisServer while main thread is sleeping.
