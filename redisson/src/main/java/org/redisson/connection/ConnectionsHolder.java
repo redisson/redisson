@@ -84,12 +84,12 @@ public class ConnectionsHolder<T extends RedisConnection> {
         freeConnectionsCounter.release();
     }
 
-    public void addConnection(T conn) {
+    private void addConnection(T conn) {
         conn.setLastUsageTime(System.nanoTime());
         freeConnections.add(conn);
     }
 
-    public T pollConnection(RedisCommand<?> command) {
+    private T pollConnection(RedisCommand<?> command) {
         T c = freeConnections.poll();
         if (c != null) {
             c.incUsage();
@@ -112,7 +112,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
         connection.decUsage();
     }
 
-    public CompletionStage<T> connect() {
+    private CompletionStage<T> connect() {
         CompletionStage<T> future = connectionCallback.apply(client);
         return future.whenComplete((conn, e) -> {
             if (e != null) {
