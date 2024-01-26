@@ -21,7 +21,6 @@ import org.redisson.client.RedisConnectionException;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ClientConnectionsEntry;
-import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.ConnectionsHolder;
 import org.redisson.connection.MasterSlaveEntry;
@@ -142,14 +141,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
             connection.closeAsync();
             return;
         }
-        ConnectionsHolder<T> holder = getConnectionHolder(entry);
-        if (entry.isFreezed() && entry.getFreezeReason() != FreezeReason.SYSTEM) {
-            connection.closeAsync();
-            holder.getAllConnections().remove(connection);
-        } else {
-            holder.releaseConnection(connection);
-        }
-        holder.releaseConnection();
+        getConnectionHolder(entry).releaseConnection(entry, connection);
     }
 
 }

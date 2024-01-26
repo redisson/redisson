@@ -76,11 +76,11 @@ public class ConnectionsHolder<T extends RedisConnection> {
         return freeConnectionsCounter;
     }
 
-    public CompletableFuture<Void> acquireConnection() {
+    protected CompletableFuture<Void> acquireConnection() {
         return freeConnectionsCounter.acquire();
     }
     
-    public void releaseConnection() {
+    private void releaseConnection() {
         freeConnectionsCounter.release();
     }
 
@@ -97,7 +97,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
         return c;
     }
 
-    public void releaseConnection(T connection) {
+    private void releaseConnection(T connection) {
         if (connection.isClosed()) {
             return;
         }
@@ -265,5 +265,16 @@ public class ConnectionsHolder<T extends RedisConnection> {
                 ", freeConnectionsCounter=" + freeConnectionsCounter +
                 '}';
     }
+
+    public final void releaseConnection(ClientConnectionsEntry entry, T connection) {
+        if (entry.isFreezed() && entry.getFreezeReason() != ClientConnectionsEntry.FreezeReason.SYSTEM) {
+            connection.closeAsync();
+            getAllConnections().remove(connection);
+        } else {
+            releaseConnection(connection);
+        }
+        releaseConnection();
+    }
+
 }
 
