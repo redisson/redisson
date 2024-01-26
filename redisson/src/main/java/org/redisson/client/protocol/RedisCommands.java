@@ -868,13 +868,13 @@ public interface RedisCommands {
                     new ListFirstObjectDecoder(new EmptyMapConvertor()),
                     new ObjectMapReplayDecoder(true, new CompositeCodec(DoubleCodec.INSTANCE, StringCodec.INSTANCE))));
 
-    RedisStrictCommand<Void> FT_DICTADD = new RedisStrictCommand<>("FT.DICTADD");
-    RedisStrictCommand<Void> FT_DICTDEL = new RedisStrictCommand<>("FT.DICTDEL");
+    RedisStrictCommand<Void> FT_DICTADD = new RedisStrictCommand<>("FT.DICTADD", new VoidReplayConvertor());
+    RedisStrictCommand<Void> FT_DICTDEL = new RedisStrictCommand<>("FT.DICTDEL", new VoidReplayConvertor());
 
     RedisStrictCommand<List<String>> FT_DICTDUMP = new RedisStrictCommand<>("FT.DICTDUMP", new StringListReplayDecoder());
 
-    RedisStrictCommand<Void> FT_DROPINDEX = new RedisStrictCommand<>("FT.DROPINDEX");
-    RedisStrictCommand<Void> FT_CURSOR_DEL = new RedisStrictCommand<>("FT.CURSOR", "DEL");
+    RedisStrictCommand<Void> FT_DROPINDEX = new RedisStrictCommand<>("FT.DROPINDEX", new VoidReplayConvertor());
+    RedisStrictCommand<Void> FT_CURSOR_DEL = new RedisStrictCommand<>("FT.CURSOR", "DEL", new VoidReplayConvertor());
 
     RedisStrictCommand<Map<String, String>> FT_CONFIG_GET = new RedisStrictCommand<>("FT.CONFIG", "GET", new ObjectMapReplayDecoder());
     RedisStrictCommand<Void> FT_CONFIG_SET = new RedisStrictCommand<Void>("FT.CONFIG", "SET", new VoidReplayConvertor());
