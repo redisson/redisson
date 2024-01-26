@@ -80,7 +80,7 @@ import java.util.function.Supplier;
  * @author Nikita Koksharov
  *
  */
-public class ServiceManager {
+public final class ServiceManager {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
