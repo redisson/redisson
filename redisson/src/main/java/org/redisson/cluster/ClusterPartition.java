@@ -15,12 +15,9 @@
  */
 package org.redisson.cluster;
 
-import java.util.BitSet;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-
 import org.redisson.misc.RedisURI;
+
+import java.util.*;
 
 import static org.redisson.connection.MasterSlaveConnectionManager.MAX_SLOT;
 
@@ -144,29 +141,16 @@ public class ClusterPartition {
     }
     
     @Override
-    @SuppressWarnings("AvoidInlineConditionals")
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((nodeId == null) ? 0 : nodeId.hashCode());
-        return result;
+        return Objects.hash(nodeId);
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        ClusterPartition other = (ClusterPartition) obj;
-        if (nodeId == null) {
-            if (other.nodeId != null)
-                return false;
-        } else if (!nodeId.equals(other.nodeId))
-            return false;
-        return true;
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ClusterPartition that = (ClusterPartition) o;
+        return Objects.equals(nodeId, that.nodeId);
     }
 
     @Override
