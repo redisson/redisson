@@ -37,8 +37,10 @@ import io.netty.resolver.dns.DnsServerAddressStreamProviders;
 import io.netty.util.Timer;
 import io.netty.util.TimerTask;
 import io.netty.util.*;
+import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.*;
+import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.internal.PlatformDependent;
 import org.redisson.ElementsSubscribeService;
 import org.redisson.QueueTransferService;
@@ -74,6 +76,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -277,11 +280,23 @@ public final class ServiceManager {
         return group;
     }
 
-    public Future<List<InetSocketAddress>> resolveAll(RedisURI uri) {
-        AddressResolver<InetSocketAddress> resolver = resolverGroup.getResolver(group.next());
-        return resolver.resolveAll(InetSocketAddress.createUnresolved(uri.getHost(), uri.getPort()));
-    }
+    public CompletableFuture<List<RedisURI>> resolveAll(RedisURI uri) {
+        if (uri.isIP()) {
+            return CompletableFuture.completedFuture(Collections.singletonList(uri));
+        }
 
+        AddressResolver<InetSocketAddress> resolver = resolverGroup.getResolver(group.next());
+        Future<List<InetSocketAddress>> f = resolver.resolveAll(InetSocketAddress.createUnresolved(uri.getHost(), uri.getPort()));
+        CompletableFuture<List<RedisURI>> result = new CompletableFuture<>();
+        f.addListener((GenericFutureListener<Future<List<InetSocketAddress>>>) future -> {
+            List<RedisURI> nodes = future.getNow().stream().map(addr -> {
+                return toURI(uri.getScheme(), addr.getAddress().getHostAddress(), "" + addr.getPort());
+            }).collect(Collectors.toList());
+            result.complete(nodes);
+        });
+        return result;
+    }
+    
     public AddressResolverGroup<InetSocketAddress> getResolverGroup() {
         return resolverGroup;
     }

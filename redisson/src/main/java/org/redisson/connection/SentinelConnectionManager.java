@@ -17,8 +17,6 @@ package org.redisson.connection;
 
 import io.netty.util.NetUtil;
 import io.netty.util.Timeout;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import io.netty.util.internal.StringUtil;
 import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
@@ -35,10 +33,11 @@ import org.redisson.misc.RedisURI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -277,35 +276,38 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
     private void scheduleSentinelDNSCheck() {
         monitorFuture = serviceManager.newTimeout(t -> {
-            AtomicInteger sentinelsCounter = new AtomicInteger(sentinelHosts.size());
-            performSentinelDNSCheck(future -> {
-                if (sentinelsCounter.decrementAndGet() == 0) {
-                    scheduleSentinelDNSCheck();
-                }
-            });
+            CompletableFuture<Void> f = performSentinelDNSCheck();
+            f.thenAccept(r -> scheduleSentinelDNSCheck());
         }, config.getDnsMonitoringInterval(), TimeUnit.MILLISECONDS);
     }
 
-    private void performSentinelDNSCheck(FutureListener<List<InetSocketAddress>> commonListener) {
+    private CompletableFuture<Void> performSentinelDNSCheck() {
+        List<CompletableFuture<List<RedisURI>>> futures = new ArrayList<>();
         for (RedisURI host : sentinelHosts) {
-            Future<List<InetSocketAddress>> allNodes = serviceManager.resolveAll(host);
-            allNodes.addListener((FutureListener<List<InetSocketAddress>>) future -> {
-                if (!future.isSuccess()) {
-                    log.error("Unable to resolve {}", host.getHost(), future.cause());
+            CompletableFuture<List<RedisURI>> allNodes = serviceManager.resolveAll(host);
+            CompletableFuture<List<RedisURI>> f = allNodes.whenComplete((nodes, ex) -> {
+                if (ex != null) {
+                    log.error("Unable to resolve {}", host.getHost(), ex);
                     return;
                 }
 
-                future.getNow().stream()
-                        .filter(addr -> {
-                            RedisURI uri = toURI(addr);
+                nodes.stream()
+                        .filter(uri -> {
                             return !sentinels.containsKey(uri) && !disconnectedSentinels.contains(uri);
                         })
-                        .forEach(addr -> registerSentinel(addr));
+                        .forEach(uri -> {
+                            try {
+                                byte[] addr = NetUtil.createByteArrayFromIpAddressString(uri.getHost());
+                                InetSocketAddress address = new InetSocketAddress(InetAddress.getByAddress(host.getHost(), addr), uri.getPort());
+                                registerSentinel(address);
+                            } catch (UnknownHostException e) {
+                                log.error(e.getMessage(), e);
+                            }
+                        });
             });
-            if (commonListener != null) {
-                allNodes.addListener(commonListener);
-            }
+            futures.add(f);
         }
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
     }
     
     private void scheduleChangeCheck(SentinelServersConfig cfg, Iterator<RedisClient> iterator) {
@@ -328,8 +330,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 log.error("Can't update cluster state", lastException.get());
             }
             disconnectedSentinels.clear();
-            performSentinelDNSCheck(null);
-            scheduleChangeCheck(cfg, null);
+            CompletableFuture<Void> f = performSentinelDNSCheck();
+            f.thenAccept(r -> scheduleChangeCheck(cfg, null));
             return;
         }
         if (!serviceManager.getShutdownLatch().acquire()) {
