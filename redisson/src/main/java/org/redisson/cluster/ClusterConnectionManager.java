@@ -846,11 +846,13 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
             CompletableFuture<List<RedisURI>> ipsFuture = serviceManager.resolveAll(clusterNodeInfo.getAddress());
             CompletableFuture<Void> f = ipsFuture.thenAccept(addresses -> {
+                int index = 0;
                 if (addresses.size() > 1) {
                     addresses.sort(Comparator.comparing(RedisURI::getHost));
-                    Collections.shuffle(addresses, new Random(serviceManager.getId().hashCode()));
+                    Random r = new Random(serviceManager.getId().hashCode());
+                    index = r.nextInt(addresses.size());
                 }
-                RedisURI address = addresses.get(0);
+                RedisURI address = addresses.get(index);
 
                 if (clusterNodeInfo.containsFlag(Flag.SLAVE)) {
                     ClusterPartition masterPartition = partitions.computeIfAbsent(masterId, k -> new ClusterPartition(masterId));
