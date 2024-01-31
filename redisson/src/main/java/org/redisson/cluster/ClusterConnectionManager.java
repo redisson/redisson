@@ -849,7 +849,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 int index = 0;
                 if (addresses.size() > 1) {
                     addresses.sort(Comparator.comparing(RedisURI::getHost));
-                    Random r = new Random(serviceManager.getId().hashCode());
+                    SplittableRandom r = new SplittableRandom(serviceManager.getId().hashCode());
                     index = r.nextInt(addresses.size());
                 }
                 RedisURI address = addresses.get(index);
