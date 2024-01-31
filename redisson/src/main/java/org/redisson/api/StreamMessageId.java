@@ -130,6 +130,7 @@ public class StreamMessageId {
     }
     
     @Override
+    @SuppressWarnings("AvoidInlineConditionals")
     public String toString() {
         if (this == NEVER_DELIVERED) {
             return ">";
