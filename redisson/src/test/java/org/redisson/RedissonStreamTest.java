@@ -521,6 +521,31 @@ public class RedissonStreamTest extends RedisDockerTest {
     }
     
     @Test
+    public void testAutogenerateStreamSequenceId() {
+        RStream<String, String> stream = redisson.getStream("test");
+        assertThat(stream.size()).isEqualTo(0);
+        
+        StreamMessageId id = new StreamMessageId(1).autogenerateSequenceId();
+        
+        Map<String, String> entry1 = new HashMap<>();
+        entry1.put("test", "value1");
+        Map<String, String> entry2 = new HashMap<>();
+        entry2.put("test", "value2");
+
+        stream.add(id,StreamAddArgs.entries(entry1));
+        stream.add(id,StreamAddArgs.entries(entry2));
+        
+        Map<StreamMessageId, Map<String, String>> r = stream.range(10, StreamMessageId.MIN, StreamMessageId.MAX);
+        System.out.println("r:" + r);
+        assertThat(r).size().isEqualTo(2);
+        assertThat(r.keySet()).containsExactly(
+            new StreamMessageId(1,0),new StreamMessageId(1,1)
+        );
+        assertThat(r.get(new StreamMessageId(1,0))).isEqualTo(entry1);
+        assertThat(r.get(new StreamMessageId(1,1))).isEqualTo(entry2);
+    }
+    
+    @Test
     public void testRangeReversed() {
         RStream<String, String> stream = redisson.getStream("test");
         assertThat(stream.size()).isEqualTo(0);

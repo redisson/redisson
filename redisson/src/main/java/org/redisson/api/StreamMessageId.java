@@ -65,8 +65,10 @@ public class StreamMessageId {
      */
     public static final StreamMessageId ALL = new StreamMessageId(-1);
     
-    private long id0;
+    private final long id0;
     private long id1;
+    
+    private boolean autogenerateSequenceId;
     
     public StreamMessageId(long id0) {
         super();
@@ -77,6 +79,11 @@ public class StreamMessageId {
         super();
         this.id0 = id0;
         this.id1 = id1;
+    }
+    
+    public StreamMessageId autogenerateSequenceId() {
+        this.autogenerateSequenceId = true;
+        return this;
     }
     
     /**
@@ -119,7 +126,7 @@ public class StreamMessageId {
             return false;
         if (id1 != other.id1)
             return false;
-        return true;
+        return autogenerateSequenceId == other.autogenerateSequenceId;
     }
     
     @Override
@@ -143,7 +150,7 @@ public class StreamMessageId {
             return "*";
         }
 
-        return id0 + "-" + id1;
+        return id0 + "-" + (autogenerateSequenceId ? "*" : id1);
     }
     
 }
