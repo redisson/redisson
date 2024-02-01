@@ -255,8 +255,11 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
 
     @Override
     public boolean isHeldByThread(long threadId) {
-        RFuture<Boolean> future = commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.HEXISTS, getRawName(), getLockName(threadId));
-        return get(future);
+        return get(isHeldByThreadAsync(threadId));
+    }
+
+    public RFuture<Boolean> isHeldByThreadAsync(long threadId) {
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.HEXISTS, getRawName(), getLockName(threadId));
     }
 
     private static final RedisCommand<Integer> HGET = new RedisCommand<Integer>("HGET", new MapValueDecoder(), new IntegerReplayConvertor(0));
