@@ -536,7 +536,7 @@ public class RedissonStreamTest extends RedisDockerTest {
         stream.add(id,StreamAddArgs.entries(entry2));
         
         Map<StreamMessageId, Map<String, String>> r = stream.range(10, StreamMessageId.MIN, StreamMessageId.MAX);
-        System.out.println("r:" + r);
+
         assertThat(r).size().isEqualTo(2);
         assertThat(r.keySet()).containsExactly(
             new StreamMessageId(1,0),new StreamMessageId(1,1)
