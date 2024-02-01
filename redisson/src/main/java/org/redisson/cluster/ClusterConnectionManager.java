@@ -856,9 +856,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     index = r.nextInt(addresses.size());
                 }
 
-                log.debug("resolved hostname: {} ips: {} index: {} amount: {}",
-                        clusterNodeInfo.getAddress(), addresses, index, addresses.size());
-
                 RedisURI address = addresses.get(index);
 
                 if (clusterNodeInfo.containsFlag(Flag.SLAVE)) {
