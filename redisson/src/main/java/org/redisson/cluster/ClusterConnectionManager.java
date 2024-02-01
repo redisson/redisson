@@ -67,9 +67,12 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     private ClusterServersConfig cfg;
 
+    private final long seed;
+
     public ClusterConnectionManager(ClusterServersConfig cfg, ServiceManager serviceManager) {
         super(cfg, serviceManager);
         this.serviceManager.setNatMapper(cfg.getNatMapper());
+        this.seed = ThreadLocalRandom.current().nextLong();
     }
 
     @Override
@@ -849,7 +852,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 int index = 0;
                 if (addresses.size() > 1) {
                     addresses.sort(Comparator.comparing(RedisURI::getHost));
-                    SplittableRandom r = new SplittableRandom(serviceManager.getId().hashCode());
+                    SplittableRandom r = new SplittableRandom(seed);
                     index = r.nextInt(addresses.size());
                 }
 
