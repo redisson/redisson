@@ -282,7 +282,8 @@ public final class ServiceManager {
 
     public CompletableFuture<List<RedisURI>> resolveAll(RedisURI uri) {
         if (uri.isIP()) {
-            return CompletableFuture.completedFuture(Collections.singletonList(uri));
+            RedisURI mappedUri = toURI(uri.getScheme(), uri.getHost(), "" + uri.getPort());
+            return CompletableFuture.completedFuture(Collections.singletonList(mappedUri));
         }
 
         AddressResolver<InetSocketAddress> resolver = resolverGroup.getResolver(group.next());
