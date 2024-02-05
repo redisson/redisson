@@ -868,8 +868,8 @@ public interface RedisCommands {
                     new ListFirstObjectDecoder(new EmptyMapConvertor()),
                     new ObjectMapReplayDecoder(true, new CompositeCodec(DoubleCodec.INSTANCE, StringCodec.INSTANCE))));
 
-    RedisStrictCommand<Void> FT_DICTADD = new RedisStrictCommand<>("FT.DICTADD", new VoidReplayConvertor());
-    RedisStrictCommand<Void> FT_DICTDEL = new RedisStrictCommand<>("FT.DICTDEL", new VoidReplayConvertor());
+    RedisStrictCommand<Long> FT_DICTADD = new RedisStrictCommand<>("FT.DICTADD");
+    RedisStrictCommand<Long> FT_DICTDEL = new RedisStrictCommand<>("FT.DICTDEL");
 
     RedisStrictCommand<List<String>> FT_DICTDUMP = new RedisStrictCommand<>("FT.DICTDUMP", new StringListReplayDecoder());
 
