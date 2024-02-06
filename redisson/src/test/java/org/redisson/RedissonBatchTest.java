@@ -364,7 +364,7 @@ public class RedissonBatchTest extends RedisDockerTest {
         GenericContainer<?> redisClusterContainer =
                 new GenericContainer<>("vishnunair/docker-redis-cluster")
                         .withExposedPorts(6379, 6380, 6381, 6382, 6383, 6384)
-                        .withStartupCheckStrategy(new MinimumDurationRunningStartupCheckStrategy(Duration.ofSeconds(10)));
+                        .withStartupCheckStrategy(new MinimumDurationRunningStartupCheckStrategy(Duration.ofSeconds(15)));
         redisClusterContainer.start();
 
         Config config = new Config();
