@@ -361,41 +361,26 @@ public class RedissonBatchTest extends RedisDockerTest {
     @ParameterizedTest
     @MethodSource("data")
     public void testSyncSlavesAOF(BatchOptions batchOptions) {
-        GenericContainer<?> redisClusterContainer =
-                new GenericContainer<>("vishnunair/docker-redis-cluster")
-                        .withExposedPorts(6379, 6380, 6381, 6382, 6383, 6384)
-                        .withStartupCheckStrategy(new MinimumDurationRunningStartupCheckStrategy(Duration.ofSeconds(15)));
-        redisClusterContainer.start();
+        testInCluster(r -> {
+            Config c = r.getConfig();
+            c.useClusterServers()
+                    .setTimeout(30000);
 
-        Config config = new Config();
-        config.useClusterServers()
-                .setTimeout(30000)
-                .setNatMapper(new NatMapper() {
-                    @Override
-                    public RedisURI map(RedisURI uri) {
-                        if (redisClusterContainer.getMappedPort(uri.getPort()) == null) {
-                            return uri;
-                        }
-                        return new RedisURI(uri.getScheme(), redisClusterContainer.getHost(), redisClusterContainer.getMappedPort(uri.getPort()));
-                    }
-                })
-                .addNodeAddress("redis://127.0.0.1:" + redisClusterContainer.getFirstMappedPort());
-        RedissonClient redisson = Redisson.create(config);
+            RedissonClient redisson = Redisson.create(c);
+            batchOptions
+                    .syncAOF(1, 1, Duration.ofSeconds(1));
 
-        batchOptions
-                .syncAOF(1, 1, Duration.ofSeconds(1));
+            RBatch batch = redisson.createBatch(batchOptions);
+            for (int i = 0; i < 20; i++) {
+                RMapAsync<String, String> map = batch.getMap("test");
+                map.putAsync("" + i, "" + i);
+            }
 
-        RBatch batch = redisson.createBatch(batchOptions);
-        for (int i = 0; i < 20; i++) {
-            RMapAsync<String, String> map = batch.getMap("test");
-            map.putAsync("" + i, "" + i);
-        }
+            BatchResult<?> result = batch.execute();
+            assertThat(result.getResponses()).hasSize(20);
 
-        BatchResult<?> result = batch.execute();
-        assertThat(result.getResponses()).hasSize(20);
-
-        redisson.shutdown();
-        redisClusterContainer.stop();
+            redisson.shutdown();
+        });
     }
 
     @ParameterizedTest
