@@ -646,4 +646,10 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      */
     int addListener(ObjectListener listener);
 
+
+    void exPut(K key, V value, long ttl);
+
+    V exGet(K key);
+
+    V addAndExGet(K key, Number delta,long ttl);
 }

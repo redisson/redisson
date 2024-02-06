@@ -441,4 +441,10 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
      */
     RFuture<Integer> addListenerAsync(ObjectListener listener);
 
+
+    RFuture<V> putAsync(K key, V value, long ttl);
+
+    RFuture<V> exGetAsync(K key);
+
+    RFuture<V> addAndExGetAsync(K key, Number value,long ttl);
 }

@@ -888,4 +888,7 @@ public interface RedisCommands {
 
     RedisCommand<Void> FT_SYNUPDATE = new RedisCommand("FT.SYNUPDATE", new VoidReplayConvertor());
 
+    RedisCommand<Object> EXHGET = new RedisCommand<Object>("EXHGET");
+    RedisStrictCommand<Boolean> EXHSET = new RedisStrictCommand<Boolean>("EXHSET", new BooleanReplayConvertor());
+    RedisStrictCommand<Long> EXHINCRBY = new RedisStrictCommand<Long>("EXHINCRBY");
 }
