@@ -553,6 +553,17 @@ public class PublishSubscribeService {
         });
     }
 
+    public CompletableFuture<Codec> unsubscribe(ChannelName channelName, PubSubType topicType) {
+        MasterSlaveEntry entry = getEntry(channelName);
+        if (entry == null) {
+            RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node for name: " + channelName + " hasn't been discovered yet. Check cluster slots coverage using CLUSTER NODES command. Increase value of retryAttempts and/or retryInterval settings.");
+            CompletableFuture<Codec> promise = new CompletableFuture<>();
+            promise.completeExceptionally(ex);
+            return promise;
+        }
+        return unsubscribe(channelName, entry, topicType);
+    }
+
     CompletableFuture<Codec> unsubscribe(ChannelName channelName, MasterSlaveEntry e, PubSubType topicType) {
         if (connectionManager.getServiceManager().isShuttingDown()) {
             return CompletableFuture.completedFuture(null);
