@@ -147,7 +147,7 @@ public class MasterSlaveEntry {
                     config);
 
             List<CompletableFuture<Void>> futures = new ArrayList<>();
-            if (!config.isSlaveNotUsed() && getEntry(client.getAddr()) != null) {
+            if (!config.isSlaveNotUsed() && getEntry(client.getAddr()) == null) {
                 CompletableFuture<Void> masterAsSlaveFuture = addSlave(client.getAddr(), client.getConfig().getAddress(),
                         true, NodeType.MASTER, client.getConfig().getSslHostname());
                 futures.add(masterAsSlaveFuture);
