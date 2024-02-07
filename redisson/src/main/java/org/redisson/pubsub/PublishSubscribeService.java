@@ -472,7 +472,7 @@ public class PublishSubscribeService {
     private CompletableFuture<Void> unsubscribeLocked(PubSubType topicType, ChannelName channelName) {
         Collection<PubSubConnectionEntry> coll = name2entry.get(channelName);
         if (coll == null || coll.isEmpty()) {
-            RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node for name: " + channelName + " hasn't been discovered yet. Check cluster slots coverage using CLUSTER NODES command. Increase value of retryAttempts and/or retryInterval settings.");
+            RedisException ex = new RedisException("Channel: " + channelName + " is not registered");
             CompletableFuture<Void> promise = new CompletableFuture<>();
             promise.completeExceptionally(ex);
             return promise;
