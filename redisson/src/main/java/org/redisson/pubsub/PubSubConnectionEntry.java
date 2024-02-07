@@ -311,7 +311,7 @@ public class PubSubConnectionEntry {
                     removeListener(channelName, listener);
                 }
                 if (!hasListeners(channelName)) {
-                    subscribeService.unsubscribeLocked(type, channelName, entry)
+                    subscribeService.unsubscribeLocked(type, channelName, this)
                             .whenComplete((r, ex) -> {
                                 lock.release();
                             });
