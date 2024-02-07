@@ -50,6 +50,8 @@ public interface ConnectionManager {
 
     MasterSlaveEntry getEntry(String name);
 
+    MasterSlaveEntry getEntry(int slot);
+
     MasterSlaveEntry getWriteEntry(int slot);
 
     MasterSlaveEntry getReadEntry(int slot);

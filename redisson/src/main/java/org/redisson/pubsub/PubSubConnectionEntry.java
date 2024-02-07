@@ -24,6 +24,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.ServiceManager;
 import org.redisson.misc.AsyncSemaphore;
 import org.redisson.misc.WrappedLock;
@@ -54,6 +55,7 @@ public class PubSubConnectionEntry {
 
     private final ServiceManager serviceManager;
     private final PublishSubscribeService subscribeService;
+    private final MasterSlaveEntry entry;
 
     private static final Map<PubSubType, PubSubType> SUBSCRIBE2UNSUBSCRIBE = new HashMap<>();
 
@@ -63,12 +65,17 @@ public class PubSubConnectionEntry {
         SUBSCRIBE2UNSUBSCRIBE.put(PubSubType.PSUBSCRIBE, PubSubType.PUNSUBSCRIBE);
     }
 
-    public PubSubConnectionEntry(RedisPubSubConnection conn, ConnectionManager connectionManager) {
+    public PubSubConnectionEntry(RedisPubSubConnection conn, ConnectionManager connectionManager, MasterSlaveEntry entry) {
         super();
         this.conn = conn;
+        this.entry = entry;
         this.serviceManager = connectionManager.getServiceManager();
         this.subscribeService = connectionManager.getSubscribeService();
         this.subscribedChannelsAmount = new AtomicInteger(serviceManager.getConfig().getSubscriptionsPerConnection());
+    }
+
+    public MasterSlaveEntry getEntry() {
+        return entry;
     }
 
     public int countListeners(ChannelName channelName) {
@@ -127,7 +134,7 @@ public class PubSubConnectionEntry {
     }
     
     public boolean removeListener(ChannelName channelName, int listenerId) {
-        Queue<RedisPubSubListener<?>> listeners = channelListeners.get(channelName);
+        Queue<RedisPubSubListener<?>> listeners = channelListeners.getOrDefault(channelName, EMPTY_QUEUE);
         for (RedisPubSubListener<?> listener : listeners) {
             if (System.identityHashCode(listener) == listenerId) {
                 removeListener(channelName, listener);
@@ -176,7 +183,7 @@ public class PubSubConnectionEntry {
         pp.whenComplete((r, e) -> {
             if (e != null) {
                 PubSubType unsubscribeType = SUBSCRIBE2UNSUBSCRIBE.get(type);
-                CompletableFuture<Codec> f = subscribeService.unsubscribe(channelName, unsubscribeType);
+                CompletableFuture<Codec> f = subscribeService.unsubscribe(channelName, entry, unsubscribeType);
                 f.whenComplete((rr, ee) -> {
                     pm.completeExceptionally(e);
                 });
@@ -304,7 +311,7 @@ public class PubSubConnectionEntry {
                     removeListener(channelName, listener);
                 }
                 if (!hasListeners(channelName)) {
-                    subscribeService.unsubscribeLocked(type, channelName)
+                    subscribeService.unsubscribeLocked(type, channelName, entry)
                             .whenComplete((r, ex) -> {
                                 lock.release();
                             });

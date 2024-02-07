@@ -458,7 +458,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return getEntry(slot);
     }
 
-    protected MasterSlaveEntry getEntry(int slot) {
+    public MasterSlaveEntry getEntry(int slot) {
         lazyConnect();
 
         return masterSlaveEntry;

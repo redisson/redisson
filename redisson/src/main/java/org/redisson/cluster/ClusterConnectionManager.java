@@ -245,7 +245,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
 
     @Override
-    protected MasterSlaveEntry getEntry(int slot) {
+    public MasterSlaveEntry getEntry(int slot) {
         lazyConnect();
 
         return slot2entry.get(slot);
