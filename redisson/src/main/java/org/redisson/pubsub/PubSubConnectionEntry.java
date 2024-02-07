@@ -183,7 +183,7 @@ public class PubSubConnectionEntry {
         pp.whenComplete((r, e) -> {
             if (e != null) {
                 PubSubType unsubscribeType = SUBSCRIBE2UNSUBSCRIBE.get(type);
-                CompletableFuture<Codec> f = subscribeService.unsubscribe(channelName, entry, unsubscribeType);
+                CompletableFuture<Codec> f = subscribeService.unsubscribe(channelName, this, unsubscribeType);
                 f.whenComplete((rr, ee) -> {
                     pm.completeExceptionally(e);
                 });
