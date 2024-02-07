@@ -278,7 +278,7 @@ public class PublishSubscribeService {
         return promise;
     }
 
-    public CompletableFuture<PubSubConnectionEntry> subscribeNoTimeout(Codec codec, String channelName,
+    CompletableFuture<PubSubConnectionEntry> subscribeNoTimeout(Codec codec, String channelName,
                                                               AsyncSemaphore semaphore, RedisPubSubListener<?>... listeners) {
         MasterSlaveEntry entry = getEntry(new ChannelName(channelName));
         if (entry == null) {
@@ -301,11 +301,11 @@ public class PublishSubscribeService {
         return promise;
     }
 
-    public AsyncSemaphore getSemaphore(ChannelName channelName) {
+    AsyncSemaphore getSemaphore(ChannelName channelName) {
         return locks[Math.abs(channelName.hashCode() % locks.length)];
     }
 
-    public void timeout(CompletableFuture<?> promise) {
+    void timeout(CompletableFuture<?> promise) {
         timeout(promise, config.getSubscriptionTimeout());
     }
 
