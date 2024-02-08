@@ -64,6 +64,10 @@ abstract class ConnectionPool<T extends RedisConnection> {
         entries.add(entry);
     }
 
+    public final void removeEntry(ClientConnectionsEntry entry) {
+        entries.remove(entry);
+    }
+
     protected abstract ConnectionsHolder<T> getConnectionHolder(ClientConnectionsEntry entry);
 
     public CompletableFuture<T> get(RedisCommand<?> command) {

@@ -105,10 +105,25 @@ public class MasterSlaveEntry {
 
     private void useMasterAsSlave() {
         if (getAvailableClients() == 0) {
-            slaveUpAsync(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM);
+            addSlaveEntry(masterEntry);
         } else {
-            slaveDownAsync(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM);
+            removeSlaveEntry(masterEntry);
         }
+    }
+
+    private void removeSlaveEntry(ClientConnectionsEntry entry) {
+        slaveConnectionPool.removeEntry(entry);
+        slavePubSubConnectionPool.removeEntry(entry);
+        client2Entry.remove(entry.getClient());
+    }
+
+    private void addSlaveEntry(ClientConnectionsEntry entry) {
+        if (getEntry(entry.getClient()) != null) {
+            return;
+        }
+        slaveConnectionPool.addEntry(entry);
+        slavePubSubConnectionPool.addEntry(entry);
+        client2Entry.put(entry.getClient(), entry);
     }
 
     private int getAvailableClients() {
@@ -146,17 +161,15 @@ public class MasterSlaveEntry {
                     NodeType.MASTER,
                     config);
 
-            List<CompletableFuture<Void>> futures = new ArrayList<>();
-            if (!config.isSlaveNotUsed() && getEntry(client.getAddr()) == null) {
-                CompletableFuture<Void> masterAsSlaveFuture = addSlave(client.getAddr(), client.getConfig().getAddress(),
-                        true, NodeType.MASTER, client.getConfig().getSslHostname());
-                futures.add(masterAsSlaveFuture);
+            if (!config.isSlaveNotUsed()) {
+                addSlaveEntry(masterEntry);
             }
 
             if (masterEntry.isFreezed()) {
                 return CompletableFuture.completedFuture(null);
             }
 
+            List<CompletableFuture<Void>> futures = new ArrayList<>();
             CompletableFuture<Void> writeFuture = masterEntry.initConnections(config.getMasterConnectionMinimumIdleSize());
             futures.add(writeFuture);
 
@@ -215,11 +228,8 @@ public class MasterSlaveEntry {
         if (!config.isSlaveNotUsed()
                 && !masterEntry.getClient().getAddr().equals(entry.getClient().getAddr())
                     && getAvailableClients() == 0) {
-            unfreezeAsync(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM).thenAccept(r -> {
-                if (r) {
-                    log.info("master {} used as slave", masterEntry.getClient().getAddr());
-                }
-            });
+            addSlaveEntry(masterEntry);
+            log.info("master {} used as slave", masterEntry.getClient().getAddr());
         }
 
         entry.nodeDown();
@@ -311,6 +321,7 @@ public class MasterSlaveEntry {
         return slaveDownAsync(entry);
     }
 
+    // TODO remove it
     private CompletableFuture<Boolean> slaveDownAsync(ClientConnectionsEntry entry) {
         if (entry.isMasterForRead()) {
             return CompletableFuture.completedFuture(false);
@@ -320,15 +331,8 @@ public class MasterSlaveEntry {
         if (!config.isSlaveNotUsed()
                 && !masterEntry.getClient().getAddr().equals(entry.getClient().getAddr())
                     && getAvailableClients() == 0) {
-            CompletableFuture<Boolean> f = unfreezeAsync(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM);
-            return f.thenApply(value -> {
-                if (value) {
-                    log.info("master {} used as slave", masterEntry.getClient().getAddr());
-                }
-
-                entry.nodeDown();
-                return value;
-            });
+            addSlaveEntry(masterEntry);
+            log.info("master {} used as slave", masterEntry.getClient().getAddr());
         }
 
         entry.nodeDown();
@@ -397,9 +401,7 @@ public class MasterSlaveEntry {
                 future = CompletableFuture.allOf(slaveFuture, pubSubFuture);
             }
             return future.thenAccept(r -> {
-                slaveConnectionPool.addEntry(entry);
-                slavePubSubConnectionPool.addEntry(entry);
-                client2Entry.put(entry.getClient(), entry);
+                addSlaveEntry(entry);
             });
         }).whenComplete((r, ex) -> {
             if (ex != null) {
@@ -481,16 +483,13 @@ public class MasterSlaveEntry {
         if (address.equals(addr)) {
             return CompletableFuture.completedFuture(false);
         }
-        CompletableFuture<Boolean> downFuture = slaveDownAsync(addr, FreezeReason.SYSTEM);
-        return downFuture.thenApply(r -> {
-            if (r) {
-                if (config.getSubscriptionMode() == SubscriptionMode.SLAVE) {
-                    masterEntry.reattachPubSub();
-                }
-                log.info("master {} excluded from slaves", addr);
-            }
-            return r;
-        });
+
+        removeSlaveEntry(masterEntry);
+        if (config.getSubscriptionMode() == SubscriptionMode.SLAVE) {
+            masterEntry.reattachPubSub();
+        }
+        log.info("master {} excluded from slaves", addr);
+        return CompletableFuture.completedFuture(true);
     }
 
     public CompletableFuture<Boolean> excludeMasterFromSlaves(InetSocketAddress address) {
@@ -498,16 +497,13 @@ public class MasterSlaveEntry {
         if (config.isSlaveNotUsed() || addr.equals(address)) {
             return CompletableFuture.completedFuture(false);
         }
-        CompletableFuture<Boolean> downFuture = slaveDownAsync(addr, FreezeReason.SYSTEM);
-        return downFuture.thenApply(r -> {
-            if (r) {
-                if (config.getSubscriptionMode() == SubscriptionMode.SLAVE) {
-                    masterEntry.reattachPubSub();
-                }
-                log.info("master {} excluded from slaves", addr);
-            }
-            return r;
-        });
+
+        removeSlaveEntry(masterEntry);
+        if (config.getSubscriptionMode() == SubscriptionMode.SLAVE) {
+            masterEntry.reattachPubSub();
+        }
+        log.info("master {} excluded from slaves", addr);
+        return CompletableFuture.completedFuture(true);
     }
 
     public CompletableFuture<Boolean> slaveUpNoMasterExclusionAsync(RedisURI address, FreezeReason freezeReason) {
