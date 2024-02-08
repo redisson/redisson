@@ -524,9 +524,10 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
     protected MultiDecoder<Object> messageDecoder(CommandData<Object, Object> data, List<Object> parts) {
         if (data == null) {
-            if (parts.isEmpty()) {
-                return null;
+            if (!parts.isEmpty()) {
+                log.error("No decoder found for decoding: {}", parts);
             }
+            return null;
         }
         return data.getCommand().getReplayMultiDecoder();
     }
