@@ -174,6 +174,15 @@ public interface RLockRx {
     Single<Boolean> isLocked();
 
     /**
+     * Checks if the lock is held by thread with defined <code>threadId</code>
+     *
+     * @param threadId Thread ID of locking thread
+     * @return <code>true</code> if held by thread with given id
+     *          otherwise <code>false</code>
+     */
+    Single<Boolean> isHeldByThread(long threadId);
+
+    /**
      * Remaining time to live of the lock
      *
      * @return time in milliseconds
