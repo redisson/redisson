@@ -52,10 +52,10 @@ public class RedissonBaseNodes implements BaseRedisNodes {
         Collection<MasterSlaveEntry> entries = connectionManager.getEntrySet();
         List<T> result = new ArrayList<>();
         for (MasterSlaveEntry masterSlaveEntry : entries) {
-            if (masterSlaveEntry.getAllEntries().isEmpty()
-                    && type == NodeType.MASTER) {
+            if (type == NodeType.MASTER) {
                 RedisNode entry = new RedisNode(masterSlaveEntry.getClient(), commandExecutor, NodeType.MASTER);
                 result.add((T) entry);
+                continue;
             }
 
             for (ClientConnectionsEntry slaveEntry : masterSlaveEntry.getAllEntries()) {
