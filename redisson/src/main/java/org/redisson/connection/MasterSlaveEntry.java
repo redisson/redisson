@@ -429,6 +429,10 @@ public class MasterSlaveEntry {
     }
 
     private ClientConnectionsEntry getEntry(InetSocketAddress address) {
+        InetSocketAddress masterAddr = masterEntry.getClient().getAddr();
+        if (masterAddr.getAddress().equals(address.getAddress()) && masterAddr.getPort() == address.getPort()) {
+            return masterEntry;
+        }
         for (ClientConnectionsEntry entry : client2Entry.values()) {
             InetSocketAddress addr = entry.getClient().getAddr();
             if (addr.getAddress().equals(address.getAddress()) && addr.getPort() == address.getPort()) {
@@ -439,10 +443,16 @@ public class MasterSlaveEntry {
     }
 
     public ClientConnectionsEntry getEntry(RedisClient redisClient) {
+        if (masterEntry.getClient().equals(redisClient)) {
+            return masterEntry;
+        }
         return client2Entry.get(redisClient);
     }
 
     public ClientConnectionsEntry getEntry(RedisURI addr) {
+        if (addr.equals(masterEntry.getClient().getAddr())) {
+            return masterEntry;
+        }
         for (ClientConnectionsEntry entry : client2Entry.values()) {
             InetSocketAddress entryAddr = entry.getClient().getAddr();
             if (addr.equals(entryAddr)) {
