@@ -52,6 +52,7 @@ import javax.cache.processor.EntryProcessorResult;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.net.URI;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -3109,6 +3110,10 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
     public CacheManager getCacheManager() {
         checkNotClosed();
         return cacheManager;
+    }
+
+    URI getURI() {
+        return cacheManager.getURI();
     }
 
     @Override

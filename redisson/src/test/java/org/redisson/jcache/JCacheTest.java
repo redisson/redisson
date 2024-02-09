@@ -60,6 +60,20 @@ public class JCacheTest {
         assertThat(r.getExitCode()).isEqualTo(0);
     }
 
+
+    @Test
+    public void testClose() throws IOException {
+        URL configUrl = getClass().getResource("redisson-jcache.yaml");
+        Config cfg = Config.fromYAML(configUrl);
+
+        MutableConfiguration c = new MutableConfiguration();
+        c.setStatisticsEnabled(true);
+        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg, c);
+        Cache<String, String> cache = Caching.getCachingProvider()
+                                                .getCacheManager().createCache("test", config);
+        cache.close();
+    }
+
     @Test
     public void testCreatedExpiryPolicy() throws Exception {
         URL configUrl = getClass().getResource("redisson-jcache.yaml");
