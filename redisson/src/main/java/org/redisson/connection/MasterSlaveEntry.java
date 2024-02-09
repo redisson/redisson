@@ -107,14 +107,18 @@ public class MasterSlaveEntry {
         if (getAvailableClients() == 0) {
             addSlaveEntry(masterEntry);
         } else {
-            removeSlaveEntry(masterEntry);
+            removeMasterEntryFromSlaves();
         }
     }
 
-    private void removeSlaveEntry(ClientConnectionsEntry entry) {
-        slaveConnectionPool.removeEntry(entry);
-        slavePubSubConnectionPool.removeEntry(entry);
-        client2Entry.remove(entry.getClient());
+    private void removeMasterEntryFromSlaves() {
+        slaveConnectionPool.removeEntry(masterEntry);
+        slavePubSubConnectionPool.removeEntry(masterEntry);
+        client2Entry.remove(masterEntry.getClient());
+
+        if (config.getSubscriptionMode() == SubscriptionMode.SLAVE) {
+            masterEntry.reattachPubSub();
+        }
     }
 
     private void addSlaveEntry(ClientConnectionsEntry entry) {
@@ -484,10 +488,7 @@ public class MasterSlaveEntry {
             return CompletableFuture.completedFuture(false);
         }
 
-        removeSlaveEntry(masterEntry);
-        if (config.getSubscriptionMode() == SubscriptionMode.SLAVE) {
-            masterEntry.reattachPubSub();
-        }
+        removeMasterEntryFromSlaves();
         log.info("master {} excluded from slaves", addr);
         return CompletableFuture.completedFuture(true);
     }
@@ -498,10 +499,7 @@ public class MasterSlaveEntry {
             return CompletableFuture.completedFuture(false);
         }
 
-        removeSlaveEntry(masterEntry);
-        if (config.getSubscriptionMode() == SubscriptionMode.SLAVE) {
-            masterEntry.reattachPubSub();
-        }
+        removeMasterEntryFromSlaves();
         log.info("master {} excluded from slaves", addr);
         return CompletableFuture.completedFuture(true);
     }
