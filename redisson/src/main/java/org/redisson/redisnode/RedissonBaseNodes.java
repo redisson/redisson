@@ -74,8 +74,7 @@ public class RedissonBaseNodes implements BaseRedisNodes {
         RedisURI addr = new RedisURI(address);
         for (MasterSlaveEntry masterSlaveEntry : entries) {
             if (nodeType == NodeType.MASTER
-                    && masterSlaveEntry.getAllEntries().isEmpty()
-                        && addr.equals(masterSlaveEntry.getClient().getAddr())) {
+                    && addr.equals(masterSlaveEntry.getClient().getAddr())) {
                 return new RedisNode(masterSlaveEntry.getClient(), commandExecutor, NodeType.MASTER);
             }
 
