@@ -82,7 +82,7 @@ public class RedissonFailoverTest {
         master.stop();
         System.out.println("master " + master.getRedisServerAddressAndPort() + " has been stopped!");
 
-        Thread.sleep(TimeUnit.SECONDS.toMillis(90));
+        TimeUnit.SECONDS.sleep(15);
 
         RedisRunner.RedisProcess newMaster = null;
         Collection<RedisClusterMaster> newMasterNodes = redisson.getRedisNodes(RedisNodes.CLUSTER).getMasters();
@@ -95,15 +95,13 @@ public class RedissonFailoverTest {
 
         assertThat(newMaster).isNotNull();
 
-        Thread.sleep(30000);
+        TimeUnit.SECONDS.sleep(30);
 
         newMaster.stop();
 
         System.out.println("new master " + newMaster.getRedisServerAddressAndPort() + " has been stopped!");
 
-        Thread.sleep(TimeUnit.SECONDS.toMillis(80));
-
-        assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
+        assertThat(latch.await(180, TimeUnit.SECONDS)).isTrue();
 
         int errors = 0;
         int success = 0;
