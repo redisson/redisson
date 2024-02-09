@@ -47,9 +47,5 @@ public class MasterConnectionPool extends ConnectionPool<RedisConnection> {
     public CompletableFuture<RedisConnection> get(RedisCommand<?> command) {
         return acquireConnection(command, entries.peek());
     }
-    
-    public void remove(ClientConnectionsEntry entry) {
-        entries.remove(entry);
-    }
 
 }

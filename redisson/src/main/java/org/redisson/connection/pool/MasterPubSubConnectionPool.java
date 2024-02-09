@@ -42,8 +42,4 @@ public class MasterPubSubConnectionPool extends PubSubConnectionPool {
         return acquireConnection(command, entries.peek());
     }
 
-    public void remove(ClientConnectionsEntry entry) {
-        entries.remove(entry);
-    }
-    
 }

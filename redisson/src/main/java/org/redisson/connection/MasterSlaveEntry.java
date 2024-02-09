@@ -551,8 +551,8 @@ public class MasterSlaveEntry {
         return future.whenComplete((newMasterClient, e) -> {
             if (e != null) {
                 if (oldMaster != masterEntry) {
-                    masterConnectionPool.remove(masterEntry);
-                    masterPubSubConnectionPool.remove(masterEntry);
+                    masterConnectionPool.removeEntry(masterEntry);
+                    masterPubSubConnectionPool.removeEntry(masterEntry);
                     masterEntry.shutdownAsync();
                     masterEntry = oldMaster;
                 }
@@ -560,8 +560,8 @@ public class MasterSlaveEntry {
                 return;
             }
             
-            masterConnectionPool.remove(oldMaster);
-            masterPubSubConnectionPool.remove(oldMaster);
+            masterConnectionPool.removeEntry(oldMaster);
+            masterPubSubConnectionPool.removeEntry(oldMaster);
 
             oldMaster.getLock().execute(() -> {
                 oldMaster.setFreezeReason(FreezeReason.MANAGER);
