@@ -121,7 +121,7 @@ public interface CommandAsyncExecutor {
 
     <T, R> RFuture<R> readRandomAsync(Codec codec, RedisCommand<T> command, Object... params);
 
-    <T, R> RFuture<R> readRandomAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object... params);
+    <T, R> RFuture<R> readRandomAsync(RedisClient client, Codec codec, RedisCommand<T> command, Object... params);
 
     <V, R> RFuture<R> async(boolean readOnlyMode, NodeSource source, Codec codec,
                             RedisCommand<V> command, Object[] params, boolean ignoreRedirect, boolean noRetry);

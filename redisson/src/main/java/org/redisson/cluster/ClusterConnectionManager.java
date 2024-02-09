@@ -228,6 +228,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             if (addr.getAddress().equals(address.getAddress()) && addr.getPort() == address.getPort()) {
                 return entry;
             }
+            if (entry.hasSlave(address)) {
+                return entry;
+            }
         }
         return null;
     }

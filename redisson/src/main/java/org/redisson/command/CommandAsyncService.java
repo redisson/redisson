@@ -221,7 +221,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     @Override
     public <T, R> RFuture<R> readRandomAsync(Codec codec, RedisCommand<T> command, Object... params) {
         CompletableFuture<R> mainPromise = createPromise();
-        List<MasterSlaveEntry> nodes = new ArrayList<MasterSlaveEntry>(connectionManager.getEntrySet());
+        List<RedisClient> nodes = connectionManager.getEntrySet().stream().map(e -> e.getClient()).collect(Collectors.toList());
         Collections.shuffle(nodes);
 
         retryReadRandomAsync(codec, command, mainPromise, nodes, params);
@@ -229,15 +229,17 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
-    public <T, R> RFuture<R> readRandomAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object... params) {
+    public <T, R> RFuture<R> readRandomAsync(RedisClient client, Codec codec, RedisCommand<T> command, Object... params) {
         CompletableFuture<R> mainPromise = createPromise();
-        retryReadRandomAsync(codec, command, mainPromise, Collections.singletonList(entry), params);
+        List<RedisClient> list = new ArrayList<>(1);
+        list.add(client);
+        retryReadRandomAsync(codec, command, mainPromise, list, params);
         return new CompletableFutureWrapper<>(mainPromise);
     }
     
     private <R, T> void retryReadRandomAsync(Codec codec, RedisCommand<T> command, CompletableFuture<R> mainPromise,
-            List<MasterSlaveEntry> nodes, Object... params) {
-        MasterSlaveEntry entry = nodes.remove(0);
+            List<RedisClient> nodes, Object... params) {
+        RedisClient entry = nodes.remove(0);
         RFuture<R> attemptPromise  = async(true, new NodeSource(entry), codec, command, params, false, false);
         attemptPromise.whenComplete((res, e) -> {
             if (e == null) {

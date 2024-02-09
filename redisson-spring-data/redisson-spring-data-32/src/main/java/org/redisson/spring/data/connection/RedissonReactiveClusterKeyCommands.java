@@ -15,18 +15,12 @@
  */
 package org.redisson.spring.data.connection;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
-
+import io.netty.util.CharsetUtil;
 import org.reactivestreams.Publisher;
+import org.redisson.client.RedisClient;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.reactive.CommandReactiveExecutor;
 import org.springframework.data.redis.connection.ReactiveClusterKeyCommands;
@@ -34,11 +28,16 @@ import org.springframework.data.redis.connection.ReactiveRedisConnection;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.BooleanResponse;
 import org.springframework.data.redis.connection.RedisClusterNode;
 import org.springframework.util.Assert;
-
-import io.netty.util.CharsetUtil;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -66,7 +65,7 @@ public class RedissonReactiveClusterKeyCommands extends RedissonReactiveKeyComma
 
     @Override
     public Mono<ByteBuffer> randomKey(RedisClusterNode node) {
-        MasterSlaveEntry entry = getEntry(node);
+        RedisClient entry = getEntry(node);
         Mono<byte[]> m = executorService.reactive(() -> {
             return executorService.readRandomAsync(entry, ByteArrayCodec.INSTANCE, RedisCommands.RANDOM_KEY);
         });

@@ -21,6 +21,7 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisNode.NodeType;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.ScanOptions;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.types.RedisClientInfo;
 
 import java.io.IOException;
@@ -67,6 +68,22 @@ public class RedissonClusterConnectionTest {
     public static void after() {
         process.shutdown();
         redisson.shutdown();
+    }
+
+    @Test
+    public void testRandomKey() {
+        StringRedisTemplate redisTemplate = new StringRedisTemplate();
+        redisTemplate.setConnectionFactory(new RedissonConnectionFactory(redisson));
+        redisTemplate.afterPropertiesSet();
+
+        for (int i = 0; i < 10; i++) {
+            redisTemplate.opsForValue().set("i" + i, "i" + i);
+        }
+
+        for (RedisClusterNode clusterNode : redisTemplate.getConnectionFactory().getClusterConnection().clusterGetNodes()) {
+            String key = redisTemplate.opsForCluster().randomKey(clusterNode);
+            assertThat(key).isNotNull();
+        }
     }
 
     @Test

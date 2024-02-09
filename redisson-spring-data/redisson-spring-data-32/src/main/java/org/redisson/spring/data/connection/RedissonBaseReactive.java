@@ -22,9 +22,11 @@ import java.util.function.Function;
 
 import org.reactivestreams.Publisher;
 import org.redisson.api.RFuture;
+import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
+import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.reactive.CommandReactiveExecutor;
@@ -61,15 +63,17 @@ abstract class RedissonBaseReactive {
     }
     
     <T> Mono<T> execute(RedisClusterNode node, RedisCommand<T> command, Object... params) {
-        MasterSlaveEntry entry = getEntry(node);
+        RedisClient entry = getEntry(node);
         return executorService.reactive(() -> {
             return executorService.writeAsync(entry, StringCodec.INSTANCE, command, params);
         });
     }
 
-    MasterSlaveEntry getEntry(RedisClusterNode node) {
-        MasterSlaveEntry entry = executorService.getConnectionManager().getEntry(new InetSocketAddress(node.getHost(), node.getPort()));
-        return entry;
+    RedisClient getEntry(RedisClusterNode node) {
+        InetSocketAddress addr = new InetSocketAddress(node.getHost(), node.getPort());
+        MasterSlaveEntry entry = executorService.getConnectionManager().getEntry(addr);
+        ClientConnectionsEntry e = entry.getEntry(addr);
+        return e.getClient();
     }
     
     <V, T> Flux<T> execute(Publisher<V> commands, Function<V, Publisher<T>> mapper) {

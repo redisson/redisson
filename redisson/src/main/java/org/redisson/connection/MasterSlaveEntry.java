@@ -428,7 +428,7 @@ public class MasterSlaveEntry {
         return Collections.unmodifiableCollection(client2Entry.values());
     }
 
-    private ClientConnectionsEntry getEntry(InetSocketAddress address) {
+    public ClientConnectionsEntry getEntry(InetSocketAddress address) {
         InetSocketAddress masterAddr = masterEntry.getClient().getAddr();
         if (masterAddr.getAddress().equals(address.getAddress()) && masterAddr.getPort() == address.getPort()) {
             return masterEntry;
