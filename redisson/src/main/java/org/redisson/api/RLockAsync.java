@@ -148,7 +148,16 @@ public interface RLockAsync {
      * @return <code>true</code> if lock acquired otherwise <code>false</code>
      */
     RFuture<Boolean> tryLockAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId);
-    
+
+    /**
+     * Checks if the lock is held by thread with defined <code>threadId</code>
+     *
+     * @param threadId Thread ID of locking thread
+     * @return <code>true</code> if held by thread with given id
+     *          otherwise <code>false</code>
+     */
+    RFuture<Boolean> isHeldByThreadAsync(long threadId);
+
     /**
      * Number of holds on this lock by the current thread
      *
