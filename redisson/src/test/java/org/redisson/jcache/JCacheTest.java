@@ -303,7 +303,7 @@ public class JCacheTest {
     }
 
     @Test
-    public void testJson() throws InterruptedException, IllegalArgumentException, URISyntaxException, IOException {
+    public void testJson() throws IllegalArgumentException, IOException {
         URL configUrl = getClass().getResource("redisson-jcache.yaml");
         Config cfg = Config.fromYAML(configUrl);
         ObjectMapper objectMapper = new ObjectMapper();
@@ -322,7 +322,7 @@ public class JCacheTest {
     }
 
     @Test
-    public void testRedissonConfig() throws InterruptedException, IllegalArgumentException, IOException {
+    public void testRedissonConfig() throws IllegalArgumentException, IOException {
         URL configUrl = getClass().getResource("redisson-jcache.yaml");
         Config cfg = Config.fromYAML(configUrl);
         
@@ -347,7 +347,7 @@ public class JCacheTest {
     }
 
     @Test
-    public void testScriptCache() throws IOException, InterruptedException {
+    public void testScriptCache() throws IOException {
         URL configUrl = getClass().getResource("redisson-jcache.yaml");
         Config cfg = Config.fromYAML(configUrl);
         cfg.setUseScriptCache(true);
@@ -407,7 +407,7 @@ public class JCacheTest {
     }
 
     @Test
-    public void testUpdate() throws IOException, InterruptedException, URISyntaxException {
+    public void testUpdate() throws InterruptedException, URISyntaxException {
         MutableConfiguration<String, String> config = new MutableConfiguration<>();
         config.setStoreByValue(true);
 
@@ -437,7 +437,7 @@ public class JCacheTest {
     }
 
     @Test
-    public void testUpdateAsync() throws IOException, InterruptedException, URISyntaxException {
+    public void testUpdateAsync() throws InterruptedException, URISyntaxException {
         MutableConfiguration<String, String> config = new MutableConfiguration<>();
         config.setStoreByValue(true);
 
@@ -472,7 +472,7 @@ public class JCacheTest {
     }
 
     @Test
-    public void testUpdateWithoutOldValue() throws IOException, InterruptedException, URISyntaxException {
+    public void testUpdateWithoutOldValue() throws InterruptedException, URISyntaxException {
         MutableConfiguration<String, String> config = new MutableConfiguration<>();
         config.setStoreByValue(true);
 
@@ -502,7 +502,7 @@ public class JCacheTest {
     }
 
     @Test
-    public void testRemoveListener() throws IOException, InterruptedException, URISyntaxException {
+    public void testRemoveListener() throws InterruptedException, URISyntaxException {
         MutableConfiguration<String, String> config = new MutableConfiguration<>();
         config.setStoreByValue(true);
 
