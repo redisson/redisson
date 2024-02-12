@@ -613,6 +613,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         Map<RedisURI, ClusterPartition> lastPartitions = getLastPartitonsByURI();
         Map<RedisURI, ClusterPartition> addedPartitions = new HashMap<>();
         Set<RedisURI> mastersElected = new HashSet<>();
+        List<CompletableFuture<?>> futures = new ArrayList<>();
+
         for (ClusterPartition newPart : newPartitions) {
             if (newPart.getSlotsAmount() == 0) {
                 continue;
@@ -632,13 +634,14 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
                         CompletableFuture<RedisClient> future = changeMaster(slot, newUri);
                         currentPart.setMasterAddress(newUri);
-                        future.whenComplete((res, e) -> {
+                        CompletableFuture<RedisClient> f = future.whenComplete((res, e) -> {
                             if (e != null) {
                                 currentPart.setMasterAddress(oldUri);
                             } else {
                                 disconnectNode(oldUri);
                             }
                         });
+                        futures.add(f);
                     }
                 }
             }
@@ -649,11 +652,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }
 
         addedPartitions.keySet().removeAll(mastersElected);
-        if (addedPartitions.isEmpty()) {
-            return CompletableFuture.completedFuture(null);
-        }
-
-        List<CompletableFuture<?>> futures = new ArrayList<>();
         for (ClusterPartition newPart : addedPartitions.values()) {
             CompletionStage<Void> future = addMasterEntry(newPart, cfg);
             futures.add(future.toCompletableFuture());

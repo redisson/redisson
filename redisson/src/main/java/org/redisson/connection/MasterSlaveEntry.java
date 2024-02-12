@@ -107,17 +107,17 @@ public class MasterSlaveEntry {
         if (getAvailableClients() == 0) {
             addSlaveEntry(masterEntry);
         } else {
-            removeMasterEntryFromSlaves();
+            removeSlaveEntry(masterEntry);
         }
     }
 
-    private void removeMasterEntryFromSlaves() {
-        slaveConnectionPool.removeEntry(masterEntry);
-        slavePubSubConnectionPool.removeEntry(masterEntry);
-        client2Entry.remove(masterEntry.getClient());
+    private void removeSlaveEntry(ClientConnectionsEntry entry) {
+        slaveConnectionPool.removeEntry(entry);
+        slavePubSubConnectionPool.removeEntry(entry);
+        client2Entry.remove(entry.getClient());
 
         if (config.getSubscriptionMode() == SubscriptionMode.SLAVE) {
-            masterEntry.reattachPubSub();
+            entry.reattachPubSub();
         }
     }
 
@@ -498,7 +498,7 @@ public class MasterSlaveEntry {
             return CompletableFuture.completedFuture(false);
         }
 
-        removeMasterEntryFromSlaves();
+        removeSlaveEntry(masterEntry);
         log.info("master {} excluded from slaves", addr);
         return CompletableFuture.completedFuture(true);
     }
@@ -509,7 +509,7 @@ public class MasterSlaveEntry {
             return CompletableFuture.completedFuture(false);
         }
 
-        removeMasterEntryFromSlaves();
+        removeSlaveEntry(masterEntry);
         log.info("master {} excluded from slaves", addr);
         return CompletableFuture.completedFuture(true);
     }
@@ -561,35 +561,41 @@ public class MasterSlaveEntry {
         return future.whenComplete((newMasterClient, e) -> {
             if (e != null) {
                 if (oldMaster != masterEntry) {
-                    masterConnectionPool.removeEntry(masterEntry);
-                    masterPubSubConnectionPool.removeEntry(masterEntry);
-                    masterEntry.shutdownAsync();
+                    removeMaster(masterEntry);
+
                     masterEntry = oldMaster;
                 }
                 log.error("Unable to change master from: {} to: {}", oldMaster.getClient().getAddr(), address, e);
                 return;
             }
-            
-            masterConnectionPool.removeEntry(oldMaster);
-            masterPubSubConnectionPool.removeEntry(oldMaster);
 
-            oldMaster.getLock().execute(() -> {
-                oldMaster.setFreezeReason(FreezeReason.MANAGER);
-            });
-            oldMaster.nodeDown();
+            ClientConnectionsEntry entry = getAllEntries().stream().filter(node -> node.getNodeType() == NodeType.SLAVE
+                                                                                        && node.getClient().getAddr().equals(masterEntry.getClient().getAddr()))
+                                                                    .findAny().orElse(null);
+            // remove new master entry if it is already present as slave
+            if (entry != null) {
+                removeSlaveEntry(entry);
+                entry.nodeDown();
+                entry.shutdownAsync();
+                log.info("new master {} excluded from slaves", masterEntry.getClient().getAddr());
+            }
 
-            changeType(oldMaster.getClient().getAddr(), NodeType.SLAVE);
-            changeType(newMasterClient.getAddr(), NodeType.MASTER);
-            // freeze in slaveBalancer
-            slaveDownAsync(oldMaster.getClient().getAddr(), FreezeReason.MANAGER);
+            removeMaster(oldMaster);
 
             // check if at least one slave is available, use master as slave if false
             if (!config.isSlaveNotUsed()) {
                 useMasterAsSlave();
             }
-            oldMaster.shutdownAsync();
-            log.info("master {} has changed to {}", oldMaster.getClient().getAddr(), masterEntry.getClient().getAddr());
+            log.info("master {} has been changed to {}", oldMaster.getClient().getAddr(), masterEntry.getClient().getAddr());
         });
+    }
+
+    private void removeMaster(ClientConnectionsEntry masterEntry) {
+        masterConnectionPool.removeEntry(masterEntry);
+        masterPubSubConnectionPool.removeEntry(masterEntry);
+        removeSlaveEntry(masterEntry);
+        masterEntry.nodeDown();
+        masterEntry.shutdownAsync();
     }
 
     public CompletableFuture<Void> shutdownAsync() {
@@ -809,16 +815,6 @@ public class MasterSlaveEntry {
             }
             return CompletableFuture.completedFuture(false);
         });
-    }
-
-    private void changeType(InetSocketAddress address, NodeType nodeType) {
-        ClientConnectionsEntry entry = getEntry(address);
-        if (entry != null) {
-            if (connectionManager.isClusterMode()) {
-                entry.getClient().getConfig().setReadOnly(nodeType == NodeType.SLAVE && connectionManager.getServiceManager().getConfig().getReadMode() != ReadMode.MASTER);
-            }
-            entry.setNodeType(nodeType);
-        }
     }
 
 }
