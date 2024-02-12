@@ -366,6 +366,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 RedisURI uri = new RedisURI(address);
                 CompletableFuture<List<RedisURI>> allNodes = serviceManager.resolveAll(uri);
                 allNodes.whenComplete((nodes, ex) -> {
+                    log.debug("{} resolved to {}", uri, nodes);
+
                     AtomicReference<Throwable> lastException = new AtomicReference<>(ex);
                     if (ex != null) {
                         checkClusterState(cfg, Collections.emptyIterator(), lastException);
@@ -858,6 +860,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 }
 
                 RedisURI address = addresses.get(index);
+
+                log.debug("{} resolved to {} and {} selected", clusterNodeInfo.getAddress(), addresses, address);
 
                 if (clusterNodeInfo.containsFlag(Flag.SLAVE)) {
                     ClusterPartition masterPartition = partitions.computeIfAbsent(masterId, k -> new ClusterPartition(masterId));
