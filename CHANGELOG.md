@@ -3,6 +3,23 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 12-Feb-2024 - 3.26.1 released
+
+Feature - enable DNS TCP fallback when UDP query timeout (thanks to @hellojukay)  
+Feature - `StreamMessageId.autogenerateSequenceId()` method added (thanks to @mrmx)  
+Feature - `RLockReactive.isHeldByThread()` method added (thanks to @sanail)  
+
+Fixed - missed implementation of Spring Data Redis `ReactiveStringCommands.bitField()` method  
+Fixed - Spring Data Redis `opsForCluster().randomKey()` method throws `UnsupportedOperationException`  
+Fixed - `JCache.close()` method throws `IllegalStateException` if statistics enabled  
+Fixed - doubled connections to the master node if `readMode = MASTER_SLAVE` or there are no slave nodes  
+Fixed - `RSearch.delDict()` and `RSearch.addDict()` methods throw NPE  
+Fixed - connection ping handler doesn't use `commandTimeout` setting  
+Fixed - repeated new connections with AWS Elasticache serverless  
+Fixed - `RLock` throws `ERR unknown command 'wait'` with AWS Elasticache serverless  
+Fixed - `RSearchReactive.dropIndex()` method doesn't call onComplete() handler  
+
+
 ### 20-Dec-2023 - 3.26.0 released
 
 Feature - ability to specify `retryInterval`, `retryAttempts`, `timeout` settings per Redisson object. Please refer to the [documentation](https://github.com/redisson/redisson/wiki/3.-operations-execution)  
