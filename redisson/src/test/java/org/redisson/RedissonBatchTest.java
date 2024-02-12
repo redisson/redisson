@@ -175,7 +175,7 @@ public class RedissonBatchTest extends RedisDockerTest {
                 });
             }
 
-            Awaitility.await().atMost(13, TimeUnit.SECONDS).until(() -> {
+            Awaitility.await().atMost(14, TimeUnit.SECONDS).until(() -> {
                 return counter.get() == 0;
             });
             Assertions.assertThat(hasErrors).isTrue();

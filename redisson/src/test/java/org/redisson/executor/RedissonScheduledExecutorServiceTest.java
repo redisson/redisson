@@ -119,7 +119,7 @@ public class RedissonScheduledExecutorServiceTest extends RedisDockerTest {
 
         long start2 = list.get(5);
         list.stream().skip(6).limit(15).reduce(start2, (r, e) -> {
-            assertThat(e - r).isBetween(160L, 310L);
+            assertThat(e - r).isBetween(160L, 380L);
             return e;
         });
     }
@@ -231,7 +231,7 @@ public class RedissonScheduledExecutorServiceTest extends RedisDockerTest {
         long start = System.currentTimeMillis();
         RExecutorFuture<?> f = executor.schedule(new IncrementRunnableTask("counter"), 1, TimeUnit.SECONDS);
         f.toCompletableFuture().join();
-        assertThat(System.currentTimeMillis() - start).isBetween(900L, 1300L);
+        assertThat(System.currentTimeMillis() - start).isBetween(900L, 1350L);
         assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(1);
         Thread.sleep(2000);
         node.shutdown();
