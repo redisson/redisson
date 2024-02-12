@@ -93,7 +93,7 @@ public class MasterSlaveEntry {
         for (String address : config.getSlaveAddresses()) {
             RedisURI uri = new RedisURI(address);
             String hostname = hostnameMapper.apply(uri);
-            CompletableFuture<Void> f = addSlave(uri, disconnectedNodes.contains(uri), NodeType.SLAVE, hostname);
+            CompletableFuture<Void> f = addSlave(uri, disconnectedNodes.contains(uri), hostname);
             result.add(f);
         }
 
@@ -366,22 +366,22 @@ public class MasterSlaveEntry {
     }
 
     public CompletableFuture<Void> addSlave(RedisURI address) {
-        return addSlave(address, false, NodeType.SLAVE, null);
+        return addSlave(address, false, null);
     }
     
     public CompletableFuture<Void> addSlave(InetSocketAddress address, RedisURI uri) {
-        return addSlave(address, uri, false, NodeType.SLAVE, null);
+        return addSlave(address, uri, false, null);
     }
 
     public CompletableFuture<Void> addSlave(InetSocketAddress address, RedisURI uri, String sslHostname) {
-        return addSlave(address, uri, false, NodeType.SLAVE, sslHostname);
+        return addSlave(address, uri, false, sslHostname);
     }
 
     public CompletableFuture<Void> addSlave(RedisClient client) {
-        return addSlave(client, false, NodeType.SLAVE);
+        return addSlave(client, false);
     }
 
-    private CompletableFuture<Void> addSlave(RedisClient client, boolean freezed, NodeType nodeType) {
+    private CompletableFuture<Void> addSlave(RedisClient client, boolean freezed) {
         noPubSubSlaves.set(false);
         CompletableFuture<InetSocketAddress> addrFuture = client.resolveAddr();
         return addrFuture.thenCompose(res -> {
@@ -389,7 +389,7 @@ public class MasterSlaveEntry {
                     config.getSlaveConnectionMinimumIdleSize(),
                     config.getSlaveConnectionPoolSize(),
                     connectionManager,
-                    nodeType,
+                    NodeType.SLAVE,
                     config);
 
             if (freezed) {
@@ -414,14 +414,14 @@ public class MasterSlaveEntry {
         });
     }
 
-    private CompletableFuture<Void> addSlave(InetSocketAddress address, RedisURI uri, boolean freezed, NodeType nodeType, String sslHostname) {
+    private CompletableFuture<Void> addSlave(InetSocketAddress address, RedisURI uri, boolean freezed, String sslHostname) {
         RedisClient client = connectionManager.createClient(NodeType.SLAVE, address, uri, sslHostname);
-        return addSlave(client, freezed, nodeType);
+        return addSlave(client, freezed);
     }
     
-    public CompletableFuture<Void> addSlave(RedisURI address, boolean freezed, NodeType nodeType, String sslHostname) {
-        RedisClient client = connectionManager.createClient(nodeType, address, sslHostname);
-        return addSlave(client, freezed, nodeType);
+    public CompletableFuture<Void> addSlave(RedisURI address, boolean freezed, String sslHostname) {
+        RedisClient client = connectionManager.createClient(NodeType.SLAVE, address, sslHostname);
+        return addSlave(client, freezed);
     }
 
     public Collection<ClientConnectionsEntry> getAllEntries() {
