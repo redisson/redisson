@@ -617,13 +617,13 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         }
 
         CompletableFuture<Boolean> f = entry.slaveUpNoMasterExclusionAsync(addr, FreezeReason.MANAGER);
-        return f.thenCompose(e -> {
-            if (e) {
-                log.info("slave: {} is up", addr);
-                return entry.excludeMasterFromSlaves(addr);
-            }
-            return CompletableFuture.completedFuture(e);
-        }).thenApply(e -> null);
+        return f.thenApply(e -> {
+                            if (e) {
+                                log.info("slave: {} is up", addr);
+                                entry.excludeMasterFromSlaves(addr);
+                            }
+                            return null;
+                        });
     }
 
     private void slaveDown(InetSocketAddress addr) {
@@ -631,11 +631,9 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             log.warn("slave: {} is down", addr);
         } else {
             MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
-            entry.slaveDownAsync(addr, FreezeReason.MANAGER).thenAccept(r -> {
-                if (r) {
-                    log.warn("slave: {} is down", addr);
-                }
-            });
+            if (entry.slaveDown(addr, FreezeReason.MANAGER)) {
+                log.warn("slave: {} is down", addr);
+            }
         }
     }
 

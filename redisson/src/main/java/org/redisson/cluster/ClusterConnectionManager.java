@@ -522,13 +522,13 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         nonFailedSlaves.forEach(uri -> {
             if (entry.hasSlave(uri)) {
                 CompletableFuture<Boolean> f = entry.slaveUpNoMasterExclusionAsync(uri, FreezeReason.MANAGER);
-                f = f.thenCompose(v -> {
+                f = f.thenApply(v -> {
                     if (v) {
                         log.info("slave: {} is up for slot ranges: {}", uri, currentPart.getSlotRanges());
                         currentPart.removeFailedSlaveAddress(uri);
                         return entry.excludeMasterFromSlaves(uri);
                     }
-                    return CompletableFuture.completedFuture(v);
+                    return v;
                 });
                 futures.add(f);
             }
@@ -538,36 +538,25 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 .filter(uri -> !currentPart.getFailedSlaveAddresses().contains(uri))
                 .forEach(uri -> {
                     currentPart.addFailedSlaveAddress(uri);
-                    CompletableFuture<Boolean> f = entry.slaveDownAsync(uri, FreezeReason.MANAGER);
-                    f.thenApply(v -> {
-                        if (v) {
-                            disconnectNode(uri);
-                            log.warn("slave: {} has down for slot ranges: {}", uri, currentPart.getSlotRanges());
-                        }
-                        return v;
-                    });
-                    futures.add(f);
+                    if (entry.slaveDown(uri, FreezeReason.MANAGER)) {
+                        disconnectNode(uri);
+                        log.warn("slave: {} has down for slot ranges: {}", uri, currentPart.getSlotRanges());
+                    }
                 });
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
     }
 
     private CompletableFuture<Set<RedisURI>> addRemoveSlaves(MasterSlaveEntry entry, ClusterPartition currentPart, ClusterPartition newPart) {
-        List<CompletableFuture<?>> futures = new ArrayList<>();
-
         Set<RedisURI> removedSlaves = new HashSet<>(currentPart.getSlaveAddresses());
         removedSlaves.removeAll(newPart.getSlaveAddresses());
 
         for (RedisURI uri : removedSlaves) {
             currentPart.removeSlaveAddress(uri);
 
-            CompletableFuture<Boolean> slaveDownFuture = entry.slaveDownAsync(uri, FreezeReason.MANAGER);
-            slaveDownFuture.thenAccept(r -> {
-                if (r) {
-                    disconnectNode(uri);
-                    log.info("slave {} removed for slot ranges: {}", uri, currentPart.getSlotRanges());
-                }
-            });
-            futures.add(slaveDownFuture);
+            if (entry.slaveDown(uri, FreezeReason.MANAGER)) {
+                disconnectNode(uri);
+                log.info("slave {} removed for slot ranges: {}", uri, currentPart.getSlotRanges());
+            }
         }
 
         Set<RedisURI> addedSlaves = newPart.getSlaveAddresses().stream()
@@ -575,17 +564,18 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                                                                                 && !newPart.getFailedSlaveAddresses().contains(uri))
                                                                 .collect(Collectors.toSet());
 
+        List<CompletableFuture<?>> futures = new ArrayList<>();
         for (RedisURI uri : addedSlaves) {
             ClientConnectionsEntry slaveEntry = entry.getEntry(uri);
             if (slaveEntry != null) {
                 CompletableFuture<Boolean> slaveUpFuture = entry.slaveUpNoMasterExclusionAsync(uri, FreezeReason.MANAGER);
-                slaveUpFuture = slaveUpFuture.thenCompose(v -> {
+                slaveUpFuture = slaveUpFuture.thenApply(v -> {
                     if (v) {
                         currentPart.addSlaveAddress(uri);
                         log.info("slave: {} added for slot ranges: {}", uri, currentPart.getSlotRanges());
                         return entry.excludeMasterFromSlaves(uri);
                     }
-                    return CompletableFuture.completedFuture(v);
+                    return v;
                 });
                 futures.add(slaveUpFuture);
                 continue;
@@ -595,8 +585,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             CompletableFuture<Void> f = slaveUpFuture.thenCompose(res -> {
                 currentPart.addSlaveAddress(uri);
                 log.info("slave: {} added for slot ranges: {}", uri, currentPart.getSlotRanges());
-                return entry.excludeMasterFromSlaves(uri)
-                        .thenApply(r -> null);
+                entry.excludeMasterFromSlaves(uri);
+                return null;
             });
             futures.add(f);
         }

@@ -174,7 +174,7 @@ public class DNSMonitor {
                                 }
                                 if (r) {
                                     slaves.put(entry.getKey(), newSlaveAddr);
-                                    masterSlaveEntry.slaveDownAsync(currentSlaveAddr, FreezeReason.MANAGER);
+                                    masterSlaveEntry.slaveDown(currentSlaveAddr, FreezeReason.MANAGER);
                                 }
                                 promise.complete(null);
                             });
@@ -188,7 +188,7 @@ public class DNSMonitor {
                                 }
 
                                 slaves.put(entry.getKey(), newSlaveAddr);
-                                masterSlaveEntry.slaveDownAsync(currentSlaveAddr, FreezeReason.MANAGER);
+                                masterSlaveEntry.slaveDown(currentSlaveAddr, FreezeReason.MANAGER);
                                 promise.complete(null);
                             });
                         }
