@@ -15,38 +15,28 @@
  */
 package org.redisson.spring.data.connection;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import org.reactivestreams.Publisher;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.StringCodec;
-import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.reactive.CommandReactiveExecutor;
 import org.springframework.data.domain.Range;
-import org.springframework.data.redis.connection.ReactiveRedisConnection.AbsentByteBufferResponse;
-import org.springframework.data.redis.connection.ReactiveRedisConnection.BooleanResponse;
-import org.springframework.data.redis.connection.ReactiveRedisConnection.ByteBufferResponse;
-import org.springframework.data.redis.connection.ReactiveRedisConnection.KeyCommand;
-import org.springframework.data.redis.connection.ReactiveRedisConnection.MultiValueResponse;
-import org.springframework.data.redis.connection.ReactiveRedisConnection.NumericResponse;
-import org.springframework.data.redis.connection.ReactiveRedisConnection.RangeCommand;
+import org.springframework.data.redis.connection.BitFieldSubCommands;
+import org.springframework.data.redis.connection.ReactiveRedisConnection.*;
 import org.springframework.data.redis.connection.ReactiveStringCommands;
 import org.springframework.data.redis.connection.RedisStringCommands.BitOperation;
 import org.springframework.data.redis.connection.RedisStringCommands.SetOption;
 import org.springframework.util.Assert;
-
-import io.netty.buffer.ByteBuf;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 
@@ -358,9 +348,50 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
         });
     }
 
+    private static final RedisStrictCommand<Long> BITFIELD = new RedisStrictCommand<>("BITFIELD");
+
     @Override
     public Flux<MultiValueResponse<BitFieldCommand, Long>> bitField(Publisher<BitFieldCommand> commands) {
-        return null;
+        return execute(commands, command -> {
+
+            List<Object> params = new ArrayList<>();
+            params.add(toByteArray(command.getKey()));
+
+            for (BitFieldSubCommands.BitFieldSubCommand subCommand : command.getSubCommands()) {
+                String offset;
+                if (subCommand.getOffset().isZeroBased()) {
+                    offset = String.valueOf(subCommand.getOffset().getValue());
+                } else {
+                    offset = "#" + subCommand.getOffset().getValue();
+                }
+
+                if (subCommand instanceof BitFieldSubCommands.BitFieldGet) {
+                    params.add("GET");
+                    params.add(subCommand.getType().toString());
+                    params.add(offset);
+                } else if (subCommand instanceof BitFieldSubCommands.BitFieldSet) {
+                    params.add("SET");
+                    params.add(subCommand.getType().toString());
+                    params.add(offset);
+                    params.add(((BitFieldSubCommands.BitFieldSet) subCommand).getValue());
+                } else if (subCommand instanceof BitFieldSubCommands.BitFieldIncrBy) {
+                    BitFieldSubCommands.BitFieldIncrBy.Overflow overflow = ((BitFieldSubCommands.BitFieldIncrBy) subCommand).getOverflow();
+                    if (overflow != null) {
+                        params.add("OVERFLOW");
+                        params.add(overflow.toString());
+                    }
+
+                    params.add("INCRBY");
+                    params.add(subCommand.getType().toString());
+                    params.add(offset);
+                    params.add(((BitFieldSubCommands.BitFieldIncrBy) subCommand).getValue());
+                }
+            }
+
+
+            Mono<List<Long>> m = read((byte[])params.get(0), StringCodec.INSTANCE, BITFIELD, params.toArray());
+            return m.map(v -> new MultiValueResponse<>(command, v));
+        });
     }
 
     private static final RedisStrictCommand<Long> BITOP = new RedisStrictCommand<Long>("BITOP");

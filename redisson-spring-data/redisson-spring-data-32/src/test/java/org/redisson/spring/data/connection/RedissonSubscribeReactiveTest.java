@@ -1,19 +1,20 @@
 package org.redisson.spring.data.connection;
 
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-
 import org.awaitility.Awaitility;
 import org.awaitility.Duration;
 import org.junit.Test;
+import org.springframework.data.redis.connection.BitFieldSubCommands;
 import org.springframework.data.redis.connection.ReactiveRedisConnection;
 import org.springframework.data.redis.connection.ReactiveSubscription;
-
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.data.redis.listener.ChannelTopic;
 import reactor.core.publisher.Mono;
+
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -61,6 +62,23 @@ public class RedissonSubscribeReactiveTest extends BaseConnectionTest {
 
         Awaitility.await().atMost(Duration.ONE_SECOND)
                     .until(() -> counter.get() == 1);
+
+        BitFieldSubCommands commands = BitFieldSubCommands.create()
+                .get(BitFieldSubCommands.BitFieldType.UINT_32).valueAt(0)
+                .get(BitFieldSubCommands.BitFieldType.UINT_32).valueAt(1)
+                .get(BitFieldSubCommands.BitFieldType.UINT_32).valueAt(2);
+        for (int i = 0; i < 128; i++) {
+            template.opsForValue().setBit("key", i, true);
+        }
+
+        AtomicReference<List<Long>> result = new AtomicReference<>();
+        template.opsForValue().bitField("key", commands).doOnNext(r -> {
+            result.set(r);
+        }).subscribe();
+
+        Awaitility.waitAtMost(Duration.FIVE_HUNDRED_MILLISECONDS).untilAsserted(() -> {
+            assertThat(result.get()).isEqualTo(Arrays.asList(0L, 0L, 0L));
+        });
     }
 
     @Test
