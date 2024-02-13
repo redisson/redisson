@@ -228,7 +228,7 @@ public class Config {
         return clusterServersConfig;
     }
 
-    protected ClusterServersConfig getClusterServersConfig() {
+    public ClusterServersConfig getClusterServersConfig() {
         return clusterServersConfig;
     }
 
@@ -258,7 +258,7 @@ public class Config {
         return replicatedServersConfig;
     }
 
-    protected ReplicatedServersConfig getReplicatedServersConfig() {
+    public ReplicatedServersConfig getReplicatedServersConfig() {
         return replicatedServersConfig;
     }
 
@@ -310,7 +310,7 @@ public class Config {
         return singleServerConfig;
     }
 
-    protected SingleServerConfig getSingleServerConfig() {
+    public SingleServerConfig getSingleServerConfig() {
         return singleServerConfig;
     }
 
@@ -339,7 +339,7 @@ public class Config {
         return this.sentinelServersConfig;
     }
 
-    protected SentinelServersConfig getSentinelServersConfig() {
+    public SentinelServersConfig getSentinelServersConfig() {
         return sentinelServersConfig;
     }
 
@@ -368,7 +368,7 @@ public class Config {
         return masterSlaveServersConfig;
     }
 
-    protected MasterSlaveServersConfig getMasterSlaveServersConfig() {
+    public MasterSlaveServersConfig getMasterSlaveServersConfig() {
         return masterSlaveServersConfig;
     }
 
