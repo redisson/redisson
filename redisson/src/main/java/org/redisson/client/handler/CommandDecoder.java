@@ -420,7 +420,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             ByteBuf buf = readBytes(in);
             Object result = null;
             if (buf != null) {
-                buf.skipBytes(3);
+                buf.skipBytes(4);
                 Decoder<Object> decoder = selectDecoder(data, parts);
                 result = decoder.decode(buf, state());
             }
