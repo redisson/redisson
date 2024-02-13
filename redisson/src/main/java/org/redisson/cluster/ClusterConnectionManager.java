@@ -67,12 +67,11 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     private ClusterServersConfig cfg;
 
-    private final long seed;
+    private final long seed = ThreadLocalRandom.current().nextLong();
 
     public ClusterConnectionManager(ClusterServersConfig cfg, ServiceManager serviceManager) {
         super(cfg, serviceManager);
         this.serviceManager.setNatMapper(cfg.getNatMapper());
-        this.seed = ThreadLocalRandom.current().nextLong();
     }
 
     @Override
@@ -343,9 +342,11 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     CompletableFuture<Void> fs = entry.initSlaveBalancer(partition.getFailedSlaveAddresses(), r -> configEndpointHostName);
                     return fs.thenAccept(r -> {
                         if (!partition.getSlaveAddresses().isEmpty()) {
-                            log.info("slaves: {} added for slot ranges: {}", partition.getSlaveAddresses(), partition.getSlotRanges());
+                            log.info("slaves: {} added for master: {} slot ranges: {}",
+                                    partition.getSlaveAddresses(), partition.getMasterAddress(), partition.getSlotRanges());
                             if (!partition.getFailedSlaveAddresses().isEmpty()) {
-                                log.warn("slaves: {} are down for slot ranges: {}", partition.getFailedSlaveAddresses(), partition.getSlotRanges());
+                                log.warn("slaves: {} down for master: {} slot ranges: {}",
+                                        partition.getFailedSlaveAddresses(), partition.getMasterAddress(), partition.getSlotRanges());
                             }
                         }
 
