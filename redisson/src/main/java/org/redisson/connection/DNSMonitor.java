@@ -17,6 +17,7 @@ package org.redisson.connection;
 
 import io.netty.resolver.AddressResolver;
 import io.netty.resolver.AddressResolverGroup;
+import io.netty.util.NetUtil;
 import io.netty.util.Timeout;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -26,10 +27,13 @@ import org.redisson.misc.RedisURI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -48,7 +52,11 @@ public class DNSMonitor {
     private final Map<RedisURI, InetSocketAddress> slaves = new HashMap<>();
     
     private volatile Timeout dnsMonitorFuture;
-    private long dnsMonitoringInterval;
+    private final long dnsMonitoringInterval;
+
+    private boolean printed;
+
+    private final long seed = ThreadLocalRandom.current().nextLong();
 
     public DNSMonitor(ConnectionManager connectionManager, RedisClient masterHost, Collection<RedisURI> slaveHosts, long dnsMonitoringInterval, AddressResolverGroup<InetSocketAddress> resolverGroup) {
         this.resolver = resolverGroup.getResolver(connectionManager.getServiceManager().getGroup().next());
@@ -94,41 +102,72 @@ public class DNSMonitor {
         for (Entry<RedisURI, InetSocketAddress> entry : masters.entrySet()) {
             CompletableFuture<Void> promise = new CompletableFuture<>();
             futures.add(promise);
-            log.debug("Request sent to resolve ip address for master host: {}", entry.getKey().getHost());
 
-            Future<InetSocketAddress> resolveFuture = resolver.resolve(InetSocketAddress.createUnresolved(entry.getKey().getHost(), entry.getKey().getPort()));
-            resolveFuture.addListener((FutureListener<InetSocketAddress>) future -> {
-                if (!future.isSuccess()) {
-                    log.error("Unable to resolve {}", entry.getKey().getHost(), future.cause());
+            CompletableFuture<List<RedisURI>> ipsFuture = connectionManager.getServiceManager().resolveAll(entry.getKey());
+            ipsFuture.whenComplete((addresses, ex) -> {
+                if (ex != null) {
+                    log.error("Unable to resolve {}", entry.getKey().getHost(), ex);
                     promise.complete(null);
                     return;
                 }
 
-                log.debug("Resolved ip: {} for master host: {}", future.getNow().getAddress(), entry.getKey().getHost());
+                if (addresses.size() > 1) {
+                    if (!printed) {
+                        log.info("Try Redisson PRO with Proxy mode to use all ip addresses: {}", addresses);
+                        printed = true;
+                    }
+                }
 
-                InetSocketAddress currentMasterAddr = entry.getValue();
-                InetSocketAddress newMasterAddr = future.getNow();
-                if (!newMasterAddr.getAddress().equals(currentMasterAddr.getAddress())) {
-                    log.info("Detected DNS change. Master {} has changed ip from {} to {}",
-                            entry.getKey(), currentMasterAddr.getAddress().getHostAddress(),
-                            newMasterAddr.getAddress().getHostAddress());
-
-                    MasterSlaveEntry masterSlaveEntry = connectionManager.getEntry(currentMasterAddr);
-                    if (masterSlaveEntry == null) {
-                        log.error("Unable to find entry for current master {}", currentMasterAddr);
+                for (RedisURI address : addresses) {
+                    if (address.equals(entry.getValue())) {
+                        log.debug("{} resolved to {}", entry.getKey().getHost(), addresses);
                         promise.complete(null);
                         return;
                     }
+                }
 
-                    CompletableFuture<RedisClient> changeFuture = masterSlaveEntry.changeMaster(newMasterAddr, entry.getKey());
-                    changeFuture.whenComplete((r, e) -> {
-                        promise.complete(null);
+                int index = 0;
+                if (addresses.size() > 1) {
+                    addresses.sort(Comparator.comparing(RedisURI::getHost));
+                    SplittableRandom r = new SplittableRandom(seed);
+                    index = r.nextInt(addresses.size());
+                }
 
-                        if (e == null) {
-                            masters.put(entry.getKey(), newMasterAddr);
+                RedisURI address = addresses.get(index);
+
+                log.debug("{} resolved to {} and {} selected", entry.getKey().getHost(), addresses, address);
+
+
+
+                try {
+                    InetSocketAddress currentMasterAddr = entry.getValue();
+                    byte[] addr = NetUtil.createByteArrayFromIpAddressString(address.getHost());
+                    InetSocketAddress newMasterAddr = new InetSocketAddress(InetAddress.getByAddress(entry.getKey().getHost(), addr), address.getPort());
+                    if (!address.equals(currentMasterAddr)) {
+                        log.info("Detected DNS change. Master {} has changed ip from {} to {}",
+                                entry.getKey(), currentMasterAddr.getAddress().getHostAddress(),
+                                newMasterAddr.getAddress().getHostAddress());
+
+                        MasterSlaveEntry masterSlaveEntry = connectionManager.getEntry(currentMasterAddr);
+                        if (masterSlaveEntry == null) {
+                            log.error("Unable to find entry for current master {}", currentMasterAddr);
+                            promise.complete(null);
+                            return;
                         }
-                    });
-                } else {
+
+                        CompletableFuture<RedisClient> changeFuture = masterSlaveEntry.changeMaster(newMasterAddr, entry.getKey());
+                        changeFuture.whenComplete((r, e) -> {
+                            promise.complete(null);
+
+                            if (e == null) {
+                                masters.put(entry.getKey(), newMasterAddr);
+                            }
+                        });
+                    } else {
+                        promise.complete(null);
+                    }
+                } catch (UnknownHostException e) {
+                    log.error(e.getMessage(), e);
                     promise.complete(null);
                 }
             });
