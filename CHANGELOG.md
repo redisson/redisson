@@ -20,7 +20,7 @@ Fixed - `RLock` throws `ERR unknown command 'wait'` with AWS Elasticache serverl
 Fixed - `RSearchReactive.dropIndex()` method doesn't call onComplete() handler  
 
 
-### 20-Dec-2023 - 3.26.0 released
+### 16-Jan-2024 - 3.26.0 released
 
 Feature - ability to specify `retryInterval`, `retryAttempts`, `timeout` settings per Redisson object. Please refer to the [documentation](https://github.com/redisson/redisson/wiki/3.-operations-execution)  
 Feature - `LocalCachedMapOptions.expirationEventPolicy` setting added  
