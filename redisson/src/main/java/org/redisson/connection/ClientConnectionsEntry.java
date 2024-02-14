@@ -22,7 +22,6 @@ import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.config.MasterSlaveServersConfig;
-import org.redisson.config.ReadMode;
 import org.redisson.misc.WrappedLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +41,8 @@ public class ClientConnectionsEntry {
     private final ConnectionsHolder<RedisConnection> connectionsHolder;
 
     private final ConnectionsHolder<RedisPubSubConnection> pubSubConnectionsHolder;
+
+    private final TrackedConnectionsHolder trackedConnectionsHolder;
 
     public enum FreezeReason {MANAGER, RECONNECT, SYSTEM}
 
@@ -75,6 +76,8 @@ public class ClientConnectionsEntry {
                                                 config.getSubscriptionConnectionPoolSize(), pubSubConnectionsHolder);
         }
         idleConnectionWatcher.add(this, poolMinSize, poolMaxSize, connectionsHolder);
+
+        this.trackedConnectionsHolder = new TrackedConnectionsHolder(connectionsHolder);
     }
 
     public CompletableFuture<Void> initConnections(int minimumIdleSize) {
@@ -83,12 +86,6 @@ public class ClientConnectionsEntry {
 
     public CompletableFuture<Void> initPubSubConnections(int minimumIdleSize) {
         return pubSubConnectionsHolder.initConnections(minimumIdleSize);
-    }
-
-    public boolean isMasterForRead() {
-        return getFreezeReason() == FreezeReason.SYSTEM
-                        && config.getReadMode() == ReadMode.MASTER_SLAVE
-                            && getNodeType() == NodeType.MASTER;
     }
 
     public boolean isInitialized() {
@@ -211,6 +208,10 @@ public class ClientConnectionsEntry {
 
     public ConnectionsHolder<RedisConnection> getConnectionsHolder() {
         return connectionsHolder;
+    }
+
+    public TrackedConnectionsHolder getTrackedConnectionsHolder() {
+        return trackedConnectionsHolder;
     }
 
     public ConnectionsHolder<RedisPubSubConnection> getPubSubConnectionsHolder() {

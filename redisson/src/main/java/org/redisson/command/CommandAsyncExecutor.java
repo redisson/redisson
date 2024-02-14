@@ -152,4 +152,6 @@ public interface CommandAsyncExecutor {
 
     <T> CompletionStage<T> handleNoSync(CompletionStage<T> stage, Supplier<CompletionStage<?>> supplier);
 
+    boolean isTrackChanges();
+
 }

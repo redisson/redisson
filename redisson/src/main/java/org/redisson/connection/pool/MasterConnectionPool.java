@@ -39,13 +39,16 @@ public class MasterConnectionPool extends ConnectionPool<RedisConnection> {
     }
 
     @Override
-    protected ConnectionsHolder<RedisConnection> getConnectionHolder(ClientConnectionsEntry entry) {
+    protected ConnectionsHolder<RedisConnection> getConnectionHolder(ClientConnectionsEntry entry, boolean trackChanges) {
+        if (trackChanges) {
+            return entry.getTrackedConnectionsHolder();
+        }
         return entry.getConnectionsHolder();
     }
 
     @Override
-    public CompletableFuture<RedisConnection> get(RedisCommand<?> command) {
-        return acquireConnection(command, entries.peek());
+    public CompletableFuture<RedisConnection> get(RedisCommand<?> command, boolean trackChanges) {
+        return acquireConnection(command, entries.peek(), trackChanges);
     }
 
 }

@@ -54,7 +54,10 @@ public class BaseRedisBatchExecutor<V, R> extends RedisExecutor<V, R> {
         
         super(readOnlyMode, source, codec, command, params, mainPromise, ignoreRedirect, connectionManager,
                 objectBuilder, referenceType, noRetry,
-                retryAttempts(connectionManager, options), retryInterval(connectionManager, options), timeout(connectionManager, options));
+                retryAttempts(connectionManager, options),
+                retryInterval(connectionManager, options),
+                timeout(connectionManager, options),
+                false);
         this.commands = commands;
         this.options = options;
         this.index = index;

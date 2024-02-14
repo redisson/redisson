@@ -57,7 +57,10 @@ public class RedisCommonBatchExecutor extends RedisExecutor<Object, Void> {
                                     AtomicInteger slots, RedissonObjectBuilder.ReferenceType referenceType, boolean noRetry) {
         super(entry.isReadOnlyMode(), source, null, null, null,
                 mainPromise, false, connectionManager, null, referenceType, noRetry,
-                retryAttempts(connectionManager, options), retryInterval(connectionManager, options), timeout(connectionManager, options));
+                retryAttempts(connectionManager, options),
+                retryInterval(connectionManager, options),
+                timeout(connectionManager, options),
+                false);
         this.options = options;
         this.entry = entry;
         this.slots = slots;

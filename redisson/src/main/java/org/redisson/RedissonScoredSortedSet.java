@@ -18,6 +18,7 @@ package org.redisson;
 import org.redisson.api.*;
 import org.redisson.api.listener.ScoredSortedSetAddListener;
 import org.redisson.api.listener.ScoredSortedSetRemoveListener;
+import org.redisson.api.listener.TrackingListener;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.*;
@@ -34,6 +35,7 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -2049,6 +2051,10 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         if (listener instanceof ScoredSortedSetRemoveListener) {
             return addListener("__keyevent@*:zrem", (ScoredSortedSetRemoveListener) listener, ScoredSortedSetRemoveListener::onRemove);
         }
+        if (listener instanceof TrackingListener) {
+            return addTrackingListener((TrackingListener) listener);
+        }
+
         return super.addListener(listener);
     }
 
@@ -2060,19 +2066,26 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         if (listener instanceof ScoredSortedSetRemoveListener) {
             return addListenerAsync("__keyevent@*:zrem", (ScoredSortedSetRemoveListener) listener, ScoredSortedSetRemoveListener::onRemove);
         }
+        if (listener instanceof TrackingListener) {
+            return addTrackingListenerAsync((TrackingListener) listener);
+        }
+
         return super.addListenerAsync(listener);
     }
 
     @Override
     public void removeListener(int listenerId) {
+        removeTrackingListener(listenerId);
         removeListener(listenerId, "__keyevent@*:zadd", "__keyevent@*:zrem");
         super.removeListener(listenerId);
     }
 
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
-        return removeListenerAsync(super.removeListenerAsync(listenerId), listenerId,
+        RFuture<Void> f1 = removeTrackingListenerAsync(listenerId);
+        RFuture<Void> f2 = removeListenerAsync(listenerId,
                 "__keyevent@*:zadd", "__keyevent@*:zrem");
+        return new CompletableFutureWrapper<>(CompletableFuture.allOf(f1.toCompletableFuture(), f2.toCompletableFuture()));
     }
 
 }

@@ -27,6 +27,7 @@ import org.redisson.mapreduce.RedissonCollectionMapReduce;
 import org.redisson.misc.CompletableFutureWrapper;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Stream;
 
@@ -879,6 +880,10 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
         if (listener instanceof SetRemoveRandomListener) {
             return addListener("__keyevent@*:spop", (SetRemoveRandomListener) listener, SetRemoveRandomListener::onRandomRemove);
         }
+        if (listener instanceof TrackingListener) {
+            return addTrackingListener((TrackingListener) listener);
+        }
+
         return super.addListener(listener);
     }
 
@@ -893,19 +898,26 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
         if (listener instanceof SetRemoveRandomListener) {
             return addListenerAsync("__keyevent@*:spop", (SetRemoveRandomListener) listener, SetRemoveRandomListener::onRandomRemove);
         }
+        if (listener instanceof TrackingListener) {
+            return addTrackingListenerAsync((TrackingListener) listener);
+        }
+
         return super.addListenerAsync(listener);
     }
 
     @Override
     public void removeListener(int listenerId) {
+        removeTrackingListener(listenerId);
         removeListener(listenerId, "__keyevent@*:sadd", "__keyevent@*:srem", "__keyevent@*:spop");
         super.removeListener(listenerId);
     }
 
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
-        return removeListenerAsync(super.removeListenerAsync(listenerId), listenerId,
-                "__keyevent@*:sadd", "__keyevent@*:srem", "__keyevent@*:spop");
+        RFuture<Void> f1 = removeTrackingListenerAsync(listenerId);
+        RFuture<Void> f2 = removeListenerAsync(listenerId,
+                            "__keyevent@*:sadd", "__keyevent@*:srem", "__keyevent@*:spop");
+        return new CompletableFutureWrapper<>(CompletableFuture.allOf(f1.toCompletableFuture(), f2.toCompletableFuture()));
     }
 
 

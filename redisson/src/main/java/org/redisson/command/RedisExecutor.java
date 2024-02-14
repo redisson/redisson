@@ -73,6 +73,7 @@ public class RedisExecutor<V, R> {
     final int attempts;
     final int retryInterval;
     final int responseTimeout;
+    final boolean trackChanges;
 
     CompletableFuture<RedisConnection> connectionFuture;
     boolean reuseConnection;
@@ -89,7 +90,8 @@ public class RedisExecutor<V, R> {
                          Object[] params, CompletableFuture<R> mainPromise, boolean ignoreRedirect,
                          ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder,
                          RedissonObjectBuilder.ReferenceType referenceType, boolean noRetry,
-                         int retryAttempts, int retryInterval, int responseTimeout) {
+                         int retryAttempts, int retryInterval, int responseTimeout,
+                         boolean trackChanges) {
         super();
         this.readOnlyMode = readOnlyMode;
         this.source = source;
@@ -106,6 +108,7 @@ public class RedisExecutor<V, R> {
         this.retryInterval = retryInterval;
         this.responseTimeout = responseTimeout;
         this.referenceType = referenceType;
+        this.trackChanges = trackChanges;
     }
 
     public void execute() {
@@ -689,7 +692,7 @@ public class RedisExecutor<V, R> {
 
     private void release(RedisConnection connection) {
         if (readOnlyMode) {
-            entry.releaseRead(connection);
+            entry.releaseRead(connection, trackChanges);
         } else {
             entry.releaseWrite(connection);
         }
@@ -786,10 +789,10 @@ public class RedisExecutor<V, R> {
             return entry.connectionReadOp(command, source.getAddr());
         }
         if (source.getRedisClient() != null) {
-            return entry.connectionReadOp(command, source.getRedisClient());
+            return entry.connectionReadOp(command, source.getRedisClient(), trackChanges);
         }
 
-        return entry.connectionReadOp(command);
+        return entry.connectionReadOp(command, trackChanges);
     }
 
     final CompletableFuture<RedisConnection> connectionWriteOp(RedisCommand<?> command, CompletableFuture<R> attemptPromise) {

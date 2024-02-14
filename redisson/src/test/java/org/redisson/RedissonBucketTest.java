@@ -1,17 +1,26 @@
 package org.redisson;
 
 import net.bytebuddy.utility.RandomString;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.redisson.RedisRunner.FailedToStartRedisException;
-import org.redisson.api.DeletedObjectListener;
-import org.redisson.api.ExpiredObjectListener;
-import org.redisson.api.RBucket;
-import org.redisson.api.RedissonClient;
+import org.redisson.api.*;
 import org.redisson.api.listener.SetObjectListener;
+import org.redisson.api.listener.TrackingListener;
 import org.redisson.api.options.PlainOptions;
+import org.redisson.api.redisnode.RedisCluster;
+import org.redisson.api.redisnode.RedisClusterSlave;
+import org.redisson.api.redisnode.RedisNodes;
+import org.redisson.client.RedisClient;
+import org.redisson.client.RedisClientConfig;
+import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisResponseTimeoutException;
-import org.redisson.config.Config;
+import org.redisson.client.protocol.RedisCommands;
+import org.redisson.config.*;
+import org.redisson.misc.RedisURI;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 
@@ -23,11 +32,169 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonBucketTest extends RedisDockerTest {
+
+    public static Iterable<Object[]> trackingData() {
+        return Arrays.asList(new Object[][] {
+                {Arrays.asList(ReadMode.MASTER, SubscriptionMode.MASTER)},
+                {Arrays.asList(ReadMode.SLAVE, SubscriptionMode.MASTER)},
+                {Arrays.asList(ReadMode.SLAVE, SubscriptionMode.SLAVE)},
+                {Arrays.asList(ReadMode.MASTER_SLAVE, SubscriptionMode.SLAVE)},
+                {Arrays.asList(ReadMode.MASTER_SLAVE, SubscriptionMode.MASTER)}
+        });
+    }
+
+    @Test
+    public void testTracking() {
+        Config c = redisson.getConfig();
+        c.setProtocol(Protocol.RESP3);
+
+        RedissonClient rs = Redisson.create(c);
+        RBucket<String> b = rs.getBucket("test");
+        AtomicReference<String> ref = new AtomicReference<>();
+        int id = b.addListener(new TrackingListener() {
+            @Override
+            public void onChange(String name) {
+                System.out.println("name " + name);
+                ref.set(name);
+            }
+        });
+        String r = b.get();
+        assertThat(ref.get()).isNull();
+
+        RBucket<String> b2 = rs.getBucket("test1");
+        AtomicReference<String> ref2 = new AtomicReference<>();
+        int id2 = b2.addListener(new TrackingListener() {
+            @Override
+            public void onChange(String name) {
+                System.out.println("name2 " + name);
+                ref2.set(name);
+            }
+        });
+        b2.get();
+        assertThat(ref2.get()).isNull();
+
+
+        RBucket<String> bb = rs.getBucket("test");
+        bb.set("1234");
+        RBucket<String> bb2 = rs.getBucket("test1");
+        bb2.set("7584");
+
+        Awaitility.waitAtMost(Duration.ofMillis(500)).untilAsserted(() -> {
+            assertThat(ref.getAndSet(null)).isEqualTo("test");
+            assertThat(ref2.getAndSet(null)).isEqualTo("test1");
+        });
+
+        b.removeListener(id);
+
+        String r2 = b.get();
+        bb.set("6345");
+
+        Awaitility.waitAtMost(Duration.ofMillis(500)).untilAsserted(() -> {
+            assertThat(ref.get()).isNull();
+            assertThat(ref2.get()).isNull();
+        });
+
+        String r3 = b2.get();
+        bb2.set("6345");
+
+        Awaitility.waitAtMost(Duration.ofMillis(500)).untilAsserted(() -> {
+            assertThat(ref2.getAndSet(null)).isEqualTo("test1");
+            assertThat(ref.get()).isNull();
+        });
+
+        rs.shutdown();
+    }
+
+    @ParameterizedTest
+    @MethodSource("trackingData")
+    public void testTrackingCluster(List<Object> params) {
+        testInCluster(rc -> {
+            Config c = rc.getConfig();
+            c.setProtocol(Protocol.RESP3);
+            c.useClusterServers()
+                    .setReadMode((ReadMode) params.get(0))
+                    .setSubscriptionMode((SubscriptionMode) params.get(1));
+
+            RedissonClient redissonClient = Redisson.create(c);
+            RBucket<String> b = redissonClient.getBucket("test");
+            AtomicReference<String> ref = new AtomicReference<>();
+            int id = b.addListener(new TrackingListener() {
+                @Override
+                public void onChange(String name) {
+                    ref.set(name);
+                }
+            });
+            String r = b.get();
+            assertThat(ref.get()).isNull();
+
+            RBucket<String> bb = redissonClient.getBucket("test");
+            bb.set("1234");
+
+            Awaitility.waitAtMost(Duration.ofMillis(2000)).untilAsserted(() -> {
+                assertThat(ref.getAndSet(null)).isEqualTo("test");
+            });
+            b.removeListener(id);
+
+            String r2 = b.get();
+            bb.set("6345");
+
+            Awaitility.waitAtMost(Duration.ofMillis(500)).untilAsserted(() -> {
+                assertThat(ref.get()).isNull();
+            });
+
+            redissonClient.shutdown();
+        });
+    }
+
+//    @Test
+    public void testTrackingCluster() {
+        for (int i = 0; i < 20; i++) {
+        testInCluster(rc -> {
+                Config c = rc.getConfig();
+                c.setProtocol(Protocol.RESP3);
+                c.useClusterServers()
+                        .setPingConnectionInterval(0)
+                        .setReadMode(ReadMode.SLAVE)
+                        .setSubscriptionMode(SubscriptionMode.MASTER);
+
+                RedissonClient redissonClient = Redisson.create(c);
+                RBucket<String> b = redissonClient.getBucket("test");
+                AtomicReference<String> ref = new AtomicReference<>();
+                int id = b.addListener(new TrackingListener() {
+                    @Override
+                    public void onChange(String name) {
+                        ref.set(name);
+                    }
+                });
+                String r = b.get();
+                assertThat(ref.get()).isNull();
+
+                RBucket<String> bb = redissonClient.getBucket("test");
+                bb.set("1234");
+
+                Awaitility.waitAtMost(Duration.ofMillis(1000)).untilAsserted(() -> {
+                    assertThat(ref.getAndSet(null)).isEqualTo("test");
+                });
+                b.removeListener(id);
+
+                String r2 = b.get();
+                bb.set("6345");
+
+                Awaitility.waitAtMost(Duration.ofMillis(1000)).untilAsserted(() -> {
+                    assertThat(ref.get()).isNull();
+                });
+
+                redissonClient.shutdown();
+        });
+            System.out.println("iteration " + i);
+        }
+    }
 
     @Test
     public void testOptions() {

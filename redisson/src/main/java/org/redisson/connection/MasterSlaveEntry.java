@@ -104,7 +104,7 @@ public class MasterSlaveEntry {
     }
 
     private void useMasterAsSlave() {
-        if (getAvailableClients() == 0) {
+        if (hasNoSlaves()) {
             addSlaveEntry(masterEntry);
         } else {
             removeSlaveEntry(masterEntry);
@@ -130,14 +130,14 @@ public class MasterSlaveEntry {
         client2Entry.put(entry.getClient(), entry);
     }
 
-    private int getAvailableClients() {
+    private boolean hasNoSlaves() {
         int count = 0;
         for (ClientConnectionsEntry connectionEntry : client2Entry.values()) {
-            if (!connectionEntry.isFreezed()) {
+            if (!connectionEntry.isFreezed() && connectionEntry.getNodeType() == NodeType.SLAVE) {
                 count++;
             }
         }
-        return count;
+        return count == 0;
     }
 
     public CompletableFuture<RedisClient> setupMasterEntry(InetSocketAddress address, RedisURI uri) {
@@ -214,16 +214,12 @@ public class MasterSlaveEntry {
     }
 
     private boolean slaveDown(ClientConnectionsEntry entry) {
-        if (entry.isMasterForRead()) {
-            return false;
-        }
-
         // add master as slave if no more slaves available
         if (!config.isSlaveNotUsed()
                 && !masterEntry.getClient().getAddr().equals(entry.getClient().getAddr())
-                    && getAvailableClients() == 0) {
+                    && hasNoSlaves()) {
             addSlaveEntry(masterEntry);
-            log.info("master {} used as slave", masterEntry.getClient().getAddr());
+            log.info("master {} is used as slave", masterEntry.getClient().getAddr());
         }
 
         entry.nodeDown();
@@ -585,24 +581,31 @@ public class MasterSlaveEntry {
     }
 
     public CompletableFuture<RedisConnection> connectionWriteOp(RedisCommand<?> command) {
-        return masterConnectionPool.get(command);
+        return masterConnectionPool.get(command, false);
+    }
+
+    public CompletableFuture<RedisConnection> trackedConnectionWriteOp(RedisCommand<?> command) {
+        return masterConnectionPool.get(command, true);
     }
 
     public CompletableFuture<RedisConnection> redirectedConnectionWriteOp(RedisCommand<?> command, RedisURI addr) {
         return connectionReadOp(command, addr);
     }
 
-    public CompletableFuture<RedisConnection> connectionReadOp(RedisCommand<?> command) {
+    public CompletableFuture<RedisConnection> connectionReadOp(RedisCommand<?> command, boolean trackChanges) {
         if (config.getReadMode() == ReadMode.MASTER) {
+            if (trackChanges) {
+                return trackedConnectionWriteOp(command);
+            }
             return connectionWriteOp(command);
         }
-        return slaveConnectionPool.get(command);
+        return slaveConnectionPool.get(command, trackChanges);
     }
 
     public CompletableFuture<RedisConnection> connectionReadOp(RedisCommand<?> command, RedisURI addr) {
         ClientConnectionsEntry entry = getEntry(addr);
         if (entry != null) {
-            return slaveConnectionPool.get(command, entry);
+            return slaveConnectionPool.get(command, entry, false);
         }
         RedisConnectionException exception = new RedisConnectionException("Can't find entry for " + addr + " command " + command);
         CompletableFuture<RedisConnection> f = new CompletableFuture<>();
@@ -610,14 +613,17 @@ public class MasterSlaveEntry {
         return f;
     }
     
-    public CompletableFuture<RedisConnection> connectionReadOp(RedisCommand<?> command, RedisClient client) {
+    public CompletableFuture<RedisConnection> connectionReadOp(RedisCommand<?> command, RedisClient client, boolean trackChanges) {
         if (config.getReadMode() == ReadMode.MASTER) {
+            if (trackChanges) {
+                return trackedConnectionWriteOp(command);
+            }
             return connectionWriteOp(command);
         }
 
         ClientConnectionsEntry entry = getEntry(client);
         if (entry != null) {
-            return slaveConnectionPool.get(command, entry);
+            return slaveConnectionPool.get(command, entry, trackChanges);
         }
         RedisConnectionException exception = new RedisConnectionException("Can't find entry for " + client + " command " + command);
         CompletableFuture<RedisConnection> f = new CompletableFuture<>();
@@ -654,24 +660,32 @@ public class MasterSlaveEntry {
 
     public void returnPubSubConnection(RedisPubSubConnection connection) {
         if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
-            masterPubSubConnectionPool.returnConnection(masterEntry, connection);
+            masterPubSubConnectionPool.returnConnection(masterEntry, connection, false);
             return;
         }
         ClientConnectionsEntry entry = getEntry(connection.getRedisClient());
-        slavePubSubConnectionPool.returnConnection(entry, connection);
+        slavePubSubConnectionPool.returnConnection(entry, connection, false);
     }
 
     public void releaseWrite(RedisConnection connection) {
-        masterConnectionPool.returnConnection(masterEntry, connection);
+        masterConnectionPool.returnConnection(masterEntry, connection, false);
     }
 
-    public void releaseRead(RedisConnection connection) {
+    public void releaseTrackedWrite(RedisConnection connection) {
+        masterConnectionPool.returnConnection(masterEntry, connection, true);
+    }
+
+    public void releaseRead(RedisConnection connection, boolean trackChanges) {
         if (config.getReadMode() == ReadMode.MASTER) {
+            if (trackChanges) {
+                releaseTrackedWrite(connection);
+                return;
+            }
             releaseWrite(connection);
             return;
         }
         ClientConnectionsEntry entry = getEntry(connection.getRedisClient());
-        slaveConnectionPool.returnConnection(entry, connection);
+        slaveConnectionPool.returnConnection(entry, connection, trackChanges);
     }
 
     public void incReference() {

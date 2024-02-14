@@ -169,7 +169,7 @@ public final class RedissonNode {
     private void retrieveAddresses() {
         ConnectionManager connectionManager = ((Redisson) redisson).getConnectionManager();
         for (MasterSlaveEntry entry : connectionManager.getEntrySet()) {
-            CompletionStage<RedisConnection> readFuture = entry.connectionReadOp(null);
+            CompletionStage<RedisConnection> readFuture = entry.connectionReadOp(null, false);
             RedisConnection readConnection = null;
             try {
                 readConnection = readFuture.toCompletableFuture().get(connectionManager.getServiceManager().getConfig().getConnectTimeout(), TimeUnit.MILLISECONDS);
@@ -179,7 +179,7 @@ public final class RedissonNode {
                 // skip
             }
             if (readConnection != null) {
-                entry.releaseRead(readConnection);
+                entry.releaseRead(readConnection, false);
                 remoteAddress = (InetSocketAddress) readConnection.getChannel().remoteAddress();
                 localAddress = (InetSocketAddress) readConnection.getChannel().localAddress();
                 return;

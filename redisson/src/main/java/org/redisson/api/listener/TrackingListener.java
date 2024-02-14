@@ -13,30 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.config;
+package org.redisson.api.listener;
+
+import org.redisson.api.ObjectListener;
 
 /**
- * 
+ * Redisson Object Event listener for <b>client tracking</b> event published by Redis.
+ * <p>
+ * Requires Redis 6.0+
+ *
  * @author Nikita Koksharov
  *
  */
-public enum ReadMode {
+public interface TrackingListener extends ObjectListener {
 
     /**
-     * Read from slave nodes. Uses MASTER if no SLAVES are available.
-     * Node is selected using specified <code>loadBalancer</code> in Redisson configuration.
+     * Invoked when a Redisson object was changed
+     *
+     * @param name object name
      */
-    SLAVE,
-
-    /**
-     * Read from master node
-     */
-    MASTER,
-
-    /**
-     * Read from master and slave nodes.
-     * Node is selected using specified <code>loadBalancer</code> in Redisson configuration.
-     */
-    MASTER_SLAVE,
+    void onChange(String name);
 
 }

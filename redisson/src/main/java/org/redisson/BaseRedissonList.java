@@ -33,6 +33,7 @@ import org.redisson.mapreduce.RedissonCollectionMapReduce;
 import org.redisson.misc.CompletableFutureWrapper;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Predicate;
@@ -822,6 +823,10 @@ public class BaseRedissonList<V> extends RedissonExpirable {
         if (listener instanceof ListInsertListener) {
             return addListener("__keyevent@*:linsert", (ListInsertListener) listener, ListInsertListener::onListInsert);
         }
+        if (listener instanceof TrackingListener) {
+            return addTrackingListener((TrackingListener) listener);
+        }
+
         return super.addListener(listener);
     }
 
@@ -842,11 +847,16 @@ public class BaseRedissonList<V> extends RedissonExpirable {
         if (listener instanceof ListInsertListener) {
             return addListenerAsync("__keyevent@*:linsert", (ListInsertListener) listener, ListInsertListener::onListInsert);
         }
+        if (listener instanceof TrackingListener) {
+            return addTrackingListenerAsync((TrackingListener) listener);
+        }
+
         return super.addListenerAsync(listener);
     }
 
     @Override
     public void removeListener(int listenerId) {
+        removeTrackingListener(listenerId);
         removeListener(listenerId, "__keyevent@*:rpush", "__keyevent@*:lrem",
                 "__keyevent@*:ltrim", "__keyevent@*:lset", "__keyevent@*:linsert");
         super.removeListener(listenerId);
@@ -854,8 +864,10 @@ public class BaseRedissonList<V> extends RedissonExpirable {
 
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
-        return removeListenerAsync(super.removeListenerAsync(listenerId), listenerId,
+        RFuture<Void> f1 = removeTrackingListenerAsync(listenerId);
+        RFuture<Void> f2 = removeListenerAsync(listenerId,
                 "__keyevent@*:rpush", "__keyevent@*:lrem", "__keyevent@*:ltrim", "__keyevent@*:lset", "__keyevent@*:linsert");
+        return new CompletableFutureWrapper<>(CompletableFuture.allOf(f1.toCompletableFuture(), f2.toCompletableFuture()));
     }
 
     public boolean removeIf(Predicate<? super V> filter) {

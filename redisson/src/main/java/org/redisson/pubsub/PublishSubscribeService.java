@@ -18,11 +18,16 @@ package org.redisson.pubsub;
 import io.netty.util.Timeout;
 import org.redisson.PubSubPatternStatusListener;
 import org.redisson.PubSubStatusListener;
+import org.redisson.api.RFuture;
+import org.redisson.api.listener.TrackingListener;
 import org.redisson.client.*;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.config.MasterSlaveServersConfig;
+import org.redisson.config.ReadMode;
 import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
@@ -42,6 +47,31 @@ import java.util.stream.Collectors;
  *
  */
 public class PublishSubscribeService {
+
+    public static class PubSubClientKey {
+
+        private final ChannelName channelName;
+
+        private final ClientConnectionsEntry entry;
+
+        public PubSubClientKey(ChannelName channelName, ClientConnectionsEntry entry) {
+            this.channelName = channelName;
+            this.entry = entry;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            PubSubClientKey that = (PubSubClientKey) o;
+            return Objects.equals(channelName, that.channelName) && Objects.equals(entry, that.entry);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(channelName, entry);
+        }
+    }
 
     public static class PubSubKey {
 
@@ -105,6 +135,7 @@ public class PublishSubscribeService {
     private final Map<ChannelName, Collection<PubSubConnectionEntry>> name2entry = new ConcurrentHashMap<>();
     private final ConcurrentMap<PubSubKey, PubSubConnectionEntry> name2PubSubConnection = new ConcurrentHashMap<>();
     private final ConcurrentMap<MasterSlaveEntry, PubSubEntry> entry2PubSubConnection = new ConcurrentHashMap<>();
+    private final Map<PubSubClientKey, PubSubConnectionEntry> key2connection = new ConcurrentHashMap<>();
 
     private final SemaphorePubSub semaphorePubSub = new SemaphorePubSub(this);
 
@@ -200,6 +231,57 @@ public class PublishSubscribeService {
                                                               Codec codec, ChannelName channelName, RedisPubSubListener<?>... listeners) {
         return subscribe(PubSubType.SUBSCRIBE, codec, channelName, entry, clientEntry, listeners);
     }
+
+    public CompletableFuture<Integer> subscribe(String key, Codec codec,
+                                                                    CommandAsyncExecutor commandExecutor, TrackingListener listener) {
+        MasterSlaveEntry entry = connectionManager.getEntry(key);
+
+        ChannelName channelName = new ChannelName("__redis__:invalidate");
+
+        RedisPubSubListener<String> redisPubSubListener = new RedisPubSubListener<String>() {
+            @Override
+            public void onMessage(CharSequence channel, String msg) {
+                if (key.equals(msg)) {
+                    listener.onChange(msg);
+                }
+            }
+        };
+
+        int listenerId = System.identityHashCode(redisPubSubListener);
+
+        List<ClientConnectionsEntry> entries = entry.getAllEntries().stream()
+                .filter(e -> {
+                    if (config.getReadMode() == ReadMode.MASTER_SLAVE) {
+                        return true;
+                    }
+                    return !e.isFreezed();
+                })
+                .collect(Collectors.toList());
+
+        List<CompletableFuture<PubSubConnectionEntry>> ffs = new ArrayList<>();
+        for (ClientConnectionsEntry ee : entries) {
+            CompletableFuture<PubSubConnectionEntry> future = subscribe(PubSubType.SUBSCRIBE, codec, channelName, entry, ee, redisPubSubListener);
+            ffs.add(future);
+        }
+        CompletableFuture<Void> future = CompletableFuture.allOf(ffs.toArray(new CompletableFuture[0]));
+        return future.thenCompose(r -> {
+            List<CompletableFuture<Void>> futures = new ArrayList<>();
+            List<PubSubConnectionEntry> ees = ffs.stream().map(v -> v.join()).collect(Collectors.toList());
+            for (PubSubConnectionEntry ee : ees) {
+                RedisPubSubConnection c = ee.getConnection();
+                RFuture<Long> idFuture = c.async(RedisCommands.CLIENT_ID);
+                CompletionStage<Void> f = idFuture.thenCompose(id -> {
+                    return commandExecutor.readAsync(c.getRedisClient(), key, StringCodec.INSTANCE,
+                            RedisCommands.CLIENT_TRACKING, "ON", "REDIRECT", id);
+                });
+                futures.add(f.toCompletableFuture());
+            }
+
+            CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+            return f.thenApply(r2 -> listenerId);
+        });
+    }
+
 
     public CompletableFuture<List<PubSubConnectionEntry>> subscribe(Codec codec, ChannelName channelName, RedisPubSubListener<?>... listeners) {
         if (isMultiEntity(channelName)) {
@@ -353,8 +435,16 @@ public class PublishSubscribeService {
     private void subscribeNoTimeout(Codec codec, ChannelName channelName, MasterSlaveEntry entry,
                                     ClientConnectionsEntry clientEntry, CompletableFuture<PubSubConnectionEntry> promise,
                                     PubSubType type, AsyncSemaphore lock, AtomicInteger attempts, RedisPubSubListener<?>... listeners) {
-        PubSubConnectionEntry connEntry = name2PubSubConnection.get(new PubSubKey(channelName, entry));
+        PubSubConnectionEntry connEntry;
+        if (clientEntry != null) {
+            connEntry = key2connection.get(new PubSubClientKey(channelName, clientEntry));
+        } else {
+            connEntry = name2PubSubConnection.get(new PubSubKey(channelName, entry));
+        }
         if (connEntry != null) {
+            if (clientEntry != null) {
+                clientEntry.getTrackedConnectionsHolder().incUsage();
+            }
             connEntry.addListeners(channelName, promise, type, lock, listeners);
             return;
         }
@@ -369,6 +459,12 @@ public class PublishSubscribeService {
             PubSubEntry freePubSubConnections = entry2PubSubConnection.getOrDefault(entry, new PubSubEntry());
 
             PubSubConnectionEntry freeEntry = freePubSubConnections.getEntries().peek();
+            if (freeEntry != null && clientEntry != null) {
+                if (!clientEntry.getClient().equals(freeEntry.getConnection().getRedisClient())) {
+                    freeEntry = null;
+                }
+            }
+
             if (freeEntry == null) {
                 freePubSubLock.release();
                 connect(codec, channelName, entry, clientEntry, promise, type, lock, attempts, listeners);
@@ -380,8 +476,19 @@ public class PublishSubscribeService {
                 throw new IllegalStateException();
             }
 
+            PubSubConnectionEntry oldEntry = null;
+            if (clientEntry != null) {
+                PubSubClientKey key = new PubSubClientKey(channelName, clientEntry);
+                oldEntry = key2connection.putIfAbsent(key, freeEntry);
+                clientEntry.getTrackedConnectionsHolder().incUsage();
+            }
+
             PubSubKey key = new PubSubKey(channelName, entry);
-            PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(key, freeEntry);
+            PubSubConnectionEntry oe = name2PubSubConnection.putIfAbsent(key, freeEntry);
+            if (clientEntry == null) {
+                oldEntry = oe;
+            }
+
             if (oldEntry != null) {
                 freeEntry.release();
                 freePubSubLock.release();
@@ -434,8 +541,18 @@ public class PublishSubscribeService {
                 PubSubConnectionEntry entry = new PubSubConnectionEntry(conn, connectionManager, msEntry);
                 int remainFreeAmount = entry.tryAcquire();
 
+                PubSubConnectionEntry oldEntry = null;
+                if (clientEntry != null) {
+                    PubSubClientKey key = new PubSubClientKey(channelName, clientEntry);
+                    oldEntry = key2connection.putIfAbsent(key, entry);
+                    clientEntry.getTrackedConnectionsHolder().incUsage();
+                }
                 PubSubKey key = new PubSubKey(channelName, msEntry);
-                PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(key, entry);
+                PubSubConnectionEntry oe = name2PubSubConnection.putIfAbsent(key, entry);
+                if (clientEntry == null) {
+                    oldEntry = oe;
+                }
+
                 if (oldEntry != null) {
                     msEntry.returnPubSubConnection(entry.getConnection());
 
@@ -503,15 +620,20 @@ public class PublishSubscribeService {
     }
 
     private void remove(ChannelName channelName, PubSubConnectionEntry entry) {
-        Collection<PubSubConnectionEntry> ee = name2entry.get(channelName);
-        if (ee == null) {
-            return;
+        ClientConnectionsEntry e = entry.getEntry().getEntry(entry.getConnection().getRedisClient());
+        PubSubClientKey key = new PubSubClientKey(channelName, e);
+        key2connection.remove(key);
+        if (e.getTrackedConnectionsHolder().decUsage() == 0) {
+            e.getTrackedConnectionsHolder().reset();
         }
 
-        ee.remove(entry);
-        if (ee.isEmpty()) {
-            name2entry.remove(channelName);
-        }
+        name2entry.computeIfPresent(channelName, (name, entries) -> {
+            entries.remove(entry);
+            if (entries.isEmpty()) {
+                return null;
+            }
+            return entries;
+        });
     }
 
     private void release(PubSubConnectionEntry entry) {

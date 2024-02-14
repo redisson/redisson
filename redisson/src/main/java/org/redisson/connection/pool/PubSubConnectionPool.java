@@ -38,15 +38,15 @@ public class PubSubConnectionPool extends ConnectionPool<RedisPubSubConnection> 
     }
 
     public CompletableFuture<RedisPubSubConnection> get() {
-        return get(RedisCommands.SUBSCRIBE);
+        return get(RedisCommands.SUBSCRIBE, false);
     }
 
     public CompletableFuture<RedisPubSubConnection> get(ClientConnectionsEntry entry) {
-        return get(RedisCommands.SUBSCRIBE, entry);
+        return get(RedisCommands.SUBSCRIBE, entry, false);
     }
 
     @Override
-    protected ConnectionsHolder<RedisPubSubConnection> getConnectionHolder(ClientConnectionsEntry entry) {
+    protected ConnectionsHolder<RedisPubSubConnection> getConnectionHolder(ClientConnectionsEntry entry, boolean trackChanges) {
         return entry.getPubSubConnectionsHolder();
     }
 

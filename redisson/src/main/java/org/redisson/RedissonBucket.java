@@ -19,13 +19,16 @@ import org.redisson.api.ObjectListener;
 import org.redisson.api.RBucket;
 import org.redisson.api.RFuture;
 import org.redisson.api.listener.SetObjectListener;
+import org.redisson.api.listener.TrackingListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.misc.CompletableFutureWrapper;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -359,26 +362,37 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         if (listener instanceof SetObjectListener) {
             return addListener("__keyevent@*:set", (SetObjectListener) listener, SetObjectListener::onSet);
         }
+        if (listener instanceof TrackingListener) {
+            return addTrackingListener((TrackingListener) listener);
+        }
+
         return super.addListener(listener);
-    };
+    }
 
     @Override
     public RFuture<Integer> addListenerAsync(ObjectListener listener) {
         if (listener instanceof SetObjectListener) {
             return addListenerAsync("__keyevent@*:set", (SetObjectListener) listener, SetObjectListener::onSet);
         }
+        if (listener instanceof TrackingListener) {
+            return addTrackingListenerAsync((TrackingListener) listener);
+        }
+
         return super.addListenerAsync(listener);
     }
 
     @Override
     public void removeListener(int listenerId) {
+        removeTrackingListener(listenerId);
         removeListener(listenerId, "__keyevent@*:set");
         super.removeListener(listenerId);
     }
 
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
-        return removeListenerAsync(super.removeListenerAsync(listenerId), listenerId, "__keyevent@*:set");
+        RFuture<Void> f1 = removeTrackingListenerAsync(listenerId);
+        RFuture<Void> f2 = removeListenerAsync(listenerId, "__keyevent@*:set");
+        return new CompletableFutureWrapper<>(CompletableFuture.allOf(f1.toCompletableFuture(), f2.toCompletableFuture()));
     }
 
 }

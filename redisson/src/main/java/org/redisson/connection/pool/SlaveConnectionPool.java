@@ -36,7 +36,10 @@ public class SlaveConnectionPool extends ConnectionPool<RedisConnection> {
     }
 
     @Override
-    protected ConnectionsHolder<RedisConnection> getConnectionHolder(ClientConnectionsEntry entry) {
+    protected ConnectionsHolder<RedisConnection> getConnectionHolder(ClientConnectionsEntry entry, boolean trackChanges) {
+        if (trackChanges) {
+            return entry.getTrackedConnectionsHolder();
+        }
         return entry.getConnectionsHolder();
     }
 

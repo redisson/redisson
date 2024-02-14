@@ -18,11 +18,16 @@ package org.redisson;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.ReferenceCountUtil;
 import org.redisson.api.*;
+import org.redisson.api.listener.TrackingListener;
+import org.redisson.client.ChannelName;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.command.CommandAsyncService;
+import org.redisson.config.Protocol;
 import org.redisson.connection.ServiceManager;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.Hash;
@@ -45,7 +50,7 @@ import java.util.stream.StreamSupport;
  */
 public abstract class RedissonObject implements RObject {
 
-    protected final CommandAsyncExecutor commandExecutor;
+    protected CommandAsyncExecutor commandExecutor;
     protected String name;
     protected final Codec codec;
 
@@ -272,7 +277,7 @@ public abstract class RedissonObject implements RObject {
         }
     }
     
-    public String getLockByMapKey(Object key, String suffix) {
+    public final String getLockByMapKey(Object key, String suffix) {
         ByteBuf keyState = encodeMapKey(key);
         try {
             return suffixName(getRawName(key), Hash.hash128toBase64(keyState) + ":" + suffix);
@@ -281,7 +286,7 @@ public abstract class RedissonObject implements RObject {
         }
     }
 
-    public String getLockByValue(Object key, String suffix) {
+    public final String getLockByValue(Object key, String suffix) {
         ByteBuf keyState = encode(key);
         try {
             return suffixName(getRawName(key), Hash.hash128toBase64(keyState) + ":" + suffix);
@@ -290,7 +295,7 @@ public abstract class RedissonObject implements RObject {
         }
     }
 
-    protected void encodeMapKeys(Collection<Object> params, Collection<?> values) {
+    protected final void encodeMapKeys(Collection<Object> params, Collection<?> values) {
         try {
             for (Object object : values) {
                 params.add(encodeMapKey(object));
@@ -303,7 +308,7 @@ public abstract class RedissonObject implements RObject {
         }
     }
 
-    protected void encodeMapValues(Collection<Object> params, Collection<?> values) {
+    protected final void encodeMapValues(Collection<Object> params, Collection<?> values) {
         try {
             for (Object object : values) {
                 params.add(encodeMapValue(object));
@@ -332,11 +337,11 @@ public abstract class RedissonObject implements RObject {
         }
     }
 
-    public ByteBuf encodeMapKey(Object value) {
+    public final ByteBuf encodeMapKey(Object value) {
         return commandExecutor.encodeMapKey(codec, value);
     }
 
-    public ByteBuf encodeMapKey(Object value, Collection<Object> params) {
+    public final ByteBuf encodeMapKey(Object value, Collection<Object> params) {
         try {
             return encodeMapKey(value);
         } catch (Exception e) {
@@ -347,7 +352,7 @@ public abstract class RedissonObject implements RObject {
         }
     }
 
-    public ByteBuf encodeMapValue(Object value) {
+    public final ByteBuf encodeMapValue(Object value) {
         return commandExecutor.encodeMapValue(codec, value);
     }
 
@@ -441,6 +446,22 @@ public abstract class RedissonObject implements RObject {
         return new CompletableFutureWrapper<>(f);
     }
 
+    protected final int addTrackingListener(TrackingListener listener) {
+        return addTrackingListenerAsync(listener).join();
+    }
+
+    protected final RFuture<Integer> addTrackingListenerAsync(TrackingListener listener) {
+        if (getServiceManager().getCfg().getProtocol() != Protocol.RESP3) {
+            throw new IllegalStateException("`protocol` config setting should be set to RESP3 value");
+        }
+
+        commandExecutor = new CommandAsyncService(commandExecutor, true);
+        PublishSubscribeService subscribeService = commandExecutor.getConnectionManager().getSubscribeService();
+        CompletableFuture<Integer> r = subscribeService.subscribe(getRawName(), StringCodec.INSTANCE,
+                commandExecutor, listener);
+        return new CompletableFutureWrapper<>(r);
+    }
+
     protected final <T extends ObjectListener> int addListener(String name, T listener, BiConsumer<T, String> consumer) {
         RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, name);
         return topic.addListener(String.class, (pattern, channel, msg) -> {
@@ -491,13 +512,34 @@ public abstract class RedissonObject implements RObject {
         return removeListenerAsync(null, listenerId, "__keyevent@*:expired", "__keyevent@*:del");
     }
 
+    protected final RFuture<Void> removeListenerAsync(int listenerId, String... names) {
+        List<String> ns = Arrays.asList(names);
+        ns.addAll(Arrays.asList("__keyevent@*:expired", "__keyevent@*:del"));
+        return removeListenerAsync(null, listenerId, ns.toArray(new String[0]));
+    }
+
+    protected final void removeTrackingListener(int listenerId) {
+        removeTrackingListenerAsync(listenerId).toCompletableFuture().join();
+    }
+
+    protected final RFuture<Void> removeTrackingListenerAsync(int listenerId) {
+        PublishSubscribeService subscribeService = commandExecutor.getConnectionManager().getSubscribeService();
+        CompletableFuture<Void> f = subscribeService.removeListenerAsync(PubSubType.UNSUBSCRIBE, new ChannelName("__redis__:invalidate"), listenerId);
+        f.whenComplete((r, e) -> {
+            if (commandExecutor.isTrackChanges()) {
+                commandExecutor = new CommandAsyncService(commandExecutor, false);
+            }
+        });
+        return new CompletableFutureWrapper<>(f);
+    }
+
     protected final List<String> map(String[] keys) {
         return Arrays.stream(keys)
                 .map(k -> commandExecutor.getServiceManager().getConfig().getNameMapper().map(k))
                 .collect(Collectors.toList());
     }
 
-    protected PublishSubscribeService getSubscribeService() {
+    protected final PublishSubscribeService getSubscribeService() {
         return commandExecutor.getConnectionManager().getSubscribeService();
     }
 

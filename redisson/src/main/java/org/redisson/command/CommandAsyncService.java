@@ -68,6 +68,20 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     private final int retryAttempts;
     private final int retryInterval;
     private final int responseTimeout;
+    private final boolean trackChanges;
+
+    public CommandAsyncService(CommandAsyncExecutor executor, boolean trackChanges) {
+        CommandAsyncService service = (CommandAsyncService) executor;
+        this.codec = service.codec;
+        this.connectionManager = service.connectionManager;
+        this.objectBuilder = service.objectBuilder;
+        this.referenceType = service.referenceType;
+        this.retryAttempts = service.retryAttempts;
+        this.retryInterval = service.retryInterval;
+        this.responseTimeout = service.responseTimeout;
+        this.trackChanges = trackChanges;
+    }
+
 
     public CommandAsyncService(CommandAsyncExecutor executor,
                                ObjectParams objectParams) {
@@ -92,6 +106,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         } else {
             this.responseTimeout = connectionManager.getServiceManager().getConfig().getTimeout();
         }
+        this.trackChanges = false;
     }
 
     public CommandAsyncService(ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder,
@@ -103,6 +118,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         this.retryAttempts = connectionManager.getServiceManager().getConfig().getRetryAttempts();
         this.retryInterval = connectionManager.getServiceManager().getConfig().getRetryInterval();
         this.responseTimeout = connectionManager.getServiceManager().getConfig().getTimeout();
+        this.trackChanges = false;
     }
 
     @Override
@@ -495,10 +511,10 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             args.addAll(keys);
             args.addAll(Arrays.asList(params));
 
-            RedisExecutor<T, R> executor = new RedisExecutor<>(readOnlyMode, nodeSource, codec, cmd,
-                                                        args.toArray(), promise, false,
-                                                        connectionManager, objectBuilder, referenceType, noRetry,
-                                                        retryAttempts, retryInterval, responseTimeout);
+            RedisExecutor<T, R> executor = new RedisExecutor(readOnlyMode, nodeSource, codec, cmd,
+                                                                args.toArray(), promise, false,
+                                                                connectionManager, objectBuilder, referenceType, noRetry,
+                                                                retryAttempts, retryInterval, responseTimeout, trackChanges);
             executor.execute();
 
             promise.whenComplete((res, e) -> {
@@ -582,8 +598,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             RedisCommand cmd = new RedisCommand("SORT_RO", command.getReplayMultiDecoder());
             CompletableFuture<R> mainPromise = createPromise();
             RedisExecutor<V, R> executor = new RedisExecutor<>(readOnlyMode, source, codec, cmd, params, mainPromise,
-                    ignoreRedirect, connectionManager, objectBuilder, referenceType, noRetry,
-                    retryAttempts, retryInterval, responseTimeout);
+                                                                ignoreRedirect, connectionManager, objectBuilder, referenceType, noRetry,
+                                                                retryAttempts, retryInterval, responseTimeout, trackChanges);
             executor.execute();
             CompletableFuture<R> result = new CompletableFuture<>();
             mainPromise.whenComplete((r, e) -> {
@@ -600,8 +616,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
         CompletableFuture<R> mainPromise = createPromise();
         RedisExecutor<V, R> executor = new RedisExecutor<>(readOnlyMode, source, codec, command, params, mainPromise,
-                                                    ignoreRedirect, connectionManager, objectBuilder, referenceType, noRetry,
-                                                    retryAttempts, retryInterval, responseTimeout);
+                                                            ignoreRedirect, connectionManager, objectBuilder, referenceType, noRetry,
+                                                            retryAttempts, retryInterval, responseTimeout, trackChanges);
         executor.execute();
         return new CompletableFutureWrapper<>(mainPromise);
     }
@@ -983,4 +999,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return new CommandBatchService(this, options);
     }
 
+    @Override
+    public boolean isTrackChanges() {
+        return trackChanges;
+    }
 }

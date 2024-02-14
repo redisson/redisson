@@ -15,11 +15,14 @@
  */
 package org.redisson.connection;
 
+import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.misc.RedisURI;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -39,13 +42,40 @@ public class SingleEntry extends MasterSlaveEntry {
     }
 
     @Override
-    public CompletableFuture<RedisConnection> connectionReadOp(RedisCommand<?> command) {
+    public CompletableFuture<RedisConnection> connectionReadOp(RedisCommand<?> command, boolean trackChanges) {
+        if (trackChanges) {
+            return super.trackedConnectionWriteOp(command);
+        }
         return super.connectionWriteOp(command);
     }
 
     @Override
-    public void releaseRead(RedisConnection connection) {
+    public void releaseRead(RedisConnection connection, boolean trackChanges) {
+        if (trackChanges) {
+            super.releaseTrackedWrite(connection);
+            return;
+        }
         super.releaseWrite(connection);
     }
 
+    @Override
+    public Collection<ClientConnectionsEntry> getAllEntries() {
+        return Collections.singletonList(masterEntry);
+    }
+
+    @Override
+    public ClientConnectionsEntry getEntry(RedisClient redisClient) {
+        if (masterEntry.getClient().equals(redisClient)) {
+            return masterEntry;
+        }
+        return null;
+    }
+
+    @Override
+    public ClientConnectionsEntry getEntry(RedisURI addr) {
+        if (addr.equals(masterEntry.getClient().getAddr())) {
+            return masterEntry;
+        }
+        return null;
+    }
 }

@@ -231,4 +231,17 @@ public interface RBucketReactive<V> extends RExpirableReactive {
      */
     Mono<Void> setAndKeepTTL(V value);
 
+    /**
+     * Adds object event listener
+     *
+     * @see org.redisson.api.listener.TrackingListener
+     * @see org.redisson.api.ExpiredObjectListener
+     * @see org.redisson.api.DeletedObjectListener
+     * @see org.redisson.api.listener.SetObjectListener
+     *
+     * @param listener - object event listener
+     * @return listener id
+     */
+    Mono<Integer> addListener(ObjectListener listener);
+
 }

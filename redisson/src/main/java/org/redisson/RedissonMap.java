@@ -21,6 +21,7 @@ import org.redisson.api.*;
 import org.redisson.api.MapOptions.WriteMode;
 import org.redisson.api.listener.MapPutListener;
 import org.redisson.api.listener.MapRemoveListener;
+import org.redisson.api.listener.TrackingListener;
 import org.redisson.api.map.RetryableMapWriterAsync;
 import org.redisson.api.mapreduce.RMapReduce;
 import org.redisson.client.RedisClient;
@@ -1898,6 +1899,10 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         if (listener instanceof MapRemoveListener) {
             return addListener("__keyevent@*:hdel", (MapRemoveListener) listener, MapRemoveListener::onRemove);
         }
+        if (listener instanceof TrackingListener) {
+            return addTrackingListener((TrackingListener) listener);
+        }
+
         return super.addListener(listener);
     }
 
@@ -1909,18 +1914,25 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         if (listener instanceof MapRemoveListener) {
             return addListenerAsync("__keyevent@*:hdel", (MapRemoveListener) listener, MapRemoveListener::onRemove);
         }
+        if (listener instanceof TrackingListener) {
+            return addTrackingListenerAsync((TrackingListener) listener);
+        }
+
         return super.addListenerAsync(listener);
     }
 
     @Override
     public void removeListener(int listenerId) {
+        removeTrackingListener(listenerId);
         removeListener(listenerId, "__keyevent@*:hset", "__keyevent@*:hdel");
         super.removeListener(listenerId);
     }
 
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
-        return removeListenerAsync(super.removeListenerAsync(listenerId), listenerId, "__keyevent@*:hset", "__keyevent@*:hdel");
+        RFuture<Void> f1 = removeTrackingListenerAsync(listenerId);
+        RFuture<Void> f2 = removeListenerAsync(super.removeListenerAsync(listenerId), listenerId, "__keyevent@*:hset", "__keyevent@*:hdel");
+        return new CompletableFutureWrapper<>(CompletableFuture.allOf(f1.toCompletableFuture(), f2.toCompletableFuture()));
     }
 
 }

@@ -16,6 +16,7 @@
 package org.redisson;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.*;
@@ -27,6 +28,7 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.*;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.misc.CompletableFutureWrapper;
 
 /**
  * 
@@ -1461,6 +1463,10 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         if (listener instanceof StreamRemoveGroupListener) {
             return addListenerAsync("__keyevent@*:xgroup-destroy", (StreamRemoveGroupListener) listener, StreamRemoveGroupListener::onRemoveGroup);
         }
+        if (listener instanceof TrackingListener) {
+            return addTrackingListenerAsync((TrackingListener) listener);
+        }
+
         return super.addListenerAsync(listener);
     }
 
@@ -1487,11 +1493,16 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         if (listener instanceof StreamTrimListener) {
             return addListener("__keyevent@*:xtrim", (StreamTrimListener) listener, StreamTrimListener::onTrim);
         }
+        if (listener instanceof TrackingListener) {
+            return addTrackingListener((TrackingListener) listener);
+        }
+
         return super.addListener(listener);
     }
 
     @Override
     public void removeListener(int listenerId) {
+        removeTrackingListener(listenerId);
         removeListener(listenerId, "__keyevent@*:xadd", "__keyevent@*:xdel", "__keyevent@*:xgroup-createconsumer",
                             "__keyevent@*:xgroup-delconsumer", "__keyevent@*:xgroup-create", "__keyevent@*:xgroup-destroy", "__keyevent@*:xtrim");
         super.removeListener(listenerId);
@@ -1499,9 +1510,11 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
 
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
-        return removeListenerAsync(super.removeListenerAsync(listenerId), listenerId,
+        RFuture<Void> f1 = removeTrackingListenerAsync(listenerId);
+        RFuture<Void> f2 = removeListenerAsync(super.removeListenerAsync(listenerId), listenerId,
                 "__keyevent@*:xadd", "__keyevent@*:xdel", "__keyevent@*:xgroup-createconsumer",
-                        "__keyevent@*:xgroup-delconsumer", "__keyevent@*:xgroup-create", "__keyevent@*:xgroup-destroy", "__keyevent@*:xtrim");
+                "__keyevent@*:xgroup-delconsumer", "__keyevent@*:xgroup-create", "__keyevent@*:xgroup-destroy", "__keyevent@*:xtrim");
+        return new CompletableFutureWrapper<>(CompletableFuture.allOf(f1.toCompletableFuture(), f2.toCompletableFuture()));
     }
 
 

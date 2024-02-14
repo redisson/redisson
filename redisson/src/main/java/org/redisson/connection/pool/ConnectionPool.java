@@ -28,7 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -68,20 +67,14 @@ abstract class ConnectionPool<T extends RedisConnection> {
         entries.remove(entry);
     }
 
-    protected abstract ConnectionsHolder<T> getConnectionHolder(ClientConnectionsEntry entry);
+    protected abstract ConnectionsHolder<T> getConnectionHolder(ClientConnectionsEntry entry, boolean trackChanges);
 
-    public CompletableFuture<T> get(RedisCommand<?> command) {
-        List<ClientConnectionsEntry> entriesCopy = new LinkedList<ClientConnectionsEntry>(entries);
-        for (Iterator<ClientConnectionsEntry> iterator = entriesCopy.iterator(); iterator.hasNext();) {
-            ClientConnectionsEntry entry = iterator.next();
-            if (!((!entry.isFreezed() || entry.isMasterForRead()) 
-                    && isHealthy(entry))) {
-                iterator.remove();
-            }
-        }
+    public CompletableFuture<T> get(RedisCommand<?> command, boolean trackChanges) {
+        List<ClientConnectionsEntry> entriesCopy = new LinkedList<>(entries);
+        entriesCopy.removeIf(n -> n.isFreezed() || !isHealthy(n));
         if (!entriesCopy.isEmpty()) {
             ClientConnectionsEntry entry = config.getLoadBalancer().getEntry(entriesCopy, command);
-            return acquireConnection(command, entry);
+            return acquireConnection(command, entry, trackChanges);
         }
         
         List<InetSocketAddress> failed = new LinkedList<>();
@@ -94,7 +87,8 @@ abstract class ConnectionPool<T extends RedisConnection> {
             }
         }
 
-        StringBuilder errorMsg = new StringBuilder(getClass().getSimpleName() + " no available Redis entries. Master entry host: " + masterSlaveEntry.getClient().getAddr());
+        StringBuilder errorMsg = new StringBuilder(getClass().getSimpleName() + " no available Redis entries. " +
+                "Master entry host: " + masterSlaveEntry.getClient().getAddr() + " entries " + entries);
         if (!freezed.isEmpty()) {
             errorMsg.append(" Disconnected hosts: ").append(freezed);
         }
@@ -108,12 +102,12 @@ abstract class ConnectionPool<T extends RedisConnection> {
         return result;
     }
 
-    public CompletableFuture<T> get(RedisCommand<?> command, ClientConnectionsEntry entry) {
-        return acquireConnection(command, entry);
+    public CompletableFuture<T> get(RedisCommand<?> command, ClientConnectionsEntry entry, boolean trackChanges) {
+        return acquireConnection(command, entry, trackChanges);
     }
 
-    protected final CompletableFuture<T> acquireConnection(RedisCommand<?> command, ClientConnectionsEntry entry) {
-        CompletableFuture<T> result = getConnectionHolder(entry).acquireConnection(command);
+    protected final CompletableFuture<T> acquireConnection(RedisCommand<?> command, ClientConnectionsEntry entry, boolean trackChanges) {
+        CompletableFuture<T> result = getConnectionHolder(entry, trackChanges).acquireConnection(command);
         result.whenComplete((r, e) -> {
             if (e != null) {
                 if (entry.getNodeType() == NodeType.SLAVE) {
@@ -140,12 +134,12 @@ abstract class ConnectionPool<T extends RedisConnection> {
         return true;
     }
 
-    public final void returnConnection(ClientConnectionsEntry entry, T connection) {
+    public final void returnConnection(ClientConnectionsEntry entry, T connection, boolean trackChanges) {
         if (entry == null) {
             connection.closeAsync();
             return;
         }
-        getConnectionHolder(entry).releaseConnection(entry, connection);
+        getConnectionHolder(entry, trackChanges).releaseConnection(entry, connection);
     }
 
 }
