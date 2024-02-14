@@ -28,7 +28,7 @@ import java.time.Duration;
 class BaseMapOptions<T extends ExMapOptions<T, K, V>, K, V> extends BaseOptions<T, Codec>
                                                             implements ExMapOptions<T, K, V> {
 
-    private int writeRetryAttempts;
+    private int writeRetryAttempts = 0;
     private MapWriter<K, V> writer;
     private MapWriterAsync<K, V> writerAsync;
     private int writeBehindBatchSize;
@@ -41,8 +41,11 @@ class BaseMapOptions<T extends ExMapOptions<T, K, V>, K, V> extends BaseOptions<
     public T writer(MapWriter<K, V> writer) {
         if (writer != null) {
             org.redisson.api.MapOptions<K, V> options = (org.redisson.api.MapOptions<K, V>) org.redisson.api.MapOptions.defaults()
-                    .writerRetryAttempts(getWriteRetryAttempts())
                     .writerRetryInterval(Duration.ofMillis(getWriteRetryInterval()));
+            if (getWriteRetryAttempts() > 0) {
+                options.writerRetryAttempts(getWriteRetryAttempts());
+            }
+
             this.writer = new RetryableMapWriter<>(options, writer);
         }
         return (T) this;
@@ -54,8 +57,12 @@ class BaseMapOptions<T extends ExMapOptions<T, K, V>, K, V> extends BaseOptions<
     public T writerAsync(MapWriterAsync<K, V> writer) {
         if (writer != null) {
             org.redisson.api.MapOptions<K, V> options = (org.redisson.api.MapOptions<K, V>) org.redisson.api.MapOptions.defaults()
-                    .writerRetryAttempts(getWriteRetryAttempts())
                     .writerRetryInterval(Duration.ofMillis(getWriteRetryInterval()));
+
+            if (getWriteRetryAttempts() > 0) {
+                options.writerRetryAttempts(getWriteRetryAttempts());
+            }
+
             this.writerAsync = new RetryableMapWriterAsync<>(options, writer);
         }
         return (T) this;

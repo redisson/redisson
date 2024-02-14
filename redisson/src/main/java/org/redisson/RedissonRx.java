@@ -299,14 +299,19 @@ public class RedissonRx implements RedissonRxClient {
                 .loaderAsync(params.getLoaderAsync())
                 .writer(params.getWriter())
                 .writerAsync(params.getWriterAsync())
-                .writeMode(MapOptions.WriteMode.valueOf(params.getWriteMode().toString()))
                 .writeBehindDelay(params.getWriteBehindDelay())
                 .writeBehindBatchSize(params.getWriteBehindBatchSize())
-                .writerRetryAttempts(params.getWriteRetryAttempts())
                 .writerRetryInterval(Duration.ofMillis(params.getWriteRetryInterval()));
 
         if (params.isRemoveEmptyEvictionTask()) {
             ops.removeEmptyEvictionTask();
+        }
+
+        if (params.getWriteMode() != null) {
+            ops.writeMode(MapOptions.WriteMode.valueOf(params.getWriteMode().toString()));
+        }
+        if (params.getWriteRetryAttempts() > 0) {
+            ops.writerRetryAttempts(params.getWriteRetryAttempts());
         }
 
         CommandRxService ce = new CommandRxService(commandExecutor, params);
@@ -1021,11 +1026,16 @@ public class RedissonRx implements RedissonRxClient {
                 .expirationEventPolicy(LocalCachedMapOptions.ExpirationEventPolicy.valueOf(params.getExpirationEventPolicy().toString()))
                 .writer(params.getWriter())
                 .writerAsync(params.getWriterAsync())
-                .writeMode(MapOptions.WriteMode.valueOf(params.getWriteMode().toString()))
                 .writeBehindDelay(params.getWriteBehindDelay())
                 .writeBehindBatchSize(params.getWriteBehindBatchSize())
-                .writerRetryAttempts(params.getWriteRetryAttempts())
                 .writerRetryInterval(Duration.ofMillis(params.getWriteRetryInterval()));
+
+        if (params.getWriteMode() != null) {
+            ops.writeMode(MapOptions.WriteMode.valueOf(params.getWriteMode().toString()));
+        }
+        if (params.getWriteRetryAttempts() > 0) {
+            ops.writerRetryAttempts(params.getWriteRetryAttempts());
+        }
 
         CommandRxService ce = new CommandRxService(commandExecutor, params);
         RMap<K, V> map = new RedissonLocalCachedMap<>(params.getCodec(), ce, params.getName(),

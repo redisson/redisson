@@ -373,11 +373,16 @@ public final class Redisson implements RedissonClient {
                 .expirationEventPolicy(LocalCachedMapOptions.ExpirationEventPolicy.valueOf(params.getExpirationEventPolicy().toString()))
                 .writer(params.getWriter())
                 .writerAsync(params.getWriterAsync())
-                .writeMode(MapOptions.WriteMode.valueOf(params.getWriteMode().toString()))
                 .writeBehindDelay(params.getWriteBehindDelay())
                 .writeBehindBatchSize(params.getWriteBehindBatchSize())
-                .writerRetryAttempts(params.getWriteRetryAttempts())
                 .writerRetryInterval(Duration.ofMillis(params.getWriteRetryInterval()));
+
+        if (params.getWriteMode() != null) {
+            ops.writeMode(MapOptions.WriteMode.valueOf(params.getWriteMode().toString()));
+        }
+        if (params.getWriteRetryAttempts() > 0) {
+            ops.writerRetryAttempts(params.getWriteRetryAttempts());
+        }
 
         return new RedissonLocalCachedMap<>(params.getCodec(), new CommandAsyncService(commandExecutor, params), params.getName(),
                 ops, evictionScheduler, this, writeBehindService);
@@ -401,11 +406,16 @@ public final class Redisson implements RedissonClient {
                 .loaderAsync(params.getLoaderAsync())
                 .writer(params.getWriter())
                 .writerAsync(params.getWriterAsync())
-                .writeMode(MapOptions.WriteMode.valueOf(params.getWriteMode().toString()))
                 .writeBehindDelay(params.getWriteBehindDelay())
                 .writeBehindBatchSize(params.getWriteBehindBatchSize())
-                .writerRetryAttempts(params.getWriteRetryAttempts())
                 .writerRetryInterval(Duration.ofMillis(params.getWriteRetryInterval()));
+
+        if (params.getWriteMode() != null) {
+            ops.writeMode(MapOptions.WriteMode.valueOf(params.getWriteMode().toString()));
+        }
+        if (params.getWriteRetryAttempts() > 0) {
+            ops.writerRetryAttempts(params.getWriteRetryAttempts());
+        }
 
         return new RedissonMap<>(new CommandAsyncService(commandExecutor, params), params.getName(),
                 this, ops, writeBehindService);
@@ -506,11 +516,16 @@ public final class Redisson implements RedissonClient {
                 .loaderAsync(params.getLoaderAsync())
                 .writer(params.getWriter())
                 .writerAsync(params.getWriterAsync())
-                .writeMode(MapOptions.WriteMode.valueOf(params.getWriteMode().toString()))
                 .writeBehindDelay(params.getWriteBehindDelay())
                 .writeBehindBatchSize(params.getWriteBehindBatchSize())
-                .writerRetryAttempts(params.getWriteRetryAttempts())
                 .writerRetryInterval(Duration.ofMillis(params.getWriteRetryInterval()));
+
+        if (params.getWriteMode() != null) {
+            ops.writeMode(MapOptions.WriteMode.valueOf(params.getWriteMode().toString()));
+        }
+        if (params.getWriteRetryAttempts() > 0) {
+            ops.writerRetryAttempts(params.getWriteRetryAttempts());
+        }
 
         if (params.isRemoveEmptyEvictionTask()) {
             ops.removeEmptyEvictionTask();

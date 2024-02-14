@@ -1024,11 +1024,16 @@ public class RedissonReactive implements RedissonReactiveClient {
                 .expirationEventPolicy(LocalCachedMapOptions.ExpirationEventPolicy.valueOf(params.getExpirationEventPolicy().toString()))
                 .writer(params.getWriter())
                 .writerAsync(params.getWriterAsync())
-                .writeMode(MapOptions.WriteMode.valueOf(params.getWriteMode().toString()))
                 .writeBehindDelay(params.getWriteBehindDelay())
                 .writeBehindBatchSize(params.getWriteBehindBatchSize())
-                .writerRetryAttempts(params.getWriteRetryAttempts())
                 .writerRetryInterval(Duration.ofMillis(params.getWriteRetryInterval()));
+
+        if (params.getWriteMode() != null) {
+            ops.writeMode(MapOptions.WriteMode.valueOf(params.getWriteMode().toString()));
+        }
+        if (params.getWriteRetryAttempts() > 0) {
+            ops.writerRetryAttempts(params.getWriteRetryAttempts());
+        }
 
         CommandReactiveService ca = new CommandReactiveService(commandExecutor, params);
         RMap<K, V> map = new RedissonLocalCachedMap<>(params.getCodec(), ca, params.getName(),
