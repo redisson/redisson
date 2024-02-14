@@ -19,6 +19,7 @@ import io.netty.util.Timeout;
 import org.redisson.PubSubPatternStatusListener;
 import org.redisson.PubSubStatusListener;
 import org.redisson.api.RFuture;
+import org.redisson.api.listener.FlushListener;
 import org.redisson.api.listener.TrackingListener;
 import org.redisson.client.*;
 import org.redisson.client.codec.Codec;
@@ -230,6 +231,60 @@ public class PublishSubscribeService {
     public CompletableFuture<PubSubConnectionEntry> subscribe(MasterSlaveEntry entry, ClientConnectionsEntry clientEntry,
                                                               Codec codec, ChannelName channelName, RedisPubSubListener<?>... listeners) {
         return subscribe(PubSubType.SUBSCRIBE, codec, channelName, entry, clientEntry, listeners);
+    }
+
+    private final Map<Integer, Collection<Integer>> flushListeners = new ConcurrentHashMap<>();
+
+    public CompletableFuture<Integer> subscribe(CommandAsyncExecutor commandExecutor, FlushListener listener) {
+        ChannelName channelName = new ChannelName("__redis__:invalidate");
+
+        int listenerId = System.identityHashCode(listener);
+
+        List<CompletableFuture<PubSubConnectionEntry>> ffs = new ArrayList<>();
+        for (MasterSlaveEntry entry : connectionManager.getEntrySet()) {
+            RedisPubSubListener<String> entryListener = new RedisPubSubListener<String>() {
+                @Override
+                public void onMessage(CharSequence channel, String msg) {
+                    listener.onFlush(entry.getClient().getAddr());
+                }
+            };
+            int entryListenerId = System.identityHashCode(entryListener);
+
+            Collection<Integer> listeners = flushListeners.computeIfAbsent(listenerId, k -> new HashSet<>());
+            listeners.add(entryListenerId);
+
+            CompletableFuture<PubSubConnectionEntry> future = subscribe(PubSubType.SUBSCRIBE, StringCodec.INSTANCE,
+                                                                            channelName, entry, entry.getEntry(), entryListener);
+            ffs.add(future);
+        }
+
+        CompletableFuture<Void> future = CompletableFuture.allOf(ffs.toArray(new CompletableFuture[0]));
+        return future.thenCompose(r -> {
+            List<CompletableFuture<Void>> futures = new ArrayList<>();
+            List<PubSubConnectionEntry> ees = ffs.stream().map(v -> v.join()).collect(Collectors.toList());
+            for (PubSubConnectionEntry ee : ees) {
+                RedisPubSubConnection c = ee.getConnection();
+                RFuture<Long> idFuture = c.async(RedisCommands.CLIENT_ID);
+                CompletionStage<Void> f = idFuture.thenCompose(id -> {
+                    return commandExecutor.readAsync(c.getRedisClient(), StringCodec.INSTANCE,
+                            RedisCommands.CLIENT_TRACKING, "ON", "REDIRECT", id);
+                });
+                futures.add(f.toCompletableFuture());
+            }
+
+            CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+            return f.thenApply(r2 -> listenerId);
+        });
+    }
+
+    public CompletableFuture<Void> removeFlushListenerAsync(int listenerId) {
+        Collection<Integer> ids = flushListeners.remove(listenerId);
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        for (Integer id : ids) {
+            CompletableFuture<Void> f = removeListenerAsync(PubSubType.UNSUBSCRIBE, new ChannelName("__redis__:invalidate"), id);
+            futures.add(f);
+        }
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
     }
 
     public CompletableFuture<Integer> subscribe(String key, Codec codec,

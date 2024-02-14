@@ -15,10 +15,8 @@
  */
 package org.redisson;
 
-import org.redisson.api.RFuture;
-import org.redisson.api.RKeys;
-import org.redisson.api.RObject;
-import org.redisson.api.RType;
+import org.redisson.api.*;
+import org.redisson.api.listener.FlushListener;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.StringCodec;
@@ -33,11 +31,13 @@ import org.redisson.client.protocol.decoder.ListScanResultReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
+import org.redisson.config.Protocol;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.iterator.RedissonBaseIterator;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.CompositeIterable;
+import org.redisson.pubsub.PublishSubscribeService;
 import org.redisson.reactive.CommandReactiveBatchService;
 import org.redisson.rx.CommandRxBatchService;
 
@@ -542,4 +542,36 @@ public class RedissonKeys implements RKeys {
     public RFuture<Void> swapdbAsync(int db1, int db2) {
         return commandExecutor.writeAsync(null, RedisCommands.SWAPDB, db1, db2);
     }
+
+    @Override
+    public int addListener(ObjectListener listener) {
+        return commandExecutor.get(addListenerAsync(listener));
+    }
+
+    @Override
+    public RFuture<Integer> addListenerAsync(ObjectListener listener) {
+        if (listener instanceof FlushListener) {
+            if (commandExecutor.getServiceManager().getCfg().getProtocol() != Protocol.RESP3) {
+                throw new IllegalStateException("`protocol` config setting should be set to RESP3 value");
+            }
+
+            PublishSubscribeService subscribeService = commandExecutor.getConnectionManager().getSubscribeService();
+            CompletableFuture<Integer> r = subscribeService.subscribe(commandExecutor, (FlushListener) listener);
+            return new CompletableFutureWrapper<>(r);
+        }
+        return null;
+    }
+
+    @Override
+    public void removeListener(int listenerId) {
+        commandExecutor.get(removeListenerAsync(listenerId));
+    }
+
+    @Override
+    public RFuture<Void> removeListenerAsync(int listenerId) {
+        PublishSubscribeService subscribeService = commandExecutor.getConnectionManager().getSubscribeService();
+        CompletableFuture<Void> f = subscribeService.removeFlushListenerAsync(listenerId);
+        return new CompletableFutureWrapper<>(f);
+    }
+
 }

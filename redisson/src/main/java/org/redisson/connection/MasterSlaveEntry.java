@@ -801,4 +801,7 @@ public class MasterSlaveEntry {
         });
     }
 
+    public ClientConnectionsEntry getEntry() {
+        return masterEntry;
+    }
 }

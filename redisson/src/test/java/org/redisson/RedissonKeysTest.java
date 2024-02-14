@@ -1,19 +1,54 @@
 package org.redisson;
 
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.redisson.ClusterRunner.ClusterProcesses;
 import org.redisson.RedisRunner.FailedToStartRedisException;
 import org.redisson.api.*;
+import org.redisson.api.listener.FlushListener;
 import org.redisson.config.Config;
-import org.redisson.connection.balancer.RandomLoadBalancer;
+import org.redisson.config.Protocol;
 
-import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonKeysTest extends RedisDockerTest {
+
+    @Test
+    public void testFlush() throws InterruptedException {
+        Config c = redisson.getConfig();
+        c.setProtocol(Protocol.RESP3);
+
+        RedissonClient r = Redisson.create(c);
+
+        AtomicReference<InetSocketAddress> ref = new AtomicReference<>();
+        int id = r.getKeys().addListener(new FlushListener() {
+            @Override
+            public void onFlush(InetSocketAddress address) {
+                ref.set(address);
+            }
+        });
+
+        r.getKeys().flushall();
+
+        Awaitility.waitAtMost(Duration.ofMillis(500)).untilAsserted(() -> {
+            assertThat(ref.getAndSet(null)).isNotNull();
+        });
+
+        r.getKeys().removeListener(id);
+
+        r.getKeys().flushall();
+
+        Thread.sleep(100);
+
+        assertThat(ref.get()).isNull();
+
+        r.shutdown();
+    }
 
     @Test
     public void testReadKeys() {

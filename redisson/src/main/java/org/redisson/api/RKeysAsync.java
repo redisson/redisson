@@ -248,5 +248,23 @@ public interface RKeysAsync {
      * @return void
      */
     RFuture<Void> flushallParallelAsync();
-    
+
+    /**
+     * Adds global object event listener
+     * which is invoked for each Redisson object.
+     *
+     * @see org.redisson.api.listener.TrackingListener
+     *
+     * @param listener object event listener
+     * @return listener id
+     */
+    RFuture<Integer> addListenerAsync(ObjectListener listener);
+
+    /**
+     * Removes global object event listener
+     *
+     * @param listenerId - listener id
+     */
+    RFuture<Void> removeListenerAsync(int listenerId);
+
 }
