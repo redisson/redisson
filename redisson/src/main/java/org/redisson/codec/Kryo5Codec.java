@@ -86,17 +86,26 @@ public class Kryo5Codec extends BaseCodec {
     private final Pool<Kryo> kryoPool;
     private final Pool<Input> inputPool;
     private final Pool<Output> outputPool;
+    private final boolean registrationRequired;
 
     public Kryo5Codec() {
-        this(null);
+        this(null, false);
+    }
+
+    public Kryo5Codec(boolean registrationRequired) {
+        this(null, registrationRequired);
     }
 
     public Kryo5Codec(ClassLoader classLoader, Kryo5Codec codec) {
-        this(classLoader);
+        this(classLoader, codec.registrationRequired);
     }
 
     public Kryo5Codec(ClassLoader classLoader) {
+        this(null, false);
+    }
 
+    public Kryo5Codec(ClassLoader classLoader, boolean registrationRequired) {
+        this.registrationRequired = registrationRequired;
         this.kryoPool = new Pool<Kryo>(true, false, 1024) {
             @Override
             protected Kryo create() {
@@ -125,7 +134,7 @@ public class Kryo5Codec extends BaseCodec {
             kryo.setClassLoader(classLoader);
         }
         kryo.setInstantiatorStrategy(new SimpleInstantiatorStrategy());
-        kryo.setRegistrationRequired(false);
+        kryo.setRegistrationRequired(registrationRequired);
         kryo.setReferences(false);
         kryo.addDefaultSerializer(Throwable.class, new JavaSerializer());
         kryo.addDefaultSerializer(UUID.class, new DefaultSerializers.UUIDSerializer());
