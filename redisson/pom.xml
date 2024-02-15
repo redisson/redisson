@@ -459,6 +459,16 @@
 -->
 
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.12.1</version>
+                <configuration>
+                    <testSource>21</testSource>
+                    <testTarget>21</testTarget>
+                </configuration>
+            </plugin>
+
+            <plugin>
          	<artifactId>maven-javadoc-plugin</artifactId>
             </plugin>
 

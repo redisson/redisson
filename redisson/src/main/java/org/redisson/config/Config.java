@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.net.URL;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -57,6 +58,8 @@ public class Config {
     private int threads = 16;
 
     private int nettyThreads = 32;
+
+    private Executor nettyExecutor;
 
     private Codec codec;
 
@@ -103,6 +106,7 @@ public class Config {
 
     public Config(Config oldConf) {
         setNettyHook(oldConf.getNettyHook());
+        setNettyExecutor(oldConf.getNettyExecutor());
         setExecutor(oldConf.getExecutor());
 
         if (oldConf.getCodec() == null) {
@@ -475,9 +479,29 @@ public class Config {
         return nettyThreads;
     }
 
+    public Executor getNettyExecutor() {
+        return nettyExecutor;
+    }
+
+    /**
+     * Use external Executor for Netty.
+     * <p>
+     * For example, it allows to define <code>Executors.newVirtualThreadPerTaskExecutor()</code>
+     * to use virtual threads.
+     * <p>
+     * The caller is responsible for closing the Executor.
+     *
+     * @param nettyExecutor netty executor object
+     * @return config
+     */
+    public Config setNettyExecutor(Executor nettyExecutor) {
+        this.nettyExecutor = nettyExecutor;
+        return this;
+    }
+
     /**
      * Use external ExecutorService. ExecutorService processes 
-     * all listeners of <code>RTopic</code>, 
+     * all listeners of <code>RTopic</code>, <code>RPatternTopic</code>
      * <code>RRemoteService</code> invocation handlers  
      * and <code>RExecutorService</code> tasks.
      * <p>

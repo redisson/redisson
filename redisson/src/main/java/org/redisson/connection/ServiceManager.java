@@ -155,7 +155,11 @@ public final class ServiceManager {
 
         if (cfg.getTransportMode() == TransportMode.EPOLL) {
             if (cfg.getEventLoopGroup() == null) {
-                this.group = new EpollEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
+                if (cfg.getNettyExecutor() != null) {
+                    this.group = new EpollEventLoopGroup(cfg.getNettyThreads(), cfg.getNettyExecutor());
+                } else {
+                    this.group = new EpollEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
+                }
             } else {
                 this.group = cfg.getEventLoopGroup();
             }
@@ -168,7 +172,11 @@ public final class ServiceManager {
             }
         } else if (cfg.getTransportMode() == TransportMode.KQUEUE) {
             if (cfg.getEventLoopGroup() == null) {
-                this.group = new KQueueEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
+                if (cfg.getNettyExecutor() != null) {
+                    this.group = new KQueueEventLoopGroup(cfg.getNettyThreads(), cfg.getNettyExecutor());
+                } else {
+                    this.group = new KQueueEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
+                }
             } else {
                 this.group = cfg.getEventLoopGroup();
             }
@@ -186,7 +194,11 @@ public final class ServiceManager {
             this.resolverGroup = cfg.getAddressResolverGroupFactory().create(IOUringDatagramChannel.class, socketChannelClass, DnsServerAddressStreamProviders.platformDefault());
         } else {
             if (cfg.getEventLoopGroup() == null) {
-                this.group = new NioEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
+                if (cfg.getNettyExecutor() != null) {
+                    this.group = new NioEventLoopGroup(cfg.getNettyThreads(), cfg.getNettyExecutor());
+                } else {
+                    this.group = new NioEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
+                }
             } else {
                 this.group = cfg.getEventLoopGroup();
             }

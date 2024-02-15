@@ -49,6 +49,18 @@ import static org.awaitility.Awaitility.await;
 public class RedissonTest extends BaseTest {
 
     @Test
+    public void testVirtualThreads() {
+        Config c = redisson.getConfig();
+        c.setNettyExecutor(Executors.newVirtualThreadPerTaskExecutor());
+
+        RedissonClient r = Redisson.create(c);
+        RBucket<String> b = r.getBucket("test");
+        b.set("1");
+        assertThat(b.get()).isEqualTo("1");
+        r.shutdown();
+    }
+
+    @Test
     public void testStopThreads() throws IOException {
         Set<Thread> threads = Thread.getAllStackTraces().keySet();
 
