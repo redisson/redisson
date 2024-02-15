@@ -27,6 +27,7 @@ import java.net.InetSocketAddress;
  * @author Nikita Koksharov
  *
  */
+@FunctionalInterface
 public interface FlushListener extends ObjectListener {
 
     /**

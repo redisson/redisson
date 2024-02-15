@@ -23,6 +23,7 @@ package org.redisson.api;
  * @author Nikita Koksharov
  *
  */
+@FunctionalInterface
 public interface DeletedObjectListener extends ObjectListener {
 
     /**
