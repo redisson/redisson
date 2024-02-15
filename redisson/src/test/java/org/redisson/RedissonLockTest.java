@@ -275,11 +275,13 @@ public class RedissonLockTest extends BaseConcurrentTest {
     @Test
     public void testInCluster() throws Exception {
         testInCluster(redisson -> {
-            RLock lock = redisson.getLock("myLock");
-            lock.lock();
-            assertThat(lock.isLocked()).isTrue();
-            lock.unlock();
-            assertThat(lock.isLocked()).isFalse();
+            for (int i = 0; i < 3; i++) {
+                RLock lock = redisson.getLock("myLock");
+                lock.lock();
+                assertThat(lock.isLocked()).isTrue();
+                lock.unlock();
+                assertThat(lock.isLocked()).isFalse();
+            }
         });
     }
 

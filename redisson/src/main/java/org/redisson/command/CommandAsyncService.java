@@ -27,6 +27,7 @@ import org.redisson.api.RFuture;
 import org.redisson.api.options.ObjectParams;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisException;
+import org.redisson.client.RedisNodeNotFoundException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
@@ -962,9 +963,21 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
             WAIT_SUPPORTED.set(true);
 
-            CompletionStage<Map<String, String>> replicationFuture = writeAsync(key, RedisCommands.INFO_REPLICATION);
+            MasterSlaveEntry e = connectionManager.getEntry(key);
+            if (e == null) {
+                throw new CompletionException(new RedisNodeNotFoundException("entry for " + key + " hasn't been discovered yet"));
+            }
+            CompletionStage<Map<String, String>> replicationFuture;
+            int slaves = e.getAvailableSlaves();
+            if (slaves != -1) {
+                replicationFuture = CompletableFuture.completedFuture(Collections.singletonMap("connected_slaves", "" + slaves));
+            } else {
+                replicationFuture = writeAsync(e, StringCodec.INSTANCE, RedisCommands.INFO_REPLICATION);
+            }
+
             CompletionStage<T> resultFuture = replicationFuture.thenCompose(r -> {
                 int availableSlaves = Integer.parseInt(r.getOrDefault("connected_slaves", "0"));
+                e.setAvailableSlaves(availableSlaves);
 
                 CommandBatchService executorService = createCommandBatchService(availableSlaves);
                 RFuture<T> result = executorService.evalWriteAsync(key, codec, evalCommandType, script, keys, params);
@@ -976,6 +989,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 CompletionStage<T> f = future.handle((res, ex) -> {
                     if (ex != null) {
                         throw new CompletionException(ex);
+                    }
+                    if (res.getSyncedSlaves() < availableSlaves) {
+                        e.setAvailableSlaves(-1);
                     }
                     if (getServiceManager().getCfg().isCheckLockSyncedSlaves()
                             && res.getSyncedSlaves() == 0 && availableSlaves > 0) {

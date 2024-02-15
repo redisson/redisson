@@ -74,6 +74,8 @@ public class MasterSlaveEntry {
 
     final AtomicBoolean noPubSubSlaves = new AtomicBoolean();
 
+    volatile int availableSlaves = -1;
+
     public MasterSlaveEntry(ConnectionManager connectionManager, MasterSlaveServersConfig config) {
         this.connectionManager = connectionManager;
         this.config = config;
@@ -131,12 +133,9 @@ public class MasterSlaveEntry {
     }
 
     private boolean hasNoSlaves() {
-        int count = 0;
-        for (ClientConnectionsEntry connectionEntry : client2Entry.values()) {
-            if (!connectionEntry.isFreezed() && connectionEntry.getNodeType() == NodeType.SLAVE) {
-                count++;
-            }
-        }
+        int count = (int) client2Entry.values().stream()
+                .filter(e -> !e.isFreezed() && e.getNodeType() == NodeType.SLAVE)
+                .count();
         return count == 0;
     }
 
@@ -323,12 +322,6 @@ public class MasterSlaveEntry {
     
     public boolean hasSlave(RedisURI addr) {
         return getEntry(addr) != null;
-    }
-
-    public int getAvailableSlaves() {
-        return (int) client2Entry.values().stream()
-                .filter(e -> !e.isFreezed() && e.getNodeType() == NodeType.SLAVE)
-                .count();
     }
 
     public CompletableFuture<Void> addSlave(RedisURI address) {
@@ -804,4 +797,13 @@ public class MasterSlaveEntry {
     public ClientConnectionsEntry getEntry() {
         return masterEntry;
     }
+
+    public int getAvailableSlaves() {
+        return availableSlaves;
+    }
+
+    public void setAvailableSlaves(int slaves) {
+        availableSlaves = slaves;
+    }
+
 }
