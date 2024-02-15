@@ -150,7 +150,7 @@ public interface RGeoAsync<V> extends RScoredSortedSetAsync<V> {
      */
     @Deprecated
     RFuture<List<V>> radiusAsync(double longitude, double latitude, double radius, GeoUnit geoUnit);
-    
+
     /*
      * Use searchAsync() method instead
      *
@@ -164,7 +164,7 @@ public interface RGeoAsync<V> extends RScoredSortedSetAsync<V> {
      */
     @Deprecated
     RFuture<List<V>> radiusAsync(double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder);
-    
+
     /*
      * Use searchAsync() method instead
      *
@@ -199,24 +199,28 @@ public interface RGeoAsync<V> extends RScoredSortedSetAsync<V> {
      * Use searchWithDistanceAsync() method instead
      *
      */
+    @Deprecated
     RFuture<Map<V, Double>> radiusWithDistanceAsync(double longitude, double latitude, double radius, GeoUnit geoUnit);
 
     /*
      * Use searchWithDistanceAsync() method instead
      *
      */
+    @Deprecated
     RFuture<Map<V, Double>> radiusWithDistanceAsync(double longitude, double latitude, double radius, GeoUnit geoUnit, int count);
     
     /*
      * Use searchWithDistanceAsync() method instead
      *
      */
+    @Deprecated
     RFuture<Map<V, Double>> radiusWithDistanceAsync(double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder);
     
     /*
      * Use searchWithDistanceAsync() method instead
      *
      */
+    @Deprecated
     RFuture<Map<V, Double>> radiusWithDistanceAsync(double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
 
     /**
@@ -246,24 +250,28 @@ public interface RGeoAsync<V> extends RScoredSortedSetAsync<V> {
      * Use searchWithPositionAsync() method instead
      *
      */
+    @Deprecated
     RFuture<Map<V, GeoPosition>> radiusWithPositionAsync(double longitude, double latitude, double radius, GeoUnit geoUnit);
 
     /*
      * Use searchWithPositionAsync() method instead
      *
      */
+    @Deprecated
     RFuture<Map<V, GeoPosition>> radiusWithPositionAsync(double longitude, double latitude, double radius, GeoUnit geoUnit, int count);
 
     /*
      * Use searchWithPositionAsync() method instead
      *
      */
+    @Deprecated
     RFuture<Map<V, GeoPosition>> radiusWithPositionAsync(double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder);
 
     /*
      * Use searchWithPositionAsync() method instead
      *
      */
+    @Deprecated
     RFuture<Map<V, GeoPosition>> radiusWithPositionAsync(double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
     
     /*
@@ -293,53 +301,61 @@ public interface RGeoAsync<V> extends RScoredSortedSetAsync<V> {
      */
     @Deprecated
     RFuture<List<V>> radiusAsync(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
-    
+
     /*
      * Use searchWithDistanceAsync() method instead
      *
      */
+    @Deprecated
     RFuture<Map<V, Double>> radiusWithDistanceAsync(V member, double radius, GeoUnit geoUnit);
 
     /*
      * Use searchWithDistanceAsync() method instead
      *
      */
+    @Deprecated
     RFuture<Map<V, Double>> radiusWithDistanceAsync(V member, double radius, GeoUnit geoUnit, int count);
 
     /*
      * Use searchWithDistanceAsync() method instead
      *
      */
+    @Deprecated
     RFuture<Map<V, Double>> radiusWithDistanceAsync(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder);
 
     /*
      * Use searchWithDistanceAsync() method instead
      *
      */
+    @Deprecated
     RFuture<Map<V, Double>> radiusWithDistanceAsync(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
-    
+
     /*
      * Use searchWithPositionAsync() method instead
      *
      */
+    @Deprecated
     RFuture<Map<V, GeoPosition>> radiusWithPositionAsync(V member, double radius, GeoUnit geoUnit);
 
     /*
      * Use searchWithPositionAsync() method instead
      *
      */
+    @Deprecated
     RFuture<Map<V, GeoPosition>> radiusWithPositionAsync(V member, double radius, GeoUnit geoUnit, int count);
 
     /*
      * Use searchWithPositionAsync() method instead
      *
      */
+    @Deprecated
     RFuture<Map<V, GeoPosition>> radiusWithPositionAsync(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder);
 
     /*
      * Use searchWithPositionAsync() method instead
      *
      */
+    @Deprecated
     RFuture<Map<V, GeoPosition>> radiusWithPositionAsync(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
 
     /**
@@ -434,36 +450,42 @@ public interface RGeoAsync<V> extends RScoredSortedSetAsync<V> {
      * Use storeSortedSearchToAsync() method instead
      *
      */
+    @Deprecated
     RFuture<Long> radiusStoreSortedToAsync(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit);
 
     /*
      * Use storeSortedSearchToAsync() method instead
      *
      */
+    @Deprecated
     RFuture<Long> radiusStoreSortedToAsync(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit, int count);
 
     /*
      * Use storeSortedSearchToAsync() method instead
      *
      */
+    @Deprecated
     RFuture<Long> radiusStoreSortedToAsync(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
 
     /*
      * Use storeSortedSearchToAsync() method instead
      *
      */
+    @Deprecated
     RFuture<Long> radiusStoreSortedToAsync(String destName, V member, double radius, GeoUnit geoUnit);
 
     /*
      * Use storeSortedSearchToAsync() method instead
      *
      */
+    @Deprecated
     RFuture<Long> radiusStoreSortedToAsync(String destName, V member, double radius, GeoUnit geoUnit, int count);
 
     /*
      * Use storeSortedSearchToAsync() method instead
      *
      */
+    @Deprecated
     RFuture<Long> radiusStoreSortedToAsync(String destName, V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
     
 }
