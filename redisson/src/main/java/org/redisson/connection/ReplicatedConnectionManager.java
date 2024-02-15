@@ -74,6 +74,10 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
 
     @Override
     public void doConnect(Set<RedisURI> disconnectedSlaves, Function<RedisURI, String> hostnameMapper) {
+        if (cfg.getNodeAddresses().isEmpty()) {
+            throw new IllegalArgumentException("At least one Redis node should be defined!");
+        }
+
         for (String address : cfg.getNodeAddresses()) {
             RedisURI addr = new RedisURI(address);
             CompletionStage<RedisConnection> connectionFuture = connectToNode(cfg, addr, addr.getHost());

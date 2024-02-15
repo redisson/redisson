@@ -195,6 +195,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 }
                 doConnect(new HashSet<>(), u -> null);
                 return;
+            } catch (IllegalArgumentException e) {
+                shutdown();
+                throw e;
             } catch (Exception e) {
                 if (i == attempts - 1) {
                     lastAttempt = false;

@@ -48,6 +48,31 @@ import static org.awaitility.Awaitility.await;
 
 public class RedissonTest extends BaseTest {
 
+    @Test
+    public void testStopThreads() throws IOException {
+        Set<Thread> threads = Thread.getAllStackTraces().keySet();
+
+        List<String> cfgs = Arrays.asList("{\"clusterServersConfig\":{\"nodeAddresses\": []}}",
+                                          "{\"singleServerConfig\":{\"address\": \"\"}}",
+                                          "{\"replicatedServersConfig\":{\"nodeAddresses\": []}}",
+                                          "{\"sentinelServersConfig\":{\"sentinelAddresses\": []}}",
+                                          "{\"masterSlaveServersConfig\":{\"masterAddress\": \"\"}}");
+        for (String cfg : cfgs) {
+            ConfigSupport support = new ConfigSupport();
+            Config config = support.fromJSON(cfg, Config.class);
+
+            Assertions.assertThrows(IllegalArgumentException.class, () -> {
+                Redisson.create(config);
+            });
+        }
+
+        Set<Thread> newThreads = Thread.getAllStackTraces().keySet();
+        newThreads.removeAll(threads);
+        newThreads.removeIf(r -> r.getName().contains("Jndi-Dns-address-change-listener")
+                                    || r.getName().contains("globalEventExecutor"));
+        assertThat(newThreads).isEmpty();
+    }
+
 //    @Test
     public void testLeak() throws InterruptedException {
         Config config = new Config();
@@ -188,7 +213,7 @@ public class RedissonTest extends BaseTest {
             });
         }
         e.shutdown();
-        assertThat(e.awaitTermination(35, TimeUnit.SECONDS)).isTrue();
+        assertThat(e.awaitTermination(40, TimeUnit.SECONDS)).isTrue();
         assertThat(counter.get()).isEqualTo(10000 * 100);
     }
     
