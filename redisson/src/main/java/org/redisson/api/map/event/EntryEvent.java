@@ -33,7 +33,10 @@ public class EntryEvent<K, V> {
     private K key;
     private V value;
     private V oldValue;
-    
+
+    public EntryEvent() {
+    }
+
     public EntryEvent(RMapCache<K, V> source, Type type, K key, V value, V oldValue) {
         super();
         this.source = source;
@@ -62,5 +65,14 @@ public class EntryEvent<K, V> {
     public V getValue() {
         return value;
     }
-    
+
+    @Override
+    public String toString() {
+        return "EntryEvent{" +
+                "type=" + type +
+                ", key=" + key +
+                ", value=" + value +
+                ", oldValue=" + oldValue +
+                '}';
+    }
 }
