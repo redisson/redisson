@@ -245,7 +245,9 @@ public class PublishSubscribeService {
             RedisPubSubListener<String> entryListener = new RedisPubSubListener<String>() {
                 @Override
                 public void onMessage(CharSequence channel, String msg) {
-                    listener.onFlush(entry.getClient().getAddr());
+                    if (msg == null) {
+                        listener.onFlush(entry.getClient().getAddr());
+                    }
                 }
             };
             int entryListenerId = System.identityHashCode(entryListener);
