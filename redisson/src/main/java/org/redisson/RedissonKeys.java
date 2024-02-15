@@ -45,6 +45,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -545,11 +546,23 @@ public class RedissonKeys implements RKeys {
 
     @Override
     public int addListener(ObjectListener listener) {
+        if (listener instanceof ExpiredObjectListener) {
+            return commandExecutor.get(addListenerAsync("__keyevent@*:expired", (ExpiredObjectListener) listener, ExpiredObjectListener::onExpired));
+        }
+        if (listener instanceof DeletedObjectListener) {
+            return commandExecutor.get(addListenerAsync("__keyevent@*:del", (DeletedObjectListener) listener, DeletedObjectListener::onDeleted));
+        }
         return commandExecutor.get(addListenerAsync(listener));
     }
 
     @Override
     public RFuture<Integer> addListenerAsync(ObjectListener listener) {
+        if (listener instanceof ExpiredObjectListener) {
+            return addListenerAsync("__keyevent@*:expired", (ExpiredObjectListener) listener, ExpiredObjectListener::onExpired);
+        }
+        if (listener instanceof DeletedObjectListener) {
+            return addListenerAsync("__keyevent@*:del", (DeletedObjectListener) listener, DeletedObjectListener::onDeleted);
+        }
         if (listener instanceof FlushListener) {
             if (commandExecutor.getServiceManager().getCfg().getProtocol() != Protocol.RESP3) {
                 throw new IllegalStateException("`protocol` config setting should be set to RESP3 value");
@@ -559,7 +572,14 @@ public class RedissonKeys implements RKeys {
             CompletableFuture<Integer> r = subscribeService.subscribe(commandExecutor, (FlushListener) listener);
             return new CompletableFutureWrapper<>(r);
         }
-        return null;
+        throw new IllegalArgumentException();
+    }
+
+    private <T extends ObjectListener> RFuture<Integer> addListenerAsync(String name, T listener, BiConsumer<T, String> consumer) {
+        RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, name);
+        return topic.addListenerAsync(String.class, (pattern, channel, msg) -> {
+            consumer.accept(listener, msg);
+        });
     }
 
     @Override
@@ -571,6 +591,21 @@ public class RedissonKeys implements RKeys {
     public RFuture<Void> removeListenerAsync(int listenerId) {
         PublishSubscribeService subscribeService = commandExecutor.getConnectionManager().getSubscribeService();
         CompletableFuture<Void> f = subscribeService.removeFlushListenerAsync(listenerId);
+        f = f.thenCompose(r -> removeListenerAsync(null, listenerId, "__keyevent@*:expired", "__keyevent@*:del"));
+        return new CompletableFutureWrapper<>(f);
+    }
+
+    private RFuture<Void> removeListenerAsync(RFuture<Void> future, int listenerId, String... names) {
+        List<CompletableFuture<Void>> futures = new ArrayList<>(names.length + 1);
+        if (future != null) {
+            futures.add(future.toCompletableFuture());
+        }
+        for (String name : names) {
+            RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, name);
+            RFuture<Void> f1 = topic.removeListenerAsync(listenerId);
+            futures.add(f1.toCompletableFuture());
+        }
+        CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
         return new CompletableFutureWrapper<>(f);
     }
 

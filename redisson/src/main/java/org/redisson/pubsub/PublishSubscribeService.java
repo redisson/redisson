@@ -281,6 +281,10 @@ public class PublishSubscribeService {
 
     public CompletableFuture<Void> removeFlushListenerAsync(int listenerId) {
         Collection<Integer> ids = flushListeners.remove(listenerId);
+        if (ids == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+
         List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (Integer id : ids) {
             CompletableFuture<Void> f = removeListenerAsync(PubSubType.UNSUBSCRIBE, new ChannelName("__redis__:invalidate"), id);

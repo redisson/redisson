@@ -312,6 +312,8 @@ public interface RKeysRx {
      * which is invoked for each Redisson object.
      *
      * @see org.redisson.api.listener.TrackingListener
+     * @see org.redisson.api.ExpiredObjectListener
+     * @see org.redisson.api.DeletedObjectListener
      *
      * @param listener object event listener
      * @return listener id

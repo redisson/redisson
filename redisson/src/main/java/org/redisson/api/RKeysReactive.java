@@ -269,8 +269,7 @@ public interface RKeysReactive {
 
     /**
      * Swap two databases.
-     * <p>
-     * Requires Redis 4.0+
+     * <p>     * Requires Redis 4.0+
      *
      * @return void
      */
@@ -310,6 +309,8 @@ public interface RKeysReactive {
      * which is invoked for each Redisson object.
      *
      * @see org.redisson.api.listener.TrackingListener
+     * @see org.redisson.api.ExpiredObjectListener
+     * @see org.redisson.api.DeletedObjectListener
      *
      * @param listener object event listener
      * @return listener id

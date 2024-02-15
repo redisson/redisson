@@ -19,7 +19,47 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class RedissonKeysTest extends RedisDockerTest {
 
     @Test
-    public void testFlush() throws InterruptedException {
+    public void testDeleteListener() {
+        testWithParams(redisson -> {
+            Config c = redisson.getConfig();
+            c.setProtocol(Protocol.RESP3);
+
+            RedissonClient r = Redisson.create(c);
+
+            AtomicReference<String> ref = new AtomicReference<>();
+            int id = r.getKeys().addListener(new DeletedObjectListener() {
+                @Override
+                public void onDeleted(String name) {
+                    ref.set(name);
+                }
+            });
+
+            r.getBucket("test").set("123");
+            r.getBucket("test").delete();
+
+            Awaitility.waitAtMost(Duration.ofMillis(500)).untilAsserted(() -> {
+                assertThat(ref.getAndSet(null)).isEqualTo("test");
+            });
+
+            r.getKeys().removeListener(id);
+
+            r.getBucket("test2").set("123");
+            r.getBucket("test2").delete();
+
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            assertThat(ref.get()).isNull();
+
+            r.shutdown();
+        }, NOTIFY_KEYSPACE_EVENTS, "Eg");
+    }
+
+    @Test
+    public void testFlushListener() throws InterruptedException {
         Config c = redisson.getConfig();
         c.setProtocol(Protocol.RESP3);
 
@@ -89,7 +129,7 @@ public class RedissonKeysTest extends RedisDockerTest {
     public void testTouch() {
         redisson.getSet("test").add("1");
         redisson.getSet("test10").add("1");
-        
+
         assertThat(redisson.getKeys().touch("test")).isEqualTo(1);
         assertThat(redisson.getKeys().touch("test", "test2")).isEqualTo(1);
         assertThat(redisson.getKeys().touch("test3", "test2")).isEqualTo(0);
@@ -117,27 +157,27 @@ public class RedissonKeysTest extends RedisDockerTest {
     public void testExists() {
         redisson.getSet("test").add("1");
         redisson.getSet("test10").add("1");
-        
+
         assertThat(redisson.getKeys().countExists("test")).isEqualTo(1);
         assertThat(redisson.getKeys().countExists("test", "test2")).isEqualTo(1);
         assertThat(redisson.getKeys().countExists("test3", "test2")).isEqualTo(0);
         assertThat(redisson.getKeys().countExists("test3", "test10", "test")).isEqualTo(2);
     }
-    
+
     @Test
     public void testType() {
         redisson.getSet("test").add("1");
-        
+
         assertThat(redisson.getKeys().getType("test")).isEqualTo(RType.SET);
         assertThat(redisson.getKeys().getType("test1")).isNull();
     }
-    
+
     @Test
     public void testEmptyKeys() {
         Iterable<String> keysIterator = redisson.getKeys().getKeysByPattern("test*", 10);
         assertThat(keysIterator.iterator().hasNext()).isFalse();
     }
-    
+
     @Test
     public void testKeysByPattern() throws FailedToStartRedisException {
         testInCluster(redisson -> {
@@ -171,7 +211,7 @@ public class RedissonKeysTest extends RedisDockerTest {
         });
     }
 
-    
+
     @Test
     public void testKeysIterablePattern() {
         redisson.getBucket("test1").set("someValue");
@@ -236,7 +276,7 @@ public class RedissonKeysTest extends RedisDockerTest {
             assertThat(deletedSize).isEqualTo(size);
         });
     }
-    
+
     @Test
     public void testDeleteByPattern() {
         RBucket<String> bucket = redisson.getBucket("test0");
@@ -284,8 +324,8 @@ public class RedissonKeysTest extends RedisDockerTest {
         BatchResult<?> r = batch.execute();
         Assertions.assertEquals(4L, r.getResponses().get(0));
     }
-    
-    
+
+
     @Test
     public void testFindKeys() {
         RBucket<String> bucket = redisson.getBucket("test1");
