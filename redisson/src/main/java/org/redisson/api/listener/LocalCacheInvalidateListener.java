@@ -23,6 +23,7 @@ import org.redisson.api.ObjectListener;
  * @author Nikita Koksharov
  *
  */
+@FunctionalInterface
 public interface LocalCacheInvalidateListener<K, V> extends ObjectListener {
 
     /**

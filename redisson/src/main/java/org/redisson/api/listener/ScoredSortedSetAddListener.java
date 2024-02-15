@@ -25,6 +25,7 @@ import org.redisson.api.ObjectListener;
  * @author Nikita Koksharov
  *
  */
+@FunctionalInterface
 public interface ScoredSortedSetAddListener extends ObjectListener {
 
     /**

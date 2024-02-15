@@ -26,6 +26,7 @@ import org.redisson.api.ObjectListener;
  * @author Nikita Koksharov
  *
  */
+@FunctionalInterface
 public interface StreamTrimListener extends ObjectListener {
 
     /**
