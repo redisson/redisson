@@ -42,7 +42,7 @@ public class RedissonStreamTest extends RedisDockerTest {
     @Test
     public void testEmptyMap() {
         RStream<Object, Object> stream = redisson.getStream("stream");
-        stream.createGroup("group");
+        stream.createGroup(StreamCreateGroupArgs.name("group").makeStream());
         stream.add(StreamAddArgs.entry("key", "value"));
 
         Map<StreamMessageId, Map<Object, Object>> result2 = stream.readGroup("group", "consumer",
@@ -61,7 +61,7 @@ public class RedissonStreamTest extends RedisDockerTest {
 
         stream.add(StreamAddArgs.entry("0", "0"));
 
-        stream.createGroup("testGroup");
+        stream.createGroup(StreamCreateGroupArgs.name("testGroup"));
 
         StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1"));
         StreamMessageId id2 = stream.add(StreamAddArgs.entry("2", "2"));
@@ -91,7 +91,7 @@ public class RedissonStreamTest extends RedisDockerTest {
 
         stream.add(StreamAddArgs.entry("0", "0"));
 
-        stream.createGroup("testGroup");
+        stream.createGroup(StreamCreateGroupArgs.name("testGroup"));
 
         StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1"));
         StreamMessageId id2 = stream.add(StreamAddArgs.entry("2", "2"));
@@ -142,7 +142,7 @@ public class RedissonStreamTest extends RedisDockerTest {
     @Test
     public void testPendingEmpty() {
         RStream<Object, Object> stream = redisson.getStream("test");
-        stream.createGroup("testGroup");
+        stream.createGroup(StreamCreateGroupArgs.name("testGroup").makeStream());
         PendingResult result = stream.getPendingInfo("testGroup");
         assertThat(result.getTotal()).isZero();
         assertThat(result.getHighestId()).isNull();
@@ -155,8 +155,8 @@ public class RedissonStreamTest extends RedisDockerTest {
         RStream<String, String> stream = redisson.getStream("test");
 
         StreamMessageId id = stream.add(StreamAddArgs.entry("0", "0"));
-        
-        stream.createGroup("testGroup");
+
+        stream.createGroup(StreamCreateGroupArgs.name("testGroup"));
 
         StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1"));
         System.out.println("id1 " + id1);
@@ -177,9 +177,9 @@ public class RedissonStreamTest extends RedisDockerTest {
         RStream<String, String> stream = redisson.getStream("test");
 
         stream.add(StreamAddArgs.entry("0", "0"));
-        
-        stream.createGroup("testGroup");
-        
+
+        stream.createGroup(StreamCreateGroupArgs.name("testGroup").makeStream());
+
         StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1"));
         StreamMessageId id2 = stream.add(StreamAddArgs.entry("2", "2"));
 
@@ -197,7 +197,7 @@ public class RedissonStreamTest extends RedisDockerTest {
 
             stream.add(StreamAddArgs.entry("0", "0"));
 
-            stream.createGroup("testGroup");
+            stream.createGroup(StreamCreateGroupArgs.name("testGroup"));
 
             StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1"));
             StreamMessageId id2 = stream.add(StreamAddArgs.entry("2", "2"));
@@ -226,7 +226,7 @@ public class RedissonStreamTest extends RedisDockerTest {
 
         stream.add(StreamAddArgs.entry("0", "0"));
 
-        stream.createGroup("testGroup");
+        stream.createGroup(StreamCreateGroupArgs.name("testGroup"));
 
         StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1"));
         StreamMessageId id2 = stream.add(StreamAddArgs.entry("2", "2"));
@@ -254,9 +254,9 @@ public class RedissonStreamTest extends RedisDockerTest {
         RStream<String, String> stream = redisson.getStream("test");
 
         stream.add(StreamAddArgs.entry("0", "0"));
-        
-        stream.createGroup("testGroup");
-        
+
+        stream.createGroup(StreamCreateGroupArgs.name("testGroup"));
+
         StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1"));
         StreamMessageId id2 = stream.add(StreamAddArgs.entry("2", "2"));
         
@@ -286,7 +286,7 @@ public class RedissonStreamTest extends RedisDockerTest {
 
         stream.add(StreamAddArgs.entry("0", "0"));
 
-        stream.createGroup("testGroup3");
+        stream.createGroup(StreamCreateGroupArgs.name("testGroup3"));
 
         StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1"));
         StreamMessageId id2 = stream.add(StreamAddArgs.entry("2", "2"));
@@ -313,7 +313,7 @@ public class RedissonStreamTest extends RedisDockerTest {
 
         stream.add(StreamAddArgs.entry("0", "0"));
         
-        stream.createGroup("testGroup3");
+        stream.createGroup(StreamCreateGroupArgs.name("testGroup3"));
         
         StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1"));
         StreamMessageId id2 = stream.add(StreamAddArgs.entry("2", "2"));
@@ -339,9 +339,9 @@ public class RedissonStreamTest extends RedisDockerTest {
         RStream<String, String> stream = redisson.getStream("test");
 
         stream.add(StreamAddArgs.entry("0", "0"));
-        
-        stream.createGroup("testGroup");
-        
+
+        stream.createGroup(StreamCreateGroupArgs.name("testGroup"));
+
         StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1"));
         StreamMessageId id2 = stream.add(StreamAddArgs.entry("2", "2"));
         
@@ -382,9 +382,9 @@ public class RedissonStreamTest extends RedisDockerTest {
         RStream<String, String> stream = redisson.getStream("test");
 
         stream.add(StreamAddArgs.entry("0", "0"));
-        
-        stream.createGroup("testGroup");
-        
+
+        stream.createGroup(StreamCreateGroupArgs.name("testGroup"));
+
         StreamMessageId id1 = stream.add(StreamAddArgs.entry("11", "12"));
         StreamMessageId id2 = stream.add(StreamAddArgs.entry("21", "22"));
         
@@ -410,9 +410,9 @@ public class RedissonStreamTest extends RedisDockerTest {
         RStream<String, String> stream = redisson.getStream("test");
 
         stream.add(StreamAddArgs.entry("0", "0"));
-        
-        stream.createGroup("testGroup");
-        
+
+        stream.createGroup(StreamCreateGroupArgs.name("testGroup"));
+
         StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1"));
         StreamMessageId id2 = stream.add(StreamAddArgs.entry("2", "2"));
         
@@ -429,10 +429,10 @@ public class RedissonStreamTest extends RedisDockerTest {
 
         StreamMessageId id01 = stream1.add(StreamAddArgs.entry("0", "0"));
         StreamMessageId id02 = stream2.add(StreamAddArgs.entry("0", "0"));
-        
-        stream1.createGroup("testGroup", id01);
-        stream2.createGroup("testGroup", id02);
-        
+
+        stream1.createGroup(StreamCreateGroupArgs.name("testGroup").id(id01));
+        stream2.createGroup(StreamCreateGroupArgs.name("testGroup").id(id02));
+
         StreamMessageId id11 = stream1.add(StreamAddArgs.entry("1", "1"));
         StreamMessageId id12 = stream1.add(StreamAddArgs.entry("2", "2"));
         StreamMessageId id13 = stream1.add(StreamAddArgs.entry("3", "3"));
@@ -449,9 +449,9 @@ public class RedissonStreamTest extends RedisDockerTest {
         RStream<String, String> stream = redisson.getStream("test");
 
         StreamMessageId id0 = stream.add(StreamAddArgs.entry("0", "0"));
-        
-        stream.createGroup("testGroup", id0);
-        
+
+        stream.createGroup(StreamCreateGroupArgs.name("testGroup").id(id0).makeStream());
+
         stream.add(StreamAddArgs.entry("1", "1"));
         stream.add(StreamAddArgs.entry("2", "2"));
         stream.add(StreamAddArgs.entry("3", "3"));
@@ -461,9 +461,9 @@ public class RedissonStreamTest extends RedisDockerTest {
         assertThat(s.size()).isEqualTo(3);
 
         stream.removeGroup("testGroup");
-        
-        stream.createGroup("testGroup", id0);
-        
+
+        stream.createGroup(StreamCreateGroupArgs.name("testGroup").id(id0).makeStream());
+
         stream.add(StreamAddArgs.entry("1", "1"));
         stream.add(StreamAddArgs.entry("2", "2"));
         stream.add(StreamAddArgs.entry("3", "3"));
@@ -471,9 +471,9 @@ public class RedissonStreamTest extends RedisDockerTest {
         RStream<String, String> stream2 = redisson.getStream("test2");
         
         StreamMessageId id1 = stream2.add(StreamAddArgs.entry("0", "0"));
-        
-        stream2.createGroup("testGroup", id1);
-        
+
+        stream2.createGroup(StreamCreateGroupArgs.name("testGroup").id(id1).makeStream());
+
 //        Map<String, Map<StreamMessageId, Map<String, String>>> s2 = stream.readGroup("testGroup", "consumer1", 3, 5, TimeUnit.SECONDS, id0, Collections.singletonMap("test2", id1));
 //        assertThat(s2.values().iterator().next().values().iterator().next().keySet()).containsAnyOf("1", "2", "3");
 //        assertThat(s2.size()).isEqualTo(3);
@@ -482,7 +482,7 @@ public class RedissonStreamTest extends RedisDockerTest {
     @Test
     public void testCreateEmpty() {
         RStream<String, String> stream = redisson.getStream("test");
-        stream.createGroup("testGroup", StreamMessageId.ALL);
+        stream.createGroup(StreamCreateGroupArgs.name("testGroup").id(StreamMessageId.ALL).makeStream());
         stream.add(StreamAddArgs.entry("1", "2"));
         
         Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered());
@@ -494,9 +494,9 @@ public class RedissonStreamTest extends RedisDockerTest {
         RStream<String, String> stream = redisson.getStream("test");
 
         StreamMessageId id0 = stream.add(StreamAddArgs.entry("0", "0"));
-        
-        stream.createGroup("testGroup", id0);
-        
+
+        stream.createGroup(StreamCreateGroupArgs.name("testGroup").id(id0));
+
         stream.add(StreamAddArgs.entry("1", "1"));
         stream.add(StreamAddArgs.entry("2", "2"));
         stream.add(StreamAddArgs.entry("3", "3"));
@@ -798,15 +798,15 @@ public class RedissonStreamTest extends RedisDockerTest {
         RStream<String, String> stream = redisson.getStream("test1");
         
         StreamMessageId id1 = new StreamMessageId(12, 44);
-        stream.createGroup("testGroup", id1);
-        
+        stream.createGroup(StreamCreateGroupArgs.name("testGroup").id(id1).makeStream());
+
         stream.add(StreamAddArgs.entry("1", "1"));
         stream.add(StreamAddArgs.entry("2", "2"));
         stream.add(StreamAddArgs.entry("3", "3"));
 
         StreamMessageId id2 = new StreamMessageId(12, 44);
-        stream.createGroup("testGroup2", id2);
-        
+        stream.createGroup(StreamCreateGroupArgs.name("testGroup2").id(id2).makeStream());
+
         stream.add(StreamAddArgs.entry("1", "1"));
         stream.add(StreamAddArgs.entry("2", "2"));
         stream.add(StreamAddArgs.entry("3", "3"));
@@ -845,15 +845,15 @@ public class RedissonStreamTest extends RedisDockerTest {
         assertThat(s).isEmpty();
         
         StreamMessageId id1 = new StreamMessageId(12, 44);
-        stream.createGroup("testGroup", id1);
-        
+        stream.createGroup(StreamCreateGroupArgs.name("testGroup").id(id1));
+
         stream.add(StreamAddArgs.entry("1", "1"));
         stream.add(StreamAddArgs.entry("2", "2"));
         stream.add(StreamAddArgs.entry("3", "3"));
 
         StreamMessageId id2 = new StreamMessageId(12, 44);
-        stream.createGroup("testGroup2", id2);
-        
+        stream.createGroup(StreamCreateGroupArgs.name("testGroup2").id(id2));
+
         stream.add(StreamAddArgs.entry("1", "1"));
         stream.add(StreamAddArgs.entry("2", "2"));
         stream.add(StreamAddArgs.entry("3", "3"));
@@ -874,8 +874,8 @@ public class RedissonStreamTest extends RedisDockerTest {
     public void testStreamInfoEmpty() {
         RStream<String, String> stream = redisson.getStream("test1");
         StreamMessageId id1 = new StreamMessageId(12, 44);
-        stream.createGroup("testGroup", id1);
-        
+        stream.createGroup(StreamCreateGroupArgs.name("testGroup").id(id1).makeStream());
+
         StreamInfo<String, String> s = stream.getInfo();
     }
     
