@@ -21,6 +21,7 @@ package org.redisson.api.executor;
  * @author Nikita Koksharov
  *
  */
+@FunctionalInterface
 public interface TaskFailureListener extends TaskListener {
 
     /**
