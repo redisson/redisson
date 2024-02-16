@@ -48,27 +48,6 @@ public interface StreamAddArgs<K, V> {
      */
     StreamTrimStrategyArgs<StreamAddArgs<K, V>> trimNonStrict();
 
-    /*
-     * Use trimNonStrict() method instead
-     *
-     */
-    @Deprecated
-    StreamAddArgs<K, V> trim(TrimStrategy strategy, int threshold);
-
-    /*
-     * Use trimNonStrict() method instead
-     *
-     */
-    @Deprecated
-    StreamAddArgs<K, V> trim(TrimStrategy strategy, int threshold, int limit);
-
-    /*
-     * Use trim() method instead
-     *
-     */
-    @Deprecated
-    StreamAddArgs<K, V> trimStrict(TrimStrategy strategy, int threshold);
-
     /**
      * Defines entry to add
      *

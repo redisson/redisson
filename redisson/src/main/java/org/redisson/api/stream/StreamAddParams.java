@@ -47,26 +47,6 @@ public final class StreamAddParams<K, V> implements StreamAddArgs<K, V>,
     }
 
     @Override
-    public StreamAddArgs<K, V> trim(TrimStrategy strategy, int threshold) {
-        return trim(strategy, threshold, 0);
-    }
-
-    @Override
-    public StreamAddArgs<K, V> trimStrict(TrimStrategy strategy, int threshold) {
-        this.maxLen = threshold;
-        this.trimStrict = true;
-        return this;
-    }
-
-    @Override
-    public StreamAddArgs<K, V> trim(TrimStrategy strategy, int threshold, int limit) {
-        this.maxLen = threshold;
-        this.trimStrict = false;
-        this.limit = limit;
-        return this;
-    }
-
-    @Override
     public StreamTrimStrategyArgs<StreamAddArgs<K, V>> trim() {
         this.trimStrict = true;
         return this;
