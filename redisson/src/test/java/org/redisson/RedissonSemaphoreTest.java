@@ -83,7 +83,7 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
 
     @Test
     public void testReducePermits() throws InterruptedException {
-        RSemaphore s = redisson.getSemaphore("test");
+        RSemaphore s = redisson.getSemaphore("test2");
         s.trySetPermits(10);
         
         s.acquire(10);
