@@ -144,25 +144,25 @@
             <dependency>
                <groupId>com.github.hazendaz.jmockit</groupId>
                <artifactId>jmockit</artifactId>
-               <version>1.51.0</version>
+               <version>1.52.0</version>
                <scope>test</scope>
             </dependency>
             <dependency>
                <groupId>org.jooq</groupId>
                <artifactId>joor-java-8</artifactId>
-               <version>0.9.14</version>
+               <version>0.9.15</version>
                <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter-engine</artifactId>
-                <version>5.10.1</version>
+                <version>5.10.2</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter-params</artifactId>
-                <version>5.10.1</version>
+                <version>5.10.2</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
@@ -175,7 +175,7 @@
             <dependency>
                 <groupId>org.testcontainers</groupId>
                 <artifactId>testcontainers-bom</artifactId>
-                <version>1.19.1</version>
+                <version>1.19.5</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
