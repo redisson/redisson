@@ -539,7 +539,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             if (timeoutInNanos < quietPeriod) {
                 quietPeriod = 0;
             }
-            serviceManager.getGroup().shutdownGracefully(unit.toNanos(quietPeriod), timeoutInNanos, TimeUnit.NANOSECONDS).syncUninterruptibly();
+            serviceManager.getGroup()
+                    .shutdownGracefully(unit.toNanos(quietPeriod), timeoutInNanos, TimeUnit.NANOSECONDS)
+                    .awaitUninterruptibly(timeoutInNanos, TimeUnit.NANOSECONDS);
         }
 
         serviceManager.getTimer().stop();
