@@ -31,7 +31,11 @@ public class RedisDockerTest {
     private static GenericContainer<?> REDIS_CLUSTER;
 
     protected static GenericContainer<?> createRedis() {
-        return new GenericContainer<>("redis:7.2")
+        return createRedis("7.2");
+    }
+
+    protected static GenericContainer<?> createRedis(String version) {
+        return new GenericContainer<>("redis:" + version)
                 .withCreateContainerCmdModifier(cmd -> {
                     cmd.withCmd("redis-server", "--save", "''");
                 })
