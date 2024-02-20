@@ -7,7 +7,7 @@ Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and
 
 Feature - [client tracking](https://github.com/redisson/redisson/wiki/10.-additional-features/#109-client-tracking-listener) support. `TrackingListener` is available for `RBucket`, `RStream`, `RScoredSortedSet`, `RSet`, `RMap` and `RBucket` objects  
 Feature - added `RKeys.addListener()` method to register global listeners  
-Feature - `FlushListener` is available for `RKeys` objects to track flushdb/flushall command invocation  
+Feature - `FlushListener` added to track flushdb/flushall command invocation  
 Feature - `Kryo5Codec` constructor with `registrationRequired` parameter added  
 Feature - `nettyExecutor` setting added  
 Feature - enable DNS TCP fallback when UDP query timeout for `RoundRobinDnsAddressResolverGroupFactory` and `SequentialDnsAddressResolverFactory`  
