@@ -614,6 +614,10 @@ public class RedisExecutor<V, R> {
 
     protected void handleError(CompletableFuture<RedisConnection> connectionFuture, Throwable cause) {
         mainPromise.completeExceptionally(cause);
+        if (connectionFuture == null) {
+            return;
+        }
+
         RedisClient client = connectionFuture.join().getRedisClient();
         client.getConfig().getFailedNodeDetector().onCommandFailed(cause);
         if (client.getConfig().getFailedNodeDetector().isNodeFailed()) {

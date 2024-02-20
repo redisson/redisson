@@ -129,6 +129,10 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
             sentPromise.completeExceptionally(cause);
             mainPromise.completeExceptionally(cause);
             if (executed.compareAndSet(false, true)) {
+                if (connectionFuture == null) {
+                    return;
+                }
+
                 RedisConnection c = getNow(connectionFuture);
                 if (c != null) {
                     c.forceFastReconnectAsync().whenComplete((res, e) -> {
