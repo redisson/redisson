@@ -14,7 +14,7 @@ Feature - enable DNS TCP fallback when UDP query timeout for `RoundRobinDnsAddre
 
 Improvement - cache result of `INFO REPLICATION` command for `RLock` objects  
 
-Fixed - `ReactiveKeyCommands.pExpire()` method throws an exception  
+Fixed - Spring Data Redis `ReactiveKeyCommands.pExpire()` method throws an exception  
 Fixed - NPE is thrown by `RedisExecutor.handleError()` method  
 Fixed - sharded pubsub detection for `Apache Tomcat Session Manager`, `RMapCache` and `RLocalCachedMap` objects  
 Fixed - Redisson's threads aren't shutdown if Redis node address isn't defined  
