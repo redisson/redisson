@@ -101,7 +101,7 @@ public class SequentialDnsAddressResolverFactory implements AddressResolverGroup
                                                           DnsServerAddressStreamProvider nameServerProvider) {
         DnsNameResolverBuilder dnsResolverBuilder = new DnsNameResolverBuilder();
         dnsResolverBuilder.channelType(channelType)
-                        .socketChannelType(socketChannelType)
+                        .socketChannelType(socketChannelType, true)
                         .nameServerProvider(nameServerProvider)
                         .resolveCache(new DefaultDnsCache())
                         .cnameCache(new DefaultDnsCnameCache());
