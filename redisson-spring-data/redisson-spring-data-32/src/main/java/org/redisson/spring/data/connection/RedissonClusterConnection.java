@@ -15,7 +15,6 @@
  */
 package org.redisson.spring.data.connection;
 
-import io.netty.util.CharsetUtil;
 import org.redisson.api.BatchResult;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
@@ -57,16 +56,16 @@ import java.util.stream.Collectors;
  */
 public class RedissonClusterConnection extends RedissonConnection implements RedisClusterConnection, DefaultedRedisClusterConnection {
 
-    private static final RedisStrictCommand<List<RedisClusterNode>> CLUSTER_NODES = 
-                            new RedisStrictCommand<List<RedisClusterNode>>("CLUSTER", "NODES", new ObjectDecoder(new RedisClusterNodeDecoder()));
-    
     public RedissonClusterConnection(RedissonClient redisson) {
         super(redisson);
     }
 
     @Override
     public Iterable<RedisClusterNode> clusterGetNodes() {
-        return read(null, StringCodec.INSTANCE, CLUSTER_NODES);
+        RedisStrictCommand<List<RedisClusterNode>> cluster
+                = new RedisStrictCommand<List<RedisClusterNode>>("CLUSTER", "NODES",
+                            new ObjectDecoder(new RedisClusterNodeDecoder(executorService.getServiceManager())));
+        return read(null, StringCodec.INSTANCE, cluster);
     }
 
     @Override
@@ -100,7 +99,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
     public Map<RedisClusterNode, Collection<RedisClusterNode>> clusterGetMasterReplicaMap() {
         Iterable<RedisClusterNode> res = clusterGetNodes();
         
-        Set<RedisClusterNode> masters = new HashSet<RedisClusterNode>();
+        Set<RedisClusterNode> masters = new HashSet<>();
         for (Iterator<RedisClusterNode> iterator = res.iterator(); iterator.hasNext();) {
             RedisClusterNode redisClusterNode = iterator.next();
             if (redisClusterNode.isMaster()) {

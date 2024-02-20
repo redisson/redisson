@@ -15,15 +15,11 @@
  */
 package org.redisson.spring.data.connection;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
+import io.netty.buffer.ByteBuf;
+import io.netty.util.CharsetUtil;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
+import org.redisson.connection.ServiceManager;
 import org.redisson.misc.RedisURI;
 import org.springframework.data.redis.connection.RedisClusterNode;
 import org.springframework.data.redis.connection.RedisClusterNode.Flag;
@@ -32,8 +28,8 @@ import org.springframework.data.redis.connection.RedisClusterNode.RedisClusterNo
 import org.springframework.data.redis.connection.RedisClusterNode.SlotRange;
 import org.springframework.data.redis.connection.RedisNode.NodeType;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.util.CharsetUtil;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * 
@@ -41,6 +37,12 @@ import io.netty.util.CharsetUtil;
  *
  */
 public class RedisClusterNodeDecoder implements Decoder<List<RedisClusterNode>> {
+
+    private final ServiceManager serviceManager;
+
+    public RedisClusterNodeDecoder(ServiceManager serviceManager) {
+        this.serviceManager = serviceManager;
+    }
 
     @Override
     public List<RedisClusterNode> decode(ByteBuf buf, State state) throws IOException {
@@ -63,7 +65,14 @@ public class RedisClusterNodeDecoder implements Decoder<List<RedisClusterNode>> 
             RedisURI address = null;
             if (!flags.contains(Flag.NOADDR)) {
                 String addr = params[1].split("@")[0];
+                String name = addr.substring(0, addr.lastIndexOf(":"));
+                if (name.isEmpty()) {
+                    // skip nodes with empty address
+                    continue;
+                }
+
                 address = new RedisURI("redis://" + addr);
+                address = serviceManager.toURI("redis", address.getHost(), String.valueOf(address.getPort()));
             }
 
             String masterId = params[3];

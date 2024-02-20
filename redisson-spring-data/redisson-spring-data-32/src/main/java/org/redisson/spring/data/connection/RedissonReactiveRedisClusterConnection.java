@@ -102,12 +102,13 @@ public class RedissonReactiveRedisClusterConnection extends RedissonReactiveRedi
         return execute(node, RedisCommands.PING);
     }
 
-    private static final RedisStrictCommand<List<RedisClusterNode>> CLUSTER_NODES =
-                            new RedisStrictCommand<>("CLUSTER", "NODES", new ObjectDecoder(new RedisClusterNodeDecoder()));
-
     @Override
     public Flux<RedisClusterNode> clusterGetNodes() {
-        Mono<List<RedisClusterNode>> result = read(null, StringCodec.INSTANCE, CLUSTER_NODES);
+        RedisStrictCommand<List<RedisClusterNode>> cluster
+                = new RedisStrictCommand<List<RedisClusterNode>>("CLUSTER", "NODES",
+                new ObjectDecoder(new RedisClusterNodeDecoder(executorService.getServiceManager())));
+
+        Mono<List<RedisClusterNode>> result = read(null, StringCodec.INSTANCE, cluster);
         return result.flatMapMany(e -> Flux.fromIterable(e));
     }
 

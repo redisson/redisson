@@ -1,86 +1,140 @@
 package org.redisson;
 
-import java.io.IOException;
-
-import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.redisson.api.NatMapper;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
+import org.redisson.config.Protocol;
+import org.redisson.misc.RedisURI;
+import org.redisson.spring.data.connection.RedissonClusterConnection;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.startupcheck.MinimumDurationRunningStartupCheckStrategy;
+
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Consumer;
 
 public abstract class BaseTest {
-    
-    protected RedissonClient redisson;
-    protected static RedissonClient defaultRedisson;
+
+    protected static final String NOTIFY_KEYSPACE_EVENTS = "--notify-keyspace-events";
+
+    private static final GenericContainer<?> REDIS = createRedis();
+
+    protected static final Protocol protocol = Protocol.RESP2;
+
+    protected static RedissonClient redisson;
+
+    protected static RedissonClient redissonCluster;
+
+    private static GenericContainer<?> REDIS_CLUSTER;
+
+    protected static GenericContainer<?> createRedis() {
+        return createRedis("7.2");
+    }
+
+    protected static GenericContainer<?> createRedis(String version) {
+        return new GenericContainer<>("redis:" + version)
+                .withCreateContainerCmdModifier(cmd -> {
+                    cmd.withCmd("redis-server", "--save", "''");
+                })
+                .withExposedPorts(6379);
+    }
 
     @BeforeClass
-    public static void beforeClass() throws IOException, InterruptedException {
-        if (!RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisServerInstance();
-            defaultRedisson = createInstance();
-            Runtime.getRuntime().addShutdownHook(new Thread() {
-                @Override
-                public void run() {
-                    defaultRedisson.shutdown();
-                    try {
-                        RedisRunner.shutDownDefaultRedisServerInstance();
-                    } catch (InterruptedException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
-                    }
+    public static void beforeAll() {
+        if (redisson == null) {
+            REDIS.start();
+            Config config = createConfig();
+            redisson = Redisson.create(config);
+
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                redisson.shutdown();
+                REDIS.stop();
+                if (redissonCluster != null) {
+                    redissonCluster.shutdown();
+                    redissonCluster = null;
                 }
-            });
+                if (REDIS_CLUSTER != null) {
+                    REDIS_CLUSTER.stop();
+                    REDIS_CLUSTER = null;
+                }
+            }));
         }
     }
 
-    @Before
-    public void before() throws IOException, InterruptedException {
-        if (RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisServerInstance();
-            redisson = createInstance();
-        } else {
-            if (redisson == null) {
-                redisson = defaultRedisson;
-            }
-            if (flushBetweenTests()) {
-                redisson.getKeys().flushall();
-            }
-        }
-    }
-
-    @After
-    public void after() throws InterruptedException {
-        if (RedissonRuntimeEnvironment.isTravis) {
-            redisson.shutdown();
-            RedisRunner.shutDownDefaultRedisServerInstance();
-        }
-    }
-
-    public static Config createConfig() {
-//        String redisAddress = System.getProperty("redisAddress");
-//        if (redisAddress == null) {
-//            redisAddress = "127.0.0.1:6379";
-//        }
+    protected static Config createConfig() {
         Config config = new Config();
-//        config.setCodec(new MsgPackJacksonCodec());
-//        config.useSentinelServers().setMasterName("mymaster").addSentinelAddress("127.0.0.1:26379", "127.0.0.1:26389");
-//        config.useClusterServers().addNodeAddress("127.0.0.1:7004", "127.0.0.1:7001", "127.0.0.1:7000");
+        config.setProtocol(protocol);
         config.useSingleServer()
-                .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
-//        .setPassword("mypass1");
-//        config.useMasterSlaveConnection()
-//        .setMasterAddress("127.0.0.1:6379")
-//        .addSlaveAddress("127.0.0.1:6399")
-//        .addSlaveAddress("127.0.0.1:6389");
+                .setAddress("redis://127.0.0.1:" + REDIS.getFirstMappedPort());
         return config;
     }
 
-    public static RedissonClient createInstance() {
+    protected static RedissonClient createInstance() {
         Config config = createConfig();
         return Redisson.create(config);
     }
 
-    protected boolean flushBetweenTests() {
-        return true;
+    protected void testWithParams(Consumer<RedissonClient> redissonCallback, String... params) {
+        GenericContainer<?> redis =
+                new GenericContainer<>("redis:7.2")
+                        .withCreateContainerCmdModifier(cmd -> {
+                            List<String> args = new ArrayList<>();
+                            args.add("redis-server");
+                            args.addAll(Arrays.asList(params));
+                            cmd.withCmd(args);
+                        })
+                        .withExposedPorts(6379);
+        redis.start();
+
+        Config config = new Config();
+        config.setProtocol(protocol);
+        config.useSingleServer().setAddress("redis://127.0.0.1:" + redis.getFirstMappedPort());
+        RedissonClient redisson = Redisson.create(config);
+
+        try {
+            redissonCallback.accept(redisson);
+        } finally {
+            redisson.shutdown();
+            redis.stop();
+        }
+
+    }
+
+    protected void testInCluster(Consumer<RedissonClusterConnection> redissonCallback) {
+        if (redissonCluster == null) {
+            REDIS_CLUSTER = new GenericContainer<>("vishnunair/docker-redis-cluster")
+                    .withExposedPorts(6379, 6380, 6381, 6382, 6383, 6384)
+                    .withStartupCheckStrategy(new MinimumDurationRunningStartupCheckStrategy(Duration.ofSeconds(15)));
+            REDIS_CLUSTER.start();
+
+            Config config = new Config();
+            config.setProtocol(protocol);
+            config.useClusterServers()
+                    .setNatMapper(new NatMapper() {
+                        @Override
+                        public RedisURI map(RedisURI uri) {
+                            if (REDIS_CLUSTER.getMappedPort(uri.getPort()) == null) {
+                                return uri;
+                            }
+                            return new RedisURI(uri.getScheme(), REDIS_CLUSTER.getHost(), REDIS_CLUSTER.getMappedPort(uri.getPort()));
+                        }
+                    })
+                    .addNodeAddress("redis://127.0.0.1:" + REDIS_CLUSTER.getFirstMappedPort());
+            redissonCluster = Redisson.create(config);
+        }
+
+        redissonCallback.accept(new RedissonClusterConnection(redissonCluster));
+    }
+
+    @Before
+    public void beforeEach() {
+        redisson.getKeys().flushall();
+        if (redissonCluster != null) {
+            redissonCluster.getKeys().flushall();
+        }
     }
 }

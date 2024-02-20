@@ -15,13 +15,6 @@
  */
 package org.redisson.spring.data.connection;
 
-import java.nio.ByteBuffer;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import org.reactivestreams.Publisher;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.StringCodec;
@@ -33,17 +26,19 @@ import org.redisson.reactive.CommandReactiveExecutor;
 import org.redisson.reactive.RedissonKeysReactive;
 import org.springframework.data.redis.connection.DataType;
 import org.springframework.data.redis.connection.ReactiveKeyCommands;
-import org.springframework.data.redis.connection.ReactiveRedisConnection.BooleanResponse;
-import org.springframework.data.redis.connection.ReactiveRedisConnection.CommandResponse;
-import org.springframework.data.redis.connection.ReactiveRedisConnection.KeyCommand;
-import org.springframework.data.redis.connection.ReactiveRedisConnection.MultiValueResponse;
-import org.springframework.data.redis.connection.ReactiveRedisConnection.NumericResponse;
+import org.springframework.data.redis.connection.ReactiveRedisConnection.*;
 import org.springframework.data.redis.connection.ValueEncoding;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.util.Assert;
-
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.nio.ByteBuffer;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 
@@ -229,7 +224,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
             Assert.notNull(command.getKey(), "Key must not be null!");
 
             byte[] keyBuf = toByteArray(command.getKey());
-            Mono<Boolean> m = write(keyBuf, StringCodec.INSTANCE, RedisCommands.PEXPIRE, keyBuf);
+            Mono<Boolean> m = write(keyBuf, StringCodec.INSTANCE, RedisCommands.PEXPIRE, keyBuf, command.getTimeout().toMillis());
             return m.map(v -> new BooleanResponse<>(command, v));
         });
     }
