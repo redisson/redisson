@@ -1191,7 +1191,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                             "return 0; " +
                         "end; " +
 
-                        "redis.call('zadd', KEYS[1], ARGV[2], ARGV[1]); " +
+                        "redis.call('zadd', KEYS[1], ARGV[2], ARGV[3]); " +
                         "return 1; ",
                 Arrays.asList(getRawName()),
                 System.currentTimeMillis(), timeoutDate, encode(object));
