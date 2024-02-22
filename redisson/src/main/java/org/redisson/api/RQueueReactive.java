@@ -77,4 +77,21 @@ public interface RQueueReactive<V> extends RCollectionReactive<V> {
      */
     Mono<List<V>> readAll();
 
+    /**
+     * Adds object event listener
+     *
+     * @see org.redisson.api.listener.TrackingListener
+     * @see org.redisson.api.ExpiredObjectListener
+     * @see org.redisson.api.DeletedObjectListener
+     * @see org.redisson.api.listener.ListAddListener
+     * @see org.redisson.api.listener.ListInsertListener
+     * @see org.redisson.api.listener.ListSetListener
+     * @see org.redisson.api.listener.ListRemoveListener
+     * @see org.redisson.api.listener.ListTrimListener
+     *
+     * @param listener - object event listener
+     * @return listener id
+     */
+    Mono<Integer> addListener(ObjectListener listener);
+
 }

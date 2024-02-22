@@ -15,11 +15,11 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.mapreduce.RCollectionMapReduce;
+
 import java.util.Iterator;
 import java.util.List;
 import java.util.RandomAccess;
-
-import org.redisson.api.mapreduce.RCollectionMapReduce;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.List}
@@ -151,6 +151,7 @@ public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RSortable<
     /**
      * Adds object event listener
      *
+     * @see org.redisson.api.listener.TrackingListener
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      * @see org.redisson.api.listener.ListAddListener
