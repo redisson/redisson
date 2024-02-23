@@ -18,7 +18,7 @@ package org.redisson.api.listener;
 import org.redisson.api.ObjectListener;
 
 /**
- * Redisson Object Event listener for <b>lset</b> event published by Redis.
+ * Redisson Object Event listener for <b>linsert</b> event published by Redis.
  * <p>
  * Redis notify-keyspace-events setting should contain El letters
  *
