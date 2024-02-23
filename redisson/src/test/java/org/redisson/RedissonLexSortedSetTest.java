@@ -6,12 +6,33 @@ import org.redisson.api.RLexSortedSet;
 import org.redisson.api.listener.ScoredSortedSetAddListener;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonLexSortedSetTest extends RedisDockerTest {
+
+    @Test
+    public void testRandom() {
+        RLexSortedSet al = redisson.getLexSortedSet("test");
+        for (int i = 0; i < 100; i++) {
+            al.add("" + i);
+        }
+
+        Set<String> values = new HashSet<>();
+        for (int i = 0; i < 3; i++) {
+            String v = al.random();
+            values.add(v);
+        }
+        assertThat(values).hasSize(3);
+
+        Collection<String> range = al.random(10);
+        assertThat(range).hasSize(10);
+    }
 
     @Test
     public void testAddListener() {

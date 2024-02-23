@@ -259,6 +259,25 @@ public interface RLexSortedSet extends RLexSortedSetAsync, RSortedSet<String>, R
     Collection<String> range(int startIndex, int endIndex);
 
     /**
+     * Returns random element from this sorted set
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @return random element
+     */
+    String random();
+
+    /**
+     * Returns random elements from this sorted set limited by <code>count</code>
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param count - values amount to return
+     * @return random elements
+     */
+    Collection<String> random(int count);
+
+    /**
      * Adds object event listener
      *
      * @see org.redisson.api.listener.TrackingListener

@@ -280,6 +280,25 @@ public interface RLexSortedSetAsync extends RCollectionAsync<String> {
     RFuture<Integer> revRankAsync(String o);
 
     /**
+     * Returns random element from this sorted set
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @return value
+     */
+    RFuture<String> randomAsync();
+
+    /**
+     * Returns random elements from this sorted set limited by <code>count</code>
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param count - values amount to return
+     * @return value
+     */
+    RFuture<Collection<String>> randomAsync(int count);
+
+    /**
      * Adds object event listener
      *
      * @see org.redisson.api.listener.TrackingListener
