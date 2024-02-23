@@ -3,12 +3,36 @@ package org.redisson;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RLexSortedSet;
+import org.redisson.api.listener.ScoredSortedSetAddListener;
 
 import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonLexSortedSetTest extends RedisDockerTest {
+
+    @Test
+    public void testAddListener() {
+        testWithParams(redisson -> {
+            RLexSortedSet al = redisson.getLexSortedSet("test");
+            CountDownLatch latch = new CountDownLatch(1);
+            al.addListener(new ScoredSortedSetAddListener() {
+                @Override
+                public void onAdd(String name) {
+                    latch.countDown();
+                }
+            });
+            al.add("abc");
+
+            try {
+                assertThat(latch.await(1, TimeUnit.SECONDS)).isTrue();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }, NOTIFY_KEYSPACE_EVENTS, "Ez");
+    }
 
     @Test
     public void testAll() {

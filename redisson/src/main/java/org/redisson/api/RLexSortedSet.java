@@ -258,4 +258,18 @@ public interface RLexSortedSet extends RLexSortedSetAsync, RSortedSet<String>, R
      */
     Collection<String> range(int startIndex, int endIndex);
 
+    /**
+     * Adds object event listener
+     *
+     * @see org.redisson.api.listener.TrackingListener
+     * @see org.redisson.api.listener.ScoredSortedSetAddListener
+     * @see org.redisson.api.listener.ScoredSortedSetRemoveListener
+     * @see org.redisson.api.ExpiredObjectListener
+     * @see org.redisson.api.DeletedObjectListener
+     *
+     * @param listener - object event listener
+     * @return listener id
+     */
+    int addListener(ObjectListener listener);
+
 }
