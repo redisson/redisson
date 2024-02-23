@@ -242,10 +242,11 @@ public class PublishSubscribeService {
 
         List<CompletableFuture<PubSubConnectionEntry>> ffs = new ArrayList<>();
         for (MasterSlaveEntry entry : connectionManager.getEntrySet()) {
-            RedisPubSubListener<String> entryListener = new RedisPubSubListener<String>() {
+            RedisPubSubListener<Object> entryListener = new RedisPubSubListener<Object>() {
                 @Override
-                public void onMessage(CharSequence channel, String msg) {
-                    if (msg == null) {
+                public void onMessage(CharSequence channel, Object msg) {
+                    if (msg == null
+                            && channel.equals(channelName.toString())) {
                         listener.onFlush(entry.getClient().getAddr());
                     }
                 }
