@@ -272,7 +272,7 @@ public class RedissonBucketTest extends RedisDockerTest {
     }
 
     @Test
-    public void testDeletedListener() throws FailedToStartRedisException {
+    public void testDeletedListener() {
         testWithParams(redisson -> {
             RBucket<Integer> al = redisson.getBucket("test");
             al.set(1);
@@ -294,7 +294,7 @@ public class RedissonBucketTest extends RedisDockerTest {
     }
     
     @Test
-    public void testSetListener() throws FailedToStartRedisException, IOException, InterruptedException {
+    public void testSetListener() {
         testWithParams(redisson -> {
             RBucket<Integer> al = redisson.getBucket("test");
             CountDownLatch latch = new CountDownLatch(1);
@@ -315,7 +315,7 @@ public class RedissonBucketTest extends RedisDockerTest {
     }
     
     @Test
-    public void testExpiredListener() throws FailedToStartRedisException, IOException, InterruptedException {
+    public void testExpiredListener() {
         testWithParams(redisson -> {
             RBucket<Integer> al = redisson.getBucket("test");
             al.set(1, Duration.ofSeconds(3));
@@ -576,7 +576,7 @@ public class RedissonBucketTest extends RedisDockerTest {
     }
 
     @Test
-    public void testMigrate() throws FailedToStartRedisException {
+    public void testMigrate() {
         testTwoInstances((r2, r) -> {
             RBucket<String> bucket = r2.getBucket("test");
             bucket.set("someValue");
@@ -589,7 +589,7 @@ public class RedissonBucketTest extends RedisDockerTest {
     }
 
     @Test
-    public void testCopy() throws FailedToStartRedisException, IOException, InterruptedException {
+    public void testCopy()  {
         testTwoInstances((r2, r) -> {
             RBucket<String> bucket = r2.getBucket("test");
             bucket.set("someValue");
