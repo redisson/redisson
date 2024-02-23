@@ -157,7 +157,9 @@ spring:
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
-## Disable Redisson
+## How to disable Redisson
+
+You may not have Redis in some environments. In this case Redisson can be disabled.
 
 ### Using Annotations
 ```java
