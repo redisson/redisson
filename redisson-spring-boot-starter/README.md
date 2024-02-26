@@ -157,7 +157,17 @@ spring:
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
-## How to disable Redisson
+## Q: How to resolve incorrect netty version brought by Spring Boot?
+
+You need to define netty version in properties section of your Maven project.
+
+```xml
+    <properties>
+                <netty.version>4.1.107.Final</netty.version> 
+    </properties>
+```
+
+## Q: How to disable Redisson?
 
 You may not have Redis in some environments. In this case Redisson can be disabled.
 
