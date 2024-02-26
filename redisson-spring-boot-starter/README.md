@@ -162,10 +162,25 @@ Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and
 You may not have Redis in some environments. In this case Redisson can be disabled.
 
 ### Using Annotations
+
+Spring Boot 2.7+
+
 ```java
 @SpringBootApplication
 @EnableAutoConfiguration(exclude = {
-    RedissonAutoConfigurationV2.class,
+    RedissonAutoConfigurationV2.class})
+public class Application {
+   
+    public static void main(String[] args) {
+        SpringApplication.run(MyApplication.class, args);
+    }
+}
+```
+
+Spring Boot up to 2.6
+```java
+@SpringBootApplication
+@EnableAutoConfiguration(exclude = {
     RedissonAutoConfiguration.class})
 public class Application {
    
@@ -175,12 +190,21 @@ public class Application {
 }
 ```
 
+
 ### Using `application.yml`
 
+Spring Boot 2.7+
 ```yaml
 spring:
   autoconfigure:
     exclude:
       - org.redisson.spring.starter.RedissonAutoConfigurationV2
+```
+
+Spring Boot up to 2.6
+```yaml
+spring:
+  autoconfigure:
+    exclude:
       - org.redisson.spring.starter.RedissonAutoConfiguration
 ```
