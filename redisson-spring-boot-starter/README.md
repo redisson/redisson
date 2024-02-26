@@ -156,3 +156,31 @@ spring:
 - `ReactiveRedisTemplate`  
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
+
+## How to disable Redisson
+
+You may not have Redis in some environments. In this case Redisson can be disabled.
+
+### Using Annotations
+```java
+@SpringBootApplication
+@EnableAutoConfiguration(exclude = {
+    RedissonAutoConfigurationV2.class,
+    RedissonAutoConfiguration.class})
+public class Application {
+   
+    public static void main(String[] args) {
+        SpringApplication.run(MyApplication.class, args);
+    }
+}
+```
+
+### Using `application.yml`
+
+```yaml
+spring:
+  autoconfigure:
+    exclude:
+      - org.redisson.spring.starter.RedissonAutoConfigurationV2
+      - org.redisson.spring.starter.RedissonAutoConfiguration
+```
