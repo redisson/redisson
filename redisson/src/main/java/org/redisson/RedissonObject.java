@@ -447,7 +447,7 @@ public abstract class RedissonObject implements RObject {
     }
 
     protected final int addTrackingListener(TrackingListener listener) {
-        return addTrackingListenerAsync(listener).join();
+        return addTrackingListenerAsync(listener).toCompletableFuture().join();
     }
 
     protected final RFuture<Integer> addTrackingListenerAsync(TrackingListener listener) {
