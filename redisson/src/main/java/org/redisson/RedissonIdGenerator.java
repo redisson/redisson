@@ -75,8 +75,7 @@ public class RedissonIdGenerator extends RedissonExpirable implements RIdGenerat
     private final AtomicBoolean isWorkerActive = new AtomicBoolean();
 
     private void startIdRequestsHandle() {
-        if (!isWorkerActive.compareAndSet(false, true)
-                || commandExecutor.getServiceManager().getExecutor().isShutdown()) {
+        if (!isWorkerActive.compareAndSet(false, true)) {
             return;
         }
 
@@ -84,6 +83,10 @@ public class RedissonIdGenerator extends RedissonExpirable implements RIdGenerat
     }
 
     private void handleIdRequests() {
+        if (getServiceManager().isShuttingDown()) {
+            return;
+        }
+
         if (queue.peek() == null) {
             isWorkerActive.set(false);
             if (!queue.isEmpty()) {
