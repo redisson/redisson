@@ -850,7 +850,8 @@ public class RedissonTopicTest extends RedisDockerTest {
                             lock.unlock();
                             status.add("ok");
                         } catch (Exception e) {
-                            if (e.getMessage().contains("READONLY")) {
+                            if (e.getMessage().contains("READONLY")
+                                    || e.getMessage().contains("ERR WAIT cannot be used")) {
                                 // skip
                                 return;
                             }
@@ -1410,7 +1411,8 @@ public class RedissonTopicTest extends RedisDockerTest {
 
                             status.add("ok");
                         } catch (Exception e) {
-                            if (e.getMessage().contains("READONLY")) {
+                            if (e.getMessage().contains("READONLY")
+                                    || e.getMessage().contains("ERR WAIT cannot be used")) {
                                 // skip
                                 return;
                             }
