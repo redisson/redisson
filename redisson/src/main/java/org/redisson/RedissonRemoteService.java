@@ -419,19 +419,9 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                     } else {
                         response = result;
                     }
-                    RFuture<Void> clientsFuture = queue.putAsync(response);
-                    queue.expireAsync(timeout, TimeUnit.MILLISECONDS);
 
-                    clientsFuture.whenComplete((res, exc) -> {
-                        if (exc != null) {
-                            if (exc instanceof RedissonShutdownException) {
-                                return;
-                            }
-                            log.error("Can't send response: {} for request: {}", response, request, exc);
-                        }
-
-                        resubscribe(remoteInterface, requestQueue, executor, method.getBean());
-                    });
+                    AtomicInteger retries = new AtomicInteger(commandExecutor.getServiceManager().getConfig().getRetryAttempts());
+                    send(retries, remoteInterface, requestQueue, executor, request, queue, response, timeout, method);
                 } catch (Exception ex) {
                     log.error("Can't send response: {} for request: {}", result, request, ex);
                 }
@@ -466,6 +456,33 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
         });
 
         return new CompletableFutureWrapper<>(responsePromise);
+    }
+
+    private <T> void send(AtomicInteger retries, Class<T> remoteInterface,
+                          RBlockingQueue<String> requestQueue, ExecutorService executor,
+                          RemoteServiceRequest request, RBlockingQueueAsync<RRemoteServiceResponse> queue,
+                          RRemoteServiceResponse response, long timeout, RemoteServiceMethod method) {
+        RFuture<Void> clientsFuture = queue.putAsync(response);
+        queue.expireAsync(timeout, TimeUnit.MILLISECONDS);
+
+        clientsFuture.whenComplete((res, exc) -> {
+            if (exc != null) {
+                if (exc instanceof RedissonShutdownException) {
+                    return;
+                }
+
+                if (retries.decrementAndGet() >= 0) {
+                    commandExecutor.getServiceManager().newTimeout(task -> {
+                        send(retries, remoteInterface, requestQueue, executor, request, queue, response, timeout, method);
+                    }, commandExecutor.getServiceManager().getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
+                    return;
+                } else {
+                    log.error("Can't send response: {} for request: {}", response, request, exc);
+                }
+            }
+
+            resubscribe(remoteInterface, requestQueue, executor, method.getBean());
+        });
     }
 
     protected <T> void invokeMethod(RemoteServiceRequest request, RemoteServiceMethod method,

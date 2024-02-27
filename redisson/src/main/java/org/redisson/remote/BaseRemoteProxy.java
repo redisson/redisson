@@ -35,6 +35,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
 /**
@@ -179,21 +180,33 @@ public abstract class BaseRemoteProxy {
     }
 
     private void pollResponse() {
-        RBlockingQueue<RRemoteServiceResponse> queue = new RedissonBlockingQueue<>(codec, commandExecutor, responseQueueName);
-        RFuture<RRemoteServiceResponse> future = queue.pollAsync(60, TimeUnit.SECONDS);
-        future.whenComplete(createResponseListener());
+        pollResponse(new AtomicInteger(commandExecutor.getServiceManager().getConfig().getRetryAttempts()));
     }
 
-    private BiConsumer<RRemoteServiceResponse, Throwable> createResponseListener() {
+    private void pollResponse(AtomicInteger retries) {
+        RBlockingQueue<RRemoteServiceResponse> queue = new RedissonBlockingQueue<>(codec, commandExecutor, responseQueueName);
+        RFuture<RRemoteServiceResponse> future = queue.pollAsync(60, TimeUnit.SECONDS);
+        future.whenComplete(createResponseListener(retries));
+    }
+
+    private BiConsumer<RRemoteServiceResponse, Throwable> createResponseListener(AtomicInteger retries) {
         return (response, e) -> {
             if (e != null) {
                 if (e instanceof RedissonShutdownException) {
                     return;
                 }
 
-                log.error("Can't get response from {}", responseQueueName, e);
+                if (retries.decrementAndGet() >= 0) {
+                    commandExecutor.getServiceManager().newTimeout(task -> {
+                        pollResponse(retries);
+                    }, commandExecutor.getServiceManager().getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
+                } else {
+                    log.error("Can't get response from {}. Try to increase 'retryInterval' and/or 'retryAttempts' settings", responseQueueName, e);
+                }
                 return;
             }
+
+            log.debug("Got response from {}", responseQueueName);
 
             CompletableFuture<RRemoteServiceResponse> future = locked.execute(() -> {
                 ResponseEntry entry = responses.get(responseQueueName);
