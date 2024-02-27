@@ -247,7 +247,10 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                     }
                     log.error("Can't process the remote service request.", e);
                     // re-subscribe after a failed takeAsync
-                    subscribe(remoteInterface, requestQueue, executor, bean);
+                    commandExecutor.getServiceManager().newTimeout(task -> {
+                        subscribe(remoteInterface, requestQueue, executor, bean);
+                    }, commandExecutor.getServiceManager().getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
+
                     return;
                 }
 
