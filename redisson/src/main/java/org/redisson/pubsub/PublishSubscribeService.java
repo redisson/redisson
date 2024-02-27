@@ -300,11 +300,12 @@ public class PublishSubscribeService {
 
         ChannelName channelName = new ChannelName("__redis__:invalidate");
 
-        RedisPubSubListener<String> redisPubSubListener = new RedisPubSubListener<String>() {
+        RedisPubSubListener<Object> redisPubSubListener = new RedisPubSubListener<Object>() {
             @Override
-            public void onMessage(CharSequence channel, String msg) {
-                if (key.equals(msg)) {
-                    listener.onChange(msg);
+            public void onMessage(CharSequence channel, Object msg) {
+                if (channel.equals(channelName.toString())
+                        && key.equals(msg)) {
+                    listener.onChange((String) msg);
                 }
             }
         };
