@@ -1,18 +1,18 @@
 package org.redisson.transaction;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.redisson.BaseTest;
+import org.redisson.RedisDockerTest;
 import org.redisson.Redisson;
 import org.redisson.api.*;
 import org.redisson.config.Config;
 
-public class RedissonTransactionalBucketTest extends BaseTest {
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class RedissonTransactionalBucketTest extends RedisDockerTest {
 
     @Test
     public void testNameMapper() {
