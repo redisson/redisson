@@ -27,10 +27,12 @@ import io.netty.util.CharsetUtil;
 public class ChannelName implements CharSequence {
 
     private final byte[] name;
+    private final String str;
 
     public ChannelName(byte[] name) {
         super();
         this.name = name;
+        this.str = new String(name, CharsetUtil.UTF_8);
     }
     
     public ChannelName(String name) {
@@ -39,7 +41,7 @@ public class ChannelName implements CharSequence {
 
     @Override
     public String toString() {
-        return new String(name, CharsetUtil.UTF_8);
+        return str;
     }
     
     public byte[] getName() {
