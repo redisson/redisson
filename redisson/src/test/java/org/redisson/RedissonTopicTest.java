@@ -1411,13 +1411,14 @@ public class RedissonTopicTest extends RedisDockerTest {
 
                             status.add("ok");
                         } catch (Exception e) {
+                            status.add("failed");
+
                             if (e.getMessage().contains("READONLY")
                                     || e.getMessage().contains("ERR WAIT cannot be used")) {
                                 // skip
                                 return;
                             }
 
-                            status.add("failed");
                             if (e.getCause() != null
                                     && e.getCause().getMessage().contains("slaves were synced")) {
                                 return;
@@ -1439,7 +1440,9 @@ public class RedissonTopicTest extends RedisDockerTest {
                 throw new RuntimeException(e);
             }
 
+            Integer port = nodes.get(0).getFirstMappedPort();
             nodes.get(0).stop();
+            System.out.println("master has been stopped! " + port);
 
             try {
                 TimeUnit.SECONDS.sleep(30);
