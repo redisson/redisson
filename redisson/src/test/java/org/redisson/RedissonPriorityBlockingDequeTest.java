@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedissonPriorityBlockingDequeTest extends BaseTest {
+public class RedissonPriorityBlockingDequeTest extends RedisDockerTest {
 
     @Test
     @Timeout(3)
