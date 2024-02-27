@@ -570,7 +570,8 @@ public class RedisExecutor<V, R> {
                 }
             }
 
-            if (cause instanceof RedisRetryException) {
+            if (cause instanceof RedisRetryException
+                    || cause instanceof RedisReadonlyException) {
                 if (attempt < attempts) {
                     onException();
                     connectionManager.getServiceManager().newTimeout(timeout -> {

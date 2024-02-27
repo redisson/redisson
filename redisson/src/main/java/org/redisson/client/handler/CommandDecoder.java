@@ -406,6 +406,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             } else if (error.startsWith("WAIT")) {
                 data.tryFailure(new RedisWaitException(error
                         + ". channel: " + channel + " data: " + data));
+            } else if (error.startsWith("READONLY")) {
+                data.tryFailure(new RedisReadonlyException(error
+                        + ". channel: " + channel + " data: " + data));
             }else {
                 if (data != null) {
                     data.tryFailure(new RedisException(error + ". channel: " + channel + " command: " + LogHelper.toString(data)));
