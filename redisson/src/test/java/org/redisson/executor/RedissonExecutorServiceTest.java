@@ -1,13 +1,15 @@
 package org.redisson.executor;
 
+import com.github.dockerjava.api.model.ContainerNetwork;
+import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.PortBinding;
+import com.github.dockerjava.api.model.Ports;
 import mockit.Invocation;
 import mockit.Mock;
 import mockit.MockUp;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.*;
-import org.redisson.BaseTest;
-import org.redisson.RedisRunner;
-import org.redisson.Redisson;
-import org.redisson.RedissonNode;
+import org.redisson.*;
 import org.redisson.api.*;
 import org.redisson.api.annotation.RInject;
 import org.redisson.api.executor.TaskFinishedListener;
@@ -15,27 +17,27 @@ import org.redisson.api.executor.TaskStartedListener;
 import org.redisson.config.Config;
 import org.redisson.config.RedissonNodeConfig;
 import org.redisson.connection.balancer.RandomLoadBalancer;
+import org.redisson.misc.RedisURI;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.Network;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-public class RedissonExecutorServiceTest extends BaseTest {
+public class RedissonExecutorServiceTest extends RedisDockerTest {
 
     private static RedissonNode node;
     
     @BeforeEach
-    @Override
     public void before() throws IOException, InterruptedException {
-        super.before();
         Config config = createConfig();
         RedissonNodeConfig nodeConfig = new RedissonNodeConfig(config);
         nodeConfig.setExecutorServiceWorkers(Collections.singletonMap("test", 1));
@@ -44,7 +46,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
     }
 
     @AfterEach
-    public void after() throws InterruptedException {
+    public void after() {
         node.shutdown();
     }
 
@@ -138,7 +140,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
         f.get();
         assertThat(redisson.<Boolean>getBucket("finished").get()).isTrue();
     }
-    
+
     @Test
     public void testFailoverInSentinel() throws Exception {
         RedisRunner.RedisProcess master = new RedisRunner()
@@ -179,16 +181,16 @@ public class RedissonExecutorServiceTest extends BaseTest {
                 .sentinel()
                 .sentinelMonitor("myMaster", "127.0.0.1", master.getRedisServerPort(), 2)
                 .run();
-        
-        Thread.sleep(5000); 
-        
+
+        Thread.sleep(5000);
+
         Config config = new Config();
         config.useSentinelServers()
-            .setLoadBalancer(new RandomLoadBalancer())
-            .addSentinelAddress(sentinel3.getRedisServerAddressAndPort()).setMasterName("myMaster");
-        
+                .setLoadBalancer(new RandomLoadBalancer())
+                .addSentinelAddress(sentinel3.getRedisServerAddressAndPort()).setMasterName("myMaster");
+
         RedissonClient redisson = Redisson.create(config);
-        
+
         RedissonNodeConfig nodeConfig = new RedissonNodeConfig(config);
         nodeConfig.setExecutorServiceWorkers(Collections.singletonMap("test2", 1));
         node.shutdown();
@@ -204,9 +206,9 @@ public class RedissonExecutorServiceTest extends BaseTest {
 
         master.stop();
         System.out.println("master " + master.getRedisServerAddressAndPort() + " stopped!");
-        
+
         Thread.sleep(TimeUnit.SECONDS.toMillis(70));
-        
+
         master = new RedisRunner()
                 .port(master.getRedisServerPort())
                 .nosave()
@@ -214,11 +216,11 @@ public class RedissonExecutorServiceTest extends BaseTest {
                 .run();
 
         System.out.println("master " + master.getRedisServerAddressAndPort() + " started!");
-        
+
         Thread.sleep(25000);
-        
+
         assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(10);
-        
+
         redisson.shutdown();
         node.shutdown();
         sentinel1.stop();
@@ -227,6 +229,41 @@ public class RedissonExecutorServiceTest extends BaseTest {
         master.stop();
         slave1.stop();
         slave2.stop();
+    }
+
+
+//    @Test
+    public void testFailoverInSentinel2() throws Exception {
+        withSentinel((nodes, config) -> {
+            node.shutdown();
+
+            RedissonNodeConfig nodeConfig = new RedissonNodeConfig(config);
+            nodeConfig.setExecutorServiceWorkers(Collections.singletonMap("test2", 1));
+            node = RedissonNode.create(nodeConfig);
+            node.start();
+
+            RedissonClient redisson = Redisson.create(config);
+            RExecutorService executor = redisson.getExecutorService("test2", ExecutorOptions.defaults().taskRetryInterval(25, TimeUnit.SECONDS));
+            for (int i = 0; i < 10; i++) {
+                executor.submit(new DelayedTask(2000, "counter"));
+            }
+            try {
+                Thread.sleep(2500);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(1);
+
+            Integer port = nodes.get(0).getFirstMappedPort();
+            nodes.get(0).stop();
+            System.out.println("master stopped! " + port);
+
+            Awaitility.waitAtMost(Duration.ofSeconds(120)).untilAsserted(() -> {
+                assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(10);
+            });
+
+            redisson.shutdown();
+        }, 1);
     }
 
     
@@ -388,7 +425,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
 
         RExecutorFuture<?> future = executor.submit(new ScheduledLongRunnableTask("executed1"));
 
-        Thread.sleep(1050);
+        Thread.sleep(1150);
 
         assertThat(future.isCancelled()).isTrue();
 
@@ -725,5 +762,141 @@ public class RedissonExecutorServiceTest extends BaseTest {
             });
         });
     }
+
+    private void withSentinel(BiConsumer<List<GenericContainer<?>>, Config> callback, int slaves) throws InterruptedException {
+        Network network = Network.newNetwork();
+
+        List<GenericContainer<? extends GenericContainer<?>>> nodes = new ArrayList<>();
+
+        GenericContainer<?> master =
+                new GenericContainer<>("bitnami/redis:7.2.4")
+                        .withNetwork(network)
+                        .withEnv("REDIS_REPLICATION_MODE", "master")
+                        .withEnv("ALLOW_EMPTY_PASSWORD", "yes")
+                        .withNetworkAliases("redis")
+                        .withExposedPorts(6379);
+        master.start();
+        assert master.getNetwork() == network;
+        int masterPort = master.getFirstMappedPort();
+        master.withCreateContainerCmdModifier(cmd -> {
+            cmd.getHostConfig().withPortBindings(
+                    new PortBinding(Ports.Binding.bindPort(Integer.valueOf(masterPort)),
+                            cmd.getExposedPorts()[0]));
+        });
+        nodes.add(master);
+
+        for (int i = 0; i < slaves; i++) {
+            GenericContainer<?> slave =
+                    new GenericContainer<>("bitnami/redis:7.2.4")
+                            .withNetwork(network)
+                            .withEnv("REDIS_REPLICATION_MODE", "slave")
+                            .withEnv("REDIS_MASTER_HOST", "redis")
+                            .withEnv("ALLOW_EMPTY_PASSWORD", "yes")
+                            .withNetworkAliases("slave" + i)
+                            .withExposedPorts(6379);
+            slave.start();
+            int slavePort = slave.getFirstMappedPort();
+            slave.withCreateContainerCmdModifier(cmd -> {
+                cmd.getHostConfig().withPortBindings(
+                        new PortBinding(Ports.Binding.bindPort(Integer.valueOf(slavePort)),
+                                cmd.getExposedPorts()[0]));
+            });
+            nodes.add(slave);
+        }
+
+        GenericContainer<?> sentinel1 =
+                new GenericContainer<>("bitnami/redis-sentinel:7.2.4")
+                        .withNetwork(network)
+                        .withEnv("REDIS_SENTINEL_DOWN_AFTER_MILLISECONDS", "5000")
+                        .withEnv("REDIS_SENTINEL_FAILOVER_TIMEOUT", "10000")
+                        .withNetworkAliases("sentinel1")
+                        .withExposedPorts(26379);
+        sentinel1.start();
+        int sentinel1Port = sentinel1.getFirstMappedPort();
+        sentinel1.withCreateContainerCmdModifier(cmd -> {
+            cmd.getHostConfig().withPortBindings(
+                    new PortBinding(Ports.Binding.bindPort(Integer.valueOf(sentinel1Port)),
+                            cmd.getExposedPorts()[0]));
+        });
+        nodes.add(sentinel1);
+
+        GenericContainer<?> sentinel2 =
+                new GenericContainer<>("bitnami/redis-sentinel:7.2.4")
+                        .withNetwork(network)
+                        .withEnv("REDIS_SENTINEL_DOWN_AFTER_MILLISECONDS", "5000")
+                        .withEnv("REDIS_SENTINEL_FAILOVER_TIMEOUT", "10000")
+                        .withNetworkAliases("sentinel2")
+                        .withExposedPorts(26379);
+        sentinel2.start();
+        int sentinel2Port = sentinel2.getFirstMappedPort();
+        sentinel2.withCreateContainerCmdModifier(cmd -> {
+            cmd.getHostConfig().withPortBindings(
+                    new PortBinding(Ports.Binding.bindPort(Integer.valueOf(sentinel2Port)),
+                            cmd.getExposedPorts()[0]));
+        });
+        nodes.add(sentinel2);
+
+        GenericContainer<?> sentinel3 =
+                new GenericContainer<>("bitnami/redis-sentinel:7.2.4")
+                        .withNetwork(network)
+                        .withEnv("REDIS_SENTINEL_DOWN_AFTER_MILLISECONDS", "5000")
+                        .withEnv("REDIS_SENTINEL_FAILOVER_TIMEOUT", "10000")
+                        .withNetworkAliases("sentinel3")
+                        .withExposedPorts(26379);
+        sentinel3.start();
+        int sentinel3Port = sentinel3.getFirstMappedPort();
+        sentinel3.withCreateContainerCmdModifier(cmd -> {
+            cmd.getHostConfig().withPortBindings(
+                    new PortBinding(Ports.Binding.bindPort(Integer.valueOf(sentinel3Port)),
+                            cmd.getExposedPorts()[0]));
+        });
+        nodes.add(sentinel3);
+
+        Thread.sleep(5000);
+
+        Config config = new Config();
+        config.setProtocol(protocol);
+        config.useSentinelServers()
+                .setNatMapper(new NatMapper() {
+
+                    @Override
+                    public RedisURI map(RedisURI uri) {
+                        for (GenericContainer<? extends GenericContainer<?>> node : nodes) {
+                            if (node.getContainerInfo() == null) {
+                                continue;
+                            }
+
+                            Ports.Binding[] mappedPort = node.getContainerInfo().getNetworkSettings()
+                                    .getPorts().getBindings().get(new ExposedPort(uri.getPort()));
+
+                            Map<String, ContainerNetwork> ss = node.getContainerInfo().getNetworkSettings().getNetworks();
+                            ContainerNetwork s = ss.values().iterator().next();
+
+                            if (uri.getPort() == 6379 && node.getNetworkAliases().contains("slave0")) {
+                                return new RedisURI(uri.getScheme(), "127.0.0.1", Integer.valueOf(mappedPort[0].getHostPortSpec()));
+                            }
+
+                            if ("redis".equals(uri.getHost())
+                                    && node.getNetworkAliases().contains(uri.getHost())) {
+                                return new RedisURI(uri.getScheme(), "127.0.0.1", Integer.valueOf(mappedPort[0].getHostPortSpec()));
+                            }
+
+                            if (mappedPort != null
+                                    && s.getIpAddress().equals(uri.getHost())) {
+                                return new RedisURI(uri.getScheme(), "127.0.0.1", Integer.valueOf(mappedPort[0].getHostPortSpec()));
+                            }
+                        }
+                        return uri;
+                    }
+                })
+                .addSentinelAddress("redis://127.0.0.1:" + sentinel1.getFirstMappedPort())
+                .setMasterName("mymaster");
+
+        callback.accept(nodes, config);
+
+        nodes.forEach(n -> n.stop());
+        network.close();
+    }
+
 
 }
