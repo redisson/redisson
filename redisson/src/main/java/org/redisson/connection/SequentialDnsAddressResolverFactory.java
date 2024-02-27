@@ -26,6 +26,8 @@ import io.netty.resolver.dns.*;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Promise;
 import org.redisson.misc.AsyncSemaphore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -39,6 +41,8 @@ import java.util.concurrent.Callable;
  *
  */
 public class SequentialDnsAddressResolverFactory implements AddressResolverGroupFactory {
+
+    static final Logger log = LoggerFactory.getLogger(SequentialDnsAddressResolverFactory.class);
 
     static class LimitedInetSocketAddressResolver extends InetSocketAddressResolver {
 
@@ -100,8 +104,14 @@ public class SequentialDnsAddressResolverFactory implements AddressResolverGroup
                                                           Class<? extends SocketChannel> socketChannelType,
                                                           DnsServerAddressStreamProvider nameServerProvider) {
         DnsNameResolverBuilder dnsResolverBuilder = new DnsNameResolverBuilder();
+        try {
+            dnsResolverBuilder.getClass().getMethod("socketChannelType", Class.class, boolean.class);
+            dnsResolverBuilder.socketChannelType(socketChannelType, true);
+        } catch (NoSuchMethodException e) {
+            log.warn("DNS TCP fallback on UDP query timeout disabled. Upgrade Netty to 4.1.105 or higher.");
+            dnsResolverBuilder.socketChannelType(socketChannelType);
+        }
         dnsResolverBuilder.channelType(channelType)
-                        .socketChannelType(socketChannelType, true)
                         .nameServerProvider(nameServerProvider)
                         .resolveCache(new DefaultDnsCache())
                         .cnameCache(new DefaultDnsCnameCache());
