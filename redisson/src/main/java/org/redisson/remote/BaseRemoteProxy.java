@@ -35,7 +35,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
 /**
@@ -180,33 +179,21 @@ public abstract class BaseRemoteProxy {
     }
 
     private void pollResponse() {
-        pollResponse(new AtomicInteger(commandExecutor.getServiceManager().getConfig().getRetryAttempts()));
-    }
-
-    private void pollResponse(AtomicInteger retries) {
         RBlockingQueue<RRemoteServiceResponse> queue = new RedissonBlockingQueue<>(codec, commandExecutor, responseQueueName);
         RFuture<RRemoteServiceResponse> future = queue.pollAsync(60, TimeUnit.SECONDS);
-        future.whenComplete(createResponseListener(retries));
+        future.whenComplete(createResponseListener());
     }
 
-    private BiConsumer<RRemoteServiceResponse, Throwable> createResponseListener(AtomicInteger retries) {
+    private BiConsumer<RRemoteServiceResponse, Throwable> createResponseListener() {
         return (response, e) -> {
             if (e != null) {
                 if (e instanceof RedissonShutdownException) {
                     return;
                 }
 
-                if (retries.decrementAndGet() >= 0) {
-                    commandExecutor.getServiceManager().newTimeout(task -> {
-                        pollResponse(retries);
-                    }, commandExecutor.getServiceManager().getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
-                } else {
-                    log.error("Can't get response from {}. Try to increase 'retryInterval' and/or 'retryAttempts' settings", responseQueueName, e);
-                }
+                log.error("Can't get response from {}", responseQueueName, e);
                 return;
             }
-
-            log.debug("Got response from {}", responseQueueName);
 
             CompletableFuture<RRemoteServiceResponse> future = locked.execute(() -> {
                 ResponseEntry entry = responses.get(responseQueueName);
