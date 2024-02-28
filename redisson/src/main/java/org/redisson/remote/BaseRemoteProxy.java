@@ -191,7 +191,7 @@ public abstract class BaseRemoteProxy {
                     return;
                 }
 
-                log.error("Can't get response from {}", responseQueueName, e);
+                log.error("Can't get response from {}. Try to increase 'retryInterval' and/or 'retryAttempts' settings", responseQueueName, e);
                 return;
             }
 

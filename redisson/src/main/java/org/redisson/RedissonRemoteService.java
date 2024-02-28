@@ -245,7 +245,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                     if (e instanceof RedissonShutdownException) {
                         return;
                     }
-                    log.error("Can't process the remote service request.", e);
+                    log.error("Can't process the remote service request. A new attempt has been made.", e);
                     // re-subscribe after a failed takeAsync
                     commandExecutor.getServiceManager().newTimeout(task -> {
                         subscribe(remoteInterface, requestQueue, executor, bean);
@@ -280,7 +280,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                         if (exc instanceof RedissonShutdownException) {
                             return;
                         }
-                        log.error("Can't process the remote service request with id {}", requestId, exc);
+                        log.error("Can't process the remote service request with id {}. Try to increase 'retryInterval' and/or 'retryAttempts' settings", requestId, exc);
                             
                         // re-subscribe after a failed takeAsync
                         resubscribe(remoteInterface, requestQueue, executor, bean);
@@ -330,7 +330,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                                         if (ex instanceof RedissonShutdownException) {
                                             return;
                                         }
-                                        log.error("Can't send ack for request: {}", request, ex);
+                                        log.error("Can't send ack for request: {}. Try to increase 'retryInterval' and/or 'retryAttempts' settings", request, ex);
 
                                         // re-subscribe after a failed send (ack)
                                         resubscribe(remoteInterface, requestQueue, executor, bean);
@@ -350,7 +350,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                                             if (exce instanceof RedissonShutdownException) {
                                                 return;
                                             }
-                                            log.error("Can't send ack for request: {}", request, exce);
+                                            log.error("Can't send ack for request: {}. Try to increase 'retryInterval' and/or 'retryAttempts' settings", request, exce);
 
                                             // re-subscribe after a failed send (ack)
                                             resubscribe(remoteInterface, requestQueue, executor, bean);
@@ -427,7 +427,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                             if (exc instanceof RedissonShutdownException) {
                                 return;
                             }
-                            log.error("Can't send response: {} for request: {}", response, request, exc);
+                            log.error("Can't send response: {} for request: {}. Try to increase 'retryInterval' and/or 'retryAttempts' settings", response, request, exc);
                         }
 
                         resubscribe(remoteInterface, requestQueue, executor, method.getBean());
