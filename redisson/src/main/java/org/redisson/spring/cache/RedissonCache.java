@@ -160,7 +160,7 @@ public class RedissonCache implements Cache {
         return delta > 0;
     }
 
-    CompletableFuture<?> retrieve(Object key) {
+    public CompletableFuture<?> retrieve(Object key) {
         RFuture<Object> f = map.getAsync(key);
         return f.thenApply(value -> {
             if (value == null) {
@@ -175,7 +175,7 @@ public class RedissonCache implements Cache {
         }).toCompletableFuture();
     }
 
-    <T> CompletableFuture<T> retrieve(Object key, Supplier<CompletableFuture<T>> valueLoader) {
+    public <T> CompletableFuture<T> retrieve(Object key, Supplier<CompletableFuture<T>> valueLoader) {
         return retrieve(key).thenCompose(v -> {
             if (v != null) {
                 return CompletableFuture.completedFuture((T) v);
