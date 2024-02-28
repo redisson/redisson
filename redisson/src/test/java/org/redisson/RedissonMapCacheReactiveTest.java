@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import org.redisson.api.RLockReactive;
 import org.redisson.api.RMapCacheReactive;
 import org.redisson.api.RMapReactive;
-import org.redisson.codec.MsgPackJacksonCodec;
 
 public class RedissonMapCacheReactiveTest extends BaseReactiveTest {
 
@@ -254,7 +253,7 @@ public class RedissonMapCacheReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testContainsValue() throws InterruptedException {
-        RMapCacheReactive<SimpleKey, SimpleValue> map = redisson.getMapCache("simple31", new MsgPackJacksonCodec());
+        RMapCacheReactive<SimpleKey, SimpleValue> map = redisson.getMapCache("simple31");
         Assertions.assertFalse(sync(map.containsValue(new SimpleValue("34"))));
         sync(map.put(new SimpleKey("33"), new SimpleValue("44"), 1, TimeUnit.SECONDS));
 
@@ -295,7 +294,7 @@ public class RedissonMapCacheReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testScheduler() throws InterruptedException {
-        RMapCacheReactive<SimpleKey, SimpleValue> map = redisson.getMapCache("simple", new MsgPackJacksonCodec());
+        RMapCacheReactive<SimpleKey, SimpleValue> map = redisson.getMapCache("simple");
         Assertions.assertNull(sync(map.get(new SimpleKey("33"))));
 
         sync(map.put(new SimpleKey("33"), new SimpleValue("44"), 5, TimeUnit.SECONDS));
@@ -308,7 +307,7 @@ public class RedissonMapCacheReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testPutGet() throws InterruptedException {
-        RMapCacheReactive<SimpleKey, SimpleValue> map = redisson.getMapCache("simple01", new MsgPackJacksonCodec());
+        RMapCacheReactive<SimpleKey, SimpleValue> map = redisson.getMapCache("simple01");
         Assertions.assertNull(sync(map.get(new SimpleKey("33"))));
 
         sync(map.put(new SimpleKey("33"), new SimpleValue("44"), 2, TimeUnit.SECONDS));
@@ -390,7 +389,7 @@ public class RedissonMapCacheReactiveTest extends BaseReactiveTest {
         sync(map.put(4, 6));
         sync(map.put(7, 8));
 
-        List<Integer> keys = new ArrayList<Integer>(Arrays.asList(1, 3, 4, 7));
+        List<Integer> keys = new ArrayList<>(Arrays.asList(1, 3, 4, 7));
         for (Iterator<Integer> iterator = toIterator(map.keyIterator()); iterator.hasNext();) {
             Integer value = iterator.next();
             if (!keys.remove(value)) {
