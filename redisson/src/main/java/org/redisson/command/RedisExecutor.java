@@ -117,6 +117,11 @@ public class RedisExecutor<V, R> {
             return;
         }
 
+        connectionManager.getServiceManager().addFuture(mainPromise);
+        mainPromise.whenComplete((r, e) -> {
+            connectionManager.getServiceManager().removeFuture(mainPromise);
+        });
+
         if (connectionManager.getServiceManager().isShuttingDown()) {
             free();
             mainPromise.completeExceptionally(new RedissonShutdownException("Redisson is shutdown"));
@@ -154,11 +159,7 @@ public class RedisExecutor<V, R> {
             };
 
             if (attempt == 0) {
-                connectionManager.getServiceManager().addFuture(mainPromise);
-
                 mainPromise.whenComplete((r, e) -> {
-                    connectionManager.getServiceManager().removeFuture(mainPromise);
-
                     if (this.mainPromiseListener != null) {
                         this.mainPromiseListener.accept(r, e);
                     }
