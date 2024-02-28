@@ -19,6 +19,8 @@ import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 
+import java.util.Objects;
+
 /**
  *
  * @author Nikita Koksharov
@@ -44,5 +46,18 @@ public class JsonCodecWrapper extends BaseCodec {
     @Override
     public Encoder getValueEncoder() {
         return innerCodec.getValueEncoder();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        JsonCodecWrapper that = (JsonCodecWrapper) o;
+        return Objects.equals(innerCodec, that.innerCodec);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(innerCodec);
     }
 }
