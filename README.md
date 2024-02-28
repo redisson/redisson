@@ -74,7 +74,7 @@ Supported Redis: 3.0 ... 7.2
 * [Tomcat Session Manager](https://github.com/redisson/redisson/tree/master/redisson-tomcat) implementation
 * [Spring Session](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#147-spring-session) implementation
 * [Redis pipelining](https://github.com/redisson/redisson/wiki/10.-additional-features#103-execution-batches-of-commands) (command batches)
-* Supports many popular codecs ([Kryo](https://github.com/EsotericSoftware/kryo), [Jackson JSON](https://github.com/FasterXML/jackson), [Avro](http://avro.apache.org/), [Smile](http://wiki.fasterxml.com/SmileFormatSpec), [CBOR](http://cbor.io/), [MsgPack](http://msgpack.org/), [Amazon Ion](https://amzn.github.io/ion-docs/), [LZ4](https://github.com/jpountz/lz4-java), [Snappy](https://github.com/xerial/snappy-java) and JDK Serialization)
+* Supports many popular codecs ([Kryo](https://github.com/EsotericSoftware/kryo), [Jackson JSON](https://github.com/FasterXML/jackson), [Avro](http://avro.apache.org/), [Smile](http://wiki.fasterxml.com/SmileFormatSpec), [CBOR](http://cbor.io/), [MsgPack](http://msgpack.org/), [Amazon Ion](https://amzn.github.io/ion-docs/), [LZ4](https://github.com/jpountz/lz4-java), [Snappy](https://github.com/xerial/snappy-java), [Protobuf](https://github.com/protocolbuffers/protobuf) and JDK Serialization)
 * 2000+ unit tests  
 <!--
 Used by
