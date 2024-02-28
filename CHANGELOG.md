@@ -14,6 +14,7 @@ Improvement - ChannelName.toString() conversion optimization
 Fixed - `retryInterval` and `retryAttempts` settings aren't applied in case of 'READONLY You can't write against a read only replica.' error  
 Fixed - `RRemoteService` may cause CPU spike after Master failover  
 Fixed - `FlushListener` causes `ClassCastException`  
+Fixed - `TrackingListener` causes `ClassCastException`  
 Fixed - `RedissonSetCache.addIfAbsentAsync()` uses incorrect argument for zadd (thanks @fooooxxxx)  
 
 ### 20-Feb-2024 - 3.27.0 released
