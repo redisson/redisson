@@ -157,13 +157,13 @@ spring:
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
-## Q: How to resolve incorrect netty version brought by Spring Boot?
+## Q: How to replace netty version brought by Spring Boot?
 
 You need to define netty version in properties section of your Maven project.
 
 ```xml
     <properties>
-                <netty.version>4.1.107.Final</netty.version> 
+          <netty.version>4.1.107.Final</netty.version> 
     </properties>
 ```
 
