@@ -3,6 +3,19 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 28-Feb-2024 - 3.27.1 released
+
+Feature - added `TrackingListener` support to `RList`, `RQueue`, `RDeque`, `RBlockingQueue`, `RBlockingDeque`, `RDelayedQueue`, `RRingBuffer` objects  
+Feature - `addListener()`, `random()` methods added to `RLexSortedSet` object  
+
+Improvement - show log warning "DNS TCP fallback on UDP query timeout disabled" if Netty version is lower 4.1.105  
+Improvement - ChannelName.toString() conversion optimization  
+
+Fixed - `retryInterval` and `retryAttempts` settings aren't applied in case of 'READONLY You can't write against a read only replica.' error  
+Fixed - `RRemoteService` may cause CPU spike after Master failover  
+Fixed - `FlushListener` causes `ClassCastException`  
+Fixed - `RedissonSetCache.addIfAbsentAsync()` uses incorrect argument for zadd (thanks @fooooxxxx)  
+
 ### 20-Feb-2024 - 3.27.0 released
 
 Feature - [client tracking](https://github.com/redisson/redisson/wiki/10.-additional-features/#109-client-tracking-listener) support. `TrackingListener` is available for `RBucket`, `RStream`, `RScoredSortedSet`, `RSet`, `RMap` and `RBucket` objects  
