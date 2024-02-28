@@ -12,7 +12,14 @@ Supported Redis: 3.0 ... 7.2
 ## Features
 
 * Thread-safe implementation  
-* Supports [Redis Replicated](https://github.com/redisson/redisson/wiki/2.-Configuration/#25-replicated-mode), [Redis Cluster](https://github.com/redisson/redisson/wiki/2.-Configuration/#24-cluster-mode), [Redis Sentinel](https://github.com/redisson/redisson/wiki/2.-Configuration/#27-sentinel-mode), [Redis Master and Slaves](https://github.com/redisson/redisson/wiki/2.-Configuration/#28-master-slave-mode), [Redis Single](https://github.com/redisson/redisson/wiki/2.-Configuration/#26-single-instance-mode), [Redis proxy](https://github.com/redisson/redisson/wiki/2.-Configuration/#29-proxy-mode), [Redis multi-cluster](https://github.com/redisson/redisson/wiki/2.-Configuration/#210-multi-cluster-mode) setup
+* Support for multiple Redis deployment types
+    * [Redis Proxy](https://github.com/redisson/redisson/wiki/2.-Configuration/#29-proxy-mode)
+    * [Redis Multi-cluster](https://github.com/redisson/redisson/wiki/2.-Configuration/#210-multi-cluster-mode)
+    * [Redis Single](https://github.com/redisson/redisson/wiki/2.-Configuration/#26-single-instance-mode)
+    * [Redis Cluster](https://github.com/redisson/redisson/wiki/2.-Configuration/#24-cluster-mode)
+    * [Redis Sentinel](https://github.com/redisson/redisson/wiki/2.-Configuration/#27-sentinel-mode)
+    * [Redis Replicated](https://github.com/redisson/redisson/wiki/2.-Configuration/#25-replicated-mode)
+    * [Redis Master and Slaves](https://github.com/redisson/redisson/wiki/2.-Configuration/#28-master-slave-mode)
 * Amazon Web Services compatible
      * [AWS Redis Global Datastore](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Redis-Global-Datastore.html)
      * [AWS ElastiCache](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/WhatIs.html)
@@ -67,8 +74,8 @@ Supported Redis: 3.0 ... 7.2
 * [Tomcat Session Manager](https://github.com/redisson/redisson/tree/master/redisson-tomcat) implementation
 * [Spring Session](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#147-spring-session) implementation
 * [Redis pipelining](https://github.com/redisson/redisson/wiki/10.-additional-features#103-execution-batches-of-commands) (command batches)
-* Supports many popular codecs ([JBoss Marshalling](https://github.com/jboss-remoting/jboss-marshalling), [Jackson JSON](https://github.com/FasterXML/jackson), [Avro](http://avro.apache.org/), [Smile](http://wiki.fasterxml.com/SmileFormatSpec), [CBOR](http://cbor.io/), [MsgPack](http://msgpack.org/), [Kryo](https://github.com/EsotericSoftware/kryo), [Amazon Ion](https://amzn.github.io/ion-docs/), [LZ4](https://github.com/jpountz/lz4-java), [Snappy](https://github.com/xerial/snappy-java) and JDK Serialization)
-* Over 1800 unit tests  
+* Supports many popular codecs ([Kryo](https://github.com/EsotericSoftware/kryo), [Jackson JSON](https://github.com/FasterXML/jackson), [Avro](http://avro.apache.org/), [Smile](http://wiki.fasterxml.com/SmileFormatSpec), [CBOR](http://cbor.io/), [MsgPack](http://msgpack.org/), [Amazon Ion](https://amzn.github.io/ion-docs/), [LZ4](https://github.com/jpountz/lz4-java), [Snappy](https://github.com/xerial/snappy-java), [Protobuf](https://github.com/protocolbuffers/protobuf) and JDK Serialization)
+* 2000+ unit tests  
 <!--
 Used by
 ================================
