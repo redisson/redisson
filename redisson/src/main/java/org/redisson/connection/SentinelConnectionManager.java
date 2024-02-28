@@ -334,7 +334,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             f.thenAccept(r -> scheduleChangeCheck(cfg, null));
             return;
         }
-        if (!serviceManager.getShutdownLatch().acquire()) {
+        if (serviceManager.isShuttingDown()) {
             return;
         }
 
@@ -348,7 +348,6 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         connectionFuture.whenComplete((connection, e) -> {
             if (e != null) {
                 lastException.set(e);
-                serviceManager.getShutdownLatch().release();
                 checkState(cfg, iterator, lastException);
                 return;
             }
@@ -377,7 +376,6 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 log.error("Can't execute SENTINEL commands on {}", connection.getRedisClient().getAddr(), e);
             }
 
-            serviceManager.getShutdownLatch().release();
             if (e != null) {
                 scheduleChangeCheck(cfg, iterator);
             } else {

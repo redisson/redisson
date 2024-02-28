@@ -303,6 +303,9 @@ public class RedisConnection implements RedisCommands {
         } else {
             RFuture<Void> f = async(RedisCommands.QUIT);
             f.whenComplete((res, e) -> {
+                if (redisClient.isShutdown()) {
+                    return;
+                }
                 channel.close();
             });
         }

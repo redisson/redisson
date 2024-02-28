@@ -59,7 +59,6 @@ import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.Protocol;
 import org.redisson.config.TransportMode;
 import org.redisson.misc.CompletableFutureWrapper;
-import org.redisson.misc.InfinitySemaphoreLatch;
 import org.redisson.misc.RedisURI;
 import org.redisson.misc.WrappedLock;
 import org.redisson.remote.ResponseEntry;
@@ -134,7 +133,7 @@ public final class ServiceManager {
 
     private IdleConnectionWatcher connectionWatcher;
 
-    private final InfinitySemaphoreLatch shutdownLatch = new InfinitySemaphoreLatch();
+    private final AtomicBoolean shutdownLatch = new AtomicBoolean();
 
     private final ElementsSubscribeService elementsSubscribeService = new ElementsSubscribeService(this);
 
@@ -273,7 +272,7 @@ public final class ServiceManager {
     }
 
     public boolean isShuttingDown() {
-        return shutdownLatch.isClosed();
+        return shutdownLatch.get();
     }
 
     public boolean isShutdown() {
@@ -344,12 +343,20 @@ public final class ServiceManager {
         futures.remove(future);
     }
 
-    public void shutdownFutures() {
-        futures.forEach(f -> f.completeExceptionally(new RedissonShutdownException("Redisson is shutdown")));
+    public void shutdownFutures(long timeout, TimeUnit unit) {
+        CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        try {
+            future.get(timeout, unit);
+        } catch (InterruptedException | ExecutionException e) {
+            // skip
+        } catch (TimeoutException e) {
+            futures.forEach(f -> f.completeExceptionally(new RedissonShutdownException("Redisson is shutdown")));
+        }
+        futures.clear();
     }
 
-    public InfinitySemaphoreLatch getShutdownLatch() {
-        return shutdownLatch;
+    public void close() {
+        shutdownLatch.set(true);
     }
 
     public RedisNodeNotFoundException createNodeNotFoundException(NodeSource source) {

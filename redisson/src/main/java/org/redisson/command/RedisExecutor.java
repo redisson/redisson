@@ -117,7 +117,7 @@ public class RedisExecutor<V, R> {
             return;
         }
 
-        if (!connectionManager.getServiceManager().getShutdownLatch().acquire()) {
+        if (connectionManager.getServiceManager().isShuttingDown()) {
             free();
             mainPromise.completeExceptionally(new RedissonShutdownException("Redisson is shutdown"));
             return;
@@ -154,7 +154,11 @@ public class RedisExecutor<V, R> {
             };
 
             if (attempt == 0) {
+                connectionManager.getServiceManager().addFuture(mainPromise);
+
                 mainPromise.whenComplete((r, e) -> {
+                    connectionManager.getServiceManager().removeFuture(mainPromise);
+
                     if (this.mainPromiseListener != null) {
                         this.mainPromiseListener.accept(r, e);
                     }
@@ -167,12 +171,10 @@ public class RedisExecutor<V, R> {
 
             connectionFuture.whenComplete((connection, e) -> {
                 if (connectionFuture.isCancelled()) {
-                    connectionManager.getServiceManager().getShutdownLatch().release();
                     return;
                 }
 
                 if (connectionFuture.isDone() && connectionFuture.isCompletedExceptionally()) {
-                    connectionManager.getServiceManager().getShutdownLatch().release();
                     exception = convertException(connectionFuture);
                     tryComplete(attemptPromise, exception);
                     return;
@@ -456,13 +458,10 @@ public class RedisExecutor<V, R> {
             scheduledFuture = null;
         }
 
-        connectionManager.getServiceManager().addFuture(mainPromise);
         mainPromise.whenComplete((res, e) -> {
             if (scheduledFuture != null) {
                 scheduledFuture.cancel();
             }
-
-            connectionManager.getServiceManager().removeFuture(mainPromise);
 
             // handling cancel operation for blocking commands
             if ((mainPromise.isCancelled()
@@ -673,7 +672,6 @@ public class RedisExecutor<V, R> {
         }
 
         RedisConnection connection = getNow(connectionFuture);
-        connectionManager.getServiceManager().getShutdownLatch().release();
         if (connectionManager.getServiceManager().getConfig().getMasterConnectionPoolSize() < 10) {
             if (source.getRedirect() == Redirect.ASK
                     || getClass() != RedisExecutor.class

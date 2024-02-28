@@ -422,7 +422,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             scheduleClusterChangeCheck(cfg);
             return;
         }
-        if (!serviceManager.getShutdownLatch().acquire()) {
+        if (serviceManager.isShuttingDown()) {
             return;
         }
         RedisURI uri = iterator.next();
@@ -430,7 +430,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         connectionFuture.whenComplete((connection, e) -> {
             if (e != null) {
                 lastException.set(e);
-                serviceManager.getShutdownLatch().release();
                 checkClusterState(cfg, iterator, lastException);
                 return;
             }
@@ -446,14 +445,12 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 if (e != null) {
                     log.error("Unable to execute {}", clusterNodesCommand, e);
                     lastException.set(e);
-                    serviceManager.getShutdownLatch().release();
                     checkClusterState(cfg, iterator, lastException);
                     return;
                 }
 
                 if (nodes.isEmpty()) {
                     log.debug("cluster nodes state got from {}: doesn't contain any nodes", connection.getRedisClient().getAddr());
-                    serviceManager.getShutdownLatch().release();
                     checkClusterState(cfg, iterator, lastException);
                     return;
                 }
@@ -478,7 +475,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                                 }
                                 log.error("Unable to parse cluster nodes state got from: {}:\n{}", connection.getRedisClient().getAddr(), nodesValue, ex);
                                 lastException.set(ex);
-                                serviceManager.getShutdownLatch().release();
                                 checkClusterState(cfg, iterator, lastException);
                             }
                         })
@@ -489,7 +485,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                         .thenApply(newPartitions -> {
                             checkSlotsMigration(newPartitions);
                             checkSlotsChange(newPartitions);
-                            serviceManager.getShutdownLatch().release();
                             scheduleClusterChangeCheck(cfg);
                             return newPartitions;
                         });

@@ -490,7 +490,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public void shutdown() {
-        shutdown(0, 2, TimeUnit.SECONDS); //default netty value
+        shutdown(2, 15, TimeUnit.SECONDS); //default netty value
     }
 
     @Override
@@ -500,7 +500,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
         long timeoutInNanos = unit.toNanos(timeout);
 
+        serviceManager.close();
         serviceManager.getConnectionWatcher().stop();
+        serviceManager.getResolverGroup().close();
+
+        long startTime = System.nanoTime();
+        serviceManager.shutdownFutures(timeoutInNanos, TimeUnit.NANOSECONDS);
+        timeoutInNanos = Math.max(0, timeoutInNanos - System.nanoTime() - startTime);
 
         if (isInitialized()) {
             List<CompletableFuture<Void>> futures = new ArrayList<>();
@@ -510,7 +516,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
 
             try {
-                long startTime = System.nanoTime();
+                startTime = System.nanoTime();
                 future.get(timeoutInNanos, TimeUnit.NANOSECONDS);
                 timeoutInNanos = Math.max(0, timeoutInNanos - System.nanoTime() - startTime);
             } catch (Exception e) {
@@ -518,13 +524,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
         }
 
-        serviceManager.getResolverGroup().close();
-
-        serviceManager.getShutdownLatch().close();
         if (serviceManager.getCfg().getExecutor() == null) {
             serviceManager.getExecutor().shutdown();
             try {
-                long startTime = System.nanoTime();
+                startTime = System.nanoTime();
                 serviceManager.getExecutor().awaitTermination(timeoutInNanos, TimeUnit.NANOSECONDS);
                 timeoutInNanos = Math.max(0, timeoutInNanos - System.nanoTime() - startTime);
             } catch (InterruptedException e) {
@@ -532,8 +535,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
         }
 
-        serviceManager.shutdownFutures();
-        serviceManager.getShutdownLatch().awaitUninterruptibly();
+        serviceManager.getTimer().stop();
 
         if (serviceManager.getCfg().getEventLoopGroup() == null) {
             if (timeoutInNanos < quietPeriod) {
@@ -541,10 +543,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
             serviceManager.getGroup()
                     .shutdownGracefully(unit.toNanos(quietPeriod), timeoutInNanos, TimeUnit.NANOSECONDS)
-                    .awaitUninterruptibly(timeoutInNanos, TimeUnit.NANOSECONDS);
+                    .syncUninterruptibly();
         }
-
-        serviceManager.getTimer().stop();
     }
 
     private boolean isInitialized() {
