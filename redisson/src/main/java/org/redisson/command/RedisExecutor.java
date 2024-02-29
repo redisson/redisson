@@ -134,7 +134,7 @@ public class RedisExecutor<V, R> {
             CompletableFuture<R> attemptPromise = new CompletableFuture<>();
             CompletableFuture<RedisConnection> connectionFuture = getConnection(attemptPromise);
             mainPromiseListener = (r, e) -> {
-                if (!mainPromise.isCancelled()) {
+                if (!mainPromise.isCompletedExceptionally()) {
                     return;
                 }
 
@@ -144,16 +144,17 @@ public class RedisExecutor<V, R> {
                     if (attemptPromise.completeExceptionally(new CancellationException())) {
                         free();
                     }
-                } else {
-                    if (command.isBlockingCommand()) {
+                    return;
+                }
+
+                if (command.isBlockingCommand()) {
+                    if (writeFuture.cancel(false)) {
+                        attemptPromise.completeExceptionally(new CancellationException());
+                    } else {
                         RedisConnection c = connectionFuture.getNow(null);
-                        if (writeFuture.cancel(false)) {
+                        c.forceFastReconnectAsync().whenComplete((res, ex) -> {
                             attemptPromise.completeExceptionally(new CancellationException());
-                        } else {
-                            c.forceFastReconnectAsync().whenComplete((res, ex) -> {
-                                attemptPromise.completeExceptionally(new CancellationException());
-                            });
-                        }
+                        });
                     }
                 }
             };
@@ -300,9 +301,12 @@ public class RedisExecutor<V, R> {
                     }
                 }
 
-                if (mainPromise.isCancelled()) {
-                    if (attemptPromise.completeExceptionally(new CancellationException())) {
-                        free();
+                if (mainPromise.isCompletedExceptionally()) {
+                    Throwable c = cause(mainPromise);
+                    if (c instanceof CancellationException || c instanceof RedissonShutdownException) {
+                        if (attemptPromise.completeExceptionally(new CancellationException())) {
+                            free();
+                        }
                     }
                     return;
                 }
@@ -440,7 +444,7 @@ public class RedisExecutor<V, R> {
         timeout = Optional.of(connectionManager.getServiceManager().newTimeout(timeoutResponseTask, timeoutTime, TimeUnit.MILLISECONDS));
     }
 
-    protected boolean isResendAllowed(int attempt, int attempts) {
+    private boolean isResendAllowed(int attempt, int attempts) {
         return attempt < attempts
                 && !noRetry
                     && (command == null || (!command.isBlockingCommand() && !command.isNoRetry()));
@@ -481,7 +485,7 @@ public class RedisExecutor<V, R> {
         });
     }
 
-    protected Throwable cause(CompletableFuture<?> future) {
+    protected final Throwable cause(CompletableFuture<?> future) {
         try {
             future.getNow(null);
             return null;
@@ -757,7 +761,7 @@ public class RedisExecutor<V, R> {
         return codecToUse;
     }
 
-    protected <T> T getNow(CompletableFuture<T> future) {
+    protected final <T> T getNow(CompletableFuture<T> future) {
         try {
             return future.getNow(null);
         } catch (Exception e) {
@@ -765,7 +769,7 @@ public class RedisExecutor<V, R> {
         }
     }
 
-    protected <T> RedisException convertException(CompletableFuture<T> future) {
+    private <T> RedisException convertException(CompletableFuture<T> future) {
         Throwable cause = cause(future);
         if (cause instanceof RedisException) {
             return (RedisException) cause;
