@@ -504,7 +504,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             // should be invoked first in order to remove stale failedSlaveAddresses
             CompletableFuture<Set<RedisURI>> addedSlavesFuture = addRemoveSlaves(entry, currentPart, newPart);
             CompletableFuture<Void> f = addedSlavesFuture.thenCompose(addedSlaves -> {
-                // Do some slaves have changed state from failed to alive?
+                // Have some slaves changed state from failed to alive?
                 return upDownSlaves(entry, currentPart, newPart, addedSlaves);
             });
             futures.add(f);
@@ -512,7 +512,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
                                     .exceptionally(e -> {
                                         if (e != null) {
-                                            log.error(e.getMessage(), e);
+                                            log.error("Unable to add/remove slave nodes", e);
                                         }
                                         return null;
                                     });
@@ -656,7 +656,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
                                     .exceptionally(e -> {
                                         if (e != null) {
-                                            log.error(e.getMessage(), e);
+                                            log.error("Unable to add/change master node", e);
                                         }
                                         return null;
                                     });
