@@ -622,7 +622,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             if (masterFound && newPart.isMasterFail()) {
                 for (Integer slot : currentPart.getSlots()) {
                     ClusterPartition newMasterPart = find(newPartitions, slot);
-                    // does partition has a new master?
+                    // does partition have a new master?
                     if (!Objects.equals(newMasterPart.getMasterAddress(), currentPart.getMasterAddress())) {
                         RedisURI newUri = newMasterPart.getMasterAddress();
                         RedisURI oldUri = currentPart.getMasterAddress();
