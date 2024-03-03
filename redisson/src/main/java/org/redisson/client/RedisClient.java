@@ -204,10 +204,6 @@ public final class RedisClient {
         return commandTimeout;
     }
 
-    public EventLoopGroup getEventLoopGroup() {
-        return bootstrap.config().group();
-    }
-    
     public RedisClientConfig getConfig() {
         return config;
     }
@@ -273,7 +269,7 @@ public final class RedisClient {
             channelFuture.addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(final ChannelFuture future) throws Exception {
-                    if (bootstrap.config().group().isShuttingDown()) {
+                    if (isShutdown()) {
                         RedisConnectionException cause = new RedisConnectionException("RedisClient is shutdown");
                         r.completeExceptionally(cause);
                         return;
@@ -336,7 +332,7 @@ public final class RedisClient {
             channelFuture.addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(final ChannelFuture future) throws Exception {
-                    if (bootstrap.config().group().isShuttingDown()) {
+                    if (isShutdown()) {
                         RedisConnectionException cause = new RedisConnectionException("RedisClient is shutdown");
                         r.completeExceptionally(cause);
                         return;
@@ -384,8 +380,15 @@ public final class RedisClient {
             shutdown(result);
             return new CompletableFutureWrapper<>(result);
         }
-        
-        ChannelGroupFuture channelsFuture = channels.newCloseFuture();
+
+        for (Channel channel : channels) {
+            RedisConnection connection = RedisConnection.getFrom(channel);
+            if (connection != null) {
+                connection.closeAsync();
+            }
+        }
+
+        ChannelGroupFuture channelsFuture = channels.close();
         channelsFuture.addListener(new FutureListener<Void>() {
             @Override
             public void operationComplete(Future<Void> future) throws Exception {
@@ -397,19 +400,12 @@ public final class RedisClient {
                 shutdown(result);
             }
         });
-        
-        for (Channel channel : channels) {
-            RedisConnection connection = RedisConnection.getFrom(channel);
-            if (connection != null) {
-                connection.closeAsync();
-            }
-        }
 
         return new CompletableFutureWrapper<>(result);
     }
 
     public boolean isShutdown() {
-        return shutdown;
+        return shutdown || bootstrap.config().group().isShuttingDown();
     }
 
     private void shutdown(CompletableFuture<Void> result) {

@@ -243,8 +243,8 @@ public class RedisConnection implements RedisCommands {
             timeout = redisClient.getCommandTimeout();
         }
         
-        if (redisClient.getEventLoopGroup().isShuttingDown()) {
-            RedissonShutdownException cause = new RedissonShutdownException("Redisson is shutdown");
+        if (redisClient.isShutdown()) {
+            RedissonShutdownException cause = new RedissonShutdownException("Redis client " + redisClient.getAddr() + " is shutdown");
             return new CompletableFutureWrapper<>(cause);
         }
 
@@ -339,6 +339,10 @@ public class RedisConnection implements RedisCommands {
     }
 
     public ChannelFuture closeAsync() {
+        if (status == Status.CLOSED) {
+            return channel.closeFuture();
+        }
+
         status = Status.CLOSED;
         closeInternal();
         return channel.closeFuture();
