@@ -856,7 +856,11 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
                 RedisURI address = addresses.get(index);
 
-                log.debug("{} resolved to {} and {} selected", clusterNodeInfo.getAddress(), addresses, address);
+                if (addresses.size() == 1) {
+                    log.debug("{} resolved to {}", clusterNodeInfo.getAddress(), address);
+                } else {
+                    log.debug("{} resolved to {} and {} selected", clusterNodeInfo.getAddress(), addresses, address);
+                }
 
                 if (clusterNodeInfo.containsFlag(Flag.SLAVE)) {
                     ClusterPartition masterPartition = partitions.computeIfAbsent(masterId, k -> new ClusterPartition(masterId));
