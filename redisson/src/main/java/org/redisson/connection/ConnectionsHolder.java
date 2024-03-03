@@ -102,7 +102,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
             return;
         }
 
-        if (client != connection.getRedisClient()) {
+        if (client != null && client != connection.getRedisClient()) {
             connection.closeAsync();
             return;
         }
@@ -110,19 +110,6 @@ public class ConnectionsHolder<T extends RedisConnection> {
         connection.setLastUsageTime(System.nanoTime());
         freeConnections.add(connection);
         connection.decUsage();
-    }
-
-    private CompletionStage<T> connect() {
-        CompletionStage<T> future = connectionCallback.apply(client);
-        return future.whenComplete((conn, e) -> {
-            if (e != null) {
-                return;
-            }
-
-            log.debug("new connection created: {}", conn);
-            
-            allConnections.add(conn);
-        });
     }
 
     public Queue<T> getAllConnections() {
@@ -198,24 +185,24 @@ public class ConnectionsHolder<T extends RedisConnection> {
     }
 
     private void createConnection(CompletableFuture<T> promise) {
-        CompletionStage<T> connFuture = connect();
+        CompletionStage<T> connFuture = connectionCallback.apply(client);
         connFuture.whenComplete((conn, e) -> {
             if (e != null) {
-                promiseFailure(promise, e);
+                releaseConnection();
+
+                promise.completeExceptionally(e);
                 return;
             }
+
+            log.debug("new connection created: {}", conn);
+
+            allConnections.add(conn);
 
             if (changeUsage) {
                 promise.thenApply(c -> c.incUsage());
             }
             connectedSuccessful(promise, conn);
         });
-    }
-
-    private void promiseFailure(CompletableFuture<T> promise, Throwable cause) {
-        releaseConnection();
-
-        promise.completeExceptionally(cause);
     }
 
     private void connectedSuccessful(CompletableFuture<T> promise, T conn) {
