@@ -25,9 +25,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 /**
@@ -121,37 +121,32 @@ public class ConnectionsHolder<T extends RedisConnection> {
             return CompletableFuture.completedFuture(null);
         }
 
-        CompletableFuture<Void> initPromise = new CompletableFuture<>();
-        AtomicInteger initializedConnections = new AtomicInteger(minimumIdleSize);
-        createConnection(initPromise, minimumIdleSize, initializedConnections);
-        return initPromise;
+        CompletableFuture<Void> f = createConnection(minimumIdleSize, 1);
+        for (int i = 2; i <= minimumIdleSize; i++) {
+            int k = i;
+            f = f.thenCompose(r -> createConnection(minimumIdleSize, k));
+        }
+        return f.thenAccept(r -> {
+            log.info("{} connections initialized for {}", minimumIdleSize, client.getAddr());
+        });
     }
 
-    private void createConnection(CompletableFuture<Void> initPromise, int minimumIdleSize, AtomicInteger initializedConnections) {
-
+    private CompletableFuture<Void> createConnection(int minimumIdleSize, int index) {
         CompletableFuture<Void> f = acquireConnection();
-        f.thenAccept(r -> {
+        return f.thenCompose(r -> {
             CompletableFuture<T> promise = new CompletableFuture<>();
             createConnection(promise);
-            promise.whenComplete((conn, e) -> {
+            return promise.handle((conn, e) -> {
                 if (e == null) {
                     if (changeUsage) {
                         conn.decUsage();
                     }
-                    if (!initPromise.isDone()) {
-                        addConnection(conn);
-                    } else {
-                        conn.closeAsync();
-                    }
+                    addConnection(conn);
                 }
 
                 releaseConnection();
 
                 if (e != null) {
-                    if (initPromise.isDone()) {
-                        return;
-                    }
-
                     for (RedisConnection connection : getAllConnections()) {
                         if (!connection.isClosed()) {
                             connection.closeAsync();
@@ -159,7 +154,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
                     }
                     getAllConnections().clear();
 
-                    int totalInitializedConnections = minimumIdleSize - initializedConnections.get();
+                    int totalInitializedConnections = index - 1;
                     String errorMsg;
                     if (totalInitializedConnections == 0) {
                         errorMsg = "Unable to connect to Redis server: " + client.getAddr();
@@ -168,18 +163,9 @@ public class ConnectionsHolder<T extends RedisConnection> {
                                 + " of " + minimumIdleSize + " were initialized. Redis server: " + client.getAddr();
                     }
                     Exception cause = new RedisConnectionException(errorMsg, e);
-                    initPromise.completeExceptionally(cause);
-                    return;
+                    throw new CompletionException(cause);
                 }
-
-                int value = initializedConnections.decrementAndGet();
-                if (value == 0) {
-                    if (initPromise.complete(null)) {
-                        log.info("{} connections initialized for {}", minimumIdleSize, client.getAddr());
-                    }
-                } else if (value > 0 && !initPromise.isDone()) {
-                    createConnection(initPromise, minimumIdleSize, initializedConnections);
-                }
+                return null;
             });
         });
     }
