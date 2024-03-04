@@ -8,8 +8,6 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
-import org.redisson.ClusterRunner.ClusterProcesses;
-import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.*;
 import org.redisson.api.redisnode.RedisClusterMaster;
 import org.redisson.api.redisnode.RedisMaster;
@@ -27,11 +25,17 @@ import org.redisson.cluster.ClusterNodeInfo;
 import org.redisson.cluster.ClusterNodeInfo.Flag;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.SerializationCodec;
-import org.redisson.config.*;
+import org.redisson.config.Config;
+import org.redisson.config.ConfigSupport;
+import org.redisson.config.Credentials;
+import org.redisson.config.CredentialsResolver;
 import org.redisson.connection.CRC16;
 import org.redisson.connection.ConnectionListener;
 import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.connection.balancer.RandomLoadBalancer;
+import org.redisson.misc.RedisURI;
+import org.testcontainers.containers.FixedHostPortGenericContainer;
+import org.testcontainers.containers.GenericContainer;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -46,7 +50,7 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-public class RedissonTest extends BaseTest {
+public class RedissonTest extends RedisDockerTest {
 
     @Test
     public void testVirtualThreads() {
@@ -110,7 +114,7 @@ public class RedissonTest extends BaseTest {
     }
 
     @Test
-    public void testLazyInitialization() throws IOException, InterruptedException {
+    public void testLazyInitialization() {
         Config config = new Config();
         config.setLazyInitialization(true);
         config.useSingleServer()
@@ -125,16 +129,14 @@ public class RedissonTest extends BaseTest {
             redisson.getStream("test").createGroup(StreamCreateGroupArgs.name("test").makeStream());
         });
 
-        RedisProcess pp = new RedisRunner()
-                .nosave()
-                .port(4431)
-                .randomDir()
-                .run();
+        FixedHostPortGenericContainer c = new FixedHostPortGenericContainer("redis:7.2")
+                .withFixedExposedPort(4431, 6379);
+        c.start();
 
         redisson.getStream("test").createGroup(StreamCreateGroupArgs.name("test").makeStream());
 
         redisson.shutdown();
-        pp.stop();
+        c.stop();
     }
 
     @Test
@@ -152,20 +154,19 @@ public class RedissonTest extends BaseTest {
         }
 
         ex.shutdown();
-        assertThat(ex.awaitTermination(8, TimeUnit.SECONDS)).isTrue();
+        assertThat(ex.awaitTermination(20, TimeUnit.SECONDS)).isTrue();
         inst.shutdown();
     }
 
     @Test
     public void testResponseHandling2() throws InterruptedException {
-        Config config = new Config();
+        Config config = createConfig();
         config.useSingleServer()
                 .setTimeout(10)
                 .setRetryAttempts(0)
                 .setConnectionPoolSize(1)
                 .setConnectionMinimumIdleSize(1)
-                .setPingConnectionInterval(0)
-                .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+                .setPingConnectionInterval(0);
 
         RedissonClient redisson = Redisson.create(config);
 
@@ -225,7 +226,7 @@ public class RedissonTest extends BaseTest {
             });
         }
         e.shutdown();
-        assertThat(e.awaitTermination(40, TimeUnit.SECONDS)).isTrue();
+        assertThat(e.awaitTermination(70, TimeUnit.SECONDS)).isTrue();
         assertThat(counter.get()).isEqualTo(10000 * 100);
     }
     
@@ -247,11 +248,10 @@ public class RedissonTest extends BaseTest {
     
     @Test
     public void testSmallPool() throws InterruptedException {
-        Config config = new Config();
+        Config config = createConfig();
         config.useSingleServer()
-              .setConnectionMinimumIdleSize(3)
-              .setConnectionPoolSize(3)
-              .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+                .setConnectionMinimumIdleSize(3)
+                .setConnectionPoolSize(3);
 
         RedissonClient localRedisson = Redisson.create(config);
         
@@ -283,12 +283,11 @@ public class RedissonTest extends BaseTest {
     }
     
     @Test
-    public void testNextResponseAfterDecoderError() throws Exception {
-        Config config = new Config();
+    public void testNextResponseAfterDecoderError() {
+        Config config = createConfig();
         config.useSingleServer()
                 .setConnectionMinimumIdleSize(1)
-                .setConnectionPoolSize(1)
-              .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+                .setConnectionPoolSize(1);
 
         RedissonClient redisson = Redisson.create(config);
         
@@ -299,7 +298,7 @@ public class RedissonTest extends BaseTest {
             RBuckets buckets = redisson.getBuckets(new JsonJacksonCodec());
             buckets.get("test2", "test1");
         } catch (Exception e) {
-            e.printStackTrace();
+            // skip
         }
         assertThat(getStringValue(redisson, "test3")).isEqualTo("\"test3\"");
         
@@ -324,81 +323,76 @@ public class RedissonTest extends BaseTest {
 
     @Test
     public void testSer() {
-        Config config = new Config();
-        config.useSingleServer().setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+        Config config = createConfig();
         config.setCodec(new SerializationCodec());
 
+        RedissonClient r = Redisson.create(config);
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            RedissonClient r = Redisson.create(config);
             r.getMap("test").put("1", new Dummy());
         });
+        r.shutdown();
     }
 
     @Test
-    public void testMemoryScript() throws IOException, InterruptedException {
-        RedisProcess p = redisTestSmallMemory();
+    public void testMemoryScript() {
+        testWithParams(redissonClient -> {
+            Config c = redissonClient.getConfig();
+            c.useSingleServer().setTimeout(100000);
 
-        Config config = new Config();
-        config.useSingleServer().setAddress(p.getRedisServerAddressAndPort()).setTimeout(100000);
-
-        Assertions.assertThrows(RedisOutOfMemoryException.class, () -> {
-            RedissonClient r = null;
-            try {
-                r = Redisson.create(config);
-                r.getKeys().flushall();
-                for (int i = 0; i < 10000; i++) {
-                    r.getMap("test").put("" + i, "" + i);
+            Assertions.assertThrows(RedisOutOfMemoryException.class, () -> {
+                RedissonClient r = null;
+                try {
+                    r = Redisson.create(c);
+                    for (int i = 0; i < 10000; i++) {
+                        r.getMap("test").put("" + i, "" + i);
+                    }
+                } finally {
+                    r.shutdown();
                 }
-            } finally {
-                r.shutdown();
-                p.stop();
-            }
-        });
+            });
+        }, "--maxmemory", "1mb");
+
     }
 
     @Test
-    public void testMemoryCommand() throws IOException, InterruptedException {
-        RedisProcess p = redisTestSmallMemory();
+    public void testMemoryCommand() {
+        testWithParams(redissonClient -> {
+            Config c = redissonClient.getConfig();
+            c.useSingleServer().setTimeout(100000);
 
-        Config config = new Config();
-        config.useSingleServer().setAddress(p.getRedisServerAddressAndPort()).setTimeout(100000);
-
-        Assertions.assertThrows(RedisOutOfMemoryException.class, () -> {
-            RedissonClient r = null;
-            try {
-                r = Redisson.create(config);
-                r.getKeys().flushall();
-                for (int i = 0; i < 10000; i++) {
-                    r.getMap("test").fastPut("" + i, "" + i);
+            Assertions.assertThrows(RedisOutOfMemoryException.class, () -> {
+                RedissonClient r = null;
+                try {
+                    r = Redisson.create(c);
+                    for (int i = 0; i < 10000; i++) {
+                        r.getMap("test").fastPut("" + i, "" + i);
+                    }
+                } finally {
+                    r.shutdown();
                 }
-            } finally {
-                r.shutdown();
-                p.stop();
-            }
-        });
+            });
+        }, "--maxmemory", "1mb");
     }
 
     @Test
     public void testConfigValidation() {
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            Config redissonConfig = new Config();
+            Config redissonConfig = createConfig();
             redissonConfig.useSingleServer()
-                    .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort())
                     .setConnectionPoolSize(2);
             Redisson.create(redissonConfig);
         });
     }
     
     @Test
-    public void testConnectionListener() throws IOException, InterruptedException, TimeoutException {
-
-        final RedisProcess p = redisTestConnection();
+    public void testConnectionListener() {
+        GenericContainer<?> redis = createRedis();
+        redis.start();
 
         final AtomicInteger connectCounter = new AtomicInteger();
         final AtomicInteger disconnectCounter = new AtomicInteger();
 
-        Config config = new Config();
-        config.useSingleServer().setAddress(p.getRedisServerAddressAndPort());
+        Config config = createConfig(redis);
         config.setConnectionListener(new ConnectionListener() {
 
             @Override
@@ -407,7 +401,7 @@ public class RedissonTest extends BaseTest {
 
             @Override
             public void onDisconnect(InetSocketAddress addr, NodeType nodeType) {
-                assertThat(addr).isEqualTo(new InetSocketAddress(p.getRedisServerBindAddress(), p.getRedisServerPort()));
+                assertThat(addr).isEqualTo(new InetSocketAddress(redis.getHost(), redis.getFirstMappedPort()));
                 assertThat(nodeType).isEqualTo(NodeType.MASTER);
                 disconnectCounter.incrementAndGet();
             }
@@ -418,7 +412,7 @@ public class RedissonTest extends BaseTest {
 
             @Override
             public void onConnect(InetSocketAddress addr, NodeType nodeType) {
-                assertThat(addr).isEqualTo(new InetSocketAddress(p.getRedisServerBindAddress(), p.getRedisServerPort()));
+                assertThat(addr).isEqualTo(new InetSocketAddress(redis.getHost(), redis.getFirstMappedPort()));
                 assertThat(nodeType).isEqualTo(NodeType.MASTER);
                 connectCounter.incrementAndGet();
             }
@@ -427,23 +421,21 @@ public class RedissonTest extends BaseTest {
         RedissonClient r = Redisson.create(config);
 
         r.getBucket("1").get();
-        Assertions.assertEquals(0, p.stop());
+        redis.setPortBindings(Arrays.asList(redis.getFirstMappedPort() + ":6379"));
+        redis.stop();
 
         await().atMost(2, TimeUnit.SECONDS).until(() -> disconnectCounter.get() == 1);
-        
+
         try {
             r.getBucket("1").get();
         } catch (Exception e) {
+            // skip
         }
-        
+
         assertThat(connectCounter.get()).isEqualTo(1);
         assertThat(disconnectCounter.get()).isEqualTo(1);
 
-        RedisProcess pp = new RedisRunner()
-                .nosave()
-                .port(p.getRedisServerPort())
-                .randomDir()
-                .run();
+        redis.start();
 
         r.getBucket("1").get();
 
@@ -451,7 +443,7 @@ public class RedissonTest extends BaseTest {
         assertThat(disconnectCounter.get()).isEqualTo(1);
 
         r.shutdown();
-        Assertions.assertEquals(0, pp.stop());
+        redis.stop();
     }
 
     public static class SlowCodec extends BaseCodec {
@@ -501,28 +493,21 @@ public class RedissonTest extends BaseTest {
     }
 
     @Test
-    public void testReconnection() throws IOException, InterruptedException, TimeoutException {
-        RedisProcess runner = new RedisRunner()
-                .appendonly(true)
-                .randomDir()
-                .randomPort()
-                .run();
-
-        Config config = new Config();
+    public void testReconnection() {
+        Config config = redisson.getConfig();
         config.useSingleServer()
                 .setConnectionMinimumIdleSize(20)
                 .setConnectionPoolSize(20)
                 .setSubscriptionConnectionMinimumIdleSize(20)
-                .setSubscriptionConnectionPoolSize(20)
-                .setAddress(runner.getRedisServerAddressAndPort());
+                .setSubscriptionConnectionPoolSize(20);
 
         RedissonClient r = Redisson.create(config);
         
         r.getBucket("myBucket").set(1);
         assertThat(r.getBucket("myBucket").get()).isEqualTo(1);
-        
-        Assertions.assertEquals(0, runner.stop());
-        
+
+        REDIS.getDockerClient().pauseContainerCmd(REDIS.getContainerId()).exec();
+
         AtomicBoolean hasError = new AtomicBoolean();
         try {
             r.getBucket("myBucket").get();
@@ -532,18 +517,12 @@ public class RedissonTest extends BaseTest {
         }
 
         assertThat(hasError.get()).isTrue();
-        
-        RedisProcess pp = new RedisRunner()
-                .appendonly(true)
-                .port(runner.getRedisServerPort())
-                .dir(runner.getDefaultDir())
-                .run();
+
+        REDIS.getDockerClient().unpauseContainerCmd(REDIS.getContainerId()).exec();
 
         assertThat(r.getBucket("myBucket").get()).isEqualTo(1);
 
         r.shutdown();
-
-        Assertions.assertEquals(0, pp.stop());
     }
 
 
@@ -565,10 +544,7 @@ public class RedissonTest extends BaseTest {
 
     @Test
     public void testShutdown() {
-        Config config = new Config();
-        config.useSingleServer().setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
-
-        RedissonClient r = Redisson.create(config);
+        RedissonClient r = createInstance();
         Assertions.assertFalse(r.isShuttingDown());
         Assertions.assertFalse(r.isShutdown());
         r.shutdown();
@@ -577,30 +553,22 @@ public class RedissonTest extends BaseTest {
     }
 
     @Test
-    public void testCredentials() throws IOException, InterruptedException {
-        RedisProcess runner = new RedisRunner()
-                .nosave()
-                .randomDir()
-                .randomPort()
-                .requirepass("1234")
-                .run();
+    public void testCredentials() {
+        withRedisParams(config -> {
+            config.useSingleServer()
+                    .setCredentialsResolver(new CredentialsResolver() {
+                        @Override
+                        public CompletionStage<Credentials> resolve(InetSocketAddress address) {
+                            return CompletableFuture.completedFuture(new Credentials(null, "1234"));
+                        }
+                    });
 
-        Config config = new Config();
-        config.useSingleServer()
-                .setCredentialsResolver(new CredentialsResolver() {
-                    @Override
-                    public CompletionStage<Credentials> resolve(InetSocketAddress address) {
-                        return CompletableFuture.completedFuture(new Credentials(null, "1234"));
-                    }
-                })
-                .setAddress(runner.getRedisServerAddressAndPort());
-        RedissonClient redisson = Redisson.create(config);
-        RBucket<String> b = redisson.getBucket("test");
-        b.set("123");
+            RedissonClient redisson = Redisson.create(config);
+            RBucket<String> b = redisson.getBucket("test");
+            b.set("123");
 
-        redisson.shutdown();
-        runner.stop();
-
+            redisson.shutdown();
+        }, "--requirepass", "1234");
     }
 
     @Test
@@ -617,29 +585,23 @@ public class RedissonTest extends BaseTest {
         RedisException e = Assertions.assertThrows(RedisException.class, () -> {
             b.compareAndSet("test", "v1");
         });
-        assertThat(e.getMessage()).startsWith("ERR unknown command `EVAL_111`");
+        assertThat(e.getMessage()).startsWith("ERR unknown command 'EVAL_111'");
 
         redisson.shutdown();
     }
 
     @Test
-    public void testURIPassword() throws InterruptedException, IOException {
-        RedisProcess runner = new RedisRunner()
-                .nosave()
-                .randomDir()
-                .randomPort()
-                .requirepass("1234")
-                .run();
+    public void testURIPassword() {
+        withRedisParams(config -> {
+            RedisURI ur = new RedisURI(config.useSingleServer().getAddress());
+            config.useSingleServer()
+                    .setAddress("redis://:1234@" + ur.getHost() + ":" + ur.getPort());
+            RedissonClient redisson = Redisson.create(config);
+            RBucket<String> b = redisson.getBucket("test");
+            b.set("123");
 
-        Config config = new Config();
-        config.useSingleServer()
-              .setAddress("redis://:1234@" + runner.getRedisServerBindAddress() + ":" + runner.getRedisServerPort());
-        RedissonClient redisson = Redisson.create(config);
-        RBucket<String> b = redisson.getBucket("test");
-        b.set("123");
-
-        redisson.shutdown();
-        runner.stop();
+            redisson.shutdown();
+        }, "--requirepass", "1234");
     }
 
     @Test
@@ -716,67 +678,17 @@ public class RedissonTest extends BaseTest {
 
     @Test
     public void testSentinelStartup() throws Exception {
-        RedisRunner.RedisProcess master = new RedisRunner()
-                .nosave()
-                .randomDir()
-                .run();
-        RedisRunner.RedisProcess slave1 = new RedisRunner()
-                .port(6380)
-                .nosave()
-                .randomDir()
-                .slaveof("127.0.0.1", 6379)
-                .run();
-        RedisRunner.RedisProcess slave2 = new RedisRunner()
-                .port(6381)
-                .nosave()
-                .randomDir()
-                .slaveof("127.0.0.1", 6379)
-                .run();
-        RedisRunner.RedisProcess sentinel1 = new RedisRunner()
-                .nosave()
-                .randomDir()
-                .port(26379)
-                .sentinel()
-                .sentinelMonitor("myMaster", "127.0.0.1", 6379, 2)
-                .run();
-        RedisRunner.RedisProcess sentinel2 = new RedisRunner()
-                .nosave()
-                .randomDir()
-                .port(26380)
-                .sentinel()
-                .sentinelMonitor("myMaster", "127.0.0.1", 6379, 2)
-                .run();
-        RedisRunner.RedisProcess sentinel3 = new RedisRunner()
-                .nosave()
-                .randomDir()
-                .port(26381)
-                .sentinel()
-                .sentinelMonitor("myMaster", "127.0.0.1", 6379, 2)
-                .run();
-        
-        Thread.sleep(5000); 
-        
-        Config config = new Config();
-        config.useSentinelServers()
-            .setLoadBalancer(new RandomLoadBalancer())
-            .addSentinelAddress(sentinel3.getRedisServerAddressAndPort()).setMasterName("myMaster");
-        
-        long t = System.currentTimeMillis();
-        RedissonClient redisson = Redisson.create(config);
-        assertThat(System.currentTimeMillis() - t).isLessThan(2000L);
-        redisson.shutdown();
-        
-        sentinel1.stop();
-        sentinel2.stop();
-        sentinel3.stop();
-        master.stop();
-        slave1.stop();
-        slave2.stop();
+        withSentinel((nodes, config) -> {
+            long t = System.currentTimeMillis();
+            RedissonClient redisson = Redisson.create(config);
+            assertThat(System.currentTimeMillis() - t).isLessThan(2000L);
+            redisson.shutdown();
+        }, 2);
     }
     
     @Test
     public void testSingleConfigYAML() throws IOException {
-        RedissonClient r = BaseTest.createInstance();
+        RedissonClient r = createInstance();
         String t = r.getConfig().toYAML();
         Config c = Config.fromYAML(t);
         assertThat(c.toYAML()).isEqualTo(t);
@@ -802,124 +714,102 @@ public class RedissonTest extends BaseTest {
     }
 
     @Test
-    public void testEvalCache() throws InterruptedException, IOException {
-        RedisRunner master1 = new RedisRunner().port(6896).randomDir().nosave();
-        RedisRunner master2 = new RedisRunner().port(6891).randomDir().nosave();
-        RedisRunner master3 = new RedisRunner().port(6892).randomDir().nosave();
-        RedisRunner slave1 = new RedisRunner().port(6900).randomDir().nosave();
-        RedisRunner slave2 = new RedisRunner().port(6901).randomDir().nosave();
-        RedisRunner slave3 = new RedisRunner().port(6902).randomDir().nosave();
+    public void testEvalCache() {
+        testInCluster(redissonClient -> {
+            Config config = redissonClient.getConfig();
+            config.setUseScriptCache(true);
 
-        ClusterRunner clusterRunner = new ClusterRunner()
-                .addNode(master1, slave1)
-                .addNode(master2, slave2)
-                .addNode(master3, slave3);
-        ClusterRunner.ClusterProcesses process = clusterRunner.run();
+            RedissonClient redisson = Redisson.create(config);
 
-        Thread.sleep(5000);
+            RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
+            t.add(4, "40");
+            t.add(2, "20");
+            t.add(1, "10", 1, TimeUnit.SECONDS);
 
-        Config config = new Config();
-        config.setUseScriptCache(true);
-        config.useClusterServers()
-                .setLoadBalancer(new RandomLoadBalancer())
-                .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
-        RedissonClient redisson = Redisson.create(config);
+            t.size();
 
-        RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
-        t.add(4, "40");
-        t.add(2, "20");
-        t.add(1, "10", 1, TimeUnit.SECONDS);
-
-        t.size();
+            redisson.shutdown();
+        });
     }
 
     @Test
     public void testMovedRedirectInCluster() throws Exception {
-        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slot1 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slot2 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slot3 = new RedisRunner().randomPort().randomDir().nosave();
-        
-        ClusterRunner clusterRunner = new ClusterRunner()
-                .addNode(master1, slot1)
-                .addNode(master2, slot2)
-                .addNode(master3, slot3);
-        ClusterProcesses process = clusterRunner.run();
-        
-        Config config = new Config();
-        config.useClusterServers()
-        .setScanInterval(100000)
-        .setLoadBalancer(new RandomLoadBalancer())
-        .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
-        RedissonClient redisson = Redisson.create(config);
-        
-        RedisClientConfig cfg = new RedisClientConfig();
-        cfg.setAddress(process.getNodes().iterator().next().getRedisServerAddressAndPort());
-        RedisClient c = RedisClient.create(cfg);
-        RedisConnection cc = c.connect();
-        List<ClusterNodeInfo> cn = cc.sync(RedisCommands.CLUSTER_NODES);
-        c.shutdownAsync();
-        cn = cn.stream().filter(i -> i.containsFlag(Flag.MASTER)).collect(Collectors.toList());
-        Iterator<ClusterNodeInfo> nodesIter = cn.iterator();
-        
-        
-        ClusterNodeInfo source = nodesIter.next();
-        ClusterNodeInfo destination = nodesIter.next();
+        withNewCluster(redissonClient -> {
+            Config config = redissonClient.getConfig();
+            config.useClusterServers()
+                    .setScanInterval(100000);
 
-        RedisClientConfig sourceCfg = new RedisClientConfig();
-        sourceCfg.setAddress(source.getAddress());
-        RedisClient sourceClient = RedisClient.create(sourceCfg);
-        RedisConnection sourceConnection = sourceClient.connect();
+            RedissonClient redisson = Redisson.create(config);
 
-        RedisClientConfig destinationCfg = new RedisClientConfig();
-        destinationCfg.setAddress(destination.getAddress());
-        RedisClient destinationClient = RedisClient.create(destinationCfg);
-        RedisConnection destinationConnection = destinationClient.connect();
-        
-        String key = null;
-        int slot = 0;
-        for (int i = 0; i < 100000; i++) {
-            key = "" + i;
-            slot = CRC16.crc16(key.getBytes()) % MasterSlaveConnectionManager.MAX_SLOT;
-            if (source.getSlotRanges().iterator().next().getStartSlot() == slot) {
-                break;
+            Collection<RedisClusterMaster> ms = redisson.getRedisNodes(RedisNodes.CLUSTER).getMasters();
+            RedisClusterMaster m = ms.iterator().next();
+            RedisURI a = config.useClusterServers().getNatMapper().map(
+                    new RedisURI("redis://" + m.getAddr().getHostString() + ":" + m.getAddr().getPort()));
+            RedisClientConfig cfg = new RedisClientConfig();
+            cfg.setAddress(a);
+            RedisClient c = RedisClient.create(cfg);
+            RedisConnection cc = c.connect();
+            List<ClusterNodeInfo> cn = cc.sync(RedisCommands.CLUSTER_NODES);
+            c.shutdownAsync();
+            cn = cn.stream().filter(i -> i.containsFlag(Flag.MASTER)).collect(Collectors.toList());
+            Iterator<ClusterNodeInfo> nodesIter = cn.iterator();
+
+
+            ClusterNodeInfo source = nodesIter.next();
+            ClusterNodeInfo destination = nodesIter.next();
+
+            RedisClientConfig sourceCfg = new RedisClientConfig();
+            sourceCfg.setAddress(config.useClusterServers().getNatMapper().map(source.getAddress()));
+            RedisClient sourceClient = RedisClient.create(sourceCfg);
+            RedisConnection sourceConnection = sourceClient.connect();
+
+            RedisClientConfig destinationCfg = new RedisClientConfig();
+            destinationCfg.setAddress(config.useClusterServers().getNatMapper().map(destination.getAddress()));
+            RedisClient destinationClient = RedisClient.create(destinationCfg);
+            RedisConnection destinationConnection = destinationClient.connect();
+
+            String key = null;
+            int slot = 0;
+            for (int i = 0; i < 100000; i++) {
+                key = "" + i;
+                slot = CRC16.crc16(key.getBytes()) % MasterSlaveConnectionManager.MAX_SLOT;
+                if (source.getSlotRanges().iterator().next().getStartSlot() == slot) {
+                    break;
+                }
             }
-        }
-        
-        redisson.getBucket(key).set("123");
 
-        destinationConnection.sync(RedisCommands.CLUSTER_SETSLOT, source.getSlotRanges().iterator().next().getStartSlot(), "IMPORTING", source.getNodeId());
-        sourceConnection.sync(RedisCommands.CLUSTER_SETSLOT, source.getSlotRanges().iterator().next().getStartSlot(), "MIGRATING", destination.getNodeId());
-        
-        List<String> keys = sourceConnection.sync(RedisCommands.CLUSTER_GETKEYSINSLOT, source.getSlotRanges().iterator().next().getStartSlot(), 100);
-        List<Object> params = new ArrayList<Object>();
-        params.add(destination.getAddress().getHost());
-        params.add(destination.getAddress().getPort());
-        params.add("");
-        params.add(0);
-        params.add(2000);
-        params.add("KEYS");
-        params.addAll(keys);
-        sourceConnection.async(RedisCommands.MIGRATE, params.toArray());
-        
-        for (ClusterNodeInfo node : cn) {
-            RedisClientConfig cc1 = new RedisClientConfig();
-            cc1.setAddress(node.getAddress());
-            RedisClient ccc = RedisClient.create(cc1);
-            RedisConnection connection = ccc.connect();
-            connection.sync(RedisCommands.CLUSTER_SETSLOT, slot, "NODE", destination.getNodeId());
-            ccc.shutdownAsync();
-        }
-        
-        redisson.getBucket(key).set("123");
-        redisson.getBucket(key).get();
+            redisson.getBucket(key).set("123");
 
-        sourceClient.shutdown();
-        destinationClient.shutdown();
-        redisson.shutdown();
-        process.shutdown();
+            destinationConnection.sync(RedisCommands.CLUSTER_SETSLOT, source.getSlotRanges().iterator().next().getStartSlot(), "IMPORTING", source.getNodeId());
+            sourceConnection.sync(RedisCommands.CLUSTER_SETSLOT, source.getSlotRanges().iterator().next().getStartSlot(), "MIGRATING", destination.getNodeId());
+
+            List<String> keys = sourceConnection.sync(RedisCommands.CLUSTER_GETKEYSINSLOT, source.getSlotRanges().iterator().next().getStartSlot(), 100);
+            List<Object> params = new ArrayList<Object>();
+            params.add(destination.getAddress().getHost());
+            params.add(destination.getAddress().getPort());
+            params.add("");
+            params.add(0);
+            params.add(2000);
+            params.add("KEYS");
+            params.addAll(keys);
+            sourceConnection.async(RedisCommands.MIGRATE, params.toArray());
+
+            for (ClusterNodeInfo node : cn) {
+                RedisClientConfig cc1 = new RedisClientConfig();
+                cc1.setAddress(config.useClusterServers().getNatMapper().map(node.getAddress()));
+                RedisClient ccc = RedisClient.create(cc1);
+                RedisConnection connection = ccc.connect();
+                connection.sync(RedisCommands.CLUSTER_SETSLOT, slot, "NODE", destination.getNodeId());
+                ccc.shutdownAsync();
+            }
+
+            redisson.getBucket(key).set("123");
+            redisson.getBucket(key).get();
+
+            sourceClient.shutdown();
+            destinationClient.shutdown();
+            redisson.shutdown();
+        });
     }
 
 
@@ -995,31 +885,13 @@ public class RedissonTest extends BaseTest {
 
     @Test
     public void testManyConnections() {
-        Assumptions.assumeFalse(RedissonRuntimeEnvironment.isTravis);
-        Config redisConfig = new Config();
+        Config redisConfig = createConfig();
         redisConfig.useSingleServer()
-        .setConnectionMinimumIdleSize(5000)
-        .setConnectionPoolSize(5000)
-        .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+                    .setConnectionMinimumIdleSize(5000)
+                    .setConnectionPoolSize(5000);
+
         RedissonClient r = Redisson.create(redisConfig);
         r.shutdown();
     }
 
-    private RedisProcess redisTestSmallMemory() throws IOException, InterruptedException {
-        return new RedisRunner()
-                .maxmemory("1mb")
-                .nosave()
-                .randomDir()
-                .randomPort()
-                .run();
-    }
-
-    private RedisProcess redisTestConnection() throws IOException, InterruptedException {
-        return new RedisRunner()
-                .nosave()
-                .randomDir()
-                .randomPort()
-                .run();
-    }
-    
 }

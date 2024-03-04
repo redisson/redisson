@@ -1,5 +1,10 @@
 package org.redisson;
 
+import com.github.dockerjava.api.command.InspectContainerResponse;
+import com.github.dockerjava.api.model.ContainerNetwork;
+import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.PortBinding;
+import com.github.dockerjava.api.model.Ports;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.redisson.api.NatMapper;
@@ -7,20 +12,24 @@ import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 import org.redisson.config.Protocol;
 import org.redisson.misc.RedisURI;
+import org.testcontainers.containers.ContainerState;
+import org.testcontainers.containers.DockerComposeContainer;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.Network;
 import org.testcontainers.containers.startupcheck.MinimumDurationRunningStartupCheckStrategy;
+import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 
+import java.io.File;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public class RedisDockerTest {
 
     protected static final String NOTIFY_KEYSPACE_EVENTS = "--notify-keyspace-events";
 
-    private static final GenericContainer<?> REDIS = createRedis();
+    protected static final GenericContainer<?> REDIS = createRedis();
 
     protected static final Protocol protocol = Protocol.RESP2;
 
@@ -35,9 +44,16 @@ public class RedisDockerTest {
     }
 
     protected static GenericContainer<?> createRedis(String version) {
+        return createRedis(version, "--save", "");
+    }
+
+    protected static GenericContainer<?> createRedis(String version, String... params) {
         return new GenericContainer<>("redis:" + version)
                 .withCreateContainerCmdModifier(cmd -> {
-                    cmd.withCmd("redis-server", "--save", "''");
+                    List<String> args = new ArrayList<>();
+                    args.add("redis-server");
+                    args.addAll(Arrays.asList(params));
+                    cmd.withCmd(args);
                 })
                 .withExposedPorts(6379);
     }
@@ -65,16 +81,43 @@ public class RedisDockerTest {
     }
 
     protected static Config createConfig() {
+        return createConfig(REDIS);
+    }
+
+    protected static Config createConfig(GenericContainer<?> container) {
         Config config = new Config();
         config.setProtocol(protocol);
         config.useSingleServer()
-                .setAddress("redis://127.0.0.1:" + REDIS.getFirstMappedPort());
+                .setAddress("redis://127.0.0.1:" + container.getFirstMappedPort());
         return config;
     }
 
     protected static RedissonClient createInstance() {
         Config config = createConfig();
         return Redisson.create(config);
+    }
+
+    protected void withRedisParams(Consumer<Config> redissonCallback, String... params) {
+        GenericContainer<?> redis =
+                new GenericContainer<>("redis:7.2")
+                        .withCreateContainerCmdModifier(cmd -> {
+                            List<String> args = new ArrayList<>();
+                            args.add("redis-server");
+                            args.addAll(Arrays.asList(params));
+                            cmd.withCmd(args);
+                        })
+                        .withExposedPorts(6379);
+        redis.start();
+
+        Config config = new Config();
+        config.setProtocol(protocol);
+        config.useSingleServer().setAddress("redis://127.0.0.1:" + redis.getFirstMappedPort());
+
+        try {
+            redissonCallback.accept(config);
+        } finally {
+            redis.stop();
+        }
     }
 
     protected void testWithParams(Consumer<RedissonClient> redissonCallback, String... params) {
@@ -100,7 +143,6 @@ public class RedisDockerTest {
             redisson.shutdown();
             redis.stop();
         }
-
     }
 
     protected void testInCluster(Consumer<RedissonClient> redissonCallback) {
@@ -135,6 +177,202 @@ public class RedisDockerTest {
         if (redissonCluster != null) {
             redissonCluster.getKeys().flushall();
         }
+    }
+
+    protected void withSentinel(BiConsumer<List<GenericContainer<?>>, Config> callback, int slaves) throws InterruptedException {
+        Network network = Network.newNetwork();
+
+        List<GenericContainer<? extends GenericContainer<?>>> nodes = new ArrayList<>();
+
+        GenericContainer<?> master =
+                new GenericContainer<>("bitnami/redis:7.2.4")
+                        .withNetwork(network)
+                        .withEnv("REDIS_REPLICATION_MODE", "master")
+                        .withEnv("ALLOW_EMPTY_PASSWORD", "yes")
+                        .withNetworkAliases("redis")
+                        .withExposedPorts(6379);
+        master.start();
+        assert master.getNetwork() == network;
+        int masterPort = master.getFirstMappedPort();
+        master.withCreateContainerCmdModifier(cmd -> {
+            cmd.getHostConfig().withPortBindings(
+                    new PortBinding(Ports.Binding.bindPort(Integer.valueOf(masterPort)),
+                            cmd.getExposedPorts()[0]));
+        });
+        nodes.add(master);
+
+        for (int i = 0; i < slaves; i++) {
+            GenericContainer<?> slave =
+                    new GenericContainer<>("bitnami/redis:7.2.4")
+                            .withNetwork(network)
+                            .withEnv("REDIS_REPLICATION_MODE", "slave")
+                            .withEnv("REDIS_MASTER_HOST", "redis")
+                            .withEnv("ALLOW_EMPTY_PASSWORD", "yes")
+                            .withNetworkAliases("slave" + i)
+                            .withExposedPorts(6379);
+            slave.start();
+            int slavePort = slave.getFirstMappedPort();
+            slave.withCreateContainerCmdModifier(cmd -> {
+                cmd.getHostConfig().withPortBindings(
+                        new PortBinding(Ports.Binding.bindPort(Integer.valueOf(slavePort)),
+                                cmd.getExposedPorts()[0]));
+            });
+            nodes.add(slave);
+        }
+
+        GenericContainer<?> sentinel1 =
+                new GenericContainer<>("bitnami/redis-sentinel:7.2.4")
+
+                        .withNetwork(network)
+                        .withEnv("REDIS_SENTINEL_DOWN_AFTER_MILLISECONDS", "5000")
+                        .withEnv("REDIS_SENTINEL_FAILOVER_TIMEOUT", "10000")
+                        .withNetworkAliases("sentinel1")
+                        .withExposedPorts(26379);
+        sentinel1.start();
+        int sentinel1Port = sentinel1.getFirstMappedPort();
+        sentinel1.withCreateContainerCmdModifier(cmd -> {
+            cmd.getHostConfig().withPortBindings(
+                    new PortBinding(Ports.Binding.bindPort(Integer.valueOf(sentinel1Port)),
+                            cmd.getExposedPorts()[0]));
+        });
+        nodes.add(sentinel1);
+
+        GenericContainer<?> sentinel2 =
+                new GenericContainer<>("bitnami/redis-sentinel:7.2.4")
+                        .withNetwork(network)
+                        .withEnv("REDIS_SENTINEL_DOWN_AFTER_MILLISECONDS", "5000")
+                        .withEnv("REDIS_SENTINEL_FAILOVER_TIMEOUT", "10000")
+                        .withNetworkAliases("sentinel2")
+                        .withExposedPorts(26379);
+        sentinel2.start();
+        int sentinel2Port = sentinel2.getFirstMappedPort();
+        sentinel2.withCreateContainerCmdModifier(cmd -> {
+            cmd.getHostConfig().withPortBindings(
+                    new PortBinding(Ports.Binding.bindPort(Integer.valueOf(sentinel2Port)),
+                            cmd.getExposedPorts()[0]));
+        });
+        nodes.add(sentinel2);
+
+        GenericContainer<?> sentinel3 =
+                new GenericContainer<>("bitnami/redis-sentinel:7.2.4")
+                        .withNetwork(network)
+                        .withEnv("REDIS_SENTINEL_DOWN_AFTER_MILLISECONDS", "5000")
+                        .withEnv("REDIS_SENTINEL_FAILOVER_TIMEOUT", "10000")
+                        .withNetworkAliases("sentinel3")
+                        .withExposedPorts(26379);
+        sentinel3.start();
+        int sentinel3Port = sentinel3.getFirstMappedPort();
+        sentinel3.withCreateContainerCmdModifier(cmd -> {
+            cmd.getHostConfig().withPortBindings(
+                    new PortBinding(Ports.Binding.bindPort(Integer.valueOf(sentinel3Port)),
+                            cmd.getExposedPorts()[0]));
+        });
+        nodes.add(sentinel3);
+
+        Thread.sleep(5000);
+
+        Config config = new Config();
+        config.setProtocol(protocol);
+        config.useSentinelServers()
+                .setNatMapper(new NatMapper() {
+
+                    @Override
+                    public RedisURI map(RedisURI uri) {
+                        for (GenericContainer<? extends GenericContainer<?>> node : nodes) {
+                            if (node.getContainerInfo() == null) {
+                                continue;
+                            }
+
+                            Ports.Binding[] mappedPort = node.getContainerInfo().getNetworkSettings()
+                                    .getPorts().getBindings().get(new ExposedPort(uri.getPort()));
+
+                            Map<String, ContainerNetwork> ss = node.getContainerInfo().getNetworkSettings().getNetworks();
+                            ContainerNetwork s = ss.values().iterator().next();
+
+                            if (uri.getPort() == 6379 && node.getNetworkAliases().contains("slave0")) {
+                                return new RedisURI(uri.getScheme(), "127.0.0.1", Integer.valueOf(mappedPort[0].getHostPortSpec()));
+                            }
+
+                            if (mappedPort != null
+                                    && s.getIpAddress().equals(uri.getHost())) {
+                                return new RedisURI(uri.getScheme(), "127.0.0.1", Integer.valueOf(mappedPort[0].getHostPortSpec()));
+                            }
+                        }
+                        return uri;
+                    }
+                })
+                .addSentinelAddress("redis://127.0.0.1:" + sentinel1.getFirstMappedPort())
+                .setMasterName("mymaster");
+
+        callback.accept(nodes, config);
+
+        nodes.forEach(n -> n.stop());
+        network.close();
+    }
+
+    protected void withNewCluster(Consumer<RedissonClient> callback) {
+        List<InspectContainerResponse> nodes = new ArrayList<>();
+
+        LogMessageWaitStrategy wait2 = new LogMessageWaitStrategy().withRegEx(".*REPLICA\ssync\\:\sFinished\swith\ssuccess.*");
+
+        DockerComposeContainer environment =
+                new DockerComposeContainer(new File("src/test/resources/docker-compose.yml"))
+                        .withExposedService("redis-node-0", 6379)
+                        .withExposedService("redis-node-1", 6379)
+                        .withExposedService("redis-node-2", 6379)
+                        .withExposedService("redis-node-3", 6379)
+                        .withExposedService("redis-node-4", 6379)
+                        .withExposedService("redis-node-5", 6379, wait2);
+
+        environment.start();
+
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        for (int i = 0; i < 6; i++) {
+            Optional<ContainerState> cc = environment.getContainerByServiceName("redis-node-" + i);
+            nodes.add(cc.get().getContainerInfo());
+        }
+
+        Optional<ContainerState> cc2 = environment.getContainerByServiceName("redis-node-0");
+
+        Config config = new Config();
+        config.useClusterServers()
+                .setNatMapper(new NatMapper() {
+
+                    @Override
+                    public RedisURI map(RedisURI uri) {
+                        for (InspectContainerResponse node : nodes) {
+                            Ports.Binding[] mappedPort = node.getNetworkSettings()
+                                    .getPorts().getBindings().get(new ExposedPort(uri.getPort()));
+
+                            Map<String, ContainerNetwork> ss = node.getNetworkSettings().getNetworks();
+                            ContainerNetwork s = ss.values().iterator().next();
+
+                            if (mappedPort != null
+                                    && s.getIpAddress().equals(uri.getHost())) {
+                                return new RedisURI(uri.getScheme(), "127.0.0.1", Integer.valueOf(mappedPort[0].getHostPortSpec()));
+                            }
+                        }
+                        return uri;
+                    }
+                })
+                .addNodeAddress("redis://127.0.0.1:" + cc2.get().getFirstMappedPort());
+
+        RedissonClient redisson = Redisson.create(config);
+
+        callback.accept(redisson);
+        redisson.shutdown();
+        environment.stop();
+    }
+
+    protected void restart(GenericContainer<?> redis) {
+        redis.setPortBindings(Arrays.asList(redis.getFirstMappedPort() + ":6379"));
+        redis.stop();
+        redis.start();
     }
 
 }

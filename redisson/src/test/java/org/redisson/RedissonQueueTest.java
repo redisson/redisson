@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RQueue;
 
-public class RedissonQueueTest extends BaseTest {
+public class RedissonQueueTest extends RedisDockerTest {
 
     <T> RQueue<T> getQueue() {
         return redisson.getQueue("queue");

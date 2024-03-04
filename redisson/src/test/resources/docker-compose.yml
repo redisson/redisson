@@ -1,0 +1,100 @@
+# Copyright VMware, Inc.
+# SPDX-License-Identifier: APACHE-2.0
+
+version: '2'
+
+networks:
+  app-tier:
+    driver: bridge
+
+services:
+  redis-node-0:
+    image: docker.io/bitnami/redis-cluster:7.2.4
+    environment:
+      - 'ALLOW_EMPTY_PASSWORD=yes'
+      - 'REDIS_NODES=redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5'
+    ports:
+      - '6379'
+    networks:
+      - app-tier
+
+  redis-node-1:
+    image: docker.io/bitnami/redis-cluster:7.2.4
+    environment:
+      - 'ALLOW_EMPTY_PASSWORD=yes'
+      - 'REDIS_NODES=redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5'
+    ports:
+      - '6379'
+    networks:
+      - app-tier
+
+  redis-node-2:
+    image: docker.io/bitnami/redis-cluster:7.2.4
+    environment:
+      - 'ALLOW_EMPTY_PASSWORD=yes'
+      - 'REDIS_NODES=redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5'
+    ports:
+      - '6379'
+    networks:
+      - app-tier
+
+  redis-node-3:
+    image: docker.io/bitnami/redis-cluster:7.2.4
+    environment:
+      - 'ALLOW_EMPTY_PASSWORD=yes'
+      - 'REDIS_NODES=redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5'
+    ports:
+      - '6379'
+    networks:
+      - app-tier
+
+  redis-node-4:
+    image: docker.io/bitnami/redis-cluster:7.2.4
+    environment:
+      - 'ALLOW_EMPTY_PASSWORD=yes'
+      - 'REDIS_NODES=redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5'
+    ports:
+      - '6379'
+    networks:
+      - app-tier
+
+#  redis-node-5:
+#    image: docker.io/bitnami/redis-cluster:7.2.4
+#    environment:
+#      - 'ALLOW_EMPTY_PASSWORD=yes'
+#      - 'REDIS_NODES=redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5'
+#    ports:
+#      - '6379'
+#    networks:
+#      - app-tier
+
+#  redis-node-6:
+#    image: docker.io/bitnami/redis-cluster:7.2.4
+#    environment:
+#      - 'ALLOW_EMPTY_PASSWORD=yes'
+#      - 'REDIS_NODES=redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5'
+#    ports:
+#      - '6379'
+#    networks:
+#      - app-tier
+
+  redis-node-5:
+    image: docker.io/bitnami/redis-cluster:7.2.4
+    depends_on:
+      - redis-node-0
+      - redis-node-1
+      - redis-node-2
+      - redis-node-3
+      - redis-node-4
+#      - redis-node-5
+#      - redis-node-6
+    environment:
+      - 'ALLOW_EMPTY_PASSWORD=yes'
+      - 'REDIS_CLUSTER_REPLICAS=1'
+      - 'REDIS_NODES=redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5'
+#      - 'REDIS_NODES=redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5 redis-node-6 redis-node-7'
+      - 'REDIS_CLUSTER_CREATOR=yes'
+    ports:
+      - '6379'
+    networks:
+      - app-tier

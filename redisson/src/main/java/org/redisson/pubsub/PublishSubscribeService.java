@@ -190,7 +190,7 @@ public class PublishSubscribeService {
                     return new PubSubPatternStatusListener((PubSubPatternStatusListener) l) {
                         @Override
                         public void onStatus(PubSubType type, CharSequence channel) {
-                            if (statusCounter.decrementAndGet() == 0) {
+                            if (statusCounter.get() == 0 || statusCounter.decrementAndGet() == 0) {
                                 super.onStatus(type, channel);
                             }
                         }
@@ -224,8 +224,8 @@ public class PublishSubscribeService {
 
     public boolean isMultiEntity(ChannelName channelName) {
         return connectionManager.isClusterMode()
-                && (channelName.toString().startsWith("__keyspace@")
-                || channelName.toString().startsWith("__keyevent@"));
+                && (channelName.toString().startsWith("__keyspace")
+                || channelName.toString().startsWith("__keyevent"));
     }
 
     public CompletableFuture<PubSubConnectionEntry> subscribe(MasterSlaveEntry entry, ClientConnectionsEntry clientEntry,
@@ -356,7 +356,7 @@ public class PublishSubscribeService {
                     return new PubSubStatusListener(((PubSubStatusListener) l).getListener(), ((PubSubStatusListener) l).getName()) {
                         @Override
                         public void onStatus(PubSubType type, CharSequence channel) {
-                            if (statusCounter.decrementAndGet() == 0) {
+                            if (statusCounter.get() == 0 || statusCounter.decrementAndGet() == 0) {
                                 super.onStatus(type, channel);
                             }
                         }

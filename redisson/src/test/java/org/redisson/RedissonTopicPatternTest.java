@@ -404,6 +404,8 @@ public class RedissonTopicPatternTest extends RedisDockerTest {
                 .addNode(master3, slave3);
         ClusterRunner.ClusterProcesses process = clusterRunner.run();
 
+        Thread.sleep(7000);
+
         Config config = new Config();
         config.useClusterServers()
                 .setSubscriptionMode(subscriptionMode)

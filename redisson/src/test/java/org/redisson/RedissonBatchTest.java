@@ -20,9 +20,6 @@ import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.command.BatchPromise;
 import org.redisson.config.Config;
 import org.redisson.config.SubscriptionMode;
-import org.redisson.misc.RedisURI;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.startupcheck.MinimumDurationRunningStartupCheckStrategy;
 
 import java.time.Duration;
 import java.util.*;
@@ -45,100 +42,89 @@ public class RedissonBatchTest extends RedisDockerTest {
 
     @ParameterizedTest
     @MethodSource("data")
-    public void testSlotMigrationInCluster(BatchOptions batchOptions) throws Exception {
-        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slot1 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slot2 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slot3 = new RedisRunner().randomPort().randomDir().nosave();
+    public void testSlotMigrationInCluster(BatchOptions batchOptions) {
+        withNewCluster(redissonClient -> {
+            Config config = redissonClient.getConfig();
+            config.useClusterServers()
+                    .setScanInterval(1000)
+                    .setSubscriptionMode(SubscriptionMode.MASTER);
+            RedissonClient redisson = Redisson.create(config);
 
-        ClusterRunner clusterRunner = new ClusterRunner()
-                .addNode(master1, slot1)
-                .addNode(master2, slot2)
-                .addNode(master3, slot3);
-        ClusterRunner.ClusterProcesses process = clusterRunner.run();
+            RedisClientConfig cfg = new RedisClientConfig();
+            cfg.setAddress(config.useClusterServers().getNodeAddresses().get(0));
+            RedisClient c = RedisClient.create(cfg);
+            RedisConnection cc = c.connect();
+            List<ClusterNodeInfo> mastersList = cc.sync(RedisCommands.CLUSTER_NODES);
+            mastersList = mastersList.stream().filter(i -> i.containsFlag(ClusterNodeInfo.Flag.MASTER)).collect(Collectors.toList());
+            c.shutdown();
 
-        Config config = new Config();
-        config.useClusterServers()
-        .setScanInterval(1000)
-        .setSubscriptionMode(SubscriptionMode.MASTER)
-        .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
-        RedissonClient redisson = Redisson.create(config);
+            ClusterNodeInfo destination = mastersList.stream().filter(i -> i.getSlotRanges().stream().noneMatch(s -> s.hasSlot(10922))).findAny().get();
+            ClusterNodeInfo source = mastersList.stream().filter(i -> i.getSlotRanges().stream().anyMatch(s -> s.hasSlot(10922))).findAny().get();
 
-        RedisClientConfig cfg = new RedisClientConfig();
-        cfg.setAddress(process.getNodes().iterator().next().getRedisServerAddressAndPort());
-        RedisClient c = RedisClient.create(cfg);
-        RedisConnection cc = c.connect();
-        List<ClusterNodeInfo> mastersList = cc.sync(RedisCommands.CLUSTER_NODES);
-        mastersList = mastersList.stream().filter(i -> i.containsFlag(ClusterNodeInfo.Flag.MASTER)).collect(Collectors.toList());
-        c.shutdown();
+            RedisClientConfig sourceCfg = new RedisClientConfig();
+            sourceCfg.setAddress(config.useClusterServers().getNatMapper().map(source.getAddress()));
+            RedisClient sourceClient = RedisClient.create(sourceCfg);
+            RedisConnection sourceConnection = sourceClient.connect();
 
-        ClusterNodeInfo destination = mastersList.stream().filter(i -> i.getSlotRanges().iterator().next().getStartSlot() != 10922).findAny().get();
-        ClusterNodeInfo source = mastersList.stream().filter(i -> i.getSlotRanges().iterator().next().getStartSlot() == 10922).findAny().get();
+            RedisClientConfig destinationCfg = new RedisClientConfig();
+            destinationCfg.setAddress(config.useClusterServers().getNatMapper().map(destination.getAddress()));
+            RedisClient destinationClient = RedisClient.create(destinationCfg);
+            RedisConnection destinationConnection = destinationClient.connect();
 
-        RedisClientConfig sourceCfg = new RedisClientConfig();
-        sourceCfg.setAddress(source.getAddress());
-        RedisClient sourceClient = RedisClient.create(sourceCfg);
-        RedisConnection sourceConnection = sourceClient.connect();
+            String lockName = "test{kaO}";
 
-        RedisClientConfig destinationCfg = new RedisClientConfig();
-        destinationCfg.setAddress(destination.getAddress());
-        RedisClient destinationClient = RedisClient.create(destinationCfg);
-        RedisConnection destinationConnection = destinationClient.connect();
-
-        String lockName = "test{kaO}";
-
-        RBatch batch = redisson.createBatch(batchOptions);
-        List<RFuture<Boolean>> futures = new ArrayList<>();
-        for (int i = 0; i < 5; i++) {
-            RFuture<Boolean> f = batch.getMap(lockName).fastPutAsync("" + i, i);
-            futures.add(f);
-        }
-
-        destinationConnection.sync(RedisCommands.CLUSTER_SETSLOT, source.getSlotRanges().iterator().next().getStartSlot(), "IMPORTING", source.getNodeId());
-        sourceConnection.sync(RedisCommands.CLUSTER_SETSLOT, source.getSlotRanges().iterator().next().getStartSlot(), "MIGRATING", destination.getNodeId());
-
-        List<String> keys = sourceConnection.sync(RedisCommands.CLUSTER_GETKEYSINSLOT, source.getSlotRanges().iterator().next().getStartSlot(), 100);
-        List<Object> params = new ArrayList<Object>();
-        params.add(destination.getAddress().getHost());
-        params.add(destination.getAddress().getPort());
-        params.add("");
-        params.add(0);
-        params.add(2000);
-        params.add("KEYS");
-        params.addAll(keys);
-        sourceConnection.async(RedisCommands.MIGRATE, params.toArray());
-
-        for (ClusterNodeInfo node : mastersList) {
-            RedisClientConfig cc1 = new RedisClientConfig();
-            cc1.setAddress(node.getAddress());
-            RedisClient ccc = RedisClient.create(cc1);
-            RedisConnection connection = ccc.connect();
-            connection.sync(RedisCommands.CLUSTER_SETSLOT, source.getSlotRanges().iterator().next().getStartSlot(), "NODE", destination.getNodeId());
-            ccc.shutdownAsync();
-        }
-
-        Thread.sleep(2000);
-
-        batch.execute();
-
-        futures.forEach(f -> {
-            try {
-                f.toCompletableFuture().get(1, TimeUnit.MILLISECONDS);
-            } catch (TimeoutException e) {
-                org.junit.jupiter.api.Assertions.fail(e);
-            } catch (ExecutionException e) {
-                e.printStackTrace();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            RBatch batch = redisson.createBatch(batchOptions);
+            List<RFuture<Boolean>> futures = new ArrayList<>();
+            for (int i = 0; i < 5; i++) {
+                RFuture<Boolean> f = batch.getMap(lockName).fastPutAsync("" + i, i);
+                futures.add(f);
             }
-        });
 
-        sourceClient.shutdown();
-        destinationClient.shutdown();
-        redisson.shutdown();
-        process.shutdown();
+            destinationConnection.sync(RedisCommands.CLUSTER_SETSLOT, source.getSlotRanges().iterator().next().getStartSlot(), "IMPORTING", source.getNodeId());
+            sourceConnection.sync(RedisCommands.CLUSTER_SETSLOT, source.getSlotRanges().iterator().next().getStartSlot(), "MIGRATING", destination.getNodeId());
+
+            List<String> keys = sourceConnection.sync(RedisCommands.CLUSTER_GETKEYSINSLOT, source.getSlotRanges().iterator().next().getStartSlot(), 100);
+            List<Object> params = new ArrayList<Object>();
+            params.add(destination.getAddress().getHost());
+            params.add(destination.getAddress().getPort());
+            params.add("");
+            params.add(0);
+            params.add(2000);
+            params.add("KEYS");
+            params.addAll(keys);
+            sourceConnection.async(RedisCommands.MIGRATE, params.toArray());
+
+            for (ClusterNodeInfo node : mastersList) {
+                RedisClientConfig cc1 = new RedisClientConfig();
+                cc1.setAddress(config.useClusterServers().getNatMapper().map(node.getAddress()));
+                RedisClient ccc = RedisClient.create(cc1);
+                RedisConnection connection = ccc.connect();
+                connection.sync(RedisCommands.CLUSTER_SETSLOT, source.getSlotRanges().iterator().next().getStartSlot(), "NODE", destination.getNodeId());
+                ccc.shutdownAsync();
+            }
+
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            batch.execute();
+
+            futures.forEach(f -> {
+                try {
+                    f.toCompletableFuture().get(1, TimeUnit.MILLISECONDS);
+                } catch (TimeoutException e) {
+                    org.junit.jupiter.api.Assertions.fail(e);
+                } catch (Exception e) {
+                    // skip
+                }
+            });
+
+            sourceClient.shutdown();
+            destinationClient.shutdown();
+            redisson.shutdown();
+        });
     }
 
     @ParameterizedTest

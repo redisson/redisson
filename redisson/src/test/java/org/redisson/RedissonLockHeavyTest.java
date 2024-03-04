@@ -14,7 +14,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
-public class RedissonLockHeavyTest extends BaseTest {
+public class RedissonLockHeavyTest extends RedisDockerTest {
 
     public static Collection<Arguments> data() {
         return Arrays.asList(Arguments.of(2, 5000),

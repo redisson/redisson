@@ -1,20 +1,20 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
+import org.testcontainers.containers.GenericContainer;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonPriorityBlockingQueueTest extends RedissonBlockingQueueTest {
 
@@ -34,15 +34,11 @@ public class RedissonPriorityBlockingQueueTest extends RedissonBlockingQueueTest
     }
     
     @Test
-    public void testPollAsyncReattach() throws InterruptedException, IOException, ExecutionException, TimeoutException {
-        RedisProcess runner = new RedisRunner()
-                .nosave()
-                .randomDir()
-                .randomPort()
-                .run();
-        
-        Config config = new Config();
-        config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
+    public void testPollAsyncReattach() throws InterruptedException, ExecutionException {
+        GenericContainer<?> redis = createRedis();
+        redis.start();
+
+        Config config = createConfig(redis);
         RedissonClient redisson = Redisson.create(config);
         
         RBlockingQueue<Integer> queue1 = getQueue(redisson);
@@ -52,13 +48,10 @@ public class RedissonPriorityBlockingQueueTest extends RedissonBlockingQueueTest
         } catch (ExecutionException | TimeoutException e) {
             // skip
         }
-        runner.stop();
+        redis.setPortBindings(Arrays.asList(redis.getFirstMappedPort() + ":6379"));
+        redis.stop();
 
-        runner = new RedisRunner()
-                .port(runner.getRedisServerPort())
-                .nosave()
-                .randomDir()
-                .run();
+        redis.start();
         queue1.put(123);
         
         // check connection rotation
@@ -71,20 +64,17 @@ public class RedissonPriorityBlockingQueueTest extends RedissonBlockingQueueTest
         assertThat(result).isEqualTo(123);
         
         redisson.shutdown();
-        runner.stop();
+        redis.stop();
     }
     
     @Test
     public void testTakeReattach() throws Exception {
-        RedisProcess runner = new RedisRunner()
-                .nosave()
-                .randomDir()
-                .randomPort()
-                .run();
-        
-        Config config = new Config();
-        config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
+        GenericContainer<?> redis = createRedis();
+        redis.start();
+
+        Config config = createConfig(redis);
         RedissonClient redisson = Redisson.create(config);
+
         RBlockingQueue<Integer> queue1 = getQueue(redisson);
         RFuture<Integer> f = queue1.takeAsync();
         try {
@@ -92,13 +82,10 @@ public class RedissonPriorityBlockingQueueTest extends RedissonBlockingQueueTest
         } catch (ExecutionException | TimeoutException e) {
             // skip
         }
-        runner.stop();
+        redis.setPortBindings(Arrays.asList(redis.getFirstMappedPort() + ":6379"));
+        redis.stop();
 
-        runner = new RedisRunner()
-                .port(runner.getRedisServerPort())
-                .nosave()
-                .randomDir()
-                .run();
+        redis.start();
         queue1.put(123);
         
         // check connection rotation
@@ -109,9 +96,9 @@ public class RedissonPriorityBlockingQueueTest extends RedissonBlockingQueueTest
         Integer result = f.get();
         assertThat(result).isEqualTo(123);
         assertThat(queue1.size()).isEqualTo(10);
-        runner.stop();
-        
+
         redisson.shutdown();
+        redis.stop();
     }
 
  
