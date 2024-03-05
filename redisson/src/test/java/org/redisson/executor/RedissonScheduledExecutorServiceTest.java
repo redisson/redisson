@@ -173,6 +173,7 @@ public class RedissonScheduledExecutorServiceTest extends RedisDockerTest {
 
 
     @Test
+    @Disabled("Doesn't work with JDK 11+")
     public void testDelay() throws ExecutionException, InterruptedException, TimeoutException {
         RScheduledExecutorService executor = redisson.getExecutorService("test", ExecutorOptions.defaults().taskRetryInterval(5, TimeUnit.SECONDS));
         long start = System.currentTimeMillis();
@@ -363,6 +364,7 @@ public class RedissonScheduledExecutorServiceTest extends RedisDockerTest {
         assertThat(executor.getTaskIds().contains(future.getTaskId())).isTrue();
         Thread.sleep(1200);
         assertThat(executor.getTaskIds().isEmpty()).isTrue();
+        executor.delete();
     }
 
     @Test

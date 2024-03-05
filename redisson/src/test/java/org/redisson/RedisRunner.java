@@ -32,6 +32,7 @@ import org.redisson.client.protocol.convertor.VoidReplayConvertor;
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
+@Deprecated
 public class RedisRunner {
 
     public enum REDIS_OPTIONS {

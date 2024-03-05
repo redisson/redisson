@@ -1,7 +1,6 @@
 package org.redisson.transaction;
 
 import org.junit.jupiter.api.Test;
-import org.redisson.BaseTest;
 import org.redisson.RedisDockerTest;
 import org.redisson.api.RSet;
 import org.redisson.api.RTransaction;

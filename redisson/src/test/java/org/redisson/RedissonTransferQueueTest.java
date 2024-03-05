@@ -208,7 +208,10 @@ public class RedissonTransferQueueTest extends RedisDockerTest {
 
         f.get();
         queue.clear();
-        assertThat(redisson.getKeys().count()).isZero();
+
+        Awaitility.waitAtMost(Duration.ofSeconds(1)).untilAsserted(() -> {
+            assertThat(redisson.getKeys().count()).isZero();
+        });
     }
 
     @Test

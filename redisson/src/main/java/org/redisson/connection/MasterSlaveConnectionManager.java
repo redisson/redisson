@@ -490,7 +490,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public void shutdown() {
-        shutdown(2, 15, TimeUnit.SECONDS); //default netty value
+        shutdown(2, 10, TimeUnit.SECONDS); //default netty value
     }
 
     @Override
@@ -505,7 +505,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         serviceManager.getResolverGroup().close();
 
         long startTime = System.nanoTime();
-        serviceManager.shutdownFutures(timeoutInNanos, TimeUnit.NANOSECONDS);
+        serviceManager.shutdownFutures(quietPeriod, unit);
         timeoutInNanos = Math.max(0, timeoutInNanos - System.nanoTime() - startTime);
 
         if (isInitialized()) {

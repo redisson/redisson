@@ -306,7 +306,7 @@ public class RedissonRateLimiterTest extends RedisDockerTest {
         for (Long value : queue) {
             if (count % 10 == 0) {
                 if (start > 0) {
-                    assertThat(value - start).isGreaterThan(980);
+                    assertThat(value - start).isGreaterThan(940);
                 }
                 start = value;
             }

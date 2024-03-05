@@ -1,16 +1,8 @@
 package org.redisson.executor;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.Collections;
-import java.util.concurrent.Callable;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.redisson.BaseTest;
 import org.redisson.RedisDockerTest;
 import org.redisson.RedisRunner.FailedToStartRedisException;
 import org.redisson.RedissonNode;
@@ -26,6 +18,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Service;
+
+import java.io.Serializable;
+import java.util.Collections;
+import java.util.concurrent.Callable;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonExecutorServiceSpringTest extends RedisDockerTest {
 
@@ -94,7 +92,7 @@ public class RedissonExecutorServiceSpringTest extends RedisDockerTest {
     private static AnnotationConfigApplicationContext context;
     
     @BeforeAll
-    public static void beforeTest() throws FailedToStartRedisException, IOException, InterruptedException {
+    public static void beforeTest() throws FailedToStartRedisException {
         context = new AnnotationConfigApplicationContext(Application.class);
     }
 

@@ -10,45 +10,16 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class RedissonCountDownLatchConcurrentTest {
+public class RedissonCountDownLatchConcurrentTest extends RedisDockerTest {
     
-    @BeforeAll
-    public static void beforeClass() throws IOException, InterruptedException {
-        if (!RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisServerInstance();
-        }
-    }
-
-    @AfterAll
-    public static void afterClass() throws IOException, InterruptedException {
-        if (!RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.shutDownDefaultRedisServerInstance();
-        }
-    }
-
-    @BeforeEach
-    public void before() throws IOException, InterruptedException {
-        if (RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisServerInstance();
-        }
-    }
-
-    @AfterEach
-    public void after() throws InterruptedException {
-        if (RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.shutDownDefaultRedisServerInstance();
-        }
-    }
-
     @Test
     public void testSingleCountDownAwait_SingleInstance() throws InterruptedException {
-        final int iterations = Runtime.getRuntime().availableProcessors()*3;
+        int iterations = Runtime.getRuntime().availableProcessors()*3;
 
-        RedissonClient redisson = BaseTest.createInstance();
-        final RCountDownLatch latch = redisson.getCountDownLatch("latch");
+        RCountDownLatch latch = redisson.getCountDownLatch("latch");
         latch.trySetCount(iterations);
 
-        final AtomicInteger counter = new AtomicInteger();
+        AtomicInteger counter = new AtomicInteger();
         ExecutorService executor = Executors.newScheduledThreadPool(iterations);
         for (int i = 0; i < iterations; i++) {
             executor.execute(() -> {
@@ -72,8 +43,6 @@ public class RedissonCountDownLatchConcurrentTest {
 
         executor.shutdown();
         Assertions.assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS));
-
-        redisson.shutdown();
     }
 
 }

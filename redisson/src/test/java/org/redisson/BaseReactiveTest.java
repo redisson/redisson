@@ -16,7 +16,7 @@ public abstract class BaseReactiveTest extends RedisDockerTest {
     protected static RedissonReactiveClient redisson;
 
     @BeforeAll
-    public static void beforeClass() throws IOException, InterruptedException {
+    public static void beforeClass() {
         redisson = RedisDockerTest.redisson.reactive();
     }
 

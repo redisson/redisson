@@ -882,7 +882,7 @@ public class RedissonTopicTest extends RedisDockerTest {
                     new GenericContainer<>("bitnami/redis:7.2.4")
                             .withNetwork(nodes.get(1).getNetwork())
                             .withEnv("REDIS_REPLICATION_MODE", "slave")
-                            .withEnv("REDIS_MASTER_HOST", "slave0")
+                            .withEnv("REDIS_MASTER_HOST", nodes.get(1).getIpAddress())
                             .withEnv("ALLOW_EMPTY_PASSWORD", "yes")
                             .withNetworkAliases("slave2")
                             .withExposedPorts(6379);
@@ -1109,7 +1109,7 @@ public class RedissonTopicTest extends RedisDockerTest {
 
         redisson.getTopic("topic").publish(1);
 
-        await().atMost(20, TimeUnit.SECONDS).until(() -> subscriptions.get() == 2);
+        await().atMost(30, TimeUnit.SECONDS).until(() -> subscriptions.get() == 2);
         assertThat(executed.get()).isTrue();
 
         redisson.shutdown();

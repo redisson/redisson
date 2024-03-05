@@ -347,11 +347,10 @@ public final class ServiceManager {
         CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
         try {
             future.get(timeout, unit);
-        } catch (InterruptedException | ExecutionException e) {
+        } catch (Exception e) {
             // skip
-        } catch (TimeoutException e) {
-            futures.forEach(f -> f.completeExceptionally(new RedissonShutdownException("Redisson is shutdown")));
         }
+        futures.forEach(f -> f.completeExceptionally(new RedissonShutdownException("Redisson is shutdown")));
         futures.clear();
     }
 

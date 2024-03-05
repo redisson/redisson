@@ -15,7 +15,6 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisClientConfig;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.Config;
-import org.redisson.connection.balancer.RandomLoadBalancer;
 import org.testcontainers.containers.GenericContainer;
 
 import java.io.IOException;
@@ -210,84 +209,52 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
     }
 
     @Test
-    public void testTakeReattachSentinel() throws IOException, InterruptedException, TimeoutException, ExecutionException {
-        RedisRunner.RedisProcess master = new RedisRunner()
-                .nosave()
-                .randomDir()
-                .run();
-        RedisRunner.RedisProcess slave1 = new RedisRunner()
-                .port(6380)
-                .nosave()
-                .randomDir()
-                .slaveof("127.0.0.1", 6379)
-                .run();
-        RedisRunner.RedisProcess slave2 = new RedisRunner()
-                .port(6381)
-                .nosave()
-                .randomDir()
-                .slaveof("127.0.0.1", 6379)
-                .run();
-        RedisRunner.RedisProcess sentinel1 = new RedisRunner()
-                .nosave()
-                .randomDir()
-                .port(26379)
-                .sentinel()
-                .sentinelMonitor("myMaster", "127.0.0.1", 6379, 2)
-                .run();
-        RedisRunner.RedisProcess sentinel2 = new RedisRunner()
-                .nosave()
-                .randomDir()
-                .port(26380)
-                .sentinel()
-                .sentinelMonitor("myMaster", "127.0.0.1", 6379, 2)
-                .run();
-        RedisRunner.RedisProcess sentinel3 = new RedisRunner()
-                .nosave()
-                .randomDir()
-                .port(26381)
-                .sentinel()
-                .sentinelMonitor("myMaster", "127.0.0.1", 6379, 2)
-                .run();
+    public void testTakeReattachSentinel() throws InterruptedException {
+        withSentinel((nodes, config) -> {
+            RedissonClient redisson = Redisson.create(config);
 
-        Thread.sleep(1000);
+            RBlockingQueue<Integer> queue1 = getQueue(redisson);
+            RFuture<Integer> f = queue1.takeAsync();
+            try {
+                f.toCompletableFuture().get(1, TimeUnit.SECONDS);
+            } catch (ExecutionException | TimeoutException | InterruptedException e) {
+                // skip
+            }
 
-        Config config = new Config();
-        config.useSentinelServers()
-            .setLoadBalancer(new RandomLoadBalancer())
-            .addSentinelAddress(sentinel3.getRedisServerAddressAndPort()).setMasterName("myMaster");
-        RedissonClient redisson = Redisson.create(config);
+            nodes.get(0).stop();
 
-        RBlockingQueue<Integer> queue1 = getQueue(redisson);
-        RFuture<Integer> f = queue1.takeAsync();
-        try {
-            f.toCompletableFuture().get(1, TimeUnit.SECONDS);
-        } catch (ExecutionException | TimeoutException e) {
-            // skip
-        }
+            try {
+                Thread.sleep(TimeUnit.SECONDS.toMillis(30));
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
 
-        master.stop();
+            try {
+                queue1.put(123);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
 
-        Thread.sleep(TimeUnit.SECONDS.toMillis(60));
+            // check connection rotation
+            for (int i = 0; i < 10; i++) {
+                try {
+                    queue1.put(i + 10000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            assertThat(queue1.size()).isEqualTo(10);
 
-        queue1.put(123);
+            Integer result = null;
+            try {
+                result = f.get(80, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            assertThat(result).isEqualTo(123);
 
-        // check connection rotation
-        for (int i = 0; i < 10; i++) {
-            queue1.put(i + 10000);
-        }
-        assertThat(queue1.size()).isEqualTo(10);
-
-        Integer result = f.get(80, TimeUnit.SECONDS);
-        assertThat(result).isEqualTo(123);
-
-        redisson.shutdown();
-        sentinel1.stop();
-        sentinel2.stop();
-        sentinel3.stop();
-        master.stop();
-        slave1.stop();
-        slave2.stop();
-
+            redisson.shutdown();
+        }, 2);
     }
 
     @Test
@@ -473,8 +440,6 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
 
     @Test
     public void testPollFirstFromAny() throws InterruptedException {
-//        Assumptions.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("7.0.0") > 0);
-
         RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");
         RBlockingQueue<Integer> queue2 = redisson.getBlockingQueue("queue:pollany1");
         RBlockingQueue<Integer> queue3 = redisson.getBlockingQueue("queue:pollany2");
@@ -696,7 +661,7 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
     }
 
     @Test
-    public void testSubscribeOnElements() throws InterruptedException {
+    public void testSubscribeOnElements() {
         RBlockingQueue<Integer> q = redisson.getBlockingQueue("test");
         Set<Integer> values = new HashSet<>();
         int listnerId = q.subscribeOnElements(v -> {
@@ -707,7 +672,7 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
             q.add(i);
         }
 
-        Awaitility.await().atMost(Duration.ofSeconds(1)).until(() -> {
+        Awaitility.await().atMost(Duration.ofSeconds(2)).until(() -> {
             return values.size() == 10;
         });
 
@@ -715,8 +680,6 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
 
         q.add(11);
         q.add(12);
-
-        Thread.sleep(1000);
 
         assertThat(values).hasSize(10);
     }

@@ -14,6 +14,7 @@ import org.redisson.api.*;
 import org.redisson.api.BatchOptions.ExecutionMode;
 import org.redisson.api.RScript.Mode;
 import org.redisson.client.RedisException;
+import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
 
@@ -101,7 +102,7 @@ public class RedissonBatchRxTest extends BaseRxTest {
     }
 
     @Test
-    @Timeout(20)
+    @Timeout(4)
     public void testConnectionLeakAfterError() {
         Config config = createConfig();
         config.useSingleServer()
@@ -113,24 +114,21 @@ public class RedissonBatchRxTest extends BaseRxTest {
         
         BatchOptions batchOptions = BatchOptions.defaults().executionMode(ExecutionMode.REDIS_WRITE_ATOMIC);
         RBatchRx batch = redisson.createBatch(batchOptions);
-        for (int i = 0; i < 130000; i++) {
+        for (int i = 0; i < 60000; i++) {
             batch.getBucket("test").set(123);
         }
-        
-        try {
+
+        Assertions.assertThrows(RedisTimeoutException.class, () -> {
             sync(batch.execute());
-            Assertions.fail();
-        } catch (Exception e) {
-            // skip
-        }
-        
+        });
+
         sync(redisson.getBucket("test3").set(4));
         assertThat(sync(redisson.getBucket("test3").get())).isEqualTo(4);
-        
-        batch = redisson.createBatch(batchOptions);
-        batch.getBucket("test1").set(1);
-        batch.getBucket("test2").set(2);
-        sync(batch.execute());
+
+        RBatchRx nbatch = redisson.createBatch(batchOptions);
+        nbatch.getBucket("test1").set(1);
+        nbatch.getBucket("test2").set(2);
+        sync(nbatch.execute());
         
         assertThat(sync(redisson.getBucket("test1").get())).isEqualTo(1);
         assertThat(sync(redisson.getBucket("test2").get())).isEqualTo(2);

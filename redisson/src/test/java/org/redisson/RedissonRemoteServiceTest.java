@@ -646,19 +646,15 @@ public class RedissonRemoteServiceTest extends RedisDockerTest {
 
         assertThat(serviceRemoteInterface.resultMethod(21L)).isEqualTo(42L);
 
-        try {
+        // Invoking a service in an unregistered custom services namespace should throw
+        Assertions.assertThrows(RemoteServiceAckTimeoutException.class, () -> {
             otherServiceRemoteInterface.resultMethod(21L);
-            Assertions.fail("Invoking a service in an unregistered custom services namespace should throw");
-        } catch (Exception e) {
-            assertThat(e).isInstanceOf(RemoteServiceAckTimeoutException.class);
-        }
+        });
 
-        try {
+        // Invoking a service in the unregistered default services namespace should throw
+        Assertions.assertThrows(RemoteServiceAckTimeoutException.class, () -> {
             defaultServiceRemoteInterface.resultMethod(21L);
-            Assertions.fail("Invoking a service in the unregistered default services namespace should throw");
-        } catch (Exception e) {
-            assertThat(e).isInstanceOf(RemoteServiceAckTimeoutException.class);
-        }
+        });
 
         client.shutdown();
         server.shutdown();

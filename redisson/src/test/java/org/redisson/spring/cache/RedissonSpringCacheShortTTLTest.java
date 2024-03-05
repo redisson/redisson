@@ -4,9 +4,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.redisson.BaseTest;
-import org.redisson.RedisRunner;
-import org.redisson.RedisRunner.FailedToStartRedisException;
+import org.redisson.RedisDockerTest;
 import org.redisson.api.RedissonClient;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
@@ -29,7 +27,7 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedissonSpringCacheShortTTLTest {
+public class RedissonSpringCacheShortTTLTest extends RedisDockerTest {
 
     public static class SampleObject implements Serializable {
 
@@ -96,7 +94,7 @@ public class RedissonSpringCacheShortTTLTest {
 
         @Bean(destroyMethod = "shutdown")
         RedissonClient redisson() {
-            return BaseTest.createInstance();
+            return createInstance();
         }
 
         @Bean
@@ -115,11 +113,11 @@ public class RedissonSpringCacheShortTTLTest {
 
         @Bean(destroyMethod = "shutdown")
         RedissonClient redisson() {
-            return BaseTest.createInstance();
+            return createInstance();
         }
 
         @Bean
-        CacheManager cacheManager(RedissonClient redissonClient) throws IOException {
+        CacheManager cacheManager(RedissonClient redissonClient) {
             return new RedissonSpringCacheManager(redissonClient, "classpath:/org/redisson/spring/cache/cache-config-shortTTL.json");
         }
 
@@ -132,8 +130,7 @@ public class RedissonSpringCacheShortTTLTest {
     }
 
     @BeforeAll
-    public static void before() throws FailedToStartRedisException, IOException, InterruptedException {
-        RedisRunner.startDefaultRedisServerInstance();
+    public static void before() {
         contexts = data().stream().collect(Collectors.toMap(e -> e, e -> new AnnotationConfigApplicationContext(e)));
     }
 

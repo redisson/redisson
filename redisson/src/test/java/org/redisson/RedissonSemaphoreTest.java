@@ -124,7 +124,7 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
     }
 
     @Test
-    @Timeout(120)
+    @Timeout(5)
     public void testBlockingNAcquire() throws InterruptedException {
         RSemaphore s = redisson.getSemaphore("test");
         s.trySetPermits(5);

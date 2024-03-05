@@ -18,6 +18,7 @@ import org.redisson.misc.BiHashMap;
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
+@Deprecated
 public class ClusterRunner {
     
     private final LinkedHashMap<RedisRunner, String> nodes = new LinkedHashMap<>();
