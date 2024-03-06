@@ -271,6 +271,7 @@ public class RedisDockerTest {
         Config config = new Config();
         config.setProtocol(protocol);
         config.useSentinelServers()
+                .setPingConnectionInterval(0)
                 .setNatMapper(new NatMapper() {
 
                     @Override
@@ -452,7 +453,6 @@ public class RedisDockerTest {
         network.close();
     }
 
-        List<ContainerState> nodes = new ArrayList<>();
     protected void withNewCluster(Consumer<RedissonClient> callback) {
 
         LogMessageWaitStrategy wait2 = new LogMessageWaitStrategy().withRegEx(".*REPLICA\ssync\\:\sFinished\swith\ssuccess.*");
@@ -474,6 +474,7 @@ public class RedisDockerTest {
             throw new RuntimeException(e);
         }
 
+        List<ContainerState> nodes = new ArrayList<>();
         for (int i = 0; i < 6; i++) {
             Optional<ContainerState> cc = environment.getContainerByServiceName("redis-node-" + i);
             nodes.add(cc.get());
@@ -485,7 +486,6 @@ public class RedisDockerTest {
 
         Config config = new Config();
         config.useClusterServers()
-                .setPingConnectionInterval(0)
                 .setNatMapper(new NatMapper() {
 
                     @Override
