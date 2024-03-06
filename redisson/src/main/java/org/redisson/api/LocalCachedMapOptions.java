@@ -24,7 +24,7 @@ import org.redisson.api.map.MapWriter;
  import org.redisson.api.map.MapWriterAsync;
 
 /**
- * Configuration for LocalCachedMap object.
+ * Use org.redisson.api.options.LocalCachedMapOptions instead
  * 
  * @author Nikita Koksharov
  *

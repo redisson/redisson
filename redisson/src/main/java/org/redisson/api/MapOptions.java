@@ -25,7 +25,7 @@ import org.redisson.api.map.RetryableMapWriterAsync;
 import java.time.Duration;
 
 /**
- * Configuration for RMap object.
+ * Use org.redisson.api.options.MapOptions instead
  * 
  * @author Nikita Koksharov
  *
