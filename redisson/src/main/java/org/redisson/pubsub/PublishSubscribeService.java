@@ -144,6 +144,8 @@ public class PublishSubscribeService {
 
     private final LockPubSub lockPubSub = new LockPubSub(this);
 
+    private final Set<PubSubConnectionEntry> trackedEntries = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
     private boolean shardingSupported = false;
 
     public PublishSubscribeService(ConnectionManager connectionManager) {
@@ -261,14 +263,33 @@ public class PublishSubscribeService {
             ffs.add(future);
         }
 
+        return registerClientTrackingListener(commandExecutor, ffs, listenerId, null);
+    }
+
+    private CompletableFuture<Integer> registerClientTrackingListener(CommandAsyncExecutor commandExecutor,
+                                                                      List<CompletableFuture<PubSubConnectionEntry>> ffs,
+                                                                      int listenerId,
+                                                                      String key) {
         CompletableFuture<Void> future = CompletableFuture.allOf(ffs.toArray(new CompletableFuture[0]));
         return future.thenCompose(r -> {
+            List<PubSubConnectionEntry> ees = ffs.stream()
+                                                        .map(v -> v.join())
+                                                        .filter(e -> !trackedEntries.contains(e))
+                                                        .collect(Collectors.toList());
+            if (ees.isEmpty()) {
+                return CompletableFuture.completedFuture(listenerId);
+            }
+
+            trackedEntries.addAll(ees);
             List<CompletableFuture<Void>> futures = new ArrayList<>();
-            List<PubSubConnectionEntry> ees = ffs.stream().map(v -> v.join()).collect(Collectors.toList());
             for (PubSubConnectionEntry ee : ees) {
                 RedisPubSubConnection c = ee.getConnection();
                 RFuture<Long> idFuture = c.async(RedisCommands.CLIENT_ID);
                 CompletionStage<Void> f = idFuture.thenCompose(id -> {
+                    if (key != null) {
+                        return commandExecutor.readAsync(c.getRedisClient(), key, StringCodec.INSTANCE,
+                                RedisCommands.CLIENT_TRACKING, "ON", "REDIRECT", id);
+                    }
                     return commandExecutor.readAsync(c.getRedisClient(), StringCodec.INSTANCE,
                             RedisCommands.CLIENT_TRACKING, "ON", "REDIRECT", id);
                 });
@@ -312,37 +333,21 @@ public class PublishSubscribeService {
 
         int listenerId = System.identityHashCode(redisPubSubListener);
 
-        List<ClientConnectionsEntry> entries = entry.getAllEntries().stream()
-                .filter(e -> {
-                    if (config.getReadMode() == ReadMode.MASTER_SLAVE) {
-                        return true;
-                    }
-                    return !e.isFreezed();
-                })
-                .collect(Collectors.toList());
+        Collection<ClientConnectionsEntry> entries = entry.getAllEntries();
+
+        if (config.getReadMode() != ReadMode.MASTER_SLAVE) {
+            entries = entry.getAllEntries().stream()
+                                            .filter(e -> !e.isFreezed())
+                                            .collect(Collectors.toList());
+        }
 
         List<CompletableFuture<PubSubConnectionEntry>> ffs = new ArrayList<>();
         for (ClientConnectionsEntry ee : entries) {
             CompletableFuture<PubSubConnectionEntry> future = subscribe(PubSubType.SUBSCRIBE, codec, channelName, entry, ee, redisPubSubListener);
             ffs.add(future);
         }
-        CompletableFuture<Void> future = CompletableFuture.allOf(ffs.toArray(new CompletableFuture[0]));
-        return future.thenCompose(r -> {
-            List<CompletableFuture<Void>> futures = new ArrayList<>();
-            List<PubSubConnectionEntry> ees = ffs.stream().map(v -> v.join()).collect(Collectors.toList());
-            for (PubSubConnectionEntry ee : ees) {
-                RedisPubSubConnection c = ee.getConnection();
-                RFuture<Long> idFuture = c.async(RedisCommands.CLIENT_ID);
-                CompletionStage<Void> f = idFuture.thenCompose(id -> {
-                    return commandExecutor.readAsync(c.getRedisClient(), key, StringCodec.INSTANCE,
-                            RedisCommands.CLIENT_TRACKING, "ON", "REDIRECT", id);
-                });
-                futures.add(f.toCompletableFuture());
-            }
 
-            CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-            return f.thenApply(r2 -> listenerId);
-        });
+        return registerClientTrackingListener(commandExecutor, ffs, listenerId, key);
     }
 
 
@@ -657,8 +662,6 @@ public class PublishSubscribeService {
     }
 
     CompletableFuture<Void> unsubscribeLocked(PubSubType topicType, ChannelName channelName, PubSubConnectionEntry ce) {
-        name2PubSubConnection.remove(new PubSubKey(channelName, ce.getEntry()));
-
         remove(channelName, ce);
 
         CompletableFuture<Void> result = new CompletableFuture<>();
@@ -683,11 +686,14 @@ public class PublishSubscribeService {
     }
 
     private void remove(ChannelName channelName, PubSubConnectionEntry entry) {
+        name2PubSubConnection.remove(new PubSubKey(channelName, entry.getEntry()));
+
         ClientConnectionsEntry e = entry.getEntry().getEntry(entry.getConnection().getRedisClient());
         PubSubClientKey key = new PubSubClientKey(channelName, e);
         key2connection.remove(key);
         if (e.getTrackedConnectionsHolder().decUsage() == 0) {
             e.getTrackedConnectionsHolder().reset();
+            trackedEntries.remove(entry);
         }
 
         name2entry.computeIfPresent(channelName, (name, entries) -> {

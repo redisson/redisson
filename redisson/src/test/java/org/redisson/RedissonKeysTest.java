@@ -9,9 +9,9 @@ import org.redisson.api.listener.FlushListener;
 import org.redisson.config.Config;
 import org.redisson.config.Protocol;
 
-import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -65,27 +65,30 @@ public class RedissonKeysTest extends RedisDockerTest {
 
         RedissonClient r = Redisson.create(c);
 
-        AtomicReference<InetSocketAddress> ref = new AtomicReference<>();
-        int id = r.getKeys().addListener(new FlushListener() {
-            @Override
-            public void onFlush(InetSocketAddress address) {
-                ref.set(address);
-            }
+        AtomicInteger counter = new AtomicInteger();
+        int id = r.getKeys().addListener((FlushListener) address -> {
+            assertThat(address).isNotNull();
+            counter.incrementAndGet();
+        });
+        int id2 = r.getKeys().addListener((FlushListener) address -> {
+            assertThat(address).isNotNull();
+            counter.incrementAndGet();
         });
 
         r.getKeys().flushall();
 
         Awaitility.waitAtMost(Duration.ofMillis(500)).untilAsserted(() -> {
-            assertThat(ref.getAndSet(null)).isNotNull();
+            assertThat(counter.get()).isEqualTo(2);
         });
 
         r.getKeys().removeListener(id);
+        r.getKeys().removeListener(id2);
 
         r.getKeys().flushall();
 
         Thread.sleep(100);
 
-        assertThat(ref.get()).isNull();
+        assertThat(counter.get()).isEqualTo(2);
 
         r.shutdown();
     }
