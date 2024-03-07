@@ -27,12 +27,16 @@ public class RedissonMultiLockTest extends RedisDockerTest {
         RLock lock = redisson.getMultiLock(lock1, lock2, lock3);
         try {
             lock.lock(10, TimeUnit.SECONDS);
+            assertThat(lock.isHeldByCurrentThread()).isTrue();
+            assertThat(lock.isHeldByThread(Thread.currentThread().threadId())).isTrue();
             Thread.sleep(1000);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } finally {
             lock.unlock();
         }
+        assertThat(lock.isHeldByCurrentThread()).isFalse();
+        assertThat(lock.isHeldByThread(Thread.currentThread().threadId())).isFalse();
     }
 
     @Test

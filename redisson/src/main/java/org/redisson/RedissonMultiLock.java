@@ -22,8 +22,13 @@ import org.redisson.client.RedisResponseTimeoutException;
 import org.redisson.misc.CompletableFutureWrapper;
 
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.stream.Stream;
 
 /**
  * Groups multiple independent locks and manages them as one lock.
@@ -281,12 +286,9 @@ public class RedissonMultiLock implements RLock {
     }
     
     protected RFuture<Void> unlockInnerAsync(Collection<RLock> locks, long threadId) {
-        List<CompletableFuture<Void>> futures = new ArrayList<>(locks.size());
-        for (RLock lock : locks) {
-            RFuture<Void> f = lock.unlockAsync(threadId);
-            futures.add(f.toCompletableFuture());
-        }
-        CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        CompletableFuture[] s = locks.stream().map(l -> l.unlockAsync(threadId).toCompletableFuture())
+                                                .toArray(CompletableFuture[]::new);
+        CompletableFuture<Void> future = CompletableFuture.allOf(s);
         return new CompletableFutureWrapper<>(future);
     }
 
@@ -408,15 +410,7 @@ public class RedissonMultiLock implements RLock {
     
     @Override
     public void unlock() {
-        List<RFuture<Void>> futures = new ArrayList<>(locks.size());
-
-        for (RLock lock : locks) {
-            futures.add(lock.unlockAsync());
-        }
-
-        for (RFuture<Void> future : futures) {
-            future.toCompletableFuture().join();
-        }
+        locks.forEach(Lock::unlock);
     }
 
     @Override
@@ -486,17 +480,23 @@ public class RedissonMultiLock implements RLock {
 
     @Override
     public boolean isHeldByThread(long threadId) {
-        throw new UnsupportedOperationException();
+        return locks.stream().map(l -> l.isHeldByThread(threadId)).reduce(true, (r, u) -> r && u);
     }
 
     @Override
     public RFuture<Boolean> isHeldByThreadAsync(long threadId) {
-        throw new UnsupportedOperationException();
+        CompletableFuture<Boolean>[] s = locks.stream().map(l -> l.isHeldByThreadAsync(threadId).toCompletableFuture())
+                                                        .toArray(CompletableFuture[]::new);
+        CompletableFuture<Void> future = CompletableFuture.allOf(s);
+        CompletableFuture<Boolean> f = future.thenApply(v -> Stream.of(s).map(r2 -> r2.getNow(false))
+                                                            .reduce(true, (r, u) -> r && u));
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
     public boolean isHeldByCurrentThread() {
-        throw new UnsupportedOperationException();
+        return locks.stream().map(l -> l.isHeldByCurrentThread())
+                                .reduce(true, (r, u) -> r && u);
     }
 
     @Override
