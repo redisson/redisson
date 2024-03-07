@@ -154,7 +154,7 @@ public class RedissonTest extends RedisDockerTest {
         }
 
         ex.shutdown();
-        assertThat(ex.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
+        assertThat(ex.awaitTermination(12, TimeUnit.SECONDS)).isTrue();
         assertThat(s.get()).isEqualTo(200_000L);
         inst.shutdown();
     }

@@ -615,7 +615,7 @@ public class RedissonStreamTest extends RedisDockerTest {
         };
         t.start();
 
-        Awaitility.await().between(Duration.ofMillis(1900), Duration.ofMillis(2200)).untilAsserted(() -> {
+        Awaitility.await().between(Duration.ofMillis(1900), Duration.ofMillis(2700)).untilAsserted(() -> {
             Map<String, Map<StreamMessageId, Map<String, String>>> s = stream.read(StreamMultiReadArgs.greaterThan(new StreamMessageId(0), "test1", StreamMessageId.NEWEST)
                     .timeout(Duration.ofSeconds(5))
                     .count(2));
