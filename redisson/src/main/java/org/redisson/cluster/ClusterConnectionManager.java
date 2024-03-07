@@ -543,7 +543,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 .filter(uri -> !currentPart.getFailedSlaveAddresses().contains(uri))
                 .forEach(uri -> {
                     currentPart.addFailedSlaveAddress(uri);
-                    if (entry.slaveDown(uri, FreezeReason.MANAGER)) {
+                    if (config.isSlaveNotUsed() || entry.slaveDown(uri, FreezeReason.MANAGER)) {
                         disconnectNode(uri);
                         log.warn("slave: {} has down for slot ranges: {}", uri, currentPart.getSlotRanges());
                     }
@@ -558,7 +558,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         for (RedisURI uri : removedSlaves) {
             currentPart.removeSlaveAddress(uri);
 
-            if (entry.slaveDown(uri, FreezeReason.MANAGER)) {
+            if (config.isSlaveNotUsed() || entry.slaveDown(uri, FreezeReason.MANAGER)) {
                 disconnectNode(uri);
                 log.info("slave {} removed for slot ranges: {}", uri, currentPart.getSlotRanges());
             }

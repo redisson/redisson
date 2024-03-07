@@ -172,7 +172,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                 .collect(Collectors.toSet());
 
         for (RedisClient slave : failedSlaves) {
-            if (entry.slaveDown(slave.getAddr(), FreezeReason.MANAGER)) {
+            if (config.isSlaveNotUsed() || entry.slaveDown(slave.getAddr(), FreezeReason.MANAGER)) {
                 log.info("slave: {} is down", slave);
                 disconnectNode(new RedisURI(slave.getConfig().getAddress().getScheme(),
                                             slave.getAddr().getAddress().getHostAddress(),
