@@ -1326,7 +1326,7 @@ public class RedissonTopicTest extends RedisDockerTest {
 
     @Test
     public void testReattachInClusterMaster2() {
-        withClusterFailover(redisson -> {
+        withNewCluster(redisson -> {
 
             Queue<String> messages = new ConcurrentLinkedQueue<>();
             Queue<String> subscriptions = new ConcurrentLinkedQueue<>();
@@ -1376,68 +1376,9 @@ public class RedissonTopicTest extends RedisDockerTest {
         });
     }
 
-    protected void withClusterFailover(Consumer<RedissonClient> callback) {
-        List<InspectContainerResponse> nodes = new ArrayList<>();
-
-        LogMessageWaitStrategy wait2 = new LogMessageWaitStrategy().withRegEx(".*REPLICA\ssync\\:\sFinished\swith\ssuccess.*");
-
-        DockerComposeContainer environment =
-                new DockerComposeContainer(new File("src/test/resources/docker-compose.yml"))
-                        .withExposedService("redis-node-0", 6379)
-                        .withExposedService("redis-node-1", 6379)
-                        .withExposedService("redis-node-2", 6379)
-                        .withExposedService("redis-node-3", 6379)
-                        .withExposedService("redis-node-4", 6379)
-                        .withExposedService("redis-node-5", 6379, wait2);
-
-        environment.start();
-
-        try {
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-
-        for (int i = 0; i < 6; i++) {
-            Optional<ContainerState> cc = environment.getContainerByServiceName("redis-node-" + i);
-            nodes.add(cc.get().getContainerInfo());
-        }
-
-        Optional<ContainerState> cc2 = environment.getContainerByServiceName("redis-node-0");
-
-        Config config = new Config();
-        config.useClusterServers()
-                .setNatMapper(new NatMapper() {
-
-                    @Override
-                    public RedisURI map(RedisURI uri) {
-                        for (InspectContainerResponse node : nodes) {
-                            Ports.Binding[] mappedPort = node.getNetworkSettings()
-                                    .getPorts().getBindings().get(new ExposedPort(uri.getPort()));
-
-                            Map<String, ContainerNetwork> ss = node.getNetworkSettings().getNetworks();
-                            ContainerNetwork s = ss.values().iterator().next();
-
-                            if (mappedPort != null
-                                    && s.getIpAddress().equals(uri.getHost())) {
-                                return new RedisURI(uri.getScheme(), "127.0.0.1", Integer.valueOf(mappedPort[0].getHostPortSpec()));
-                            }
-                        }
-                        return uri;
-                    }
-                })
-                .addNodeAddress("redis://127.0.0.1:" + cc2.get().getFirstMappedPort());
-
-        RedissonClient redisson = Redisson.create(config);
-
-        callback.accept(redisson);
-        redisson.shutdown();
-        environment.stop();
-    }
-
     @Test
     public void testReattachInClusterMaster() {
-        withClusterFailover(redissonClient -> {
+        withNewCluster(redissonClient -> {
             Config cfg = redissonClient.getConfig();
             cfg.useClusterServers().setSubscriptionMode(SubscriptionMode.MASTER);
 
@@ -1496,7 +1437,7 @@ public class RedissonTopicTest extends RedisDockerTest {
 
     @Test
     public void testReattachPatternTopicListenersOnClusterFailover() {
-        withClusterFailover(redisson -> {
+        withNewCluster(redisson -> {
             RedisCluster nodes = redisson.getRedisNodes(RedisNodes.CLUSTER);
             for (RedisClusterMaster master : nodes.getMasters()) {
                 master.setConfig("notify-keyspace-events", "K$");
