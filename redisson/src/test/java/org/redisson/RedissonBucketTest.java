@@ -6,25 +6,21 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.redisson.RedisRunner.FailedToStartRedisException;
-import org.redisson.api.*;
+import org.redisson.api.DeletedObjectListener;
+import org.redisson.api.ExpiredObjectListener;
+import org.redisson.api.RBucket;
+import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.SetObjectListener;
 import org.redisson.api.listener.TrackingListener;
 import org.redisson.api.options.PlainOptions;
-import org.redisson.api.redisnode.RedisCluster;
-import org.redisson.api.redisnode.RedisClusterSlave;
-import org.redisson.api.redisnode.RedisNodes;
-import org.redisson.client.RedisClient;
-import org.redisson.client.RedisClientConfig;
-import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisResponseTimeoutException;
-import org.redisson.client.protocol.RedisCommands;
-import org.redisson.config.*;
-import org.redisson.misc.RedisURI;
+import org.redisson.config.Config;
+import org.redisson.config.Protocol;
+import org.redisson.config.ReadMode;
+import org.redisson.config.SubscriptionMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -32,6 +28,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
@@ -56,16 +53,23 @@ public class RedissonBucketTest extends RedisDockerTest {
 
         RedissonClient rs = Redisson.create(c);
         RBucket<String> b = rs.getBucket("test");
-        AtomicReference<String> ref = new AtomicReference<>();
+        AtomicInteger ref = new AtomicInteger();
         int id = b.addListener(new TrackingListener() {
             @Override
             public void onChange(String name) {
-                System.out.println("name " + name);
-                ref.set(name);
+                assertThat(name).isEqualTo(b.getName());
+                ref.incrementAndGet();
+            }
+        });
+        int id3 = b.addListener(new TrackingListener() {
+            @Override
+            public void onChange(String name) {
+                assertThat(name).isEqualTo(b.getName());
+                ref.incrementAndGet();
             }
         });
         String r = b.get();
-        assertThat(ref.get()).isNull();
+        assertThat(ref.get()).isZero();
 
         RBucket<String> b2 = rs.getBucket("test1");
         AtomicReference<String> ref2 = new AtomicReference<>();
@@ -86,17 +90,18 @@ public class RedissonBucketTest extends RedisDockerTest {
         bb2.set("7584");
 
         Awaitility.waitAtMost(Duration.ofMillis(500)).untilAsserted(() -> {
-            assertThat(ref.getAndSet(null)).isEqualTo("test");
+            assertThat(ref.getAndSet(0)).isEqualTo(2);
             assertThat(ref2.getAndSet(null)).isEqualTo("test1");
         });
 
         b.removeListener(id);
+        b.removeListener(id3);
 
         String r2 = b.get();
         bb.set("6345");
 
         Awaitility.waitAtMost(Duration.ofMillis(500)).untilAsserted(() -> {
-            assertThat(ref.get()).isNull();
+            assertThat(ref.get()).isZero();
             assertThat(ref2.get()).isNull();
         });
 
@@ -104,8 +109,8 @@ public class RedissonBucketTest extends RedisDockerTest {
         bb2.set("6345");
 
         Awaitility.waitAtMost(Duration.ofMillis(500)).untilAsserted(() -> {
+            assertThat(ref.get()).isZero();
             assertThat(ref2.getAndSet(null)).isEqualTo("test1");
-            assertThat(ref.get()).isNull();
         });
 
         rs.shutdown();
