@@ -723,10 +723,7 @@ public class RedissonTopicTest extends RedisDockerTest {
         GenericContainer<?> redis = createRedis();
         redis.start();
 
-        Config config = new Config();
-        config.setProtocol(protocol);
-        config.useSingleServer()
-                .setAddress("redis://127.0.0.1:" + redis.getFirstMappedPort());
+        Config config = createConfig(redis);
         RedissonClient redisson = Redisson.create(config);
         
         final AtomicBoolean executed = new AtomicBoolean();
@@ -769,10 +766,7 @@ public class RedissonTopicTest extends RedisDockerTest {
         GenericContainer<?> redis = createRedis();
         redis.start();
 
-        Config config = new Config();
-        config.setProtocol(protocol);
-        config.useSingleServer()
-                .setAddress("redis://127.0.0.1:" + redis.getFirstMappedPort());
+        Config config = createConfig(redis);
         RedissonClient redisson = Redisson.create(config);
 
         redis.setPortBindings(Arrays.asList(redis.getFirstMappedPort() + ":6379"));
