@@ -79,6 +79,8 @@ public class RedissonShardedTopicTest extends RedisDockerTest {
                 }
             });
 
+            assertThat(topic.countSubscribers()).isEqualTo(1);
+
             RedisCluster rnc = redisson.getRedisNodes(RedisNodes.CLUSTER);
             for (RedisClusterMaster master : rnc.getMasters()) {
                 RedisClientConfig cc = new RedisClientConfig();
@@ -95,7 +97,10 @@ public class RedissonShardedTopicTest extends RedisDockerTest {
             Awaitility.waitAtMost(Duration.ofSeconds(30)).until(() -> subscriptions.get() == 2);
 
             redisson.getShardedTopic("3").publish(1);
-            assertThat(executed.get()).isTrue();
+
+            Awaitility.waitAtMost(Duration.ofSeconds(1)).untilAsserted(() -> {
+                assertThat(executed.get()).isTrue();
+            });
 
             redisson.shutdown();
         });

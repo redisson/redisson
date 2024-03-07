@@ -25,7 +25,7 @@ import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Single;
 
 /**
- * RxJava2 interface for Publish Subscribe object. Messages are delivered to all message listeners across Redis cluster.
+ * RxJava3 interface for Publish Subscribe object. Messages are delivered to all message listeners across Redis cluster.
  *
  * @author Nikita Koksharov
  *

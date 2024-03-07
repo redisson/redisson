@@ -21,6 +21,7 @@ import org.redisson.api.RShardedTopic;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
@@ -88,6 +89,6 @@ public class RedissonShardedTopic extends RedissonTopic implements RShardedTopic
 
     @Override
     public RFuture<Long> countSubscribersAsync() {
-        throw new UnsupportedOperationException("Sharded PUBSUB doesn't support this operation");
+        return commandExecutor.writeAsync(name, LongCodec.INSTANCE, RedisCommands.PUBSUB_SHARDNUMSUB, channelName);
     }
 }

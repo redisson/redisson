@@ -708,16 +708,17 @@ public interface RedisCommands {
     RedisStrictCommand<Long> PUBLISH = new RedisStrictCommand<Long>("PUBLISH");
 
     RedisStrictCommand<Long> SPUBLISH = new RedisStrictCommand<Long>("SPUBLISH");
-    RedisCommand<Long> PUBSUB_NUMSUB = new RedisCommand<Long>("PUBSUB", "NUMSUB", new ListObjectDecoder<Long>(1));
+    RedisCommand<Long> PUBSUB_NUMSUB = new RedisCommand<>("PUBSUB", "NUMSUB", new ListObjectDecoder<>(1));
     RedisCommand<List<String>> PUBSUB_CHANNELS = new RedisStrictCommand<>("PUBSUB", "CHANNELS", new StringListReplayDecoder());
     RedisCommand<List<String>> PUBSUB_SHARDCHANNELS = new RedisStrictCommand<>("PUBSUB", "SHARDCHANNELS", new StringListReplayDecoder());
+    RedisCommand<Long> PUBSUB_SHARDNUMSUB = new RedisCommand<>("PUBSUB", "SHARDNUMSUB", new ListObjectDecoder<>(1));
 
-    RedisCommand<Object> SSUBSCRIBE = new RedisCommand<Object>("SSUBSCRIBE", new PubSubStatusDecoder());
-    RedisCommand<Object> SUBSCRIBE = new RedisCommand<Object>("SUBSCRIBE", new PubSubStatusDecoder());
-    RedisCommand<Object> UNSUBSCRIBE = new RedisCommand<Object>("UNSUBSCRIBE", new PubSubStatusDecoder());
-    RedisCommand<Object> SUNSUBSCRIBE = new RedisCommand<Object>("SUNSUBSCRIBE", new PubSubStatusDecoder());
-    RedisCommand<Object> PSUBSCRIBE = new RedisCommand<Object>("PSUBSCRIBE", new PubSubStatusDecoder());
-    RedisCommand<Object> PUNSUBSCRIBE = new RedisCommand<Object>("PUNSUBSCRIBE", new PubSubStatusDecoder());
+    RedisCommand<Object> SSUBSCRIBE = new RedisCommand<>("SSUBSCRIBE", new PubSubStatusDecoder());
+    RedisCommand<Object> SUBSCRIBE = new RedisCommand<>("SUBSCRIBE", new PubSubStatusDecoder());
+    RedisCommand<Object> UNSUBSCRIBE = new RedisCommand<>("UNSUBSCRIBE", new PubSubStatusDecoder());
+    RedisCommand<Object> SUNSUBSCRIBE = new RedisCommand<>("SUNSUBSCRIBE", new PubSubStatusDecoder());
+    RedisCommand<Object> PSUBSCRIBE = new RedisCommand<>("PSUBSCRIBE", new PubSubStatusDecoder());
+    RedisCommand<Object> PUNSUBSCRIBE = new RedisCommand<>("PUNSUBSCRIBE", new PubSubStatusDecoder());
 
     Set<String> PUBSUB_COMMANDS = Collections.unmodifiableSet(new HashSet<>(
             Arrays.asList(PSUBSCRIBE.getName(), SUBSCRIBE.getName(), PUNSUBSCRIBE.getName(),
