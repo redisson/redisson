@@ -405,7 +405,7 @@ public class RedissonTopicTest extends RedisDockerTest {
 
     @Test
     public void testSlotMigrationInCluster() {
-        withCluster(client -> {
+        withNewCluster(client -> {
             Config config = client.getConfig();
             config.useClusterServers()
                     .setScanInterval(1000)
@@ -751,9 +751,7 @@ public class RedissonTopicTest extends RedisDockerTest {
             }
         });
 
-        redis.setPortBindings(Arrays.asList(redis.getFirstMappedPort() + ":6379"));
-        redis.stop();
-        redis.start();
+        restart(redis);
 
         Thread.sleep(2000);
 
@@ -1178,7 +1176,7 @@ public class RedissonTopicTest extends RedisDockerTest {
 
     @Test
     public void testReattachInClusterSlave() {
-        withCluster(client -> {
+        withNewCluster(client -> {
             Config config = client.getConfig();
             config.useClusterServers()
                     .setSubscriptionMode(SubscriptionMode.SLAVE);
@@ -1376,32 +1374,6 @@ public class RedissonTopicTest extends RedisDockerTest {
             }
             assertThat(messages).hasSize(topicsAmount);
         });
-    }
-
-    public void withCluster(Consumer<RedissonClient> callback) {
-        GenericContainer redisCluster = new GenericContainer<>("vishnunair/docker-redis-cluster")
-                .withExposedPorts(6379, 6380, 6381, 6382, 6383, 6384)
-                .withStartupCheckStrategy(new MinimumDurationRunningStartupCheckStrategy(Duration.ofSeconds(10)));
-        redisCluster.start();
-
-        Config config = new Config();
-        config.setProtocol(protocol);
-        config.useClusterServers()
-                .setNatMapper(new NatMapper() {
-                    @Override
-                    public RedisURI map(RedisURI uri) {
-                        if (redisCluster.getMappedPort(uri.getPort()) == null) {
-                            return uri;
-                        }
-                        return new RedisURI(uri.getScheme(), redisCluster.getHost(), redisCluster.getMappedPort(uri.getPort()));
-                    }
-                })
-                .addNodeAddress("redis://127.0.0.1:" + redisCluster.getFirstMappedPort());
-
-        RedissonClient redisson = Redisson.create(config);
-        callback.accept(redisson);
-        redisson.shutdown();
-        redisCluster.stop();
     }
 
     protected void withClusterFailover(Consumer<RedissonClient> callback) {
