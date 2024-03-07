@@ -784,7 +784,7 @@ public class PublishSubscribeService {
                 if (scodec != null) {
                     Queue<RedisPubSubListener<?>> listeners = pubSubEntry.getListeners(entry.getKey().getChannelName());
                     unsubscribe(entry.getKey().getChannelName(), pubSubEntry, PubSubType.SUNSUBSCRIBE);
-                    subscribe(codec, entry.getKey().getChannelName(), listeners.toArray(new RedisPubSubListener[0]));
+                    ssubscribe(codec, entry.getKey().getChannelName(), listeners.toArray(new RedisPubSubListener[0]));
                 }
 
                 Codec patternCodec = pubSubEntry.getConnection().getPatternChannels().get(entry.getKey().getChannelName());
@@ -876,7 +876,7 @@ public class PublishSubscribeService {
                 return;
             }
 
-            log.info("listeners of '{}' channel have been resubscribed to '{}'", channelName, res);
+            log.info("listeners of '{}' sharded-channel have been resubscribed to '{}'", channelName, res);
         });
     }
 
