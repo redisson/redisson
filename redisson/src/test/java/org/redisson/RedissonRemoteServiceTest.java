@@ -370,7 +370,6 @@ public class RedissonRemoteServiceTest extends RedisDockerTest {
         RedissonClient r1 = createInstance();
         AtomicInteger iterations = new AtomicInteger();
         ExecutorService executor = Executors.newSingleThreadExecutor();
-        r1.getKeys().flushall();
         r1.getRemoteService().register(RemoteInterface.class, new RemoteImpl(iterations), 1, executor);
         
         RedissonClient r2 = createInstance();
@@ -394,7 +393,6 @@ public class RedissonRemoteServiceTest extends RedisDockerTest {
         RedissonReactiveClient r1 = Redisson.create(createConfig()).reactive();
         AtomicInteger iterations = new AtomicInteger();
         ExecutorService executor = Executors.newSingleThreadExecutor();
-        r1.getKeys().flushall();
         r1.getRemoteService().register(RemoteInterface.class, new RemoteImpl(iterations), 1, executor);
         
         RedissonReactiveClient r2 = Redisson.create(createConfig()).reactive();
