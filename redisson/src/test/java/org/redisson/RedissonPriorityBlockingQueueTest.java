@@ -48,10 +48,9 @@ public class RedissonPriorityBlockingQueueTest extends RedissonBlockingQueueTest
         } catch (ExecutionException | TimeoutException e) {
             // skip
         }
-        redis.setPortBindings(Arrays.asList(redis.getFirstMappedPort() + ":6379"));
-        redis.stop();
 
-        redis.start();
+        restart(redis);
+
         queue1.put(123);
         
         // check connection rotation
@@ -82,10 +81,9 @@ public class RedissonPriorityBlockingQueueTest extends RedissonBlockingQueueTest
         } catch (ExecutionException | TimeoutException e) {
             // skip
         }
-        redis.setPortBindings(Arrays.asList(redis.getFirstMappedPort() + ":6379"));
-        redis.stop();
 
-        redis.start();
+        restart(redis);
+
         queue1.put(123);
         
         // check connection rotation

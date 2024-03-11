@@ -297,9 +297,7 @@ public class RedissonBoundedBlockingQueueTest extends RedisDockerTest {
         t.start();
         t.join(1000);
 
-        redis.setPortBindings(Arrays.asList(redis.getFirstMappedPort() + ":6379"));
-        redis.stop();
-        redis.start();
+        restart(redis);
 
         Thread.sleep(1000);
 
@@ -331,9 +329,7 @@ public class RedissonBoundedBlockingQueueTest extends RedisDockerTest {
             // skip
         }
 
-        redis.setPortBindings(Arrays.asList(redis.getFirstMappedPort() + ":6379"));
-        redis.stop();
-        redis.start();
+        restart(redis);
 
         assertThat(queue1.trySetCapacity(15)).isTrue();
         queue1.put(123);
@@ -359,8 +355,7 @@ public class RedissonBoundedBlockingQueueTest extends RedisDockerTest {
 
         Config config = createConfig(redis);
         RedissonClient redisson = Redisson.create(config);
-        redisson.getKeys().flushall();
-        
+
         RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("testTakeReattach");
         assertThat(queue1.trySetCapacity(15)).isTrue();
         RFuture<Integer> f = queue1.takeAsync();
@@ -370,9 +365,7 @@ public class RedissonBoundedBlockingQueueTest extends RedisDockerTest {
             // skip
         }
 
-        redis.setPortBindings(Arrays.asList(redis.getFirstMappedPort() + ":6379"));
-        redis.stop();
-        redis.start();
+        restart(redis);
 
         assertThat(queue1.trySetCapacity(15)).isTrue();
         queue1.put(123);
@@ -396,8 +389,7 @@ public class RedissonBoundedBlockingQueueTest extends RedisDockerTest {
         config.useSingleServer().setConnectionMinimumIdleSize(1).setConnectionPoolSize(1);
 
         RedissonClient redisson = Redisson.create(config);
-        redisson.getKeys().flushall();
-        
+
         RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("testTakeAsyncCancel");
         assertThat(queue1.trySetCapacity(15)).isTrue();
         for (int i = 0; i < 10; i++) {
@@ -417,8 +409,7 @@ public class RedissonBoundedBlockingQueueTest extends RedisDockerTest {
         config.useSingleServer().setConnectionMinimumIdleSize(1).setConnectionPoolSize(1);
 
         RedissonClient redisson = Redisson.create(config);
-        redisson.getKeys().flushall();
-        
+
         RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("queue:pollany");
         assertThat(queue1.trySetCapacity(15)).isTrue();
         for (int i = 0; i < 10; i++) {

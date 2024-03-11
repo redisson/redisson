@@ -523,7 +523,7 @@ public class RedisDockerTest {
     }
 
     protected void restart(GenericContainer<?> redis) {
-        redis.setPortBindings(Arrays.asList(redis.getFirstMappedPort() + ":6379"));
+        redis.setPortBindings(Arrays.asList(redis.getFirstMappedPort() + ":" + redis.getExposedPorts().get(0)));
         redis.stop();
         redis.start();
     }
