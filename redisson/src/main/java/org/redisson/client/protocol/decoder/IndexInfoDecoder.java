@@ -50,16 +50,16 @@ public class IndexInfoDecoder implements MultiDecoder<Object> {
             ii.setMaxDocId(toLong(result, "max_doc_id"));
             ii.setTerms(toLong(result, "num_terms"));
             ii.setRecords(toLong(result, "num_records"));
-            ii.setInvertedSize(Double.valueOf(result.get("inverted_sz_mb").toString()));
-            ii.setVectorIndexSize(Double.valueOf(result.get("vector_index_sz_mb").toString()));
-            ii.setTotalInvertedIndexBlocks(Double.valueOf(result.get("total_inverted_index_blocks").toString()));
-            ii.setOffsetVectorsSize(Double.valueOf(result.get("offset_vectors_sz_mb").toString()));
-            ii.setDocTableSize(Double.valueOf(result.get("doc_table_size_mb").toString()));
-            ii.setSortableValuesSize(Double.valueOf(result.get("sortable_values_size_mb").toString()));
-            ii.setKeyTableSize(Double.valueOf(result.get("key_table_size_mb").toString()));
-            ii.setRecordsPerDocAverage(Double.valueOf(result.get("records_per_doc_avg").toString()));
-            ii.setBytesPerRecordAverage(toLong(result, "bytes_per_record_avg"));
-            ii.setOffsetsPerTermAverage(toLong(result, "offsets_per_term_avg"));
+            ii.setInvertedSize(toDouble(result, "inverted_sz_mb"));
+            ii.setVectorIndexSize(toDouble(result, "vector_index_sz_mb"));
+            ii.setTotalInvertedIndexBlocks(toDouble(result, "total_inverted_index_blocks"));
+            ii.setOffsetVectorsSize(toDouble(result, "offset_vectors_sz_mb"));
+            ii.setDocTableSize(toDouble(result, "doc_table_size_mb"));
+            ii.setSortableValuesSize(toDouble(result, "sortable_values_size_mb"));
+            ii.setKeyTableSize(toDouble(result, "key_table_size_mb"));
+            ii.setRecordsPerDocAverage(toDouble(result, "records_per_doc_avg"));
+            ii.setBytesPerRecordAverage(toDouble(result, "bytes_per_record_avg"));
+            ii.setOffsetsPerTermAverage(toDouble(result, "offsets_per_term_avg"));
             ii.setOffsetBitsPerRecordAverage(toLong(result, "offset_bits_per_record_avg"));
             ii.setHashIndexingFailures(toLong(result, "hash_indexing_failures"));
             ii.setTotalIndexingTime(Double.valueOf(result.get("total_indexing_time").toString()));
@@ -84,5 +84,12 @@ public class IndexInfoDecoder implements MultiDecoder<Object> {
             return d.longValue();
         }
         return Long.valueOf(result.get(prop).toString());
+    }
+    
+    private Double toDouble(Map<String, Object> result, String prop) {
+        if (result.get(prop).toString().contains("nan")) {
+            return 0D;
+        }
+        return Double.valueOf(result.get(prop).toString());
     }
 }

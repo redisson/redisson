@@ -63,9 +63,9 @@ public class IndexInfo {
 
     private Double recordsPerDocAverage;
 
-    private Long bytesPerRecordAverage;
+    private Double bytesPerRecordAverage;
 
-    private Long offsetsPerTermAverage;
+    private Double offsetsPerTermAverage;
     private Long offsetBitsPerRecordAverage;
 
     private Long hashIndexingFailures;
@@ -249,20 +249,20 @@ public class IndexInfo {
         return this;
     }
 
-    public Long getBytesPerRecordAverage() {
+    public Double getBytesPerRecordAverage() {
         return bytesPerRecordAverage;
     }
 
-    public IndexInfo setBytesPerRecordAverage(Long bytesPerRecordAverage) {
+    public IndexInfo setBytesPerRecordAverage(Double bytesPerRecordAverage) {
         this.bytesPerRecordAverage = bytesPerRecordAverage;
         return this;
     }
 
-    public Long getOffsetsPerTermAverage() {
+    public Double getOffsetsPerTermAverage() {
         return offsetsPerTermAverage;
     }
 
-    public IndexInfo setOffsetsPerTermAverage(Long offsetsPerTermAverage) {
+    public IndexInfo setOffsetsPerTermAverage(Double offsetsPerTermAverage) {
         this.offsetsPerTermAverage = offsetsPerTermAverage;
         return this;
     }
