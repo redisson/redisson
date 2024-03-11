@@ -298,9 +298,15 @@ public final class ServiceManager {
         }
 
         AddressResolver<InetSocketAddress> resolver = resolverGroup.getResolver(group.next());
-        Future<List<InetSocketAddress>> f = resolver.resolveAll(InetSocketAddress.createUnresolved(uri.getHost(), uri.getPort()));
+        Future<List<InetSocketAddress>> future = resolver.resolveAll(InetSocketAddress.createUnresolved(uri.getHost(), uri.getPort()));
         CompletableFuture<List<RedisURI>> result = new CompletableFuture<>();
-        f.addListener((GenericFutureListener<Future<List<InetSocketAddress>>>) future -> {
+        future.addListener((GenericFutureListener<Future<List<InetSocketAddress>>>) f -> {
+            if (!f.isSuccess()) {
+                log.error("Unable to resolve {}", uri, f.cause());
+                result.completeExceptionally(f.cause());
+                return;
+            }
+
             List<RedisURI> nodes = future.getNow().stream().map(addr -> {
                 return toURI(uri.getScheme(), addr.getAddress().getHostAddress(), "" + addr.getPort());
             }).collect(Collectors.toList());
