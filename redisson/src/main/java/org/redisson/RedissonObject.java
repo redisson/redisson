@@ -513,7 +513,7 @@ public abstract class RedissonObject implements RObject {
     }
 
     protected final RFuture<Void> removeListenerAsync(int listenerId, String... names) {
-        List<String> ns = Arrays.asList(names);
+        List<String> ns = new ArrayList<>(Arrays.asList(names));
         ns.addAll(Arrays.asList("__keyevent@*:expired", "__keyevent@*:del"));
         return removeListenerAsync(null, listenerId, ns.toArray(new String[0]));
     }

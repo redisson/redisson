@@ -297,7 +297,20 @@ public class RedissonBucketTest extends RedisDockerTest {
             }
         }, NOTIFY_KEYSPACE_EVENTS, "Eg");
     }
-    
+
+    @Test
+    public void testRemoveListenerAsync() {
+        testWithParams(redisson -> {
+            RBucket<Integer> al = redisson.getBucket("test");
+            int id = al.addListenerAsync(new SetObjectListener() {
+                @Override
+                public void onSet(String name) {
+                }
+            }).toCompletableFuture().join();
+            al.removeListenerAsync(id).toCompletableFuture().join();
+        }, NOTIFY_KEYSPACE_EVENTS, "E$");
+    }
+
     @Test
     public void testSetListener() {
         testWithParams(redisson -> {
