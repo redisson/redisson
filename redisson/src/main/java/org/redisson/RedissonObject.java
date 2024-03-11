@@ -524,6 +524,11 @@ public abstract class RedissonObject implements RObject {
 
     protected final RFuture<Void> removeTrackingListenerAsync(int listenerId) {
         PublishSubscribeService subscribeService = commandExecutor.getConnectionManager().getSubscribeService();
+        ChannelName cn = new ChannelName("__redis__:invalidate");
+        if (!subscribeService.hasEntry(cn)) {
+            return new CompletableFutureWrapper<>((Void) null);
+        }
+
         CompletableFuture<Void> f = subscribeService.removeListenerAsync(PubSubType.UNSUBSCRIBE, new ChannelName("__redis__:invalidate"), listenerId);
         f = f.whenComplete((r, e) -> {
             if (!commandExecutor.isTrackChanges()) {
