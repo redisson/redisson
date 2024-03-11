@@ -558,7 +558,7 @@
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
-                <version>5.1.1</version>
+                <version>5.1.9</version>
                 <extensions>true</extensions>
                 <executions>
                     <execution>
@@ -573,6 +573,7 @@
                     <instructions>
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <DynamicImport-Package>*</DynamicImport-Package>
+                        <Import-Package>jdk.net;resolution:=optional,*</Import-Package>
                     </instructions>
                 </configuration>
             </plugin>
