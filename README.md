@@ -12,7 +12,7 @@ Supported Redis: 3.0 ... 7.2
 ## Features
 
 * Thread-safe implementation  
-* Support for multiple Redis deployment types
+* Compatible with multiple Redis deployment types
     * [Redis Proxy](https://github.com/redisson/redisson/wiki/2.-Configuration/#29-proxy-mode)
     * [Redis Multi-cluster](https://github.com/redisson/redisson/wiki/2.-Configuration/#210-multi-cluster-mode)
     * [Redis Single](https://github.com/redisson/redisson/wiki/2.-Configuration/#26-single-instance-mode)
