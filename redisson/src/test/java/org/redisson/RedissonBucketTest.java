@@ -539,14 +539,10 @@ public class RedissonBucketTest extends RedisDockerTest {
                                         .withNetworkAliases("foo2");
         redis2.start();
 
-        Config config2 = new Config();
-        config2.setProtocol(protocol);
-        config2.useSingleServer().setAddress("redis://" + redis.getHost() + ":" + redis.getFirstMappedPort());
+        Config config2 = createConfig(redis);
         RedissonClient r2 = Redisson.create(config2);
 
-        Config config = new Config();
-        config.setProtocol(protocol);
-        config.useSingleServer().setAddress("redis://" + redis2.getHost() + ":" + redis2.getFirstMappedPort());
+        Config config = createConfig(redis2);
         RedissonClient r = Redisson.create(config);
 
         consumer.accept(r2, r);
@@ -563,12 +559,10 @@ public class RedissonBucketTest extends RedisDockerTest {
         GenericContainer<?> redis = createRedis();
         redis.start();
 
-        Config config = new Config();
-        config.setProtocol(protocol);
+        Config config = createConfig(redis);
         config.useSingleServer()
                 .setRetryAttempts(3)
-                .setRetryInterval(0)
-                .setAddress("redis://127.0.0.1:" + redis.getFirstMappedPort());
+                .setRetryInterval(0);
         RedissonClient rc = Redisson.create(config);
 
         List<String> args = new ArrayList<>();

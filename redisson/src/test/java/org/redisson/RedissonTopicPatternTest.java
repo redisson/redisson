@@ -443,19 +443,10 @@ public class RedissonTopicPatternTest extends RedisDockerTest {
 
     @Test
     public void testReattach() throws InterruptedException {
-        GenericContainer<?> redis =
-                new GenericContainer<>("redis:7.2")
-                        .withExposedPorts(6379);
+        GenericContainer<?> redis = createRedis();
         redis.start();
-        int port = redis.getFirstMappedPort();
-        redis.withCreateContainerCmdModifier(cmd -> {
-            cmd.getHostConfig().withPortBindings(
-                    new PortBinding(Ports.Binding.bindPort(Integer.valueOf(port)),
-                            cmd.getExposedPorts()[0]));
-        });
 
-        Config config = new Config();
-        config.useSingleServer().setAddress("redis://127.0.0.1:" + redis.getFirstMappedPort());
+        Config config = createConfig(redis);
         RedissonClient redisson = Redisson.create(config);
         
         final AtomicBoolean executed = new AtomicBoolean();
@@ -470,8 +461,7 @@ public class RedissonTopicPatternTest extends RedisDockerTest {
             }
         });
 
-        redis.stop();
-        redis.start();
+        restart(redis);
 
         Thread.sleep(1000);
 

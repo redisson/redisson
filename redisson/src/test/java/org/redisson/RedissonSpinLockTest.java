@@ -57,13 +57,10 @@ public class RedissonSpinLockTest extends BaseConcurrentTest {
 
     @Test
     public void testRedisFailed() {
-        GenericContainer<?> redis =
-                new GenericContainer<>("redis:7.2")
-                        .withExposedPorts(6379);
+        GenericContainer<?> redis = createRedis();
         redis.start();
 
-        Config config = new Config();
-        config.useSingleServer().setAddress("redis://127.0.0.1:" + redis.getFirstMappedPort());
+        Config config = createConfig(redis);
         RedissonClient redisson = Redisson.create(config);
 
         Assertions.assertThrows(RedisException.class, () -> {

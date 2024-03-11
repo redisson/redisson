@@ -245,8 +245,7 @@ public class RedissonBoundedBlockingQueueTest extends RedisDockerTest {
         GenericContainer<?> redis = createRedis();
         redis.start();
 
-        Config config = new Config();
-        config.useSingleServer().setAddress("redis://" + redis.getHost() + ":" + redis.getFirstMappedPort());
+        Config config = createConfig(redis);
         RedissonClient redisson = Redisson.create(config);
 
         RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("bounded-queue:pollTimeout");
@@ -273,8 +272,7 @@ public class RedissonBoundedBlockingQueueTest extends RedisDockerTest {
         GenericContainer<?> redis = createRedis();
         redis.start();
 
-        Config config = new Config();
-        config.useSingleServer().setAddress("redis://" + redis.getHost() + ":" + redis.getFirstMappedPort());
+        Config config = createConfig(redis);
         RedissonClient redisson = Redisson.create(config);
 
         final AtomicBoolean executed = new AtomicBoolean();
@@ -321,9 +319,8 @@ public class RedissonBoundedBlockingQueueTest extends RedisDockerTest {
     public void testPollAsyncReattach() throws InterruptedException, ExecutionException, TimeoutException {
         GenericContainer<?> redis = createRedis();
         redis.start();
-        
-        Config config = new Config();
-        config.useSingleServer().setAddress("redis://" + redis.getHost() + ":" + redis.getFirstMappedPort());
+
+        Config config = createConfig(redis);
         RedissonClient redisson = Redisson.create(config);
         
         RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("queue:pollany");
@@ -359,9 +356,8 @@ public class RedissonBoundedBlockingQueueTest extends RedisDockerTest {
     public void testTakeReattach() throws InterruptedException, ExecutionException, TimeoutException {
         GenericContainer<?> redis = createRedis();
         redis.start();
-        
-        Config config = new Config();
-        config.useSingleServer().setAddress("redis://" + redis.getHost() + ":" + redis.getFirstMappedPort());
+
+        Config config = createConfig(redis);
         RedissonClient redisson = Redisson.create(config);
         redisson.getKeys().flushall();
         

@@ -142,10 +142,7 @@ public class RedissonMultiLockTest extends RedisDockerTest {
     }
 
     private RedissonClient createClient(GenericContainer<?> redis) {
-        Config config = new Config();
-        config.setProtocol(protocol);
-        config.useSingleServer()
-                .setAddress("redis://127.0.0.1:" + redis.getFirstMappedPort());
+        Config config = createConfig(redis);
         return Redisson.create(config);
     }
     

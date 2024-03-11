@@ -181,8 +181,7 @@ public class RedissonLockTest extends BaseConcurrentTest {
         GenericContainer<?> redis = createRedis();
         redis.start();
 
-        Config config = new Config();
-        config.useSingleServer().setAddress("redis://127.0.0.1:" + redis.getFirstMappedPort());
+        Config config = createConfig(redis);
         RedissonClient redisson = Redisson.create(config);
 
         Assertions.assertThrows(RedisException.class, () -> {
