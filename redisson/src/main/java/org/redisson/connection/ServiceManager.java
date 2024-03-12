@@ -465,7 +465,12 @@ public final class ServiceManager {
             }
         }
         RedisURI uri = new RedisURI(scheme + "://" + host + ":" + port);
-        return natMapper.map(uri);
+        try {
+            return natMapper.map(uri);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            return uri;
+        }
     }
 
     public void setNatMapper(NatMapper natMapper) {
