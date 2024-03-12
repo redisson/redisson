@@ -179,14 +179,16 @@ public class RedissonSpinLock extends RedissonBaseLock {
     }
 
     @Override
-    protected void cancelExpirationRenewal(Long threadId) {
-        super.cancelExpirationRenewal(threadId);
-        this.internalLockLeaseTime = getServiceManager().getCfg().getLockWatchdogTimeout();
+    protected void cancelExpirationRenewal(Long threadId, Boolean unlockResult) {
+        super.cancelExpirationRenewal(threadId, unlockResult);
+        if (unlockResult == null || unlockResult) {
+            internalLockLeaseTime = getServiceManager().getCfg().getLockWatchdogTimeout();
+        }
     }
 
     @Override
     public RFuture<Boolean> forceUnlockAsync() {
-        cancelExpirationRenewal(null);
+        cancelExpirationRenewal(null, null);
         return commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if (redis.call('del', KEYS[1]) == 1) then "
                         + "return 1 "

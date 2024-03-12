@@ -197,6 +197,17 @@ public class RedissonLockTest extends BaseConcurrentTest {
     }
 
     @Test
+    public void testRemainTimeToLive2() {
+        RLock lock = redisson.getLock("lock");
+        lock.lock(10, TimeUnit.SECONDS);
+        lock.lock(10, TimeUnit.SECONDS);
+        lock.lock(10, TimeUnit.SECONDS);
+        lock.unlock();
+        lock.unlock();
+        assertThat(lock.remainTimeToLive()).isBetween(9000L, 10000L);
+    }
+
+    @Test
     public void testTryLockWait() throws InterruptedException {
         testSingleInstanceConcurrency(1, r -> {
             RLock lock = r.getLock("lock");

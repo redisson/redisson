@@ -154,7 +154,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
                         // reschedule itself
                         renewExpiration();
                     } else {
-                        cancelExpirationRenewal(null);
+                        cancelExpirationRenewal(null, null);
                     }
                 });
             }
@@ -174,7 +174,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
                 renewExpiration();
             } finally {
                 if (Thread.currentThread().isInterrupted()) {
-                    cancelExpirationRenewal(threadId);
+                    cancelExpirationRenewal(threadId, null);
                 }
             }
         }
@@ -191,7 +191,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
                 internalLockLeaseTime, getLockName(threadId));
     }
 
-    protected void cancelExpirationRenewal(Long threadId) {
+    protected void cancelExpirationRenewal(Long threadId, Boolean unlockResult) {
         ExpirationEntry task = EXPIRATION_RENEWAL_MAP.get(getEntryName());
         if (task == null) {
             return;
@@ -292,8 +292,8 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
 
     private RFuture<Void> unlockAsync0(long threadId) {
         CompletionStage<Boolean> future = unlockInnerAsync(threadId);
-        CompletionStage<Void> f = future.handle((opStatus, e) -> {
-            cancelExpirationRenewal(threadId);
+        CompletionStage<Void> f = future.handle((res, e) -> {
+            cancelExpirationRenewal(threadId, res);
 
             if (e != null) {
                 if (e instanceof CompletionException) {
@@ -301,7 +301,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
                 }
                 throw new CompletionException(e);
             }
-            if (opStatus == null) {
+            if (res == null) {
                 IllegalMonitorStateException cause = new IllegalMonitorStateException("attempt to unlock lock, not locked by current thread by node id: "
                         + id + " thread-id: " + threadId);
                 throw new CompletionException(cause);

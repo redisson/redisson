@@ -180,7 +180,7 @@ public class RedissonReadLock extends RedissonLock implements RLock {
 
     @Override
     public RFuture<Boolean> forceUnlockAsync() {
-        cancelExpirationRenewal(null);
+        cancelExpirationRenewal(null, null);
         return commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if (redis.call('hget', KEYS[1], 'mode') == 'read') then " +
                     "redis.call('del', KEYS[1]); " +
