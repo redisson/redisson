@@ -3,6 +3,27 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 12-Mar-2024 - 3.27.2 released
+
+Feature - `RShardedTopic.countSubscribers()` method implemented  
+Feature - `RedissonMultiLock` implements `isHeldByThread()` and `isHeldByCurrentThread()` methods  
+
+Fixed - Multiple locking of RLock reset remainTimeToLive to config default  
+Fixed - exception thrown by `natMapper` is not shown in logs  
+Fixed - OSGi jdk.net package import should be optional  
+Fixed - `ServiceManager.resolveAll()` method throws NPE  
+Fixed - `RObject.addListenerAsync()` method throws `UnsupportedOperationException`  
+Fixed - `StatusListener` doesn't work with `RShardedTopic`  
+Fixed - NPE is thrown in cluster mode if slave node added  
+Fixed - continuously reconnecting to a removed slave node in cluster mode  
+Fixed - incorrect handling of TrackingListener removal  
+Fixed - `FlushListener` receives duplicate events  
+Fixed - `SlotsDecoder` throws NPE on empty result  
+Fixed - Clash between RedissonCache and Spring (6.1+) Cache interface methods  
+Fixed - `RedissonClient.shutdown()` method hangs at `serviceManager.getShutdownLatch()` invocation  
+Fixed - "Failed to submit a listener notification task. Event loop shut down?" error caused by `PingConnectionHandler`  
+Fixed - `JsonCodecWrapper` isn't cached properly  
+
 ### 28-Feb-2024 - 3.27.1 released
 
 Feature - added `TrackingListener` support to `RList`, `RQueue`, `RDeque`, `RBlockingQueue`, `RBlockingDeque`, `RDelayedQueue`, `RRingBuffer` objects  
