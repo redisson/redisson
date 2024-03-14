@@ -8,20 +8,18 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
-import org.redisson.api.redisnode.RedisClusterMaster;
 import org.redisson.api.redisnode.RedisMaster;
 import org.redisson.api.redisnode.RedisNodes;
 import org.redisson.api.redisnode.RedisSingle;
 import org.redisson.api.stream.StreamCreateGroupArgs;
-import org.redisson.client.*;
+import org.redisson.client.RedisConnectionException;
+import org.redisson.client.RedisException;
+import org.redisson.client.RedisOutOfMemoryException;
 import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
-import org.redisson.client.protocol.RedisCommands;
-import org.redisson.cluster.ClusterNodeInfo;
-import org.redisson.cluster.ClusterNodeInfo.Flag;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.SerializationCodec;
 import org.redisson.config.Config;
@@ -32,6 +30,7 @@ import org.redisson.connection.CRC16;
 import org.redisson.connection.ConnectionListener;
 import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.misc.RedisURI;
+import org.testcontainers.containers.ContainerState;
 import org.testcontainers.containers.FixedHostPortGenericContainer;
 import org.testcontainers.containers.GenericContainer;
 
@@ -39,11 +38,13 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -670,7 +671,7 @@ public class RedissonTest extends RedisDockerTest {
     }
 
     @Test
-    public void testMovedRedirectInCluster() throws Exception {
+    public void testMovedRedirectInCluster() {
         withNewCluster((nodes, redissonClient) -> {
             Config config = redissonClient.getConfig();
             config.useClusterServers()
@@ -678,73 +679,59 @@ public class RedissonTest extends RedisDockerTest {
 
             RedissonClient redisson = Redisson.create(config);
 
-            Collection<RedisClusterMaster> ms = redisson.getRedisNodes(RedisNodes.CLUSTER).getMasters();
-            RedisClusterMaster m = ms.iterator().next();
-            RedisURI a = config.useClusterServers().getNatMapper().map(
-                    new RedisURI("redis://" + m.getAddr().getHostString() + ":" + m.getAddr().getPort()));
-            RedisClientConfig cfg = new RedisClientConfig();
-            cfg.setAddress(a);
-            RedisClient c = RedisClient.create(cfg);
-            RedisConnection cc = c.connect();
-            List<ClusterNodeInfo> cn = cc.sync(RedisCommands.CLUSTER_NODES);
-            c.shutdownAsync();
-            cn = cn.stream().filter(i -> i.containsFlag(Flag.MASTER)).collect(Collectors.toList());
-            Iterator<ClusterNodeInfo> nodesIter = cn.iterator();
-
-
-            ClusterNodeInfo source = nodesIter.next();
-            ClusterNodeInfo destination = nodesIter.next();
-
-            RedisClientConfig sourceCfg = new RedisClientConfig();
-            sourceCfg.setAddress(config.useClusterServers().getNatMapper().map(source.getAddress()));
-            RedisClient sourceClient = RedisClient.create(sourceCfg);
-            RedisConnection sourceConnection = sourceClient.connect();
-
-            RedisClientConfig destinationCfg = new RedisClientConfig();
-            destinationCfg.setAddress(config.useClusterServers().getNatMapper().map(destination.getAddress()));
-            RedisClient destinationClient = RedisClient.create(destinationCfg);
-            RedisConnection destinationConnection = destinationClient.connect();
+            List<ContainerState> masters = getMasterNodes(nodes);
+            ContainerState source = masters.get(0);
+            ContainerState destination = masters.get(0);
 
             String key = null;
             int slot = 0;
+            String res = execute(source, "redis-cli", "cluster", "slots");
+            int sourceSlot = Integer.valueOf(res.split("\\n")[1]);
             for (int i = 0; i < 100000; i++) {
                 key = "" + i;
                 slot = CRC16.crc16(key.getBytes()) % MasterSlaveConnectionManager.MAX_SLOT;
-                if (source.getSlotRanges().iterator().next().getStartSlot() == slot) {
+                if (sourceSlot == slot) {
                     break;
                 }
             }
 
             redisson.getBucket(key).set("123");
 
-            destinationConnection.sync(RedisCommands.CLUSTER_SETSLOT, source.getSlotRanges().iterator().next().getStartSlot(), "IMPORTING", source.getNodeId());
-            sourceConnection.sync(RedisCommands.CLUSTER_SETSLOT, source.getSlotRanges().iterator().next().getStartSlot(), "MIGRATING", destination.getNodeId());
+            String ss = execute(source, "redis-cli", "exists", key);
+            assertThat(ss).contains("1");
 
-            List<String> keys = sourceConnection.sync(RedisCommands.CLUSTER_GETKEYSINSLOT, source.getSlotRanges().iterator().next().getStartSlot(), 100);
-            List<Object> params = new ArrayList<Object>();
-            params.add(destination.getAddress().getHost());
-            params.add(destination.getAddress().getPort());
+            String sourceId = execute(source, "redis-cli", "cluster", "myid");
+            String destinationId = execute(destination, "redis-cli", "cluster", "myid");
+            execute(destination, "redis-cli", "cluster", "setslot", String.valueOf(sourceSlot), "IMPORTING", sourceId);
+            execute(source, "redis-cli", "cluster", "setslot", String.valueOf(sourceSlot), "MIGRATING", destinationId);
+
+            String keysr = execute(source, "redis-cli", "cluster", "getkeysinslot", String.valueOf(sourceSlot), "100");
+            String[] keys = keysr.split("\n");
+
+            List<String> params = new ArrayList<>();
+            params.add("redis-cli");
+            params.add("migrate");
+            String destinationIP = destination.getContainerInfo().getNetworkSettings().getNetworks()
+                                            .values().iterator().next().getIpAddress();
+            params.add(destinationIP);
+            params.add(destination.getExposedPorts().get(0).toString());
             params.add("");
-            params.add(0);
-            params.add(2000);
+            params.add("0");
+            params.add("2000");
             params.add("KEYS");
-            params.addAll(keys);
-            sourceConnection.async(RedisCommands.MIGRATE, params.toArray());
+            params.addAll(Arrays.asList(keys));
+            execute(source, params.toArray(new String[0]));
 
-            for (ClusterNodeInfo node : cn) {
-                RedisClientConfig cc1 = new RedisClientConfig();
-                cc1.setAddress(config.useClusterServers().getNatMapper().map(node.getAddress()));
-                RedisClient ccc = RedisClient.create(cc1);
-                RedisConnection connection = ccc.connect();
-                connection.sync(RedisCommands.CLUSTER_SETSLOT, slot, "NODE", destination.getNodeId());
-                ccc.shutdownAsync();
+            for (ContainerState master : masters) {
+                execute(master, "redis-cli", "cluster", "setslot", String.valueOf(slot), "NODE", destinationId);
             }
 
-            redisson.getBucket(key).set("123");
-            redisson.getBucket(key).get();
+            String ss2 = execute(destination, "redis-cli", "exists", key);
+            assertThat(ss2).contains("1");
 
-            sourceClient.shutdown();
-            destinationClient.shutdown();
+            redisson.getBucket(key).set("123");
+            assertThat(redisson.getBucket(key).get()).isEqualTo("123");
+
             redisson.shutdown();
         });
     }

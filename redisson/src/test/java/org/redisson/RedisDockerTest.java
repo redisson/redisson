@@ -11,10 +11,7 @@ import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 import org.redisson.config.Protocol;
 import org.redisson.misc.RedisURI;
-import org.testcontainers.containers.ContainerState;
-import org.testcontainers.containers.DockerComposeContainer;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.Network;
+import org.testcontainers.containers.*;
 import org.testcontainers.containers.startupcheck.MinimumDurationRunningStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 
@@ -525,7 +522,11 @@ public class RedisDockerTest {
 
     protected String execute(ContainerState node, String... commands) {
         try {
-            return node.execInContainer(commands).getStdout();
+            Container.ExecResult r = node.execInContainer(commands);
+            if (!r.getStderr().isBlank()) {
+                throw new RuntimeException(r.getStderr());
+            }
+            return r.getStdout();
         } catch (IOException e) {
             throw new RuntimeException(e);
         } catch (InterruptedException e) {
