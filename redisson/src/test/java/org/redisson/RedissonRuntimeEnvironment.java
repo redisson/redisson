@@ -6,6 +6,7 @@ import java.util.Locale;
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
+@Deprecated
 public class RedissonRuntimeEnvironment {
 
     public static final boolean isTravis = "true".equalsIgnoreCase(System.getProperty("travisEnv"));

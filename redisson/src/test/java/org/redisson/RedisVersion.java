@@ -7,6 +7,7 @@ import java.util.regex.Pattern;
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
+@Deprecated
 public class RedisVersion implements Comparable<RedisVersion>{
 
     private final String fullVersion;

@@ -39,7 +39,7 @@ public abstract class BaseConcurrentTest extends RedisDockerTest {
         }
 
         executor.shutdown();
-        Assertions.assertTrue(executor.awaitTermination(RedissonRuntimeEnvironment.isTravis ? 10 : 3, TimeUnit.MINUTES));
+        Assertions.assertTrue(executor.awaitTermination(3, TimeUnit.MINUTES));
 
         System.out.println("multi: " + (System.currentTimeMillis() - watch));
 
@@ -73,7 +73,7 @@ public abstract class BaseConcurrentTest extends RedisDockerTest {
         }
 
         pool.shutdown();
-        Assertions.assertTrue(pool.awaitTermination(RedissonRuntimeEnvironment.isTravis ? 20 : 3, TimeUnit.MINUTES));
+        Assertions.assertTrue(pool.awaitTermination(3, TimeUnit.MINUTES));
 
         System.out.println(System.currentTimeMillis() - watch);
 
