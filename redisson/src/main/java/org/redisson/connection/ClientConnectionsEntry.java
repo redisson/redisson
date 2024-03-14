@@ -177,6 +177,7 @@ public class ClientConnectionsEntry {
 
         MasterSlaveEntry entry = connectionManager.getEntry(key);
         if (entry == null) {
+            log.debug("Unable to get entry for {} during blocking command reattach {}", key, commandData);
             connectionManager.getServiceManager().newTimeout(timeout ->
                     reattachBlockingQueue(commandData), 1, TimeUnit.SECONDS);
             return;
@@ -185,6 +186,7 @@ public class ClientConnectionsEntry {
         CompletableFuture<RedisConnection> newConnectionFuture = entry.connectionWriteOp(commandData.getCommand());
         newConnectionFuture.whenComplete((newConnection, e) -> {
             if (e != null) {
+                log.debug("Unable to acquire connection during blocking command reattach {}", commandData, e);
                 connectionManager.getServiceManager().newTimeout(timeout ->
                         reattachBlockingQueue(commandData), 1, TimeUnit.SECONDS);
                 return;
@@ -197,6 +199,7 @@ public class ClientConnectionsEntry {
             ChannelFuture channelFuture = newConnection.send(commandData);
             channelFuture.addListener(future -> {
                 if (!future.isSuccess()) {
+                    log.debug("Unable to send a command during blocking command reattach {}", commandData, future.cause());
                     connectionManager.getServiceManager().newTimeout(timeout ->
                             reattachBlockingQueue(commandData), 1, TimeUnit.SECONDS);
                     return;
