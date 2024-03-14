@@ -140,7 +140,7 @@ public class RedisDockerTest {
         }
     }
 
-    protected void testInCluster(Consumer<RedissonClient> redissonCallback) {
+    protected static void testInCluster(Consumer<RedissonClient> redissonCallback) {
         if (redissonCluster == null) {
             REDIS_CLUSTER = new GenericContainer<>("vishnunair/docker-redis-cluster")
                             .withExposedPorts(6379, 6380, 6381, 6382, 6383, 6384)
