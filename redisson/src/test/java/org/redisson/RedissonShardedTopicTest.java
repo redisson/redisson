@@ -8,16 +8,10 @@ import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.api.listener.StatusListener;
-import org.redisson.api.redisnode.RedisCluster;
-import org.redisson.api.redisnode.RedisClusterMaster;
-import org.redisson.api.redisnode.RedisNodes;
-import org.redisson.client.RedisClient;
-import org.redisson.client.RedisClientConfig;
-import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisException;
-import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.Config;
 import org.redisson.config.SubscriptionMode;
+import org.testcontainers.containers.ContainerState;
 import org.testcontainers.containers.GenericContainer;
 
 import java.time.Duration;
@@ -50,7 +44,7 @@ public class RedissonShardedTopicTest extends RedisDockerTest {
 
     @Test
     public void testReattachInClusterMaster() {
-        withNewCluster(redissonClient -> {
+        withNewCluster((nodes, redissonClient) -> {
             Config cfg = redissonClient.getConfig();
             cfg.useClusterServers()
                     .setPingConnectionInterval(0)
@@ -81,17 +75,13 @@ public class RedissonShardedTopicTest extends RedisDockerTest {
 
             assertThat(topic.countSubscribers()).isEqualTo(1);
 
-            RedisCluster rnc = redisson.getRedisNodes(RedisNodes.CLUSTER);
-            for (RedisClusterMaster master : rnc.getMasters()) {
-                RedisClientConfig cc = new RedisClientConfig();
-                cc.setAddress("redis://" + master.getAddr().getHostString() + ":" + master.getAddr().getPort());
-                RedisClient c = RedisClient.create(cc);
-                RedisConnection cn = c.connect();
-                List<String> channels = cn.sync(RedisCommands.PUBSUB_SHARDCHANNELS);
-                if (channels.contains("3")) {
-                    cn.async(RedisCommands.SHUTDOWN);
+            List<ContainerState> masters = getMasterNodes(nodes);
+            for (ContainerState master : masters) {
+                String r = execute(master, "redis-cli", "pubsub", "shardchannels");
+                if (r.contains("3")) {
+                    stop(master);
+                    break;
                 }
-                c.shutdown();
             }
 
             Awaitility.waitAtMost(Duration.ofSeconds(30)).until(() -> subscriptions.get() == 2);

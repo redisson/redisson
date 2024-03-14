@@ -12,9 +12,6 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.config.Protocol;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,13 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Testcontainers
 public class RedisClientTest  {
-
-    @Container
-    private static final GenericContainer<?> REDIS =
-            new GenericContainer<>("redis:7.2")
-                    .withExposedPorts(6379);
 
     private static RedisClient redisClient;
     
@@ -39,7 +30,7 @@ public class RedisClientTest  {
     public static void beforeAll() {
         RedisClientConfig config = new RedisClientConfig();
         config.setProtocol(Protocol.RESP3);
-        config.setAddress("redis://127.0.0.1:" + REDIS.getFirstMappedPort());
+        config.setAddress("redis://127.0.0.1:" + RedisDockerTest.REDIS.getFirstMappedPort());
         redisClient = RedisClient.create(config);
     }
 

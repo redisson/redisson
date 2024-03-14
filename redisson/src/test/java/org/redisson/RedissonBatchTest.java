@@ -43,7 +43,7 @@ public class RedissonBatchTest extends RedisDockerTest {
     @ParameterizedTest
     @MethodSource("data")
     public void testSlotMigrationInCluster(BatchOptions batchOptions) {
-        withNewCluster(redissonClient -> {
+        withNewCluster((nodes, redissonClient) -> {
             Config config = redissonClient.getConfig();
             config.useClusterServers()
                     .setScanInterval(1000)

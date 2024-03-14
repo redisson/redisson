@@ -8,13 +8,8 @@ import org.redisson.api.Entry;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
-import org.redisson.api.redisnode.RedisCluster;
-import org.redisson.api.redisnode.RedisClusterMaster;
-import org.redisson.api.redisnode.RedisNodes;
-import org.redisson.client.RedisClient;
-import org.redisson.client.RedisClientConfig;
-import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.Config;
+import org.testcontainers.containers.ContainerState;
 import org.testcontainers.containers.GenericContainer;
 
 import java.io.IOException;
@@ -154,7 +149,7 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
 
     @Test
     public void testTakeReattachCluster() {
-        withNewCluster(redisson -> {
+        withNewCluster((nodes, redisson) -> {
             List<RFuture<Integer>> futures = new ArrayList<>();
             for (int i = 0; i < 10; i++) {
                 RBlockingQueue<Integer> queue = redisson.getBlockingQueue("queue" + i);
@@ -168,14 +163,8 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
                 throw new RuntimeException(e);
             }
 
-            RedisCluster rnc = redisson.getRedisNodes(RedisNodes.CLUSTER);
-            Optional<RedisClusterMaster> ff = rnc.getMasters().stream().findFirst();
-            RedisClusterMaster master = ff.get();
-            RedisClientConfig cc = new RedisClientConfig();
-            cc.setAddress("redis://" + master.getAddr().getHostString() + ":" + master.getAddr().getPort());
-            RedisClient c = RedisClient.create(cc);
-            c.connect().async(RedisCommands.SHUTDOWN);
-            c.shutdown();
+            List<ContainerState> masters = getMasterNodes(nodes);
+            stop(masters.get(0));
 
             try {
                 Thread.sleep(TimeUnit.SECONDS.toMillis(30));
@@ -186,7 +175,7 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
             for (int i = 0; i < 10; i++) {
                 RBlockingQueue<Integer> queue = redisson.getBlockingQueue("queue" + i);
                 try {
-                    queue.put(i*100);
+                    queue.put(i * 100);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -200,7 +189,7 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
                     // skip
                 }
                 Integer result = f.toCompletableFuture().getNow(null);
-                assertThat(result).isEqualTo(i*100);
+                assertThat(result).isEqualTo(i * 100);
             }
 
             redisson.shutdown();

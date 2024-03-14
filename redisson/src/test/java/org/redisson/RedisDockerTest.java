@@ -5,7 +5,6 @@ import com.github.dockerjava.api.model.ContainerNetwork;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.redisson.api.NatMapper;
 import org.redisson.api.RedissonClient;
@@ -20,10 +19,12 @@ import org.testcontainers.containers.startupcheck.MinimumDurationRunningStartupC
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 
 import java.io.File;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public class RedisDockerTest {
 
@@ -453,7 +454,7 @@ public class RedisDockerTest {
         network.close();
     }
 
-    protected void withNewCluster(Consumer<RedissonClient> callback) {
+    protected void withNewCluster(BiConsumer<List<ContainerState>, RedissonClient> callback) {
 
         LogMessageWaitStrategy wait2 = new LogMessageWaitStrategy().withRegEx(".*REPLICA\ssync\\:\sFinished\swith\ssuccess.*");
 
@@ -515,11 +516,51 @@ public class RedisDockerTest {
         RedissonClient redisson = Redisson.create(config);
 
         try {
-            callback.accept(redisson);
+            callback.accept(nodes, redisson);
         } finally {
             redisson.shutdown();
             environment.stop();
         }
+    }
+
+    protected String execute(ContainerState node, String... commands) {
+        try {
+            return node.execInContainer(commands).getStdout();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    protected List<ContainerState> getSlaveNodes(List<ContainerState> nodes) {
+        return nodes.stream().filter(node -> {
+            if (!node.isRunning()) {
+                return false;
+            }
+            String r = execute(node, "redis-cli", "info", "replication");
+            if (r.contains("role:slave")) {
+                return true;
+            }
+            return false;
+        }).collect(Collectors.toList());
+    }
+
+    protected List<ContainerState> getMasterNodes(List<ContainerState> nodes) {
+        return nodes.stream().filter(node -> {
+            if (!node.isRunning()) {
+                return false;
+            }
+            String r = execute(node, "redis-cli", "info", "replication");
+            if (r.contains("role:master")) {
+                return true;
+            }
+            return false;
+        }).collect(Collectors.toList());
+    }
+
+    protected void stop(ContainerState node) {
+        execute(node, "redis-cli", "shutdown");
     }
 
     protected void restart(GenericContainer<?> redis) {

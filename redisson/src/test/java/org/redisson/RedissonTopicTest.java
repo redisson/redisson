@@ -1,9 +1,5 @@
 package org.redisson;
 
-import com.github.dockerjava.api.command.InspectContainerResponse;
-import com.github.dockerjava.api.model.ContainerNetwork;
-import com.github.dockerjava.api.model.ExposedPort;
-import com.github.dockerjava.api.model.Ports;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -26,12 +22,9 @@ import org.redisson.config.SubscriptionMode;
 import org.redisson.connection.balancer.RandomLoadBalancer;
 import org.redisson.misc.RedisURI;
 import org.testcontainers.containers.ContainerState;
-import org.testcontainers.containers.DockerComposeContainer;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.startupcheck.MinimumDurationRunningStartupCheckStrategy;
-import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 
-import java.io.File;
 import java.io.Serializable;
 import java.time.Duration;
 import java.util.*;
@@ -40,7 +33,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -405,7 +397,7 @@ public class RedissonTopicTest extends RedisDockerTest {
 
     @Test
     public void testSlotMigrationInCluster() {
-        withNewCluster(client -> {
+        withNewCluster((nodes, client) -> {
             Config config = client.getConfig();
             config.useClusterServers()
                     .setScanInterval(1000)
@@ -1170,7 +1162,7 @@ public class RedissonTopicTest extends RedisDockerTest {
 
     @Test
     public void testReattachInClusterSlave() {
-        withNewCluster(client -> {
+        withNewCluster((nodes2, client) -> {
             Config config = client.getConfig();
             config.useClusterServers()
                     .setSubscriptionMode(SubscriptionMode.SLAVE);
@@ -1203,13 +1195,9 @@ public class RedissonTopicTest extends RedisDockerTest {
 
             assertThat(subscriptions.get()).isEqualTo(1);
 
-            RedisCluster nodes = redisson.getRedisNodes(RedisNodes.CLUSTER);
-            for (RedisClusterSlave slave : nodes.getSlaves()) {
-                RedisClientConfig cc = new RedisClientConfig();
-                cc.setAddress("redis://" + slave.getAddr().getHostString() + ":" + slave.getAddr().getPort());
-                RedisClient c = RedisClient.create(cc);
-                c.connect().async(RedisCommands.SHUTDOWN);
-                c.shutdown();
+            List<ContainerState> slaves = getSlaveNodes(nodes2);
+            for (ContainerState slave : slaves) {
+                stop(slave);
             }
 
             await().atMost(25, TimeUnit.SECONDS).until(() -> subscriptions.get() == 2);
@@ -1320,7 +1308,7 @@ public class RedissonTopicTest extends RedisDockerTest {
 
     @Test
     public void testReattachInClusterMaster2() {
-        withNewCluster(redisson -> {
+        withNewCluster((nodes, redisson) -> {
 
             Queue<String> messages = new ConcurrentLinkedQueue<>();
             Queue<String> subscriptions = new ConcurrentLinkedQueue<>();
@@ -1343,14 +1331,8 @@ public class RedissonTopicTest extends RedisDockerTest {
                 topic.addListener(String.class, (channel, msg) -> messages.add(msg));
             }
 
-            RedisCluster rnc = redisson.getRedisNodes(RedisNodes.CLUSTER);
-            Optional<RedisClusterMaster> f = rnc.getMasters().stream().findFirst();
-            RedisClusterMaster master = f.get();
-            RedisClientConfig cc = new RedisClientConfig();
-            cc.setAddress("redis://" + master.getAddr().getHostString() + ":" + master.getAddr().getPort());
-            RedisClient c = RedisClient.create(cc);
-            c.connect().async(RedisCommands.SHUTDOWN);
-            c.shutdown();
+            List<ContainerState> masters = getMasterNodes(nodes);
+            stop(masters.get(0));
 
             Awaitility.waitAtMost(Duration.ofSeconds(40)).untilAsserted(() -> {
                 assertThat(subscriptions).hasSizeGreaterThan(125);
@@ -1372,7 +1354,7 @@ public class RedissonTopicTest extends RedisDockerTest {
 
     @Test
     public void testReattachInClusterMaster() {
-        withNewCluster(redissonClient -> {
+        withNewCluster((nodes, redissonClient) -> {
             Config cfg = redissonClient.getConfig();
             cfg.useClusterServers().setSubscriptionMode(SubscriptionMode.MASTER);
 
@@ -1401,17 +1383,13 @@ public class RedissonTopicTest extends RedisDockerTest {
 
             sendCommands(redisson, "3");
 
-            RedisCluster rnc = redisson.getRedisNodes(RedisNodes.CLUSTER);
-            for (RedisClusterMaster master : rnc.getMasters()) {
-                RedisClientConfig cc = new RedisClientConfig();
-                cc.setAddress("redis://" + master.getAddr().getHostString() + ":" + master.getAddr().getPort());
-                RedisClient c = RedisClient.create(cc);
-                RedisConnection cn = c.connect();
-                List<String> channels = cn.sync(RedisCommands.PUBSUB_CHANNELS);
-                if (channels.contains("3")) {
-                    cn.async(RedisCommands.SHUTDOWN);
+            List<ContainerState> masters = getMasterNodes(nodes);
+            for (ContainerState master : masters) {
+                String r = execute(master, "redis-cli", "pubsub", "channels");
+                if (r.contains("3")) {
+                    stop(master);
+                    break;
                 }
-                c.shutdown();
             }
 
             try {
@@ -1431,7 +1409,7 @@ public class RedissonTopicTest extends RedisDockerTest {
 
     @Test
     public void testReattachPatternTopicListenersOnClusterFailover() {
-        withNewCluster(redisson -> {
+        withNewCluster((nodes2, redisson) -> {
             RedisCluster nodes = redisson.getRedisNodes(RedisNodes.CLUSTER);
             for (RedisClusterMaster master : nodes.getMasters()) {
                 master.setConfig("notify-keyspace-events", "K$");
@@ -1467,21 +1445,13 @@ public class RedissonTopicTest extends RedisDockerTest {
                 return messagesReceived.get() == 100;
             });
 
-            RedisCluster rnc = redisson.getRedisNodes(RedisNodes.CLUSTER);
-            for (RedisClusterMaster master : rnc.getMasters()) {
-                RedisClientConfig cc = new RedisClientConfig();
-                cc.setAddress("redis://" + master.getAddr().getHostString() + ":" + master.getAddr().getPort());
-                RedisClient c = RedisClient.create(cc);
-                RedisConnection cn = c.connect();
-                try {
-                    Boolean res = cn.sync(RedisCommands.EXISTS, "i99");
-                    if (res) {
-                        cn.async(RedisCommands.SHUTDOWN);
-                    }
-                } catch (Exception e) {
-                    // skip
+            List<ContainerState> masters = getMasterNodes(nodes2);
+            for (ContainerState master : masters) {
+                String r = execute(master, "redis-cli", "exists", "i99");
+                if (r.contains("1")) {
+                    stop(master);
+                    break;
                 }
-                c.shutdown();
             }
 
             await().atMost(30, TimeUnit.SECONDS).until(() -> {

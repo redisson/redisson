@@ -6,7 +6,6 @@ import io.netty.util.CharsetUtil;
 import net.bytebuddy.utility.RandomString;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
 import org.redisson.api.redisnode.RedisClusterMaster;
@@ -32,7 +31,6 @@ import org.redisson.config.CredentialsResolver;
 import org.redisson.connection.CRC16;
 import org.redisson.connection.ConnectionListener;
 import org.redisson.connection.MasterSlaveConnectionManager;
-import org.redisson.connection.balancer.RandomLoadBalancer;
 import org.redisson.misc.RedisURI;
 import org.testcontainers.containers.FixedHostPortGenericContainer;
 import org.testcontainers.containers.GenericContainer;
@@ -673,7 +671,7 @@ public class RedissonTest extends RedisDockerTest {
 
     @Test
     public void testMovedRedirectInCluster() throws Exception {
-        withNewCluster(redissonClient -> {
+        withNewCluster((nodes, redissonClient) -> {
             Config config = redissonClient.getConfig();
             config.useClusterServers()
                     .setScanInterval(100000);
