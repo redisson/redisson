@@ -45,4 +45,13 @@ public class Kryo5CodecTest {
 
     }
 
+    @Test
+    public void testCustomClassloader()  {
+        ClassLoader customClassLoader = new ClassLoader() {
+        };
+
+        Kryo5Codec cc = new Kryo5Codec(customClassLoader);
+
+        Assertions.assertThat(cc.getClassLoader()).isEqualTo(customClassLoader);
+    }
 }

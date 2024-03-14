@@ -101,7 +101,7 @@ public class Kryo5Codec extends BaseCodec {
     }
 
     public Kryo5Codec(ClassLoader classLoader) {
-        this(null, false);
+        this(classLoader, false);
     }
 
     public Kryo5Codec(ClassLoader classLoader, boolean registrationRequired) {
