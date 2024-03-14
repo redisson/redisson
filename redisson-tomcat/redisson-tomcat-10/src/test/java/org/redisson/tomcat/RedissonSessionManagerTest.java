@@ -1,5 +1,7 @@
 package org.redisson.tomcat;
 
+import com.github.dockerjava.api.model.PortBinding;
+import com.github.dockerjava.api.model.Ports;
 import org.apache.http.client.fluent.Executor;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.cookie.Cookie;
@@ -7,18 +9,29 @@ import org.apache.http.impl.client.BasicCookieStore;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
-import org.redisson.config.Config;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
+@Testcontainers
 public class RedissonSessionManagerTest {
+
+    @Container
+    private static final GenericContainer<?> REDIS =
+            new GenericContainer<>("redis:latest")
+                    .withExposedPorts(6379)
+                    .withCreateContainerCmdModifier(cmd -> {
+                        cmd.getHostConfig().withPortBindings(
+                                new PortBinding(Ports.Binding.bindPort(6379),
+                                        cmd.getExposedPorts()[0]));
+                    });
 
     public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][] {
@@ -95,6 +108,22 @@ public class RedissonSessionManagerTest {
         server1.stop();
         server2.stop();
         server3.stop();
+    }
+
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testCollection(String contextName) throws Exception {
+        prepare(contextName);
+        // start the server at http://localhost:8080/myapp
+        TomcatServer server = new TomcatServer("myapp", 8080, "src/test/");
+        server.start();
+
+        Executor executor = Executor.newInstance();
+
+        writeColl(8080, executor, "test", "1234");
+
+        Executor.closeIdleConnections();
+        server.stop();
     }
 
     @ParameterizedTest
@@ -329,13 +358,19 @@ public class RedissonSessionManagerTest {
         read(8080, executor, "test", "null");
         invalidate(8080, executor);
         
-        Executor.closeIdleConnections();
-        server.stop();
-
         TimeUnit.SECONDS.sleep(61);
         Assertions.assertEquals(0, r.getKeys().count());
+
+        Executor.closeIdleConnections();
+        server.stop();
     }
-    
+
+    private void writeColl(int port, Executor executor, String key, String value) throws IOException {
+        String url = "http://localhost:" + port + "/myapp/write-coll?key=" + key + "&value=" + value;
+        String response = executor.execute(Request.Get(url)).returnContent().asString();
+        Assertions.assertEquals("OK", response);
+    }
+
     private void write(int port, Executor executor, String key, String value) throws IOException {
         String url = "http://localhost:" + port + "/myapp/write?key=" + key + "&value=" + value;
         String response = executor.execute(Request.Get(url)).returnContent().asString();

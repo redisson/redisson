@@ -230,13 +230,9 @@ public class RedissonSession extends StandardSession {
     }
 
     protected AttributesPutAllMessage createPutAllMessage(Map<String, Object> newMap) {
-        Map<String, Object> map = new HashMap<String, Object>();
-        for (Entry<String, Object> entry : newMap.entrySet()) {
-            map.put(entry.getKey(), entry.getValue());
-        }
         try {
-            return new AttributesPutAllMessage(redissonManager.getNodeId(), getId(), map, this.map.getCodec().getMapValueEncoder());
-        } catch (IOException e) {
+            return new AttributesPutAllMessage(redissonManager.getNodeId(), getId(), newMap, this.map.getCodec().getMapValueEncoder());
+        } catch (Exception e) {
             throw new IllegalStateException(e);
         }
     }

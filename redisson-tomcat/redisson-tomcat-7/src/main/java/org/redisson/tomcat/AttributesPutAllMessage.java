@@ -15,13 +15,14 @@
  */
 package org.redisson.tomcat;
 
+import org.redisson.client.protocol.Decoder;
+import org.redisson.client.protocol.Encoder;
+
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-
-import org.redisson.client.protocol.Decoder;
-import org.redisson.client.protocol.Encoder;
 
 /**
  * 
@@ -35,15 +36,30 @@ public class AttributesPutAllMessage extends AttributeMessage {
     public AttributesPutAllMessage() {
     }
 
-    public AttributesPutAllMessage(String nodeId, String sessionId, Map<String, Object> attrs, Encoder encoder) throws IOException {
+    public AttributesPutAllMessage(String nodeId, String sessionId, Map<String, Object> attrs, Encoder encoder) throws Exception {
         super(nodeId, sessionId);
         if (attrs != null) {
-        	this.attrs = new HashMap<String, byte[]>();
-        	for (Entry<String, Object> entry: attrs.entrySet()) {
-            	this.attrs.put(entry.getKey(), toByteArray(encoder, entry.getValue()));
-        	}
+            this.attrs = new HashMap<>();
+            for (Entry<String, Object> entry: attrs.entrySet()) {
+                Object value = entry.getValue();
+                try {
+                    if (value instanceof Collection) {
+                        Collection newInstance = (Collection) value.getClass().getDeclaredConstructor().newInstance();
+                        newInstance.addAll((Collection) value);
+                        value = newInstance;
+                    }
+                    if (value instanceof Map) {
+                        Map newInstance = (Map) value.getClass().getDeclaredConstructor().newInstance();
+                        newInstance.putAll((Map) value);
+                        value = newInstance;
+                    }
+                } catch (Exception e) {
+                    // can't be copied
+                }
+                this.attrs.put(entry.getKey(), toByteArray(encoder, value));
+            }
         } else {
-        	this.attrs = null;
+            this.attrs = null;
         }
     }
 
