@@ -1,10 +1,15 @@
 package org.redisson.micronaut;
 
+import com.github.dockerjava.api.model.PortBinding;
+import com.github.dockerjava.api.model.Ports;
 import io.micronaut.context.ApplicationContext;
 import io.micronaut.inject.qualifiers.Qualifiers;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RedissonClient;
 import org.redisson.micronaut.cache.RedissonSyncCache;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,7 +21,19 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Nikita Koksharov
  *
  */
+@Testcontainers
 public class RedissonCacheTest {
+
+    @Container
+    private static final GenericContainer<?> REDIS =
+            new GenericContainer<>("redis:latest")
+                    .withExposedPorts(6379)
+                    .withCreateContainerCmdModifier(cmd -> {
+                        cmd.getHostConfig().withPortBindings(
+                                new PortBinding(Ports.Binding.bindPort(6379),
+                                        cmd.getExposedPorts()[0]));
+                    });
+
 
     @Test
     public void testCache() throws InterruptedException {
