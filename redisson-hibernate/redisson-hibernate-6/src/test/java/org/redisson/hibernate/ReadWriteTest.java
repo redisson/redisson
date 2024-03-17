@@ -12,7 +12,10 @@ import org.hibernate.stat.Statistics;
 import org.hibernate.testing.junit4.BaseCoreFunctionalTestCase;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.testcontainers.containers.FixedHostPortGenericContainer;
+import org.testcontainers.containers.GenericContainer;
 
 /**
  * 
@@ -20,6 +23,10 @@ import org.junit.Test;
  *
  */
 public class ReadWriteTest extends BaseCoreFunctionalTestCase {
+
+    @ClassRule
+    public static GenericContainer REDIS = new FixedHostPortGenericContainer("redis:latest")
+                                                .withFixedExposedPort(6379, 6379);
 
     @Override
     protected Class<?>[] getAnnotatedClasses() {

@@ -7,11 +7,12 @@ import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.Environment;
 import org.hibernate.stat.Statistics;
 import org.hibernate.testing.junit4.BaseCoreFunctionalTestCase;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 
 import jakarta.persistence.*;
+import org.testcontainers.containers.FixedHostPortGenericContainer;
+import org.testcontainers.containers.GenericContainer;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +25,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  */
 public class CollectionTest extends BaseCoreFunctionalTestCase {
+
+    @ClassRule
+    public static GenericContainer H2 = new FixedHostPortGenericContainer("oscarfonts/h2:latest")
+                                                        .withFixedExposedPort(1521, 1521);
+
+    @ClassRule
+    public static GenericContainer REDIS = new FixedHostPortGenericContainer("redis:latest")
+                                                        .withFixedExposedPort(6379, 6379);
 
     @Entity
     @Cache(usage = CacheConcurrencyStrategy.READ_ONLY)
