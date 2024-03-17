@@ -29,10 +29,10 @@ public class TransactionalTest extends BaseCoreFunctionalTestCase {
     @Override
     protected void configure(Configuration cfg) {
         super.configure(cfg);
-        cfg.setProperty(Environment.DRIVER, org.h2.Driver.class.getName());
-        cfg.setProperty(Environment.URL, "jdbc:h2:mem:db1;DB_CLOSE_DELAY=-1;");
-        cfg.setProperty(Environment.USER, "sa");
-        cfg.setProperty(Environment.PASS, "");
+//        cfg.setProperty(Environment.DRIVER, org.h2.Driver.class.getName());
+//        cfg.setProperty(Environment.URL, "jdbc:h2:mem:db1;DB_CLOSE_DELAY=-1;");
+//        cfg.setProperty(Environment.USER, "sa");
+//        cfg.setProperty(Environment.PASS, "");
         cfg.setProperty(Environment.CACHE_REGION_PREFIX, "");
         cfg.setProperty(Environment.GENERATE_STATISTICS, "true");
 
