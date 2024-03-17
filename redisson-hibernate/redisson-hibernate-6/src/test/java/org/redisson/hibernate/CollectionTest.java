@@ -1,17 +1,18 @@
 package org.redisson.hibernate;
 
+import jakarta.persistence.*;
 import org.hibernate.Session;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.hibernate.cfg.Configuration;
-import org.hibernate.cfg.Environment;
 import org.hibernate.stat.Statistics;
-import org.hibernate.testing.junit4.BaseCoreFunctionalTestCase;
-import org.junit.*;
-
-import jakarta.persistence.*;
+import org.hibernate.testing.orm.junit.BaseSessionFactoryFunctionalTest;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.FixedHostPortGenericContainer;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -24,14 +25,15 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Nikita Koksharov
  *
  */
-public class CollectionTest extends BaseCoreFunctionalTestCase {
+@Testcontainers
+public class CollectionTest extends BaseSessionFactoryFunctionalTest {
 
-    @ClassRule
-    public static GenericContainer H2 = new FixedHostPortGenericContainer("oscarfonts/h2:latest")
+    @Container
+    public static final GenericContainer H2 = new FixedHostPortGenericContainer("oscarfonts/h2:latest")
                                                         .withFixedExposedPort(1521, 1521);
 
-    @ClassRule
-    public static GenericContainer REDIS = new FixedHostPortGenericContainer("redis:latest")
+    @Container
+    public static final GenericContainer REDIS = new FixedHostPortGenericContainer("redis:latest")
                                                         .withFixedExposedPort(6379, 6379);
 
     @Entity
@@ -65,23 +67,7 @@ public class CollectionTest extends BaseCoreFunctionalTestCase {
         return new Class[] { A.class, B.class };
     }
 
-    @Override
-    protected void configure(Configuration cfg) {
-        super.configure(cfg);
-//        cfg.setProperty(Environment.DRIVER, org.h2.Driver.class.getName());
-//        cfg.setProperty(Environment.URL, "jdbc:h2:mem:db1;DB_CLOSE_DELAY=-1;");
-//        cfg.setProperty(Environment.USER, "sa");
-//        cfg.setProperty(Environment.PASS, "");
-        cfg.setProperty(Environment.CACHE_REGION_PREFIX, "");
-        cfg.setProperty(Environment.GENERATE_STATISTICS, "true");
-
-        cfg.setProperty(Environment.SHOW_SQL, "true");
-        cfg.setProperty(Environment.USE_SECOND_LEVEL_CACHE, "true");
-        cfg.setProperty(Environment.USE_QUERY_CACHE, "true");
-        cfg.setProperty(Environment.CACHE_REGION_FACTORY, RedissonRegionFactory.class.getName());
-    }
-    
-    @Before
+    @BeforeEach
     public void before() {
         sessionFactory().getCache().evictEntityData();
         sessionFactory().getStatistics().clear();
@@ -91,7 +77,7 @@ public class CollectionTest extends BaseCoreFunctionalTestCase {
     public void testQuery() {
         Statistics stats = sessionFactory().getStatistics();
 
-        Session s = openSession();
+        Session s = sessionFactory().openSession();
         s.beginTransaction();
 
         A a = new A();
@@ -105,16 +91,15 @@ public class CollectionTest extends BaseCoreFunctionalTestCase {
         s.flush();
         s.getTransaction().commit();
 
-        s = openSession();
+        s = sessionFactory().openSession();
         s.beginTransaction();
         A a1 = s.get(A.class, 1L);
-        System.out.println("here1");
         assertThat(a1.bs).hasSize(1);
         s.getTransaction().commit();
 
-        Assert.assertEquals(0, stats.getDomainDataRegionStatistics("org.redisson.hibernate.CollectionTest$A.bs").getHitCount());
+        Assertions.assertEquals(0, stats.getDomainDataRegionStatistics("org.redisson.hibernate.CollectionTest$A.bs").getHitCount());
 
-        s = openSession();
+        s = sessionFactory().openSession();
         s.beginTransaction();
         A a2 = s.get(A.class, 1L);
         B b2 = a2.bs.iterator().next();
@@ -123,7 +108,7 @@ public class CollectionTest extends BaseCoreFunctionalTestCase {
 
         s.close();
 
-        Assert.assertEquals(1, stats.getDomainDataRegionStatistics("org.redisson.hibernate.CollectionTest$A.bs").getHitCount());
+        Assertions.assertEquals(1, stats.getDomainDataRegionStatistics("org.redisson.hibernate.CollectionTest$A.bs").getHitCount());
 
         stats.logSummary();
         
