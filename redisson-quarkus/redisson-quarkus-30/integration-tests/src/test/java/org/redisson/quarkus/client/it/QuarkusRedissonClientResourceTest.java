@@ -7,9 +7,19 @@ import static org.hamcrest.Matchers.is;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
+import org.testcontainers.containers.FixedHostPortGenericContainer;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 @QuarkusTest
+@Testcontainers
 public class QuarkusRedissonClientResourceTest {
+
+    @Container
+    public static final GenericContainer REDIS = new FixedHostPortGenericContainer("redis:latest")
+                                                            .withFixedExposedPort(6379, 6379);
+
 
     @Test
     public void testRemoteService() {

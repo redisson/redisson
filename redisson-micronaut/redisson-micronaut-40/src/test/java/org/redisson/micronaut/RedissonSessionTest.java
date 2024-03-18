@@ -1,7 +1,6 @@
 package org.redisson.micronaut;
 
-import com.github.dockerjava.api.model.PortBinding;
-import com.github.dockerjava.api.model.Ports;
+import com.github.dockerjava.api.command.CreateContainerCmd;
 import io.micronaut.context.ApplicationContext;
 import io.micronaut.context.event.ApplicationEventListener;
 import io.micronaut.session.event.AbstractSessionEvent;
@@ -12,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.redisson.api.RedissonClient;
 import org.redisson.micronaut.session.RedissonSession;
 import org.redisson.micronaut.session.RedissonSessionStore;
+import org.testcontainers.containers.FixedHostPortGenericContainer;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -21,6 +21,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -31,15 +32,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class RedissonSessionTest {
 
     @Container
-    private static final GenericContainer<?> REDIS =
-            new GenericContainer<>("redis:latest")
-                    .withExposedPorts(6379)
-                    .withCreateContainerCmdModifier(cmd -> {
-                        cmd.withCmd("redis-server", "--notify-keyspace-events", "Egx");
-                        cmd.getHostConfig().withPortBindings(
-                                new PortBinding(Ports.Binding.bindPort(6379),
-                                        cmd.getExposedPorts()[0]));
-                    });
+    public static final GenericContainer REDIS = new FixedHostPortGenericContainer("redis:latest")
+                                                        .withFixedExposedPort(6380, 6379)
+                                                        .withCreateContainerCmdModifier((Consumer<CreateContainerCmd>) cmd -> {
+                                                            cmd.withCmd("redis-server", "--notify-keyspace-events", "Egx");
+                                                        });
 
     public static class MyObject implements Serializable {
 
@@ -83,7 +80,7 @@ public class RedissonSessionTest {
         map.put("micronaut.session.http.redisson.enabled", "true");
         map.put("micronaut.session.http.redisson.updateMode", "WRITE_BEHIND");
 
-        map.put("redisson.singleServerConfig.address", "redis://127.0.0.1:6379");
+        map.put("redisson.singleServerConfig.address", "redis://127.0.0.1:6380");
         ApplicationContext ac = ApplicationContext.run(map);
         RedissonClient rc = ac.getBean(RedissonClient.class);
 
@@ -112,7 +109,7 @@ public class RedissonSessionTest {
         Map<String, Object> map = new HashMap<>();
         map.put("redisson.threads", "10");
         map.put("micronaut.session.http.redisson.enabled", "true");
-        map.put("redisson.singleServerConfig.address", "redis://127.0.0.1:6379");
+        map.put("redisson.singleServerConfig.address", "redis://127.0.0.1:6380");
         ApplicationContext ac = ApplicationContext.run(map);
         RedissonClient rc = ac.getBean(RedissonClient.class);
 
@@ -144,7 +141,7 @@ public class RedissonSessionTest {
         Map<String, Object> map = new HashMap<>();
         map.put("redisson.threads", "10");
         map.put("micronaut.session.http.redisson.enabled", "true");
-        map.put("redisson.singleServerConfig.address", "redis://127.0.0.1:6379");
+        map.put("redisson.singleServerConfig.address", "redis://127.0.0.1:6380");
         ApplicationContext ac = ApplicationContext.run(map);
         RedissonClient rc = ac.getBean(RedissonClient.class);
         AppListener listener = ac.getBean(AppListener.class);

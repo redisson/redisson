@@ -1,7 +1,5 @@
 package org.redisson.tomcat;
 
-import com.github.dockerjava.api.model.PortBinding;
-import com.github.dockerjava.api.model.Ports;
 import org.apache.http.client.fluent.Executor;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.cookie.Cookie;
@@ -10,6 +8,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.redisson.api.RedissonClient;
+import org.testcontainers.containers.FixedHostPortGenericContainer;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -24,14 +23,8 @@ import java.util.concurrent.TimeUnit;
 public class RedissonSessionManagerTest {
 
     @Container
-    private static final GenericContainer<?> REDIS =
-            new GenericContainer<>("redis:latest")
-                    .withExposedPorts(6379)
-                    .withCreateContainerCmdModifier(cmd -> {
-                        cmd.getHostConfig().withPortBindings(
-                                new PortBinding(Ports.Binding.bindPort(6379),
-                                        cmd.getExposedPorts()[0]));
-                    });
+    public static final GenericContainer REDIS = new FixedHostPortGenericContainer("redis:latest")
+                                                        .withFixedExposedPort(6379, 6379);
 
     public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][] {
