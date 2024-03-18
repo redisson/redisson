@@ -11,6 +11,10 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.testcontainers.containers.FixedHostPortGenericContainer;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.List;
 
@@ -23,9 +27,15 @@ import java.util.List;
             "spring.session.store-type=redis",
 //            "spring.session.timeout.seconds=900",
         })
+@Testcontainers
 public class RedissonSessionManagerAutoConfigurationTest {
 
-	@LocalServerPort
+    @Container
+    public static final GenericContainer REDIS = new FixedHostPortGenericContainer("redis:latest")
+            .withFixedExposedPort(6379, 6379);
+
+
+    @LocalServerPort
 	private int port;
 
 	@Autowired

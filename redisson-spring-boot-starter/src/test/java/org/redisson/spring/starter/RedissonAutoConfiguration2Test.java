@@ -13,13 +13,23 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.BoundHashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.testcontainers.containers.FixedHostPortGenericContainer;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringJUnitConfig
 @SpringBootTest(classes = RedissonApplication.class)
 @Import(RedissonAutoConfiguration2Test.RedissonConnectionDetailsConfig.class)
+@Testcontainers
 public class RedissonAutoConfiguration2Test {
+
+    @Container
+    public static final GenericContainer REDIS = new FixedHostPortGenericContainer("redis:latest")
+            .withFixedExposedPort(6379, 6379);
+
 
     @TestConfiguration
     static class RedissonConnectionDetailsConfig {

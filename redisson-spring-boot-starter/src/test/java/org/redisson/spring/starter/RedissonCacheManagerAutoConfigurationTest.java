@@ -7,6 +7,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.testcontainers.containers.FixedHostPortGenericContainer;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 @SpringJUnitConfig
 @SpringBootTest(
@@ -16,7 +20,12 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
             "spring.redis.timeout=10000",
             "spring.cache.type=redis",
         })
+@Testcontainers
 public class RedissonCacheManagerAutoConfigurationTest {
+
+    @Container
+    public static final GenericContainer REDIS = new FixedHostPortGenericContainer("redis:latest")
+            .withFixedExposedPort(6379, 6379);
 
     @Autowired
     private CacheManager cacheManager;

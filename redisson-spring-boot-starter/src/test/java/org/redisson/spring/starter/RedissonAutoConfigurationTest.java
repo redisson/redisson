@@ -9,6 +9,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.BoundHashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.testcontainers.containers.FixedHostPortGenericContainer;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -19,7 +23,12 @@ import static org.assertj.core.api.Assertions.assertThat;
             "spring.redis.redisson.file=classpath:redisson.yaml",
             "spring.redis.timeout=10000"
         })
+@Testcontainers
 public class RedissonAutoConfigurationTest {
+
+    @Container
+    public static final GenericContainer REDIS = new FixedHostPortGenericContainer("redis:latest")
+                                                        .withFixedExposedPort(6379, 6379);
 
     @Autowired
     private RedissonClient redisson;
