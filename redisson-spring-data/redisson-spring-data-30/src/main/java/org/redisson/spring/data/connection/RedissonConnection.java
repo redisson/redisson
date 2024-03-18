@@ -2411,11 +2411,13 @@ public class RedissonConnection extends AbstractRedisConnection {
         return write(key, ByteArrayCodec.INSTANCE, ZPOPMIN, (Object) key);
     }
 
+    private static final RedisCommand<Set<Tuple>> ZPOPMIN_FOR_SET = new RedisCommand<>("ZPOPMIN", new ScoredSortedSetReplayDecoder());
+
     @Override
     public Set<Tuple> zPopMin(byte[] key, long count) {
         Assert.notNull(key, "Key must not be null!");
 
-        return write(key, ByteArrayCodec.INSTANCE, ZPOPMIN, key, count);
+        return write(key, ByteArrayCodec.INSTANCE, ZPOPMIN_FOR_SET, key, count);
     }
 
     private static final RedisCommand<Tuple> BZPOPMIN = new RedisCommand<>("BZPOPMIN", new ScoredSortedSingleBlockingReplayDecoder());
@@ -2437,11 +2439,13 @@ public class RedissonConnection extends AbstractRedisConnection {
         return write(key, ByteArrayCodec.INSTANCE, ZPOPMAX, (Object) key);
     }
 
+    private static final RedisCommand<Set<Tuple>> ZPOPMAX_FOR_SET = new RedisCommand<>("ZPOPMAX", new ScoredSortedSetReplayDecoder());
+
     @Override
     public Set<Tuple> zPopMax(byte[] key, long count) {
         Assert.notNull(key, "Key must not be null!");
 
-        return write(key, ByteArrayCodec.INSTANCE, ZPOPMAX, key, count);
+        return write(key, ByteArrayCodec.INSTANCE, ZPOPMAX_FOR_SET, key, count);
     }
 
     private static final RedisCommand<Tuple> BZPOPMAX = new RedisCommand<>("BZPOPMAX", new ScoredSortedSingleBlockingReplayDecoder());
