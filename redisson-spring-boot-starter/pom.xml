@@ -83,6 +83,7 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
+            <optional>true</optional>
         </dependency>
 
         <dependency>
