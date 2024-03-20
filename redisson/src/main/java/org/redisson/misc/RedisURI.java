@@ -34,11 +34,13 @@ public class RedisURI {
     private final int port;
     private String username;
     private String password;
+    private int hashCode;
 
     public RedisURI(String scheme, String host, int port) {
         this.ssl = "rediss".equals(scheme);
         this.host = host;
         this.port = port;
+        this.hashCode = Objects.hash(ssl, host, port);
     }
 
     public RedisURI(String uri) {
@@ -142,7 +144,7 @@ public class RedisURI {
 
     @Override
     public int hashCode() {
-        return Objects.hash(ssl, host, port);
+        return hashCode;
     }
 
     @Override
