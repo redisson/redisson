@@ -51,7 +51,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private final ConcurrentMap<Integer, ClusterPartition> lastPartitions = new ConcurrentHashMap<>();
+    private final Map<Integer, ClusterPartition> lastPartitions = new ConcurrentHashMap<>();
+    private final Map<RedisURI, ClusterPartition> lastUri2Partition = new ConcurrentHashMap<>();
 
     private volatile Timeout monitorFuture;
     
@@ -345,6 +346,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 for (Integer slot : partition.getSlots()) {
                     addEntry(slot, entry);
                     lastPartitions.put(slot, partition);
+                    lastUri2Partition.put(partition.getMasterAddress(), partition);
                 }
 
                 if (!config.isSlaveNotUsed()) {
@@ -673,7 +675,10 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 .filter(s -> newPartitions.stream().noneMatch(p -> p.hasSlot(s)))
                 .collect(Collectors.toSet());
 
-        lastPartitions.keySet().removeAll(removedSlots);
+        for (Integer removedSlot : removedSlots) {
+            ClusterPartition p = lastPartitions.remove(removedSlot);
+            lastUri2Partition.remove(p.getMasterAddress());
+        }
         if (!removedSlots.isEmpty()) {
             log.info("{} slots found to remove", removedSlots.size());
         }
@@ -693,6 +698,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 if (entry != null) {
                     addEntry(slot, entry);
                     lastPartitions.put(slot, clusterPartition);
+                    lastUri2Partition.put(clusterPartition.getMasterAddress(), clusterPartition);
                     addedSlots++;
                 }
             }
@@ -703,7 +709,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
     
     private void checkSlotsMigration(Collection<ClusterPartition> newPartitions) {
-        Set<ClusterPartition> clusterLastPartitions = getLastPartitions();
+        Collection<ClusterPartition> clusterLastPartitions = getLastPartitions();
 
         // https://github.com/redisson/redisson/issues/3635
         Map<String, MasterSlaveEntry> nodeEntries = clusterLastPartitions.stream().collect(Collectors.toMap(p -> p.getNodeId(),
@@ -725,6 +731,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 addedSlots.stream().forEach(slot -> {
                     addEntry(slot, entry);
                     lastPartitions.put(slot, currentPartition);
+                    lastUri2Partition.put(currentPartition.getMasterAddress(), currentPartition);
                     changedSlots.add(slot);
                 });
                 if (!addedSlots.isEmpty()) {
@@ -736,6 +743,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
                 removedSlots.stream().forEach(slot -> {
                     if (lastPartitions.remove(slot, currentPartition)) {
+                        lastUri2Partition.remove(currentPartition.getMasterAddress());
                         removeEntry(slot);
                         changedSlots.add(slot);
                     }
@@ -931,11 +939,11 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private Map<RedisURI, ClusterPartition> getLastPartitonsByURI() {
-        return lastPartitions.values().stream().collect(Collectors.toMap(p -> p.getMasterAddress(), p -> p, (e1, e2) -> e1));
+        return lastUri2Partition;
     }
 
-    private Set<ClusterPartition> getLastPartitions() {
-        return new HashSet<>(lastPartitions.values());
+    private Collection<ClusterPartition> getLastPartitions() {
+        return lastUri2Partition.values();
     }
     
     @Override
