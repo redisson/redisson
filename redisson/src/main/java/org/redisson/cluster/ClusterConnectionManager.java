@@ -346,6 +346,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 for (Integer slot : partition.getSlots()) {
                     addEntry(slot, entry);
                     lastPartitions.put(slot, partition);
+                }
+                if (partition.getSlotsAmount() > 0) {
                     lastUri2Partition.put(partition.getMasterAddress(), partition);
                 }
 
@@ -731,10 +733,10 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 addedSlots.stream().forEach(slot -> {
                     addEntry(slot, entry);
                     lastPartitions.put(slot, currentPartition);
-                    lastUri2Partition.put(currentPartition.getMasterAddress(), currentPartition);
                     changedSlots.add(slot);
                 });
                 if (!addedSlots.isEmpty()) {
+                    lastUri2Partition.put(currentPartition.getMasterAddress(), currentPartition);
                     log.info("{} slots added to {}", addedSlots.cardinality(), currentPartition.getMasterAddress());
                 }
 
