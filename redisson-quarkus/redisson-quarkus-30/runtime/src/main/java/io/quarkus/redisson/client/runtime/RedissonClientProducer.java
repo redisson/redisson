@@ -17,6 +17,8 @@ package io.quarkus.redisson.client.runtime;
 
 import com.fasterxml.jackson.databind.MapperFeature;
 import io.quarkus.arc.DefaultBean;
+import io.quarkus.runtime.shutdown.ShutdownConfig;
+import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
@@ -31,7 +33,9 @@ import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -45,6 +49,9 @@ import java.util.stream.StreamSupport;
 public class RedissonClientProducer {
 
     private RedissonClient redisson;
+
+    @Inject
+    public ShutdownConfig shutdownConfig;
 
     @Produces
     @Singleton
@@ -83,7 +90,12 @@ public class RedissonClientProducer {
     @PreDestroy
     public void close() {
         if (redisson != null) {
-            redisson.shutdown();
+            if (shutdownConfig.isShutdownTimeoutSet()){
+                Duration grace = shutdownConfig.timeout.get();
+                redisson.shutdown(grace.toMillis(),grace.toMillis()*2, TimeUnit.MILLISECONDS);
+            }else{
+                redisson.shutdown();
+            }
         }
     }
 
