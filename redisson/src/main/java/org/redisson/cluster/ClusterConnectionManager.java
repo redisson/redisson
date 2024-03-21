@@ -497,9 +497,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     private CompletableFuture<Void> checkSlaveNodesChange(Collection<ClusterPartition> newPartitions) {
         List<CompletableFuture<?>> futures = new ArrayList<>();
-        Map<RedisURI, ClusterPartition> lastPartitions = getLastPartitonsByURI();
         for (ClusterPartition newPart : newPartitions) {
-            ClusterPartition currentPart = lastPartitions.get(newPart.getMasterAddress());
+            ClusterPartition currentPart = lastUri2Partition.get(newPart.getMasterAddress());
             if (currentPart == null) {
                 continue;
             }
@@ -610,7 +609,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private CompletableFuture<Void> checkMasterNodesChange(ClusterServersConfig cfg, Collection<ClusterPartition> newPartitions) {
-        Map<RedisURI, ClusterPartition> lastPartitions = getLastPartitonsByURI();
         Map<RedisURI, ClusterPartition> addedPartitions = new HashMap<>();
         Set<RedisURI> mastersElected = new HashSet<>();
         List<CompletableFuture<?>> futures = new ArrayList<>();
@@ -620,7 +618,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 continue;
             }
 
-            ClusterPartition currentPart = lastPartitions.get(newPart.getMasterAddress());
+            ClusterPartition currentPart = lastUri2Partition.get(newPart.getMasterAddress());
             boolean masterFound = currentPart != null;
             if (masterFound && newPart.isMasterFail()) {
                 for (Integer slot : currentPart.getSlots()) {
@@ -679,7 +677,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
         for (Integer removedSlot : removedSlots) {
             ClusterPartition p = lastPartitions.remove(removedSlot);
-            lastUri2Partition.remove(p.getMasterAddress());
+            if (p != null) {
+                lastUri2Partition.remove(p.getMasterAddress());
+            }
         }
         if (!removedSlots.isEmpty()) {
             log.info("{} slots found to remove", removedSlots.size());
@@ -938,10 +938,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         
         closeNodeConnections();
         super.shutdown(quietPeriod, timeout, unit);
-    }
-
-    private Map<RedisURI, ClusterPartition> getLastPartitonsByURI() {
-        return lastUri2Partition;
     }
 
     private Collection<ClusterPartition> getLastPartitions() {
