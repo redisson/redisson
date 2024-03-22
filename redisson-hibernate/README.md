@@ -11,9 +11,13 @@ Redisson provides various Hibernate Cache factories including those with feature
 
 **data partitioning** - data partitioning in cluster mode. Scales available memory, read/write operations and entry eviction process for individual Hibernate Cache instance in Redis cluster.
 
+**entry eviction** - allows to define `time to live` or `max idle time` settings. Redis hash structure doesn't support eviction thus it's done on Redisson side through custom scheduled task which removes expired entries. This leads to extra Redis calls to clean up evicted entries and eviction task per unique map object name.
+
+**advanced entry eviction** - improved version of the **entry eviction** process. Doesn't use an entry eviction task.
+
 Below is the list of all available factories with local cache and/or data partitioning support:
 
-|Class name | Local cache | Data<br/>partitioning | Eviction<br/>by Redisson | Eviction<br/> by Redis | Ultra-fast<br/>read/write |
+|Class name | Local cache | Data<br/>partitioning | Entry<br/>eviction | Advanced<br/>entry eviction | Ultra-fast<br/>read/write |
 | ------------- | :-----------: | :----------:| :----------:| :----------:| :----------:|
 |RedissonRegionFactory<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ | ❌ | ❌ |
 |RedissonRegionFactory<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ | ❌ | ✔️ |
