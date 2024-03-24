@@ -12,7 +12,7 @@
     <packaging>jar</packaging>
 
     <properties>
-        <micronaut.version>4.3.0</micronaut.version>
+        <micronaut.version>3.10.4</micronaut.version>
     </properties>
 
     <name>Redisson/Micronaut v4.x.x integration</name>
