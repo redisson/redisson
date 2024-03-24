@@ -26,6 +26,8 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.pubsub.SemaphorePubSub;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -38,6 +40,8 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  */
 public class RedissonPermitExpirableSemaphore extends RedissonExpirable implements RPermitExpirableSemaphore {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(RedissonPermitExpirableSemaphore.class);
 
     private final String channelName;
     private final SemaphorePubSub semaphorePubSub;
@@ -464,7 +468,10 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         RedissonLockEntry entry;
         try {
             entry = future.get(time, TimeUnit.MILLISECONDS);
-        } catch (ExecutionException | TimeoutException e) {
+        } catch (ExecutionException e) {
+            LOGGER.error(e.getMessage(), e);
+            return Collections.emptyList();
+        } catch (TimeoutException e) {
             return Collections.emptyList();
         }
 

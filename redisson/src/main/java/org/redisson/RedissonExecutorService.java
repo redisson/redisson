@@ -1001,7 +1001,9 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         RExecutorBatchFuture future = submit(tasks.toArray(new Callable[0]));
         try {
             future.toCompletableFuture().get(timeout, unit);
-        } catch (ExecutionException | TimeoutException | CancellationException e) {
+        } catch (ExecutionException e) {
+            LOGGER.error(e.getMessage(), e);
+        } catch (TimeoutException | CancellationException e) {
             // skip
         }
         List<?> futures = future.getTaskFutures();
