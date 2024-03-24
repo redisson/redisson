@@ -93,7 +93,7 @@
         <dependency>
             <groupId>io.helidon.microprofile.cdi</groupId>
             <artifactId>helidon-microprofile-cdi</artifactId>
-            <version>2.5.1</version>
+            <version>4.0.6</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
