@@ -230,7 +230,7 @@ public class RedissonSession extends StandardSession {
 
     protected AttributesPutAllMessage createPutAllMessage(Map<String, Object> newMap) {
         try {
-            return new AttributesPutAllMessage(redissonManager.getNodeId(), getId(), newMap, this.map.getCodec().getMapValueEncoder());
+            return new AttributesPutAllMessage(redissonManager, getId(), newMap, this.map.getCodec().getMapValueEncoder());
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }

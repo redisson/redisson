@@ -36,26 +36,30 @@ public class AttributesPutAllMessage extends AttributeMessage {
     public AttributesPutAllMessage() {
     }
 
-    public AttributesPutAllMessage(String nodeId, String sessionId, Map<String, Object> attrs, Encoder encoder) throws Exception {
-        super(nodeId, sessionId);
+    public AttributesPutAllMessage(RedissonSessionManager redissonSessionManager, String sessionId, Map<String, Object> attrs, Encoder encoder) throws Exception {
+        super(redissonSessionManager.getNodeId(), sessionId);
         if (attrs != null) {
             this.attrs = new HashMap<>();
             for (Entry<String, Object> entry: attrs.entrySet()) {
                 Object value = entry.getValue();
-                try {
-                    if (value instanceof Collection) {
-                        Collection newInstance = (Collection) value.getClass().getDeclaredConstructor().newInstance();
-                        newInstance.addAll((Collection) value);
-                        value = newInstance;
+                if (redissonSessionManager.getReadMode()
+                        .equals(RedissonSessionManager.ReadMode.MEMORY.toString())) {
+                    try {
+                        if (value instanceof Collection) {
+                            Collection newInstance = (Collection) value.getClass().getDeclaredConstructor().newInstance();
+                            newInstance.addAll((Collection) value);
+                            value = newInstance;
+                        }
+                        if (value instanceof Map) {
+                            Map newInstance = (Map) value.getClass().getDeclaredConstructor().newInstance();
+                            newInstance.putAll((Map) value);
+                            value = newInstance;
+                        }
+                    } catch (Exception e) {
+                        // can't be copied
                     }
-                    if (value instanceof Map) {
-                        Map newInstance = (Map) value.getClass().getDeclaredConstructor().newInstance();
-                        newInstance.putAll((Map) value);
-                        value = newInstance;
-                    }
-                } catch (Exception e) {
-                    // can't be copied
                 }
+
                 this.attrs.put(entry.getKey(), toByteArray(encoder, value));
             }
         } else {
