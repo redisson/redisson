@@ -926,7 +926,7 @@ public class PublishSubscribeService {
     }
 
     private CompletableFuture<Void> removeListenerAsync(PubSubType type, ChannelName channelName, Consumer<PubSubConnectionEntry> consumer) {
-        if (!name2entry.containsKey(channelName)) {
+        if (!name2entry.containsKey(channelName) || connectionManager.getServiceManager().isShuttingDown()) {
             return CompletableFuture.completedFuture(null);
         }
 
@@ -939,7 +939,9 @@ public class PublishSubscribeService {
 
         return sf.thenCompose(res -> {
             Collection<PubSubConnectionEntry> entries = name2entry.get(channelName);
-            if (entries == null || entries.isEmpty()) {
+            if (entries == null
+                    || entries.isEmpty()
+                        || connectionManager.getServiceManager().isShuttingDown()) {
                 semaphore.release();
                 return CompletableFuture.completedFuture(null);
             }
