@@ -24,7 +24,7 @@
        <dependency>
          <groupId>org.hibernate</groupId>
          <artifactId>hibernate-testing</artifactId>
-         <version>5.2.18.Final</version>
+         <version>5.6.15.Final</version>
          <scope>test</scope>
        </dependency>
 
