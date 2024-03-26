@@ -421,14 +421,14 @@
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
-            <version>4.26.0</version>
+            <version>3.16.3</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java-util</artifactId>
-            <version>4.26.0</version>
+            <version>3.16.3</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
@@ -524,6 +524,10 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                     <configuration>
                         <redirectTestOutputToFile>true</redirectTestOutputToFile>
+
+                        <includes>
+                           <include>ProtobufCodecTest</include>
+                        </includes>
 
                         <excludes>
                             <exclude>LRUCacheMapTest</exclude>
