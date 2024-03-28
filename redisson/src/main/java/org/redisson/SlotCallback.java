@@ -16,6 +16,7 @@
 package org.redisson;
 
 import org.redisson.client.protocol.RedisCommand;
+import org.redisson.connection.MasterSlaveEntry;
 
 import java.util.List;
 
@@ -32,7 +33,7 @@ public interface SlotCallback<T, R> {
         return null;
     }
 
-    default Object[] createKeys(List<Object> params) {
+    default Object[] createKeys(MasterSlaveEntry entry, List<Object> params) {
         return params.toArray();
     }
 
@@ -40,7 +41,7 @@ public interface SlotCallback<T, R> {
         return params.toArray();
     }
 
-    void onSlotResult(T result);
+    void onSlotResult(List<Object> keys, T result);
 
     R onFinish();
 

@@ -651,7 +651,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     private <T, R> RFuture<R> evalBatchedAsync(boolean readOnly, Codec codec, RedisCommand<T> command, String script, List<Object> keys, SlotCallback<T, R> callback) {
         if (!connectionManager.isClusterMode()) {
-            Object[] keysArray = callback.createKeys(keys);
+            Object[] keysArray = callback.createKeys(null, keys);
             Object[] paramsArray = callback.createParams(Collections.emptyList());
             if (readOnly) {
                 return evalReadAsync((String) null, codec, command, script, Arrays.asList(keysArray), paramsArray);
@@ -663,7 +663,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         if (keys.isEmpty()) {
             entry2keys = connectionManager.getEntrySet().stream()
                     .collect(Collectors.toMap(Function.identity(),
-                            e -> Collections.singletonMap(0, Collections.emptyList())));
+                            e -> Collections.singletonMap(0, new ArrayList<>())));
         } else {
             entry2keys = keys.stream().collect(
                     Collectors.groupingBy(k -> {
@@ -687,7 +687,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                     }, Collectors.toList())));
         }
 
-        List<CompletableFuture<?>> futures = new ArrayList<>();
+        Map<List<Object>, CompletableFuture<?>> futures = new IdentityHashMap<>();
         for (Entry<MasterSlaveEntry, Map<Integer, List<Object>>> entry : entry2keys.entrySet()) {
             // executes in batch due to CROSSLOT error
             CommandBatchService executorService;
@@ -703,14 +703,14 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 if (newCommand != null) {
                     c = newCommand;
                 }
-                Object[] keysArray = callback.createKeys(groupedKeys);
+                Object[] keysArray = callback.createKeys(entry.getKey(), groupedKeys);
                 Object[] paramsArray = callback.createParams(Collections.emptyList());
                 if (readOnly) {
                     RFuture<T> f = executorService.evalReadAsync(entry.getKey(), codec, c, script, Arrays.asList(keysArray), paramsArray);
-                    futures.add(f.toCompletableFuture());
+                    futures.put(groupedKeys, f.toCompletableFuture());
                 } else {
                     RFuture<T> f = executorService.evalWriteAsync(entry.getKey(), codec, c, script, Arrays.asList(keysArray), paramsArray);
-                    futures.add(f.toCompletableFuture());
+                    futures.put(groupedKeys, f.toCompletableFuture());
                 }
             }
 
@@ -719,10 +719,10 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             }
         }
 
-        CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        CompletableFuture<Void> future = CompletableFuture.allOf(futures.values().toArray(new CompletableFuture[0]));
         CompletableFuture<R> result = future.thenApply(r -> {
-            futures.forEach(f -> {
-                callback.onSlotResult((T) f.join());
+            futures.entrySet().forEach(e -> {
+                callback.onSlotResult(e.getKey(), (T) e.getValue().join());
             });
             return callback.onFinish();
         });
@@ -760,7 +760,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                     }
                 }, Collectors.toList())));
 
-        List<CompletableFuture<?>> futures = new ArrayList<>();
+        Map<List<Object>, CompletableFuture<?>> futures = new IdentityHashMap<>();
         List<CompletableFuture<?>> mainFutures = new ArrayList<>();
         for (Entry<MasterSlaveEntry, Map<Integer, List<Object>>> entry : entry2keys.entrySet()) {
             // executes in batch due to CROSSLOT error
@@ -780,10 +780,10 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 Object[] params = callback.createParams(groupedKeys);
                 if (readOnly) {
                     RFuture<T> f = executorService.readAsync(entry.getKey(), codec, c, params);
-                    futures.add(f.toCompletableFuture());
+                    futures.put(groupedKeys, f.toCompletableFuture());
                 } else {
                     RFuture<T> f = executorService.writeAsync(entry.getKey(), codec, c, params);
-                    futures.add(f.toCompletableFuture());
+                    futures.put(groupedKeys, f.toCompletableFuture());
                 }
             }
 
@@ -797,12 +797,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         if (!mainFutures.isEmpty()) {
             future = CompletableFuture.allOf(mainFutures.toArray(new CompletableFuture[0]));
         } else {
-            future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+            future = CompletableFuture.allOf(futures.values().toArray(new CompletableFuture[0]));
         }
         CompletableFuture<R> result = future.thenApply(r -> {
-            futures.forEach(f -> {
-                if (!f.isCompletedExceptionally() && f.getNow(null) != null) {
-                    callback.onSlotResult((T) f.getNow(null));
+            futures.entrySet().forEach(e -> {
+                if (!e.getValue().isCompletedExceptionally() && e.getValue().getNow(null) != null) {
+                    callback.onSlotResult(e.getKey(), (T) e.getValue().getNow(null));
                 }
             });
             return callback.onFinish();

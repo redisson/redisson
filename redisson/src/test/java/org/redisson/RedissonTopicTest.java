@@ -205,7 +205,54 @@ public class RedissonTopicTest extends RedisDockerTest {
         
         redisson.shutdown();
     }
-    
+
+    @Test
+    public void test1() throws InterruptedException {
+        int loops = 10;
+        AtomicInteger counter = new AtomicInteger();
+        for (int j = 0; j < loops; j++) {
+            RTopic t = redisson.getTopic("PUBSUB_" + j);
+            t.addListener(String.class, new MessageListener<String>() {
+                @Override
+                public void onMessage(CharSequence channel, String msg) {
+//                    System.out.println("channel " + channel + " " + msg);
+                    counter.incrementAndGet();
+//                    System.out.println("m " + counter.incrementAndGet());
+                }
+            });
+        }
+
+        for (int s = 0; s < 100; s++) {
+            ExecutorService executor = Executors.newFixedThreadPool(16);
+            for (int k = 0; k < 100; k++) {
+                executor.execute(() -> {
+                    for (int j = 0; j < loops; j++) {
+                        for (int i = 0; i < 20; i++) {
+                            RTopic t = redisson.getTopic("PUBSUB_" + j);
+                            t.publishAsync("message " + j + "_" + i);
+                        }
+                    }
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
+
+            executor.shutdown();
+            executor.awaitTermination(10, TimeUnit.SECONDS);
+
+            Awaitility.waitAtMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+                assertThat(counter.get()).isEqualTo(loops * 20*100);
+            });
+            counter.set(0);
+            System.out.println("s " + s);
+        }
+
+
+    }
+
     @Test
     public void testConcurrentTopic() throws Exception {
         int threads = 16;
