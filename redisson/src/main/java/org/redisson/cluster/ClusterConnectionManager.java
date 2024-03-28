@@ -943,7 +943,15 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     private Collection<ClusterPartition> getLastPartitions() {
         return lastUri2Partition.values();
     }
-    
+
+    public int getSlot(MasterSlaveEntry entry) {
+        return lastPartitions.entrySet().stream()
+                .filter(e -> e.getValue().getMasterAddress().equals(entry.getClient().getConfig().getAddress()))
+                .findAny()
+                .map(m -> m.getKey())
+                .orElse(-1);
+    }
+
     @Override
     public RedisURI getLastClusterNode() {
         return lastClusterNode;
