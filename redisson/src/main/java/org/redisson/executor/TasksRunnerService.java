@@ -119,6 +119,10 @@ public class TasksRunnerService implements RemoteExecutorService {
     public void scheduleAtFixedRate(ScheduledAtFixedRateParameters params) {
         long start = System.nanoTime();
         executeRunnable(params, false);
+        if (!redisson.getMap(tasksName, StringCodec.INSTANCE).containsKey(params.getRequestId())) {
+            return;
+        }
+
         long spent = params.getSpentTime()
                                 + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
 
