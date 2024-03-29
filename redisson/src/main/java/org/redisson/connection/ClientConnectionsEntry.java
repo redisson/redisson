@@ -49,11 +49,9 @@ public class ClientConnectionsEntry {
     private volatile FreezeReason freezeReason;
     final RedisClient client;
 
-    private volatile NodeType nodeType;
+    private final NodeType nodeType;
     private final IdleConnectionWatcher idleConnectionWatcher;
     private final ConnectionManager connectionManager;
-
-    private final MasterSlaveServersConfig config;
 
     private volatile boolean initialized = false;
 
@@ -67,7 +65,6 @@ public class ClientConnectionsEntry {
         this.idleConnectionWatcher = connectionManager.getServiceManager().getConnectionWatcher();
         this.connectionManager = connectionManager;
         this.nodeType = nodeType;
-        this.config = config;
         this.pubSubConnectionsHolder = new ConnectionsHolder<>(client, config.getSubscriptionConnectionPoolSize(),
                 r -> r.connectPubSubAsync(), connectionManager.getServiceManager(), false);
 
@@ -96,10 +93,6 @@ public class ClientConnectionsEntry {
         this.initialized = isInited;
     }
     
-    public void setNodeType(NodeType nodeType) {
-        this.nodeType = nodeType;
-    }
-
     public NodeType getNodeType() {
         return nodeType;
     }
@@ -144,6 +137,11 @@ public class ClientConnectionsEntry {
     }
 
     public void nodeDown() {
+        nodeDown(connectionsHolder);
+        reattachPubSub();
+    }
+
+    protected final void nodeDown(ConnectionsHolder<RedisConnection> connectionsHolder) {
         connectionsHolder.getFreeConnectionsCounter().removeListeners();
 
         for (RedisConnection connection : connectionsHolder.getAllConnections()) {
