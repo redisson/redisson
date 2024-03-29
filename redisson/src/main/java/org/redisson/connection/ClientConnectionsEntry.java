@@ -150,8 +150,6 @@ public class ClientConnectionsEntry {
         }
         connectionsHolder.getFreeConnections().clear();
         connectionsHolder.getAllConnections().clear();
-
-        reattachPubSub();
     }
 
     private void reattachBlockingQueue(CommandData<?, ?> commandData) {
