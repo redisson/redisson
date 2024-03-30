@@ -15,14 +15,13 @@
  */
 package org.redisson;
 
-import org.redisson.api.*;
 import org.redisson.api.LocalCachedMapOptions;
 import org.redisson.api.MapCacheOptions;
 import org.redisson.api.MapOptions;
+import org.redisson.api.*;
 import org.redisson.api.options.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.JsonCodec;
-import org.redisson.command.CommandAsyncService;
 import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
@@ -91,7 +90,7 @@ public class RedissonRx implements RedissonRxClient {
         PlainParams params = (PlainParams) options;
 
         return RxProxyBuilder.create(commandExecutor,
-                new RedissonStream<K, V>(params.getCodec(), new CommandAsyncService(commandExecutor, params), params.getName()), RStreamRx.class);
+                new RedissonStream<K, V>(params.getCodec(), new CommandRxService(commandExecutor, params), params.getName()), RStreamRx.class);
     }
 
     @Override
@@ -108,7 +107,7 @@ public class RedissonRx implements RedissonRxClient {
     public RSearchRx getSearch(OptionalOptions options) {
         OptionalParams params = (OptionalParams) options;
         return RxProxyBuilder.create(commandExecutor,
-                new RedissonSearch(params.getCodec(), new CommandAsyncService(commandExecutor, params)), RSearchRx.class);
+                new RedissonSearch(params.getCodec(), new CommandRxService(commandExecutor, params)), RSearchRx.class);
     }
 
     @Override
@@ -128,7 +127,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public <V> RGeoRx<V> getGeo(PlainOptions options) {
         PlainParams params = (PlainParams) options;
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         RedissonScoredSortedSet<V> set = new RedissonScoredSortedSet<V>(params.getCodec(), ce, params.getName(), null);
         return RxProxyBuilder.create(commandExecutor, new RedissonGeo<V>(params.getCodec(), ce, params.getName(), null),
                 new RedissonScoredSortedSetRx<V>(set), RGeoRx.class);
@@ -143,7 +142,7 @@ public class RedissonRx implements RedissonRxClient {
     public RLockRx getFairLock(CommonOptions options) {
         CommonParams params = (CommonParams) options;
         return RxProxyBuilder.create(commandExecutor,
-                            new RedissonFairLock(new CommandAsyncService(commandExecutor, params), params.getName()), RLockRx.class);
+                            new RedissonFairLock(new CommandRxService(commandExecutor, params), params.getName()), RLockRx.class);
     }
 
     @Override
@@ -155,7 +154,7 @@ public class RedissonRx implements RedissonRxClient {
     public RRateLimiterRx getRateLimiter(CommonOptions options) {
         CommonParams params = (CommonParams) options;
         return RxProxyBuilder.create(commandExecutor,
-                new RedissonRateLimiter(new CommandAsyncService(commandExecutor, params), params.getName()), RRateLimiterRx.class);
+                new RedissonRateLimiter(new CommandRxService(commandExecutor, params), params.getName()), RRateLimiterRx.class);
     }
 
     @Override
@@ -182,7 +181,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public RSemaphoreRx getSemaphore(CommonOptions options) {
         CommonParams params = (CommonParams) options;
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         return RxProxyBuilder.create(commandExecutor, new RedissonSemaphore(ce, params.getName()), RSemaphoreRx.class);
     }
 
@@ -194,7 +193,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public RPermitExpirableSemaphoreRx getPermitExpirableSemaphore(CommonOptions options) {
         CommonParams params = (CommonParams) options;
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         return RxProxyBuilder.create(commandExecutor,
                 new RedissonPermitExpirableSemaphore(ce, params.getName()), RPermitExpirableSemaphoreRx.class);
     }
@@ -219,7 +218,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public RLockRx getLock(CommonOptions options) {
         CommonParams params = (CommonParams) options;
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         return RxProxyBuilder.create(commandExecutor, new RedissonLock(ce, params.getName()), RLockRx.class);
     }
 
@@ -243,7 +242,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public RFencedLockRx getFencedLock(CommonOptions options) {
         CommonParams params = (CommonParams) options;
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         RedissonFencedLock lock = new RedissonFencedLock(ce, params.getName());
         return RxProxyBuilder.create(commandExecutor, lock, RFencedLockRx.class);
     }
@@ -274,7 +273,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public RCountDownLatchRx getCountDownLatch(CommonOptions options) {
         CommonParams params = (CommonParams) options;
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         return RxProxyBuilder.create(commandExecutor, new RedissonCountDownLatch(ce, params.getName()), RCountDownLatchRx.class);
     }
 
@@ -353,7 +352,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public RBucketsRx getBuckets(OptionalOptions options) {
         OptionalParams params = (OptionalParams) options;
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         return RxProxyBuilder.create(commandExecutor, new RedissonBuckets(params.getCodec(), ce), RBucketsRx.class);
     }
 
@@ -365,7 +364,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public <V> RJsonBucketRx<V> getJsonBucket(JsonBucketOptions<V> options) {
         JsonBucketParams<V> params = (JsonBucketParams<V>) options;
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         return RxProxyBuilder.create(commandExecutor, new RedissonJsonBucket<>(params.getCodec(), ce, params.getName()), RJsonBucketRx.class);
     }
 
@@ -382,7 +381,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public <V> RHyperLogLogRx<V> getHyperLogLog(PlainOptions options) {
         PlainParams params = (PlainParams) options;
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         return RxProxyBuilder.create(commandExecutor, new RedissonHyperLogLog<V>(params.getCodec(), ce, params.getName()), RHyperLogLogRx.class);
     }
 
@@ -394,7 +393,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public RIdGeneratorRx getIdGenerator(CommonOptions options) {
         CommonParams params = (CommonParams) options;
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         return RxProxyBuilder.create(commandExecutor, new RedissonIdGenerator(ce, params.getName()), RIdGeneratorRx.class);
     }
 
@@ -415,7 +414,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public <V> RListRx<V> getList(PlainOptions options) {
         PlainParams params = (PlainParams) options;
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         RedissonList<V> list = new RedissonList<V>(params.getCodec(), ce, params.getName(), null);
         return RxProxyBuilder.create(commandExecutor, list,
                 new RedissonListRx<V>(list), RListRx.class);
@@ -438,7 +437,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public <K, V> RListMultimapRx<K, V> getListMultimap(PlainOptions options) {
         PlainParams params = (PlainParams) options;
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         RedissonListMultimap<K, V> listMultimap = new RedissonListMultimap<>(params.getCodec(), ce, params.getName());
         return RxProxyBuilder.create(commandExecutor, listMultimap,
                 new RedissonListMultimapRx<K, V>(listMultimap, commandExecutor), RListMultimapRx.class);
@@ -553,7 +552,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public <V> RSetRx<V> getSet(PlainOptions options) {
         PlainParams params = (PlainParams) options;
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         RedissonSet<V> set = new RedissonSet<V>(params.getCodec(), ce, params.getName(), null);
         return RxProxyBuilder.create(commandExecutor, set,
                 new RedissonSetRx<V>(set, this), RSetRx.class);
@@ -576,7 +575,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public <V> RScoredSortedSetRx<V> getScoredSortedSet(PlainOptions options) {
         PlainParams params = (PlainParams) options;
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         RedissonScoredSortedSet<V> set = new RedissonScoredSortedSet<V>(params.getCodec(), ce, params.getName(), null);
         return RxProxyBuilder.create(commandExecutor, set,
                 new RedissonScoredSortedSetRx<>(set), RScoredSortedSetRx.class);
@@ -592,7 +591,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public RLexSortedSetRx getLexSortedSet(CommonOptions options) {
         CommonParams params = (CommonParams) options;
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         RedissonLexSortedSet set = new RedissonLexSortedSet(ce, params.getName(), null);
         return RxProxyBuilder.create(commandExecutor, set,
                 new RedissonLexSortedSetRx(set), RLexSortedSetRx.class);
@@ -613,7 +612,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public RShardedTopicRx getShardedTopic(PlainOptions options) {
         PlainParams params = (PlainParams) options;
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         RShardedTopic topic = new RedissonShardedTopic(params.getCodec(), ce, params.getName());
         return RxProxyBuilder.create(commandExecutor, topic, new RedissonTopicRx(topic), RShardedTopicRx.class);
     }
@@ -633,7 +632,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public RTopicRx getTopic(PlainOptions options) {
         PlainParams params = (PlainParams) options;
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         RTopic topic = new RedissonTopic(params.getCodec(), ce, params.getName());
         return RxProxyBuilder.create(commandExecutor, topic, new RedissonTopicRx(topic), RTopicRx.class);
     }
@@ -651,7 +650,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public RReliableTopicRx getReliableTopic(PlainOptions options) {
         PlainParams params = (PlainParams) options;
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         return RxProxyBuilder.create(commandExecutor,
                 new RedissonReliableTopic(params.getCodec(), ce, params.getName(), null), RReliableTopicRx.class);
     }
@@ -669,7 +668,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public RPatternTopicRx getPatternTopic(PatternTopicOptions options) {
         PatternTopicParams params = (PatternTopicParams) options;
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         return RxProxyBuilder.create(commandExecutor, new RedissonPatternTopic(params.getCodec(), ce, params.getPattern()), RPatternTopicRx.class);
     }
 
@@ -688,7 +687,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public <V> RQueueRx<V> getQueue(PlainOptions options) {
         PlainParams params = (PlainParams) options;
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         return RxProxyBuilder.create(commandExecutor, new RedissonQueue<V>(params.getCodec(), ce, params.getName(), null),
                 new RedissonListRx<V>(new RedissonList<V>(params.getCodec(), ce, params.getName(), null)), RQueueRx.class);
     }
@@ -706,7 +705,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public <V> RRingBufferRx<V> getRingBuffer(PlainOptions options) {
         PlainParams params = (PlainParams) options;
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         return RxProxyBuilder.create(commandExecutor,
                 new RedissonRingBuffer<V>(params.getCodec(), ce, params.getName(), null), RRingBufferRx.class);
     }
@@ -728,7 +727,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public <V> RBlockingQueueRx<V> getBlockingQueue(PlainOptions options) {
         PlainParams params = (PlainParams) options;
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         RedissonBlockingQueue<V> queue = new RedissonBlockingQueue<V>(params.getCodec(), ce, params.getName(), null);
         return RxProxyBuilder.create(commandExecutor, queue,
                 new RedissonBlockingQueueRx<V>(queue), RBlockingQueueRx.class);
@@ -751,7 +750,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public <V> RDequeRx<V> getDeque(PlainOptions options) {
         PlainParams params = (PlainParams) options;
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         RedissonDeque<V> queue = new RedissonDeque<V>(params.getCodec(), ce, params.getName(), null);
         return RxProxyBuilder.create(commandExecutor, queue,
                 new RedissonListRx<V>(queue), RDequeRx.class);
@@ -774,7 +773,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public <V, L> RTimeSeriesRx<V, L> getTimeSeries(PlainOptions options) {
         PlainParams params = (PlainParams) options;
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         RTimeSeries<V, L> timeSeries = new RedissonTimeSeries<>(params.getCodec(), evictionScheduler, ce, params.getName());
         return RxProxyBuilder.create(commandExecutor, timeSeries,
                 new RedissonTimeSeriesRx<>(timeSeries, this), RTimeSeriesRx.class);
@@ -797,7 +796,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public <V> RSetCacheRx<V> getSetCache(PlainOptions options) {
         PlainParams params = (PlainParams) options;
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         RSetCache<V> set = new RedissonSetCache<V>(params.getCodec(), evictionScheduler, ce, params.getName(), null);
         return RxProxyBuilder.create(commandExecutor, set,
                 new RedissonSetCacheRx<V>(set, this), RSetCacheRx.class);
@@ -811,7 +810,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public RAtomicLongRx getAtomicLong(CommonOptions options) {
         CommonParams params = (CommonParams) options;
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         return RxProxyBuilder.create(commandExecutor, new RedissonAtomicLong(ce, params.getName()), RAtomicLongRx.class);
     }
 
@@ -823,7 +822,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public RAtomicDoubleRx getAtomicDouble(CommonOptions options) {
         CommonParams params = (CommonParams) options;
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         return RxProxyBuilder.create(commandExecutor, new RedissonAtomicDouble(ce, params.getName()), RAtomicDoubleRx.class);
     }
 
@@ -870,7 +869,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public RBitSetRx getBitSet(CommonOptions options) {
         CommonParams params = (CommonParams) options;
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         return RxProxyBuilder.create(commandExecutor, new RedissonBitSet(ce, params.getName()), RBitSetRx.class);
     }
 
@@ -887,7 +886,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public RFunctionRx getFunction(OptionalOptions options) {
         OptionalParams params = (OptionalParams) options;
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         return RxProxyBuilder.create(commandExecutor, new RedissonFuction(ce, params.getCodec()), RFunctionRx.class);
     }
 
@@ -904,7 +903,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public RScriptRx getScript(OptionalOptions options) {
         OptionalParams params = (OptionalParams) options;
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         return RxProxyBuilder.create(commandExecutor, new RedissonScript(ce, params.getCodec()), RScriptRx.class);
     }
 
@@ -1068,7 +1067,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public <V> RBlockingDequeRx<V> getBlockingDeque(PlainOptions options) {
         PlainParams params = (PlainParams) options;
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         RedissonBlockingDeque<V> deque = new RedissonBlockingDeque<V>(params.getCodec(), ce, params.getName(), null);
         return RxProxyBuilder.create(commandExecutor, deque,
                 new RedissonBlockingDequeRx<V>(deque), RBlockingDequeRx.class);
@@ -1097,7 +1096,7 @@ public class RedissonRx implements RedissonRxClient {
         PlainParams params = (PlainParams) options;
         String remoteName = RedissonObject.suffixName(params.getName(), "remoteService");
         RRemoteService service = getRemoteService(remoteName);
-        CommandAsyncService ce = new CommandAsyncService(commandExecutor, params);
+        CommandRxService ce = new CommandRxService(commandExecutor, params);
         RedissonTransferQueue<V> queue = new RedissonTransferQueue<V>(params.getCodec(), ce, params.getName(), service);
         return RxProxyBuilder.create(commandExecutor, queue,
                 new RedissonTransferQueueRx<V>(queue), RTransferQueueRx.class);
