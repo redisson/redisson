@@ -34,7 +34,7 @@ import java.util.concurrent.CompletionException;
  */
 public class CommandReactiveService extends CommandAsyncService implements CommandReactiveExecutor {
 
-    public CommandReactiveService(CommandAsyncExecutor executor, boolean trackChanges) {
+    CommandReactiveService(CommandAsyncExecutor executor, boolean trackChanges) {
         super(executor, trackChanges);
     }
 
@@ -42,7 +42,7 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
         super(connectionManager, objectBuilder, RedissonObjectBuilder.ReferenceType.REACTIVE);
     }
 
-    public CommandReactiveService(CommandAsyncExecutor executor, ObjectParams objectParams) {
+    CommandReactiveService(CommandAsyncExecutor executor, ObjectParams objectParams) {
         super(executor, objectParams);
     }
 

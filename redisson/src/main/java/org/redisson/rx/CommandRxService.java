@@ -36,7 +36,7 @@ import java.util.concurrent.CompletionException;
  */
 public class CommandRxService extends CommandAsyncService implements CommandRxExecutor {
 
-    public CommandRxService(CommandAsyncExecutor executor, boolean trackChanges) {
+    CommandRxService(CommandAsyncExecutor executor, boolean trackChanges) {
         super(executor, trackChanges);
     }
 
@@ -44,7 +44,7 @@ public class CommandRxService extends CommandAsyncService implements CommandRxEx
         super(connectionManager, objectBuilder, RedissonObjectBuilder.ReferenceType.RXJAVA);
     }
 
-    public CommandRxService(CommandAsyncExecutor executor, ObjectParams objectParams) {
+    CommandRxService(CommandAsyncExecutor executor, ObjectParams objectParams) {
         super(executor, objectParams);
     }
 
