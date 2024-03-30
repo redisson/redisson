@@ -49,6 +49,7 @@ public class RedissonReactive implements RedissonReactiveClient {
     protected final CommandReactiveExecutor commandExecutor;
     protected final ConnectionManager connectionManager;
 
+    @Deprecated
     protected RedissonReactive(Config config) {
         Config configCopy = new Config(config);
 

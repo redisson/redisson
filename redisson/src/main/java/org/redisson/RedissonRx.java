@@ -47,6 +47,7 @@ public class RedissonRx implements RedissonRxClient {
     protected final CommandRxExecutor commandExecutor;
     protected final ConnectionManager connectionManager;
 
+    @Deprecated
     protected RedissonRx(Config config) {
         Config configCopy = new Config(config);
 
