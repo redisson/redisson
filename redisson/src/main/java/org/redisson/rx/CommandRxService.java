@@ -44,6 +44,10 @@ public class CommandRxService extends CommandAsyncService implements CommandRxEx
         super(executor, objectParams);
     }
 
+    public CommandRxExecutor copy(ObjectParams objectParams) {
+        return new CommandRxService(this, objectParams);
+    }
+
     @Override
     public <R> Flowable<R> flowable(Callable<RFuture<R>> supplier) {
         ReplayProcessor<R> p = ReplayProcessor.create();

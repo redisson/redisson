@@ -16,6 +16,7 @@
 package org.redisson.reactive;
 
 import org.redisson.api.RFuture;
+import org.redisson.api.options.ObjectParams;
 import org.redisson.command.CommandAsyncExecutor;
 import reactor.core.publisher.Mono;
 
@@ -29,5 +30,7 @@ import java.util.concurrent.Callable;
 public interface CommandReactiveExecutor extends CommandAsyncExecutor {
 
     <R> Mono<R> reactive(Callable<RFuture<R>> supplier);
+
+    CommandReactiveExecutor copy(ObjectParams objectParams);
 
 }
