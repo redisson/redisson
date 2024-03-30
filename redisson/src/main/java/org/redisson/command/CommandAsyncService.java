@@ -45,7 +45,10 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -71,7 +74,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     private final int responseTimeout;
     private final boolean trackChanges;
 
-    public CommandAsyncService(CommandAsyncExecutor executor, boolean trackChanges) {
+    @Override
+    public CommandAsyncExecutor copy(boolean trackChanges) {
+        return new CommandAsyncService(this, trackChanges);
+    }
+
+    protected CommandAsyncService(CommandAsyncExecutor executor, boolean trackChanges) {
         CommandAsyncService service = (CommandAsyncService) executor;
         this.codec = service.codec;
         this.connectionManager = service.connectionManager;
@@ -83,8 +91,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         this.trackChanges = trackChanges;
     }
 
+    @Override
+    public CommandAsyncExecutor copy(ObjectParams objectParams) {
+        return new CommandAsyncService(this, objectParams);
+    }
 
-    public CommandAsyncService(CommandAsyncExecutor executor,
+    protected CommandAsyncService(CommandAsyncExecutor executor,
                                ObjectParams objectParams) {
         CommandAsyncService service = (CommandAsyncService) executor;
         this.codec = service.codec;
