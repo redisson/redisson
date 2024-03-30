@@ -31,6 +31,7 @@ public interface CommandRxExecutor extends CommandAsyncExecutor {
 
     <R> Flowable<R> flowable(Callable<RFuture<R>> supplier);
 
+    @Override
     CommandRxExecutor copy(ObjectParams objectParams);
 
 }

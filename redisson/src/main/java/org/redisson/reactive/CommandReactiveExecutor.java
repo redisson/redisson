@@ -31,6 +31,7 @@ public interface CommandReactiveExecutor extends CommandAsyncExecutor {
 
     <R> Mono<R> reactive(Callable<RFuture<R>> supplier);
 
+    @Override
     CommandReactiveExecutor copy(ObjectParams objectParams);
 
 }
