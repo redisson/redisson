@@ -402,7 +402,7 @@
         <dependency>
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-test</artifactId>
-            <version>3.5.3</version>
+            <version>3.6.4</version>
             <scope>test</scope>
         </dependency>
 
