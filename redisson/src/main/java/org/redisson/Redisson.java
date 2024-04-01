@@ -15,17 +15,16 @@
  */
 package org.redisson;
 
-import org.redisson.api.*;
 import org.redisson.api.ExecutorOptions;
 import org.redisson.api.LocalCachedMapOptions;
 import org.redisson.api.MapCacheOptions;
 import org.redisson.api.MapOptions;
+import org.redisson.api.*;
 import org.redisson.api.options.*;
 import org.redisson.api.redisnode.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.JsonCodec;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.command.CommandAsyncService;
 import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
