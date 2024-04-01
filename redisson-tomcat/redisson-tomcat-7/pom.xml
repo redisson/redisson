@@ -35,7 +35,7 @@
         <dependency>
             <groupId>org.apache.tomcat</groupId>
             <artifactId>tomcat-jasper</artifactId>
-            <version>7.0.109</version>
+            <version>10.1.20</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
