@@ -24,10 +24,7 @@ import org.redisson.client.*;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
-import org.redisson.config.BaseMasterSlaveServersConfig;
-import org.redisson.config.MasterSlaveServersConfig;
-import org.redisson.config.ReadMode;
-import org.redisson.config.SentinelServersConfig;
+import org.redisson.config.*;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.RedisURI;
 import org.slf4j.Logger;
@@ -64,8 +61,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     private String scheme;
     private SentinelServersConfig cfg;
 
-    public SentinelConnectionManager(SentinelServersConfig cfg, ServiceManager serviceManager) {
-        super(cfg, serviceManager);
+    public SentinelConnectionManager(SentinelServersConfig cfg, Config configCopy) {
+        super(cfg, configCopy);
         this.serviceManager.setNatMapper(cfg.getNatMapper());
 
         for (String address : cfg.getSentinelAddresses()) {

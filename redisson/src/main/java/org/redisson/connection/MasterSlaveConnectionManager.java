@@ -19,10 +19,7 @@ import io.netty.buffer.ByteBuf;
 import org.redisson.api.NodeType;
 import org.redisson.client.*;
 import org.redisson.cluster.ClusterSlotRange;
-import org.redisson.config.BaseConfig;
-import org.redisson.config.BaseMasterSlaveServersConfig;
-import org.redisson.config.MasterSlaveServersConfig;
-import org.redisson.config.ReadMode;
+import org.redisson.config.*;
 import org.redisson.misc.RedisURI;
 import org.redisson.pubsub.PublishSubscribeService;
 import org.slf4j.Logger;
@@ -64,9 +61,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     private boolean lastAttempt;
 
-    public MasterSlaveConnectionManager(BaseMasterSlaveServersConfig<?> cfg, ServiceManager serviceManager) {
-        this.serviceManager = serviceManager;
-
+    public MasterSlaveConnectionManager(BaseMasterSlaveServersConfig<?> cfg, Config configCopy) {
         if (cfg instanceof MasterSlaveServersConfig) {
             this.config = (MasterSlaveServersConfig) cfg;
             if (this.config.getSlaveAddresses().isEmpty()
@@ -77,8 +72,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             this.config = create(cfg);
         }
 
-        serviceManager.setConfig(this.config);
-        serviceManager.initTimer();
+        serviceManager = new ServiceManager(this.config, configCopy);
         subscribeService = new PublishSubscribeService(this);
     }
 

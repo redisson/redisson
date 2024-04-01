@@ -149,7 +149,7 @@ public final class ServiceManager {
 
     private final QueueTransferService queueTransferService = new QueueTransferService();
 
-    public ServiceManager(Config cfg) {
+    public ServiceManager(MasterSlaveServersConfig config, Config cfg) {
         Version.logVersion();
 
         if (cfg.getTransportMode() == TransportMode.EPOLL) {
@@ -221,6 +221,7 @@ public final class ServiceManager {
         }
 
         this.cfg = cfg;
+        this.config = config;
 
         if (cfg.getConnectionListener() != null) {
             this.connectionEventsHub.addListener(cfg.getConnectionListener());
@@ -237,6 +238,8 @@ public final class ServiceManager {
                 SCRIPT_SHA_CACHE.remove(addr);
             }
         });
+
+        initTimer();
     }
 
     // for Quarkus substitution
@@ -244,7 +247,7 @@ public final class ServiceManager {
         return new IOUringEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
     }
 
-    public void initTimer() {
+    private void initTimer() {
         int minTimeout = Math.min(config.getRetryInterval(), config.getTimeout());
         if (minTimeout % 100 != 0) {
             minTimeout = (minTimeout % 100) / 2;
@@ -379,10 +382,6 @@ public final class ServiceManager {
 
     public MasterSlaveServersConfig getConfig() {
         return config;
-    }
-
-    public void setConfig(MasterSlaveServersConfig config) {
-        this.config = config;
     }
 
     public ElementsSubscribeService getElementsSubscribeService() {

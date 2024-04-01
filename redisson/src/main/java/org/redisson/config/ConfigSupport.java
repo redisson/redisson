@@ -191,24 +191,22 @@ public class ConfigSupport {
     }
 
     public static ConnectionManager createConnectionManager(Config configCopy) {
-        ServiceManager serviceManager = new ServiceManager(configCopy);
-
         ConnectionManager cm = null;
         if (configCopy.getMasterSlaveServersConfig() != null) {
             validate(configCopy.getMasterSlaveServersConfig());
-            cm = new MasterSlaveConnectionManager(configCopy.getMasterSlaveServersConfig(), serviceManager);
+            cm = new MasterSlaveConnectionManager(configCopy.getMasterSlaveServersConfig(), configCopy);
         } else if (configCopy.getSingleServerConfig() != null) {
             validate(configCopy.getSingleServerConfig());
-            cm = new SingleConnectionManager(configCopy.getSingleServerConfig(), serviceManager);
+            cm = new SingleConnectionManager(configCopy.getSingleServerConfig(), configCopy);
         } else if (configCopy.getSentinelServersConfig() != null) {
             validate(configCopy.getSentinelServersConfig());
-            cm = new SentinelConnectionManager(configCopy.getSentinelServersConfig(), serviceManager);
+            cm = new SentinelConnectionManager(configCopy.getSentinelServersConfig(), configCopy);
         } else if (configCopy.getClusterServersConfig() != null) {
             validate(configCopy.getClusterServersConfig());
-            cm = new ClusterConnectionManager(configCopy.getClusterServersConfig(), serviceManager);
+            cm = new ClusterConnectionManager(configCopy.getClusterServersConfig(), configCopy);
         } else if (configCopy.getReplicatedServersConfig() != null) {
             validate(configCopy.getReplicatedServersConfig());
-            cm = new ReplicatedConnectionManager(configCopy.getReplicatedServersConfig(), serviceManager);
+            cm = new ReplicatedConnectionManager(configCopy.getReplicatedServersConfig(), configCopy);
         } else if (configCopy.getConnectionManager() != null) {
             cm = configCopy.getConnectionManager();
         }
