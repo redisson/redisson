@@ -19,6 +19,10 @@ public class RedissonLongAdderTest extends RedisDockerTest {
         Assertions.assertThat(adder1.sum()).isEqualTo(7);
         Assertions.assertThat(adder2.sum()).isEqualTo(7);
         Assertions.assertThat(adder3.sum()).isEqualTo(7);
+
+        adder1.destroy();
+        adder2.destroy();
+        adder3.destroy();
     }
     
     @Test
@@ -36,6 +40,10 @@ public class RedissonLongAdderTest extends RedisDockerTest {
         Assertions.assertThat(adder1.sum()).isZero();
         Assertions.assertThat(adder2.sum()).isZero();
         Assertions.assertThat(adder3.sum()).isZero();
+
+        adder1.destroy();
+        adder2.destroy();
+        adder3.destroy();
     }
     
 }

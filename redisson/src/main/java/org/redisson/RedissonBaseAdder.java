@@ -25,10 +25,8 @@ import org.redisson.misc.CompletableFutureWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 
@@ -56,6 +54,10 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
         }
 
         this.redisson = redisson;
+
+        AtomicInteger usage = getServiceManager().getAddersUsage().computeIfAbsent(name, r -> new AtomicInteger());
+        usage.incrementAndGet();
+
         listenerId = topic.addListener(String.class, (channel, msg) -> {
             String[] parts = msg.split(":");
             String id = parts[1];
@@ -69,23 +71,28 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
                         return;
                     }
 
-                    semaphore.releaseAsync().whenComplete((r, ex) -> {
-                        if (ex != null) {
-                            log.error("Can't release semaphore", ex);
-                        }
-                    });
+                    release(id, usage, semaphore);
                 });
             }
 
             if (parts[0].equals(CLEAR_MSG)) {
                 doReset();
-                semaphore.releaseAsync().whenComplete((res, e) -> {
-                    if (e != null) {
-                        log.error("Can't release semaphore", e);
-                    }
-                });
+
+                release(id, usage, semaphore);
             }
         });
+    }
+
+    private void release(String id, AtomicInteger usage, RSemaphore semaphore) {
+        AtomicInteger counter = getServiceManager().getAddersCounter().computeIfAbsent(id, r -> new AtomicInteger());
+        if (counter.incrementAndGet() == usage.get()) {
+            getServiceManager().getAddersCounter().remove(id);
+            semaphore.releaseAsync().whenComplete((r, ex) -> {
+                if (ex != null) {
+                    log.error("Can't release semaphore", ex);
+                }
+            });
+        }
     }
 
     protected abstract void doReset();
@@ -122,7 +129,9 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
         RSemaphore semaphore = getSemaphore(id);
 
         RFuture<Long> future = topic.publishAsync(SUM_MSG + ":" + id);
-        CompletionStage<T> f = future.thenCompose(r -> tryAcquire(semaphore, timeout, timeUnit, r.intValue()))
+        CompletionStage<T> f = future.thenCompose(r -> {
+                    return tryAcquire(semaphore, timeout, timeUnit, r.intValue());
+                })
                                     .thenCompose(r -> getAndDeleteAsync(id))
                                     .thenCompose(r -> semaphore.deleteAsync().thenApply(res -> r));
         return new CompletableFutureWrapper<>(f);
@@ -163,6 +172,11 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
 
     public void destroy() {
         topic.removeListener(listenerId);
+
+        AtomicInteger c = getServiceManager().getAddersUsage().getOrDefault(name, new AtomicInteger());
+        if (c.decrementAndGet() == 0) {
+            getServiceManager().getAddersUsage().remove(name, c);
+        }
     }
 
     protected abstract RFuture<T> addAndGetAsync(String id);
