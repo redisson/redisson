@@ -90,7 +90,7 @@
         <dependency>
             <groupId>io.helidon.microprofile.config</groupId>
             <artifactId>helidon-microprofile-config</artifactId>
-            <version>4.0.3</version>
+            <version>4.0.6</version>
             <scope>runtime</scope>
             <optional>true</optional>
         </dependency>
