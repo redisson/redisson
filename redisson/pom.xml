@@ -525,10 +525,6 @@
                     <configuration>
                         <redirectTestOutputToFile>true</redirectTestOutputToFile>
 
-                        <includes>
-                           <include>ProtobufCodecTest</include>
-                        </includes>
-
                         <excludes>
                             <exclude>LRUCacheMapTest</exclude>
                             <exclude>SoftCacheMapTest</exclude>
