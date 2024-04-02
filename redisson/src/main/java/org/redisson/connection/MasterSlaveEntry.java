@@ -53,7 +53,7 @@ public class MasterSlaveEntry {
 
     final Logger log = LoggerFactory.getLogger(getClass());
 
-    ClientConnectionsEntry masterEntry;
+    volatile ClientConnectionsEntry masterEntry;
 
     int references;
     
@@ -652,20 +652,21 @@ public class MasterSlaveEntry {
     }
 
     public void returnPubSubConnection(RedisPubSubConnection connection) {
-        if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
-            masterPubSubConnectionPool.returnConnection(masterEntry, connection, false);
+        ClientConnectionsEntry entry = getEntry(connection.getRedisClient());
+        if (entry == null) {
+            connection.closeAsync();
             return;
         }
-        ClientConnectionsEntry entry = getEntry(connection.getRedisClient());
-        slavePubSubConnectionPool.returnConnection(entry, connection, false);
+        entry.returnConnection(connection);
     }
 
     public void releaseWrite(RedisConnection connection) {
-        masterConnectionPool.returnConnection(masterEntry, connection, false);
+        masterEntry.returnConnection(connection);
     }
 
+    @Deprecated
     public void releaseTrackedWrite(RedisConnection connection) {
-        masterConnectionPool.returnConnection(masterEntry, connection, true);
+        masterEntry.returnConnection(connection);
     }
 
     public void releaseRead(RedisConnection connection, boolean trackChanges) {
@@ -677,8 +678,13 @@ public class MasterSlaveEntry {
             releaseWrite(connection);
             return;
         }
+
         ClientConnectionsEntry entry = getEntry(connection.getRedisClient());
-        slaveConnectionPool.returnConnection(entry, connection, trackChanges);
+        if (entry == null) {
+            connection.closeAsync();
+            return;
+        }
+        entry.returnConnection(connection);
     }
 
     public void incReference() {

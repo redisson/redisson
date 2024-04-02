@@ -26,7 +26,9 @@ import org.redisson.misc.WrappedLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -56,6 +58,8 @@ public class ClientConnectionsEntry {
     private volatile boolean initialized = false;
 
     private final WrappedLock lock = new WrappedLock();
+
+    private final Map<RedisConnection, ConnectionsHolder<?>> connection2holder = new ConcurrentHashMap<>();
 
     public ClientConnectionsEntry(RedisClient client, int poolMinSize, int poolMaxSize,
                                   ConnectionManager connectionManager, NodeType nodeType, MasterSlaveServersConfig config) {
@@ -215,6 +219,20 @@ public class ClientConnectionsEntry {
 
     public ConnectionsHolder<RedisPubSubConnection> getPubSubConnectionsHolder() {
         return pubSubConnectionsHolder;
+    }
+
+    public void addHandler(RedisConnection connection, ConnectionsHolder<?> handler) {
+        connection2holder.put(connection, handler);
+    }
+
+    public final <T extends RedisConnection> void returnConnection(T connection) {
+        ConnectionsHolder<T> handler;
+        if (connection.getUsage() > 1) {
+            handler = (ConnectionsHolder<T>) connection2holder.get(connection);
+        } else {
+            handler = (ConnectionsHolder<T>) connection2holder.remove(connection);
+        }
+        handler.releaseConnection(this, connection);
     }
 
     @Override

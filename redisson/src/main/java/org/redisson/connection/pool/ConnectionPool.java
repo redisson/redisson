@@ -107,7 +107,8 @@ abstract class ConnectionPool<T extends RedisConnection> {
     }
 
     protected final CompletableFuture<T> acquireConnection(RedisCommand<?> command, ClientConnectionsEntry entry, boolean trackChanges) {
-        CompletableFuture<T> result = getConnectionHolder(entry, trackChanges).acquireConnection(command);
+        ConnectionsHolder<T> handler = getConnectionHolder(entry, trackChanges);
+        CompletableFuture<T> result = handler.acquireConnection(command);
         result.whenComplete((r, e) -> {
             if (e != null) {
                 if (entry.getNodeType() == NodeType.SLAVE) {
@@ -118,6 +119,8 @@ abstract class ConnectionPool<T extends RedisConnection> {
                 }
                 return;
             }
+
+            entry.addHandler(r, handler);
 
             if (entry.getNodeType() == NodeType.SLAVE) {
                 entry.getClient().getConfig().getFailedNodeDetector().onConnectSuccessful();
@@ -132,14 +135,6 @@ abstract class ConnectionPool<T extends RedisConnection> {
             return false;
         }
         return true;
-    }
-
-    public final void returnConnection(ClientConnectionsEntry entry, T connection, boolean trackChanges) {
-        if (entry == null) {
-            connection.closeAsync();
-            return;
-        }
-        getConnectionHolder(entry, trackChanges).releaseConnection(entry, connection);
     }
 
 }
