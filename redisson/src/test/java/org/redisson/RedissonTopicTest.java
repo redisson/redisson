@@ -206,12 +206,24 @@ public class RedissonTopicTest extends RedisDockerTest {
         redisson.shutdown();
     }
 
-    @Test
+//    @Test
     public void test1() throws InterruptedException {
         int loops = 10;
         AtomicInteger counter = new AtomicInteger();
         for (int j = 0; j < loops; j++) {
             RTopic t = redisson.getTopic("PUBSUB_" + j);
+
+            t.addListener(new StatusListener() {
+                @Override
+                public void onSubscribe(String channel) {
+                    System.out.println("redis channel subscribed {}" + channel);
+                }
+
+                @Override
+                public void onUnsubscribe(String channel) {
+                    System.out.println("redis channel unsubscribed {}" + channel);
+                }
+            });
             t.addListener(String.class, new MessageListener<String>() {
                 @Override
                 public void onMessage(CharSequence channel, String msg) {
