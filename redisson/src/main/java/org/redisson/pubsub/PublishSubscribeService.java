@@ -671,8 +671,13 @@ public class PublishSubscribeService {
             public void onStatus(PubSubType type, CharSequence channel) {
                 if (type == topicType && channel.equals(channelName)) {
                     freePubSubLock.acquire().thenAccept(c -> {
-                        release(ce);
-                        freePubSubLock.release();
+                        try {
+                            release(ce);
+                        } catch (Exception e) {
+                            result.completeExceptionally(e);
+                        } finally {
+                            freePubSubLock.release();
+                        }
 
                         result.complete(null);
                     });
