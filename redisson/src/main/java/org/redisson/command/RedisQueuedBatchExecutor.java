@@ -98,6 +98,11 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
     protected void releaseConnection(CompletableFuture<R> attemptPromise, CompletableFuture<RedisConnection> connectionFuture) {
         if (RedisCommands.EXEC.getName().equals(command.getName())
                 || RedisCommands.DISCARD.getName().equals(command.getName())) {
+            if (attempt < attempts
+                    && attemptPromise.isCompletedExceptionally()) {
+                return;
+            }
+
             super.releaseConnection(attemptPromise, connectionFuture);
         }
     }
