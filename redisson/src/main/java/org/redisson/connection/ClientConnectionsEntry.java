@@ -225,7 +225,7 @@ public class ClientConnectionsEntry {
         connection2holder.put(connection, handler);
     }
 
-    public final <T extends RedisConnection> void returnConnection(T connection) {
+    public <T extends RedisConnection> void returnConnection(T connection) {
         ConnectionsHolder<T> handler;
         if (connection.getUsage() > 1) {
             handler = (ConnectionsHolder<T>) connection2holder.get(connection);
