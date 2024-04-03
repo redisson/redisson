@@ -283,7 +283,7 @@ public class RedissonBatchTest extends RedisDockerTest {
         });
 
         // time to reconnect broken connection
-        Thread.sleep(300);
+        Thread.sleep(700);
 
         redisson.getBucket("test3").set(4);
         assertThat(redisson.getBucket("test3").get()).isEqualTo(4);
