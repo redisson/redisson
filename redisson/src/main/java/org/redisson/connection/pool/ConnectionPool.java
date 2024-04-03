@@ -109,7 +109,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
     protected final CompletableFuture<T> acquireConnection(RedisCommand<?> command, ClientConnectionsEntry entry, boolean trackChanges) {
         ConnectionsHolder<T> handler = getConnectionHolder(entry, trackChanges);
         CompletableFuture<T> result = handler.acquireConnection(command);
-        result.whenComplete((r, e) -> {
+        return result.whenComplete((r, e) -> {
             if (e != null) {
                 if (entry.getNodeType() == NodeType.SLAVE) {
                     entry.getClient().getConfig().getFailedNodeDetector().onConnectFailed();
@@ -126,7 +126,6 @@ abstract class ConnectionPool<T extends RedisConnection> {
                 entry.getClient().getConfig().getFailedNodeDetector().onConnectSuccessful();
             }
         });
-        return result;
     }
         
     private boolean isHealthy(ClientConnectionsEntry entry) {
