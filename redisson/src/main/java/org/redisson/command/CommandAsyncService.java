@@ -474,7 +474,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return connectionManager.getServiceManager().getCfg().isUseScriptCache();
     }
 
-    private Object[] copy(Object[] params) {
+    protected Object[] copy(Object[] params) {
         List<Object> result = new ArrayList<>();
         for (Object object : params) {
             if (object instanceof ByteBuf) {
@@ -503,7 +503,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         this.EVAL_SHA_RO_SUPPORTED.set(value);
     }
 
-    private <T, R> RFuture<R> evalAsync(NodeSource nodeSource, boolean readOnlyMode, Codec codec, RedisCommand<T> evalCommandType,
+    public <T, R> RFuture<R> evalAsync(NodeSource nodeSource, boolean readOnlyMode, Codec codec, RedisCommand<T> evalCommandType,
                                         String script, List<Object> keys, boolean noRetry, Object... params) {
         if (isEvalCacheActive() && evalCommandType.getName().equals("EVAL")) {
             CompletableFuture<R> mainPromise = new CompletableFuture<>();
