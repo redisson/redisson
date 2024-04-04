@@ -209,7 +209,7 @@ public class RedissonTransaction implements RTransaction {
         
         BatchOptions batchOptions = createOptions();
         
-        CommandBatchService transactionExecutor = new CommandBatchService(commandExecutor, batchOptions);
+        CommandBatchService transactionExecutor = commandExecutor.createCommandBatchService(batchOptions);
         for (TransactionalOperation transactionalOperation : operations) {
             transactionalOperation.commit(transactionExecutor);
         }
@@ -278,7 +278,7 @@ public class RedissonTransaction implements RTransaction {
         
         BatchOptions batchOptions = createOptions();
         
-        CommandBatchService transactionExecutor = new CommandBatchService(commandExecutor, batchOptions);
+        CommandBatchService transactionExecutor = commandExecutor.createCommandBatchService(batchOptions);
         for (TransactionalOperation transactionalOperation : operations) {
             transactionalOperation.commit(transactionExecutor);
         }

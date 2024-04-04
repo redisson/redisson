@@ -1024,6 +1024,11 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     protected CommandBatchService createCommandBatchService(int availableSlaves) {
         BatchOptions options = BatchOptions.defaults()
                                             .sync(availableSlaves, Duration.ofMillis(getServiceManager().getCfg().getSlavesSyncTimeout()));
+        return createCommandBatchService(options);
+    }
+
+    @Override
+    public CommandBatchService createCommandBatchService(BatchOptions options) {
         return new CommandBatchService(this, options);
     }
 

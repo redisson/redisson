@@ -34,7 +34,7 @@ public class RedissonBatch implements RBatch {
     private final CommandBatchService executorService;
 
     public RedissonBatch(EvictionScheduler evictionScheduler, CommandAsyncExecutor executor, BatchOptions options) {
-        this.executorService = new CommandBatchService(executor, options);
+        this.executorService = executor.createCommandBatchService(options);
         this.evictionScheduler = evictionScheduler;
     }
 

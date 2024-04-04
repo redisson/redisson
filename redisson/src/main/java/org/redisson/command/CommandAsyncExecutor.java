@@ -17,6 +17,7 @@ package org.redisson.command;
 
 import io.netty.buffer.ByteBuf;
 import org.redisson.SlotCallback;
+import org.redisson.api.BatchOptions;
 import org.redisson.api.RFuture;
 import org.redisson.api.options.ObjectParams;
 import org.redisson.client.RedisClient;
@@ -158,5 +159,7 @@ public interface CommandAsyncExecutor {
     <T> CompletionStage<T> handleNoSync(CompletionStage<T> stage, Supplier<CompletionStage<?>> supplier);
 
     boolean isTrackChanges();
+
+    CommandBatchService createCommandBatchService(BatchOptions options);
 
 }
