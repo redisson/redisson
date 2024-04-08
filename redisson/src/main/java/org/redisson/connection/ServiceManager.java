@@ -653,9 +653,9 @@ public final class ServiceManager {
         return codec;
     }
 
-    private final Map<String, AtomicInteger> addersUsage = new ConcurrentHashMap<>();
+    private final Map<String, AdderEntry> addersUsage = new ConcurrentHashMap<>();
 
-    public Map<String, AtomicInteger> getAddersUsage() {
+    public Map<String, AdderEntry> getAddersUsage() {
         return addersUsage;
     }
 
