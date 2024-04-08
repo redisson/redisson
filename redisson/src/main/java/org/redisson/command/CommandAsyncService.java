@@ -16,7 +16,6 @@
 package org.redisson.command;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.util.ReferenceCountUtil;
 import org.redisson.RedissonReference;
 import org.redisson.SlotCallback;
