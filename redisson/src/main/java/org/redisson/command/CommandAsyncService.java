@@ -475,15 +475,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return connectionManager.getServiceManager().getCfg().isUseScriptCache();
     }
 
-    protected Object[] copy(Object[] params) {
-        List<Object> result = new ArrayList<>();
+    protected final Object[] copy(Object[] params) {
+        List<Object> result = new ArrayList<>(params.length);
         for (Object object : params) {
             if (object instanceof ByteBuf) {
                 ByteBuf b = (ByteBuf) object;
-                ByteBuf nb = ByteBufAllocator.DEFAULT.buffer(b.readableBytes());
-                int ri = b.readerIndex();
-                nb.writeBytes(b);
-                b.readerIndex(ri);
+                ByteBuf nb = b.copy();
                 result.add(nb);
             } else {
                 result.add(object);
