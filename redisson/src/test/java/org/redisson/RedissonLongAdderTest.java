@@ -7,6 +7,20 @@ import org.redisson.api.RLongAdder;
 public class RedissonLongAdderTest extends RedisDockerTest {
 
     @Test
+    public void testSumStability() {
+        for (int i = 0; i < 100; i++) {
+            testSum();
+        }
+    }
+
+    @Test
+    public void testResetStability() {
+        for (int i = 0; i < 100; i++) {
+            testReset();
+        }
+    }
+
+    @Test
     public void testSum() {
         RLongAdder adder1 = redisson.getLongAdder("test1");
         RLongAdder adder2 = redisson.getLongAdder("test1");
