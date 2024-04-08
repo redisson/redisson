@@ -56,14 +56,31 @@ public class RedissonLockEntry implements PubSubEntry<RedissonLockEntry> {
 
     public void addListener(Runnable listener) {
         listeners.add(listener);
+
+        if (latch.tryAcquire()) {
+            tryRunListener();
+        }
+    }
+
+    public void tryRunListener() {
+        Runnable runnableToExecute = listeners.poll();
+        if (runnableToExecute != null) {
+            runnableToExecute.run();
+        }
+    }
+
+    public void tryRunAllListeners() {
+        while (true) {
+            Runnable runnableToExecute = listeners.poll();
+            if (runnableToExecute == null) {
+                break;
+            }
+            runnableToExecute.run();
+        }
     }
 
     public boolean removeListener(Runnable listener) {
         return listeners.remove(listener);
-    }
-
-    public ConcurrentLinkedQueue<Runnable> getListeners() {
-        return listeners;
     }
 
     public Semaphore getLatch() {
