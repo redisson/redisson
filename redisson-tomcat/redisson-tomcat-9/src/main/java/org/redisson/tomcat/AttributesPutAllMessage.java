@@ -15,14 +15,13 @@
  */
 package org.redisson.tomcat;
 
+import org.redisson.client.protocol.Decoder;
+import org.redisson.client.protocol.Encoder;
+
 import java.io.IOException;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-
-import org.redisson.client.protocol.Decoder;
-import org.redisson.client.protocol.Encoder;
 
 /**
  * 
@@ -41,26 +40,7 @@ public class AttributesPutAllMessage extends AttributeMessage {
         if (attrs != null) {
             this.attrs = new HashMap<>();
             for (Entry<String, Object> entry: attrs.entrySet()) {
-                Object value = entry.getValue();
-                if (redissonSessionManager.getReadMode()
-                        .equals(RedissonSessionManager.ReadMode.MEMORY.toString())) {
-                    try {
-                        if (value instanceof Collection) {
-                            Collection newInstance = (Collection) value.getClass().getDeclaredConstructor().newInstance();
-                            newInstance.addAll((Collection) value);
-                            value = newInstance;
-                        }
-                        if (value instanceof Map) {
-                            Map newInstance = (Map) value.getClass().getDeclaredConstructor().newInstance();
-                            newInstance.putAll((Map) value);
-                            value = newInstance;
-                        }
-                    } catch (Exception e) {
-                        // can't be copied
-                    }
-                }
-
-                this.attrs.put(entry.getKey(), toByteArray(encoder, value));
+                this.attrs.put(entry.getKey(), toByteArray(encoder, entry.getValue()));
             }
         } else {
             this.attrs = null;
