@@ -100,7 +100,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.6</version>
+                        <version>3.2.1</version>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
@@ -175,14 +175,14 @@
             <dependency>
                 <groupId>org.testcontainers</groupId>
                 <artifactId>testcontainers-bom</artifactId>
-                <version>1.19.5</version>
+                <version>1.19.7</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-bom</artifactId>
-                <version>4.1.107.Final</version>
+                <version>4.1.108.Final</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -318,7 +318,7 @@
             <plugin>
          	<groupId>org.apache.maven.plugins</groupId>
          	<artifactId>maven-javadoc-plugin</artifactId>
-         	<version>3.6.2</version>
+         	<version>3.6.3</version>
          	<executions>
                    <execution>
                      <id>attach-javadocs</id>

@@ -38,7 +38,7 @@ public class BooleanSlotCallback implements SlotCallback<Boolean, Boolean> {
     }
 
     @Override
-    public void onSlotResult(Boolean res) {
+    public void onSlotResult(List<Object> keys, Boolean res) {
         if (res) {
             r.set(true);
         }

@@ -229,7 +229,7 @@ public class RedissonBatchTest extends RedisDockerTest {
     }
 
     @Test
-    public void testSkipResult() throws InterruptedException {
+    public void testSkipResult() throws InterruptedException, ExecutionException, TimeoutException {
         ExecutorService e = Executors.newFixedThreadPool(8);
         Queue<RFuture<?>> futures = new ConcurrentLinkedQueue<>();
         for (int i = 0; i < 8; i++) {
@@ -257,7 +257,7 @@ public class RedissonBatchTest extends RedisDockerTest {
         assertThat(e.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
 
         for (RFuture<?> future : futures) {
-            future.toCompletableFuture().join();
+            future.toCompletableFuture().get(1, TimeUnit.SECONDS);
         }
     }
 
@@ -283,7 +283,7 @@ public class RedissonBatchTest extends RedisDockerTest {
         });
 
         // time to reconnect broken connection
-        Thread.sleep(300);
+        Thread.sleep(700);
 
         redisson.getBucket("test3").set(4);
         assertThat(redisson.getBucket("test3").get()).isEqualTo(4);

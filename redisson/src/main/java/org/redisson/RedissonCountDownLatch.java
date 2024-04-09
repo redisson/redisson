@@ -24,6 +24,8 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.pubsub.CountDownLatchPubSub;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.concurrent.*;
@@ -41,6 +43,8 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  */
 public class RedissonCountDownLatch extends RedissonObject implements RCountDownLatch {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(RedissonCountDownLatch.class);
 
     private final CountDownLatchPubSub pubSub;
 
@@ -118,9 +122,10 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
         CompletableFuture<RedissonCountDownLatchEntry> promise = subscribe();
         try {
             promise.toCompletableFuture().get(time, unit);
-        } catch (ExecutionException | CancellationException e) {
-            // skip
-        } catch (TimeoutException e) {
+        } catch (ExecutionException e) {
+            LOGGER.error(e.getMessage(), e);
+            return false;
+        } catch (TimeoutException | CancellationException e) {
             return false;
         }
 
@@ -136,14 +141,14 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
                 }
                 current = System.currentTimeMillis();
                 // waiting for open state
-                commandExecutor.getNow(promise).getLatch().await(remainTime, TimeUnit.MILLISECONDS);
+                promise.join().getLatch().await(remainTime, TimeUnit.MILLISECONDS);
 
                 remainTime -= System.currentTimeMillis() - current;
             }
 
             return true;
         } finally {
-            unsubscribe(commandExecutor.getNow(promise));
+            unsubscribe(promise.join());
         }
     }
 

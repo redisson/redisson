@@ -15,17 +15,16 @@
  */
 package org.redisson;
 
-import org.redisson.api.*;
 import org.redisson.api.ExecutorOptions;
 import org.redisson.api.LocalCachedMapOptions;
 import org.redisson.api.MapCacheOptions;
 import org.redisson.api.MapOptions;
+import org.redisson.api.*;
 import org.redisson.api.options.*;
 import org.redisson.api.redisnode.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.JsonCodec;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.command.CommandAsyncService;
 import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
@@ -73,7 +72,7 @@ public final class Redisson implements RedissonClient {
         if (config.isReferenceEnabled()) {
             objectBuilder = new RedissonObjectBuilder(this);
         }
-        commandExecutor = new CommandAsyncService(connectionManager, objectBuilder, RedissonObjectBuilder.ReferenceType.DEFAULT);
+        commandExecutor = connectionManager.createCommandExecutor(objectBuilder, RedissonObjectBuilder.ReferenceType.DEFAULT);
         evictionScheduler = new EvictionScheduler(commandExecutor);
         writeBehindService = new WriteBehindService(commandExecutor);
     }
@@ -176,7 +175,7 @@ public final class Redisson implements RedissonClient {
     public <V, L> RTimeSeries<V, L> getTimeSeries(PlainOptions options) {
         PlainParams params = (PlainParams) options;
         return new RedissonTimeSeries<>(params.getCodec(), evictionScheduler,
-                new CommandAsyncService(commandExecutor, params),
+                commandExecutor.copy(params),
                 params.getName());
     }
 
@@ -193,7 +192,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public <K, V> RStream<K, V> getStream(PlainOptions options) {
         PlainParams params = (PlainParams) options;
-        return new RedissonStream<>(params.getCodec(), new CommandAsyncService(commandExecutor, params), params.getName());
+        return new RedissonStream<>(params.getCodec(), commandExecutor.copy(params), params.getName());
     }
 
     @Override
@@ -209,7 +208,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public RSearch getSearch(OptionalOptions options) {
         OptionalParams params = (OptionalParams) options;
-        return new RedissonSearch(params.getCodec(), new CommandAsyncService(commandExecutor, params));
+        return new RedissonSearch(params.getCodec(), commandExecutor.copy(params));
     }
 
     @Override
@@ -220,7 +219,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public RBinaryStream getBinaryStream(CommonOptions options) {
         CommonParams params = (CommonParams) options;
-        return new RedissonBinaryStream(new CommandAsyncService(commandExecutor, params), params.getName());
+        return new RedissonBinaryStream(commandExecutor.copy(params), params.getName());
     }
 
     @Override
@@ -236,7 +235,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public <V> RGeo<V> getGeo(PlainOptions options) {
         PlainParams params = (PlainParams) options;
-        return new RedissonGeo<>(params.getCodec(), new CommandAsyncService(commandExecutor, params),
+        return new RedissonGeo<>(params.getCodec(), commandExecutor.copy(params),
                 params.getName(), this);
     }
 
@@ -253,7 +252,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public RRateLimiter getRateLimiter(CommonOptions options) {
         CommonParams params = (CommonParams) options;
-        return new RedissonRateLimiter(new CommandAsyncService(commandExecutor, params), params.getName());
+        return new RedissonRateLimiter(commandExecutor.copy(params), params.getName());
     }
 
     @Override
@@ -264,7 +263,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public <V> RBucket<V> getBucket(PlainOptions options) {
         PlainParams params = (PlainParams) options;
-        return new RedissonBucket<>(params.getCodec(), new CommandAsyncService(commandExecutor, params), params.getName());
+        return new RedissonBucket<>(params.getCodec(), commandExecutor.copy(params), params.getName());
     }
 
     @Override
@@ -280,7 +279,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public RBuckets getBuckets(OptionalOptions options) {
         OptionalParams params = (OptionalParams) options;
-        return new RedissonBuckets(params.getCodec(), new CommandAsyncService(commandExecutor, params));
+        return new RedissonBuckets(params.getCodec(), commandExecutor.copy(params));
     }
 
     @Override
@@ -307,7 +306,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public <V> RHyperLogLog<V> getHyperLogLog(PlainOptions options) {
         PlainParams params = (PlainParams) options;
-        return new RedissonHyperLogLog<V>(params.getCodec(), new CommandAsyncService(commandExecutor, params), params.getName());
+        return new RedissonHyperLogLog<V>(params.getCodec(), commandExecutor.copy(params), params.getName());
     }
 
     @Override
@@ -323,7 +322,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public <V> RList<V> getList(PlainOptions options) {
         PlainParams params = (PlainParams) options;
-        return new RedissonList<V>(params.getCodec(), new CommandAsyncService(commandExecutor, params), params.getName(), this);
+        return new RedissonList<V>(params.getCodec(), commandExecutor.copy(params), params.getName(), this);
     }
 
     @Override
@@ -339,7 +338,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public <K, V> RListMultimap<K, V> getListMultimap(PlainOptions options) {
         PlainParams params = (PlainParams) options;
-        return new RedissonListMultimap<>(params.getCodec(), new CommandAsyncService(commandExecutor, params), params.getName());
+        return new RedissonListMultimap<>(params.getCodec(), commandExecutor.copy(params), params.getName());
     }
 
     @Override
@@ -384,7 +383,7 @@ public final class Redisson implements RedissonClient {
             ops.writerRetryAttempts(params.getWriteRetryAttempts());
         }
 
-        return new RedissonLocalCachedMap<>(params.getCodec(), new CommandAsyncService(commandExecutor, params), params.getName(),
+        return new RedissonLocalCachedMap<>(params.getCodec(), commandExecutor.copy(params), params.getName(),
                 ops, evictionScheduler, this, writeBehindService);
     }
 
@@ -417,7 +416,7 @@ public final class Redisson implements RedissonClient {
             ops.writerRetryAttempts(params.getWriteRetryAttempts());
         }
 
-        return new RedissonMap<>(new CommandAsyncService(commandExecutor, params), params.getName(),
+        return new RedissonMap<>(commandExecutor.copy(params), params.getName(),
                 this, ops, writeBehindService);
     }
 
@@ -440,7 +439,7 @@ public final class Redisson implements RedissonClient {
     public <K, V> RSetMultimapCache<K, V> getSetMultimapCache(PlainOptions options) {
         PlainParams params = (PlainParams) options;
         return new RedissonSetMultimapCache<K, V>(evictionScheduler, params.getCodec(),
-                new CommandAsyncService(commandExecutor, params), params.getName());
+                commandExecutor.copy(params), params.getName());
     }
 
     @Override
@@ -457,7 +456,7 @@ public final class Redisson implements RedissonClient {
     public <K, V> RListMultimapCache<K, V> getListMultimapCache(PlainOptions options) {
         PlainParams params = (PlainParams) options;
         return new RedissonListMultimapCache<K, V>(evictionScheduler, params.getCodec(),
-                new CommandAsyncService(commandExecutor, params), params.getName());
+                commandExecutor.copy(params), params.getName());
     }
 
     @Override
@@ -468,7 +467,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public <K, V> RSetMultimap<K, V> getSetMultimap(PlainOptions options) {
         PlainParams params = (PlainParams) options;
-        return new RedissonSetMultimap<>(params.getCodec(), new CommandAsyncService(commandExecutor, params), params.getName());
+        return new RedissonSetMultimap<>(params.getCodec(), commandExecutor.copy(params), params.getName());
     }
 
     @Override
@@ -485,7 +484,7 @@ public final class Redisson implements RedissonClient {
     public <V> RSetCache<V> getSetCache(PlainOptions options) {
         PlainParams params = (PlainParams) options;
         return new RedissonSetCache<V>(params.getCodec(), evictionScheduler,
-                new CommandAsyncService(commandExecutor, params), params.getName(), this);
+                commandExecutor.copy(params), params.getName(), this);
     }
 
     @Override
@@ -552,7 +551,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public RLock getLock(CommonOptions options) {
         CommonParams params = (CommonParams) options;
-        return new RedissonLock(new CommandAsyncService(commandExecutor, params), params.getName());
+        return new RedissonLock(commandExecutor.copy(params), params.getName());
     }
 
     @Override
@@ -573,7 +572,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public RFencedLock getFencedLock(CommonOptions options) {
         CommonParams params = (CommonParams) options;
-        return new RedissonFencedLock(new CommandAsyncService(commandExecutor, params), params.getName());
+        return new RedissonFencedLock(commandExecutor.copy(params), params.getName());
     }
 
     @Override
@@ -594,7 +593,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public RLock getFairLock(CommonOptions options) {
         CommonParams params = (CommonParams) options;
-        return new RedissonFairLock(new CommandAsyncService(commandExecutor, params), params.getName());
+        return new RedissonFairLock(commandExecutor.copy(params), params.getName());
     }
 
     @Override
@@ -605,7 +604,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public RReadWriteLock getReadWriteLock(CommonOptions options) {
         CommonParams params = (CommonParams) options;
-        return new RedissonReadWriteLock(new CommandAsyncService(commandExecutor, params), params.getName());
+        return new RedissonReadWriteLock(commandExecutor.copy(params), params.getName());
     }
 
     @Override
@@ -621,7 +620,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public <V> RSet<V> getSet(PlainOptions options) {
         PlainParams params = (PlainParams) options;
-        return new RedissonSet<V>(params.getCodec(), new CommandAsyncService(commandExecutor, params), params.getName(), this);
+        return new RedissonSet<V>(params.getCodec(), commandExecutor.copy(params), params.getName(), this);
     }
 
     @Override
@@ -637,7 +636,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public RFunction getFunction(OptionalOptions options) {
         OptionalParams params = (OptionalParams) options;
-        return new RedissonFuction(new CommandAsyncService(commandExecutor, params), params.getCodec());
+        return new RedissonFuction(commandExecutor.copy(params), params.getCodec());
     }
 
     @Override
@@ -653,7 +652,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public RScript getScript(OptionalOptions options) {
         OptionalParams params = (OptionalParams) options;
-        return new RedissonScript(new CommandAsyncService(commandExecutor, params), params.getCodec());
+        return new RedissonScript(commandExecutor.copy(params), params.getCodec());
     }
 
     @Override
@@ -683,7 +682,7 @@ public final class Redisson implements RedissonClient {
                                             .idGenerator(params.getIdGenerator())
                                             .taskRetryInterval(params.getTaskRetryInterval(), TimeUnit.MILLISECONDS);
         return new RedissonExecutorService(params.getCodec(),
-                new CommandAsyncService(commandExecutor, params), this, params.getName(), ops);
+                commandExecutor.copy(params), this, params.getName(), ops);
     }
 
     @Override
@@ -718,7 +717,7 @@ public final class Redisson implements RedissonClient {
                 && params.getCodec() != connectionManager.getServiceManager().getCfg().getCodec()) {
             executorId = executorId + ":" + params.getName();
         }
-        return new RedissonRemoteService(params.getCodec(), params.getName(), new CommandAsyncService(commandExecutor, params), executorId);
+        return new RedissonRemoteService(params.getCodec(), params.getName(), commandExecutor.copy(params), executorId);
     }
 
     @Override
@@ -735,7 +734,7 @@ public final class Redisson implements RedissonClient {
     public <V> RSortedSet<V> getSortedSet(PlainOptions options) {
         PlainParams params = (PlainParams) options;
         return new RedissonSortedSet<V>(params.getCodec(),
-                new CommandAsyncService(commandExecutor, params), params.getName(), this);
+                commandExecutor.copy(params), params.getName(), this);
     }
 
     @Override
@@ -752,7 +751,7 @@ public final class Redisson implements RedissonClient {
     public <V> RScoredSortedSet<V> getScoredSortedSet(PlainOptions options) {
         PlainParams params = (PlainParams) options;
         return new RedissonScoredSortedSet<V>(params.getCodec(),
-                new CommandAsyncService(commandExecutor, params), params.getName(), this);
+                commandExecutor.copy(params), params.getName(), this);
     }
 
     @Override
@@ -763,7 +762,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public RLexSortedSet getLexSortedSet(CommonOptions options) {
         CommonParams params = (CommonParams) options;
-        return new RedissonLexSortedSet(new CommandAsyncService(commandExecutor, params), params.getName(), this);
+        return new RedissonLexSortedSet(commandExecutor.copy(params), params.getName(), this);
     }
 
     @Override
@@ -779,7 +778,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public RShardedTopic getShardedTopic(PlainOptions options) {
         PlainParams params = (PlainParams) options;
-        return new RedissonShardedTopic(params.getCodec(), new CommandAsyncService(commandExecutor, params), params.getName());
+        return new RedissonShardedTopic(params.getCodec(), commandExecutor.copy(params), params.getName());
     }
 
     @Override
@@ -795,7 +794,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public RTopic getTopic(PlainOptions options) {
         PlainParams params = (PlainParams) options;
-        return new RedissonTopic(params.getCodec(), new CommandAsyncService(commandExecutor, params), params.getName());
+        return new RedissonTopic(params.getCodec(), commandExecutor.copy(params), params.getName());
     }
 
     @Override
@@ -812,7 +811,7 @@ public final class Redisson implements RedissonClient {
     public RReliableTopic getReliableTopic(PlainOptions options) {
         PlainParams params = (PlainParams) options;
         return new RedissonReliableTopic(params.getCodec(),
-                new CommandAsyncService(commandExecutor, params), params.getName(), null);
+                commandExecutor.copy(params), params.getName(), null);
     }
 
     @Override
@@ -828,7 +827,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public RPatternTopic getPatternTopic(PatternTopicOptions options) {
         PatternTopicParams params = (PatternTopicParams) options;
-        return new RedissonPatternTopic(params.getCodec(), new CommandAsyncService(commandExecutor, params), params.getPattern());
+        return new RedissonPatternTopic(params.getCodec(), commandExecutor.copy(params), params.getPattern());
     }
 
     @Override
@@ -853,7 +852,7 @@ public final class Redisson implements RedissonClient {
     public <V> RQueue<V> getQueue(PlainOptions options) {
         PlainParams params = (PlainParams) options;
         return new RedissonQueue<V>(params.getCodec(),
-                new CommandAsyncService(commandExecutor, params), params.getName(), this);
+                commandExecutor.copy(params), params.getName(), this);
     }
 
     @Override
@@ -876,7 +875,7 @@ public final class Redisson implements RedissonClient {
         String remoteName = RedissonObject.suffixName(params.getName(), "remoteService");
         RRemoteService service = getRemoteService(remoteName);
         return new RedissonTransferQueue<V>(params.getCodec(),
-                new CommandAsyncService(commandExecutor, params), params.getName(), service);
+                commandExecutor.copy(params), params.getName(), service);
     }
 
     @Override
@@ -893,7 +892,7 @@ public final class Redisson implements RedissonClient {
     public <V> RRingBuffer<V> getRingBuffer(PlainOptions options) {
         PlainParams params = (PlainParams) options;
         return new RedissonRingBuffer<V>(params.getCodec(),
-                new CommandAsyncService(commandExecutor, params), params.getName(), this);
+                commandExecutor.copy(params), params.getName(), this);
     }
 
     @Override
@@ -910,7 +909,7 @@ public final class Redisson implements RedissonClient {
     public <V> RBlockingQueue<V> getBlockingQueue(PlainOptions options) {
         PlainParams params = (PlainParams) options;
         return new RedissonBlockingQueue<V>(params.getCodec(),
-                new CommandAsyncService(commandExecutor, params), params.getName(), this);
+                commandExecutor.copy(params), params.getName(), this);
     }
 
     @Override
@@ -927,7 +926,7 @@ public final class Redisson implements RedissonClient {
     public <V> RBoundedBlockingQueue<V> getBoundedBlockingQueue(PlainOptions options) {
         PlainParams params = (PlainParams) options;
         return new RedissonBoundedBlockingQueue<V>(params.getCodec(),
-                new CommandAsyncService(commandExecutor, params), params.getName(), this);
+                commandExecutor.copy(params), params.getName(), this);
     }
 
     @Override
@@ -944,7 +943,7 @@ public final class Redisson implements RedissonClient {
     public <V> RDeque<V> getDeque(PlainOptions options) {
         PlainParams params = (PlainParams) options;
         return new RedissonDeque<V>(params.getCodec(),
-                new CommandAsyncService(commandExecutor, params), params.getName(), this);
+                commandExecutor.copy(params), params.getName(), this);
     }
 
     @Override
@@ -961,7 +960,7 @@ public final class Redisson implements RedissonClient {
     public <V> RBlockingDeque<V> getBlockingDeque(PlainOptions options) {
         PlainParams params = (PlainParams) options;
         return new RedissonBlockingDeque<V>(params.getCodec(),
-                new CommandAsyncService(commandExecutor, params), params.getName(), this);
+                commandExecutor.copy(params), params.getName(), this);
     }
 
     @Override
@@ -972,7 +971,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public RAtomicLong getAtomicLong(CommonOptions options) {
         CommonParams params = (CommonParams) options;
-        return new RedissonAtomicLong(new CommandAsyncService(commandExecutor, params), params.getName());
+        return new RedissonAtomicLong(commandExecutor.copy(params), params.getName());
     }
 
     @Override
@@ -983,7 +982,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public RLongAdder getLongAdder(CommonOptions options) {
         CommonParams params = (CommonParams) options;
-        return new RedissonLongAdder(new CommandAsyncService(commandExecutor, params), params.getName(), this);
+        return new RedissonLongAdder(commandExecutor.copy(params), params.getName(), this);
     }
 
     @Override
@@ -994,7 +993,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public RDoubleAdder getDoubleAdder(CommonOptions options) {
         CommonParams params = (CommonParams) options;
-        return new RedissonDoubleAdder(new CommandAsyncService(commandExecutor, params), params.getName(), this);
+        return new RedissonDoubleAdder(commandExecutor.copy(params), params.getName(), this);
     }
 
     @Override
@@ -1005,7 +1004,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public RAtomicDouble getAtomicDouble(CommonOptions options) {
         CommonParams params = (CommonParams) options;
-        return new RedissonAtomicDouble(new CommandAsyncService(commandExecutor, params), params.getName());
+        return new RedissonAtomicDouble(commandExecutor.copy(params), params.getName());
     }
 
     @Override
@@ -1016,7 +1015,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public RCountDownLatch getCountDownLatch(CommonOptions options) {
         CommonParams params = (CommonParams) options;
-        return new RedissonCountDownLatch(new CommandAsyncService(commandExecutor, params), params.getName());
+        return new RedissonCountDownLatch(commandExecutor.copy(params), params.getName());
     }
 
     @Override
@@ -1027,7 +1026,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public RBitSet getBitSet(CommonOptions options) {
         CommonParams params = (CommonParams) options;
-        return new RedissonBitSet(new CommandAsyncService(commandExecutor, params), params.getName());
+        return new RedissonBitSet(commandExecutor.copy(params), params.getName());
     }
 
     @Override
@@ -1038,7 +1037,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public RSemaphore getSemaphore(CommonOptions options) {
         CommonParams params = (CommonParams) options;
-        return new RedissonSemaphore(new CommandAsyncService(commandExecutor, params), params.getName());
+        return new RedissonSemaphore(commandExecutor.copy(params), params.getName());
     }
 
     @Override
@@ -1049,7 +1048,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public RPermitExpirableSemaphore getPermitExpirableSemaphore(CommonOptions options) {
         CommonParams params = (CommonParams) options;
-        return new RedissonPermitExpirableSemaphore(new CommandAsyncService(commandExecutor, params), params.getName());
+        return new RedissonPermitExpirableSemaphore(commandExecutor.copy(params), params.getName());
     }
 
     @Override
@@ -1065,7 +1064,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public <V> RBloomFilter<V> getBloomFilter(PlainOptions options) {
         PlainParams params = (PlainParams) options;
-        return new RedissonBloomFilter<V>(params.getCodec(), new CommandAsyncService(commandExecutor, params), params.getName());
+        return new RedissonBloomFilter<V>(params.getCodec(), commandExecutor.copy(params), params.getName());
     }
 
     @Override
@@ -1076,7 +1075,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public RIdGenerator getIdGenerator(CommonOptions options) {
         CommonParams params = (CommonParams) options;
-        return new RedissonIdGenerator(new CommandAsyncService(commandExecutor, params), params.getName());
+        return new RedissonIdGenerator(commandExecutor.copy(params), params.getName());
     }
 
     @Override
@@ -1087,7 +1086,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public RKeys getKeys(KeysOptions options) {
         KeysParams params = (KeysParams) options;
-        return new RedissonKeys(new CommandAsyncService(commandExecutor, params));
+        return new RedissonKeys(commandExecutor.copy(params));
     }
 
     @Override
@@ -1113,7 +1112,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public RLiveObjectService getLiveObjectService(LiveObjectOptions options) {
         LiveObjectParams params = (LiveObjectParams) options;
-        return new RedissonLiveObjectService(liveObjectClassCache, new CommandAsyncService(commandExecutor, params));
+        return new RedissonLiveObjectService(liveObjectClassCache, commandExecutor.copy(params));
     }
 
     @Override
@@ -1200,7 +1199,7 @@ public final class Redisson implements RedissonClient {
     public <V> RPriorityQueue<V> getPriorityQueue(PlainOptions options) {
         PlainParams params = (PlainParams) options;
         return new RedissonPriorityQueue<V>(params.getCodec(),
-                new CommandAsyncService(commandExecutor, params), params.getName(), this);
+                commandExecutor.copy(params), params.getName(), this);
     }
 
     @Override
@@ -1217,7 +1216,7 @@ public final class Redisson implements RedissonClient {
     public <V> RPriorityBlockingQueue<V> getPriorityBlockingQueue(PlainOptions options) {
         PlainParams params = (PlainParams) options;
         return new RedissonPriorityBlockingQueue<V>(params.getCodec(),
-                new CommandAsyncService(commandExecutor, params), params.getName(), this);
+                commandExecutor.copy(params), params.getName(), this);
     }
 
     @Override
@@ -1234,7 +1233,7 @@ public final class Redisson implements RedissonClient {
     public <V> RPriorityBlockingDeque<V> getPriorityBlockingDeque(PlainOptions options) {
         PlainParams params = (PlainParams) options;
         return new RedissonPriorityBlockingDeque<V>(params.getCodec(),
-                new CommandAsyncService(commandExecutor, params), params.getName(), this);
+                commandExecutor.copy(params), params.getName(), this);
     }
 
     @Override
@@ -1251,7 +1250,7 @@ public final class Redisson implements RedissonClient {
     public <V> RPriorityDeque<V> getPriorityDeque(PlainOptions options) {
         PlainParams params = (PlainParams) options;
         return new RedissonPriorityDeque<V>(params.getCodec(),
-                new CommandAsyncService(commandExecutor, params), params.getName(), this);
+                commandExecutor.copy(params), params.getName(), this);
     }
 
     @Override

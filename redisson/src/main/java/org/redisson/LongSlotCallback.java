@@ -38,7 +38,7 @@ public class LongSlotCallback implements SlotCallback<Long, Long> {
     }
 
     @Override
-    public void onSlotResult(Long result) {
+    public void onSlotResult(List<Object> keys, Long result) {
         results.addAndGet(result);
     }
 

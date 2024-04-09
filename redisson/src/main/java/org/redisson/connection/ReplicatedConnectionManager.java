@@ -21,10 +21,7 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.config.BaseMasterSlaveServersConfig;
-import org.redisson.config.MasterSlaveServersConfig;
-import org.redisson.config.ReadMode;
-import org.redisson.config.ReplicatedServersConfig;
+import org.redisson.config.*;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.RedisURI;
 import org.slf4j.Logger;
@@ -68,8 +65,8 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
 
     private ReplicatedServersConfig cfg;
 
-    public ReplicatedConnectionManager(ReplicatedServersConfig cfg, ServiceManager serviceManager) {
-        super(cfg, serviceManager);
+    public ReplicatedConnectionManager(ReplicatedServersConfig cfg, Config configCopy) {
+        super(cfg, configCopy);
     }
 
     @Override

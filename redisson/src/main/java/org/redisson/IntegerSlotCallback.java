@@ -38,7 +38,7 @@ public class IntegerSlotCallback implements SlotCallback<Integer, Integer> {
     }
 
     @Override
-    public void onSlotResult(Integer result) {
+    public void onSlotResult(List<Object> keys, Integer result) {
         results.addAndGet(result);
     }
 

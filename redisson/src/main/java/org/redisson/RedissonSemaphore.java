@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
 
-    private static final Logger log = LoggerFactory.getLogger(RSemaphore.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RedissonSemaphore.class);
 
     private final SemaphorePubSub semaphorePubSub;
 
@@ -283,19 +283,19 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
     
     @Override
     public boolean tryAcquire(int permits, long waitTime, TimeUnit unit) throws InterruptedException {
-        log.debug("trying to acquire, permits: {}, waitTime: {}, unit: {}, name: {}", permits, waitTime, unit, getName());
+        LOGGER.debug("trying to acquire, permits: {}, waitTime: {}, unit: {}, name: {}", permits, waitTime, unit, getName());
 
         long time = unit.toMillis(waitTime);
         long current = System.currentTimeMillis();
 
         if (tryAcquire(permits)) {
-            log.debug("acquired, permits: {}, waitTime: {}, unit: {}, name: {}", permits, waitTime, unit, getName());
+            LOGGER.debug("acquired, permits: {}, waitTime: {}, unit: {}, name: {}", permits, waitTime, unit, getName());
             return true;
         }
 
         time -= System.currentTimeMillis() - current;
         if (time <= 0) {
-            log.debug("unable to acquire, permits: {}, name: {}", permits, getName());
+            LOGGER.debug("unable to acquire, permits: {}, name: {}", permits, getName());
             return false;
         }
 
@@ -304,40 +304,43 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
         RedissonLockEntry entry;
         try {
             entry = future.get(time, TimeUnit.MILLISECONDS);
-        } catch (ExecutionException | CancellationException | TimeoutException e) {
-            log.debug("unable to subscribe for permits acquisition, permits: {}, name: {}", permits, getName());
+        } catch (ExecutionException e) {
+            LOGGER.error(e.getMessage(), e);
+            return false;
+        } catch (TimeoutException | CancellationException e) {
+            LOGGER.debug("unable to subscribe for permits acquisition, permits: {}, name: {}", permits, getName());
             return false;
         }
 
         try {
             time -= System.currentTimeMillis() - current;
             if (time <= 0) {
-                log.debug("unable to acquire, permits: {}, name: {}", permits, getName());
+                LOGGER.debug("unable to acquire, permits: {}, name: {}", permits, getName());
                 return false;
             }
             
             while (true) {
                 current = System.currentTimeMillis();
                 if (tryAcquire(permits)) {
-                    log.debug("acquired, permits: {}, wait-time: {}, unit: {}, name: {}", permits, waitTime, unit, getName());
+                    LOGGER.debug("acquired, permits: {}, wait-time: {}, unit: {}, name: {}", permits, waitTime, unit, getName());
                     return true;
                 }
 
                 time -= System.currentTimeMillis() - current;
                 if (time <= 0) {
-                    log.debug("unable to acquire, permits: {}, name: {}", permits, getName());
+                    LOGGER.debug("unable to acquire, permits: {}, name: {}", permits, getName());
                     return false;
                 }
 
                 // waiting for message
                 current = System.currentTimeMillis();
 
-                log.debug("wait for acquisition, permits: {}, wait-time(ms): {}, name: {}", permits, time, getName());
+                LOGGER.debug("wait for acquisition, permits: {}, wait-time(ms): {}, name: {}", permits, time, getName());
                 entry.getLatch().tryAcquire(time, TimeUnit.MILLISECONDS);
 
                 time -= System.currentTimeMillis() - current;
                 if (time <= 0) {
-                    log.debug("unable to acquire, permits: {}, name: {}", permits, getName());
+                    LOGGER.debug("unable to acquire, permits: {}, name: {}", permits, getName());
                     return false;
                 }
             }
@@ -439,9 +442,9 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
                 "local value = redis.call('incrby', KEYS[1], ARGV[1]); " +
                         "redis.call(ARGV[2], KEYS[2], value); ",
                 Arrays.asList(getRawName(), getChannelName()), permits, getSubscribeService().getPublishCommand());
-        if (log.isDebugEnabled()) {
+        if (LOGGER.isDebugEnabled()) {
             future.thenAccept(o -> {
-                log.debug("released, permits: {}, name: {}", permits, getName());
+                LOGGER.debug("released, permits: {}, name: {}", permits, getName());
             });
         }
         return future;
@@ -492,12 +495,12 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
                 Arrays.asList(getRawName(), getChannelName()),
                 permits, getSubscribeService().getPublishCommand());
 
-        if (log.isDebugEnabled()) {
+        if (LOGGER.isDebugEnabled()) {
             future.thenAccept(r -> {
                 if (r) {
-                    log.debug("permits set, permits: {}, name: {}", permits, getName());
+                    LOGGER.debug("permits set, permits: {}, name: {}", permits, getName());
                 } else {
-                    log.debug("unable to set permits, permits: {}, name: {}", permits, getName());
+                    LOGGER.debug("unable to set permits, permits: {}, name: {}", permits, getName());
                 }
             });
         }

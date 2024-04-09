@@ -21,14 +21,13 @@ import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.connection.AdderEntry;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 
@@ -48,14 +47,24 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
     
     public RedissonBaseAdder(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name);
-        
-        topic = RedissonTopic.createRaw(StringCodec.INSTANCE, commandExecutor, suffixName(getRawName(), "topic"));
+
+        if (getSubscribeService().isShardingSupported()) {
+            topic = RedissonShardedTopic.createRaw(StringCodec.INSTANCE, commandExecutor, suffixName(getRawName(), "topic"));
+        } else {
+            topic = RedissonTopic.createRaw(StringCodec.INSTANCE, commandExecutor, suffixName(getRawName(), "topic"));
+        }
+
         this.redisson = redisson;
+
+        AdderEntry entry = getServiceManager().getAddersUsage().computeIfAbsent(name, r -> new AdderEntry());
+        entry.getUsage().incrementAndGet();
+
         listenerId = topic.addListener(String.class, (channel, msg) -> {
             String[] parts = msg.split(":");
             String id = parts[1];
 
-            RSemaphore semaphore = getSemaphore(id);
+            entry.getIds().add(id);
+
             if (parts[0].equals(SUM_MSG)) {
                 RFuture<T> addAndGetFuture = addAndGetAsync(id);
                 addAndGetFuture.whenComplete((res, e) -> {
@@ -64,23 +73,31 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
                         return;
                     }
 
-                    semaphore.releaseAsync().whenComplete((r, ex) -> {
-                        if (ex != null) {
-                            log.error("Can't release semaphore", ex);
-                        }
-                    });
+                    release(id, entry);
                 });
             }
 
             if (parts[0].equals(CLEAR_MSG)) {
                 doReset();
-                semaphore.releaseAsync().whenComplete((res, e) -> {
-                    if (e != null) {
-                        log.error("Can't release semaphore", e);
-                    }
-                });
+
+                release(id, entry);
             }
         });
+    }
+
+    private void release(String id, AdderEntry entry) {
+        AtomicInteger counter = getServiceManager().getAddersCounter().computeIfAbsent(id, r -> new AtomicInteger());
+        if (counter.incrementAndGet() == entry.getUsage().get()
+                || entry.getUsage().get() == 0) {
+            getServiceManager().getAddersCounter().remove(id);
+            entry.getIds().remove(id);
+            RSemaphore semaphore = getSemaphore(id);
+            semaphore.releaseAsync().whenComplete((r, ex) -> {
+                if (ex != null) {
+                    log.error("Can't release semaphore", ex);
+                }
+            });
+        }
     }
 
     protected abstract void doReset();
@@ -95,9 +112,9 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
     
     public RFuture<T> sumAsync() {
         String id = getServiceManager().generateId();
-        RFuture<Long> future = topic.publishAsync(SUM_MSG + ":" + id);
         RSemaphore semaphore = getSemaphore(id);
 
+        RFuture<Long> future = topic.publishAsync(SUM_MSG + ":" + id);
         CompletionStage<T> f = future.thenCompose(r -> semaphore.acquireAsync(r.intValue()))
                                         .thenCompose(r -> getAndDeleteAsync(id))
                                         .thenCompose(r -> semaphore.deleteAsync().thenApply(res -> r));
@@ -114,9 +131,12 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
 
     public RFuture<T> sumAsync(long timeout, TimeUnit timeUnit) {
         String id = getServiceManager().generateId();
-        RFuture<Long> future = topic.publishAsync(SUM_MSG + ":" + id);
         RSemaphore semaphore = getSemaphore(id);
-        CompletionStage<T> f = future.thenCompose(r -> tryAcquire(semaphore, timeout, timeUnit, r.intValue()))
+
+        RFuture<Long> future = topic.publishAsync(SUM_MSG + ":" + id);
+        CompletionStage<T> f = future.thenCompose(r -> {
+                    return tryAcquire(semaphore, timeout, timeUnit, r.intValue());
+                })
                                     .thenCompose(r -> getAndDeleteAsync(id))
                                     .thenCompose(r -> semaphore.deleteAsync().thenApply(res -> r));
         return new CompletableFutureWrapper<>(f);
@@ -137,8 +157,9 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
 
     public RFuture<Void> resetAsync() {
         String id = getServiceManager().generateId();
-        RFuture<Long> future = topic.publishAsync(CLEAR_MSG + ":" + id);
         RSemaphore semaphore = getSemaphore(id);
+
+        RFuture<Long> future = topic.publishAsync(CLEAR_MSG + ":" + id);
         CompletionStage<Void> f = future.thenCompose(r -> semaphore.acquireAsync(r.intValue()))
                                         .thenCompose(r -> semaphore.deleteAsync().thenApply(res -> null));
         return new CompletableFutureWrapper<>(f);
@@ -146,8 +167,9 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
     
     public RFuture<Void> resetAsync(long timeout, TimeUnit timeUnit) {
         String id = getServiceManager().generateId();
-        RFuture<Long> future = topic.publishAsync(CLEAR_MSG + ":" + id);
         RSemaphore semaphore = getSemaphore(id);
+
+        RFuture<Long> future = topic.publishAsync(CLEAR_MSG + ":" + id);
         CompletionStage<Void> f = future.thenCompose(r -> tryAcquire(semaphore, timeout, timeUnit, r.intValue()))
                                         .thenCompose(r -> semaphore.deleteAsync().thenApply(res -> null));
         return new CompletableFutureWrapper<>(f);
@@ -155,6 +177,15 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
 
     public void destroy() {
         topic.removeListener(listenerId);
+
+        AdderEntry entry = getServiceManager().getAddersUsage().get(name);
+        if (entry != null
+                && entry.getUsage().decrementAndGet() == 0) {
+            for (String id : entry.getIds()) {
+                release(id, entry);
+            }
+            getServiceManager().getAddersUsage().remove(name, entry);
+        }
     }
 
     protected abstract RFuture<T> addAndGetAsync(String id);

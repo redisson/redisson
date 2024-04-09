@@ -95,7 +95,7 @@
         <dependency>
             <groupId>io.reactivex.rxjava3</groupId>
             <artifactId>rxjava</artifactId>
-            <version>3.1.6</version>
+            <version>3.1.8</version>
         </dependency>
 
         <dependency>
@@ -160,7 +160,7 @@
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>fluent-hc</artifactId>
-            <version>4.5.13</version>
+            <version>4.5.14</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -228,7 +228,7 @@
         <dependency>
             <groupId>org.msgpack</groupId>
             <artifactId>jackson-dataformat-msgpack</artifactId>
-            <version>0.9.1</version>
+            <version>0.9.8</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
@@ -318,7 +318,7 @@
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
-            <version>1.14.5</version>
+            <version>1.14.13</version>
         </dependency>
         <dependency>
             <groupId>org.jodd</groupId>
@@ -395,14 +395,14 @@
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-core</artifactId>
-            <version>1.10.3</version>
+            <version>1.12.4</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-test</artifactId>
-            <version>3.5.3</version>
+            <version>3.6.4</version>
             <scope>test</scope>
         </dependency>
 
@@ -514,7 +514,7 @@
                     <dependency>
                        <groupId>com.puppycrawl.tools</groupId>
                        <artifactId>checkstyle</artifactId>
-                       <version>10.12.4</version>
+                       <version>10.15.0</version>
                   </dependency>
                 </dependencies>
             </plugin>

@@ -100,7 +100,14 @@ public class CommandsData implements QueueCommand {
 
     @Override
     public String toString() {
-        return "CommandsData [promise=" + promise + ", commands=" + commands + "]";
+        return "CommandsData{" +
+                "commands=" + commands +
+                ", promise=" + promise +
+                ", skipResult=" + skipResult +
+                ", atomic=" + atomic +
+                ", queued=" + queued +
+                ", syncSlaves=" + syncSlaves +
+                '}';
     }
 
     @Override

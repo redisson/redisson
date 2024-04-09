@@ -18,6 +18,8 @@ package org.redisson.connection;
 import io.netty.buffer.ByteBuf;
 import org.redisson.api.NodeType;
 import org.redisson.client.RedisClient;
+import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.misc.RedisURI;
 import org.redisson.pubsub.PublishSubscribeService;
 
@@ -71,5 +73,8 @@ public interface ConnectionManager {
     void shutdown(long quietPeriod, long timeout, TimeUnit unit);
     
     ServiceManager getServiceManager();
+
+    CommandAsyncExecutor createCommandExecutor(RedissonObjectBuilder objectBuilder,
+                                               RedissonObjectBuilder.ReferenceType referenceType);
 
 }

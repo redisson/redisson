@@ -13,36 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson;
+package org.redisson.connection;
 
-import org.redisson.client.protocol.RedisCommand;
-import org.redisson.connection.MasterSlaveEntry;
-
-import java.util.List;
+import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * 
+ *
  * @author Nikita Koksharov
  *
- * @param <T> type of batch result
- * @param <R> type of result
  */
-public interface SlotCallback<T, R> {
+public class AdderEntry {
 
-    default RedisCommand<T> createCommand(List<Object> params) {
-        return null;
+    private final Set<String> ids = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+    private final AtomicInteger usage = new AtomicInteger();
+
+    public Set<String> getIds() {
+        return ids;
     }
 
-    default Object[] createKeys(MasterSlaveEntry entry, List<Object> params) {
-        return params.toArray();
+    public AtomicInteger getUsage() {
+        return usage;
     }
-
-    default Object[] createParams(List<Object> params) {
-        return params.toArray();
-    }
-
-    void onSlotResult(List<Object> keys, T result);
-
-    R onFinish();
 
 }

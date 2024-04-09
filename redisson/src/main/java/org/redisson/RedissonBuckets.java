@@ -87,7 +87,7 @@ public class RedissonBuckets implements RBuckets {
             final Map<String, V> results = new ConcurrentHashMap<>();
 
             @Override
-            public void onSlotResult(Map<Object, Object> result) {
+            public void onSlotResult(List<Object> keys, Map<Object, Object> result) {
                 for (Map.Entry<Object, Object> entry : result.entrySet()) {
                     if (entry.getKey() != null && entry.getValue() != null) {
                         String key = commandExecutor.getServiceManager().getConfig().getNameMapper().unmap((String) entry.getKey());
@@ -120,7 +120,7 @@ public class RedissonBuckets implements RBuckets {
             final AtomicBoolean result = new AtomicBoolean(true);
 
             @Override
-            public void onSlotResult(Boolean result) {
+            public void onSlotResult(List<Object> keys, Boolean result) {
                 if (!result && this.result.get()){
                     this.result.set(result);
                 }
@@ -163,7 +163,7 @@ public class RedissonBuckets implements RBuckets {
 
         return commandExecutor.writeBatchedAsync(codec, RedisCommands.MSET, new SlotCallback<Void, Void>() {
             @Override
-            public void onSlotResult(Void result) {
+            public void onSlotResult(List<Object> keys, Void result) {
             }
 
             @Override

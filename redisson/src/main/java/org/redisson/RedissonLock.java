@@ -24,6 +24,8 @@ import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.pubsub.LockPubSub;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -43,6 +45,8 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  */
 public class RedissonLock extends RedissonBaseLock {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(RedissonLock.class);
 
     protected long internalLockLeaseTime;
 
@@ -257,6 +261,7 @@ public class RedissonLock extends RedissonBaseLock {
             acquireFailed(waitTime, unit, threadId);
             return false;
         } catch (ExecutionException e) {
+            LOGGER.error(e.getMessage(), e);
             acquireFailed(waitTime, unit, threadId);
             return false;
         }

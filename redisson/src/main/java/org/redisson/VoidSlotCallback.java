@@ -38,7 +38,7 @@ public class VoidSlotCallback implements SlotCallback<Void, Void> {
     }
 
     @Override
-    public void onSlotResult(Void res) {
+    public void onSlotResult(List<Object> keys, Void res) {
     }
 
     @Override

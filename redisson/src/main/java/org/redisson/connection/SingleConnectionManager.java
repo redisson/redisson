@@ -15,10 +15,7 @@
  */
 package org.redisson.connection;
 
-import org.redisson.config.MasterSlaveServersConfig;
-import org.redisson.config.ReadMode;
-import org.redisson.config.SingleServerConfig;
-import org.redisson.config.SubscriptionMode;
+import org.redisson.config.*;
 
 /**
  * 
@@ -27,8 +24,8 @@ import org.redisson.config.SubscriptionMode;
  */
 public class SingleConnectionManager extends MasterSlaveConnectionManager {
 
-    public SingleConnectionManager(SingleServerConfig cfg, ServiceManager serviceManager) {
-        super(create(cfg), serviceManager);
+    public SingleConnectionManager(SingleServerConfig cfg, Config configCopy) {
+        super(create(cfg), configCopy);
     }
 
     private static MasterSlaveServersConfig create(SingleServerConfig cfg) {

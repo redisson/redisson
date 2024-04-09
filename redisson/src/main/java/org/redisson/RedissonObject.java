@@ -26,7 +26,6 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.command.CommandAsyncService;
 import org.redisson.config.Protocol;
 import org.redisson.connection.ServiceManager;
 import org.redisson.misc.CompletableFutureWrapper;
@@ -455,7 +454,7 @@ public abstract class RedissonObject implements RObject {
             throw new IllegalStateException("`protocol` config setting should be set to RESP3 value");
         }
 
-        commandExecutor = new CommandAsyncService(commandExecutor, true);
+        commandExecutor = commandExecutor.copy(true);
         PublishSubscribeService subscribeService = commandExecutor.getConnectionManager().getSubscribeService();
         CompletableFuture<Integer> r = subscribeService.subscribe(getRawName(), StringCodec.INSTANCE,
                 commandExecutor, listener);
@@ -532,7 +531,7 @@ public abstract class RedissonObject implements RObject {
         CompletableFuture<Void> f = subscribeService.removeListenerAsync(PubSubType.UNSUBSCRIBE, new ChannelName("__redis__:invalidate"), listenerId);
         f = f.whenComplete((r, e) -> {
             if (!commandExecutor.isTrackChanges()) {
-                commandExecutor = new CommandAsyncService(commandExecutor, false);
+                commandExecutor = commandExecutor.copy(false);
             }
         });
         return new CompletableFutureWrapper<>(f);

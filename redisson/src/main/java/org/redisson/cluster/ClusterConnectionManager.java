@@ -24,10 +24,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.cluster.ClusterNodeInfo.Flag;
 import org.redisson.cluster.ClusterPartition.Type;
-import org.redisson.config.BaseMasterSlaveServersConfig;
-import org.redisson.config.ClusterServersConfig;
-import org.redisson.config.MasterSlaveServersConfig;
-import org.redisson.config.ReadMode;
+import org.redisson.config.*;
 import org.redisson.connection.*;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.RedisURI;
@@ -70,8 +67,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     private final long seed = ThreadLocalRandom.current().nextLong();
 
-    public ClusterConnectionManager(ClusterServersConfig cfg, ServiceManager serviceManager) {
-        super(cfg, serviceManager);
+    public ClusterConnectionManager(ClusterServersConfig cfg, Config configCopy) {
+        super(cfg, configCopy);
         this.serviceManager.setNatMapper(cfg.getNatMapper());
     }
 
@@ -943,7 +940,15 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     private Collection<ClusterPartition> getLastPartitions() {
         return lastUri2Partition.values();
     }
-    
+
+    public int getSlot(MasterSlaveEntry entry) {
+        return lastPartitions.entrySet().stream()
+                .filter(e -> e.getValue().getMasterAddress().equals(entry.getClient().getConfig().getAddress()))
+                .findAny()
+                .map(m -> m.getKey())
+                .orElse(-1);
+    }
+
     @Override
     public RedisURI getLastClusterNode() {
         return lastClusterNode;
