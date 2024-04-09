@@ -4,6 +4,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.util.CharsetUtil;
 import net.bytebuddy.utility.RandomString;
+import nl.altindag.log.LogCaptor;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -22,13 +23,11 @@ import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.SerializationCodec;
-import org.redisson.config.Config;
-import org.redisson.config.ConfigSupport;
-import org.redisson.config.Credentials;
-import org.redisson.config.CredentialsResolver;
+import org.redisson.config.*;
 import org.redisson.connection.CRC16;
 import org.redisson.connection.ConnectionListener;
 import org.redisson.connection.MasterSlaveConnectionManager;
+import org.redisson.connection.pool.SlaveConnectionPool;
 import org.redisson.misc.RedisURI;
 import org.testcontainers.containers.ContainerState;
 import org.testcontainers.containers.FixedHostPortGenericContainer;
@@ -667,6 +666,32 @@ public class RedissonTest extends RedisDockerTest {
             t.size();
 
             redisson.shutdown();
+        });
+    }
+
+    @Test
+    public void testReadMasterSlave() {
+        testInCluster(rc -> {
+            Config c = rc.getConfig();
+            c.useClusterServers().setReadMode(ReadMode.MASTER_SLAVE);
+
+            LogCaptor logCaptor = LogCaptor.forClass(SlaveConnectionPool.class);
+            logCaptor.setLogLevelToDebug();
+
+            RedissonClient rr = Redisson.create(c);
+
+            for (int i = 0; i < 100; i++) {
+                rr.getBucket("" + i).get();
+            }
+
+            long slaveConnections = logCaptor.getDebugLogs().stream().filter(s -> s.contains("nodeType=SLAVE")).count();
+            long masterConnections = logCaptor.getDebugLogs().stream().filter(s -> s.contains("nodeType=MASTER")).count();
+
+            assertThat(masterConnections).isEqualTo(50);
+            assertThat(slaveConnections).isEqualTo(50);
+
+            logCaptor.close();
+            rr.shutdown();
         });
     }
 
