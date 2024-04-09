@@ -531,7 +531,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     if (v) {
                         log.info("slave: {} is up for slot ranges: {}", uri, currentPart.getSlotRanges());
                         currentPart.removeFailedSlaveAddress(uri);
-                        return entry.excludeMasterFromSlaves(uri);
+                        entry.excludeMasterFromSlaves(uri);
                     }
                     return v;
                 });
@@ -578,7 +578,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     if (v) {
                         currentPart.addSlaveAddress(uri);
                         log.info("slave: {} added for slot ranges: {}", uri, currentPart.getSlotRanges());
-                        return entry.excludeMasterFromSlaves(uri);
+                        entry.excludeMasterFromSlaves(uri);
                     }
                     return v;
                 });
