@@ -888,6 +888,14 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                         masterPartition.setMasterFail(true);
                     }
                 }
+            }).exceptionally(ex -> {
+                if (clusterNodeInfo.containsFlag(Flag.FAIL)
+                        || clusterNodeInfo.containsFlag(Flag.EVENTUAL_FAIL)) {
+                    return null;
+                }
+
+                log.error(ex.getMessage(), ex);
+                return null;
             });
             futures.add(f);
         }
