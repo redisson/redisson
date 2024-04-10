@@ -10,7 +10,7 @@ Feature - `RLocalCachedMapCacheV2` object implemented with effecient partitionin
 Feature - graceful shutdown in quarkus (thanks to @naah69)  
 
 Improvement - `RLongAdder` and `RDoubleAddder` should use sharded topic if possible  
-Improvement - CPU and Memory consumption by `ClusterConnectionManager.getLastPartitonsByURI()` method  
+Improvement - reduced CPU and Memory consumption by `ClusterConnectionManager.getLastPartitonsByURI()` method  
 Improvement - `RedisURI.hashCode()` caching to reduce CPU consumption  
 Improvement - shutdown check added in `RTopic.removeListener()` method  
 
