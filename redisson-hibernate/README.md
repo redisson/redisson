@@ -72,6 +72,8 @@ Define Redisson Region Cache Factory:
 <!-- Redisson Region Cache factory -->
 <property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.RedissonRegionFactory" />
 <!-- or -->
+<property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.RedissonRegionV2Factory" />
+<!-- or -->
 <property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.RedissonLocalCachedRegionFactory" />
 <!-- or -->
 <property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.RedissonClusteredRegionFactory" />
@@ -84,8 +86,11 @@ By default each Region Factory creates own Redisson instance. For multiple appli
 ```xml
 <!-- name of Redisson instance registered in JNDI -->
 <property name="hibernate.cache.redisson.jndi_name" value="redisson_instance" />
+
 <!-- JNDI Redisson Region Cache factory -->
 <property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.JndiRedissonRegionFactory" />
+<!-- or -->
+<property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.JndiRedissonRegionV2Factory" />
 <!-- or -->
 <property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.JndiRedissonLocalCachedRegionFactory" />
 <!-- or -->

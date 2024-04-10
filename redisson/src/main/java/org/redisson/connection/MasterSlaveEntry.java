@@ -106,7 +106,8 @@ public class MasterSlaveEntry {
     }
 
     private void useMasterAsSlave() {
-        if (hasNoSlaves()) {
+        if (hasNoSlaves()
+                || config.getReadMode() == ReadMode.MASTER_SLAVE) {
             addSlaveEntry(masterEntry);
         } else {
             removeSlaveEntry(masterEntry);
@@ -434,7 +435,8 @@ public class MasterSlaveEntry {
         CompletableFuture<Boolean> f = unfreezeAsync(entry, freezeReason);
         return f.thenApply(r -> {
             if (r) {
-                return excludeMasterFromSlaves(entry.getClient().getAddr());
+                excludeMasterFromSlaves(entry.getClient().getAddr());
+                return r;
             }
             return r;
         });
@@ -445,7 +447,8 @@ public class MasterSlaveEntry {
         CompletableFuture<Boolean> f = unfreezeAsync(address, freezeReason);
         return f.thenApply(r -> {
             if (r) {
-                return excludeMasterFromSlaves(address);
+                excludeMasterFromSlaves(address);
+                return r;
             }
             return r;
         });
@@ -453,7 +456,8 @@ public class MasterSlaveEntry {
 
     public boolean excludeMasterFromSlaves(RedisURI address) {
         InetSocketAddress addr = masterEntry.getClient().getAddr();
-        if (address.equals(addr)) {
+        if (address.equals(addr)
+                || config.getReadMode() == ReadMode.MASTER_SLAVE) {
             return false;
         }
 
@@ -464,7 +468,8 @@ public class MasterSlaveEntry {
 
     public boolean excludeMasterFromSlaves(InetSocketAddress address) {
         InetSocketAddress addr = masterEntry.getClient().getAddr();
-        if (config.isSlaveNotUsed() || addr.equals(address)) {
+        if (config.isSlaveNotUsed() || addr.equals(address)
+                || config.getReadMode() == ReadMode.MASTER_SLAVE) {
             return false;
         }
 
@@ -488,7 +493,8 @@ public class MasterSlaveEntry {
         CompletableFuture<Boolean> f = unfreezeAsync(address, freezeReason);
         return f.thenApply(r -> {
             if (r) {
-                return excludeMasterFromSlaves(address);
+                excludeMasterFromSlaves(address);
+                return r;
             }
             return r;
         });

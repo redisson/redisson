@@ -435,7 +435,7 @@ public class RedissonSession extends StandardSession {
         if (readMode == ReadMode.MEMORY) {
             if (attrs != null) {
                 for (Entry<String, Object> entry : attrs.entrySet()) {
-                    newMap.put(entry.getKey(), entry.getValue());
+                    newMap.put(entry.getKey(), copy(entry.getValue()));
                 }
             }
         } else {
@@ -460,7 +460,25 @@ public class RedissonSession extends StandardSession {
 
         expireSession();
     }
-    
+
+    private Object copy(Object value) {
+        try {
+            if (value instanceof Collection) {
+                Collection newInstance = (Collection) value.getClass().getDeclaredConstructor().newInstance();
+                newInstance.addAll((Collection) value);
+                value = newInstance;
+            }
+            if (value instanceof Map) {
+                Map newInstance = (Map) value.getClass().getDeclaredConstructor().newInstance();
+                newInstance.putAll((Map) value);
+                value = newInstance;
+            }
+        } catch (Exception e) {
+            // can't be copied
+        }
+        return value;
+    }
+
     public void load(Map<String, Object> attrs) {
         Long creationTime = (Long) attrs.remove(CREATION_TIME_ATTR);
         if (creationTime != null) {

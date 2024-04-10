@@ -74,6 +74,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
         entriesCopy.removeIf(n -> n.isFreezed() || !isHealthy(n));
         if (!entriesCopy.isEmpty()) {
             ClientConnectionsEntry entry = config.getLoadBalancer().getEntry(entriesCopy, command);
+            log.debug("Entry {} selected as connection source", entry);
             return acquireConnection(command, entry, trackChanges);
         }
         
