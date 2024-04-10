@@ -177,7 +177,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         MasterSlaveEntry entry = getEntrySet().iterator().next();
         RedisConnection c = entry.connectionWriteOp(null).join();
         try {
-            c.sync(RedisCommands.SPUBLISH, "", "");
+            c.sync(RedisCommands.PUBSUB_SHARDNUMSUB);
             subscribeService.setShardingSupported(true);
         } catch (Exception e) {
             // skip
