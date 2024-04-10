@@ -23,6 +23,7 @@ Below is the list of all available factories with local cache and/or data partit
 |RedissonRegionFactory<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ | ❌ | ✔️ |
 |RedissonRegionV2Factory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ❌ | ✔️ | ❌ | ✔️ | ✔️ |
 |RedissonLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ❌ | ✔️ | ❌ | ✔️ |
+|RedissonLocalCachedV2RegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ✔️ | ❌ | ✔️ | ✔️ |
 |RedissonClusteredRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ | ❌ | ✔️ |
 |RedissonClusteredLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ | ❌ | ✔️ |
 
@@ -76,6 +77,8 @@ Define Redisson Region Cache Factory:
 <!-- or -->
 <property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.RedissonLocalCachedRegionFactory" />
 <!-- or -->
+<property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.RedissonLocalCachedV2RegionFactory" />
+<!-- or -->
 <property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.RedissonClusteredRegionFactory" />
 <!-- or -->
 <property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.RedissonClusteredLocalCachedRegionFactory" />
@@ -93,6 +96,8 @@ By default each Region Factory creates own Redisson instance. For multiple appli
 <property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.JndiRedissonRegionV2Factory" />
 <!-- or -->
 <property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.JndiRedissonLocalCachedRegionFactory" />
+<!-- or -->
+<property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.JndiRedissonLocalCachedV2RegionFactory" />
 <!-- or -->
 <property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.JndiRedissonClusteredRegionFactory" />
 <!-- or -->
