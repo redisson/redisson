@@ -267,8 +267,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     
     private <R, T> void retryReadRandomAsync(Codec codec, RedisCommand<T> command, CompletableFuture<R> mainPromise,
             List<RedisClient> nodes, Object... params) {
-        RedisClient entry = nodes.remove(0);
-        RFuture<R> attemptPromise  = async(true, new NodeSource(entry), codec, command, params, false, false);
+        RedisClient client = nodes.remove(0);
+        MasterSlaveEntry masterSlaveEntry = connectionManager.getEntry(client);
+        RFuture<R> attemptPromise  = async(true, new NodeSource(masterSlaveEntry, client), codec, command, params, false, false);
         attemptPromise.whenComplete((res, e) -> {
             if (e == null) {
                 if (res == null) {
