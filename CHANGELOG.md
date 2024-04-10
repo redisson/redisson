@@ -5,7 +5,7 @@ Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and
 
 ### 10-Apr-2024 - 3.28.0 released
 
-Feature - [Multi Sentinel mode](https://github.com/redisson/redisson/wiki/2.-Configuration/#211-multi-sentinel-mode) implementation  
+Feature - [Multi Sentinel mode](https://github.com/redisson/redisson/wiki/2.-Configuration/#211-multi-sentinel-mode) implementation
 Feature - `RLocalCachedMapCacheV2` object implemented with effecient partitioning and advanced entry eviction  
 Feature - graceful shutdown in quarkus (thanks to @naah69)  
 
