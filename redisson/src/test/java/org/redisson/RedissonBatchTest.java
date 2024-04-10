@@ -171,6 +171,18 @@ public class RedissonBatchTest extends RedisDockerTest {
         });
     }
 
+    @Test
+    public void testBatchReadRandom() throws Exception {
+        redisson.getMap("key1").put("1", "2");
+        String randomKey = redisson.getKeys().randomKeyAsync().get();
+        RBatch batch = redisson.createBatch();
+        RFuture<String> keys = batch.getKeys().randomKeyAsync();
+        batch.execute();
+        String randomKeyInBatch = keys.get();
+        assertThat(randomKeyInBatch).isNotBlank();
+        assertThat(randomKeyInBatch).isEqualTo(randomKey);
+    }
+
 	public RFuture<BatchResult<?>> executeBatch(RedissonClient client, BatchOptions batchOptions) {
 		RBatch batch = client.createBatch(batchOptions);
 		for (int i = 0; i < 100000; i++) {
