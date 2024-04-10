@@ -14,7 +14,7 @@ Improvement - CPU and Memory consumption by `ClusterConnectionManager.getLastPar
 Improvement - `RedisURI.hashCode()` caching to reduce CPU consumption  
 Improvement - shutdown check added in `RTopic.removeListener()` method  
 
-Fixed - incorrect sharded pubsub detection  
+Fixed - incorrect detection of sharded pubsub support  
 Fixed - `RBatch` does not work with RKeys.randomKeyAsync() method (thanks to @wynn5a)  
 Fixed - unresolved Redis node hostname in cluster mode affects cluster topology scan  
 Fixed - `MASTER` nodes aren't used if `readMode = MASTER_SLAVE`  
