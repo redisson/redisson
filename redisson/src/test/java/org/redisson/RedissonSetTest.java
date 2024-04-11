@@ -1,12 +1,18 @@
 package org.redisson;
 
+import io.netty.util.ResourceLeakDetector;
+import mockit.Invocation;
+import mockit.Mock;
+import mockit.MockUp;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.RedisRunner.FailedToStartRedisException;
 import org.redisson.api.RFuture;
 import org.redisson.api.RList;
 import org.redisson.api.RSet;
+import org.redisson.api.RTransaction;
 import org.redisson.api.SortOrder;
+import org.redisson.api.TransactionOptions;
 import org.redisson.client.codec.IntegerCodec;
 import org.redisson.client.codec.StringCodec;
 
@@ -889,5 +895,34 @@ public class RedissonSetTest extends RedisDockerTest {
 
         assertThat(strings).containsAll(stringsOne);
         assertThat(strings).hasSize(stringsOne.size());
+    }
+
+    @Test
+    public void testAddAndContainsInTransactionShouldNotShowResourceLeak() {
+
+        new MockUp<ResourceLeakDetector<?>>() {
+            @Mock
+            void reportTracedLeak(Invocation invocation, String resourceType, String records) {
+                invocation.proceed();
+                Assertions.fail();
+            }
+
+            @Mock
+            void reportUntracedLeak(Invocation invocation, String resourceType) {
+                invocation.proceed();
+                Assertions.fail();
+            }
+        };
+
+        RTransaction tx = redisson.createTransaction(TransactionOptions.defaults());
+        RSet<Integer> testSet = tx.getSet("testSet");
+        for (int index = 0; index < 1000; index++) {
+            testSet.add(index);
+            if (testSet.contains(index)) {
+                // do nothing
+            }
+        }
+
+        tx.commit();
     }
 }
