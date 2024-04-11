@@ -50,7 +50,7 @@ public class StringMapDataDecoder implements MultiDecoder<Map<String, String>> {
     };
 
     @Override
-    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return decoder;
     }
 

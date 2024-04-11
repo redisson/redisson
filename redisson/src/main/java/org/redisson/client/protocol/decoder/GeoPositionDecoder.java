@@ -31,7 +31,7 @@ import org.redisson.client.protocol.Decoder;
 public class GeoPositionDecoder implements MultiDecoder<GeoPosition> {
 
     @Override
-    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return DoubleCodec.INSTANCE.getValueDecoder();
     }
     

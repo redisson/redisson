@@ -36,9 +36,9 @@ public class ListMultiDecoder2<T> implements MultiDecoder<Object> {
     }
     
     @Override
-    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         int index = state.getLevel();
-        return decoders[index].getDecoder(codec, paramNum, state);
+        return decoders[index].getDecoder(codec, paramNum, state, size);
     }
     
     @Override

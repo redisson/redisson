@@ -32,8 +32,8 @@ public class TimeSeriesFirstEntryReplayDecoder implements MultiDecoder<Object> {
     private final TimeSeriesEntryReplayDecoder decoder = new TimeSeriesEntryReplayDecoder();
 
     @Override
-    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
-        return decoder.getDecoder(codec, paramNum, state);
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
+        return decoder.getDecoder(codec, paramNum, state, size);
     }
     
     @Override

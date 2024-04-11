@@ -45,11 +45,11 @@ public class ListFirstObjectDecoder implements MultiDecoder<Object> {
     }
 
     @Override
-    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (inner != null) {
-            return inner.getDecoder(codec, paramNum, state);
+            return inner.getDecoder(codec, paramNum, state, size);
         }
-        return MultiDecoder.super.getDecoder(codec, paramNum, state);
+        return MultiDecoder.super.getDecoder(codec, paramNum, state, size);
     }
 
     @Override

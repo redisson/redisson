@@ -42,7 +42,7 @@ public class RedisURIDecoder implements MultiDecoder<RedisURI> {
     }
 
     @Override
-    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return StringCodec.INSTANCE.getValueDecoder();
     }
     

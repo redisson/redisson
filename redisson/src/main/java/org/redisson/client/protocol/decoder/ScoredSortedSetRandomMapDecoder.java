@@ -32,9 +32,9 @@ import java.util.stream.Collectors;
 public class ScoredSortedSetRandomMapDecoder extends ObjectMapReplayDecoder<Object, Object> {
 
     @Override
-    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (paramNum % 2 == 0) {
-            return super.getDecoder(codec, paramNum, state);
+            return super.getDecoder(codec, paramNum, state, size);
         }
         return DoubleCodec.INSTANCE.getValueDecoder();
     }

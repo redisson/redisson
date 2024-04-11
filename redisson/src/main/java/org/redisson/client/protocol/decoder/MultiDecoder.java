@@ -31,7 +31,7 @@ import org.redisson.client.protocol.Decoder;
  */
 public interface MultiDecoder<T> {
 
-    default Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+    default Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (codec == null) {
             codec = StringCodec.INSTANCE;
         }

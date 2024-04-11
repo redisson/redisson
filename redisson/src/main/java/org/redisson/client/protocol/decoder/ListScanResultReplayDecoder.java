@@ -30,7 +30,7 @@ import java.util.List;
 public class ListScanResultReplayDecoder implements MultiDecoder<ListScanResult<Object>> {
 
     @Override
-    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return StringCodec.INSTANCE.getValueDecoder();
     }
     

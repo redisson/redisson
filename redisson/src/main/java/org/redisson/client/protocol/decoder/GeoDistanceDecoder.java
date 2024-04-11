@@ -30,11 +30,11 @@ import org.redisson.client.protocol.Decoder;
 public class GeoDistanceDecoder implements MultiDecoder<List<Object>> {
 
     @Override
-    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (paramNum % 2 != 0) {
             return DoubleCodec.INSTANCE.getValueDecoder();
         }
-        return MultiDecoder.super.getDecoder(codec, paramNum, state);
+        return MultiDecoder.super.getDecoder(codec, paramNum, state, size);
     }
     
     @Override

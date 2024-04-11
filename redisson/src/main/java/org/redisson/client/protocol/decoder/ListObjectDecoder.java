@@ -37,11 +37,11 @@ public class ListObjectDecoder<T> implements MultiDecoder<T> {
     }
 
     @Override
-    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (paramNum == 0) {
             return StringCodec.INSTANCE.getValueDecoder();
         }
-        return MultiDecoder.super.getDecoder(codec, paramNum, state);
+        return MultiDecoder.super.getDecoder(codec, paramNum, state, size);
     }
     
     @Override

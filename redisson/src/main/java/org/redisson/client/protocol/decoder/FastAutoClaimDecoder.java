@@ -31,7 +31,7 @@ import java.util.List;
 public class FastAutoClaimDecoder implements MultiDecoder<FastAutoClaimResult> {
 
     @Override
-    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return new StreamIdDecoder();
     }
 

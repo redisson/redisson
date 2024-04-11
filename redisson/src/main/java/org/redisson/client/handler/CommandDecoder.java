@@ -213,7 +213,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         if (data instanceof CommandData) {
             CommandData<Object, Object> cmd = (CommandData<Object, Object>) data;
             try {
-                decode(in, cmd, null, channel, false, null);
+                decode(in, cmd, null, channel, false, null, 0);
                 sendNext(channel, data);
             } catch (Exception e) {
                 log.error("Unable to decode data. channel: {}, reply: {}, command: {}", channel, LogHelper.toString(in), LogHelper.toString(data), e);
@@ -235,7 +235,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         } else {
             try {
                 while (in.writerIndex() > in.readerIndex()) {
-                    decode(in, null, null, channel, false, null);
+                    decode(in, null, null, channel, false, null, 0);
                 }
                 sendNext(channel);
             } catch (Exception e) {
@@ -287,7 +287,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                     }
                 }
 
-                decode(in, commandData, null, channel, skipConvertor, commandsData);
+                decode(in, commandData, null, channel, skipConvertor, commandsData, 0);
                 
                 if (commandData != null
                         && RedisCommands.EXEC.getName().equals(commandData.getCommand().getName())
@@ -344,7 +344,8 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         }
     }
 
-    protected void decode(ByteBuf in, CommandData<Object, Object> data, List<Object> parts, Channel channel, boolean skipConvertor, List<CommandData<?, ?>> commandsData) throws IOException {
+    protected void decode(ByteBuf in, CommandData<Object, Object> data, List<Object> parts,
+                          Channel channel, boolean skipConvertor, List<CommandData<?, ?>> commandsData, long partsSize) throws IOException {
         int code = in.readByte();
         if (code == '_') {
             readCRLF(in);
@@ -424,7 +425,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             Object result = null;
             if (buf != null) {
                 buf.skipBytes(4);
-                Decoder<Object> decoder = selectDecoder(data, parts);
+                Decoder<Object> decoder = selectDecoder(data, parts, partsSize);
                 result = decoder.decode(buf, state());
             }
             handleResult(data, parts, result, false);
@@ -432,7 +433,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             ByteBuf buf = readBytes(in);
             Object result = null;
             if (buf != null) {
-                Decoder<Object> decoder = selectDecoder(data, parts);
+                Decoder<Object> decoder = selectDecoder(data, parts, partsSize);
                 result = decoder.decode(buf, state());
             }
             handleResult(data, parts, result, false);
@@ -483,14 +484,14 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                     suffix = 1;
                 }
                 CommandData<Object, Object> commandData = (CommandData<Object, Object>) commandsData.get(i+suffix);
-                decode(in, commandData, respParts, channel, skipConvertor, commandsData);
+                decode(in, commandData, respParts, channel, skipConvertor, commandsData, size);
                 if (commandData.getPromise().isDone() && commandData.getPromise().isCompletedExceptionally()) {
                     data.tryFailure(commandData.cause());
                 }
             }
         } else {
             for (int i = respParts.size(); i < size; i++) {
-                decode(in, data, respParts, channel, skipConvertor, null);
+                decode(in, data, respParts, channel, skipConvertor, null, size);
             }
         }
 
@@ -535,14 +536,14 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         return data.getCommand().getReplayMultiDecoder();
     }
 
-    protected Decoder<Object> selectDecoder(CommandData<Object, Object> data, List<Object> parts) {
+    protected Decoder<Object> selectDecoder(CommandData<Object, Object> data, List<Object> parts, long size) {
         if (data == null) {
             return StringCodec.INSTANCE.getValueDecoder();
         }
 
         MultiDecoder<Object> multiDecoder = data.getCommand().getReplayMultiDecoder();
-        Integer size = Optional.ofNullable(parts).map(List::size).orElse(0);
-        return multiDecoder.getDecoder(data.getCodec(), size, state());
+        Integer paramIndex = Optional.ofNullable(parts).map(List::size).orElse(0);
+        return multiDecoder.getDecoder(data.getCodec(), paramIndex, state(), size);
     }
 
     private ByteBuf readBytes(ByteBuf is) throws IOException {

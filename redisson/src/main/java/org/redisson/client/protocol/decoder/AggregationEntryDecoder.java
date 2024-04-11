@@ -15,37 +15,37 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import org.redisson.api.TimeSeriesEntry;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.LongCodec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
-
-import java.util.List;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class TimeSeriesSingleEntryReplayDecoder implements MultiDecoder<TimeSeriesEntry<Object, Object>> {
+public class AggregationEntryDecoder extends ObjectMapReplayDecoder {
+
+    private final Codec codec;
+    private final int reducers;
+
+    public AggregationEntryDecoder(Codec codec, int reducers) {
+        this.codec = codec;
+        this.reducers = reducers*2;
+    }
 
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
-        if (paramNum == 0 || paramNum == 1) {
-            return LongCodec.INSTANCE.getValueDecoder();
+        if (reducers > 0
+                && paramNum >= size - reducers) {
+            return StringCodec.INSTANCE.getValueDecoder();
         }
-        return MultiDecoder.super.getDecoder(codec, paramNum, state, size);
-    }
-    
-    @Override
-    public TimeSeriesEntry<Object, Object> decode(List<Object> parts, State state) {
-        Long n = (Long) parts.get(0);
-        Object label = null;
-        if (n == 3) {
-            label = parts.get(3);
+
+        if (paramNum % 2 != 0) {
+            return this.codec.getMapValueDecoder();
         }
-        return new TimeSeriesEntry<>((Long) parts.get(1), parts.get(2), label);
+        return StringCodec.INSTANCE.getValueDecoder();
     }
 
 }

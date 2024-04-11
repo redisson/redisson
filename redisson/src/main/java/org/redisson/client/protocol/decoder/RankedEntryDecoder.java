@@ -32,7 +32,7 @@ import java.util.List;
 public class RankedEntryDecoder implements MultiDecoder<RankedEntry<?>> {
 
     @Override
-    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (paramNum % 2 != 0) {
             return DoubleCodec.INSTANCE.getValueDecoder();
         }

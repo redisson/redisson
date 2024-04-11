@@ -89,7 +89,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
                         data = null;
                     }
                 }
-                decode(in, (CommandData<Object, Object>) data, null, channel, false, null);
+                decode(in, (CommandData<Object, Object>) data, null, channel, false, null, 0);
             }
             sendNext(channel, data);
         } catch (Exception e) {
@@ -270,7 +270,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
     }
 
     @Override
-    protected Decoder<Object> selectDecoder(CommandData<Object, Object> data, List<Object> parts) {
+    protected Decoder<Object> selectDecoder(CommandData<Object, Object> data, List<Object> parts, long size) {
         if (parts != null) {
             if (data != null && parts.size() == 1 && "pong".equals(parts.get(0))) {
                 return data.getCodec().getValueDecoder();
@@ -283,11 +283,11 @@ public class CommandPubSubDecoder extends CommandDecoder {
             }
             if (parts.size() == 2 && TYPE_MESSAGES.contains(parts.get(0))) {
                 byte[] channelName = (byte[]) parts.get(1);
-                return getDecoder(null, parts, channelName);
+                return getDecoder(null, parts, channelName, size);
             }
             if (parts.size() == 3 && "pmessage".equals(parts.get(0))) {
                 byte[] patternName = (byte[]) parts.get(1);
-                return getDecoder(null, parts, patternName);
+                return getDecoder(null, parts, patternName, size);
             }
         }
         
@@ -295,13 +295,13 @@ public class CommandPubSubDecoder extends CommandDecoder {
             return StringCodec.INSTANCE.getValueDecoder();
         }
         
-        return super.selectDecoder(data, parts);
+        return super.selectDecoder(data, parts, size);
     }
 
-    private Decoder<Object> getDecoder(Codec codec, List<Object> parts, byte[] name) {
+    private Decoder<Object> getDecoder(Codec codec, List<Object> parts, byte[] name, long size) {
         PubSubEntry entry = entries.get(new ChannelName(name));
         if (entry != null) {
-            return entry.getDecoder().getDecoder(codec, parts.size(), state());
+            return entry.getDecoder().getDecoder(codec, parts.size(), state(), size);
         }
         return ByteArrayCodec.INSTANCE.getValueDecoder();
     }

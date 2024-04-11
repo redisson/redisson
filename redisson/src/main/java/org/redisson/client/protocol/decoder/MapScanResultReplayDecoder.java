@@ -31,7 +31,7 @@ import java.util.Map;
 public class MapScanResultReplayDecoder implements MultiDecoder<MapScanResult<Object, Object>> {
 
     @Override
-    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return StringCodec.INSTANCE.getValueDecoder();
     }
     

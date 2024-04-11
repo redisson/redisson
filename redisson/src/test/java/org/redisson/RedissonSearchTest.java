@@ -136,10 +136,10 @@ public class RedissonSearchTest extends DockerRedisStackTest {
 
     @Test
     public void testGroupBy() {
-        RMap<String, SimpleObject> m = redisson.getMap("doc:1", new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
+        RMap<String, Object> m = redisson.getMap("doc:1", new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
         m.put("t1", new SimpleObject("name1"));
         m.put("t2", new SimpleObject("name2"));
-        RMap<String, SimpleObject> m2 = redisson.getMap("doc:2", new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
+        RMap<String, Object> m2 = redisson.getMap("doc:2", new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
         m2.put("t1", new SimpleObject("name3"));
         m2.put("t2", new SimpleObject("name4"));
 
@@ -156,11 +156,25 @@ public class RedissonSearchTest extends DockerRedisStackTest {
 
         assertThat(r.getTotal()).isEqualTo(2);
         assertThat(r.getCursorId()).isEqualTo(-1);
-        Map<String, SimpleObject> mm2 = m2.readAllMap();
+        Map<String, Object> mm2 = m2.readAllMap();
         mm2.remove("t2");
-        Map<String, SimpleObject> mm = m.readAllMap();
+        Map<String, Object> mm = m.readAllMap();
         mm.remove("t2");
         assertThat(new HashSet<>(r.getAttributes())).isEqualTo(new HashSet<>(Arrays.asList(mm2, mm)));
+
+        AggregationResult r2 = s.aggregate("idx", "*", AggregationOptions.defaults()
+                                                                            .load("t1", "t2")
+                                                                            .groupBy(GroupBy.fieldNames("@t1")
+                                                                                            .reducers(Reducer.count().as("count"),
+                                                                                                    Reducer.min("@t1").as("min"))));
+
+        assertThat(r2.getTotal()).isEqualTo(2);
+        assertThat(r2.getCursorId()).isEqualTo(-1);
+        mm2.put("count", "1");
+        mm2.put("min", "0");
+        mm.put("count", "1");
+        mm.put("min", "0");
+        assertThat(new HashSet<>(r2.getAttributes())).isEqualTo(new HashSet<>(Arrays.asList(mm2, mm)));
     }
 
     @Test

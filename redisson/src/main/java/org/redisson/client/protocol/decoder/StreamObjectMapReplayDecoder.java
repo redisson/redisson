@@ -61,11 +61,11 @@ public class StreamObjectMapReplayDecoder extends ObjectMapReplayDecoder<Object,
     }
 
     @Override
-    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (this.codec != null) {
             return this.codec;
         }
-        return super.getDecoder(codec, paramNum, state);
+        return super.getDecoder(codec, paramNum, state, size);
     }
 
 }

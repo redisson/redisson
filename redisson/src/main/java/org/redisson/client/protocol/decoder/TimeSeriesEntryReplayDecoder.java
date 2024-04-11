@@ -43,11 +43,11 @@ public class TimeSeriesEntryReplayDecoder implements MultiDecoder<List<TimeSerie
     }
 
     @Override
-    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (paramNum % 4 == 2 || paramNum % 4 == 3) {
             return LongCodec.INSTANCE.getValueDecoder();
         }
-        return MultiDecoder.super.getDecoder(codec, paramNum, state);
+        return MultiDecoder.super.getDecoder(codec, paramNum, state, size);
     }
     
     @Override

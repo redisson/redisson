@@ -38,7 +38,7 @@ public class PubSubMessageDecoder implements MultiDecoder<Object> {
     }
 
     @Override
-    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return decoder;
     }
     

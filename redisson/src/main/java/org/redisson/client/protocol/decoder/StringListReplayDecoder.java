@@ -31,7 +31,7 @@ import org.redisson.client.protocol.Decoder;
 public class StringListReplayDecoder implements MultiDecoder<List<String>> {
 
     @Override
-    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return StringCodec.INSTANCE.getValueDecoder();
     }
     

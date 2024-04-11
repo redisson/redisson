@@ -29,11 +29,11 @@ import org.redisson.client.protocol.Decoder;
 public class ScoredSortedSetScanDecoder<T> extends ObjectListReplayDecoder<T> {
 
     @Override
-    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (paramNum % 2 != 0) {
             return DoubleCodec.INSTANCE.getValueDecoder();
         }
-        return super.getDecoder(codec, paramNum, state);
+        return super.getDecoder(codec, paramNum, state, size);
     }
     
 }

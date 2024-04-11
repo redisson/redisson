@@ -610,6 +610,9 @@ public class RedissonSearch implements RSearch {
             args.add(options.getDialect());
         }
 
+        int reducers = options.getGroupByParams().stream()
+                                                 .mapToInt(g -> g.getReducers().size())
+                                                 .sum();
         RedisStrictCommand<AggregationResult> command;
         if (isResp3()) {
             if (options.isWithCursor()) {
@@ -618,24 +621,24 @@ public class RedissonSearch implements RSearch {
                                 new ObjectListReplayDecoder(),
                                 new ObjectListReplayDecoder(),
                                 new ObjectMapReplayDecoder(),
-                                new ObjectMapReplayDecoder(new CompositeCodec(StringCodec.INSTANCE, codec))));
+                                new AggregationEntryDecoder(new CompositeCodec(StringCodec.INSTANCE, codec), reducers)));
             } else {
                 command = new RedisStrictCommand<>("FT.AGGREGATE",
                         new ListMultiDecoder2(new AggregationResultDecoderV2(),
                                 new ObjectListReplayDecoder(),
                                 new ObjectMapReplayDecoder(),
-                                new ObjectMapReplayDecoder(new CompositeCodec(StringCodec.INSTANCE, codec))));
+                                new AggregationEntryDecoder(new CompositeCodec(StringCodec.INSTANCE, codec), reducers)));
             }
         } else {
             if (options.isWithCursor()) {
                 command = new RedisStrictCommand<>("FT.AGGREGATE",
                         new ListMultiDecoder2(new AggregationCursorResultDecoder(),
                                 new ObjectListReplayDecoder(),
-                                new ObjectMapReplayDecoder(new CompositeCodec(StringCodec.INSTANCE, codec))));
+                                new AggregationEntryDecoder(new CompositeCodec(StringCodec.INSTANCE, codec), reducers)));
             } else {
                 command = new RedisStrictCommand<>("FT.AGGREGATE",
                         new ListMultiDecoder2(new AggregationResultDecoder(),
-                                new ObjectMapReplayDecoder(new CompositeCodec(StringCodec.INSTANCE, codec)),
+                                new AggregationEntryDecoder(new CompositeCodec(StringCodec.INSTANCE, codec), reducers),
                                 new ObjectListReplayDecoder()));
             }
         }

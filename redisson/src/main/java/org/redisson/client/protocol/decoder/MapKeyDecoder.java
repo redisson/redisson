@@ -33,7 +33,7 @@ public class MapKeyDecoder<T> implements MultiDecoder<Object> {
     }
 
     @Override
-    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return codec.getMapKeyDecoder();
     }
 

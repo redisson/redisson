@@ -33,7 +33,7 @@ import java.util.List;
 public class ScoredEntryScanDecoder<T> implements MultiDecoder<ListScanResult<ScoredEntry<T>>> {
 
     @Override
-    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return StringCodec.INSTANCE.getValueDecoder();
     }
     

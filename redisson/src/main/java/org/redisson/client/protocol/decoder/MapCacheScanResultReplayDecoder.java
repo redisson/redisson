@@ -39,7 +39,7 @@ public class MapCacheScanResultReplayDecoder implements MultiDecoder<MapCacheSca
     }
 
     @Override
-    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return StringCodec.INSTANCE.getValueDecoder();
     }
 

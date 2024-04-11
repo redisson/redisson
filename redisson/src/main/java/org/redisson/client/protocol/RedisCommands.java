@@ -141,7 +141,7 @@ public interface RedisCommands {
                     new CodecDecoder(),
                     new CodecDecoder() {
                         @Override
-                        public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+                        public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
                             if ((paramNum + 1) % 2 == 0) {
                                 return DoubleCodec.INSTANCE.getValueDecoder();
                             }
@@ -168,7 +168,7 @@ public interface RedisCommands {
                     new CodecDecoder(),
                     new CodecDecoder() {
                         @Override
-                        public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+                        public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
                             if ((paramNum + 1) % 2 == 0) {
                                 return DoubleCodec.INSTANCE.getValueDecoder();
                             }
@@ -189,7 +189,7 @@ public interface RedisCommands {
             new CodecDecoder(),
             new ListFirstObjectDecoder() {
                 @Override
-                public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+                public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
                     if ((paramNum + 1) % 2 == 0) {
                         return DoubleCodec.INSTANCE.getValueDecoder();
                     }
@@ -324,7 +324,7 @@ public interface RedisCommands {
                     new CodecDecoder(),
                     new CodecDecoder() {
                         @Override
-                        public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+                        public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
                             if ((paramNum + 1) % 2 == 0) {
                                 return DoubleCodec.INSTANCE.getValueDecoder();
                             }
