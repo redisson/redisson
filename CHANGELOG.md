@@ -3,6 +3,29 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 10-Apr-2024 - 3.28.0 released
+
+Feature - [Multi Sentinel mode](https://github.com/redisson/redisson/wiki/2.-Configuration/#211-multi-sentinel-mode) implementation  
+Feature - `RLocalCachedMapCacheV2` object implemented with effecient partitioning and advanced entry eviction  
+Feature - graceful shutdown in quarkus (thanks to @naah69)  
+
+Improvement - `RLongAdder` and `RDoubleAddder` should use sharded topic if possible  
+Improvement - reduced CPU and Memory consumption by `ClusterConnectionManager.getLastPartitonsByURI()` method  
+Improvement - `RedisURI.hashCode()` caching to reduce CPU consumption  
+Improvement - shutdown check added in `RTopic.removeListener()` method  
+
+Fixed - incorrect detection of sharded pubsub support  
+Fixed - `RBatch` does not work with RKeys.randomKeyAsync() method (thanks to @wynn5a)  
+Fixed - unresolved Redis node hostname in cluster mode affects cluster topology scan  
+Fixed - `MASTER` nodes aren't used if `readMode = MASTER_SLAVE`  
+Fixed - `RLock`, `RFencedLock`, `RReadWriteLock` miss unlock messages and wait a defined timeout before a next attempt or hang  
+Fixed - `RSemaphore`, `RPermitExpirableSemaphore` miss release messages and wait a defined timeout before a next attempt or hang  
+Fixed - incorrect value of `RLongAdder.sum()` and `RDoubleAddder.sum()` methods if multiple Adder instances for the same Redisson object are used  
+Fixed - `CountDownLatch.await()` method may throw NPE  
+Fixed - ExecutionException handling in RExecutorService, RLock, RPermitExpirableSemaphore, RSemaphore objects  
+Fixed - `ConcurrentModificationException` is thrown on RedissonSession save method if readMode = MEMORY  
+Fixed - Spring Data Redis zPopMin() and zPopMax() methods don't work (thanks to @bimslab)  
+
 ### 12-Mar-2024 - 3.27.2 released
 
 Feature - `RShardedTopic.countSubscribers()` method implemented  
