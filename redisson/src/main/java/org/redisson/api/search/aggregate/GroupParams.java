@@ -16,6 +16,7 @@
 package org.redisson.api.search.aggregate;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -26,7 +27,7 @@ import java.util.List;
 public final class GroupParams implements GroupBy {
 
     private List<String> fieldNames;
-    private List<Reducer> reducers;
+    private List<Reducer> reducers = Collections.emptyList();
 
     GroupParams(List<String> fieldNames) {
         this.fieldNames = fieldNames;
