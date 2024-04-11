@@ -561,7 +561,7 @@ public class RedissonSearch implements RSearch {
         }
         if (!options.getSortedByFields().isEmpty()) {
             args.add("SORTBY");
-            args.add(options.getSortedByFields().size());
+            args.add(options.getSortedByFields().size()*2);
             for (SortedField sortedByField : options.getSortedByFields()) {
                 args.add(sortedByField.getName());
                 args.add(sortedByField.getOrder());

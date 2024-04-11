@@ -6,8 +6,7 @@ import org.redisson.api.RJsonBucket;
 import org.redisson.api.RMap;
 import org.redisson.api.RSearch;
 import org.redisson.api.search.SpellcheckOptions;
-import org.redisson.api.search.aggregate.AggregationOptions;
-import org.redisson.api.search.aggregate.AggregationResult;
+import org.redisson.api.search.aggregate.*;
 import org.redisson.api.search.index.*;
 import org.redisson.api.search.query.Document;
 import org.redisson.api.search.query.QueryOptions;
@@ -108,6 +107,31 @@ public class RedissonSearchTest extends DockerRedisStackTest {
         IndexInfo r = s.info("idx");
         assertThat(r.getName()).isEqualTo("idx");
         assertThat(r.getAttributes()).hasSize(2);
+    }
+
+    @Test
+    public void testSort() {
+        RMap<String, SimpleObject> m = redisson.getMap("doc:1", new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
+        m.put("t1", new SimpleObject("name1"));
+        m.put("t2", new SimpleObject("name2"));
+        RMap<String, SimpleObject> m2 = redisson.getMap("doc:2", new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
+        m2.put("t1", new SimpleObject("name3"));
+        m2.put("t2", new SimpleObject("name4"));
+
+        RSearch s = redisson.getSearch();
+        s.createIndex("idx", IndexOptions.defaults()
+                        .on(IndexType.HASH)
+                        .prefix(Arrays.asList("doc:")),
+                FieldIndex.text("t1"),
+                FieldIndex.text("t2"));
+
+        AggregationResult r = s.aggregate("idx", "*", AggregationOptions.defaults()
+                                                                            .load("t1", "t2")
+                                                                            .sortBy(new SortedField("@t1")));
+
+        assertThat(r.getTotal()).isEqualTo(2);
+        assertThat(r.getCursorId()).isEqualTo(-1);
+        assertThat(new HashSet<>(r.getAttributes())).isEqualTo(new HashSet<>(Arrays.asList(m2.readAllMap(), m.readAllMap())));
     }
 
     @Test
