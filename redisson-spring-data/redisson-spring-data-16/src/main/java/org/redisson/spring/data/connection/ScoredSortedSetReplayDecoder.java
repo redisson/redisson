@@ -35,7 +35,7 @@ import org.springframework.data.redis.connection.RedisZSetCommands.Tuple;
 public class ScoredSortedSetReplayDecoder implements MultiDecoder<Set<Tuple>> {
 
     @Override
-    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (paramNum % 2 != 0) {
             return DoubleCodec.INSTANCE.getValueDecoder();
         }

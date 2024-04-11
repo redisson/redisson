@@ -55,7 +55,7 @@ public class ObjectListReplayDecoder2<T> implements MultiDecoder<List<T>> {
     }
 
     @Override
-    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return decoder;
     }
 }

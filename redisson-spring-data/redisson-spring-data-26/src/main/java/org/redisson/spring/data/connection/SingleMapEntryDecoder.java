@@ -32,7 +32,7 @@ import java.util.Map.Entry;
 public class SingleMapEntryDecoder implements MultiDecoder<Entry<Object, Object>> {
 
     @Override
-    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (paramNum % 2 != 0) {
             return codec.getMapValueDecoder();
         }

@@ -23,9 +23,7 @@ import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.springframework.data.redis.connection.zset.DefaultTuple;
 import org.springframework.data.redis.connection.zset.Tuple;
 
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * 
@@ -35,11 +33,11 @@ import java.util.Set;
 public class ScoredSortedSetReplayDecoderV2 implements MultiDecoder<Tuple> {
 
     @Override
-    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (paramNum % 2 != 0) {
             return DoubleCodec.INSTANCE.getValueDecoder();
         }
-        return MultiDecoder.super.getDecoder(codec, paramNum, state);
+        return MultiDecoder.super.getDecoder(codec, paramNum, state, size);
     }
     
     @Override

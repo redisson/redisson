@@ -32,7 +32,7 @@ import org.springframework.data.geo.Point;
 public class PointDecoder implements MultiDecoder<Point> {
 
     @Override
-    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return DoubleCodec.INSTANCE.getValueDecoder();
     }
     

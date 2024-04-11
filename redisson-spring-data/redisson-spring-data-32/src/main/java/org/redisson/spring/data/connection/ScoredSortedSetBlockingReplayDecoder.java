@@ -35,11 +35,11 @@ import java.util.Set;
 public class ScoredSortedSetBlockingReplayDecoder implements MultiDecoder<Set<Tuple>> {
 
     @Override
-    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state) {
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (paramNum == 2) {
             return DoubleCodec.INSTANCE.getValueDecoder();
         }
-        return MultiDecoder.super.getDecoder(codec, paramNum, state);
+        return MultiDecoder.super.getDecoder(codec, paramNum, state, size);
     }
     
     @Override
