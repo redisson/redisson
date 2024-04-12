@@ -92,6 +92,15 @@ public interface RSemaphoreRx extends RExpirableRx {
     Single<Boolean> trySetPermits(int permits);
 
     /**
+     * Tries to set number of permits with defined time to live.
+     *
+     * @param timeToLive time to live
+     * @param permits number of permits
+     * @return <code>true</code> if permits has been set successfully, otherwise <code>false</code>.
+     */
+    Single<Boolean> trySetPermits(int permits, Duration timeToLive);
+
+    /**
      * Use {@link #tryAcquire(Duration)} instead
      *
      * @param waitTime the maximum time to wait

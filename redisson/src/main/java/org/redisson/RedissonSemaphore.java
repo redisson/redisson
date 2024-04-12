@@ -506,15 +506,45 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
     @Override
     public RFuture<Boolean> trySetPermitsAsync(int permits) {
         RFuture<Boolean> future = commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                "local value = redis.call('get', KEYS[1]); " +
+                  "local value = redis.call('get', KEYS[1]); " +
                         "if (value == false) then "
-                        + "redis.call('set', KEYS[1], ARGV[1]); "
-                        + "redis.call(ARGV[2], KEYS[2], ARGV[1]); "
-                        + "return 1;"
-                        + "end;"
-                        + "return 0;",
+                          + "redis.call('set', KEYS[1], ARGV[1]); "
+                          + "redis.call(ARGV[2], KEYS[2], ARGV[1]); "
+                          + "return 1;"
+                      + "end;"
+                      + "return 0;",
                 Arrays.asList(getRawName(), getChannelName()),
                 permits, getSubscribeService().getPublishCommand());
+
+        if (LOGGER.isDebugEnabled()) {
+            future.thenAccept(r -> {
+                if (r) {
+                    LOGGER.debug("permits set, permits: {}, name: {}", permits, getName());
+                } else {
+                    LOGGER.debug("unable to set permits, permits: {}, name: {}", permits, getName());
+                }
+            });
+        }
+        return future;
+    }
+
+    @Override
+    public boolean trySetPermits(int permits, Duration timeToLive) {
+        return get(trySetPermitsAsync(permits, timeToLive));
+    }
+
+    @Override
+    public RFuture<Boolean> trySetPermitsAsync(int permits, Duration timeToLive) {
+        RFuture<Boolean> future = commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                  "local value = redis.call('get', KEYS[1]); " +
+                        "if (value == false) then "
+                          + "redis.call('set', KEYS[1], ARGV[1], 'px', ARGV[3]); "
+                          + "redis.call(ARGV[2], KEYS[2], ARGV[1]); "
+                          + "return 1;"
+                      + "end;"
+                      + "return 0;",
+                Arrays.asList(getRawName(), getChannelName()),
+                permits, getSubscribeService().getPublishCommand(), timeToLive.toMillis());
 
         if (LOGGER.isDebugEnabled()) {
             future.thenAccept(r -> {

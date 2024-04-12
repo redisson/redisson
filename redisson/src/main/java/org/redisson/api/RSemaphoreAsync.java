@@ -83,10 +83,19 @@ public interface RSemaphoreAsync extends RExpirableAsync {
     /**
      * Tries to set number of permits.
      *
-     * @param permits - number of permits
+     * @param permits number of permits
      * @return <code>true</code> if permits has been set successfully, otherwise <code>false</code>.  
      */
     RFuture<Boolean> trySetPermitsAsync(int permits);
+
+    /**
+     * Tries to set number of permits with defined time to live.
+     *
+     * @param timeToLive time to live
+     * @param permits number of permits
+     * @return <code>true</code> if permits has been set successfully, otherwise <code>false</code>.
+     */
+    RFuture<Boolean> trySetPermitsAsync(int permits, Duration timeToLive);
 
     /**
      * Use {@link #tryAcquireAsync(Duration)} instead
