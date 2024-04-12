@@ -278,8 +278,7 @@ public abstract class LocalCacheListener {
 
         byte[] id = commandExecutor.getServiceManager().generateIdArray();
         RSemaphore semaphore = getClearSemaphore(id);
-        CompletionStage<Void> f = semaphore.trySetPermitsAsync(0)
-                .thenCompose(r -> semaphore.expireAsync(Duration.ofSeconds(60)))
+        CompletionStage<Void> f = semaphore.trySetPermitsAsync(0, Duration.ofSeconds(60))
                 .thenCompose(r -> publishAsync(id))
                 .thenCompose(res -> {
                     if (res == 0) {
