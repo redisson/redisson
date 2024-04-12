@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -67,16 +68,26 @@ public interface RSemaphore extends RExpirable, RSemaphoreAsync {
      * Waits up to defined <code>waitTime</code> if necessary until a permit became available.
      *
      * @param waitTime the maximum time to wait
+     * @return <code>true</code> if a permit was acquired and <code>false</code>
+     *         otherwise
+     * @throws InterruptedException if the current thread was interrupted
+     */
+    boolean tryAcquire(Duration waitTime) throws InterruptedException;
+
+    /**
+     * Use {@link #tryAcquire(Duration)} instead
+     *
+     * @param waitTime the maximum time to wait
      * @param unit the time unit
      * @return <code>true</code> if a permit was acquired and <code>false</code>
      *         otherwise
      * @throws InterruptedException if the current thread was interrupted
      */
+    @Deprecated
     boolean tryAcquire(long waitTime, TimeUnit unit) throws InterruptedException;
 
     /**
-     * Tries to acquire defined amount of currently available <code>permits</code>.
-     * Waits up to defined <code>waitTime</code> if necessary until all permits became available.
+     * Use {@link #tryAcquire(int, Duration)} instead
      *
      * @param permits amount of permits
      * @param waitTime the maximum time to wait
@@ -85,7 +96,20 @@ public interface RSemaphore extends RExpirable, RSemaphoreAsync {
      *         otherwise
      * @throws InterruptedException if the current thread was interrupted
      */
+    @Deprecated
     boolean tryAcquire(int permits, long waitTime, TimeUnit unit) throws InterruptedException;
+
+    /**
+     * Tries to acquire defined amount of currently available <code>permits</code>.
+     * Waits up to defined <code>waitTime</code> if necessary until all permits became available.
+     *
+     * @param permits amount of permits
+     * @param waitTime the maximum time to wait
+     * @return <code>true</code> if permits were acquired and <code>false</code>
+     *         otherwise
+     * @throws InterruptedException if the current thread was interrupted
+     */
+    boolean tryAcquire(int permits, Duration waitTime) throws InterruptedException;
 
     /**
      * Releases a permit. Increases the number of available permits.

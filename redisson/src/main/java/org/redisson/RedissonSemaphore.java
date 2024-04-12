@@ -28,6 +28,7 @@ import org.redisson.pubsub.SemaphorePubSub;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.*;
@@ -280,16 +281,21 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
     public RFuture<Boolean> tryAcquireAsync(long waitTime, TimeUnit unit) {
         return tryAcquireAsync(1, waitTime, unit);
     }
-    
-    @Override
-    public boolean tryAcquire(int permits, long waitTime, TimeUnit unit) throws InterruptedException {
-        LOGGER.debug("trying to acquire, permits: {}, waitTime: {}, unit: {}, name: {}", permits, waitTime, unit, getName());
 
-        long time = unit.toMillis(waitTime);
+    @Override
+    public boolean tryAcquire(Duration waitTime) throws InterruptedException {
+        return tryAcquire(1, waitTime);
+    }
+
+    @Override
+    public boolean tryAcquire(int permits, Duration waitTime) throws InterruptedException {
+        LOGGER.debug("trying to acquire, permits: {}, waitTime: {}, name: {}", permits, waitTime,  getName());
+
+        long time = waitTime.toMillis();
         long current = System.currentTimeMillis();
 
         if (tryAcquire(permits)) {
-            LOGGER.debug("acquired, permits: {}, waitTime: {}, unit: {}, name: {}", permits, waitTime, unit, getName());
+            LOGGER.debug("acquired, permits: {}, waitTime: {}, name: {}", permits, waitTime, getName());
             return true;
         }
 
@@ -318,11 +324,11 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
                 LOGGER.debug("unable to acquire, permits: {}, name: {}", permits, getName());
                 return false;
             }
-            
+
             while (true) {
                 current = System.currentTimeMillis();
                 if (tryAcquire(permits)) {
-                    LOGGER.debug("acquired, permits: {}, wait-time: {}, unit: {}, name: {}", permits, waitTime, unit, getName());
+                    LOGGER.debug("acquired, permits: {}, wait-time: {}, name: {}", permits, waitTime, getName());
                     return true;
                 }
 
@@ -347,13 +353,18 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
         } finally {
             unsubscribe(entry);
         }
-//        return get(tryAcquireAsync(permits, waitTime, unit));
+//        return get(tryAcquireAsync(permits, waitTime));
     }
 
     @Override
-    public RFuture<Boolean> tryAcquireAsync(int permits, long waitTime, TimeUnit unit) {
+    public RFuture<Boolean> tryAcquireAsync(Duration waitTime) {
+        return tryAcquireAsync(1, waitTime);
+    }
+
+    @Override
+    public RFuture<Boolean> tryAcquireAsync(int permits, Duration waitTime) {
         CompletableFuture<Boolean> result = new CompletableFuture<>();
-        AtomicLong time = new AtomicLong(unit.toMillis(waitTime));
+        AtomicLong time = new AtomicLong(waitTime.toMillis());
         long curr = System.currentTimeMillis();
         RFuture<Boolean> tryAcquireFuture = tryAcquireAsync(permits);
         tryAcquireFuture.whenComplete((res, e) -> {
@@ -368,15 +379,15 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
                 }
                 return;
             }
-            
+
             long elap = System.currentTimeMillis() - curr;
             time.addAndGet(-elap);
-            
+
             if (time.get() <= 0) {
                 result.complete(false);
                 return;
             }
-            
+
             long current = System.currentTimeMillis();
             CompletableFuture<RedissonLockEntry> subscribeFuture = subscribe();
             semaphorePubSub.timeout(subscribeFuture, time.get());
@@ -388,17 +399,27 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
 
                 long elapsed = System.currentTimeMillis() - current;
                 time.addAndGet(-elapsed);
-                
+
                 if (time.get() < 0) {
                     unsubscribe(r);
                     result.complete(false);
                     return;
                 }
-                
+
                 tryAcquireAsync(time, permits, r, result);
             });
         });
         return new CompletableFutureWrapper<>(result);
+    }
+
+    @Override
+    public boolean tryAcquire(int permits, long waitTime, TimeUnit unit) throws InterruptedException {
+        return tryAcquire(permits, Duration.ofMillis(unit.toMillis(waitTime)));
+    }
+
+    @Override
+    public RFuture<Boolean> tryAcquireAsync(int permits, long waitTime, TimeUnit unit) {
+        return tryAcquireAsync(permits, Duration.ofMillis(unit.toMillis(waitTime)));
     }
 
     private CompletableFuture<RedissonLockEntry> subscribe() {

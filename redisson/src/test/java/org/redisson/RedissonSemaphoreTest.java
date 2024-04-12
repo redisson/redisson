@@ -44,7 +44,7 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
     @Test
     public void testZero() throws InterruptedException {
         RSemaphore s = redisson.getSemaphore("test");
-        assertThat(s.tryAcquire(0, 10, TimeUnit.MINUTES)).isTrue();
+        assertThat(s.tryAcquire(0, Duration.ofMinutes(10))).isTrue();
         s.release(0);
         assertThat(s.availablePermits()).isZero();
     }
@@ -191,7 +191,7 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
         t.join(1);
 
         Awaitility.await().between(Duration.ofMillis(900), Duration.ofMillis(1200)).untilAsserted(() -> {
-            assertThat(s.tryAcquire(4, 2, TimeUnit.SECONDS)).isTrue();
+            assertThat(s.tryAcquire(4, Duration.ofSeconds(2))).isTrue();
         });
 
         assertThat(s.availablePermits()).isEqualTo(0);

@@ -17,6 +17,7 @@ package org.redisson.api;
 
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -90,16 +91,38 @@ public interface RSemaphoreReactive extends RExpirableReactive {
     Mono<Boolean> trySetPermits(int permits);
 
     /**
-     * Tries to acquire currently available permit.
-     * Waits up to defined <code>waitTime</code> if necessary until a permit became available.
+     * Use {@link #tryAcquire(Duration)} instead
      *
      * @param waitTime the maximum time to wait
      * @param unit the time unit
      * @return <code>true</code> if a permit was acquired and <code>false</code>
      *         otherwise
      */
+    @Deprecated
     Mono<Boolean> tryAcquire(long waitTime, TimeUnit unit);
     
+    /**
+     * Tries to acquire currently available permit.
+     * Waits up to defined <code>waitTime</code> if necessary until a permit became available.
+     *
+     * @param waitTime the maximum time to wait
+     * @return <code>true</code> if a permit was acquired and <code>false</code>
+     *         otherwise
+     */
+    Mono<Boolean> tryAcquire(Duration waitTime);
+
+    /**
+     * Use {@link #tryAcquire(int, Duration)} instead
+     *
+     * @param permits amount of permits
+     * @param waitTime the maximum time to wait
+     * @param unit the time unit
+     * @return <code>true</code> if permits were acquired and <code>false</code>
+     *         otherwise
+     */
+    @Deprecated
+    Mono<Boolean> tryAcquire(int permits, long waitTime, TimeUnit unit);
+
     /**
      * Tries to acquire defined amount of currently available <code>permits</code>.
      * Waits up to defined <code>waitTime</code> if necessary until all permits became available.
@@ -110,7 +133,7 @@ public interface RSemaphoreReactive extends RExpirableReactive {
      * @return <code>true</code> if permits were acquired and <code>false</code>
      *         otherwise
      */
-    Mono<Boolean> tryAcquire(int permits, long waitTime, TimeUnit unit);
+    Mono<Boolean> tryAcquire(int permits, Duration waitTime);
 
     /**
      * Increases or decreases the number of available permits by defined value.
