@@ -287,13 +287,9 @@ public abstract class LocalCacheListener {
                                         .thenApply(r -> null);
                     }
 
-                    System.out.println("res " + res);
                     return semaphore.tryAcquireAsync(res.intValue() - 1, 40, TimeUnit.SECONDS)
-                                    .thenCompose(r -> {
-                                        System.out.println("aca " + r);
-                                        return semaphore.deleteAsync()
-                                                .thenApply(re -> null);
-                                    });
+                                    .thenCompose(r -> semaphore.deleteAsync()
+                                                               .thenApply(re -> null));
                 });
         return new CompletableFutureWrapper<>(f);
     }
