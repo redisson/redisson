@@ -557,11 +557,14 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
                 .evictionPolicy(EvictionPolicy.LFU)
                 .cacheSize(5)
                 .syncStrategy(SyncStrategy.INVALIDATE);
-        
+
+        Config c = redisson.getConfig();
+        RedissonClient redisson2 = Redisson.create(c);
+
         RLocalCachedMap<String, Integer> map1 = redisson.getLocalCachedMap(options);
         Map<String, Integer> cache1 = map1.getCachedMap();
         
-        RLocalCachedMap<String, Integer> map2 = redisson.getLocalCachedMap(options);
+        RLocalCachedMap<String, Integer> map2 = redisson2.getLocalCachedMap(options);
         Map<String, Integer> cache2 = map2.getCachedMap();
         
         map1.put("1", 1);
@@ -573,13 +576,14 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         assertThat(cache1.size()).isEqualTo(2);
         assertThat(cache2.size()).isEqualTo(2);
 
-        
         map1.clearLocalCache();
-        
+
         assertThat(redisson.getKeys().count()).isEqualTo(1);
 
         assertThat(cache1.size()).isZero();
         assertThat(cache2.size()).isZero();
+
+        redisson2.shutdown();
     }
 
     
