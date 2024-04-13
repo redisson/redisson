@@ -432,13 +432,19 @@ public class BaseRedissonList<V> extends RedissonExpirable {
         return commandExecutor.evalReadAsync(getRawName(), codec, new RedisCommand<R>("EVAL", convertor),
                 "local key = KEYS[1] " +
                 "local obj = ARGV[1] " +
-                "local items = redis.call('lrange', key, 0, -1) " +
-                "for i=1,#items do " +
-                    "if items[i] == obj then " +
-                        "return i - 1 " +
+                "local index = -1 " +
+                "local cursor = 0 " +
+                "repeat " +
+                    "local items = redis.call('lrange', key, cursor, cursor + 99) " +
+                    "for i=1,#items do " +
+                        "if items[i] == obj then " +
+                            "index = cursor + i - 1 " +
+                            "break " +
+                        "end " +
                     "end " +
-                "end " +
-                "return -1",
+                    "cursor = cursor + 100 " +
+                "until index ~= -1 or #items < 100 " +
+                "return index",
                 Collections.<Object>singletonList(getRawName()), encode(o));
     }
 
