@@ -1,6 +1,18 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Single;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.redisson.api.*;
+import org.redisson.api.annotation.RRemoteAsync;
+import org.redisson.api.annotation.RRemoteReactive;
+import org.redisson.api.annotation.RRemoteRx;
+import org.redisson.codec.SerializationCodec;
+import org.redisson.remote.RemoteServiceAckTimeoutException;
+import org.redisson.remote.RemoteServiceTimeoutException;
+import reactor.core.Disposable;
+import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.io.NotSerializableException;
@@ -8,35 +20,11 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-import org.redisson.api.RFuture;
-import org.redisson.api.RRemoteService;
-import org.redisson.api.RedissonClient;
-import org.redisson.api.RedissonReactiveClient;
-import org.redisson.api.RedissonRxClient;
-import org.redisson.api.RemoteInvocationOptions;
-import org.redisson.api.annotation.RRemoteAsync;
-import org.redisson.api.annotation.RRemoteReactive;
-import org.redisson.api.annotation.RRemoteRx;
-import org.redisson.codec.SerializationCodec;
-import org.redisson.remote.RemoteServiceAckTimeoutException;
-import org.redisson.remote.RemoteServiceTimeoutException;
-
-import io.reactivex.rxjava3.core.Completable;
-import io.reactivex.rxjava3.core.Single;
-import reactor.core.Disposable;
-import reactor.core.publisher.Mono;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonRemoteServiceTest extends RedisDockerTest {
 
@@ -445,11 +433,11 @@ public class RedissonRemoteServiceTest extends RedisDockerTest {
     }
 
     @Test
-    public void testReactive() throws InterruptedException {
+    public void testReactive() {
         RedissonReactiveClient r1 = Redisson.create(createConfig()).reactive();
         r1.getRemoteService().register(RemoteInterface.class, new RemoteImpl());
         
-        RedissonReactiveClient r2 = Redisson.create(createConfig()).reactive();
+        RedissonClient r2 = Redisson.create(createConfig());
         RemoteInterfaceReactive ri = r2.getRemoteService().get(RemoteInterfaceReactive.class);
         
         Mono<Void> f = ri.voidMethod("someName", 100L);
