@@ -1010,8 +1010,17 @@ public class PublishSubscribeService {
         return f;
     }
 
-    public void setShardingSupported(boolean value) {
-        this.shardingSupported = value;
+    public void detectSharding() {
+        MasterSlaveEntry entry = connectionManager.getEntrySet().iterator().next();
+        RedisConnection c = entry.connectionWriteOp(null).join();
+        try {
+            c.sync(RedisCommands.PUBSUB_SHARDNUMSUB);
+            shardingSupported = true;
+        } catch (Exception e) {
+            // skip
+        } finally {
+            entry.releaseWrite(c);
+        }
     }
 
     public boolean isShardingSupported() {

@@ -169,21 +169,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             }
         }
 
-        detectSharding();
+        subscribeService.detectSharding();
         scheduleClusterChangeCheck(cfg);
-    }
-
-    private void detectSharding() {
-        MasterSlaveEntry entry = getEntrySet().iterator().next();
-        RedisConnection c = entry.connectionWriteOp(null).join();
-        try {
-            c.sync(RedisCommands.PUBSUB_SHARDNUMSUB);
-            subscribeService.setShardingSupported(true);
-        } catch (Exception e) {
-            // skip
-        } finally {
-            entry.releaseWrite(c);
-        }
     }
 
     @Override
