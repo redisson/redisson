@@ -9,12 +9,9 @@ import org.redisson.client.codec.IntegerCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RankedEntry;
 import org.redisson.client.protocol.ScoredEntry;
-import org.redisson.config.Config;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -156,7 +153,7 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
     }
     
     @Test
-    public void testPollFirstFromAny() throws InterruptedException {
+    public void testPollFirstFromAny() {
         final RScoredSortedSet<Integer> queue1 = redisson.getScoredSortedSet("queue:pollany");
         Executors.newSingleThreadScheduledExecutor().schedule(() -> {
             RScoredSortedSet<Integer> queue2 = redisson.getScoredSortedSet("queue:pollany1");
@@ -326,7 +323,7 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
     }
 
     @Test
-    public void testPollLastFromAny() throws InterruptedException {
+    public void testPollLastFromAny() {
         final RScoredSortedSet<Integer> queue1 = redisson.getScoredSortedSet("queue:pollany");
         Executors.newSingleThreadScheduledExecutor().schedule(() -> {
             RScoredSortedSet<Integer> queue2 = redisson.getScoredSortedSet("queue:pollany1");
@@ -647,13 +644,13 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
     public void testAddAll() {
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
 
-        Map<String, Double> objects = new HashMap<String, Double>();
+        Map<String, Double> objects = new HashMap<>();
         objects.put("1", 0.1);
         objects.put("2", 0.2);
         objects.put("3", 0.3);
         assertThat(set.addAll(objects)).isEqualTo(3);
         assertThat(set.entryRange(0, -1)).containsOnly(
-                new ScoredEntry<String>(0.1, "1"), new ScoredEntry<String>(0.2, "2"), new ScoredEntry<String>(0.3, "3"));
+                new ScoredEntry<>(0.1, "1"), new ScoredEntry<>(0.2, "2"), new ScoredEntry<>(0.3, "3"));
     }
 
     @Test
@@ -1040,27 +1037,27 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
     }
 
     @Test
-    public void testAddAndGetRankAsync() throws InterruptedException, ExecutionException {
+    public void testAddAndGetRank() {
         RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple");
-        RFuture<Integer> future = set.addAndGetRankAsync(0.3, 1);
-        Assertions.assertEquals(new Integer(0), future.get());
-        RFuture<Integer> future2 = set.addAndGetRankAsync(0.4, 2);
-        Assertions.assertEquals(new Integer(1), future2.get());
-        RFuture<Integer> future3 = set.addAndGetRankAsync(0.2, 3);
-        Assertions.assertEquals(new Integer(0), future3.get());
+        Integer res = set.addAndGetRank(0.3, 1);
+        assertThat(res).isEqualTo(0);
+        Integer res2 = set.addAndGetRank(0.4, 2);
+        assertThat(res2).isEqualTo(1);
+        Integer res3 = set.addAndGetRank(0.2, 3);
+        assertThat(res3).isEqualTo(0);
 
         Assertions.assertTrue(set.contains(3));
     }
 
     @Test
-    public void testAddAndGetRevRankAsync() throws InterruptedException, ExecutionException {
+    public void testAddAndGetRevRank() {
         RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple");
-        RFuture<Integer> future = set.addAndGetRevRankAsync(0.3, 1);
-        Assertions.assertEquals(new Integer(0), future.get());
-        RFuture<Integer> future2 = set.addAndGetRevRankAsync(0.4, 2);
-        Assertions.assertEquals(new Integer(0), future2.get());
-        RFuture<Integer> future3 = set.addAndGetRevRankAsync(0.2, 3);
-        Assertions.assertEquals(new Integer(2), future3.get());
+        Integer res = set.addAndGetRevRank(0.3, 1);
+        assertThat(res).isEqualTo(0);
+        Integer res2 = set.addAndGetRevRank(0.4, 2);
+        assertThat(res2).isEqualTo(0);
+        Integer res3  = set.addAndGetRevRank(0.2, 3);
+        assertThat(res3).isEqualTo(2);
 
         Assertions.assertTrue(set.contains(3));
     }
@@ -1134,7 +1131,7 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
             set.add(i, Integer.valueOf(i));
         }
 
-        Set<Integer> setCopy = new HashSet<Integer>();
+        Set<Integer> setCopy = new HashSet<>();
         for (int i = 0; i < 1000; i++) {
             setCopy.add(Integer.valueOf(i));
         }
@@ -1143,14 +1140,13 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
     }
 
     private void checkIterator(RScoredSortedSet<Integer> set, Set<Integer> setCopy) {
-        for (Iterator<Integer> iterator = set.iterator(); iterator.hasNext();) {
-            Integer value = iterator.next();
+        for (Integer value : set) {
             if (!setCopy.remove(value)) {
                 Assertions.fail();
             }
         }
 
-        Assertions.assertEquals(0, setCopy.size());
+        assertThat(setCopy.size()).isEqualTo(0);
     }
 
     @Test
@@ -1160,9 +1156,9 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
             set.add(i*10, i);
         }
 
-        Assertions.assertTrue(set.retainAll(Arrays.asList(1, 2)));
-        assertThat(set).containsExactly(1, 2); 
-        Assertions.assertEquals(2, set.size());
+        assertThat(set.retainAll(Arrays.asList(1, 2))).isTrue();
+        assertThat(set).containsExactly(1, 2);
+        assertThat(set.size()).isEqualTo(2);
         assertThat(set.getScore(1)).isEqualTo(10);
         assertThat(set.getScore(2)).isEqualTo(20);
     }
@@ -1236,7 +1232,7 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
     @Test
     public void testTailSetTreeSet() {
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            TreeSet<Integer> set = new TreeSet<Integer>();
+            TreeSet<Integer> set = new TreeSet<>();
 
             set.add(1);
             set.add(2);
@@ -1399,7 +1395,15 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
         Collection<Integer> vals = set.valueRange(0, -1);
         assertThat(vals).containsExactly(1, 2, 3, 4, 5);
     }
-    
+
+    @Test
+    public void testValueRangeReversedInfinity() {
+        RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple");
+        set.add(1, 1);
+        set.add(2, 2);
+        set.valueRangeReversed(Double.POSITIVE_INFINITY, true, Double.NEGATIVE_INFINITY, true, 0, 1);
+    }
+
     @Test
     public void testValueRangeReversed() {
         RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple");
@@ -1443,11 +1447,11 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
 
         Collection<ScoredEntry<Integer>> vals = set.entryRangeReversed(0, -1);
         assertThat(vals).containsExactly(
-                new ScoredEntry<Integer>(50D, 5),
-                new ScoredEntry<Integer>(40D, 4),
-                new ScoredEntry<Integer>(30D, 3),
-                new ScoredEntry<Integer>(20D, 2),
-                new ScoredEntry<Integer>(10D, 1)
+                new ScoredEntry<>(50D, 5),
+                new ScoredEntry<>(40D, 4),
+                new ScoredEntry<>(30D, 3),
+                new ScoredEntry<>(20D, 2),
+                new ScoredEntry<>(10D, 1)
                 );
     }
 
@@ -1468,7 +1472,7 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
     }
 
     @Test
-    public void testScoredSortedSetValueRangeLimit() {
+    public void testValueRangeLimit() {
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
 
         set.add(0, "a");
@@ -1482,7 +1486,7 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
     }
 
     @Test
-    public void testScoredSortedSetValueRange() {
+    public void testValueRangeAlpha() {
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
 
         set.add(0, "a");
@@ -1496,7 +1500,7 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
     }
 
     @Test
-    public void testScoredSortedSetValueRangeReversedLimit() {
+    public void testValueRangeReversedLimit() {
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
 
         set.add(0, "a");
@@ -1510,7 +1514,7 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
     }
 
     @Test
-    public void testScoredSortedSetValueRangeReversed() {
+    public void testValueRangeReversedAlpha() {
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
 
         set.add(0, "a");
@@ -1524,8 +1528,8 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
     }
     
     @Test
-    public void testScoredSortedSetValueRangeNegativeInf() {
-        RScoredSortedSet<String> set = redisson.<String>getScoredSortedSet("simple");
+    public void testValueRangeNegativeInf() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
 
         set.add(0, "a");
         set.add(1, "b");
@@ -1539,8 +1543,8 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
     }
     
     @Test
-    public void testScoredSortedSetValueRangePositiveInf() {
-        RScoredSortedSet<String> set = redisson.<String>getScoredSortedSet("simple");
+    public void testValueRangePositiveInf() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
 
         set.add(0, "a");
         set.add(1, "b");
@@ -1554,7 +1558,7 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
     }
 
     @Test
-    public void testScoredSortedSetEntryRange() {
+    public void testEntryRangeAlpha() {
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
 
         set.add(0, "a");
@@ -1573,7 +1577,7 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
     }
 
     @Test
-    public void testScoredSortedSetEntryRangeReversed() {
+    public void testEntryRangeReversedAlpha() {
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
 
         set.add(0, "a");
@@ -1592,8 +1596,8 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
     }
     
     @Test
-    public void testScoredSortedSetEntryRangeNegativeInf() {
-        RScoredSortedSet<String> set = redisson.<String>getScoredSortedSet("simple");
+    public void testEntryRangeNegativeInf() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
 
         set.add(0, "a");
         set.add(1, "b");
@@ -1610,8 +1614,8 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
     }
     
     @Test
-    public void testScoredSortedSetEntryRangePositiveInf() {
-        RScoredSortedSet<String> set = redisson.<String>getScoredSortedSet("simple");
+    public void testEntryRangePositiveInf() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
 
         set.add(0, "a");
         set.add(1, "b");
@@ -1628,33 +1632,33 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
     }
     
     @Test
-    public void testAddAndGet() throws InterruptedException {
+    public void testAddAndGet() {
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
         set.add(1, "100");
 
         Double res = set.addScore("100", 11);
-        Assertions.assertEquals(12, (double)res, 0);
+        Assertions.assertEquals(12, res, 0);
         Double score = set.getScore("100");
-        Assertions.assertEquals(12, (double)score, 0);
+        Assertions.assertEquals(12, score, 0);
 
         RScoredSortedSet<String> set2 = redisson.getScoredSortedSet("simple");
         set2.add(100.2, "1");
 
-        Double res2 = set2.addScore("1", new Double(12.1));
-        Assertions.assertTrue(new Double(112.3).compareTo(res2) == 0);
+        Double res2 = set2.addScore("1", 12.1);
+        assertThat(res2).isEqualTo(112.3);
         res2 = set2.getScore("1");
-        Assertions.assertTrue(new Double(112.3).compareTo(res2) == 0);
+        assertThat(res2).isEqualTo(112.3);
     }
 
     @Test
-    public void testAddAndGetAll() throws InterruptedException {
+    public void testAddAndGetAll() {
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
         set.add(100.2, "1");
 
-        Double res2 = set.addScore("1", new Double(12.1));
-        Assertions.assertTrue(new Double(112.3).compareTo(res2) == 0);
+        Double res2 = set.addScore("1", 12.1);
+        assertThat(res2).isEqualTo(112.3);
         res2 = set.getScore("1");
-        Assertions.assertTrue(new Double(112.3).compareTo(res2) == 0);
+        assertThat(res2).isEqualTo(112.3);
 
         Collection<Double> res = set.getScore(Arrays.asList("1", "42", "100"));
         Assertions.assertArrayEquals(new Double[] {112.3d, null, null},
@@ -1662,7 +1666,7 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
     }
     
     @Test
-    public void testAddScoreAndGetRank() throws InterruptedException {
+    public void testAddScoreAndGetRank() {
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
 
         Integer res1 = set.addScoreAndGetRank("12", 12);
@@ -1680,7 +1684,7 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
     }
     
     @Test
-    public void testAddScoreAndGetRevRank() throws InterruptedException {
+    public void testAddScoreAndGetRevRank() {
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
 
         Integer res1 = set.addScoreAndGetRevRank("12", 12);
@@ -1700,7 +1704,7 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
     }
 
     @Test
-    public void testAddAndGetRevRankCollection() throws InterruptedException {
+    public void testAddAndGetRevRankCollection() {
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple", StringCodec.INSTANCE);
         Map<String, Double> map = new LinkedHashMap<>();
         map.put("one", 1d);
