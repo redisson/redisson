@@ -120,6 +120,8 @@ public interface RBlockingQueue<V> extends BlockingQueue<V>, RQueue<V>, RBlockin
     /**
      * Subscribes on elements appeared in this queue.
      * Continuously invokes {@link #takeAsync()} method to get a new element.
+     * <p>
+     * NOTE: don't call blocking methods in the elements listener
      *
      * @param consumer - queue elements listener
      * @return listenerId - id of listener

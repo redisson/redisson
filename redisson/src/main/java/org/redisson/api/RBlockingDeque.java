@@ -67,6 +67,8 @@ public interface RBlockingDeque<V> extends BlockingDeque<V>, RBlockingQueue<V>, 
     /**
      * Subscribes on first elements appeared in this queue.
      * Continuously invokes {@link #takeFirstAsync()} method to get a new element.
+     * <p>
+     * NOTE: don't call blocking methods in the elements listener
      *
      * @param consumer - queue elements listener
      * @return listenerId - id of listener
@@ -76,6 +78,8 @@ public interface RBlockingDeque<V> extends BlockingDeque<V>, RBlockingQueue<V>, 
     /**
      * Subscribes on last elements appeared in this queue.
      * Continuously invokes {@link #takeLastAsync()} method to get a new element.
+     * <p>
+     * NOTE: don't call blocking methods in the elements listener
      *
      * @param consumer - queue elements listener
      * @return listenerId - id of listener

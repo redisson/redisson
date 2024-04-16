@@ -202,6 +202,8 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     /**
      * Subscribes on first elements appeared in this set.
      * Continuously invokes {@link #takeFirstAsync()} method to get a new element.
+     * <p>
+     * NOTE: don't call blocking methods in the elements listener
      *
      * @param consumer - queue elements listener
      * @return listenerId - id of listener
@@ -211,6 +213,8 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     /**
      * Subscribes on last elements appeared in this set.
      * Continuously invokes {@link #takeLastAsync()} method to get a new element.
+     * <p>
+     * NOTE: don't call blocking methods in the elements listener
      *
      * @param consumer - queue elements listener
      * @return listenerId - id of listener
