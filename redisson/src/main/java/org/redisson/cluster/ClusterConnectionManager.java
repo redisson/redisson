@@ -169,7 +169,11 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             }
         }
 
-        subscribeService.detectSharding();
+        if (cfg.getShardedSubscriptionMode() == ShardedSubscriptionMode.AUTO) {
+            subscribeService.detectSharding();
+        } else if (cfg.getShardedSubscriptionMode() == ShardedSubscriptionMode.ON) {
+            subscribeService.setShardingSupported(true);
+        }
         scheduleClusterChangeCheck(cfg);
     }
 

@@ -45,6 +45,8 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
 
     private boolean checkSlotsCoverage = true;
 
+    private ShardedSubscriptionMode shardedSubscriptionMode = ShardedSubscriptionMode.AUTO;
+
     public ClusterServersConfig() {
     }
 
@@ -54,6 +56,7 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
         setScanInterval(config.getScanInterval());
         setNatMapper(config.getNatMapper());
         setCheckSlotsCoverage(config.isCheckSlotsCoverage());
+        setShardedSubscriptionMode(config.getShardedSubscriptionMode());
     }
 
     /**
@@ -98,7 +101,7 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
      * <p>
      * Default is <code>true</code>
      *
-     * @param checkSlotsCoverage - boolean value
+     * @param checkSlotsCoverage boolean value
      * @return config
      */
     public ClusterServersConfig setCheckSlotsCoverage(boolean checkSlotsCoverage) {
@@ -128,13 +131,28 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
      * @see HostNatMapper
      * @see HostPortNatMapper
      *
-     * @param natMapper - nat mapper object
+     * @param natMapper nat mapper object
      * @return config
      */
     public ClusterServersConfig setNatMapper(NatMapper natMapper) {
         this.natMapper = natMapper;
         return this;
     }
-    
 
+    public ShardedSubscriptionMode getShardedSubscriptionMode() {
+        return shardedSubscriptionMode;
+    }
+
+    /**
+     * Defines detection of sharded subscription feature available in Redis 7.0+
+     * <p>
+     * Default is <code>AUTO</code>
+     *
+     * @param shardedSubscriptionMode param
+     * @return config
+     */
+    public ClusterServersConfig setShardedSubscriptionMode(ShardedSubscriptionMode shardedSubscriptionMode) {
+        this.shardedSubscriptionMode = shardedSubscriptionMode;
+        return this;
+    }
 }
