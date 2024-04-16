@@ -55,6 +55,10 @@ public interface RLiveObjectService {
     
     /**
      * Finds the entities matches specified <code>condition</code>.
+     * <p><strong>
+     * NOTE: open-source version is slow.<br>
+     * Use <a href="https://redisson.pro">Redisson PRO</a> instead.
+     * </strong><p>
      * Usage example:
      * <pre>
      * Collection objects = liveObjectService.find(MyObject.class, Conditions.or(Conditions.in("field", "value1", "value2"), 
@@ -72,6 +76,10 @@ public interface RLiveObjectService {
 
     /**
      * Counts the entities matches specified <code>condition</code>.
+     * <p><strong>
+     * NOTE: open-source version is slow.<br>
+     * Use <a href="https://redisson.pro">Redisson PRO</a> instead.
+     * </strong><p>
      * Usage example:
      * <pre>
      * long objectsAmount = liveObjectService.count(MyObject.class, Conditions.or(Conditions.in("field", "value1", "value2"),
