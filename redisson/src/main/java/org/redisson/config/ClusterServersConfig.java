@@ -144,7 +144,10 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
     }
 
     /**
-     * Defines detection of sharded subscription feature available in Redis 7.0+
+     * Defines whether to use sharded subscription feature available in Redis 7.0+.
+     * <p>
+     * Used in RMapCache, RLocalCachedMap, RCountDownLatch, RLock, RPermitExpirableSemaphore,
+     * RSemaphore, RLongAdder, RDoubleAdder, Micronaut Session, Apache Tomcat Manager objects.
      * <p>
      * Default is <code>AUTO</code>
      *
