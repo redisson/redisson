@@ -28,6 +28,7 @@ import io.netty.buffer.ByteBuf;
  * @author Nikita Koksharov
  *
  */
+@Deprecated
 public class BitSetCodec implements Codec {
 
     public static final BitSetCodec INSTANCE = new BitSetCodec();
