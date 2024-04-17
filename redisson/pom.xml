@@ -115,7 +115,7 @@
         </dependency>
         <dependency>
             <groupId>org.jooq</groupId>
-            <artifactId>joor-java-8</artifactId>
+            <artifactId>joor</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

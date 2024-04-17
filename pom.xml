@@ -149,7 +149,7 @@
             </dependency>
             <dependency>
                <groupId>org.jooq</groupId>
-               <artifactId>joor-java-8</artifactId>
+               <artifactId>joor</artifactId>
                <version>0.9.15</version>
                <scope>test</scope>
             </dependency>
