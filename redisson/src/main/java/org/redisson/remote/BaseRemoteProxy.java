@@ -35,6 +35,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
 /**
@@ -53,7 +54,6 @@ public abstract class BaseRemoteProxy {
     final Codec codec;
     final String executorId;
     final BaseRemoteService remoteService;
-    final WrappedLock locked;
 
     BaseRemoteProxy(CommandAsyncExecutor commandExecutor, String name, String responseQueueName,
                     Codec codec, String executorId, BaseRemoteService remoteService) {
@@ -65,7 +65,6 @@ public abstract class BaseRemoteProxy {
         this.codec = codec;
         this.executorId = executorId;
         this.remoteService = remoteService;
-        this.locked = commandExecutor.getServiceManager().getResponsesLock();
     }
 
     private final Map<Class<?>, String> requestQueueNameCache = new ConcurrentHashMap<>();
@@ -96,8 +95,10 @@ public abstract class BaseRemoteProxy {
                                                                                          String requestId, boolean insertFirst) {
         CompletableFuture<T> responseFuture = new CompletableFuture<T>();
 
-        ResponseEntry e = locked.execute(() -> {
-            ResponseEntry entry = responses.computeIfAbsent(responseQueueName, k -> new ResponseEntry());
+        ResponseEntry e = responses.compute(responseQueueName, (key, entry) -> {
+            if (entry == null) {
+                entry = new ResponseEntry();
+            }
 
             addCancelHandling(requestId, responseFuture);
 
@@ -124,15 +125,10 @@ public abstract class BaseRemoteProxy {
 
     private <T extends RRemoteServiceResponse> Timeout createResponseTimeout(long timeout, String requestId, CompletableFuture<T> responseFuture) {
         return commandExecutor.getServiceManager().newTimeout(t -> {
-                    locked.execute(() -> {
-                        ResponseEntry entry = responses.get(responseQueueName);
-                        if (entry == null) {
-                            return;
-                        }
-
+                    responses.computeIfPresent(responseQueueName, (k, entry) -> {
                         RemoteServiceTimeoutException ex = new RemoteServiceTimeoutException("No response after " + timeout + "ms");
                         if (!responseFuture.completeExceptionally(ex)) {
-                            return;
+                            return entry;
                         }
 
                         List<Result> list = entry.getResponses().get(requestId);
@@ -141,8 +137,9 @@ public abstract class BaseRemoteProxy {
                             entry.getResponses().remove(requestId);
                         }
                         if (entry.getResponses().isEmpty()) {
-                            responses.remove(responseQueueName, entry);
+                            return null;
                         }
+                        return entry;
                     });
                 }, timeout, TimeUnit.MILLISECONDS);
     }
@@ -153,11 +150,10 @@ public abstract class BaseRemoteProxy {
                 return;
             }
 
-            locked.execute(() -> {
-                ResponseEntry e = responses.get(responseQueueName);
+            responses.computeIfPresent(responseQueueName, (key, e) -> {
                 List<Result> list = e.getResponses().get(requestId);
                 if (list == null) {
-                    return;
+                    return e;
                 }
 
                 for (Iterator<Result> iterator = list.iterator(); iterator.hasNext();) {
@@ -172,8 +168,9 @@ public abstract class BaseRemoteProxy {
                 }
 
                 if (e.getResponses().isEmpty()) {
-                    responses.remove(responseQueueName, e);
+                    return null;
                 }
+                return e;
             });
         });
     }
@@ -200,19 +197,15 @@ public abstract class BaseRemoteProxy {
                 return;
             }
 
-            CompletableFuture<RRemoteServiceResponse> future = locked.execute(() -> {
-                ResponseEntry entry = responses.get(responseQueueName);
-                if (entry == null) {
-                    return null;
-                }
-
+            AtomicReference<CompletableFuture<RRemoteServiceResponse>> future = new AtomicReference<>();
+            responses.computeIfPresent(responseQueueName, (k, entry) -> {
                 String key = response.getId();
                 List<Result> list = entry.getResponses().get(key);
                 if (list == null) {
                     pollResponse();
                     return null;
                 }
-                
+
                 Result res = list.remove(0);
                 if (list.isEmpty()) {
                     entry.getResponses().remove(key);
@@ -220,17 +213,19 @@ public abstract class BaseRemoteProxy {
 
                 CompletableFuture<RRemoteServiceResponse> f = res.getPromise();
                 res.cancelResponseTimeout();
-                
+
                 if (entry.getResponses().isEmpty()) {
                     responses.remove(responseQueueName, entry);
                 } else {
                     pollResponse();
                 }
-                return f;
+                future.set(f);
+
+                return entry;
             });
 
-            if (future != null) {
-                future.complete(response);
+            if (future.get() != null) {
+                future.get().complete(response);
             }
         };
     }

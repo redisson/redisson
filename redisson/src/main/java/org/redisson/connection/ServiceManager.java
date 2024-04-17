@@ -145,8 +145,6 @@ public final class ServiceManager {
 
     private final Map<String, ResponseEntry> responses = new ConcurrentHashMap<>();
 
-    private final WrappedLock responsesLock = new WrappedLock();
-
     private final QueueTransferService queueTransferService = new QueueTransferService();
 
     public ServiceManager(MasterSlaveServersConfig config, Config cfg) {
@@ -636,10 +634,6 @@ public final class ServiceManager {
 
     public Map<String, ResponseEntry> getResponses() {
         return responses;
-    }
-
-    public WrappedLock getResponsesLock() {
-        return responsesLock;
     }
 
     public QueueTransferService getQueueTransferService() {

@@ -75,7 +75,6 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     private final RTopic terminationTopic;
     private final RedissonExecutorRemoteService remoteService;
     private final RTopic workersTopic;
-    private final WrappedLock responsesLock;
     private int workersGroupListenerId;
 
     private final RemoteExecutorServiceAsync asyncScheduledService;
@@ -109,7 +108,6 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         this.redisson = redisson;
         this.queueTransferService = commandExecutor.getServiceManager().getQueueTransferService();
         this.responses = commandExecutor.getServiceManager().getResponses();
-        this.responsesLock = commandExecutor.getServiceManager().getResponsesLock();
 
         if (codec == commandExecutor.getServiceManager().getCfg().getCodec()) {
             this.executorId = commandExecutor.getServiceManager().getId();
@@ -797,12 +795,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     }
     
     private void cancelResponseHandling(String requestId) {
-        responsesLock.execute(() -> {
-            ResponseEntry entry = responses.get(responseQueueName);
-            if (entry == null) {
-                return;
-            }
-
+        responses.computeIfPresent(responseQueueName, (key, entry) -> {
             List<Result> list = entry.getResponses().remove(requestId);
             if (list != null) {
                 for (Result result : list) {
@@ -810,8 +803,9 @@ public class RedissonExecutorService implements RScheduledExecutorService {
                 }
             }
             if (entry.getResponses().isEmpty()) {
-                responses.remove(responseQueueName, entry);
+                return null;
             }
+            return entry;
         });
     }
     
