@@ -60,7 +60,6 @@ import org.redisson.config.Protocol;
 import org.redisson.config.TransportMode;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.RedisURI;
-import org.redisson.misc.WrappedLock;
 import org.redisson.remote.ResponseEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

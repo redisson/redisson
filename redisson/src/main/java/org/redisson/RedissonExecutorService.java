@@ -27,7 +27,6 @@ import org.redisson.executor.*;
 import org.redisson.executor.params.*;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.Injector;
-import org.redisson.misc.WrappedLock;
 import org.redisson.remote.ResponseEntry;
 import org.redisson.remote.ResponseEntry.Result;
 import org.slf4j.Logger;
