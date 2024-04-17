@@ -256,11 +256,9 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
 
         RBlockingQueue<Integer> queue1 = getQueue(redisson);
         RFuture<Integer> f = queue1.takeAsync();
-        try {
+        Assertions.assertThrowsExactly(TimeoutException.class, () -> {
             f.toCompletableFuture().get(1, TimeUnit.SECONDS);
-        } catch (ExecutionException | TimeoutException e) {
-            e.printStackTrace();
-        }
+        });
 
         restart(redis);
         queue1.put(123);
