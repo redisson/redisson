@@ -28,8 +28,10 @@ import org.redisson.misc.CompletableFutureWrapper;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -253,7 +255,14 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
 
     @Override
     public int subscribeOnElements(Consumer<V> consumer) {
-        return getServiceManager().getElementsSubscribeService().subscribeOnElements(this::takeAsync, consumer);
+        return getServiceManager().getElementsSubscribeService()
+                .subscribeOnElements(this::takeAsync, consumer);
+    }
+
+    @Override
+    public int subscribeOnElements(Function<V, CompletionStage<Void>> consumer) {
+        return getServiceManager().getElementsSubscribeService()
+                    .subscribeOnElements(this::takeAsync, consumer);
     }
 
     @Override

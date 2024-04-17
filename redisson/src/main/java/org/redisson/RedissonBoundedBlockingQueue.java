@@ -34,6 +34,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * <p>Distributed and concurrent implementation of bounded {@link java.util.concurrent.BlockingQueue}.
@@ -49,7 +50,7 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
     protected RedissonBoundedBlockingQueue(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name, redisson);
         blockingQueue = new RedissonBlockingQueue<>(commandExecutor, name, redisson);
-        semaphore = new RedissonQueueSemaphore(commandExecutor, getSemaphoreName(), commandExecutor.getServiceManager().getCfg().getCodec());
+        semaphore = new RedissonQueueSemaphore(commandExecutor, getSemaphoreName(), getServiceManager().getCfg().getCodec());
         channelName = RedissonSemaphore.getChannelName(semaphore.getRawName());
     }
 
@@ -124,14 +125,14 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
     }
 
     private <V> RFuture<V> wrapTakeFuture(RFuture<V> takeFuture) {
-        CompletableFuture<V> f = takeFuture.toCompletableFuture().thenCompose(res -> {
+        CompletionStage<V> f = takeFuture.thenCompose(res -> {
             if (res == null) {
                 return CompletableFuture.completedFuture(null);
             }
             return createSemaphore(null).releaseAsync().handle((r, ex) -> res);
         });
         f.whenComplete((r, e) -> {
-            if (f.isCancelled()) {
+            if (f.toCompletableFuture().isCancelled()) {
                 takeFuture.cancel(false);
             }
         });
@@ -260,12 +261,19 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
 
     @Override
     public int subscribeOnElements(Consumer<V> consumer) {
-        return commandExecutor.getServiceManager().getElementsSubscribeService().subscribeOnElements(this::takeAsync, consumer);
+        return getServiceManager().getElementsSubscribeService()
+                .subscribeOnElements(this::takeAsync, consumer);
+    }
+
+    @Override
+    public int subscribeOnElements(Function<V, CompletionStage<Void>> consumer) {
+        return getServiceManager().getElementsSubscribeService()
+                .subscribeOnElements(this::takeAsync, consumer);
     }
 
     @Override
     public void unsubscribe(int listenerId) {
-        commandExecutor.getServiceManager().getElementsSubscribeService().unsubscribe(listenerId);
+        getServiceManager().getElementsSubscribeService().unsubscribe(listenerId);
     }
 
     @Override

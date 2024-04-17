@@ -36,8 +36,10 @@ import java.time.Duration;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
@@ -2010,12 +2012,26 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public int subscribeOnFirstElements(Consumer<V> consumer) {
-        return getServiceManager().getElementsSubscribeService().subscribeOnElements(this::takeFirstAsync, consumer);
+        return getServiceManager().getElementsSubscribeService()
+                .subscribeOnElements(this::takeFirstAsync, consumer);
     }
 
     @Override
     public int subscribeOnLastElements(Consumer<V> consumer) {
-        return getServiceManager().getElementsSubscribeService().subscribeOnElements(this::takeLastAsync, consumer);
+        return getServiceManager().getElementsSubscribeService()
+                .subscribeOnElements(this::takeLastAsync, consumer);
+    }
+
+    @Override
+    public int subscribeOnFirstElements(Function<V, CompletionStage<Void>> consumer) {
+        return getServiceManager().getElementsSubscribeService()
+                .subscribeOnElements(this::takeFirstAsync, consumer);
+    }
+
+    @Override
+    public int subscribeOnLastElements(Function<V, CompletionStage<Void>> consumer) {
+        return getServiceManager().getElementsSubscribeService()
+                .subscribeOnElements(this::takeLastAsync, consumer);
     }
 
     @Override

@@ -19,8 +19,10 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Distributed implementation of {@link BlockingQueue}
@@ -118,6 +120,15 @@ public interface RBlockingQueue<V> extends BlockingQueue<V>, RQueue<V>, RBlockin
     V takeLastAndOfferFirstTo(String queueName) throws InterruptedException;
 
     /**
+     * Use {@link #subscribeOnElements(Function)} instead.
+     *
+     * @param consumer - queue elements listener
+     * @return listenerId - id of listener
+     */
+    @Deprecated
+    int subscribeOnElements(Consumer<V> consumer);
+
+    /**
      * Subscribes on elements appeared in this queue.
      * Continuously invokes {@link #takeAsync()} method to get a new element.
      * <p>
@@ -126,7 +137,7 @@ public interface RBlockingQueue<V> extends BlockingQueue<V>, RQueue<V>, RBlockin
      * @param consumer - queue elements listener
      * @return listenerId - id of listener
      */
-    int subscribeOnElements(Consumer<V> consumer);
+    int subscribeOnElements(Function<V, CompletionStage<Void>> consumer);
 
     /**
      * Un-subscribes defined listener.

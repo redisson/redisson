@@ -33,9 +33,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * <p>Distributed and concurrent implementation of {@link java.util.concurrent.PriorityBlockingQueue}.
@@ -74,7 +76,7 @@ public class RedissonPriorityBlockingQueue<V> extends RedissonPriorityQueue<V> i
 
     protected <T> void takeAsync(CompletableFuture<V> result, long delay, long timeoutInMicro, RedisCommand<T> command, Object... params) {
         long start = System.currentTimeMillis();
-        commandExecutor.getServiceManager().newTimeout(t -> {
+        getServiceManager().newTimeout(t -> {
             RFuture<V> future = wrapLockedAsync(command, params);
             future.whenComplete((res, e) -> {
                     if (e != null && !(e instanceof RedisConnectionException)) {
@@ -175,12 +177,19 @@ public class RedissonPriorityBlockingQueue<V> extends RedissonPriorityQueue<V> i
 
     @Override
     public int subscribeOnElements(Consumer<V> consumer) {
-        return commandExecutor.getServiceManager().getElementsSubscribeService().subscribeOnElements(this::takeAsync, consumer);
+        return getServiceManager().getElementsSubscribeService()
+                .subscribeOnElements(this::takeAsync, consumer);
+    }
+
+    @Override
+    public int subscribeOnElements(Function<V, CompletionStage<Void>> consumer) {
+        return getServiceManager().getElementsSubscribeService()
+                .subscribeOnElements(this::takeAsync, consumer);
     }
 
     @Override
     public void unsubscribe(int listenerId) {
-        commandExecutor.getServiceManager().getElementsSubscribeService().unsubscribe(listenerId);
+        getServiceManager().getElementsSubscribeService().unsubscribe(listenerId);
     }
 
     public RFuture<V> takeLastAndOfferFirstToAsync(String queueName) {

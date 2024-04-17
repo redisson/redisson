@@ -19,8 +19,10 @@ import org.redisson.api.queue.DequeMoveArgs;
 
 import java.time.Duration;
 import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * {@link BlockingDeque} backed by Redis
@@ -65,7 +67,25 @@ public interface RBlockingDeque<V> extends BlockingDeque<V>, RBlockingQueue<V>, 
     V move(Duration timeout, DequeMoveArgs args);
 
     /**
-     * Subscribes on first elements appeared in this queue.
+     * Use {@link #subscribeOnFirstElements(Function)} instead.
+     *
+     * @param consumer - queue elements listener
+     * @return listenerId - id of listener
+     */
+    @Deprecated
+    int subscribeOnFirstElements(Consumer<V> consumer);
+
+    /**
+     * Use {@link #subscribeOnLastElements(Function)} instead.
+     *
+     * @param consumer - queue elements listener
+     * @return listenerId - id of listener
+     */
+    @Deprecated
+    int subscribeOnLastElements(Consumer<V> consumer);
+
+    /**
+     * Use {@link #subscribeOnLastElements(Function)} instead.
      * Continuously invokes {@link #takeFirstAsync()} method to get a new element.
      * <p>
      * NOTE: don't call blocking methods in the elements listener
@@ -73,7 +93,7 @@ public interface RBlockingDeque<V> extends BlockingDeque<V>, RBlockingQueue<V>, 
      * @param consumer - queue elements listener
      * @return listenerId - id of listener
      */
-    int subscribeOnFirstElements(Consumer<V> consumer);
+    int subscribeOnFirstElements(Function<V, CompletionStage<Void>> consumer);
 
     /**
      * Subscribes on last elements appeared in this queue.
@@ -84,6 +104,6 @@ public interface RBlockingDeque<V> extends BlockingDeque<V>, RBlockingQueue<V>, 
      * @param consumer - queue elements listener
      * @return listenerId - id of listener
      */
-    int subscribeOnLastElements(Consumer<V> consumer);
+    int subscribeOnLastElements(Function<V, CompletionStage<Void>> consumer);
 
 }

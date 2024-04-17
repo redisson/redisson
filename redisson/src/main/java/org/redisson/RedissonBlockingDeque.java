@@ -15,13 +15,6 @@
  */
 package org.redisson;
 
-import java.time.Duration;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
-
 import org.redisson.api.Entry;
 import org.redisson.api.RBlockingDeque;
 import org.redisson.api.RFuture;
@@ -31,6 +24,15 @@ import org.redisson.api.queue.DequeMoveParams;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+
+import java.time.Duration;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * <p>Distributed and concurrent implementation of {@link java.util.concurrent.BlockingDeque}.
@@ -170,6 +172,11 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
     }
 
     @Override
+    public int subscribeOnElements(Function<V, CompletionStage<Void>> consumer) {
+        return blockingQueue.subscribeOnElements(consumer);
+    }
+
+    @Override
     public void unsubscribe(int id) {
         blockingQueue.unsubscribe(id);
     }
@@ -278,12 +285,26 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
 
     @Override
     public int subscribeOnFirstElements(Consumer<V> consumer) {
-        return commandExecutor.getServiceManager().getElementsSubscribeService().subscribeOnElements(this::takeFirstAsync, consumer);
+        return getServiceManager().getElementsSubscribeService()
+                .subscribeOnElements(this::takeFirstAsync, consumer);
     }
 
     @Override
     public int subscribeOnLastElements(Consumer<V> consumer) {
-        return commandExecutor.getServiceManager().getElementsSubscribeService().subscribeOnElements(this::takeLastAsync, consumer);
+        return getServiceManager().getElementsSubscribeService()
+                .subscribeOnElements(this::takeLastAsync, consumer);
+    }
+
+    @Override
+    public int subscribeOnFirstElements(Function<V, CompletionStage<Void>> consumer) {
+        return getServiceManager().getElementsSubscribeService()
+                .subscribeOnElements(this::takeFirstAsync, consumer);
+    }
+
+    @Override
+    public int subscribeOnLastElements(Function<V, CompletionStage<Void>> consumer) {
+        return getServiceManager().getElementsSubscribeService()
+                .subscribeOnElements(this::takeLastAsync, consumer);
     }
 
     @Override

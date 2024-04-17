@@ -36,8 +36,7 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
-
-
+import java.util.function.Function;
 
 
 /**
@@ -644,7 +643,14 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
 
     @Override
     public int subscribeOnElements(Consumer<V> consumer) {
-        return getServiceManager().getElementsSubscribeService().subscribeOnElements(this::takeAsync, consumer);
+        return getServiceManager().getElementsSubscribeService()
+                .subscribeOnElements(this::takeAsync, consumer);
+    }
+
+    @Override
+    public int subscribeOnElements(Function<V, CompletionStage<Void>> consumer) {
+        return getServiceManager().getElementsSubscribeService()
+                .subscribeOnElements(this::takeAsync, consumer);
     }
 
     @Override
