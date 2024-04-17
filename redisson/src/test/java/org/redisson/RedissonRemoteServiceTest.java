@@ -341,7 +341,7 @@ public class RedissonRemoteServiceTest extends RedisDockerTest {
         RemoteInterfaceAsync ri = r2.getRemoteService().get(RemoteInterfaceAsync.class);
         
         RFuture<Void> f = ri.timeoutMethod();
-        Thread.sleep(100);
+        Thread.sleep(200);
         assertThat(rs.getFreeWorkers(RemoteInterface.class)).isEqualTo(0);
         f.get();
         assertThat(rs.getFreeWorkers(RemoteInterface.class)).isEqualTo(1);
