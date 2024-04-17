@@ -51,6 +51,15 @@ import static org.awaitility.Awaitility.await;
 public class RedissonTest extends RedisDockerTest {
 
     @Test
+    public void testZeroMinimumIdleSize() {
+        Config c = redisson.getConfig();
+        c.useSingleServer().setConnectionMinimumIdleSize(0);
+
+        RedissonClient r = Redisson.create(c);
+        r.shutdown();
+    }
+
+    @Test
     public void testVirtualThreads() {
         Config c = redisson.getConfig();
         c.setNettyExecutor(Executors.newVirtualThreadPerTaskExecutor());
