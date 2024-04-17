@@ -212,14 +212,13 @@ public abstract class BaseRemoteProxy {
 
                 CompletableFuture<RRemoteServiceResponse> f = res.getPromise();
                 res.cancelResponseTimeout();
-
-                if (entry.getResponses().isEmpty()) {
-                    responses.remove(responseQueueName, entry);
-                } else {
-                    pollResponse();
-                }
                 future.set(f);
 
+                if (entry.getResponses().isEmpty()) {
+                    return null;
+                }
+
+                pollResponse();
                 return entry;
             });
 
