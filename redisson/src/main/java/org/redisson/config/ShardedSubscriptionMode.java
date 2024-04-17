@@ -23,15 +23,18 @@ package org.redisson.config;
 public enum ShardedSubscriptionMode {
 
     /**
-     * Subscribe to slave nodes
+     * Use sharded pubsub only if it's available.
      */
     AUTO,
 
     /**
-     * Subscribe to master node
+     * Use sharded pubsub.
      */
     ON,
 
+    /**
+     * Don't use sharded pubsub.
+     */
     OFF
 
 }
