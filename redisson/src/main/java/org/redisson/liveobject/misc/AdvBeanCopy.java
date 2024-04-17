@@ -15,26 +15,39 @@
  */
 package org.redisson.liveobject.misc;
 
-import jodd.bean.BeanCopy;
+import jodd.bean.BeanUtil;
 import jodd.bean.BeanUtilBean;
+import jodd.bean.BeanVisitor;
+
+import java.util.List;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class AdvBeanCopy extends BeanCopy {
+public final class AdvBeanCopy {
+
+    private final Object source;
+    private final Object destination;
 
     public AdvBeanCopy(Object source, Object destination) {
-        super(source, destination);
+        this.source = source;
+        this.destination = destination;
     }
     
-    @Override
-    public void copy() {
-        beanUtil = new BeanUtilBean()
-                .declared(declared)
-                .forced(forced);
-        visit();
+    public void copy(List<String> excludedFields) {
+        BeanUtil beanUtil = new BeanUtilBean();
+
+        new BeanVisitor(source)
+                .ignoreNulls(true)
+                .visit((name, value) -> {
+                    if (excludedFields.contains(name)) {
+                        return;
+                    }
+
+                    beanUtil.setProperty(destination, name, value);
+                });
     }
 
 }

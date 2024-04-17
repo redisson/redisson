@@ -326,8 +326,8 @@
         </dependency>
         <dependency>
             <groupId>org.jodd</groupId>
-            <artifactId>jodd-bean</artifactId>
-            <version>5.1.6</version>
+            <artifactId>jodd-util</artifactId>
+            <version>6.2.2</version>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>

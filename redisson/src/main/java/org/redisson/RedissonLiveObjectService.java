@@ -428,7 +428,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     private <T> T detach(T attachedObject, Map<String, Object> alreadyDetached) {
         validateAttached(attachedObject);
         T detached = instantiateDetachedObject((Class<T>) attachedObject.getClass().getSuperclass(), asLiveObject(attachedObject).getLiveObjectId());
-        BeanCopy.beans(attachedObject, detached).declared(true, true).copy();
+        new BeanCopy(attachedObject, detached).declared(true).copy();
         alreadyDetached.put(getMap(attachedObject).getName(), detached);
         
         for (Entry<String, Object> obj : getMap(attachedObject).entrySet()) {
@@ -773,9 +773,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
     private <T> void copy(T detachedObject, T attachedObject, List<String> excludedFields) {
         new AdvBeanCopy(detachedObject, attachedObject)
-                .ignoreNulls(true)
-                .exclude(excludedFields.toArray(new String[excludedFields.size()]))
-                .copy();
+                .copy(excludedFields);
     }
 
     private String getRIdFieldName(Class<?> cls) {
