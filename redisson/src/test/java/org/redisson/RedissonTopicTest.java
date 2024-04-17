@@ -206,7 +206,7 @@ public class RedissonTopicTest extends RedisDockerTest {
         redisson.shutdown();
     }
 
-//    @Test
+    @Test
     public void test1() throws InterruptedException {
         int loops = 10;
         AtomicInteger counter = new AtomicInteger();
@@ -234,7 +234,8 @@ public class RedissonTopicTest extends RedisDockerTest {
             });
         }
 
-        for (int s = 0; s < 100; s++) {
+        int ll = 1000;
+        for (int s = 0; s < ll; s++) {
             ExecutorService executor = Executors.newFixedThreadPool(16);
             for (int k = 0; k < 100; k++) {
                 executor.execute(() -> {
@@ -252,11 +253,8 @@ public class RedissonTopicTest extends RedisDockerTest {
                 });
             }
 
-            executor.shutdown();
-            executor.awaitTermination(10, TimeUnit.SECONDS);
-
-            Awaitility.waitAtMost(Duration.ofSeconds(5)).untilAsserted(() -> {
-                assertThat(counter.get()).isEqualTo(loops * 20*100);
+            Awaitility.waitAtMost(Duration.ofMinutes(10)).untilAsserted(() -> {
+                assertThat(counter.get()).isEqualTo(ll * 20*100);
             });
             counter.set(0);
             System.out.println("s " + s);

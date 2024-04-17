@@ -25,7 +25,7 @@ public class RedissonShardedTopicTest extends RedisDockerTest {
 
     @Test
     public void testInvalidCommand() {
-        GenericContainer<?> redis = createRedis("6.2");
+        GenericContainer<?> redis = createRedisWithVersion("redis:6.2");
         redis.start();
 
         Config config = createConfig(redis);

@@ -71,7 +71,7 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
     
     @Test
     public void testPollReattach() throws InterruptedException {
-        GenericContainer<?> redis = createRedis("latest","--requirepass", "1234");
+        GenericContainer<?> redis = createRedis("--requirepass", "1234");
         redis.start();
 
         Config config = createConfig(redis);
@@ -115,7 +115,7 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
     }
     
     @Test
-    public void testPollAsyncReattach() throws InterruptedException, IOException, ExecutionException, TimeoutException {
+    public void testPollAsyncReattach() throws InterruptedException, ExecutionException, TimeoutException {
         GenericContainer<?> redis = createRedis();
         redis.start();
 

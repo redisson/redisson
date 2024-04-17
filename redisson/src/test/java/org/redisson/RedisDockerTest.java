@@ -37,16 +37,8 @@ public class RedisDockerTest {
 
     private static GenericContainer<?> REDIS_CLUSTER;
 
-    protected static GenericContainer<?> createRedis() {
-        return createRedis("7.2");
-    }
-
-    protected static GenericContainer<?> createRedis(String version) {
-        return createRedis(version, "--save", "");
-    }
-
-    protected static GenericContainer<?> createRedis(String version, String... params) {
-        return new GenericContainer<>("redis:" + version)
+    protected static GenericContainer<?> createRedisWithVersion(String version, String... params) {
+        return new GenericContainer<>(version)
                 .withCreateContainerCmdModifier(cmd -> {
                     List<String> args = new ArrayList<>();
                     args.add("redis-server");
@@ -54,6 +46,10 @@ public class RedisDockerTest {
                     cmd.withCmd(args);
                 })
                 .withExposedPorts(6379);
+    }
+
+    protected static GenericContainer<?> createRedis(String... params) {
+        return createRedisWithVersion("redis:latest", params);
     }
 
     static {
@@ -92,39 +88,8 @@ public class RedisDockerTest {
         return Redisson.create(config);
     }
 
-    protected void withRedisParams(Consumer<Config> redissonCallback, String... params) {
-        GenericContainer<?> redis =
-                new GenericContainer<>("redis:7.2")
-                        .withCreateContainerCmdModifier(cmd -> {
-                            List<String> args = new ArrayList<>();
-                            args.add("redis-server");
-                            args.addAll(Arrays.asList(params));
-                            cmd.withCmd(args);
-                        })
-                        .withExposedPorts(6379);
-        redis.start();
-
-        Config config = new Config();
-        config.setProtocol(protocol);
-        config.useSingleServer().setAddress("redis://127.0.0.1:" + redis.getFirstMappedPort());
-
-        try {
-            redissonCallback.accept(config);
-        } finally {
-            redis.stop();
-        }
-    }
-
     protected void testWithParams(Consumer<RedissonClient> redissonCallback, String... params) {
-        GenericContainer<?> redis =
-                new GenericContainer<>("redis:7.2")
-                        .withCreateContainerCmdModifier(cmd -> {
-                            List<String> args = new ArrayList<>();
-                            args.add("redis-server");
-                            args.addAll(Arrays.asList(params));
-                            cmd.withCmd(args);
-                        })
-                        .withExposedPorts(6379);
+        GenericContainer<?> redis = createRedis(params);
         redis.start();
 
         Config config = new Config();

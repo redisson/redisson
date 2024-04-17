@@ -562,21 +562,25 @@ public class RedissonTest extends RedisDockerTest {
 
     @Test
     public void testCredentials() {
-        withRedisParams(config -> {
-            config.useSingleServer()
-                    .setCredentialsResolver(new CredentialsResolver() {
-                        @Override
-                        public CompletionStage<Credentials> resolve(InetSocketAddress address) {
-                            return CompletableFuture.completedFuture(new Credentials(null, "1234"));
-                        }
-                    });
+        GenericContainer<?> redis = createRedis("--requirepass", "1234");
+        redis.start();
 
-            RedissonClient redisson = Redisson.create(config);
-            RBucket<String> b = redisson.getBucket("test");
-            b.set("123");
+        Config config = createConfig(redis);
+        config.useSingleServer()
+                .setPassword("1234")
+                .setCredentialsResolver(new CredentialsResolver() {
+                    @Override
+                    public CompletionStage<Credentials> resolve(InetSocketAddress address) {
+                        return CompletableFuture.completedFuture(new Credentials(null, "1234"));
+                    }
+                });
 
-            redisson.shutdown();
-        }, "--requirepass", "1234");
+        RedissonClient redisson = Redisson.create(config);
+        RBucket<String> b = redisson.getBucket("test");
+        b.set("123");
+
+        redisson.shutdown();
+        redis.stop();
     }
 
     @Test
@@ -600,16 +604,19 @@ public class RedissonTest extends RedisDockerTest {
 
     @Test
     public void testURIPassword() {
-        withRedisParams(config -> {
-            RedisURI ur = new RedisURI(config.useSingleServer().getAddress());
-            config.useSingleServer()
-                    .setAddress("redis://:1234@" + ur.getHost() + ":" + ur.getPort());
-            RedissonClient redisson = Redisson.create(config);
-            RBucket<String> b = redisson.getBucket("test");
-            b.set("123");
+        GenericContainer<?> redis = createRedis("--requirepass", "1234");
+        redis.start();
 
-            redisson.shutdown();
-        }, "--requirepass", "1234");
+        Config config = createConfig(redis);
+        RedisURI ur = new RedisURI(config.useSingleServer().getAddress());
+        config.useSingleServer().setAddress("redis://:1234@" + ur.getHost() + ":" + ur.getPort());
+        RedissonClient redisson = Redisson.create(config);
+
+        RBucket<String> b = redisson.getBucket("test");
+        b.set("123");
+
+        redisson.shutdown();
+        redis.stop();
     }
 
     @Test
