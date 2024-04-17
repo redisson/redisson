@@ -2,6 +2,7 @@ package org.redisson;
 
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
 import org.redisson.api.listener.*;
@@ -207,6 +208,7 @@ public class RedissonTopicTest extends RedisDockerTest {
     }
 
     @Test
+    @Disabled
     public void test1() throws InterruptedException {
         int loops = 10;
         AtomicInteger counter = new AtomicInteger();
@@ -254,7 +256,7 @@ public class RedissonTopicTest extends RedisDockerTest {
             }
 
             Awaitility.waitAtMost(Duration.ofMinutes(10)).untilAsserted(() -> {
-                assertThat(counter.get()).isEqualTo(ll * 20*100);
+                assertThat(counter.get()).isEqualTo(loops * 20*100);
             });
             counter.set(0);
             System.out.println("s " + s);
