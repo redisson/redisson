@@ -195,14 +195,14 @@ public abstract class BaseRemoteProxy {
                 return;
             }
 
+            if (response == null) {
+                pollResponse();
+                return;
+            }
+
             CompletableFuture<RRemoteServiceResponse> future = locked.execute(() -> {
                 ResponseEntry entry = responses.get(responseQueueName);
                 if (entry == null) {
-                    return null;
-                }
-
-                if (response == null) {
-                    pollResponse();
                     return null;
                 }
 
