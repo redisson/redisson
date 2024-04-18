@@ -18,6 +18,7 @@ package org.redisson.cluster;
 import org.redisson.misc.RedisURI;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.redisson.connection.MasterSlaveConnectionManager.MAX_SLOT;
 
@@ -35,8 +36,8 @@ public class ClusterPartition {
     private final String nodeId;
     private boolean masterFail;
     private RedisURI masterAddress;
-    private final Set<RedisURI> slaveAddresses = new HashSet<>();
-    private final Set<RedisURI> failedSlaves = new HashSet<>();
+    private final Set<RedisURI> slaveAddresses = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final Set<RedisURI> failedSlaves = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     private BitSet slots;
     private Set<ClusterSlotRange> slotRanges = Collections.emptySet();
