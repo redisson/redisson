@@ -136,6 +136,9 @@ public class ClientConnectionsEntry {
             connection.closeAsync();
             connectionManager.getSubscribeService().reattachPubSub(connection);
         }
+
+        log.debug("{} PubSub connections to {} have been closed", pubSubConnectionsHolder.getAllConnections().size(), client.getAddr());
+
         pubSubConnectionsHolder.getFreeConnections().clear();
         pubSubConnectionsHolder.getAllConnections().clear();
     }
@@ -152,6 +155,9 @@ public class ClientConnectionsEntry {
             connection.closeAsync();
             reattachBlockingQueue(connection.getCurrentCommand());
         }
+
+        log.debug("{} connections to {} have been closed", connectionsHolder.getAllConnections().size(), client.getAddr());
+
         connectionsHolder.getFreeConnections().clear();
         connectionsHolder.getAllConnections().clear();
     }
