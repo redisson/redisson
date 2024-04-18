@@ -41,30 +41,25 @@ public class RedissonKeysTest extends RedisDockerTest {
     @Test
     public void testDeleteListener() {
         testWithParams(redisson -> {
-            Config c = redisson.getConfig();
-            c.setProtocol(Protocol.RESP3);
-
-            RedissonClient r = Redisson.create(c);
-
             AtomicReference<String> ref = new AtomicReference<>();
-            int id = r.getKeys().addListener(new DeletedObjectListener() {
+            int id = redisson.getKeys().addListener(new DeletedObjectListener() {
                 @Override
                 public void onDeleted(String name) {
                     ref.set(name);
                 }
             });
 
-            r.getBucket("test").set("123");
-            r.getBucket("test").delete();
+            redisson.getBucket("test").set("123");
+            redisson.getBucket("test").delete();
 
             Awaitility.waitAtMost(Duration.ofMillis(500)).untilAsserted(() -> {
                 assertThat(ref.getAndSet(null)).isEqualTo("test");
             });
 
-            r.getKeys().removeListener(id);
+            redisson.getKeys().removeListener(id);
 
-            r.getBucket("test2").set("123");
-            r.getBucket("test2").delete();
+            redisson.getBucket("test2").set("123");
+            redisson.getBucket("test2").delete();
 
             try {
                 Thread.sleep(100);
@@ -73,8 +68,6 @@ public class RedissonKeysTest extends RedisDockerTest {
             }
 
             assertThat(ref.get()).isNull();
-
-            r.shutdown();
         }, NOTIFY_KEYSPACE_EVENTS, "Eg");
     }
 
