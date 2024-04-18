@@ -243,7 +243,7 @@ public class RedisExecutor<V, R> {
         TimerTask task = timeout -> {
             if (writeFuture.cancel(false)) {
                 exception = new RedisTimeoutException("Command still hasn't been written into connection! " +
-                        "Check CPU usage of the JVM. Check connection with Redis node: " + connectionFuture.join().getRedisClient().getAddr() +
+                        "Check CPU usage of the JVM. Check that there are no blocking invocations in async/reactive/rx listeners or subscribeOnElements method. Check connection with Redis node: " + connectionFuture.join().getRedisClient().getAddr() +
                         " for TCP packet drops. Try to increase nettyThreads setting. "
                         + " Node source: " + source + ", connection: " + connectionFuture.join()
                         + ", command: " + LogHelper.toString(command, params)
@@ -281,7 +281,7 @@ public class RedisExecutor<V, R> {
                                 if (writeFuture != null && writeFuture.cancel(false)) {
                                     if (exception == null) {
                                         exception = new RedisTimeoutException("Command still hasn't been written into connection! " +
-                                                "Check CPU usage of the JVM. Check connection with Redis node: " + getNow(connectionFuture).getRedisClient().getAddr() +
+                                                "Check CPU usage of the JVM. Check that there are no blocking invocations in async/reactive/rx listeners or subscribeOnElements method. Check connection with Redis node: " + getNow(connectionFuture).getRedisClient().getAddr() +
                                                 " for TCP packet drops. Try to increase nettyThreads setting. "
                                                 + " Node source: " + source + ", connection: " + getNow(connectionFuture)
                                                 + ", command: " + LogHelper.toString(command, params)
