@@ -17,6 +17,8 @@ package org.redisson;
 
 import org.redisson.api.*;
 import org.redisson.api.listener.FlushListener;
+import org.redisson.api.listener.NewObjectListener;
+import org.redisson.api.listener.SetObjectListener;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.StringCodec;
@@ -546,17 +548,17 @@ public class RedissonKeys implements RKeys {
 
     @Override
     public int addListener(ObjectListener listener) {
-        if (listener instanceof ExpiredObjectListener) {
-            return commandExecutor.get(addListenerAsync("__keyevent@*:expired", (ExpiredObjectListener) listener, ExpiredObjectListener::onExpired));
-        }
-        if (listener instanceof DeletedObjectListener) {
-            return commandExecutor.get(addListenerAsync("__keyevent@*:del", (DeletedObjectListener) listener, DeletedObjectListener::onDeleted));
-        }
         return commandExecutor.get(addListenerAsync(listener));
     }
 
     @Override
     public RFuture<Integer> addListenerAsync(ObjectListener listener) {
+        if (listener instanceof NewObjectListener) {
+            return addListenerAsync("__keyevent@*:new", (NewObjectListener) listener, NewObjectListener::onNew);
+        }
+        if (listener instanceof SetObjectListener) {
+            return addListenerAsync("__keyevent@*:set", (SetObjectListener) listener, SetObjectListener::onSet);
+        }
         if (listener instanceof ExpiredObjectListener) {
             return addListenerAsync("__keyevent@*:expired", (ExpiredObjectListener) listener, ExpiredObjectListener::onExpired);
         }

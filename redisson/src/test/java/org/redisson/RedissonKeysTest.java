@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.redisson.RedisRunner.FailedToStartRedisException;
 import org.redisson.api.*;
 import org.redisson.api.listener.FlushListener;
+import org.redisson.api.listener.NewObjectListener;
 import org.redisson.config.Config;
 import org.redisson.config.Protocol;
 
@@ -17,6 +18,25 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonKeysTest extends RedisDockerTest {
+
+    @Test
+    public void testNewObjectListener() {
+        testWithParams(redisson -> {
+            AtomicReference<String> ref = new AtomicReference<>();
+            int id = redisson.getKeys().addListener(new NewObjectListener() {
+                @Override
+                public void onNew(String name) {
+                    ref.set(name);
+                }
+            });
+
+            redisson.getBucket("test").set("123");
+
+            Awaitility.waitAtMost(Duration.ofMillis(500)).untilAsserted(() -> {
+                assertThat(ref.get()).isEqualTo("test");
+            });
+        }, NOTIFY_KEYSPACE_EVENTS, "En");
+    }
 
     @Test
     public void testDeleteListener() {

@@ -376,6 +376,8 @@ public interface RKeys extends RKeysAsync {
      * which is invoked for each Redisson object.
      *
      * @see org.redisson.api.listener.TrackingListener
+     * @see org.redisson.api.listener.SetObjectListener
+     * @see org.redisson.api.listener.NewObjectListener
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      *
