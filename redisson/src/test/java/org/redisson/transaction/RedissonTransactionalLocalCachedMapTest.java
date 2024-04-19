@@ -1,9 +1,16 @@
 package org.redisson.transaction;
 
+import mockit.Invocation;
+import mockit.Mock;
+import mockit.MockUp;
 import org.junit.jupiter.api.Test;
 import org.redisson.RedisDockerTest;
+import org.redisson.RedissonListMultimapCache;
 import org.redisson.api.*;
 import org.redisson.api.map.MapLoader;
+import org.redisson.client.codec.StringCodec;
+import org.redisson.codec.CompositeCodec;
+import org.redisson.codec.SnappyCodecV2;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -45,6 +52,31 @@ public class RedissonTransactionalLocalCachedMapTest extends RedisDockerTest {
         // Commit will fail because tx has timed out
         tx.commit();
     }
+
+    @Test
+    public void testDisabledKeys() {
+        new MockUp<RedissonListMultimapCache>() {
+            @Mock
+            void removeAllAsync(Invocation invocation, Object key) {
+                // skip
+            }
+        };
+
+        CompositeCodec CODEC = new CompositeCodec(new StringCodec(), new SnappyCodecV2());;
+        RLocalCachedMap<String, String> localCachedMap = redisson.getLocalCachedMap(
+                org.redisson.api.options.LocalCachedMapOptions.<String, String>name("test1").codec(CODEC));
+
+        RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+
+        RLocalCachedMap<String, String> transactionLocalCachedMap = transaction.getLocalCachedMap(
+                localCachedMap);
+        transactionLocalCachedMap.put("1", "1");
+        transaction.commit();
+
+        RLocalCachedMap < Object, Object > localCachedMap2 = redisson.getLocalCachedMap(
+                org.redisson.api.options.LocalCachedMapOptions.name("test1").codec(CODEC));
+    }
+
     @Test
     public void testPut() throws InterruptedException {
         RLocalCachedMap<String, String> m1 = redisson.getLocalCachedMap("test", LocalCachedMapOptions.defaults());

@@ -29,6 +29,7 @@ import org.redisson.api.listener.MessageListener;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.codec.CompositeCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.slf4j.Logger;
@@ -50,7 +51,7 @@ public abstract class LocalCacheListener {
     public static final String DISABLED_KEYS_SUFFIX = "disabled-keys";
     public static final String DISABLED_ACK_SUFFIX = ":topic";
 
-    private ConcurrentMap<CacheKey, String> disabledKeys = new ConcurrentHashMap<CacheKey, String>();
+    private ConcurrentMap<CacheKey, String> disabledKeys = new ConcurrentHashMap<>();
 
     private static final Logger log = LoggerFactory.getLogger(LocalCacheListener.class);
 
@@ -129,10 +130,12 @@ public abstract class LocalCacheListener {
             syncListenerId = addMessageListener();
 
             String disabledKeysName = RedissonObject.suffixName(name, DISABLED_KEYS_SUFFIX);
-            RListMultimapCache<LocalCachedMapDisabledKey, String> multimap = new RedissonListMultimapCache<LocalCachedMapDisabledKey, String>(null, codec, commandExecutor, disabledKeysName);
+            CompositeCodec localCacheCodec = new CompositeCodec(LocalCachedMessageCodec.INSTANCE, StringCodec.INSTANCE, StringCodec.INSTANCE);
+            RListMultimapCache<LocalCachedMapDisabledKey, String> multimap =
+                    new RedissonListMultimapCache<>(null, localCacheCodec, commandExecutor, disabledKeysName);
 
             for (LocalCachedMapDisabledKey key : multimap.readAllKeySet()) {
-                Set<CacheKey> keysToDisable = new HashSet<CacheKey>();
+                Set<CacheKey> keysToDisable = new HashSet<>();
                 for (String hash : multimap.getAll(key)) {
                     CacheKey cacheKey = new CacheKey(ByteBufUtil.decodeHexDump(hash));
                     keysToDisable.add(cacheKey);
@@ -174,7 +177,7 @@ public abstract class LocalCacheListener {
         if (msg instanceof LocalCachedMapDisable) {
             LocalCachedMapDisable m = (LocalCachedMapDisable) msg;
             String requestId = m.getRequestId();
-            Set<CacheKey> keysToDisable = new HashSet<CacheKey>();
+            Set<CacheKey> keysToDisable = new HashSet<>();
             for (byte[] keyHash : ((LocalCachedMapDisable) msg).getKeyHashes()) {
                 CacheKey key = new CacheKey(keyHash);
                 keysToDisable.add(key);
@@ -321,7 +324,7 @@ public abstract class LocalCacheListener {
     }
 
     public void remove() {
-        List<Integer> ids = new ArrayList<Integer>(2);
+        List<Integer> ids = new ArrayList<>(2);
         if (syncListenerId != 0) {
             ids.add(syncListenerId);
         }
