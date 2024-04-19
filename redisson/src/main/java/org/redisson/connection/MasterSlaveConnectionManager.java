@@ -303,7 +303,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         c.setConnectTimeout(cfg.getConnectTimeout());
         c.setIdleConnectionTimeout(cfg.getIdleConnectionTimeout());
 
-        c.setFailedSlaveCheckInterval(cfg.getFailedSlaveCheckInterval());
         c.setFailedSlaveReconnectionInterval(cfg.getFailedSlaveReconnectionInterval());
         c.setFailedSlaveNodeDetector(cfg.getFailedSlaveNodeDetector());
         c.setMasterConnectionMinimumIdleSize(cfg.getMasterConnectionMinimumIdleSize());

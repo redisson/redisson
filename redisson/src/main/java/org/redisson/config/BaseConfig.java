@@ -31,8 +31,8 @@ import java.net.URL;
  * @param <T> config type
  */
 public class BaseConfig<T extends BaseConfig<T>> {
-    
-    private static final Logger log = LoggerFactory.getLogger("config");
+
+    protected static final Logger log = LoggerFactory.getLogger("config");
 
     /**
      * If pooled connection not used for a <code>timeout</code> time

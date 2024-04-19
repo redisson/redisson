@@ -44,7 +44,8 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     private int slaveConnectionPoolSize = 64;
 
     private int failedSlaveReconnectionInterval = 3000;
-    
+
+    @Deprecated
     private int failedSlaveCheckInterval = 180000;
     
     /**
@@ -90,7 +91,6 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
         setReadMode(config.getReadMode());
         setSubscriptionMode(config.getSubscriptionMode());
         setDnsMonitoringInterval(config.getDnsMonitoringInterval());
-        setFailedSlaveCheckInterval(config.getFailedSlaveCheckInterval());
         setFailedSlaveReconnectionInterval(config.getFailedSlaveReconnectionInterval());
         setFailedSlaveNodeDetector(config.getFailedSlaveNodeDetector());
     }
@@ -144,10 +144,12 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
      */
     @Deprecated
     public T setFailedSlaveCheckInterval(int slaveFailsInterval) {
+        log.error("failedSlaveCheckInterval setting is deprecated and will be removed in future releases. Use failedSlaveNodeDetector setting instead");
         this.failedSlaveCheckInterval = slaveFailsInterval;
         this.failedSlaveNodeDetector = new FailedConnectionDetector(slaveFailsInterval);
         return (T) this;
     }
+    @Deprecated
     public int getFailedSlaveCheckInterval() {
         return failedSlaveCheckInterval;
     }
