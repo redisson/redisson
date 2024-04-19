@@ -29,7 +29,7 @@ import org.redisson.client.protocol.Decoder;
  */
 public class ListObjectDecoder<T> implements MultiDecoder<T> {
 
-    private int index;
+    private final int index;
     
     public ListObjectDecoder(int index) {
         super();
