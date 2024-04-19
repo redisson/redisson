@@ -661,7 +661,7 @@ public interface RedisCommands {
     RedisCommand<Map<StreamMessageId, Map<Object, Object>>> XAUTOCLAIM = new RedisCommand<>("XAUTOCLAIM",
             new ListMultiDecoder2(
                     new AutoClaimDecoder(),
-                    new ObjectMapReplayDecoder2(),
+                    new AutoClaimMapReplayDecoder(),
                     new ObjectDecoder(new StreamIdDecoder()),
                     new StreamObjectMapReplayDecoder()));
 

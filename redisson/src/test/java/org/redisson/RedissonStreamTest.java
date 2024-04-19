@@ -86,6 +86,34 @@ public class RedissonStreamTest extends RedisDockerTest {
     }
 
     @Test
+    public void testAutoClaimDeletedIds() throws InterruptedException {
+        RStream<String, String> stream = redisson.getStream("test");
+
+        StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1"));
+        StreamMessageId id2 = stream.add(StreamAddArgs.entry("2", "2"));
+
+        stream.createGroup(StreamCreateGroupArgs.name("testGroup").id(StreamMessageId.ALL));
+        stream.createConsumer("testGroup", "consumer1");
+
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1",
+                                                                StreamReadGroupArgs.neverDelivered());
+
+        Thread.sleep(5);
+
+        AutoClaimResult<String, String> res = stream.autoClaim("testGroup", "consumer1",
+                                                        1, TimeUnit.MILLISECONDS, StreamMessageId.MIN, 2);
+        assertThat(res.getMessages().size()).isEqualTo(2);
+
+        stream.remove(res.getMessages().keySet().toArray(new StreamMessageId[0]));
+
+        AutoClaimResult<String, String> res1 = stream.autoClaim("testGroup", "consumer1",
+                                                        1, TimeUnit.MILLISECONDS, StreamMessageId.MIN, 2);
+
+        assertThat(res1.getDeletedIds()).containsExactlyInAnyOrder(res.getMessages().keySet().toArray(new StreamMessageId[0]));
+
+    }
+
+    @Test
     public void testPendingIdle() throws InterruptedException {
         RStream<String, String> stream = redisson.getStream("test");
 

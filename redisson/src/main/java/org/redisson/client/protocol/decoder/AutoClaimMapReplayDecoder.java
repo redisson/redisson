@@ -15,40 +15,45 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import org.redisson.api.AutoClaimResult;
-import org.redisson.api.StreamMessageId;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
-import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class AutoClaimDecoder implements MultiDecoder<Object> {
+public class AutoClaimMapReplayDecoder implements MultiDecoder<Object> {
+
+    private final ThreadLocal<Integer> index = ThreadLocal.withInitial(() -> 0);
 
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
-        return new StreamIdDecoder();
+        if (index.get() == 1) {
+            return new StreamIdDecoder();
+        }
+        return MultiDecoder.super.getDecoder(codec, paramNum, state, size);
     }
 
     @Override
     public Object decode(List<Object> parts, State state) {
-        if (parts.isEmpty()) {
-            return null;            
+        if (index.get() == 1) {
+            index.remove();
+            return parts;
         }
 
-        Map<StreamMessageId, Map<Object, Object>> maps = (Map<StreamMessageId, Map<Object, Object>>) parts.get(1);
-        List<StreamMessageId> deletedIds = Collections.emptyList();
-        if (parts.size() == 3) {
-            deletedIds = (List<StreamMessageId>) parts.get(2);
-        }
-        return new AutoClaimResult((StreamMessageId) parts.get(0), maps, deletedIds);
+        index.set(index.get()+1);
+        List<List<Object>> list = (List<List<Object>>) (Object) parts;
+        return list.stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(e -> e.get(0), e -> e.get(1),
+                        (a, b) -> a, LinkedHashMap::new));
     }
 
 }

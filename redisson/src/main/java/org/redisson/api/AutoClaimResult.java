@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -34,14 +35,16 @@ public class AutoClaimResult<K, V> implements Serializable {
 
     private StreamMessageId nextId;
     private Map<StreamMessageId, Map<K, V>> messages;
+    private List<StreamMessageId> deletedIds;
 
     public AutoClaimResult() {
     }
 
-    public AutoClaimResult(StreamMessageId nextId, Map<StreamMessageId, Map<K, V>> messages) {
+    public AutoClaimResult(StreamMessageId nextId, Map<StreamMessageId, Map<K, V>> messages, List<StreamMessageId> deletedIds) {
         super();
         this.nextId = nextId;
         this.messages = messages;
+        this.deletedIds = deletedIds;
     }
 
     public StreamMessageId getNextId() {
@@ -50,5 +53,9 @@ public class AutoClaimResult<K, V> implements Serializable {
 
     public Map<StreamMessageId, Map<K, V>> getMessages() {
         return messages;
+    }
+
+    public List<StreamMessageId> getDeletedIds() {
+        return deletedIds;
     }
 }
