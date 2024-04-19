@@ -31,11 +31,9 @@ import java.util.stream.Collectors;
  */
 public class AutoClaimMapReplayDecoder implements MultiDecoder<Object> {
 
-    private final ThreadLocal<Integer> index = ThreadLocal.withInitial(() -> 0);
-
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
-        if (index.get() == 1) {
+        if (state.getValue() != null) {
             return new StreamIdDecoder();
         }
         return MultiDecoder.super.getDecoder(codec, paramNum, state, size);
@@ -43,12 +41,11 @@ public class AutoClaimMapReplayDecoder implements MultiDecoder<Object> {
 
     @Override
     public Object decode(List<Object> parts, State state) {
-        if (index.get() == 1) {
-            index.remove();
+        if (state.getValue() != null) {
             return parts;
         }
 
-        index.set(index.get()+1);
+        state.setValue(true);
         List<List<Object>> list = (List<List<Object>>) (Object) parts;
         return list.stream()
                 .filter(Objects::nonNull)
