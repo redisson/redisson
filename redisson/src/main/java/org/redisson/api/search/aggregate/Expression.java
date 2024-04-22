@@ -16,6 +16,7 @@
 package org.redisson.api.search.aggregate;
 
 /**
+ * Expression that is applied on properties
  *
  * @author Nikita Koksharov
  *
