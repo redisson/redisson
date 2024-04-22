@@ -44,7 +44,7 @@
             <groupId>io.netty.incubator</groupId>
             <artifactId>netty-incubator-transport-native-io_uring</artifactId>
             <scope>provided</scope>
-            <version>0.0.21.Final</version>
+            <version>0.0.25.Final</version>
             <classifier>linux-x86_64</classifier>
         </dependency>
 
@@ -239,7 +239,7 @@
         <dependency>
             <groupId>org.xerial.snappy</groupId>
             <artifactId>snappy-java</artifactId>
-            <version>1.1.10.4</version>
+            <version>1.1.10.5</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
