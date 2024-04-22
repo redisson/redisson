@@ -3,6 +3,31 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 22-Apr-2024 - 3.29.0 released
+Feature - `NewObjectListener` added to track created objects  
+Feature - `NewObjectListener` and `SetObjectListener` can be registered with `RKeys.addListener()` method  
+Feature - `subscribeOnElements()`, `subscribeOnLastElements()` and `subscribeOnFirstElements()` methods wait for `CompletionStage` to complete before polling the next element  
+Feature - `shardedSubscriptionMode` setting added in Cluster configuration  
+Feature - `RSemaphore.trySetPermits()` method with ttl parameter added  
+Feature - `getDeletedIds()` method added to `RStream` `AutoClaimResult` object  
+
+Improvement - responses map lock replaced with fine-grained entry locking in `RRemoteService` and `RScheduledExecutorService`  
+
+Fixed - `RStream.autoClaim()` method throws ClassCastException  
+Fixed - `RSearch` aggregate expression applied incorrectly  
+Fixed - `LocalCachedMapDisabledKey` event is parsed incorrectly if local cache used with `RTransaction`  
+Fixed - Slave node in cluster mode isn't shutdown properly if `readMode = MASTER` and `subscribeMode = MASTER` (regression since 3.27.2)  
+Fixed - race condition during cluster topology update causes slave added/removed events  
+Fixed - OSGi MANIFEST should define optional dependencies  
+Fixed - `TimeoutException` is thrown if `connectionMinimumIdleSize = 0`  
+Fixed - `ClassCastException` is thrown for Reactive/Rx RemoteService invocation if Redisson instance isn't Reactive/Rx  
+Fixed - semaphore object is not deleted after `RLocalCachedMap.clearLocalCache()` method invocation  
+Fixed - `AggregationOptions.groupBy()` setting with reducers used in `RSearch.aggregate()` method causes an exception  
+Fixed - `AggregationOptions.groupBy()` setting usage with `RSearch.aggregate()` method causes an exception if reducers aren't defined  
+Fixed - `AggregationOptions.sortBy()` setting usage with `RSearch.aggregate()` method causes an exception  
+Fixed - resource leak error when executing multiple contains operation of `RSet` in transaction (thanks to @wynn5a)  
+Fixed - jmockit upgraded to 1.52.0 inside maven-surefire-plugin (thanks to @roharon)  
+
 ### 10-Apr-2024 - 3.28.0 released
 
 Feature - [Multi Sentinel mode](https://github.com/redisson/redisson/wiki/2.-Configuration/#211-multi-sentinel-mode) implementation  
