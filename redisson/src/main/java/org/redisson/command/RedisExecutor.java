@@ -626,8 +626,11 @@ public class RedisExecutor<V, R> {
         }
 
         RedisClient client = connectionFuture.join().getRedisClient();
-        client.getConfig().getFailedNodeDetector().onCommandFailed(cause);
-        if (client.getConfig().getFailedNodeDetector().isNodeFailed()) {
+        FailedNodeDetector detector = client.getConfig().getFailedNodeDetector();
+        detector.onCommandFailed(cause);
+        if (detector.isNodeFailed()) {
+            log.error("Redis node {} has been marked as failed as failed according to the detection logic defined in {}",
+                            entry.getClient().getAddr(), detector);
             entry.shutdownAndReconnectAsync(client, cause);
         }
     }

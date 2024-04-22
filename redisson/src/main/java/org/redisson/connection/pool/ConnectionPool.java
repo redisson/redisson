@@ -16,6 +16,7 @@
 package org.redisson.connection.pool;
 
 import org.redisson.api.NodeType;
+import org.redisson.client.FailedNodeDetector;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.protocol.RedisCommand;
@@ -114,8 +115,11 @@ abstract class ConnectionPool<T extends RedisConnection> {
         result.whenComplete((r, e) -> {
             if (e != null) {
                 if (entry.getNodeType() == NodeType.SLAVE) {
-                    entry.getClient().getConfig().getFailedNodeDetector().onConnectFailed();
-                    if (entry.getClient().getConfig().getFailedNodeDetector().isNodeFailed()) {
+                    FailedNodeDetector detector = entry.getClient().getConfig().getFailedNodeDetector();
+                    detector.onConnectFailed();
+                    if (detector.isNodeFailed()) {
+                        log.error("Redis node {} has been marked as failed according to the detection logic defined in {}",
+                                        entry.getClient().getAddr(), detector);
                         masterSlaveEntry.shutdownAndReconnectAsync(entry.getClient(), e);
                     }
                 }
