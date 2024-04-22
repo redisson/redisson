@@ -14,7 +14,7 @@ public class DockerRedisStackTest {
 
     @Container
     private static final GenericContainer<?> REDIS =
-            new GenericContainer<>("redis/redis-stack")
+            new GenericContainer<>("redis/redis-stack-server:latest")
                     .withExposedPorts(6379);
 
     protected static RedissonClient redisson;
