@@ -89,6 +89,21 @@ public class RedissonSearchTest extends DockerRedisStackTest {
     }
 
     @Test
+    public void testExpression() {
+        RSearch s = redisson.getSearch();
+        s.createIndex("idx", IndexOptions.defaults()
+                        .on(IndexType.HASH)
+                        .prefix(Arrays.asList("doc:")),
+                FieldIndex.text("t1"),
+                FieldIndex.text("t2"));
+
+        AggregationResult aggregate = s.aggregate("idx", "*", AggregationOptions.defaults()
+                .load("$.location", "as", "location", "$.*", "as", "$")
+                .apply(new Expression("geodistance(@location, 1, 2)", "dist"))
+                .limit(0, 1000));
+    }
+
+    @Test
     public void testInfo() {
         for (int i = 0; i < 1000; i++) {
             RMap<String, SimpleObject> m = redisson.getMap("doc:" +i, new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));

@@ -574,6 +574,7 @@ public class RedissonSearch implements RSearch {
         for (Expression expression : options.getExpressions()) {
             args.add("APPLY");
             args.add(expression.getValue());
+            args.add("AS");
             args.add(expression.getAs());
         }
         if (options.getOffset() != null
