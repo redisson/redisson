@@ -273,8 +273,7 @@ public class RedissonBatchTest extends RedisDockerTest {
         }
     }
 
-    @ParameterizedTest
-    @MethodSource("data")
+    @Test
     public void testConnectionLeakAfterError() throws InterruptedException {
         Config config = createConfig();
         config.useSingleServer()
