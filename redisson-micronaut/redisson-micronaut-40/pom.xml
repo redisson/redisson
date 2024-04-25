@@ -55,7 +55,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.11.0</version>
+          <version>3.13.0</version>
           <configuration>
             <compilerArgs>
               <arg>-parameters</arg>
@@ -68,7 +68,7 @@
                   </path>
                   <path>
                     <groupId>io.micronaut.validation</groupId>
-                    <artifactId>micronaut-validation</artifactId>
+                    <artifactId>micronaut-validation-processor</artifactId>
                     <version>${micronaut.version}</version>
                   </path>
             </annotationProcessorPaths>
@@ -91,7 +91,7 @@
                   </path>
                   <path>
                     <groupId>io.micronaut.validation</groupId>
-                    <artifactId>micronaut-validation</artifactId>
+                    <artifactId>micronaut-validation-processor</artifactId>
                     <version>${micronaut.version}</version>
                   </path>
                 </annotationProcessorPaths>
@@ -114,14 +114,14 @@
         <dependency>
             <groupId>io.micronaut.cache</groupId>
             <artifactId>micronaut-cache-core</artifactId>
-            <version>4.2.2</version>
+            <version>4.3.0</version>
             <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>io.micronaut.session</groupId>
             <artifactId>micronaut-session</artifactId>
-            <version>4.2.0</version>
+            <version>4.3.0</version>
             <optional>true</optional>
         </dependency>
 
@@ -164,7 +164,7 @@
         <dependency>
           <groupId>io.micronaut.test</groupId>
           <artifactId>micronaut-test-junit5</artifactId>
-          <version>4.2.1</version>
+          <version>4.3.0</version>
           <scope>test</scope>
         </dependency>
         <dependency>
