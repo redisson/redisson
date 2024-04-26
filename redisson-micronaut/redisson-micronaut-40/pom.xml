@@ -12,7 +12,7 @@
     <packaging>jar</packaging>
 
     <properties>
-        <micronaut.version>4.4.0</micronaut.version>
+        <micronaut.version>4.4.4</micronaut.version>
     </properties>
 
     <name>Redisson/Micronaut v4.x.x integration</name>
@@ -63,6 +63,11 @@
             <annotationProcessorPaths>
                   <path>
                     <groupId>io.micronaut</groupId>
+                    <artifactId>micronaut-inject</artifactId>
+                    <version>${micronaut.version}</version>
+                  </path>
+                  <path>
+                    <groupId>io.micronaut</groupId>
                     <artifactId>micronaut-inject-java</artifactId>
                     <version>${micronaut.version}</version>
                   </path>
@@ -84,6 +89,11 @@
                   <arg>-parameters</arg>
                 </compilerArgs>
                 <annotationProcessorPaths>
+                  <path>
+                    <groupId>io.micronaut</groupId>
+                    <artifactId>micronaut-inject</artifactId>
+                    <version>${micronaut.version}</version>
+                  </path>
                   <path>
                     <groupId>io.micronaut</groupId>
                     <artifactId>micronaut-inject-java</artifactId>
@@ -110,18 +120,17 @@
             <version>${micronaut.version}</version>
             <optional>true</optional>
         </dependency>
-
         <dependency>
             <groupId>io.micronaut.cache</groupId>
             <artifactId>micronaut-cache-core</artifactId>
-            <version>4.2.0</version>
+            <version>4.3.0</version>
             <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>io.micronaut.session</groupId>
             <artifactId>micronaut-session</artifactId>
-            <version>4.2.0</version>
+            <version>4.3.0</version>
             <optional>true</optional>
         </dependency>
 
@@ -164,7 +173,7 @@
         <dependency>
           <groupId>io.micronaut.test</groupId>
           <artifactId>micronaut-test-junit5</artifactId>
-          <version>4.2.0</version>
+          <version>4.3.0</version>
           <scope>test</scope>
         </dependency>
         <dependency>
