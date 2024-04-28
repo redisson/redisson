@@ -89,20 +89,13 @@ public interface RPatternTopic {
 
     RFuture<Void> removeListenerAsync(int listenerId);
 
-    /**
-     * Returns amount of registered listeners to this pattern topic
-     *
-     * @return amount of listeners
-     */
-    RFuture<Long> countSubscribersAsync();
 
     /**
-     * Returns amount of subscribers to this pattern topic across all Redisson instances.
-     * Each subscriber may have multiple listeners.
-     *
-     * @return amount of subscribers
+     * Returns amount of list channel to this pattern
+     * An active channel is a Pub/Sub channel with one or more subscribers (excluding clients subscribed to patterns).
+     * @return all actives channel to this pattern topic
      */
-    long countSubscribers();
+    RFuture<List<String>> getActiveTopicsAsync();
 
 
     /**
@@ -110,14 +103,6 @@ public interface RPatternTopic {
      * An active channel is a Pub/Sub channel with one or more subscribers (excluding clients subscribed to patterns).
      * @return all actives channel to this pattern topic
      */
-    RFuture<List<String>> getMatchTopicsAsync();
-
-
-    /**
-     * Returns amount of list channel to this pattern
-     * An active channel is a Pub/Sub channel with one or more subscribers (excluding clients subscribed to patterns).
-     * @return all actives channel to this pattern topic
-     */
-    List<String> getMatchTopics();
+    List<String> getActiveTopics();
 
 }

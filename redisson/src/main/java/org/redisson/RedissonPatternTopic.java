@@ -132,22 +132,12 @@ public class RedissonPatternTopic implements RPatternTopic {
     }
 
     @Override
-    public RFuture<Long> countSubscribersAsync() {
-        return commandExecutor.writeAsync(name, LongCodec.INSTANCE, RedisCommands.PUBSUB_NUMSUB, name);
-    }
-
-    @Override
-    public long countSubscribers() {
-        return commandExecutor.get(countSubscribersAsync());
-    }
-
-    @Override
-    public RFuture<List<String>> getMatchTopicsAsync() {
+    public RFuture<List<String>> getActiveTopicsAsync() {
         return commandExecutor.writeAsync(name, StringCodec.INSTANCE, RedisCommands.PUBSUB_CHANNELS, name);
     }
 
     @Override
-    public List<String> getMatchTopics() {
-        return commandExecutor.get(listActiveChannelsAsync());
+    public List<String> getActiveTopics() {
+        return commandExecutor.get(getActiveTopicsAsync());
     }
 }
