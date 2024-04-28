@@ -15,10 +15,10 @@
  */
 package org.redisson.api;
 
-import java.util.List;
-
 import org.redisson.api.listener.PatternMessageListener;
 import org.redisson.api.listener.PatternStatusListener;
+
+import java.util.List;
 
 /**
  * Pattern based observer for Publish Subscribe object.

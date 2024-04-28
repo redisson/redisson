@@ -22,7 +22,6 @@ import org.redisson.api.listener.PatternStatusListener;
 import org.redisson.client.ChannelName;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
