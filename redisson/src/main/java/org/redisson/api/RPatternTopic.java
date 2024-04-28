@@ -91,17 +91,15 @@ public interface RPatternTopic {
 
 
     /**
-     * Returns amount of list channel to this pattern
-     * An active channel is a Pub/Sub channel with one or more subscribers (excluding clients subscribed to patterns).
-     * @return all actives channel to this pattern topic
+     * Returns  active topic list of this pattern
+     * @return all actives channel of this pattern
      */
     RFuture<List<String>> getActiveTopicsAsync();
 
 
     /**
-     * Returns amount of list channel to this pattern
-     * An active channel is a Pub/Sub channel with one or more subscribers (excluding clients subscribed to patterns).
-     * @return all actives channel to this pattern topic
+     * Returns active topic list of this pattern
+     * @return all actives topic of this pattern
      */
     List<String> getActiveTopics();
 
