@@ -1,12 +1,12 @@
 /**
  * Copyright (c) 2013-2024 Nikita Koksharov
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,6 +22,9 @@ import org.redisson.api.listener.PatternStatusListener;
 import org.redisson.client.ChannelName;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.LongCodec;
+import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
@@ -37,7 +40,6 @@ import java.util.concurrent.CompletableFuture;
  * Distributed topic implementation. Messages are delivered to all message listeners across Redis cluster.
  *
  * @author Nikita Koksharov
- *
  */
 public class RedissonPatternTopic implements RPatternTopic {
 
@@ -75,19 +77,19 @@ public class RedissonPatternTopic implements RPatternTopic {
         commandExecutor.get(future);
         return System.identityHashCode(pubSubListener);
     }
-    
+
     @Override
     public RFuture<Integer> addListenerAsync(PatternStatusListener listener) {
         PubSubPatternStatusListener pubSubListener = new PubSubPatternStatusListener(listener, name);
         return addListenerAsync(pubSubListener);
     }
-    
+
     @Override
     public <T> RFuture<Integer> addListenerAsync(Class<T> type, PatternMessageListener<T> listener) {
         PubSubPatternMessageListener<T> pubSubListener = new PubSubPatternMessageListener<T>(type, listener, name);
         return addListenerAsync(pubSubListener);
     }
-    
+
     private RFuture<Integer> addListenerAsync(RedisPubSubListener<?> pubSubListener) {
         CompletableFuture<Collection<PubSubConnectionEntry>> future = subscribeService.psubscribe(channelName, codec, pubSubListener);
         CompletableFuture<Integer> f = future.thenApply(res -> {
@@ -95,18 +97,18 @@ public class RedissonPatternTopic implements RPatternTopic {
         });
         return new CompletableFutureWrapper<>(f);
     }
-    
+
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
         CompletableFuture<Void> f = subscribeService.removeListenerAsync(PubSubType.PUNSUBSCRIBE, channelName, listenerId);
         return new CompletableFutureWrapper<>(f);
     }
-    
+
     @Override
     public void removeListener(int listenerId) {
         commandExecutor.get(removeListenerAsync(listenerId).toCompletableFuture());
     }
-    
+
     @Override
     public void removeAllListeners() {
         commandExecutor.get(removeAllListenersAsync());
@@ -123,10 +125,29 @@ public class RedissonPatternTopic implements RPatternTopic {
         CompletableFuture<Void> future = subscribeService.removeListenerAsync(PubSubType.PUNSUBSCRIBE, channelName, listener);
         commandExecutor.get(future);
     }
-    
+
     @Override
     public List<String> getPatternNames() {
         return Collections.singletonList(name);
     }
 
+    @Override
+    public RFuture<Long> countSubscribersAsync() {
+        return commandExecutor.writeAsync(name, LongCodec.INSTANCE, RedisCommands.PUBSUB_NUMSUB, name);
+    }
+
+    @Override
+    public long countSubscribers() {
+        return commandExecutor.get(countSubscribersAsync());
+    }
+
+    @Override
+    public RFuture<List<String>> getMatchTopicsAsync() {
+        return commandExecutor.writeAsync(name, StringCodec.INSTANCE, RedisCommands.PUBSUB_CHANNELS, name);
+    }
+
+    @Override
+    public List<String> getMatchTopics() {
+        return commandExecutor.get(listActiveChannelsAsync());
+    }
 }

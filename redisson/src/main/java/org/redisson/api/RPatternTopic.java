@@ -1,12 +1,12 @@
 /**
  * Copyright (c) 2013-2024 Nikita Koksharov
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,7 +39,7 @@ public interface RPatternTopic {
      * Subscribes to this topic.
      * <code>MessageListener.onMessage</code> is called when any message
      * is published on this topic.
-     * 
+     *
      * @param <T> type of message
      * @param type - type of message
      * @param listener - message listener
@@ -63,14 +63,14 @@ public interface RPatternTopic {
      * @param listenerId - id of message listener
      */
     void removeListener(int listenerId);
-    
+
     /**
      * Removes the listener by its instance
      *
      * @param listener - listener instance
      */
     void removeListener(PatternMessageListener<?> listener);
-    
+
     /**
      * Removes all listeners from this topic
      */
@@ -82,11 +82,42 @@ public interface RPatternTopic {
      * @return void
      */
     RFuture<Void> removeAllListenersAsync();
-    
+
     RFuture<Integer> addListenerAsync(PatternStatusListener listener);
-    
+
     <T> RFuture<Integer> addListenerAsync(Class<T> type, PatternMessageListener<T> listener);
 
     RFuture<Void> removeListenerAsync(int listenerId);
+
+    /**
+     * Returns amount of registered listeners to this pattern topic
+     *
+     * @return amount of listeners
+     */
+    RFuture<Long> countSubscribersAsync();
+
+    /**
+     * Returns amount of subscribers to this pattern topic across all Redisson instances.
+     * Each subscriber may have multiple listeners.
+     *
+     * @return amount of subscribers
+     */
+    long countSubscribers();
+
+
+    /**
+     * Returns amount of list channel to this pattern
+     * An active channel is a Pub/Sub channel with one or more subscribers (excluding clients subscribed to patterns).
+     * @return all actives channel to this pattern topic
+     */
+    RFuture<List<String>> getMatchTopicsAsync();
+
+
+    /**
+     * Returns amount of list channel to this pattern
+     * An active channel is a Pub/Sub channel with one or more subscribers (excluding clients subscribed to patterns).
+     * @return all actives channel to this pattern topic
+     */
+    List<String> getMatchTopics();
 
 }
