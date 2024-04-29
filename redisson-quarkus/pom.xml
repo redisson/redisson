@@ -20,7 +20,7 @@
     </modules>
 
      <properties>
-       <compiler-plugin.version>3.11.0</compiler-plugin.version>
+       <compiler-plugin.version>3.13.0</compiler-plugin.version>
        <surefire-plugin.version>3.0.0</surefire-plugin.version>
        <failsafe-plugin.version>${surefire-plugin.version}</failsafe-plugin.version>
      </properties>

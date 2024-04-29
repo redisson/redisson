@@ -286,7 +286,7 @@
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
-            <version>3.1.1</version>
+            <version>3.1.8</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
@@ -406,7 +406,7 @@
         <dependency>
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-test</artifactId>
-            <version>3.6.4</version>
+            <version>3.6.5</version>
             <scope>test</scope>
         </dependency>
 
@@ -518,7 +518,7 @@
                     <dependency>
                        <groupId>com.puppycrawl.tools</groupId>
                        <artifactId>checkstyle</artifactId>
-                       <version>10.15.0</version>
+                       <version>10.16.0</version>
                   </dependency>
                 </dependencies>
             </plugin>
@@ -547,7 +547,7 @@
 
             <plugin>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>3.3.0</version>
+                <version>3.4.1</version>
                 <configuration>
                     <archive>
                         <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>

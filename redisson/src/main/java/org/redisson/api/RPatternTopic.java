@@ -89,4 +89,17 @@ public interface RPatternTopic {
 
     RFuture<Void> removeListenerAsync(int listenerId);
 
+    /**
+     * Returns  active topic list of this pattern
+     * @return all actives channel of this pattern
+     */
+    RFuture<List<String>> getActiveTopicsAsync();
+
+
+    /**
+     * Returns active topic list of this pattern
+     * @return all actives topic of this pattern
+     */
+    List<String> getActiveTopics();
+
 }
