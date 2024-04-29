@@ -18,6 +18,8 @@ package org.redisson.jcache;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.redisson.Redisson;
 import org.redisson.config.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.cache.CacheException;
 import javax.cache.CacheManager;
@@ -39,6 +41,8 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  */
 public class JCachingProvider implements CachingProvider {
+
+    private static final Logger LOG = LoggerFactory.getLogger(JCachingProvider.class);
 
     private final Map<ClassLoader, Map<URI, CacheManager>> managers = new ConcurrentHashMap<>();
     
@@ -86,6 +90,7 @@ public class JCachingProvider implements CachingProvider {
             }
             manager = oldManager;
         }
+        LOG.info("JCacheManager created with uri: {} and properties: {}", uri, properties);
         return manager;
     }
 
@@ -159,8 +164,10 @@ public class JCachingProvider implements CachingProvider {
     public void close(ClassLoader classLoader) {
         Map<URI, CacheManager> uri2manager = managers.remove(classLoader);
         if (uri2manager != null) {
-            for (CacheManager manager : uri2manager.values()) {
-                manager.close();
+            for (Map.Entry<URI, CacheManager> entry : uri2manager.entrySet()) {
+                entry.getValue().close();
+                LOG.info("JCacheManager closed with uri: {} and properties: {}",
+                        entry.getKey(), entry.getValue().getProperties());
             }
         }
     }
@@ -176,6 +183,7 @@ public class JCachingProvider implements CachingProvider {
             return;
         }
         manager.close();
+        LOG.info("JCacheManager closed with uri: {} and properties: {}", uri, manager.getProperties());
         if (uri2manager.isEmpty()) {
             managers.remove(classLoader, Collections.emptyMap());
         }
