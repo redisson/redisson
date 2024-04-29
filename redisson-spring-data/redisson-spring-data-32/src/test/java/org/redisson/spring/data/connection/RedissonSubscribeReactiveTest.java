@@ -1,7 +1,7 @@
 package org.redisson.spring.data.connection;
 
 import org.awaitility.Awaitility;
-import org.awaitility.Duration;
+import org.awaitility.Durations;
 import org.junit.Test;
 import org.springframework.data.redis.connection.BitFieldSubCommands;
 import org.springframework.data.redis.connection.ReactiveRedisConnection;
@@ -36,7 +36,7 @@ public class RedissonSubscribeReactiveTest extends BaseConnectionTest {
             connection.pubSubCommands().publish(ByteBuffer.wrap("test".getBytes()), ByteBuffer.wrap("msg".getBytes())).block();
         }
 
-        Awaitility.await().atMost(Duration.ONE_SECOND).untilAsserted(() -> {
+        Awaitility.await().atMost(Durations.ONE_SECOND).untilAsserted(() -> {
             assertThat(counter.get()).isEqualTo(40);
         });
     }
@@ -60,7 +60,7 @@ public class RedissonSubscribeReactiveTest extends BaseConnectionTest {
         ReactiveRedisConnection connection = factory.getReactiveConnection();
         connection.pubSubCommands().publish(ByteBuffer.wrap("test".getBytes()), ByteBuffer.wrap("msg".getBytes())).block();
 
-        Awaitility.await().atMost(Duration.ONE_SECOND)
+        Awaitility.await().atMost(Durations.ONE_SECOND)
                     .until(() -> counter.get() == 1);
 
         BitFieldSubCommands commands = BitFieldSubCommands.create()
@@ -76,7 +76,7 @@ public class RedissonSubscribeReactiveTest extends BaseConnectionTest {
             result.set(r);
         }).subscribe();
 
-        Awaitility.waitAtMost(Duration.FIVE_HUNDRED_MILLISECONDS).untilAsserted(() -> {
+        Awaitility.waitAtMost(Durations.FIVE_HUNDRED_MILLISECONDS).untilAsserted(() -> {
             assertThat(result.get()).isEqualTo(Arrays.asList(0L, 0L, 0L));
         });
     }
@@ -96,7 +96,7 @@ public class RedissonSubscribeReactiveTest extends BaseConnectionTest {
         
         connection.pubSubCommands().publish(ByteBuffer.wrap("test".getBytes()), ByteBuffer.wrap("msg".getBytes())).block();
 
-        Awaitility.await().atMost(Duration.ONE_SECOND)
+        Awaitility.await().atMost(Durations.ONE_SECOND)
                     .until(() -> Arrays.equals("msg".getBytes(), msg.get()));
         
         ss.unsubscribe();
@@ -118,7 +118,7 @@ public class RedissonSubscribeReactiveTest extends BaseConnectionTest {
         }).subscribe();
         
         connection.pubSubCommands().publish(ByteBuffer.wrap("test".getBytes()), ByteBuffer.wrap("msg".getBytes())).block();
-        Awaitility.await().atMost(Duration.ONE_SECOND)
+        Awaitility.await().atMost(Durations.ONE_SECOND)
                     .until(() -> Arrays.equals("msg".getBytes(), msg.get()));
         
         ss.unsubscribe();
