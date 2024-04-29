@@ -274,7 +274,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     private void scheduleSentinelDNSCheck() {
         monitorFuture = serviceManager.newTimeout(t -> {
             CompletableFuture<Void> f = performSentinelDNSCheck();
-            f.thenAccept(r -> scheduleSentinelDNSCheck());
+            f.whenComplete((r, e) -> scheduleSentinelDNSCheck());
         }, config.getDnsMonitoringInterval(), TimeUnit.MILLISECONDS);
     }
 
@@ -328,7 +328,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             }
             disconnectedSentinels.clear();
             CompletableFuture<Void> f = performSentinelDNSCheck();
-            f.thenAccept(r -> scheduleChangeCheck(cfg, null));
+            f.whenComplete((r, e) -> scheduleChangeCheck(cfg, null));
             return;
         }
         if (serviceManager.isShuttingDown()) {
