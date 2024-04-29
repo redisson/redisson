@@ -22,6 +22,8 @@ import org.redisson.api.listener.PatternStatusListener;
 import org.redisson.client.ChannelName;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
@@ -127,6 +129,16 @@ public class RedissonPatternTopic implements RPatternTopic {
     @Override
     public List<String> getPatternNames() {
         return Collections.singletonList(name);
+    }
+
+    @Override
+    public RFuture<List<String>> getActiveTopicsAsync() {
+        return commandExecutor.writeAsync(name, StringCodec.INSTANCE, RedisCommands.PUBSUB_CHANNELS, name);
+    }
+
+    @Override
+    public List<String> getActiveTopics() {
+        return commandExecutor.get(getActiveTopicsAsync());
     }
 
 }
