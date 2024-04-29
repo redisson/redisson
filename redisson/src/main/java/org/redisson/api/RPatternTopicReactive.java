@@ -66,4 +66,11 @@ public interface RPatternTopicReactive {
      */
     Mono<Void> removeListener(int listenerId);
 
+
+    /**
+     * Returns  active topic list of this pattern
+     * @return all actives channel of this pattern
+     */
+    Mono<List<String>> getActiveTopics();
+
 }

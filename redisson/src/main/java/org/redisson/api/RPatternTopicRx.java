@@ -66,4 +66,10 @@ public interface RPatternTopicRx {
      */
     void removeListener(int listenerId);
 
+    /**
+     * Returns active topic list of this pattern
+     * @return all actives topic of this pattern
+     */
+    Single<List<String>> getActiveTopics();
+
 }
