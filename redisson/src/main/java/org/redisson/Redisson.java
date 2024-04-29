@@ -416,7 +416,7 @@ public final class Redisson implements RedissonClient {
             ops.writerRetryAttempts(params.getWriteRetryAttempts());
         }
 
-        return new RedissonMap<>(commandExecutor.copy(params), params.getName(),
+        return new RedissonMap<>(params.getCodec(), commandExecutor.copy(params), params.getName(),
                 this, ops, writeBehindService);
     }
 
