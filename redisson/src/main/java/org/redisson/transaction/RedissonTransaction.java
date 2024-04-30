@@ -56,7 +56,7 @@ public class RedissonTransaction implements RTransaction {
     private final TransactionOptions options;
     private List<TransactionalOperation> operations = new CopyOnWriteArrayList<>();
     private Set<String> localCaches = new HashSet<>();
-    private final Map<String, RLocalCachedMap<?, ?>> localCacheInstances = new HashMap<>();
+    private final Map<RLocalCachedMap<?, ?>, RLocalCachedMap<?, ?>> localCacheInstances = new IdentityHashMap<>();
     private final Map<String, Object> instances = new HashMap<>();
 
     private RedissonTransactionalBuckets bucketsInstance;
@@ -89,7 +89,7 @@ public class RedissonTransaction implements RTransaction {
         checkState();
 
         localCaches.add(fromInstance.getName());
-        return (RLocalCachedMap<K, V>) localCacheInstances.computeIfAbsent(fromInstance.getName(), k -> {
+        return (RLocalCachedMap<K, V>) localCacheInstances.computeIfAbsent(fromInstance, k -> {
             return new RedissonTransactionalLocalCachedMap<>(commandExecutor,
                     operations, options.getTimeout(), executed, fromInstance, id);
         });
