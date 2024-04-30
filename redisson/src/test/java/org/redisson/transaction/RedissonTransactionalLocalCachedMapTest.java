@@ -156,5 +156,21 @@ public class RedissonTransactionalLocalCachedMapTest extends RedisDockerTest {
         assertThat(m2.get("3")).isEqualTo("4");
     }
 
-    
+    @Test
+    public void testPut2Maps() throws InterruptedException {
+        RLocalCachedMap<String, String> m1 = redisson.getLocalCachedMap("test1", LocalCachedMapOptions.defaults());
+        RLocalCachedMap<String, String> m2 = redisson.getLocalCachedMap("test2", LocalCachedMapOptions.defaults());
+
+        RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+        RMap<String, String> tMap1 = transaction.getLocalCachedMap(m1);
+        RMap<String, String> tMap2 = transaction.getLocalCachedMap(m2);
+        tMap1.put("1", "2");
+        tMap2.put("3", "4");
+
+        transaction.commit();
+
+        assertThat(m1.get("1")).isEqualTo("2");
+        assertThat(m1.get("3")).isEqualTo("4");
+    }
+
 }
