@@ -20,8 +20,8 @@
      </modules>
 
      <properties>
-       <quarkus.version>3.9.5</quarkus.version>
-       <quarkus.plugin.version>3.9.5</quarkus.plugin.version>
+       <quarkus.version>3.10.0</quarkus.version>
+       <quarkus.plugin.version>3.10.0</quarkus.plugin.version>
        <maven.compiler.source>11</maven.compiler.source>
        <maven.compiler.target>11</maven.compiler.target>
      </properties>
