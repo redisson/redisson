@@ -238,7 +238,9 @@ public class ClientConnectionsEntry {
         } else {
             handler = (ConnectionsHolder<T>) connection2holder.remove(connection);
         }
-        handler.releaseConnection(this, connection);
+        if (handler != null) {
+            handler.releaseConnection(this, connection);
+        }
     }
 
     @Override

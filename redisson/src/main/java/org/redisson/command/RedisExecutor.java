@@ -203,6 +203,10 @@ public class RedisExecutor<V, R> {
                 releaseConnection(attemptPromise, connectionFuture);
 
                 checkAttemptPromise(attemptPromise, connectionFuture);
+            }).whenComplete((r, e) -> {
+                if (e != null) {
+                    log.error(e.getMessage(), e);
+                }
             });
         } catch (Exception e) {
             free();
