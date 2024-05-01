@@ -70,7 +70,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
     }
 
     @Override
-    public void doConnect(Set<RedisURI> disconnectedSlaves, Function<RedisURI, String> hostnameMapper) {
+    public void doConnect(Function<RedisURI, String> hostnameMapper) {
         if (cfg.getNodeAddresses().isEmpty()) {
             throw new IllegalArgumentException("At least one Redis node should be defined!");
         }
@@ -107,7 +107,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
             log.warn("ReadMode = {}, but slave nodes are not found! Please specify all nodes in replicated mode.", this.config.getReadMode());
         }
 
-        super.doConnect(disconnectedSlaves, hostnameMapper);
+        super.doConnect(hostnameMapper);
 
         scheduleMasterChangeCheck(cfg);
     }

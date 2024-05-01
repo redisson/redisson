@@ -79,7 +79,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
 
     @Override
-    public void doConnect(Set<RedisURI> disconnectedSlaves, Function<RedisURI, String> hostnameMapper) {
+    public void doConnect(Function<RedisURI, String> hostnameMapper) {
         if (cfg.getNodeAddresses().isEmpty()) {
             throw new IllegalArgumentException("At least one cluster node should be defined!");
         }
@@ -323,7 +323,10 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             if (config.isSlaveNotUsed()) {
                 entry = new SingleEntry(this, config);
             } else {
-                Set<String> slaveAddresses = partition.getSlaveAddresses().stream().map(r -> r.toString()).collect(Collectors.toSet());
+                Set<String> slaveAddresses = partition.getSlaveAddresses().stream()
+                                                                            .filter(r -> !partition.getFailedSlaveAddresses().contains(r))
+                                                                            .map(r -> r.toString())
+                                                                            .collect(Collectors.toSet());
                 config.setSlaveAddresses(slaveAddresses);
 
                 entry = new MasterSlaveEntry(ClusterConnectionManager.this, config);
@@ -340,7 +343,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 }
 
                 if (!config.isSlaveNotUsed()) {
-                    CompletableFuture<Void> fs = entry.initSlaveBalancer(partition.getFailedSlaveAddresses(), r -> configEndpointHostName);
+                    CompletableFuture<Void> fs = entry.initSlaveBalancer(r -> configEndpointHostName);
                     return fs.thenAccept(r -> {
                         if (!partition.getSlaveAddresses().isEmpty()) {
                             log.info("slaves: {} added for master: {} slot ranges: {}",

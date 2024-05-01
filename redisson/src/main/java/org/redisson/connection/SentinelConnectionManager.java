@@ -76,7 +76,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     @Override
-    public void doConnect(Set<RedisURI> disconnectedSlaves, Function<RedisURI, String> hostnameMapper) {
+    public void doConnect(Function<RedisURI, String> hostnameMapper) {
         checkAuth(cfg);
 
         if ("redis".equals(scheme)) {
@@ -133,13 +133,14 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     if (isHostname(host)) {
                         uri2hostname.put(uri, host);
                     }
-                    this.config.addSlaveAddress(uri.toString());
+
                     log.debug("slave {} state: {}", slaveAddr, map);
-                    log.info("slave: {} added", slaveAddr);
 
                     if (isSlaveDown(flags, masterLinkStatus)) {
-                        disconnectedSlaves.add(uri);
                         log.warn("slave: {} is down", slaveAddr);
+                    } else {
+                        this.config.addSlaveAddress(uri.toString());
+                        log.info("slave: {} added", slaveAddr);
                     }
                 }
 
@@ -201,7 +202,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             log.warn("ReadMode = {}, but slave nodes are not found!", this.config.getReadMode());
         }
 
-        super.doConnect(disconnectedSlaves, uri2hostname::get);
+        super.doConnect(uri2hostname::get);
 
         scheduleChangeCheck(cfg, null);
     }

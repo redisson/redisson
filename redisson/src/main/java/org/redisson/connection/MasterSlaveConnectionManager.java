@@ -190,7 +190,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 if (i == attempts - 1) {
                     lastAttempt = true;
                 }
-                doConnect(new HashSet<>(), u -> null);
+                doConnect(u -> null);
                 return;
             } catch (IllegalArgumentException e) {
                 shutdown();
@@ -210,7 +210,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     }
 
-    protected void doConnect(Set<RedisURI> disconnectedSlaves, Function<RedisURI, String> hostnameMapper) {
+    protected void doConnect(Function<RedisURI, String> hostnameMapper) {
         try {
             if (config.isSlaveNotUsed()) {
                 masterSlaveEntry = new SingleEntry(this, config);
@@ -234,7 +234,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
 
             if (!config.isSlaveNotUsed()) {
-                CompletableFuture<Void> fs = masterSlaveEntry.initSlaveBalancer(disconnectedSlaves, hostnameMapper);
+                CompletableFuture<Void> fs = masterSlaveEntry.initSlaveBalancer(hostnameMapper);
                 try {
                     if (config.getSlaveConnectionMinimumIdleSize() == 0) {
                         fs.join();

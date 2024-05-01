@@ -90,12 +90,12 @@ public class MasterSlaveEntry {
         return config;
     }
 
-    public CompletableFuture<Void> initSlaveBalancer(Collection<RedisURI> disconnectedNodes, Function<RedisURI, String> hostnameMapper) {
+    public CompletableFuture<Void> initSlaveBalancer(Function<RedisURI, String> hostnameMapper) {
         List<CompletableFuture<Void>> result = new ArrayList<>(config.getSlaveAddresses().size());
         for (String address : config.getSlaveAddresses()) {
             RedisURI uri = new RedisURI(address);
             String hostname = hostnameMapper.apply(uri);
-            CompletableFuture<Void> f = addSlave(uri, disconnectedNodes.contains(uri), hostname);
+            CompletableFuture<Void> f = addSlave(uri, false, hostname);
             result.add(f);
         }
 
