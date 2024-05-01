@@ -240,7 +240,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
     }
 
     public void releaseConnection(ClientConnectionsEntry entry, T connection) {
-        if (entry.isFreezed() && entry.getFreezeReason() != ClientConnectionsEntry.FreezeReason.SYSTEM) {
+        if (entry.isFreezed()) {
             connection.closeAsync();
             getAllConnections().remove(connection);
         } else {

@@ -595,7 +595,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 continue;
             }
 
-            CompletableFuture<Void> slaveUpFuture = entry.addSlave(uri, false, configEndpointHostName);
+            CompletableFuture<Void> slaveUpFuture = entry.addSlave(uri, configEndpointHostName);
             CompletableFuture<Void> f = slaveUpFuture.thenAccept(res -> {
                 currentPart.addSlaveAddress(uri);
                 log.info("slave: {} added for master {} and slot ranges: {}",

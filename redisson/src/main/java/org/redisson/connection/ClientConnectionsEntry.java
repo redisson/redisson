@@ -46,7 +46,7 @@ public class ClientConnectionsEntry {
 
     private final TrackedConnectionsHolder trackedConnectionsHolder;
 
-    public enum FreezeReason {MANAGER, RECONNECT, SYSTEM}
+    public enum FreezeReason {MANAGER, RECONNECT}
 
     private volatile FreezeReason freezeReason;
     final RedisClient client;
