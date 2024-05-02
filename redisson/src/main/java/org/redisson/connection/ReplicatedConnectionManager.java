@@ -247,6 +247,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                     return;
                 }
 
+                entry.excludeMasterFromSlaves(address);
                 log.info("slave: {} added", address);
             });
         }
