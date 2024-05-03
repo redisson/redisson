@@ -567,7 +567,6 @@ public class RedissonTest extends RedisDockerTest {
 
         Config config = createConfig(redis);
         config.useSingleServer()
-                .setPassword("1234")
                 .setCredentialsResolver(new CredentialsResolver() {
                     @Override
                     public CompletionStage<Credentials> resolve(InetSocketAddress address) {
