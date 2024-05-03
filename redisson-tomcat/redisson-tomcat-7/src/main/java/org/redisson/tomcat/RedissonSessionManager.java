@@ -313,10 +313,7 @@ public class RedissonSessionManager extends ManagerBase {
                             }
                         } else {
                             if (msg instanceof SessionCreatedMessage) {
-                                Session s = findSession(msg.getSessionId());
-                                if (s == null) {
-                                    throw new IllegalStateException("Unable to find session: " + msg.getSessionId());
-                                }
+                                findSession(msg.getSessionId());
                             }
                             
                             if (msg instanceof SessionDestroyedMessage) {
