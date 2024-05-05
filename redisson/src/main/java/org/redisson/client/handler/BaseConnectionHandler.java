@@ -17,6 +17,7 @@ package org.redisson.client.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.util.internal.StringUtil;
 import org.redisson.client.*;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.Protocol;
@@ -65,7 +66,7 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
                 .thenCompose(credentials -> {
                     String password = Objects.toString(config.getAddress().getPassword(),
                             Objects.toString(credentials.getPassword(), config.getPassword()));
-                    if (password != null) {
+                    if (!StringUtil.isNullOrEmpty(password)) {
                         CompletionStage<Object> future;
                         String username = Objects.toString(config.getAddress().getUsername(),
                                 Objects.toString(credentials.getUsername(), config.getUsername()));
