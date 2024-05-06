@@ -83,7 +83,9 @@ public class BaseConfig<T extends BaseConfig<T>> {
     private String clientName;
 
     private boolean sslEnableEndpointIdentification = true;
-    
+
+    private String sslKeystoreType;
+
     private SslProvider sslProvider = SslProvider.JDK;
     
     private URL sslTruststore;
@@ -137,6 +139,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
         setSslProvider(config.getSslProvider());
         setSslTruststore(config.getSslTruststore());
         setSslTruststorePassword(config.getSslTruststorePassword());
+        setSslKeystoreType(config.getSslKeystoreType());
         setSslKeystore(config.getSslKeystore());
         setSslKeystorePassword(config.getSslKeystorePassword());
         setSslProtocols(config.getSslProtocols());
@@ -602,6 +605,23 @@ public class BaseConfig<T extends BaseConfig<T>> {
      */
     public T setCredentialsResolver(CredentialsResolver credentialsResolver) {
         this.credentialsResolver = credentialsResolver;
+        return (T) this;
+    }
+
+    public String getSslKeystoreType() {
+        return sslKeystoreType;
+    }
+
+    /**
+     * Defines SSL keystore type.
+     * <p>
+     * Default is <code>null</code>
+     *
+     * @param sslKeystoreType keystore type
+     * @return config
+     */
+    public T setSslKeystoreType(String sslKeystoreType) {
+        this.sslKeystoreType = sslKeystoreType;
         return (T) this;
     }
 

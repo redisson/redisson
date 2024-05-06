@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.util.Arrays;
 
 /**
@@ -117,14 +118,17 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
             provided = io.netty.handler.ssl.SslProvider.OPENSSL;
         }
         
-        SslContextBuilder sslContextBuilder = SslContextBuilder.forClient().sslProvider(provided);
+        SslContextBuilder sslContextBuilder = SslContextBuilder.forClient()
+                                                    .sslProvider(provided)
+                                                    .keyStoreType(config.getSslKeystoreType());
+
         sslContextBuilder.protocols(config.getSslProtocols());
         if (config.getSslCiphers() != null) {
             sslContextBuilder.ciphers(Arrays.asList(config.getSslCiphers()));
         }
 
         if (config.getSslTruststore() != null) {
-            KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+            KeyStore keyStore = getKeyStore(config);
             
             InputStream stream = config.getSslTruststore().openStream();
             try {
@@ -146,7 +150,7 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
         }
 
         if (config.getSslKeystore() != null){
-            KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+            KeyStore keyStore = getKeyStore(config);
             
             InputStream stream = config.getSslKeystore().openStream();
             char[] password = null;
@@ -217,5 +221,12 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
 
         });
     }
-    
+
+    private KeyStore getKeyStore(RedisClientConfig config) throws KeyStoreException {
+        if (config.getSslKeystoreType() != null) {
+            return KeyStore.getInstance(config.getSslKeystoreType());
+        }
+        return KeyStore.getInstance(KeyStore.getDefaultType());
+    }
+
 }

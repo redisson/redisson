@@ -280,6 +280,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         c.setPingConnectionInterval(cfg.getPingConnectionInterval());
         c.setSslEnableEndpointIdentification(cfg.isSslEnableEndpointIdentification());
         c.setSslProvider(cfg.getSslProvider());
+        c.setSslKeystoreType(cfg.getSslKeystoreType());
         c.setSslTruststore(cfg.getSslTruststore());
         c.setSslTruststorePassword(cfg.getSslTruststorePassword());
         c.setSslKeystore(cfg.getSslKeystore());
@@ -361,6 +362,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 .setSslHostname(sslHostname)
                 .setSslEnableEndpointIdentification(config.isSslEnableEndpointIdentification())
                 .setSslProvider(config.getSslProvider())
+                .setSslKeystoreType(config.getSslKeystoreType())
                 .setSslTruststore(config.getSslTruststore())
                 .setSslTruststorePassword(config.getSslTruststorePassword())
                 .setSslKeystore(config.getSslKeystore())

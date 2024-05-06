@@ -65,6 +65,7 @@ public class RedisClientConfig {
     private String sslHostname;
     private boolean sslEnableEndpointIdentification = true;
     private SslProvider sslProvider = SslProvider.JDK;
+    private String sslKeystoreType;
     private URL sslTruststore;
     private String sslTruststorePassword;
     private URL sslKeystore;
@@ -129,6 +130,7 @@ public class RedisClientConfig {
         this.tcpKeepAliveInterval = config.tcpKeepAliveInterval;
         this.tcpUserTimeout = config.tcpUserTimeout;
         this.protocol = config.protocol;
+        this.sslKeystoreType = config.sslKeystoreType;
     }
 
     public NettyHook getNettyHook() {
@@ -464,6 +466,15 @@ public class RedisClientConfig {
 
     public RedisClientConfig setProtocol(Protocol protocol) {
         this.protocol = protocol;
+        return this;
+    }
+
+    public String getSslKeystoreType() {
+        return sslKeystoreType;
+    }
+
+    public RedisClientConfig setSslKeystoreType(String sslKeystoreType) {
+        this.sslKeystoreType = sslKeystoreType;
         return this;
     }
 }

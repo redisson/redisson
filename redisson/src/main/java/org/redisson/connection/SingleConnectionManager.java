@@ -34,6 +34,7 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
         newconfig.setPingConnectionInterval(cfg.getPingConnectionInterval());
         newconfig.setSslEnableEndpointIdentification(cfg.isSslEnableEndpointIdentification());
         newconfig.setSslProvider(cfg.getSslProvider());
+        newconfig.setSslKeystoreType(cfg.getSslKeystoreType());
         newconfig.setSslTruststore(cfg.getSslTruststore());
         newconfig.setSslTruststorePassword(cfg.getSslTruststorePassword());
         newconfig.setSslKeystore(cfg.getSslKeystore());
