@@ -144,19 +144,21 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     }
                 }
 
-                List<Map<String, String>> sentinelSentinels = connection.sync(StringCodec.INSTANCE, RedisCommands.SENTINEL_SENTINELS, cfg.getMasterName());
-                List<CompletableFuture<Void>> connectionFutures = new ArrayList<>(sentinelSentinels.size());
-                for (Map<String, String> map : sentinelSentinels) {
-                    if (map.isEmpty()) {
-                        continue;
+                List<CompletableFuture<Void>> connectionFutures = new LinkedList<>();
+                if (cfg.isSentinelsDiscovery()) {
+                    List<Map<String, String>> sentinelSentinels = connection.sync(StringCodec.INSTANCE, RedisCommands.SENTINEL_SENTINELS, cfg.getMasterName());
+                    for (Map<String, String> map : sentinelSentinels) {
+                        if (map.isEmpty()) {
+                            continue;
+                        }
+
+                        String ip = map.get("ip");
+                        String port = map.get("port");
+
+                        InetSocketAddress sentinelAddr = resolveIP(ip, port).join();
+                        CompletionStage<Void> future = registerSentinel(sentinelAddr);
+                        connectionFutures.add(future.toCompletableFuture());
                     }
-
-                    String ip = map.get("ip");
-                    String port = map.get("port");
-
-                    InetSocketAddress sentinelAddr = resolveIP(ip, port).join();
-                    CompletionStage<Void> future = registerSentinel(sentinelAddr);
-                    connectionFutures.add(future.toCompletableFuture());
                 }
 
                 CompletionStage<Void> f = registerSentinel(connection.getRedisClient().getAddr());
