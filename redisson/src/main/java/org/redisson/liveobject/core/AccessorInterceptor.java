@@ -175,6 +175,14 @@ public class AccessorInterceptor {
                 } else {
                     liveMap.fastPut(fieldName, arg);
                 }
+            } else {
+                if (field.getAnnotation(RIndex.class) == null) {
+                    if (commandExecutor instanceof CommandBatchService) {
+                        liveMap.removeAsync(fieldName);
+                    } else {
+                        liveMap.remove(fieldName);
+                    }
+                }
             }
             return me;
         }

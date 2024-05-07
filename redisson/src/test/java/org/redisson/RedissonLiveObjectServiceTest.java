@@ -654,6 +654,19 @@ public class RedissonLiveObjectServiceTest extends RedisDockerTest {
     }
 
     @Test
+    public void testNullValue() {
+        TestClass ti = new TestClass("3");
+        TestClass liveObject = redisson.getLiveObjectService().merge(ti);
+
+        liveObject.setCode("test");
+        liveObject.setCode(null);
+        assertThat(liveObject.getCode()).isNull();
+
+        liveObject.setCode("123");
+        assertThat(liveObject.getCode()).isEqualTo("123");
+    }
+
+    @Test
     public void testFindGt() {
         RLiveObjectService s = redisson.getLiveObjectService();
         TestIndexed t1 = new TestIndexed("1");
