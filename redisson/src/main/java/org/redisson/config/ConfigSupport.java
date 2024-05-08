@@ -110,9 +110,7 @@ public class ConfigSupport {
         while (m.find()) {
             String[] parts = m.group(1).split(":-");
             String v = System.getenv(parts[0]);
-            if (v == null) {
-                v = System.getProperty(parts[0]);
-            }
+            v = System.getProperty(parts[0], v);
             if (v != null) {
                 content = content.replace(m.group(), v);
             } else if (parts.length == 2) {
