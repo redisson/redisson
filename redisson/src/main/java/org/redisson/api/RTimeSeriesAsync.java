@@ -69,8 +69,7 @@ public interface RTimeSeriesAsync<V, L> extends RExpirableAsync {
     RFuture<Void>  addAllAsync(Collection<TimeSeriesEntry<V, L>> entries);
 
     /**
-     * Adds element to this time-series collection
-     * by specified <code>timestamp</code>.
+     * Use {@link #addAsync(long, Object, Duration)} instead
      *
      * @param timestamp - object timestamp
      * @param object - object itself
@@ -78,7 +77,18 @@ public interface RTimeSeriesAsync<V, L> extends RExpirableAsync {
      * @param timeUnit - unit of time to live interval
      * @return void
      */
+    @Deprecated
     RFuture<Void> addAsync(long timestamp, V object, long timeToLive, TimeUnit timeUnit);
+
+    /**
+     * Adds element to this time-series collection
+     * by specified <code>timestamp</code>.
+     *
+     * @param timestamp object timestamp
+     * @param object object itself
+     * @param timeToLive time to live interval
+     */
+    RFuture<Void> addAsync(long timestamp, V object, Duration timeToLive);
 
     /**
      * Adds element with <code>label</code> to this time-series collection
@@ -93,15 +103,24 @@ public interface RTimeSeriesAsync<V, L> extends RExpirableAsync {
     RFuture<Void> addAsync(long timestamp, V object, L label, Duration timeToLive);
 
     /**
-     * Adds all elements contained in the specified map to this time-series collection.
-     * Map contains of timestamp mapped by object.
+     * Use {@link #addAllAsync(Map, Duration)} instead
      *
      * @param objects - map of elements to add
      * @param timeToLive - time to live interval
      * @param timeUnit - unit of time to live interval
      * @return void
      */
+    @Deprecated
     RFuture<Void> addAllAsync(Map<Long, V> objects, long timeToLive, TimeUnit timeUnit);
+
+    /**
+     * Adds all elements contained in the specified map to this time-series collection.
+     * Map contains of timestamp mapped by object.
+     *
+     * @param objects map of elements to add
+     * @param timeToLive time to live interval
+     */
+    RFuture<Void> addAllAsync(Map<Long, V> objects, Duration timeToLive);
 
     /**
      * Adds all time series entries collection to this time-series collection.

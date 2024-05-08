@@ -90,7 +90,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
 
     @Override
     public void addAll(Map<Long, V> objects) {
-        addAll(objects, 0, null);
+        addAll(objects, 0, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -101,6 +101,16 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
     @Override
     public RFuture<Void> addAsync(long timestamp, V object, long timeToLive, TimeUnit timeUnit) {
         return addAllAsync(Collections.singletonMap(timestamp, object), timeToLive, timeUnit);
+    }
+
+    @Override
+    public void add(long timestamp, V object, Duration timeToLive) {
+        get(addAsync(timestamp, object, timeToLive));
+    }
+
+    @Override
+    public RFuture<Void> addAsync(long timestamp, V object, Duration timeToLive) {
+        return addAllAsync(Collections.singletonMap(timestamp, object), timeToLive);
     }
 
     @Override
@@ -120,14 +130,24 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
 
     @Override
     public RFuture<Void> addAllAsync(Map<Long, V> objects) {
-        return addAllAsync(objects, 0, null);
+        return addAllAsync(objects, 0, TimeUnit.MILLISECONDS);
     }
 
     @Override
     public RFuture<Void> addAllAsync(Map<Long, V> objects, long timeToLive, TimeUnit timeUnit) {
+        return addAllAsync(objects, Duration.ofMillis(timeUnit.toMillis(timeToLive)));
+    }
+
+    @Override
+    public void addAll(Map<Long, V> objects, Duration timeToLive) {
+        get(addAllAsync(objects, timeToLive));
+    }
+
+    @Override
+    public RFuture<Void> addAllAsync(Map<Long, V> objects, Duration timeToLive) {
         long expirationTime = System.currentTimeMillis();
-        if (timeToLive > 0) {
-            expirationTime += timeUnit.toMillis(timeToLive);
+        if (timeToLive != null && !timeToLive.isZero()) {
+            expirationTime += timeToLive.toMillis();
         } else {
             expirationTime += TimeUnit.DAYS.toMillis(365 * 100);
         }
@@ -141,7 +161,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
             encode(params, entry.getValue());
         }
 
-        if (timeToLive > 0) {
+        if (timeToLive != null && !timeToLive.isZero()) {
             return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
            "for i = 2, #ARGV, 3 do " +
                     "local val = struct.pack('BBc0Lc0Lc0', 2, string.len(ARGV[i+1]), ARGV[i+1], string.len(ARGV[i+2]), ARGV[i+2], 0, ''); " +

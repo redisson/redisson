@@ -67,15 +67,25 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
     void addAll(Collection<TimeSeriesEntry<V, L>> entries);
 
     /**
-     * Adds element to this time-series collection
-     * by specified <code>timestamp</code>.
+     * Use {@link #add(long, Object, Duration)} instead
      *
      * @param timestamp - object timestamp
      * @param object - object itself
      * @param timeToLive - time to live interval
      * @param timeUnit - unit of time to live interval
      */
+    @Deprecated
     void add(long timestamp, V object, long timeToLive, TimeUnit timeUnit);
+
+    /**
+     * Adds element to this time-series collection
+     * by specified <code>timestamp</code>.
+     *
+     * @param timestamp object timestamp
+     * @param object object itself
+     * @param timeToLive time to live interval
+     */
+    void add(long timestamp, V object, Duration timeToLive);
 
     /**
      * Adds element with <code>label</code> to this time-series collection
@@ -89,14 +99,23 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
     void add(long timestamp, V object, L label, Duration timeToLive);
 
     /**
-     * Adds all elements contained in the specified map to this time-series collection.
-     * Map contains of timestamp mapped by object.
+     * Use {@link #addAll(Map, Duration)} instead
      *
      * @param objects - map of elements to add
      * @param timeToLive - time to live interval
      * @param timeUnit - unit of time to live interval
      */
+    @Deprecated
     void addAll(Map<Long, V> objects, long timeToLive, TimeUnit timeUnit);
+
+    /**
+     * Adds all elements contained in the specified map to this time-series collection.
+     * Map contains of timestamp mapped by object.
+     *
+     * @param objects map of elements to add
+     * @param timeToLive time to live interval
+     */
+    void addAll(Map<Long, V> objects, Duration timeToLive);
 
     /**
      * Adds all time series entries collection to this time-series collection.
