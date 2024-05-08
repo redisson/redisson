@@ -380,6 +380,14 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
     <T extends Number> Mono<List<T>> incrementAndGetMulti(String path, Mono<T> delta);
 
     /**
+     * Merges object into element by the specified JSONPath.
+     *
+     * @param path JSON path
+     * @param value value to merge
+     */
+    Mono<Void> merge(String path, Object value);
+
+    /**
      * Returns keys amount in JSON container
      *
      * @return keys amount

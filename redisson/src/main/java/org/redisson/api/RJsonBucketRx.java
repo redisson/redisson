@@ -382,6 +382,14 @@ public interface RJsonBucketRx<V> extends RBucketRx<V> {
     <T extends Number> Single<List<T>> incrementAndGetMulti(String path, Maybe<T> delta);
 
     /**
+     * Merges object into element by the specified JSONPath.
+     *
+     * @param path JSON path
+     * @param value value to merge
+     */
+    Completable merge(String path, Object value);
+
+    /**
      * Returns keys amount in JSON container
      *
      * @return keys amount

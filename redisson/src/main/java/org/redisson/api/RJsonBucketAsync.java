@@ -379,6 +379,14 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
     <T extends Number> RFuture<List<T>> incrementAndGetMultiAsync(String path, T delta);
 
     /**
+     * Merges object into element by the specified JSONPath.
+     *
+     * @param path JSON path
+     * @param value value to merge
+     */
+    RFuture<Void> mergeAsync(String path, Object value);
+
+    /**
      * Returns keys amount in JSON container
      *
      * @return keys amount

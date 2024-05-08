@@ -455,6 +455,18 @@ public class RedissonJsonBucketTest extends DockerRedisStackTest {
     }
 
     @Test
+    public void testMerge() {
+        RJsonBucket<TestType> al = redisson.getJsonBucket("test", new JacksonCodec<>(TestType.class));
+        TestType t = new TestType();
+        t.setName("name1");
+        al.set(t);
+
+        al.merge("$.name", "name2");
+        t = al.get();
+        assertThat(t.getName()).isEqualTo("name2");
+    }
+
+    @Test
     public void testSetGet() {
         RJsonBucket<TestType> al = redisson.getJsonBucket("test", new JacksonCodec<>(TestType.class));
         assertThat(al.get()).isNull();

@@ -98,7 +98,6 @@ public interface RJsonBucket<V> extends RBucket<V>, RJsonBucketAsync<V> {
      *
      * @param path JSON path
      * @param value value to set
-     * @return void
      */
     void set(String path, Object value);
 
@@ -377,6 +376,14 @@ public interface RJsonBucket<V> extends RBucket<V>, RJsonBucketAsync<V> {
      * @return list of updated value
      */
     <T extends Number> List<T> incrementAndGetMulti(String path, T delta);
+
+    /**
+     * Merges object into element by the specified JSONPath.
+     *
+     * @param path JSON path
+     * @param value value to merge
+     */
+    void merge(String path, Object value);
 
     /**
      * Returns keys amount in JSON container

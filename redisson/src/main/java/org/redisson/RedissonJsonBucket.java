@@ -929,4 +929,13 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.JSON_DEL_LONG, getRawName(), path);
     }
 
+    @Override
+    public void merge(String path, Object value) {
+        get(mergeAsync(path, value));
+    }
+
+    @Override
+    public RFuture<Void> mergeAsync(String path, Object value) {
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.JSON_MERGE, getRawName(), path, encode(value));
+    }
 }
