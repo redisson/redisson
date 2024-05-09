@@ -26,6 +26,7 @@ import org.redisson.misc.WrappedLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -173,12 +174,22 @@ public class ClientConnectionsEntry {
         for (int i = 0; i < commandData.getParams().length; i++) {
             Object param = commandData.getParams()[i];
             if ("STREAMS".equals(param)) {
-                key = (String) commandData.getParams()[i+1];
+                Object k = commandData.getParams()[i+1];
+                if (k instanceof byte[]) {
+                    key = new String((byte[]) k, StandardCharsets.UTF_8);
+                } else {
+                    key = (String) k;
+                }
                 break;
             }
         }
         if (key == null) {
-            key = (String) commandData.getParams()[0];
+            Object k = commandData.getParams()[0];
+            if (k instanceof byte[]) {
+                key = new String((byte[]) k, StandardCharsets.UTF_8);
+            } else {
+                key = (String) k;
+            }
         }
 
         MasterSlaveEntry entry = connectionManager.getEntry(key);
