@@ -1,10 +1,26 @@
 package org.redisson.spring.data.connection;
 
+import mockit.Invocation;
+import mockit.Mock;
+import mockit.MockUp;
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
+import org.redisson.Redisson;
+import org.redisson.api.RedissonClient;
+import org.redisson.client.protocol.CommandData;
+import org.redisson.connection.ClientConnectionsEntry;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.stream.*;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.stream.StreamListener;
+import org.springframework.data.redis.stream.StreamMessageListenerContainer;
+import org.springframework.data.redis.stream.Subscription;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -12,6 +28,105 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Nikita Koksharov
  */
 public class RedissonStreamTest extends BaseConnectionTest {
+
+    @Test
+    public void testReattachment() throws InterruptedException {
+        withSentinel((nodes, config) -> {
+            RedissonClient redissonClient = Redisson.create(config);
+
+            RedisConnectionFactory redisConnectionFactory = new RedissonConnectionFactory(redissonClient);
+
+            StreamMessageListenerContainer listenerContainer = StreamMessageListenerContainer.create(redisConnectionFactory, getOptions());
+
+
+            Consumer consumer = Consumer.from("group", "consumer1");
+            StreamOffset<String> streamOffset = StreamOffset.create("test", ReadOffset.from(">"));
+            String channel = "test";
+            AtomicInteger counter = new AtomicInteger();
+            Subscription subscription = listenerContainer.register(getReadRequest(consumer, streamOffset),
+                    listener(redisConnectionFactory, channel, consumer, counter));
+
+            StringRedisTemplate t1 = new StringRedisTemplate(redisConnectionFactory);
+            t1.opsForStream().createGroup("test", "group");
+
+            listenerContainer.start();
+
+            AtomicReference<Boolean> invoked = new AtomicReference<>();
+
+            new MockUp<ClientConnectionsEntry>() {
+
+                @Mock
+                void reattachBlockingQueue(Invocation inv, CommandData<?, ?> commandData) {
+                    try {
+                        inv.proceed(commandData);
+                        invoked.compareAndSet(null, true);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        invoked.set(false);
+                        throw e;
+                    }
+                }
+            };
+
+            for (int i = 0; i < 3; i++) {
+                StringRedisTemplate stringRedisTemplate = new StringRedisTemplate(redisConnectionFactory);
+                ObjectRecord<String, String> record = StreamRecords.newRecord()
+                        .ofObject("message")
+                        .withStreamKey(channel);
+                RecordId recordId = stringRedisTemplate.opsForStream().add(record);
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                nodes.get(0).stop();
+                try {
+                    Thread.sleep(15000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            assertThat(invoked.get()).isTrue();
+
+            Assertions.assertThat(counter.get()).isEqualTo(3);
+            listenerContainer.stop();
+            redissonClient.shutdown();
+        }, 2);
+    }
+
+    private StreamMessageListenerContainer.StreamMessageListenerContainerOptions<String, ObjectRecord<String, String>> getOptions() {
+        return StreamMessageListenerContainer
+                .StreamMessageListenerContainerOptions
+                .builder()
+                .pollTimeout(Duration.ofSeconds(1))
+                .targetType(String.class)
+                .build();
+    }
+
+    private StreamMessageListenerContainer.StreamReadRequest<String> getReadRequest(Consumer consumer, StreamOffset<String> streamOffset) {
+        return StreamMessageListenerContainer.StreamReadRequest
+                .builder(streamOffset)
+                .consumer(consumer)
+                .autoAcknowledge(false)
+                .cancelOnError((err) -> false)  // do not stop consuming after error
+                .build();
+    }
+
+    private <T> StreamListener listener(RedisConnectionFactory redisConnectionFactory, String channel, Consumer consumer, AtomicInteger counter) {
+
+        return message -> {
+            try {
+                System.out.println("Acknowledging message: " + message.getId());
+                StringRedisTemplate stringRedisTemplate = new StringRedisTemplate(redisConnectionFactory);
+                stringRedisTemplate.opsForStream().acknowledge(channel, consumer.getGroup(), message.getId());
+                System.out.println("RECEIVED " + consumer + " " + message);
+                counter.incrementAndGet();
+            } catch(Exception e) {
+                e.printStackTrace();
+            }
+        };
+    }
 
     @Test
     public void testPending() {

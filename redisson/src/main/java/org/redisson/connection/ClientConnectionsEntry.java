@@ -163,7 +163,7 @@ public class ClientConnectionsEntry {
         connectionsHolder.getAllConnections().clear();
     }
 
-    private void reattachBlockingQueue(CommandData<?, ?> commandData) {
+    void reattachBlockingQueue(CommandData<?, ?> commandData) {
         if (commandData == null
                 || !commandData.isBlockingCommand()
                 || commandData.getPromise().isDone()) {

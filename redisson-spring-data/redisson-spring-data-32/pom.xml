@@ -26,10 +26,28 @@
             <version>1.4.12</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>com.github.hazendaz.jmockit</groupId>
+            <artifactId>jmockit</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                    <configuration>
+                        <redirectTestOutputToFile>true</redirectTestOutputToFile>
+
+                        <forkCount>4</forkCount>
+                        <reuseForks>true</reuseForks>
+                        <argLine>${argLine} -javaagent:"${settings.localRepository}"/com/github/hazendaz/jmockit/jmockit/1.52.0/jmockit-1.52.0.jar</argLine>
+                    </configuration>
+            </plugin>
+
             <plugin>
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>3.4.1</version>
