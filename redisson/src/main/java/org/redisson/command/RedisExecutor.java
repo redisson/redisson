@@ -31,6 +31,8 @@ import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.decoder.ListMultiDecoder2;
+import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
@@ -42,10 +44,7 @@ import org.redisson.misc.RedisURI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.BiConsumer;
 
@@ -461,7 +460,12 @@ public class RedisExecutor<V, R> {
         if (popTimeout != 0) {
             // handling cases when connection has been lost
             scheduledFuture = connectionManager.getServiceManager().newTimeout(timeout -> {
-                if (attemptPromise.complete(null)) {
+                R res = null;
+                if (command.getReplayMultiDecoder() instanceof ObjectListReplayDecoder
+                        || command.getReplayMultiDecoder() instanceof ListMultiDecoder2) {
+                    res = (R) Collections.emptyList();
+                }
+                if (attemptPromise.complete(res)) {
                     connection.forceFastReconnectAsync();
                 }
             }, popTimeout + 3000, TimeUnit.MILLISECONDS);
