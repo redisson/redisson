@@ -3,6 +3,30 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
 
+### 10-May-2024 - 3.30.0 released
+Feature - `sslKeystoreType` setting added  
+Feature - `RPatternTopic.getActiveTopic()` method added (thanks to @MasterShi)  
+Feature - `RJsonBucket.merge()` method added  
+Feature - Async, Rx, Reactive interfaces implemented for `RBloomFilter` object  
+Feature - fallback mode for JCache  
+Feature - [passwords encryption](https://github.com/redisson/redisson/wiki/2.-Configuration#223-passwords-encryption) support  
+Feature - [Spring Cloud Stream](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#149-spring-cloud-stream) integration  
+
+Improvement - configuration variable defined as Java system property overrides environment variable  
+
+Fixed - io.projectreactor package should be defined as optional in OSGi Manifest  
+Fixed - Spring Data Redis `StreamPollTask.deserializeAndEmitRecords()` method throws NPE after failover  
+Fixed - Spring Data Redis blocking poll commands can't be reattached after failover  
+Fixed - Unable to find session error reported by `RedissonSessionManager`  
+Fixed - Sentinels discovery is applied at Redisson startup if `sentinelsDiscovery = true`  
+Fixed - master node is used for read operations after slave node addition if `readMode = SLAVE` in replicated mode  
+Fixed - failover handling of blocking methods calls with defined timeout. RStream, RBlockingQueue objects  
+Fixed - multiple `RLocalCachedMap` objects don't work in the same RTransaction (thanks to @vlad-ogol @RajaJaisankar)  
+Fixed - codec setting isn't applied in `redisson.getMap(MapOptions)` method  
+Fixed - Live Object field can't set to null value  
+Fixed - `SentinelConnectionManager` stops scheduling topology change change / dns check after host resolution error  
+Fixed - `RMapCache.fastPutIfExistsOperation()` method uses incorrect pubsub channel
+
 ### 22-Apr-2024 - 3.29.0 released
 Feature - `NewObjectListener` added to track created objects  
 Feature - `NewObjectListener` and `SetObjectListener` can be registered with `RKeys.addListener()` method  
