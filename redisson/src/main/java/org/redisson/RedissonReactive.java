@@ -871,6 +871,24 @@ public class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
+    public <V> RBloomFilterReactive<V> getBloomFilter(String name) {
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonBloomFilter<>(commandExecutor, name), RBloomFilterReactive.class);
+    }
+
+    @Override
+    public <V> RBloomFilterReactive<V> getBloomFilter(String name, Codec codec) {
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonBloomFilter<>(codec, commandExecutor, name), RBloomFilterReactive.class);
+    }
+
+    @Override
+    public <V> RBloomFilterReactive<V> getBloomFilter(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        CommandReactiveExecutor ca = commandExecutor.copy(params);
+        return ReactiveProxyBuilder.create(commandExecutor,
+                new RedissonBloomFilter<V>(params.getCodec(), ca, params.getName()), RBloomFilterReactive.class);
+    }
+
+    @Override
     public RFunctionReactive getFunction() {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonFuction(commandExecutor), RFunctionReactive.class);
     }

@@ -3,6 +3,7 @@ package org.redisson;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RBloomFilter;
+import org.redisson.client.RedisException;
 
 import java.time.Instant;
 import java.util.Arrays;
@@ -89,7 +90,7 @@ public class RedissonBloomFilterTest extends RedisDockerTest {
 
     @Test
     public void testNotInitializedOnExpectedInsertions() {
-        Assertions.assertThrows(IllegalStateException.class, () -> {
+        Assertions.assertThrows(RedisException.class, () -> {
             RBloomFilter<String> filter = redisson.getBloomFilter("filter");
             filter.getExpectedInsertions();
         });
@@ -111,7 +112,7 @@ public class RedissonBloomFilterTest extends RedisDockerTest {
 
     @Test
     public void testNotInitializedOnContains() {
-        Assertions.assertThrows(IllegalStateException.class, () -> {
+        Assertions.assertThrows(RedisException.class, () -> {
             RBloomFilter<String> filter = redisson.getBloomFilter("filter");
             filter.contains("32");
         });
@@ -119,7 +120,7 @@ public class RedissonBloomFilterTest extends RedisDockerTest {
 
     @Test
     public void testNotInitializedOnAdd() {
-        Assertions.assertThrows(IllegalStateException.class, () -> {
+        Assertions.assertThrows(RedisException.class, () -> {
             RBloomFilter<String> filter = redisson.getBloomFilter("filter");
             filter.add("123");
         });

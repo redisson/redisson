@@ -1362,6 +1362,35 @@ public interface RedissonReactiveClient {
     RBitSetReactive getBitSet(CommonOptions options);
 
     /**
+     * Returns bloom filter instance by name.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @return BloomFilter object
+     */
+    <V> RBloomFilterReactive<V> getBloomFilter(String name);
+
+    /**
+     * Returns bloom filter instance by name
+     * using provided codec for objects.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @param codec codec for values
+     * @return BloomFilter object
+     */
+    <V> RBloomFilterReactive<V> getBloomFilter(String name, Codec codec);
+
+    /**
+     * Returns bloom filter instance with specified <code>options</code>.
+     *
+     * @param <V> type of value
+     * @param options instance options
+     * @return BloomFilter object
+     */
+    <V> RBloomFilterReactive<V> getBloomFilter(PlainOptions options);
+
+    /**
      * Returns interface for Redis Function feature
      *
      * @return function object

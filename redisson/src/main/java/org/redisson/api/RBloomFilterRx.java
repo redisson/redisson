@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import io.reactivex.rxjava3.core.Single;
+
 import java.util.Collection;
 
 /**
@@ -24,7 +26,7 @@ import java.util.Collection;
  *
  * @param <T> - type of object
  */
-public interface RBloomFilter<T> extends RExpirable, RBloomFilterAsync<T> {
+public interface RBloomFilterRx<T> extends RExpirableRx {
 
     /**
      * Adds element
@@ -33,7 +35,7 @@ public interface RBloomFilter<T> extends RExpirable, RBloomFilterAsync<T> {
      * @return <code>true</code> if element has been added successfully
      *         <code>false</code> if element is already present
      */
-    boolean add(T object);
+    Single<Boolean> add(T object);
 
     /**
      * Adds elements
@@ -41,7 +43,7 @@ public interface RBloomFilter<T> extends RExpirable, RBloomFilterAsync<T> {
      * @param elements elements to add
      * @return number of added elements
      */
-    long add(Collection<T> elements);
+    Single<Long> add(Collection<T> elements);
 
     /**
      * Checks for element presence
@@ -50,7 +52,7 @@ public interface RBloomFilter<T> extends RExpirable, RBloomFilterAsync<T> {
      * @return <code>true</code> if element is present
      *         <code>false</code> if element is not present
      */
-    boolean contains(T object);
+    Single<Boolean> contains(T object);
 
     /**
      * Checks for elements presence
@@ -58,7 +60,7 @@ public interface RBloomFilter<T> extends RExpirable, RBloomFilterAsync<T> {
      * @param elements elements to check presence
      * @return number of elements present
      */
-    long contains(Collection<T> elements);
+    Single<Long> contains(Collection<T> elements);
 
     /**
      * Initializes Bloom filter params (size and hashIterations)
@@ -70,7 +72,7 @@ public interface RBloomFilter<T> extends RExpirable, RBloomFilterAsync<T> {
      * @return <code>true</code> if Bloom filter initialized
      *         <code>false</code> if Bloom filter already has been initialized
      */
-    boolean tryInit(long expectedInsertions, double falseProbability);
+    Single<Boolean> tryInit(long expectedInsertions, double falseProbability);
 
     /**
      * Returns expected amount of insertions per element.
@@ -78,7 +80,7 @@ public interface RBloomFilter<T> extends RExpirable, RBloomFilterAsync<T> {
      * 
      * @return expected amount of insertions per element
      */
-    long getExpectedInsertions();
+    Single<Long> getExpectedInsertions();
 
     /**
      * Returns false probability of element presence. 
@@ -86,14 +88,14 @@ public interface RBloomFilter<T> extends RExpirable, RBloomFilterAsync<T> {
      * 
      * @return false probability of element presence
      */
-    double getFalseProbability();
+    Single<Double> getFalseProbability();
 
     /**
      * Returns number of bits in Redis memory required by this instance
      * 
      * @return number of bits
      */
-    long getSize();
+    Single<Long> getSize();
 
     /**
      * Returns hash iterations amount used per element. 
@@ -101,13 +103,13 @@ public interface RBloomFilter<T> extends RExpirable, RBloomFilterAsync<T> {
      * 
      * @return hash iterations amount
      */
-    int getHashIterations();
+    Single<Integer> getHashIterations();
 
     /**
      * Calculates probabilistic number of elements already added to Bloom filter.
      *
      * @return probabilistic number of elements
      */
-    long count();
+    Single<Long> count();
 
 }
