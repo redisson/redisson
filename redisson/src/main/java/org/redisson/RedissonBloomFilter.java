@@ -109,31 +109,35 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
 
         List<Long> allIndexes = index(objects);
 
-        CommandBatchService executorService = new CommandBatchService(commandExecutor);
-        addConfigCheck(hashIterations, size, executorService);
-        RBitSetAsync bs = createBitSet(executorService);
-        for (long index : allIndexes) {
-            bs.setAsync(index);
-        }
-        List<Boolean> result = (List<Boolean>) executorService.execute().getResponses();
-        List<Boolean> res = result.subList(1, result.size());
-
+        List<Object> params = new ArrayList<>();
+        params.add(size);
+        params.add(hashIterations);
         int s = allIndexes.size() / objects.size();
-        int c = 0;
-        int k = 0;
-        for (int i = 0; i < res.size(); i++) {
-            Boolean val = res.get(i);
-            if (!val) {
-                k++;
-            }
-            if ((i + 1) % s == 0) {
-                if (k > 0) {
-                    c++;
-                }
-                k = 0;
-            }
-        }
-        return c;
+        params.add(s);
+        params.addAll(allIndexes);
+
+        return get(commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_LONG,
+                  "local size = redis.call('hget', KEYS[1], 'size');" +
+                        "local hashIterations = redis.call('hget', KEYS[1], 'hashIterations');" +
+                        "assert(size == ARGV[1] and hashIterations == ARGV[2], 'Bloom filter config has been changed')" +
+
+                        "local k = 0;" +
+                        "local c = 0;" +
+                        "for i = 4, #ARGV, 1 do " +
+                            "local r = redis.call('setbit', KEYS[2], ARGV[i], 1); " +
+                            "if r == 0 then " +
+                                "k = k + 1;" +
+                            "end; " +
+                            "if ((i - 4) + 1) % ARGV[3] == 0 then " +
+                                "if k > 0 then " +
+                                    "c = c + 1;" +
+                                "end; " +
+                                "k = 0; " +
+                            "end; " +
+                        "end; " +
+                        "return c;",
+                Arrays.asList(configName, getRawName()),
+                params.toArray()));
     }
 
     private long[] hash(long hash1, long hash2, int iterations, long size) {
@@ -158,31 +162,35 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
 
         List<Long> allIndexes = index(objects);
 
-        CommandBatchService executorService = new CommandBatchService(commandExecutor);
-        addConfigCheck(hashIterations, size, executorService);
-        RBitSetAsync bs = createBitSet(executorService);
-        for (long index : allIndexes) {
-            bs.getAsync(index);
-        }
-        List<Boolean> result = (List<Boolean>) executorService.execute().getResponses();
-        List<Boolean> res = result.subList(1, result.size());
+        List<Object> params = new ArrayList<>();
+        params.add(size);
+        params.add(hashIterations);
+        params.add(objects.size());
+        params.addAll(allIndexes);
 
-        int s = allIndexes.size() / objects.size();
-        int missed = 0;
-        int k = 0;
-        for (int i = 0; i < res.size(); i++) {
-            Boolean val = res.get(i);
-            if (!val) {
-                k++;
-            }
-            if ((i + 1) % s == 0) {
-                if (k > 0) {
-                    missed++;
-                }
-                k = 0;
-            }
-        }
-        return objects.size() - missed;
+        return get(commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_LONG,
+                  "local size = redis.call('hget', KEYS[1], 'size');" +
+                        "local hashIterations = redis.call('hget', KEYS[1], 'hashIterations');" +
+                        "assert(size == ARGV[1] and hashIterations == ARGV[2], 'Bloom filter config has been changed')" +
+
+                        "local k = 0;" +
+                        "local c = 0;" +
+                        "local cc = (#ARGV - 3) / ARGV[3];" +
+                        "for i = 4, #ARGV, 1 do " +
+                            "local r = redis.call('getbit', KEYS[2], ARGV[i]); " +
+                            "if r == 0 then " +
+                                "k = k + 1;" +
+                            "end; " +
+                            "if ((i - 4) + 1) % cc == 0 then " +
+                                "if k > 0 then " +
+                                    "c = c + 1;" +
+                                "end; " +
+                                "k = 0; " +
+                            "end; " +
+                        "end; " +
+                        "return ARGV[3] - c;",
+                Arrays.asList(configName, getRawName()),
+                params.toArray()));
     }
 
     private List<Long> index(Collection<T> objects) {
@@ -202,14 +210,6 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
 
     protected RBitSetAsync createBitSet(CommandBatchService executorService) {
         return new RedissonBitSet(executorService, getName());
-    }
-
-    private void addConfigCheck(int hashIterations, long size, CommandBatchService executorService) {
-        executorService.evalReadAsync(configName, codec, RedisCommands.EVAL_VOID,
-                "local size = redis.call('hget', KEYS[1], 'size');" +
-                        "local hashIterations = redis.call('hget', KEYS[1], 'hashIterations');" +
-                        "assert(size == ARGV[1] and hashIterations == ARGV[2], 'Bloom filter config has been changed')",
-                        Arrays.<Object>asList(configName), size, hashIterations);
     }
 
     @Override
