@@ -123,8 +123,11 @@ public class RedissonReliableTopicTest extends RedisDockerTest {
             messages.add(m);
         });
 
+        Thread.sleep(50);
         assertThat(messages).containsOnly("1");
+
         rt.publish("2");
+
         Thread.sleep(50);
         assertThat(messages).containsOnly("1", "2");
 
