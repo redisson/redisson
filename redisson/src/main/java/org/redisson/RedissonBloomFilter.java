@@ -57,11 +57,11 @@ import java.util.stream.Collectors;
  */
 public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomFilter<T> {
 
-    private volatile long size;
-    private volatile int hashIterations;
+    volatile long size;
+    volatile int hashIterations;
 
-    private final CommandAsyncExecutor commandExecutor;
-    private String configName;
+    final CommandAsyncExecutor commandExecutor;
+    String configName;
 
     protected RedissonBloomFilter(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
@@ -217,7 +217,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
         return get(containsAsync(objects));
     }
 
-    private List<Long> index(Collection<T> objects) {
+    List<Long> index(Collection<T> objects) {
         List<Long> allIndexes = new LinkedList<>();
         for (T object : objects) {
             long[] hashes = hash(object);
@@ -266,7 +266,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
         return super.sizeInMemoryAsync(keys);
     }
     
-    private CompletionStage<Void> readConfigAsync() {
+    CompletionStage<Void> readConfigAsync() {
         RFuture<Map<String, String>> future = commandExecutor.readAsync(configName, StringCodec.INSTANCE,
                 new RedisCommand<Map<Object, Object>>("HGETALL", new ObjectMapReplayDecoder()), configName);
         return future.thenAccept(config -> {
