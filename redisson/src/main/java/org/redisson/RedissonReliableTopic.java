@@ -193,6 +193,10 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
                 log.error(ex.getCause().getMessage(), ex.getCause());
 
                 getServiceManager().newTimeout(task -> {
+                    if (getServiceManager().isShuttingDown()) {
+                        return;
+                    }
+
                     poll(id);
                 }, 1, TimeUnit.SECONDS);
                 return;
@@ -325,7 +329,7 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
 
     private void renewExpiration() {
         timeoutTask = getServiceManager().newTimeout(t -> {
-            if (!subscribed.get()) {
+            if (!subscribed.get() || getServiceManager().isShuttingDown()) {
                 return;
             }
 
