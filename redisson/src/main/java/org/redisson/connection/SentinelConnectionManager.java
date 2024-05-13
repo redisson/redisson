@@ -170,8 +170,6 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 } catch (Exception e) {
                     // skip
                 }
-
-                break;
             } catch (RedisConnectionException e) {
                 internalShutdown();
                 throw e;
