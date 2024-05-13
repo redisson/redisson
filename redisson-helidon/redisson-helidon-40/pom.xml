@@ -83,14 +83,14 @@
         <dependency>
             <groupId>org.jboss</groupId>
             <artifactId>jandex</artifactId>
-            <version>3.1.5</version>
+            <version>3.1.8</version>
             <scope>runtime</scope>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>io.helidon.microprofile.config</groupId>
             <artifactId>helidon-microprofile-config</artifactId>
-            <version>4.0.3</version>
+            <version>4.0.8</version>
             <scope>runtime</scope>
             <optional>true</optional>
         </dependency>
@@ -105,7 +105,7 @@
         <dependency>
             <groupId>io.helidon.microprofile.cdi</groupId>
             <artifactId>helidon-microprofile-cdi</artifactId>
-            <version>4.0.3</version>
+            <version>4.0.8</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
