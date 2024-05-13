@@ -212,6 +212,9 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 if (e instanceof CompletionException) {
                     e = e.getCause();
                 }
+                if (e instanceof CacheException) {
+                    throw new CompletionException(e);
+                }
                 throw new CompletionException(new CacheException(e));
             }
             return r;
@@ -268,6 +271,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                         try {
                             V val = loadValue(key);
                             result.complete(val);
+                        } catch (CacheException ex) {
+                            result.completeExceptionally(ex);
                         } catch (Exception ex) {
                             result.completeExceptionally(new CacheException(ex));
                         }
@@ -409,8 +414,13 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
             throw new CacheLoaderException(ex);
         }
         if (loaded != null) {
+            loaded = loaded.entrySet()
+                    .stream()
+                    .filter(e -> e.getValue() != null)
+                    .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+
             long startTime = currentNanoTime();
-            putAll(loaded);
+            putAllValues(loaded);
             cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
         }
         return loaded;
@@ -1069,13 +1079,14 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                                 .collect(Collectors.toSet());
 
                         Map<K, V> loadedMap = loadValues(nullKeys);
-                        r.putAll(loadedMap);
+                        notNullEntries.putAll(loadedMap);
                     } catch (Exception exc) {
                         result.completeExceptionally(exc);
                         return;
                     }
                     cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
-                    result.complete(r);
+
+                    result.complete(notNullEntries);
                 });
             } else {
                 cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
