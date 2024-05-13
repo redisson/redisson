@@ -179,7 +179,7 @@ public final class RedissonNode {
                 // skip
             }
             if (readConnection != null) {
-                entry.releaseRead(readConnection, false);
+                entry.releaseRead(readConnection);
                 remoteAddress = (InetSocketAddress) readConnection.getChannel().remoteAddress();
                 localAddress = (InetSocketAddress) readConnection.getChannel().localAddress();
                 return;

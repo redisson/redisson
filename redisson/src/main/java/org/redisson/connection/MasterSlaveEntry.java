@@ -656,17 +656,8 @@ public class MasterSlaveEntry {
         masterEntry.returnConnection(connection);
     }
 
-    @Deprecated
-    public void releaseTrackedWrite(RedisConnection connection) {
-        masterEntry.returnConnection(connection);
-    }
-
-    public void releaseRead(RedisConnection connection, boolean trackChanges) {
+    public void releaseRead(RedisConnection connection) {
         if (config.getReadMode() == ReadMode.MASTER) {
-            if (trackChanges) {
-                releaseTrackedWrite(connection);
-                return;
-            }
             releaseWrite(connection);
             return;
         }

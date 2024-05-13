@@ -713,7 +713,7 @@ public class RedisExecutor<V, R> {
 
     private void release(RedisConnection connection) {
         if (readOnlyMode) {
-            entry.releaseRead(connection, trackChanges);
+            entry.releaseRead(connection);
         } else {
             entry.releaseWrite(connection);
         }
