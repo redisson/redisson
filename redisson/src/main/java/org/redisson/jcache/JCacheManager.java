@@ -15,6 +15,20 @@
  */
 package org.redisson.jcache;
 
+import org.redisson.Redisson;
+import org.redisson.jcache.bean.EmptyStatisticsMXBean;
+import org.redisson.jcache.bean.JCacheManagementMXBean;
+import org.redisson.jcache.bean.JCacheStatisticsMXBean;
+import org.redisson.jcache.configuration.JCacheConfiguration;
+import org.redisson.jcache.configuration.RedissonConfiguration;
+
+import javax.cache.Cache;
+import javax.cache.CacheException;
+import javax.cache.CacheManager;
+import javax.cache.configuration.CompleteConfiguration;
+import javax.cache.configuration.Configuration;
+import javax.cache.spi.CachingProvider;
+import javax.management.*;
 import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.util.Collections;
@@ -23,27 +37,6 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import javax.cache.Cache;
-import javax.cache.CacheException;
-import javax.cache.CacheManager;
-import javax.cache.configuration.CompleteConfiguration;
-import javax.cache.configuration.Configuration;
-import javax.cache.spi.CachingProvider;
-import javax.management.InstanceAlreadyExistsException;
-import javax.management.InstanceNotFoundException;
-import javax.management.MBeanRegistrationException;
-import javax.management.MBeanServer;
-import javax.management.MalformedObjectNameException;
-import javax.management.NotCompliantMBeanException;
-import javax.management.ObjectName;
-
-import org.redisson.Redisson;
-import org.redisson.jcache.bean.EmptyStatisticsMXBean;
-import org.redisson.jcache.bean.JCacheManagementMXBean;
-import org.redisson.jcache.bean.JCacheStatisticsMXBean;
-import org.redisson.jcache.configuration.JCacheConfiguration;
-import org.redisson.jcache.configuration.RedissonConfiguration;
 
 /**
  * 
@@ -59,9 +52,9 @@ public class JCacheManager implements CacheManager {
     private final CachingProvider cacheProvider;
     private final Properties properties;
     private final URI uri;
-    private final ConcurrentMap<String, JCache<?, ?>> caches = new ConcurrentHashMap<>();
-    private final ConcurrentMap<JCache<?, ?>, JCacheStatisticsMXBean> statBeans = new ConcurrentHashMap<>();
-    private final ConcurrentMap<JCache<?, ?>, JCacheManagementMXBean> managementBeans = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Cache<?, ?>> caches = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Cache<?, ?>, JCacheStatisticsMXBean> statBeans = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Cache<?, ?>, JCacheManagementMXBean> managementBeans = new ConcurrentHashMap<>();
     
     private final AtomicBoolean closed = new AtomicBoolean();
     
@@ -132,7 +125,7 @@ public class JCacheManager implements CacheManager {
         
         JCacheConfiguration<K, V> cfg = new JCacheConfiguration<K, V>(configuration);
         JCache<K, V> cache = new JCache<>(this, cacheRedisson, cacheName, cfg, hasOwnRedisson);
-        JCache<?, ?> oldCache = caches.putIfAbsent(cacheName, cache);
+        Cache<?, ?> oldCache = caches.putIfAbsent(cacheName, cache);
         if (oldCache != null) {
             throw new CacheException("Cache " + cacheName + " already exists");
         }
@@ -158,7 +151,7 @@ public class JCacheManager implements CacheManager {
             throw new NullPointerException();
         }
         
-        JCache<?, ?> cache = caches.get(cacheName);
+        Cache<?, ?> cache = caches.get(cacheName);
         if (cache == null) {
             return null;
         }
@@ -199,7 +192,7 @@ public class JCacheManager implements CacheManager {
             throw new NullPointerException();
         }
 
-        JCache<?, ?> cache = caches.get(cacheName);
+        Cache<?, ?> cache = caches.get(cacheName);
         if (cache != null) {
             cache.clear();
             cache.close();
@@ -219,7 +212,7 @@ public class JCacheManager implements CacheManager {
             throw new NullPointerException();
         }
         
-        JCache<?, ?> cache = caches.get(cacheName);
+        Cache<?, ?> cache = caches.get(cacheName);
         if (cache == null) {
             throw new NullPointerException();
         }
@@ -253,12 +246,12 @@ public class JCacheManager implements CacheManager {
         cache.getConfiguration(JCacheConfiguration.class).setManagementEnabled(enabled);
     }
 
-    private ObjectName queryNames(String baseName, JCache<?, ?> cache) throws MalformedObjectNameException {
+    private ObjectName queryNames(String baseName, Cache<?, ?> cache) throws MalformedObjectNameException {
         String name = getName(baseName, cache);
         return new ObjectName(name);
     }
 
-    private void unregisterManagementBean(JCache<?, ?> cache) {
+    private void unregisterManagementBean(Cache<?, ?> cache) {
         JCacheManagementMXBean statBean = managementBeans.remove(cache);
         if (statBean != null) {
             try {
@@ -284,7 +277,7 @@ public class JCacheManager implements CacheManager {
         return EMPTY_INSTANCE;
     }
     
-    private String getName(String name, JCache<?, ?> cache) {
+    private String getName(String name, Cache<?, ?> cache) {
         return "javax.cache:type=Cache" + name + ",CacheManager="
                 + getURI().toString().replaceAll(",|:|=|\n", ".")
                 + ",Cache=" + cache.getName().replaceAll(",|:|=|\n", ".");
@@ -297,7 +290,7 @@ public class JCacheManager implements CacheManager {
             throw new NullPointerException();
         }
         
-        JCache<?, ?> cache = caches.get(cacheName);
+        Cache<?, ?> cache = caches.get(cacheName);
         if (cache == null) {
             throw new NullPointerException();
         }
@@ -331,7 +324,7 @@ public class JCacheManager implements CacheManager {
         cache.getConfiguration(JCacheConfiguration.class).setStatisticsEnabled(enabled);
     }
 
-    private void unregisterStatisticsBean(JCache<?, ?> cache) {
+    private void unregisterStatisticsBean(Cache<?, ?> cache) {
         JCacheStatisticsMXBean statBean = statBeans.remove(cache);
         if (statBean != null) {
             try {

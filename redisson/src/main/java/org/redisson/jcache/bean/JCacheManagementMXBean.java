@@ -15,10 +15,9 @@
  */
 package org.redisson.jcache.bean;
 
+import javax.cache.Cache;
 import javax.cache.configuration.CompleteConfiguration;
 import javax.cache.management.CacheMXBean;
-
-import org.redisson.jcache.JCache;
 
 /**
  * 
@@ -27,9 +26,9 @@ import org.redisson.jcache.JCache;
  */
 public class JCacheManagementMXBean implements CacheMXBean {
 
-    private final JCache<?, ?> cache;
+    private final Cache<?, ?> cache;
     
-    public JCacheManagementMXBean(JCache<?, ?> cache) {
+    public JCacheManagementMXBean(Cache<?, ?> cache) {
         super();
         this.cache = cache;
     }
