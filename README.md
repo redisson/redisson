@@ -23,6 +23,7 @@ Supported Redis: 3.0 ... 7.2
     * [Redis Master and Slaves](https://github.com/redisson/redisson/wiki/2.-Configuration/#28-master-slave-mode)
 * [Valkey](https://valkey.io) compatible
 * Amazon Web Services compatible
+     * [AWS Elasticache Serverless](https://aws.amazon.com/elasticache/features/#Serverless)
      * [AWS Redis Global Datastore](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Redis-Global-Datastore.html)
      * [AWS ElastiCache](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/WhatIs.html)
      * [Amazon MemoryDB](https://aws.amazon.com/memorydb)
