@@ -286,7 +286,7 @@ public class JCacheManager implements CacheManager {
     
     private String getName(String name, JCache<?, ?> cache) {
         return "javax.cache:type=Cache" + name + ",CacheManager="
-                + cache.getURI().toString().replaceAll(",|:|=|\n", ".")
+                + getURI().toString().replaceAll(",|:|=|\n", ".")
                 + ",Cache=" + cache.getRawName().replaceAll(",|:|=|\n", ".");
     }
     
