@@ -410,7 +410,10 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             } else if (error.startsWith("READONLY")) {
                 data.tryFailure(new RedisReadonlyException(error
                         + ". channel: " + channel + " data: " + data));
-            }else {
+            }  else if (error.startsWith("NOREPLICAS")) {
+                data.tryFailure(new RedisNoReplicasException(error
+                        + ". channel: " + channel + " data: " + data));
+            } else {
                 if (data != null) {
                     data.tryFailure(new RedisException(error + ". channel: " + channel + " command: " + LogHelper.toString(data)));
                 } else {
