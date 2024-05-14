@@ -512,7 +512,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
         long startTime = System.nanoTime();
         serviceManager.shutdownFutures(quietPeriod, unit);
-        timeoutInNanos = Math.max(0, timeoutInNanos - System.nanoTime() - startTime);
+        timeoutInNanos = Math.max(0, timeoutInNanos - (System.nanoTime() - startTime));
 
         if (isInitialized()) {
             List<CompletableFuture<Void>> futures = new ArrayList<>();
@@ -524,7 +524,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             try {
                 startTime = System.nanoTime();
                 future.get(timeoutInNanos, TimeUnit.NANOSECONDS);
-                timeoutInNanos = Math.max(0, timeoutInNanos - System.nanoTime() - startTime);
+                timeoutInNanos = Math.max(0, timeoutInNanos - (System.nanoTime() - startTime));
             } catch (Exception e) {
                 // skip
             }
@@ -535,7 +535,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             try {
                 startTime = System.nanoTime();
                 serviceManager.getExecutor().awaitTermination(timeoutInNanos, TimeUnit.NANOSECONDS);
-                timeoutInNanos = Math.max(0, timeoutInNanos - System.nanoTime() - startTime);
+                timeoutInNanos = Math.max(0, timeoutInNanos - (System.nanoTime() - startTime));
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
