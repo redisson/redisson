@@ -540,7 +540,8 @@
 },
 {
   "name":"org.redisson.RedissonLock",
-  "allDeclaredMethods":true
+  "allDeclaredMethods": true,
+  "allPublicMethods": true
 },
 {
   "name":"org.redisson.RedissonLongAdder",
