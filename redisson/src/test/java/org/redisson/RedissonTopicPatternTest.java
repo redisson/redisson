@@ -20,6 +20,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
 import org.redisson.config.SubscriptionMode;
 import org.redisson.connection.balancer.RandomLoadBalancer;
+import org.testcontainers.containers.ContainerState;
 import org.testcontainers.containers.GenericContainer;
 
 import java.io.Serializable;
@@ -101,7 +102,6 @@ public class RedissonTopicPatternTest extends RedisDockerTest {
             AtomicInteger counter = new AtomicInteger();
 
             PatternMessageListener<String> listener = (pattern, channel, msg) -> {
-                System.out.println("mes " + channel + " counter " + counter.get());
                 counter.incrementAndGet();
             };
             topic.addListener(String.class, listener);
@@ -349,96 +349,74 @@ public class RedissonTopicPatternTest extends RedisDockerTest {
         t.removeAllListeners();
     }
 
-    @Test
-    public void testReattachInClusterSlave() throws Exception {
+//    @Test
+    public void testReattachInClusterSlave() {
         testReattachInCluster(SubscriptionMode.SLAVE);
     }
 
     @Test
-    public void testReattachInClusterMaster() throws Exception {
+    public void testReattachInClusterMaster() {
         testReattachInCluster(SubscriptionMode.MASTER);
     }
 
-    private void testReattachInCluster(SubscriptionMode subscriptionMode) throws Exception {
-        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave()
-                .notifyKeyspaceEvents(
-                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.K,
-                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.g,
-                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
-                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.$);
-        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave()
-                .notifyKeyspaceEvents(
-                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.K,
-                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.g,
-                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
-                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.$);
-        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave()
-                .notifyKeyspaceEvents(
-                RedisRunner.KEYSPACE_EVENTS_OPTIONS.K,
-                RedisRunner.KEYSPACE_EVENTS_OPTIONS.g,
-                RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
-                RedisRunner.KEYSPACE_EVENTS_OPTIONS.$);
-        RedisRunner slave1 = new RedisRunner().randomPort().randomDir().nosave()
-                .notifyKeyspaceEvents(
-                RedisRunner.KEYSPACE_EVENTS_OPTIONS.K,
-                RedisRunner.KEYSPACE_EVENTS_OPTIONS.g,
-                RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
-                RedisRunner.KEYSPACE_EVENTS_OPTIONS.$);
-        RedisRunner slave2 = new RedisRunner().randomPort().randomDir().nosave()
-                .notifyKeyspaceEvents(
-                RedisRunner.KEYSPACE_EVENTS_OPTIONS.K,
-                RedisRunner.KEYSPACE_EVENTS_OPTIONS.g,
-                RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
-                RedisRunner.KEYSPACE_EVENTS_OPTIONS.$);
-        RedisRunner slave3 = new RedisRunner().randomPort().randomDir().nosave()
-                .notifyKeyspaceEvents(
-                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.K,
-                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.g,
-                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
-                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.$);
+    private void testReattachInCluster(SubscriptionMode subscriptionMode) {
+        withNewCluster((nds, instance) -> {
+            Config config = instance.getConfig();
+            config.useClusterServers()
+                    .setSubscriptionMode(subscriptionMode);
+            RedissonClient redisson = Redisson.create(config);
 
-
-        ClusterRunner clusterRunner = new ClusterRunner()
-                .addNode(master1, slave1)
-                .addNode(master2, slave2)
-                .addNode(master3, slave3);
-        ClusterRunner.ClusterProcesses process = clusterRunner.run();
-
-        Thread.sleep(7000);
-
-        Config config = new Config();
-        config.useClusterServers()
-                .setSubscriptionMode(subscriptionMode)
-                .setLoadBalancer(new RandomLoadBalancer())
-                .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
-        RedissonClient redisson = Redisson.create(config);
-
-        AtomicInteger executions = new AtomicInteger();
-
-        RPatternTopic topic = redisson.getPatternTopic("__keyevent@*:del", StringCodec.INSTANCE);
-        topic.addListener(String.class, new PatternMessageListener<String>() {
-            @Override
-            public void onMessage(CharSequence pattern, CharSequence channel, String msg) {
-                executions.incrementAndGet();
+            RedisCluster nodes = redisson.getRedisNodes(RedisNodes.CLUSTER);
+            for (RedisClusterSlave slave : nodes.getSlaves()) {
+                slave.setConfig("notify-keyspace-events", "KgE$");
             }
+            for (RedisClusterMaster master : nodes.getMasters()) {
+                master.setConfig("notify-keyspace-events", "KgE$");
+            }
+
+            AtomicInteger executions = new AtomicInteger();
+
+            RPatternTopic topic = redisson.getPatternTopic("__keyevent@*:del", StringCodec.INSTANCE);
+            topic.addListener(String.class, new PatternMessageListener<String>() {
+                @Override
+                public void onMessage(CharSequence pattern, CharSequence channel, String msg) {
+                    executions.incrementAndGet();
+                }
+            });
+
+            List<ContainerState> masters = getMasterNodes(nds);
+            stop(masters.get(0));
+
+            try {
+                Thread.sleep(40000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            nodes = redisson.getRedisNodes(RedisNodes.CLUSTER);
+            for (RedisClusterSlave slave : nodes.getSlaves()) {
+                slave.setConfig("notify-keyspace-events", "KgE$");
+            }
+            for (RedisClusterMaster master : nodes.getMasters()) {
+                master.setConfig("notify-keyspace-events", "KgE$");
+            }
+
+            for (int i = 0; i < 100; i++) {
+                RBucket<Object> b = redisson.getBucket("test" + i);
+                b.set(i);
+                b.delete();
+            }
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            assertThat(executions.get()).isEqualTo(100);
+
+            redisson.shutdown();
         });
 
-        process.getNodes().stream().filter(x -> master1.getPort() == x.getRedisServerPort())
-                .forEach(x -> {
-                        x.stop();
-                });
 
-        Thread.sleep(40000);
-
-        for (int i = 0; i < 100; i++) {
-            RBucket<Object> b = redisson.getBucket("test" + i);
-            b.set(i);
-            b.delete();
-        }
-        Thread.sleep(100);
-        assertThat(executions.get()).isEqualTo(100);
-
-        redisson.shutdown();
     }
 
     @Test

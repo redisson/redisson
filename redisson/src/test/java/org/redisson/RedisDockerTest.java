@@ -505,10 +505,7 @@ public class RedisDockerTest {
                 return false;
             }
             String r = execute(node, "redis-cli", "info", "replication");
-            if (r.contains("role:slave")) {
-                return true;
-            }
-            return false;
+            return r.contains("role:slave");
         }).collect(Collectors.toList());
     }
 
@@ -518,10 +515,7 @@ public class RedisDockerTest {
                 return false;
             }
             String r = execute(node, "redis-cli", "info", "replication");
-            if (r.contains("role:master")) {
-                return true;
-            }
-            return false;
+            return r.contains("role:master");
         }).collect(Collectors.toList());
     }
 
