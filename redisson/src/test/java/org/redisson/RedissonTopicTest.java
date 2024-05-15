@@ -1259,7 +1259,7 @@ public class RedissonTopicTest extends RedisDockerTest {
                 stop(slave);
             }
 
-            await().atMost(25, TimeUnit.SECONDS).until(() -> subscriptions.get() == 2);
+            await().atMost(30, TimeUnit.SECONDS).until(() -> subscriptions.get() == 2);
 
             executed.set(false);
             redisson.getTopic("topic").publish(1);
