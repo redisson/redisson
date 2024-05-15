@@ -852,4 +852,18 @@ public class RedissonTest extends RedisDockerTest {
         r.shutdown();
     }
 
+    @Test
+    public void testShutdownQuietPeriod() {
+        // On a very slow system this may give false positives,
+        // but at the same time a longer timeout would make the test suite slower
+        long quietPeriod = TimeUnit.MILLISECONDS.toMillis(50);
+        long timeOut = quietPeriod + TimeUnit.SECONDS.toMillis(2);
+        RedissonClient r = createInstance();
+        long startTime = System.currentTimeMillis();
+        r.shutdown(quietPeriod, timeOut, TimeUnit.MILLISECONDS);
+        long shutdownTime = System.currentTimeMillis() - startTime;
+
+        Assertions.assertTrue(shutdownTime > quietPeriod);
+    }
+
 }
