@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.redisson.RedisRunner.FailedToStartRedisException;
 import org.redisson.Redisson;
 import org.redisson.api.*;
 import org.redisson.api.BatchOptions.ExecutionMode;
@@ -157,7 +156,7 @@ public class RedissonBatchRxTest extends BaseRxTest {
 
     @ParameterizedTest
     @MethodSource("data")
-    public void testSyncSlaves(BatchOptions batchOptions) throws FailedToStartRedisException {
+    public void testSyncSlaves(BatchOptions batchOptions) {
         testInCluster(client -> {
             Config config = client.getConfig();
             config.useClusterServers()
@@ -264,7 +263,7 @@ public class RedissonBatchRxTest extends BaseRxTest {
     
     @ParameterizedTest
     @MethodSource("data")
-    public void testAtomicSyncSlaves(BatchOptions batchOptions) throws FailedToStartRedisException, IOException, InterruptedException {
+    public void testAtomicSyncSlaves(BatchOptions batchOptions) {
         testInCluster(client -> {
             Config config = client.getConfig();
             config.useClusterServers()

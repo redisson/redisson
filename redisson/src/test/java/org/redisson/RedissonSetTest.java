@@ -6,7 +6,6 @@ import mockit.Mock;
 import mockit.MockUp;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.redisson.RedisRunner.FailedToStartRedisException;
 import org.redisson.api.RFuture;
 import org.redisson.api.RList;
 import org.redisson.api.RSet;
@@ -561,7 +560,7 @@ public class RedissonSetTest extends RedisDockerTest {
     }
 
     @Test
-    public void testClusteredIterator() throws FailedToStartRedisException {
+    public void testClusteredIterator() {
         testInCluster(redisson -> {
             int size = 10000;
             RSet<String> set = redisson.getSet("{test");
@@ -579,7 +578,7 @@ public class RedissonSetTest extends RedisDockerTest {
     }
     
     @Test
-    public void testIteratorRemoveHighVolume() throws InterruptedException {
+    public void testIteratorRemoveHighVolume() {
         Set<Integer> set = redisson.getSet("set") /*new HashSet<Integer>()*/;
         for (int i = 0; i < 10000; i++) {
             set.add(i);

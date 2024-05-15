@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class RedissonListTest extends RedisDockerTest {
 
     @Test
-    public void testAddListener() throws RedisRunner.FailedToStartRedisException {
+    public void testAddListener() {
         testWithParams(redisson -> {
             RList<Integer> al = redisson.getList("name");
             CountDownLatch latch = new CountDownLatch(1);

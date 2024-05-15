@@ -3,7 +3,6 @@ package org.redisson;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.redisson.RedisRunner.FailedToStartRedisException;
 import org.redisson.api.*;
 import org.redisson.api.listener.FlushListener;
 import org.redisson.api.listener.NewObjectListener;
@@ -153,7 +152,7 @@ public class RedissonKeysTest extends RedisDockerTest {
     }
 
     @Test
-    public void testExistsInCluster() throws FailedToStartRedisException {
+    public void testExistsInCluster() {
         testInCluster(redisson -> {
             int size = 10000;
             List<String> list = new ArrayList<>();
@@ -195,7 +194,7 @@ public class RedissonKeysTest extends RedisDockerTest {
     }
 
     @Test
-    public void testKeysByPattern() throws FailedToStartRedisException {
+    public void testKeysByPattern() {
         testInCluster(redisson -> {
             int size = 10000;
             for (int i = 0; i < size; i++) {
@@ -278,7 +277,7 @@ public class RedissonKeysTest extends RedisDockerTest {
     }
 
     @Test
-    public void testDeleteInCluster() throws FailedToStartRedisException {
+    public void testDeleteInCluster() {
         testInCluster(redisson -> {
             int size = 10000;
             List<String> list = new ArrayList<>();

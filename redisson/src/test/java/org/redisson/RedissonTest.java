@@ -98,15 +98,9 @@ public class RedissonTest extends RedisDockerTest {
 
 //    @Test
     public void testLeak() throws InterruptedException {
-        Config config = new Config();
-        config.useSingleServer()
-              .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
-
-        RedissonClient localRedisson = Redisson.create(config);
-
         String key = RandomString.make(120);
         for (int i = 0; i < 500; i++) {
-            RMapCache<String, String> cache = localRedisson.getMapCache("mycache");
+            RMapCache<String, String> cache = redisson.getMapCache("mycache");
             RLock keyLock = cache.getLock(key);
             keyLock.lockInterruptibly(10, TimeUnit.SECONDS);
             try {

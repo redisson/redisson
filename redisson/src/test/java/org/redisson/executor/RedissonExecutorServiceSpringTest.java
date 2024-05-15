@@ -4,7 +4,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.redisson.RedisDockerTest;
-import org.redisson.RedisRunner.FailedToStartRedisException;
 import org.redisson.RedissonNode;
 import org.redisson.api.RExecutorFuture;
 import org.redisson.api.RedissonClient;
@@ -92,7 +91,7 @@ public class RedissonExecutorServiceSpringTest extends RedisDockerTest {
     private static AnnotationConfigApplicationContext context;
     
     @BeforeAll
-    public static void beforeTest() throws FailedToStartRedisException {
+    public static void beforeTest() {
         context = new AnnotationConfigApplicationContext(Application.class);
     }
 

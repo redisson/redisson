@@ -21,6 +21,7 @@ import static org.awaitility.Awaitility.await;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Disabled
+@Deprecated
 public class RedissonRedLockTest {
 
     @Test

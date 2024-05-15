@@ -9,8 +9,6 @@ import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.RedisDockerTest;
-import org.redisson.RedisRunner;
-import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.WriteRedisConnectionException;

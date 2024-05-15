@@ -5,7 +5,6 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.redisson.RedisRunner.FailedToStartRedisException;
 import org.redisson.Redisson;
 import org.redisson.api.CacheAsync;
 import org.redisson.api.CacheReactive;
@@ -379,7 +378,7 @@ public class JCacheTest {
     }
 
     @Test
-    public void testExpiration() throws InterruptedException, IllegalArgumentException, URISyntaxException, FailedToStartRedisException, IOException {
+    public void testExpiration() throws InterruptedException, IllegalArgumentException, URISyntaxException {
         MutableConfiguration<String, String> config = new MutableConfiguration<>();
         config.setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, 1)));
         config.setStoreByValue(true);

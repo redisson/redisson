@@ -12,7 +12,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.redisson.RedisRunner.KEYSPACE_EVENTS_OPTIONS.s;
 
 /**
  *

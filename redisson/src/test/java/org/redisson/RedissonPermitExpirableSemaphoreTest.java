@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
 
     @Test
-    public void testGetInClusterNameMapper() throws RedisRunner.FailedToStartRedisException, InterruptedException {
+    public void testGetInClusterNameMapper() {
         testInCluster(client -> {
             Config config = client.getConfig();
             config.setSlavesSyncTimeout(2000);

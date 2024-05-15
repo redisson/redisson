@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.awaitility.Awaitility;
-import org.awaitility.Duration;
+import org.awaitility.Durations;
 import org.junit.Test;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
@@ -23,7 +23,7 @@ public class RedissonSubscribeTest extends BaseConnectionTest {
         }, "test".getBytes());
         
         connection.publish("test".getBytes(), "msg".getBytes());
-        Awaitility.await().atMost(Duration.ONE_SECOND)
+        Awaitility.await().atMost(Durations.ONE_SECOND)
                     .until(() -> Arrays.equals("msg".getBytes(), msg.get()));
         
         connection.getSubscription().unsubscribe();
@@ -43,7 +43,7 @@ public class RedissonSubscribeTest extends BaseConnectionTest {
         }, "test".getBytes());
         
         connection.publish("test".getBytes(), "msg".getBytes());
-        Awaitility.await().atMost(Duration.ONE_SECOND)
+        Awaitility.await().atMost(Durations.ONE_SECOND)
                     .until(() -> Arrays.equals("msg".getBytes(), msg.get()));
         
         connection.getSubscription().unsubscribe();
