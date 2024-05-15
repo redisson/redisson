@@ -221,17 +221,24 @@ public class RedissonListMultimapTest extends RedisDockerTest {
     
     @Test
     public void testRemoveAll() {
-        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
-        map.put(new SimpleKey("0"), new SimpleValue("1"));
-        map.put(new SimpleKey("0"), new SimpleValue("1"));
-        map.put(new SimpleKey("0"), new SimpleValue("2"));
-        map.put(new SimpleKey("0"), new SimpleValue("3"));
+        RListMultimap<String, String> map = redisson.getListMultimap("test1");
+        map.put("0", "1");
+        map.put("0", "1");
+        map.put("0", "2");
+        map.put("0", "3");
 
-        List<SimpleValue> values = map.removeAll(new SimpleKey("0"));
-        assertThat(values).containsExactly(new SimpleValue("1"), new SimpleValue("1"), new SimpleValue("2"), new SimpleValue("3"));
+        RList<String> set = map.get("0");
+        set.removeAll(Arrays.asList("4", "5"));
+        assertThat(map.size()).isEqualTo(4);
+
+        set.removeAll(Arrays.asList("3"));
+        assertThat(map.size()).isEqualTo(3);
+
+        List<String> values = map.removeAll("0");
+        assertThat(values).containsExactly("1", "1", "2");
         assertThat(map.size()).isZero();
 
-        List<SimpleValue> values2 = map.removeAll(new SimpleKey("0"));
+        List<String> values2 = map.removeAll("0");
         assertThat(values2).isEmpty();
     }
 

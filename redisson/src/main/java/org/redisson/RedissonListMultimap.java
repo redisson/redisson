@@ -197,9 +197,9 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
 
 
     @Override
-    public RList<V> get(final K key) {
+    public RList<V> get(K key) {
         String keyHash = keyHash(key);
-        final String setName = getValuesName(keyHash);
+        String setName = getValuesName(keyHash);
 
         return new RedissonList<V>(codec, commandExecutor, setName, null) {
             
@@ -224,19 +224,22 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
                     return new CompletableFutureWrapper<>(false);
                 }
 
-                List<Object> args = new ArrayList<Object>(c.size() + 1);
+                List<Object> args = new ArrayList<>(c.size() + 1);
                 args.add(encodeMapKey(key));
                 encode(args, c);
                 
                 return commandExecutor.evalWriteAsync(RedissonListMultimap.this.getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
                         "local v = 0 " +
                         "for i = 2, #ARGV, 1 do "
-                            + "if redis.call('lrem', KEYS[2], 0, ARGV[i]) == 1 "
-                            + "then v = 1 end "
+                            + "if redis.call('lrem', KEYS[2], 0, ARGV[i]) == 1 then "
+                                + "v = 1; "
+                            + "end "
                        +"end "
-                      + "redis.call('hdel', KEYS[1], ARGV[1]); " 
+                      + "if v == 1 and redis.call('exists', KEYS[2]) == 0 then "
+                          + "redis.call('hdel', KEYS[1], ARGV[1]); "
+                       +"end "
                       + "return v",
-                    Arrays.<Object>asList(RedissonListMultimap.this.getRawName(), setName),
+                    Arrays.asList(RedissonListMultimap.this.getRawName(), setName),
                     args.toArray());
             }
             
