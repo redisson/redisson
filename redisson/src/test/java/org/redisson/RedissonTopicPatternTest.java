@@ -349,7 +349,7 @@ public class RedissonTopicPatternTest extends RedisDockerTest {
         t.removeAllListeners();
     }
 
-//    @Test
+    @Test
     public void testReattachInClusterSlave() {
         testReattachInCluster(SubscriptionMode.SLAVE);
     }

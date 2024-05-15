@@ -26,6 +26,8 @@ import io.netty.util.CharsetUtil;
  */
 public class ChannelName implements CharSequence {
 
+    public static final ChannelName TRACKING = new ChannelName("__redis__:invalidate");
+
     private final byte[] name;
     private final String str;
 
@@ -83,6 +85,14 @@ public class ChannelName implements CharSequence {
     @Override
     public CharSequence subSequence(int start, int end) {
         return toString().subSequence(start, end);
+    }
+
+    public boolean isKeyspace() {
+        return str.startsWith("__keyspace") || str.startsWith("__keyevent");
+    }
+
+    public boolean isTracking() {
+        return str.equals(TRACKING.toString());
     }
 
 }

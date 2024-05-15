@@ -243,7 +243,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
 
         if ("invalidate".equals(parts.get(0))) {
             parts.set(0, "message");
-            parts.add(1, "__redis__:invalidate".getBytes());
+            parts.add(1, ChannelName.TRACKING.getName());
         }
 
         String command = parts.get(0).toString();
