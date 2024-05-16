@@ -39,8 +39,6 @@ public interface ConnectionManager {
     PublishSubscribeService getSubscribeService();
     
     RedisURI getLastClusterNode();
-    
-    boolean isClusterMode();
 
     int calcSlot(String key);
 

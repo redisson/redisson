@@ -238,7 +238,7 @@ public class RedissonKeys implements RKeys {
         if (commandExecutor instanceof CommandBatchService
                 || commandExecutor instanceof CommandReactiveBatchService
                     || commandExecutor instanceof CommandRxBatchService) {
-            if (getConnectionManager().isClusterMode()) {
+            if (commandExecutor.getServiceManager().getCfg().isClusterConfig()) {
                 throw new IllegalStateException("This method doesn't work in batch for Redis cluster mode. For Redis cluster execute it as non-batch method");
             }
 

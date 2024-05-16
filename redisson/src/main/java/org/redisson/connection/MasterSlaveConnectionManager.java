@@ -140,11 +140,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public boolean isClusterMode() {
-        return false;
-    }
-
-    @Override
     public Collection<MasterSlaveEntry> getEntrySet() {
         lazyConnect();
 

@@ -972,10 +972,5 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return lastClusterNode;
     }
     
-    @Override
-    public boolean isClusterMode() {
-        return true;
-    }
-    
 }
 

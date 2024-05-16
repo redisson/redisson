@@ -212,7 +212,7 @@ public class AccessorInterceptor {
             set.removeAsync(((RLiveObject) me).getLiveObjectId());
         } else {
             if (ClassUtils.isAnnotationPresent(field.getType(), REntity.class)
-                    || commandExecutor.getConnectionManager().isClusterMode()) {
+                    || commandExecutor.getServiceManager().getCfg().isClusterConfig()) {
                 CompletableFuture<Object> f;
                 if (commandExecutor instanceof CommandBatchService) {
                     f = liveMap.removeAsync(field.getName()).toCompletableFuture();
