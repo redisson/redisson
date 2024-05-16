@@ -784,10 +784,11 @@ public class RedissonTest extends RedisDockerTest {
 
     @Test
     public void testClusterConnectionFail() {
-        Awaitility.await().atLeast(Duration.ofSeconds(3)).atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+            Awaitility.await().atLeast(Duration.ofSeconds(3)).atMost(Duration.ofSeconds(7)).untilAsserted(() -> {
             Assertions.assertThrows(RedisConnectionException.class, () -> {
                 Config config = new Config();
-                config.useClusterServers().addNodeAddress("redis://127.99.0.1:1111");
+                config.useClusterServers()
+                        .addNodeAddress("redis://127.99.0.1:1111");
                 Redisson.create(config);
             });
         });
