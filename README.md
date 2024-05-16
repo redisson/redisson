@@ -68,8 +68,9 @@ Supported JDK:   1.8 - 21 and Android
 * [Micronaut](https://github.com/redisson/redisson/tree/master/redisson-micronaut) integration  
 * [Quarkus](https://github.com/redisson/redisson/tree/master/redisson-quarkus) integration  
 * [Spring Cache](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#142-spring-cache) implementation
+* [Spring Cloud Stream](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#149-spring-cloud-stream) implementation
 * [Spring Transaction API](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#148-spring-transaction-manager) implementation
-* [Spring Data Redis](https://github.com/redisson/redisson/tree/master/redisson-spring-data) integration
+* [Spring Data Redis](https://github.com/redisson/redisson/tree/master/redisson-spring-data) implementation
 * [Spring Boot Starter](https://github.com/redisson/redisson/tree/master/redisson-spring-boot-starter) implementation
 * [Hibernate Cache](https://github.com/redisson/redisson/tree/master/redisson-hibernate) implementation
 * [MyBatis Cache](https://github.com/redisson/redisson/tree/master/redisson-mybatis) implementation
