@@ -11,7 +11,8 @@ Supported Redis: 3.0 ... 7.2
 
 ## Features
 
-* Thread-safe implementation  
+* Thread-safe implementation
+* [Valkey](https://valkey.io) compatible
 * Compatible with different Redis deployment types
     * [Redis Proxy](https://github.com/redisson/redisson/wiki/2.-Configuration/#29-proxy-mode)
     * [Redis Multi-Cluster](https://github.com/redisson/redisson/wiki/2.-Configuration/#210-multi-cluster-mode)
@@ -21,7 +22,6 @@ Supported Redis: 3.0 ... 7.2
     * [Redis Sentinel](https://github.com/redisson/redisson/wiki/2.-Configuration/#27-sentinel-mode)
     * [Redis Replicated](https://github.com/redisson/redisson/wiki/2.-Configuration/#25-replicated-mode)
     * [Redis Master and Slaves](https://github.com/redisson/redisson/wiki/2.-Configuration/#28-master-slave-mode)
-* [Valkey](https://valkey.io) compatible
 * Amazon Web Services compatible
      * [AWS Elasticache Serverless](https://aws.amazon.com/elasticache/features/#Serverless)
      * [AWS Redis Global Datastore](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Redis-Global-Datastore.html)
