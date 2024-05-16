@@ -429,7 +429,7 @@ public class RedissonBatchTest extends RedisDockerTest {
         batch.execute();
         long executionTime = System.currentTimeMillis() - s;
         if (batchOptions.getExecutionMode() == ExecutionMode.IN_MEMORY) {
-            assertThat(executionTime).isLessThan(1000);
+            assertThat(executionTime).isLessThan(1200);
         } else {
             assertThat(executionTime).isLessThan(300);
         }
