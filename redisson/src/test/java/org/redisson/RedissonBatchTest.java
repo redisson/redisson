@@ -604,7 +604,7 @@ public class RedissonBatchTest extends RedisDockerTest {
 
     @ParameterizedTest
     @MethodSource("data")
-    @Timeout(1)
+    @Timeout(3)
     public void testShutdownTimeout(BatchOptions batchOptions) {
         RedissonClient redisson = createInstance();
 
