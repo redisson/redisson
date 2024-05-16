@@ -6,13 +6,14 @@
 [Quick start](https://github.com/redisson/redisson#quick-start) | [Documentation](https://github.com/redisson/redisson/wiki/Table-of-Content) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [FAQs](https://github.com/redisson/redisson/wiki/16.-FAQ) | [Report an issue](https://github.com/redisson/redisson/issues/new)
 
 Based on high-performance async and lock-free Java Redis client and [Netty](http://netty.io) framework.  
-Supported JDK:   1.8 ... 21 and Android  
-Supported Redis: 3.0 ... 7.2  
+Supported JDK:   1.8 - 21 and Android  
+
 
 ## Features
 
 * Thread-safe implementation
-* [Valkey](https://valkey.io) compatible
+* [Redis](https://redis.io) 3.0 - 7.2 compatible
+* [Valkey](https://valkey.io) 7.2.5+ compatible
 * Compatible with different Redis deployment types
     * [Redis Proxy](https://github.com/redisson/redisson/wiki/2.-Configuration/#29-proxy-mode)
     * [Redis Multi-Cluster](https://github.com/redisson/redisson/wiki/2.-Configuration/#210-multi-cluster-mode)
