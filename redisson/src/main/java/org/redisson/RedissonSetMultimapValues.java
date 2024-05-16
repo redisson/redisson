@@ -387,7 +387,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
 
     @Override
     public RFuture<V> randomAsync() {
-        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SRANDMEMBER_SINGLE, getRawName());
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.SRANDMEMBER_SINGLE, getRawName());
     }
 
     @Override
@@ -397,7 +397,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
 
     @Override
     public RFuture<Set<V>> randomAsync(int count) {
-        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SRANDMEMBER, getRawName(), count);
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.SRANDMEMBER, getRawName(), count);
     }
     
     @Override

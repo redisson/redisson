@@ -245,7 +245,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
 
     @Override
     public RFuture<V> randomAsync() {
-        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SRANDMEMBER_SINGLE, getRawName());
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.SRANDMEMBER_SINGLE, getRawName());
     }
 
     @Override
@@ -255,7 +255,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
 
     @Override
     public RFuture<Set<V>> randomAsync(int count) {
-        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SRANDMEMBER, getRawName(), count);
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.SRANDMEMBER, getRawName(), count);
     }
 
     @Override
