@@ -1,7 +1,7 @@
 Redisson Releases History
 ================================
 
-Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
+Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
 ### 10-May-2024 - 3.30.0 released
 Feature - `sslKeystoreType` setting added  

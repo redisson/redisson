@@ -77,4 +77,4 @@ Tomcat 9.x - [redisson-tomcat-9-3.30.0.jar](https://repo1.maven.org/maven2/org/r
 
 Tomcat 10.x - [redisson-tomcat-10-3.30.0.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-10/3.30.0/redisson-tomcat-10-3.30.0.jar)  
 
-Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
+Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.

@@ -8,7 +8,7 @@ assignees: ''
 ---
 
 <!--
-Try Redisson PRO https://redisson.pro with ultra-fast performance and support by SLA.
+Upgrade to Redisson PRO https://redisson.pro with advanced features.
 -->
 
 **Is your feature request related to a problem? Please describe.**

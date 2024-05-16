@@ -155,7 +155,7 @@ spring:
 - `RedisTemplate`  
 - `ReactiveRedisTemplate`  
 
-Try __[Redisson PRO](https://redisson.pro)__ with **ultra-fast performance** and **support by SLA**.
+Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
 ## Q: How to replace Netty version brought by Spring Boot?
 
