@@ -412,15 +412,15 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
 
             if (command.getConsumer() == null) {
                 if (command.getReadOptions().getBlock() != null && command.getReadOptions().getBlock() > 0) {
-                    m = read(toByteArray(command.getStreamOffsets().get(0).getKey()), ByteArrayCodec.INSTANCE, executorService.getServiceManager().getXReadBlockingCommand(), params.toArray());
+                    m = read(toByteArray(command.getStreamOffsets().get(0).getKey()), ByteArrayCodec.INSTANCE, RedisCommands.XREAD_BLOCKING, params.toArray());
                 } else {
-                    m = read(toByteArray(command.getStreamOffsets().get(0).getKey()), ByteArrayCodec.INSTANCE, executorService.getServiceManager().getXReadCommand(), params.toArray());
+                    m = read(toByteArray(command.getStreamOffsets().get(0).getKey()), ByteArrayCodec.INSTANCE, RedisCommands.XREAD, params.toArray());
                 }
             } else {
                 if (command.getReadOptions().getBlock() != null && command.getReadOptions().getBlock() > 0) {
-                    m = read(toByteArray(command.getStreamOffsets().get(0).getKey()), ByteArrayCodec.INSTANCE, executorService.getServiceManager().getXReadGroupBlockingCommand(), params.toArray());
+                    m = read(toByteArray(command.getStreamOffsets().get(0).getKey()), ByteArrayCodec.INSTANCE, RedisCommands.XREADGROUP_BLOCKING, params.toArray());
                 } else {
-                    m = read(toByteArray(command.getStreamOffsets().get(0).getKey()), ByteArrayCodec.INSTANCE, executorService.getServiceManager().getXReadGroupCommand(), params.toArray());
+                    m = read(toByteArray(command.getStreamOffsets().get(0).getKey()), ByteArrayCodec.INSTANCE, RedisCommands.XREADGROUP, params.toArray());
                 }
             }
 

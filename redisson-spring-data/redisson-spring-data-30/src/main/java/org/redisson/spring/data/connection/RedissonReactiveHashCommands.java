@@ -290,9 +290,9 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
 
             Mono<Map<byte[], byte[]>> m;
             if (command.getCount() > 0) {
-                m = read(keyBuf, ByteArrayCodec.INSTANCE, executorService.getServiceManager().getHRandomFieldCommand(), keyBuf, command.getCount());
+                m = read(keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.HRANDFIELD, keyBuf, command.getCount());
             } else {
-                m = read(keyBuf, ByteArrayCodec.INSTANCE, executorService.getServiceManager().getHRandomFieldCommand(), keyBuf);
+                m = read(keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.HRANDFIELD, keyBuf);
             }
 
             Mono<Map<ByteBuffer, ByteBuffer>> f = m.map(v -> v.entrySet().stream().collect(Collectors.toMap(e -> ByteBuffer.wrap(e.getKey()), e -> ByteBuffer.wrap(e.getValue()))));

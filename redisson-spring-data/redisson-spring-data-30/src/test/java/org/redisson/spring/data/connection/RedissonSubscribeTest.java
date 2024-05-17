@@ -1,7 +1,7 @@
 package org.redisson.spring.data.connection;
 
 import org.awaitility.Awaitility;
-import org.awaitility.Duration;
+import org.awaitility.Durations;
 import org.junit.Test;
 import org.redisson.ClusterRunner;
 import org.redisson.RedisRunner;
@@ -105,7 +105,7 @@ public class RedissonSubscribeTest extends BaseConnectionTest {
         factory.getConnection().setEx("test:key2".getBytes(), 3, "123".getBytes());
         factory.getConnection().setEx("test:key1".getBytes(), 3, "123".getBytes());
 
-        Awaitility.await().atMost(Duration.FIVE_SECONDS).untilAsserted(() -> {
+        Awaitility.await().atMost(Durations.FIVE_SECONDS).untilAsserted(() -> {
             assertThat(names).containsExactlyInAnyOrder("EG:test:key1", "test:key2", "test:key1");
         });
 
@@ -133,7 +133,7 @@ public class RedissonSubscribeTest extends BaseConnectionTest {
         RedisConnection c = factory.getConnection();
         c.publish("a".getBytes(), "msg".getBytes());
 
-        Awaitility.await().atMost(Duration.ONE_SECOND)
+        Awaitility.await().atMost(Durations.ONE_SECOND)
                 .untilAsserted(() -> {
                     assertThat(msg).containsExactly("msg".getBytes());
                 });
@@ -181,7 +181,7 @@ public class RedissonSubscribeTest extends BaseConnectionTest {
         c.set("mykey".getBytes(), "2".getBytes());
         c.del("mykey".getBytes());
 
-        Awaitility.await().atMost(Duration.FIVE_SECONDS).until(() -> {
+        Awaitility.await().atMost(Durations.FIVE_SECONDS).until(() -> {
             return counterTest.get() == 3;
         });
 
@@ -201,7 +201,7 @@ public class RedissonSubscribeTest extends BaseConnectionTest {
         }, "test".getBytes());
         
         connection.publish("test".getBytes(), "msg".getBytes());
-        Awaitility.await().atMost(Duration.ONE_SECOND)
+        Awaitility.await().atMost(Durations.ONE_SECOND)
                     .until(() -> Arrays.equals("msg".getBytes(), msg.get()));
         
         connection.getSubscription().unsubscribe();
@@ -221,7 +221,7 @@ public class RedissonSubscribeTest extends BaseConnectionTest {
         }, "test".getBytes());
         
         connection.publish("test".getBytes(), "msg".getBytes());
-        Awaitility.await().atMost(Duration.ONE_SECOND)
+        Awaitility.await().atMost(Durations.ONE_SECOND)
                     .until(() -> Arrays.equals("msg".getBytes(), msg.get()));
         
         connection.getSubscription().unsubscribe();

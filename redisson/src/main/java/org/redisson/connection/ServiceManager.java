@@ -48,7 +48,6 @@ import org.redisson.RedissonShutdownException;
 import org.redisson.Version;
 import org.redisson.api.NatMapper;
 import org.redisson.api.RFuture;
-import org.redisson.api.StreamMessageId;
 import org.redisson.cache.LRUCacheMap;
 import org.redisson.client.RedisNodeNotFoundException;
 import org.redisson.client.codec.Codec;
@@ -568,67 +567,25 @@ public final class ServiceManager {
         return cfg.getProtocol() == Protocol.RESP3;
     }
 
-    public RedisCommand<Map<String, Map<StreamMessageId, Map<Object, Object>>>> getXReadGroupBlockingCommand() {
-        if (isResp3()) {
-            return RedisCommands.XREADGROUP_BLOCKING_V2;
-        }
-        return RedisCommands.XREADGROUP_BLOCKING;
+    private static final Map<RedisCommand<?>, RedisCommand<?>> RESP3MAPPING = new HashMap<>();
+
+    static {
+        RESP3MAPPING.put(RedisCommands.XREADGROUP_BLOCKING, RedisCommands.XREADGROUP_BLOCKING_V2);
+        RESP3MAPPING.put(RedisCommands.XREADGROUP, RedisCommands.XREADGROUP_V2);
+        RESP3MAPPING.put(RedisCommands.XREADGROUP_BLOCKING_SINGLE, RedisCommands.XREADGROUP_BLOCKING_SINGLE_V2);
+        RESP3MAPPING.put(RedisCommands.XREADGROUP_SINGLE, RedisCommands.XREADGROUP_SINGLE_V2);
+        RESP3MAPPING.put(RedisCommands.XREAD_BLOCKING_SINGLE, RedisCommands.XREAD_BLOCKING_SINGLE_V2);
+        RESP3MAPPING.put(RedisCommands.XREAD_SINGLE, RedisCommands.XREAD_SINGLE_V2);
+        RESP3MAPPING.put(RedisCommands.XREAD_BLOCKING, RedisCommands.XREAD_BLOCKING_V2);
+        RESP3MAPPING.put(RedisCommands.XREAD, RedisCommands.XREAD_V2);
+        RESP3MAPPING.put(RedisCommands.HRANDFIELD, RedisCommands.HRANDFIELD_V2);
     }
 
-    public RedisCommand<Map<String, Map<StreamMessageId, Map<Object, Object>>>> getXReadGroupCommand() {
+    public <R> RedisCommand<R> resp3(RedisCommand<R> command) {
         if (isResp3()) {
-            return RedisCommands.XREADGROUP_V2;
+            return (RedisCommand<R>) RESP3MAPPING.getOrDefault(command, command);
         }
-        return RedisCommands.XREADGROUP;
-    }
-
-    public RedisCommand<Map<StreamMessageId, Map<Object, Object>>> getXReadGroupBlockingSingleCommand() {
-        if (isResp3()) {
-            return RedisCommands.XREADGROUP_BLOCKING_SINGLE_V2;
-        }
-        return RedisCommands.XREADGROUP_BLOCKING_SINGLE;
-    }
-
-    public RedisCommand<Map<StreamMessageId, Map<Object, Object>>> getXReadGroupSingleCommand() {
-        if (isResp3()) {
-            return RedisCommands.XREADGROUP_SINGLE_V2;
-        }
-        return RedisCommands.XREADGROUP_SINGLE;
-    }
-
-    public RedisCommand<Map<StreamMessageId, Map<Object, Object>>> getXReadBlockingSingleCommand() {
-        if (isResp3()) {
-            return RedisCommands.XREAD_BLOCKING_SINGLE_V2;
-        }
-        return RedisCommands.XREAD_BLOCKING_SINGLE;
-    }
-
-    public RedisCommand<Map<StreamMessageId, Map<Object, Object>>> getXReadSingleCommand() {
-        if (isResp3()) {
-            return RedisCommands.XREAD_SINGLE_V2;
-        }
-        return RedisCommands.XREAD_SINGLE;
-    }
-
-    public RedisCommand<Map<String, Map<StreamMessageId, Map<Object, Object>>>> getXReadBlockingCommand() {
-        if (isResp3()) {
-            return RedisCommands.XREAD_BLOCKING_V2;
-        }
-        return RedisCommands.XREAD_BLOCKING;
-    }
-
-    public RedisCommand<Map<String, Map<StreamMessageId, Map<Object, Object>>>> getXReadCommand() {
-        if (isResp3()) {
-            return RedisCommands.XREAD_V2;
-        }
-        return RedisCommands.XREAD;
-    }
-
-    public RedisCommand<Map<Object, Object>> getHRandomFieldCommand() {
-        if (isResp3()) {
-            return RedisCommands.HRANDFIELD_V2;
-        }
-        return RedisCommands.HRANDFIELD;
+        return command;
     }
 
     public Map<String, ResponseEntry> getResponses() {

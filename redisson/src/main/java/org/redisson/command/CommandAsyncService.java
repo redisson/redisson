@@ -602,10 +602,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     
     public <V, R> RFuture<R> async(boolean readOnlyMode, NodeSource source, Codec codec,
             RedisCommand<V> command, Object[] params, boolean ignoreRedirect, boolean noRetry) {
-        if (readOnlyMode && command.getName().equals("SORT") && !SORT_RO_SUPPORTED.get()) {
+        RedisCommand<V> cmnd = getServiceManager().resp3(command);
+
+        if (readOnlyMode && cmnd.getName().equals("SORT") && !SORT_RO_SUPPORTED.get()) {
             readOnlyMode = false;
-        } else if (readOnlyMode && command.getName().equals("SORT") && SORT_RO_SUPPORTED.get()) {
-            RedisCommand cmd = new RedisCommand("SORT_RO", command.getReplayMultiDecoder());
+        } else if (readOnlyMode && cmnd.getName().equals("SORT") && SORT_RO_SUPPORTED.get()) {
+            RedisCommand cmd = new RedisCommand("SORT_RO", cmnd.getReplayMultiDecoder());
             CompletableFuture<R> mainPromise = createPromise();
             RedisExecutor<V, R> executor = new RedisExecutor<>(readOnlyMode, source, codec, cmd, params, mainPromise,
                                                                 ignoreRedirect, connectionManager, objectBuilder, referenceType, noRetry,
@@ -625,7 +627,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }
 
         CompletableFuture<R> mainPromise = createPromise();
-        RedisExecutor<V, R> executor = new RedisExecutor<>(readOnlyMode, source, codec, command, params, mainPromise,
+        RedisExecutor<V, R> executor = new RedisExecutor<>(readOnlyMode, source, codec, cmnd, params, mainPromise,
                                                             ignoreRedirect, connectionManager, objectBuilder, referenceType, noRetry,
                                                             retryAttempts, retryInterval, responseTimeout, trackChanges);
         executor.execute();

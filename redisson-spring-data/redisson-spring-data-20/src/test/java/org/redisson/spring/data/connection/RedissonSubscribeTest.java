@@ -7,7 +7,7 @@ import java.util.function.Consumer;
 
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
-import org.awaitility.Duration;
+import org.awaitility.Durations;
 import org.junit.Test;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
@@ -51,7 +51,7 @@ public class RedissonSubscribeTest extends BaseConnectionTest {
         RedisConnection c = factory.getConnection();
         c.publish("test".getBytes(), "sdfdsf".getBytes());
 
-        Awaitility.await().atMost(Duration.FIVE_SECONDS).until(() -> {
+        Awaitility.await().atMost(Durations.FIVE_SECONDS).until(() -> {
             return counterTest.get() == 2;
         });
         Assertions.assertThat(counterTest2.get()).isZero();
@@ -72,7 +72,7 @@ public class RedissonSubscribeTest extends BaseConnectionTest {
         }, "test".getBytes());
         
         connection.publish("test".getBytes(), "msg".getBytes());
-        Awaitility.await().atMost(Duration.ONE_SECOND)
+        Awaitility.await().atMost(Durations.ONE_SECOND)
                     .until(() -> Arrays.equals("msg".getBytes(), msg.get()));
         
         connection.getSubscription().unsubscribe();
@@ -92,7 +92,7 @@ public class RedissonSubscribeTest extends BaseConnectionTest {
         }, "test".getBytes());
         
         connection.publish("test".getBytes(), "msg".getBytes());
-        Awaitility.await().atMost(Duration.ONE_SECOND)
+        Awaitility.await().atMost(Durations.ONE_SECOND)
                     .until(() -> Arrays.equals("msg".getBytes(), msg.get()));
         
         connection.getSubscription().unsubscribe();

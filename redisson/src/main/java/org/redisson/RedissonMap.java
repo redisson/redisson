@@ -617,7 +617,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public RFuture<Map<K, V>> randomEntriesAsync(int count) {
-        return commandExecutor.readAsync(getRawName(), codec, getServiceManager().getHRandomFieldCommand(), getRawName(), count, "WITHVALUES");
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.HRANDFIELD, getRawName(), count, "WITHVALUES");
     }
 
     @Override

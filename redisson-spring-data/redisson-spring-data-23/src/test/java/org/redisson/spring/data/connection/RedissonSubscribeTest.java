@@ -7,7 +7,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
-import org.awaitility.Duration;
+import org.awaitility.Durations;
 import org.junit.Test;
 import org.redisson.RedisRunner;
 import org.redisson.Redisson;
@@ -65,7 +65,7 @@ public class RedissonSubscribeTest extends BaseConnectionTest {
         c.set("mykey".getBytes(), "2".getBytes());
         c.del("mykey".getBytes());
 
-        Awaitility.await().atMost(Duration.ONE_SECOND).until(() -> {
+        Awaitility.await().atMost(Durations.ONE_SECOND).until(() -> {
             return counterTest.get() == 3;
         });
 
@@ -85,7 +85,7 @@ public class RedissonSubscribeTest extends BaseConnectionTest {
         }, "test".getBytes());
         
         connection.publish("test".getBytes(), "msg".getBytes());
-        Awaitility.await().atMost(Duration.ONE_SECOND)
+        Awaitility.await().atMost(Durations.ONE_SECOND)
                     .until(() -> Arrays.equals("msg".getBytes(), msg.get()));
         
         connection.getSubscription().unsubscribe();
@@ -105,7 +105,7 @@ public class RedissonSubscribeTest extends BaseConnectionTest {
         }, "test".getBytes());
         
         connection.publish("test".getBytes(), "msg".getBytes());
-        Awaitility.await().atMost(Duration.ONE_SECOND)
+        Awaitility.await().atMost(Durations.ONE_SECOND)
                     .until(() -> Arrays.equals("msg".getBytes(), msg.get()));
         
         connection.getSubscription().unsubscribe();

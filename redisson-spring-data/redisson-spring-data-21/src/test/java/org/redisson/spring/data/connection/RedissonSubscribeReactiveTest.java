@@ -5,7 +5,7 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.awaitility.Awaitility;
-import org.awaitility.Duration;
+import org.awaitility.Durations;
 import org.junit.Test;
 import org.springframework.data.redis.connection.ReactiveRedisConnection;
 import org.springframework.data.redis.connection.ReactiveSubscription;
@@ -30,7 +30,7 @@ public class RedissonSubscribeReactiveTest extends BaseConnectionTest {
         ReactiveRedisConnection connection = factory.getReactiveConnection();
         connection.pubSubCommands().publish(ByteBuffer.wrap("test".getBytes()), ByteBuffer.wrap("msg".getBytes())).block();
 
-        Awaitility.await().atMost(Duration.ONE_SECOND)
+        Awaitility.await().atMost(Durations.ONE_SECOND)
                     .until(() -> Arrays.equals("msg".getBytes(), msg.get()));
     }
 
@@ -49,7 +49,7 @@ public class RedissonSubscribeReactiveTest extends BaseConnectionTest {
         
         connection.pubSubCommands().publish(ByteBuffer.wrap("test".getBytes()), ByteBuffer.wrap("msg".getBytes())).block();
 
-        Awaitility.await().atMost(Duration.ONE_SECOND)
+        Awaitility.await().atMost(Durations.ONE_SECOND)
                     .until(() -> Arrays.equals("msg".getBytes(), msg.get()));
         
         ss.unsubscribe();
@@ -71,7 +71,7 @@ public class RedissonSubscribeReactiveTest extends BaseConnectionTest {
         }).subscribe();
         
         connection.pubSubCommands().publish(ByteBuffer.wrap("test".getBytes()), ByteBuffer.wrap("msg".getBytes())).block();
-        Awaitility.await().atMost(Duration.ONE_SECOND)
+        Awaitility.await().atMost(Durations.ONE_SECOND)
                     .until(() -> Arrays.equals("msg".getBytes(), msg.get()));
         
         ss.unsubscribe();
