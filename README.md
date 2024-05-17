@@ -6,12 +6,14 @@
 [Quick start](https://github.com/redisson/redisson#quick-start) | [Documentation](https://github.com/redisson/redisson/wiki/Table-of-Content) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [FAQs](https://github.com/redisson/redisson/wiki/16.-FAQ) | [Report an issue](https://github.com/redisson/redisson/issues/new)
 
 Based on high-performance async and lock-free Java Redis client and [Netty](http://netty.io) framework.  
-Supported JDK:   1.8 ... 21 and Android  
-Supported Redis: 3.0 ... 7.2  
+Supported JDK:   1.8 - 21 and Android  
+
 
 ## Features
 
-* Thread-safe implementation  
+* Thread-safe implementation
+* [Redis](https://redis.io) 3.0 - 7.2 compatible
+* [Valkey](https://valkey.io) 7.2.5+ compatible
 * Compatible with different Redis deployment types
     * [Redis Proxy](https://github.com/redisson/redisson/wiki/2.-Configuration/#29-proxy-mode)
     * [Redis Multi-Cluster](https://github.com/redisson/redisson/wiki/2.-Configuration/#210-multi-cluster-mode)
@@ -21,7 +23,6 @@ Supported Redis: 3.0 ... 7.2
     * [Redis Sentinel](https://github.com/redisson/redisson/wiki/2.-Configuration/#27-sentinel-mode)
     * [Redis Replicated](https://github.com/redisson/redisson/wiki/2.-Configuration/#25-replicated-mode)
     * [Redis Master and Slaves](https://github.com/redisson/redisson/wiki/2.-Configuration/#28-master-slave-mode)
-* [Valkey](https://valkey.io) compatible
 * Amazon Web Services compatible
      * [AWS Elasticache Serverless](https://aws.amazon.com/elasticache/features/#Serverless)
      * [AWS Redis Global Datastore](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Redis-Global-Datastore.html)
@@ -67,8 +68,9 @@ Supported Redis: 3.0 ... 7.2
 * [Micronaut](https://github.com/redisson/redisson/tree/master/redisson-micronaut) integration  
 * [Quarkus](https://github.com/redisson/redisson/tree/master/redisson-quarkus) integration  
 * [Spring Cache](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#142-spring-cache) implementation
+* [Spring Cloud Stream](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#149-spring-cloud-stream) implementation
 * [Spring Transaction API](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#148-spring-transaction-manager) implementation
-* [Spring Data Redis](https://github.com/redisson/redisson/tree/master/redisson-spring-data) integration
+* [Spring Data Redis](https://github.com/redisson/redisson/tree/master/redisson-spring-data) implementation
 * [Spring Boot Starter](https://github.com/redisson/redisson/tree/master/redisson-spring-boot-starter) implementation
 * [Hibernate Cache](https://github.com/redisson/redisson/tree/master/redisson-hibernate) implementation
 * [MyBatis Cache](https://github.com/redisson/redisson/tree/master/redisson-mybatis) implementation
