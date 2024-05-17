@@ -924,20 +924,29 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     public <T> CompletionStage<T> handleNoSync(CompletionStage<T> stage, Supplier<CompletionStage<?>> supplier) {
         CompletionStage<T> s = stage.handle((r, ex) -> {
             if (ex != null) {
-                if (ex.getCause().getMessage() != null
-                        && ex.getCause().getMessage().equals("None of slaves were synced")) {
+                if (ex.getCause() != null
+                        && ex.getCause().getMessage() != null
+                            && ex.getCause().getMessage().equals("None of slaves were synced")) {
                     return supplier.get().handle((r1, e) -> {
                         if (e != null) {
-                            if (ex.getCause().getMessage() != null
-                                    && e.getCause().getMessage().equals("None of slaves were synced")) {
+                            if (e.getCause() != null
+                                    && e.getCause().getMessage() != null
+                                        && e.getCause().getMessage().equals("None of slaves were synced")) {
                                 throw new CompletionException(ex.getCause());
                             }
-                            e.getCause().addSuppressed(ex.getCause());
+                            if (e.getCause() != null) {
+                                e.getCause().addSuppressed(ex.getCause());
+                            } else {
+                                e.addSuppressed(ex.getCause());
+                            }
                         }
                         throw new CompletionException(ex.getCause());
                     });
                 } else {
-                    throw new CompletionException(ex.getCause());
+                    if (ex.getCause() != null) {
+                        throw new CompletionException(ex.getCause());
+                    }
+                    throw new CompletionException(ex);
                 }
             }
             return CompletableFuture.completedFuture(r);

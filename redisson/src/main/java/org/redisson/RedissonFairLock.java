@@ -116,8 +116,8 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                         "if firstThreadId2 == false then " +
                             "break;" +
                         "end;" +
-                        "local timeout = tonumber(redis.call('zscore', KEYS[3], firstThreadId2));" +
-                        "if timeout <= tonumber(ARGV[3]) then " +
+                        "local timeout = redis.call('zscore', KEYS[3], firstThreadId2);" +
+                        "if timeout ~= false and tonumber(timeout) <= tonumber(ARGV[3]) then " +
                             // remove the item from the queue and timeout set
                             // NOTE we do not alter any other timeout
                             "redis.call('zrem', KEYS[3], firstThreadId2);" +
@@ -162,8 +162,8 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                             "break;" +
                         "end;" +
 
-                        "local timeout = tonumber(redis.call('zscore', KEYS[3], firstThreadId2));" +
-                        "if timeout <= tonumber(ARGV[4]) then " +
+                        "local timeout = redis.call('zscore', KEYS[3], firstThreadId2);" +
+                        "if timeout ~= false and tonumber(timeout) <= tonumber(ARGV[4]) then " +
                             // remove the item from the queue and timeout set
                             // NOTE we do not alter any other timeout
                             "redis.call('zrem', KEYS[3], firstThreadId2);" +
@@ -247,8 +247,8 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                 + "if firstThreadId2 == false then "
                     + "break;"
                 + "end; "
-                + "local timeout = tonumber(redis.call('zscore', KEYS[3], firstThreadId2));"
-                + "if timeout <= tonumber(ARGV[4]) then "
+                + "local timeout = redis.call('zscore', KEYS[3], firstThreadId2);"
+                + "if timeout ~= false and tonumber(timeout) <= tonumber(ARGV[4]) then "
                     + "redis.call('zrem', KEYS[3], firstThreadId2); "
                     + "redis.call('lpop', KEYS[2]); "
                 + "else "
@@ -328,8 +328,8 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                 + "if firstThreadId2 == false then "
                     + "break;"
                 + "end; "
-                + "local timeout = tonumber(redis.call('zscore', KEYS[3], firstThreadId2));"
-                + "if timeout <= tonumber(ARGV[2]) then "
+                + "local timeout = redis.call('zscore', KEYS[3], firstThreadId2);"
+                + "if timeout ~= false and tonumber(timeout) <= tonumber(ARGV[2]) then "
                     + "redis.call('zrem', KEYS[3], firstThreadId2); "
                     + "redis.call('lpop', KEYS[2]); "
                 + "else "
