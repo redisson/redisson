@@ -125,22 +125,25 @@ public class RedissonConnectionFactory implements RedisConnectionFactory,
         if (!redisson.getConfig().isSentinelConfig()) {
             throw new InvalidDataAccessResourceUsageException("Redisson is not in Sentinel mode");
         }
-        
-        SentinelConnectionManager manager = ((SentinelConnectionManager)((Redisson)redisson).getConnectionManager());
+
+        SentinelConnectionManager manager = (SentinelConnectionManager)(((Redisson)redisson).getConnectionManager());
         for (RedisClient client : manager.getSentinels()) {
-            org.redisson.client.RedisConnection connection = client.connect();
+            org.redisson.client.RedisConnection connection = null;
             try {
+                connection = client.connect();
                 String res = connection.sync(RedisCommands.PING);
                 if ("pong".equalsIgnoreCase(res)) {
                     return new RedissonSentinelConnection(connection);
                 }
             } catch (Exception e) {
                 log.warn("Can't connect to " + client, e);
-                connection.closeAsync();
+                if (connection != null) {
+                    connection.closeAsync();
+                }
             }
         }
-        
-        throw new InvalidDataAccessResourceUsageException("Sentinels are not found");
+
+        throw new InvalidDataAccessResourceUsageException("Sentinels are offline");
     }
 
     @Override
