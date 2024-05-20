@@ -10,9 +10,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.redisson.api.*;
 import org.redisson.api.BatchOptions.ExecutionMode;
-import org.redisson.client.RedisClient;
-import org.redisson.client.RedisClientConfig;
-import org.redisson.client.RedisConnection;
+import org.redisson.client.*;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.cluster.ClusterNodeInfo;
@@ -270,6 +268,29 @@ public class RedissonBatchTest extends RedisDockerTest {
 
         for (RFuture<?> future : futures) {
             future.toCompletableFuture().get(1, TimeUnit.SECONDS);
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testConnectionLeakAfterError(BatchOptions batchOptions) {
+        Config config = createConfig();
+        config.useSingleServer()
+                .setConnectionMinimumIdleSize(1).setConnectionPoolSize(1);
+
+        RedissonClient redisson = Redisson.create(config);
+        redisson.getBucket("test").set("test");
+
+        for (int i = 0; i < 5; i++) {
+            try {
+                RBatch batch = redisson.createBatch(batchOptions);
+                batch.getAtomicLong("test").incrementAndGetAsync();
+                batch.execute();
+            } catch (RedisTimeoutException e) {
+                org.junit.jupiter.api.Assertions.fail(e);
+            } catch (RedisException e) {
+                // skip
+            }
         }
     }
 
