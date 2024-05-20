@@ -100,7 +100,10 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
                 || RedisCommands.DISCARD.getName().equals(command.getName())) {
             if (attempt < attempts
                     && attemptPromise.isCompletedExceptionally()) {
-                return;
+                Throwable cause = cause(attemptPromise);
+                if (cause instanceof CancellationException) {
+                    return;
+                }
             }
 
             super.releaseConnection(attemptPromise, connectionFuture);
