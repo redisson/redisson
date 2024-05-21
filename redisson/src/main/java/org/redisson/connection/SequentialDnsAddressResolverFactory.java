@@ -86,7 +86,7 @@ public class SequentialDnsAddressResolverFactory implements AddressResolverGroup
     private final AsyncSemaphore asyncSemaphore;
 
     public SequentialDnsAddressResolverFactory() {
-        this(6);
+        this(2);
     }
 
     /**
