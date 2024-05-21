@@ -15,14 +15,14 @@ Supported JDK:   1.8 - 21 and Android
 * [Redis](https://redis.io) 3.0 - 7.2 compatible
 * [Valkey](https://valkey.io) 7.2.5+ compatible
 * Supported deployment types
-    * [Redis Proxy](https://github.com/redisson/redisson/wiki/2.-Configuration/#29-proxy-mode)
-    * [Redis Multi-Cluster](https://github.com/redisson/redisson/wiki/2.-Configuration/#210-multi-cluster-mode)
-    * [Redis Multi-Sentinel](https://github.com/redisson/redisson/wiki/2.-Configuration/#211-multi-sentinel-mode)
-    * [Redis Single](https://github.com/redisson/redisson/wiki/2.-Configuration/#26-single-instance-mode)
-    * [Redis Cluster](https://github.com/redisson/redisson/wiki/2.-Configuration/#24-cluster-mode)
-    * [Redis Sentinel](https://github.com/redisson/redisson/wiki/2.-Configuration/#27-sentinel-mode)
-    * [Redis Replicated](https://github.com/redisson/redisson/wiki/2.-Configuration/#25-replicated-mode)
-    * [Redis Master and Slaves](https://github.com/redisson/redisson/wiki/2.-Configuration/#28-master-slave-mode)
+    * [Proxy](https://github.com/redisson/redisson/wiki/2.-Configuration/#29-proxy-mode)
+    * [Multi-Cluster](https://github.com/redisson/redisson/wiki/2.-Configuration/#210-multi-cluster-mode)
+    * [Multi-Sentinel](https://github.com/redisson/redisson/wiki/2.-Configuration/#211-multi-sentinel-mode)
+    * [Single](https://github.com/redisson/redisson/wiki/2.-Configuration/#26-single-instance-mode)
+    * [Cluster](https://github.com/redisson/redisson/wiki/2.-Configuration/#24-cluster-mode)
+    * [Sentinel](https://github.com/redisson/redisson/wiki/2.-Configuration/#27-sentinel-mode)
+    * [Replicated](https://github.com/redisson/redisson/wiki/2.-Configuration/#25-replicated-mode)
+    * [Master and Slaves](https://github.com/redisson/redisson/wiki/2.-Configuration/#28-master-slave-mode)
 * Amazon Web Services compatible
      * [AWS Elasticache Serverless](https://aws.amazon.com/elasticache/features/#Serverless)
      * [AWS Redis Global Datastore](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Redis-Global-Datastore.html)
