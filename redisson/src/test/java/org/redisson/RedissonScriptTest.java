@@ -1,22 +1,57 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.redisson.api.*;
+import org.redisson.api.RScript.Mode;
+import org.redisson.client.RedisException;
+import org.redisson.client.codec.StringCodec;
+import org.redisson.config.CommandMapper;
+import org.redisson.config.Config;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-import org.redisson.api.RFuture;
-import org.redisson.api.RLexSortedSet;
-import org.redisson.api.RScript;
-import org.redisson.api.RScript.Mode;
-import org.redisson.client.RedisException;
-import org.redisson.client.codec.StringCodec;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonScriptTest extends RedisDockerTest {
+
+    @Test
+    public void testCommandMapping() {
+        String script = "local value = redis.call('cmd1', KEYS[1], ARGV[1]); "
+                + "if value ~= false then "
+                    + "redis.call('cmd2', KEYS[1], ARGV[1], ARGV[2]); "
+                    + "redis.call('cmd2', KEYS[1], ARGV[1], ARGV[2]); "
+                    + "return value; "
+                + "end; "
+                + "return nil; ";
+
+        Config cfg = createConfig();
+        cfg.useSingleServer().setCommandMapper(new CommandMapper() {
+            @Override
+            public String map(String name) {
+                if (name.equalsIgnoreCase("cmd1")) {
+                    return "hget";
+                }
+                if (name.equalsIgnoreCase("cmd2")) {
+                    return "hset";
+                }
+                return name;
+            }
+        });
+
+        RedissonClient r = Redisson.create(cfg);
+        RMap<Object, Object> m = r.getMap("test");
+        m.fastPut("key1", "value");
+
+        String res = r.getScript().eval(Mode.READ_WRITE,
+                script,
+                RScript.ReturnType.VALUE, Arrays.asList("test"), "key1", "value3");
+        assertThat(res).isEqualTo("value");
+
+        assertThat(m.get("key1")).isEqualTo("value3");
+    }
 
     @Test
     public void testMulti() {

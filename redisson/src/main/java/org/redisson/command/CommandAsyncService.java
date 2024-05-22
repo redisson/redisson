@@ -31,6 +31,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.config.DefaultCommandMapper;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
@@ -53,6 +54,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -500,15 +503,37 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         this.EVAL_SHA_RO_SUPPORTED.set(value);
     }
 
+    private static final Pattern COMMANDS_PATTERN = Pattern.compile("redis\\.call\\(['\"]{1}([\\w.]+)['\"]{1}");
+
+    private String map(String script) {
+        if (getServiceManager().getConfig().getCommandMapper() instanceof DefaultCommandMapper) {
+            return script;
+        }
+
+        Matcher matcher = COMMANDS_PATTERN.matcher(script);
+        while (matcher.find()) {
+
+            String command = matcher.group(1);
+            String mapped = getServiceManager().getConfig().getCommandMapper().map(command);
+            if (!command.equalsIgnoreCase(mapped)) {
+                script = script.replace(command, mapped);
+            }
+        }
+        return script;
+    }
+
     public <T, R> RFuture<R> evalAsync(NodeSource nodeSource, boolean readOnlyMode, Codec codec, RedisCommand<T> evalCommandType,
-                                        String script, List<Object> keys, boolean noRetry, Object... params) {
+                                       String script, List<Object> keys, boolean noRetry, Object... params) {
+
+        String mappedScript = map(script);
+
         if (isEvalCacheActive() && evalCommandType.getName().equals("EVAL")) {
             CompletableFuture<R> mainPromise = new CompletableFuture<>();
-            
+
             Object[] pps = copy(params);
 
             CompletableFuture<R> promise = new CompletableFuture<>();
-            String sha1 = getServiceManager().calcSHA(script);
+            String sha1 = getServiceManager().calcSHA(mappedScript);
             RedisCommand cmd;
             if (readOnlyMode && EVAL_SHA_RO_SUPPORTED.get()) {
                 cmd = new RedisCommand(evalCommandType, "EVALSHA_RO");
@@ -522,19 +547,19 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             args.addAll(Arrays.asList(params));
 
             RedisExecutor<T, R> executor = new RedisExecutor(readOnlyMode, nodeSource, codec, cmd,
-                                                                args.toArray(), promise, false,
-                                                                connectionManager, objectBuilder, referenceType, noRetry,
-                                                                retryAttempts, retryInterval, responseTimeout, trackChanges);
+                    args.toArray(), promise, false,
+                    connectionManager, objectBuilder, referenceType, noRetry,
+                    retryAttempts, retryInterval, responseTimeout, trackChanges);
             executor.execute();
 
             promise.whenComplete((res, e) -> {
                 if (e != null) {
                     if (e.getMessage().startsWith("ERR unknown command")) {
                         EVAL_SHA_RO_SUPPORTED.set(false);
-                        RFuture<R> future = evalAsync(nodeSource, readOnlyMode, codec, evalCommandType, script, keys, noRetry, pps);
+                        RFuture<R> future = evalAsync(nodeSource, readOnlyMode, codec, evalCommandType, mappedScript, keys, noRetry, pps);
                         transfer(future.toCompletableFuture(), mainPromise);
                     } else if (e.getMessage().startsWith("NOSCRIPT")) {
-                        RFuture<String> loadFuture = loadScript(executor.getRedisClient(), script);
+                        RFuture<String> loadFuture = loadScript(executor.getRedisClient(), mappedScript);
                         loadFuture.whenComplete((r, ex) -> {
                             if (ex != null) {
                                 free(pps);
@@ -567,9 +592,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             });
             return new CompletableFutureWrapper<>(mainPromise);
         }
-        
+
         List<Object> args = new ArrayList<Object>(2 + keys.size() + params.length);
-        args.add(script);
+        args.add(mappedScript);
         args.add(keys.size());
         args.addAll(keys);
         args.addAll(Arrays.asList(params));
