@@ -25,6 +25,7 @@ import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.transaction.operation.*;
 import org.redisson.transaction.operation.bucket.*;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -336,7 +337,13 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
         long currentThreadId = Thread.currentThread().getId();
         return setAsync(value, new BucketSetOperation<V>(getName(), getLockName(), getCodec(), value, timeToLive, timeUnit, transactionId, currentThreadId));
     }
-    
+
+    @Override
+    public RFuture<Void> setAsync(V value, Duration duration) {
+        long currentThreadId = Thread.currentThread().getId();
+        return setAsync(value, new BucketSetOperation<V>(getName(), getLockName(), getCodec(), value, duration.toMillis(), TimeUnit.MILLISECONDS, transactionId, currentThreadId));
+    }
+
     @Override
     public RFuture<Boolean> trySetAsync(V newValue) {
         long currentThreadId = Thread.currentThread().getId();

@@ -69,13 +69,31 @@ public class RedissonTransactionalBucketTest extends RedisDockerTest {
         
         RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
         RBucket<String> bucket = transaction.getBucket("test");
+        assertThat(bucket.get()).isEqualTo("123");
         bucket.set("234");
         assertThat(bucket.get()).isEqualTo("234");
-        
+
         transaction.commit();
         
         assertThat(redisson.getKeys().count()).isEqualTo(1);
         assertThat(b.get()).isEqualTo("234");
+    }
+
+    @Test
+    public void testSetDuration() throws InterruptedException {
+        RBucket<String> b = redisson.getBucket("test");
+        b.set("123");
+
+        RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+        RBucket<String> bucket = transaction.getBucket("test");
+        bucket.set("234", Duration.ofSeconds(2));
+        assertThat(bucket.get()).isEqualTo("234");
+        assertThat(b.get()).isEqualTo("123");
+        transaction.commit();
+
+        assertThat(b.get()).isEqualTo("234");
+        Thread.sleep(2200);
+        assertThat(b.get()).isNull();
     }
 
     @Test
