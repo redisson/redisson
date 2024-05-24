@@ -12,7 +12,10 @@ jobs:
     strategy: 
       fail-fast: false
       matrix: 
-        java: [17, 21]
+        include:
+          - java: 17
+            exclude: -pl '!:redisson-helidon-40'
+          - java: 21
     steps:
     - uses: actions/checkout@v4
     - name: Set up JDK ${{matrix.java}}
@@ -30,8 +33,4 @@ jobs:
           ${{ runner.os }}-maven-java-${{matrix.java}}
 
     - name: Build with Maven
-      run: mvn -B verify --file pom.xml
-      if: ${{matrix.java == 21}}
-    - name: Test with Maven
-      run: mvn -B test -pl '!:redisson-helidon-40' --file pom.xml
-      if: ${{matrix.java != 21}}
+      run: mvn -B verify ${{matrix.exclude}} --file pom.xml
