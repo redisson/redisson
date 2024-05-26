@@ -2,10 +2,13 @@ package org.redisson;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import org.redisson.api.RRateLimiter;
-import org.redisson.api.RScoredSortedSet;
-import org.redisson.api.RateIntervalUnit;
-import org.redisson.api.RateType;
+import org.redisson.api.*;
+import org.redisson.client.codec.Codec;
+import org.redisson.client.protocol.RedisCommand;
+import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.command.CommandAsyncService;
+import org.redisson.connection.ConnectionManager;
+import org.redisson.liveobject.core.RedissonObjectBuilder;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -17,6 +20,40 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonRateLimiterTest extends RedisDockerTest {
+
+    private static class FakeCommandAsyncExecutor extends CommandAsyncService {
+
+        public FakeCommandAsyncExecutor(ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder, RedissonObjectBuilder.ReferenceType referenceType) {
+            super(connectionManager, objectBuilder, referenceType);
+        }
+
+        @Override
+        public <T, R> RFuture<R> evalWriteAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
+            if (params[params.length - 1] instanceof byte[]) {
+                params[params.length - 1] = new byte[]{1, 2, 3};
+            }
+            return super.evalWriteAsync(key, codec, evalCommandType, script, keys, params);
+        }
+    }
+
+    /**
+     * test expire
+     * case : same random value
+     */
+    @Test
+    public void testExpire3() throws InterruptedException {
+        Redisson client = (Redisson) redisson;
+        CommandAsyncExecutor executor = new FakeCommandAsyncExecutor(client.getConnectionManager(), client.getCommandExecutor().getObjectBuilder(), RedissonObjectBuilder.ReferenceType.DEFAULT);
+        RedissonRateLimiter rateLimiter = new RedissonRateLimiter(executor, "testRateLimitAcquire");
+        rateLimiter.trySetRate(RateType.OVERALL, 10, 5, RateIntervalUnit.SECONDS);
+
+        for(int i = 0; i < 10; i++) {
+            rateLimiter.acquire();
+        }
+
+        Thread.sleep(5000);
+        assertThat(rateLimiter.availablePermits()).isEqualTo(10);
+    }
 
     @Test
     public void testExpire2() throws InterruptedException {
