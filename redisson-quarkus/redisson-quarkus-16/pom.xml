@@ -37,7 +37,7 @@
      </modules>
 
      <properties>
-       <quarkus.version>1.13.6.Final</quarkus.version>
+       <quarkus.version>2.16.12.Final</quarkus.version>
      </properties>
 
      <dependencyManagement>
