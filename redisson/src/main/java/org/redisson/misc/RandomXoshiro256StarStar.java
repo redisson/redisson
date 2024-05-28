@@ -65,11 +65,11 @@ public class RandomXoshiro256StarStar extends Random {
 
     private static final long SPLITMIX1_MAGIC = 0x9E3779B97F4A7C15L;
 
-    private static long splitmix64_1(long x) {
+    private static long splitmix64v1(long x) {
         return (x + SPLITMIX1_MAGIC);
     }
 
-    private static long splitmix64_2(long z) {
+    private static long splitmix64v2(long z) {
         z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9L;
         z = (z ^ (z >> 27)) * 0x94D049BB133111EBL;
         return z ^ (z >> 31);
@@ -84,14 +84,14 @@ public class RandomXoshiro256StarStar extends Random {
 
         long[] oldState = stateRef.get(stamp);
         long[] state = new long[4];
-        long sms = splitmix64_1(seed);
-        state[0] = splitmix64_2(sms);
-        sms = splitmix64_1(sms);
-        state[1] = splitmix64_2(sms);
-        sms = splitmix64_1(sms);
-        state[2] = splitmix64_2(sms);
-        sms = splitmix64_1(sms);
-        state[3] = splitmix64_2(sms);
+        long sms = splitmix64v1(seed);
+        state[0] = splitmix64v2(sms);
+        sms = splitmix64v1(sms);
+        state[1] = splitmix64v2(sms);
+        sms = splitmix64v1(sms);
+        state[2] = splitmix64v2(sms);
+        sms = splitmix64v1(sms);
+        state[3] = splitmix64v2(sms);
         if (!stateRef.compareAndSet(oldState, state, stamp[0], 1)) {
             throw new IllegalStateException();
         }
@@ -115,17 +115,17 @@ public class RandomXoshiro256StarStar extends Random {
     // not called, implemented instead of just throwing for completeness
     @Override
     protected int next(int bits) {
-        return (int)(nextLong() & ((1L << bits) - 1));
+        return (int) (nextLong() & ((1L << bits) - 1));
     }
 
     @Override
     public int nextInt() {
-        return (int)nextLong();
+        return (int) nextLong();
     }
 
     @Override
     public int nextInt(int bound) {
-        return (int)nextLong(bound);
+        return (int) nextLong(bound);
     }
 
     public long nextLong(long bound) {
@@ -165,7 +165,7 @@ public class RandomXoshiro256StarStar extends Random {
                 l = nextLong();
                 j = 0;
             }
-            buf[i] = (byte)(l&0xFF);
+            buf[i] = (byte) (l&0xFF);
             l =  l >>> 8L;
             j++;
         }
@@ -180,7 +180,7 @@ public class RandomXoshiro256StarStar extends Random {
             long[] oldState = stateRef.get(stamp);
 
             long[] state = Arrays.copyOf(oldState, oldState.length);
-            long result_starstar = Long.rotateLeft(state[0] + state[3], 23) + state[0];
+            long result = Long.rotateLeft(state[0] + state[3], 23) + state[0];
 
             long t = state[1] << 17;
 
@@ -194,7 +194,7 @@ public class RandomXoshiro256StarStar extends Random {
             state[3] = Long.rotateLeft(state[3], 45);
 
             if (stateRef.compareAndSet(oldState, state, stamp[0], stamp[0]+1)) {
-                return result_starstar;
+                return result;
             }
         }
     }
