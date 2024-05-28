@@ -309,12 +309,11 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return new CompletableFutureWrapper<>(result);
     }
     
-    protected static byte[] generateLogEntryId(byte[] keyHash) {
+    protected byte[] generateLogEntryId(byte[] keyHash) {
         byte[] result = new byte[keyHash.length + 1 + 8];
         result[16] = ':';
-        byte[] id = new byte[8];
-        ThreadLocalRandom.current().nextBytes(id);
-        
+        byte[] id = getServiceManager().generateIdArray(8);
+
         System.arraycopy(keyHash, 0, result, 0, keyHash.length);
         System.arraycopy(id, 0, result, 17, id.length);
         return result;
