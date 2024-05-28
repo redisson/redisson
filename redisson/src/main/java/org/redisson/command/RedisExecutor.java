@@ -203,7 +203,9 @@ public class RedisExecutor<V, R> {
 
                 checkAttemptPromise(attemptPromise, connectionFuture);
             }).whenComplete((r, e) -> {
-                if (e != null) {
+                if (e != null
+                        && !e.getMessage().contains("NOSCRIPT")
+                            && !e.getMessage().contains("ERR unknown command")) {
                     log.error(e.getMessage(), e);
                 }
             });
