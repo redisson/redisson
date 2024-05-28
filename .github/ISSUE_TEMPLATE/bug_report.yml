@@ -6,7 +6,7 @@ body:
       value: |
         Thank you for reporting an issue.
 
-        Upgrade to [Redisson PRO](https://redisson.pro) with **advanced features** and **support with SLA**.
+        Upgrade to [Redisson PRO](https://redisson.pro) with **support with SLA** and **advanced features**.
   - type: input
     attributes:
       label: Redis version
@@ -17,7 +17,7 @@ body:
       label: Redisson version
     validations:
       required: true
-  - type: input
+  - type: textarea
     attributes:
       label: Redisson configuration
     validations:
