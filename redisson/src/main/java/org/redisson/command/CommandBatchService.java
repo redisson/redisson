@@ -426,38 +426,31 @@ public class CommandBatchService extends CommandAsyncService {
                         }
 
                         for (Map.Entry<NodeSource, Entry> e : r.entrySet()) {
+                            Entry entry = e.getValue();
                             if (this.options.getExecutionMode() != ExecutionMode.IN_MEMORY) {
-                                for (Entry entry : r.values()) {
-                                    BatchCommandData<?, ?> multiCommand = new BatchCommandData<>(RedisCommands.MULTI, new Object[] {}, index.incrementAndGet());
-                                    entry.addFirstCommand(multiCommand);
-                                    BatchCommandData<?, ?> execCommand = new BatchCommandData<>(RedisCommands.EXEC, new Object[] {}, index.incrementAndGet());
-                                    entry.add(execCommand);
-                                }
+                                BatchCommandData<?, ?> multiCommand = new BatchCommandData<>(RedisCommands.MULTI, new Object[] {}, index.incrementAndGet());
+                                entry.addFirstCommand(multiCommand);
+                                BatchCommandData<?, ?> execCommand = new BatchCommandData<>(RedisCommands.EXEC, new Object[] {}, index.incrementAndGet());
+                                entry.add(execCommand);
                             }
 
                             if (this.options.isSkipResult()) {
-                                for (Entry entry : r.values()) {
-                                    BatchCommandData<?, ?> offCommand = new BatchCommandData<>(RedisCommands.CLIENT_REPLY, new Object[] { "OFF" }, index.incrementAndGet());
-                                    entry.addFirstCommand(offCommand);
-                                    BatchCommandData<?, ?> onCommand = new BatchCommandData<>(RedisCommands.CLIENT_REPLY, new Object[] { "ON" }, index.incrementAndGet());
-                                    entry.add(onCommand);
-                                }
+                                BatchCommandData<?, ?> offCommand = new BatchCommandData<>(RedisCommands.CLIENT_REPLY, new Object[] { "OFF" }, index.incrementAndGet());
+                                entry.addFirstCommand(offCommand);
+                                BatchCommandData<?, ?> onCommand = new BatchCommandData<>(RedisCommands.CLIENT_REPLY, new Object[] { "ON" }, index.incrementAndGet());
+                                entry.add(onCommand);
                             }
 
                             if (this.options.getSyncSlaves() > 0) {
+                                BatchCommandData<?, ?> waitCommand;
                                 if (this.options.isSyncAOF()) {
-                                    for (Entry entry : r.values()) {
-                                        BatchCommandData<?, ?> waitCommand = new BatchCommandData<>(RedisCommands.WAITAOF,
-                                                new Object[] { this.options.getSyncLocals(), this.options.getSyncSlaves(), this.options.getSyncTimeout() }, index.incrementAndGet());
-                                        entry.add(waitCommand);
-                                    }
+                                    waitCommand = new BatchCommandData<>(RedisCommands.WAITAOF,
+                                            new Object[]{this.options.getSyncLocals(), this.options.getSyncSlaves(), this.options.getSyncTimeout()}, index.incrementAndGet());
                                 } else {
-                                    for (Entry entry : r.values()) {
-                                        BatchCommandData<?, ?> waitCommand = new BatchCommandData<>(RedisCommands.WAIT,
-                                                new Object[] { this.options.getSyncSlaves(), this.options.getSyncTimeout() }, index.incrementAndGet());
-                                        entry.add(waitCommand);
-                                    }
+                                    waitCommand = new BatchCommandData<>(RedisCommands.WAIT,
+                                            new Object[]{this.options.getSyncSlaves(), this.options.getSyncTimeout()}, index.incrementAndGet());
                                 }
+                                entry.add(waitCommand);
                             }
 
                             BatchOptions options = BatchOptions.defaults()

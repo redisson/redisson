@@ -40,6 +40,45 @@ public class RedissonBatchTest extends RedisDockerTest {
 
     @ParameterizedTest
     @MethodSource("data")
+    public void testMemoryAtomicInCluster(BatchOptions batchOptions) {
+        Assumptions.assumeTrue(batchOptions.getExecutionMode() == ExecutionMode.IN_MEMORY);
+
+        testInCluster(client -> {
+            Config config = client.getConfig();
+            config.useClusterServers()
+                    .setTimeout(123000);
+            RedissonClient redisson = Redisson.create(config);
+
+            batchOptions
+                    .sync(1, Duration.ofSeconds(1))
+                    .executionMode(ExecutionMode.IN_MEMORY_ATOMIC);
+
+            RBatch batch = redisson.createBatch(batchOptions);
+            batch.getBucket("{a}Test1").setAsync("test1");
+            batch.getBucket("{a}Test2").setAsync("test2");
+            batch.getBucket("{b}Test3").setAsync("test3");
+
+            BatchResult<?> result = batch.execute();
+            assertThat(result.getSyncedSlaves()).isEqualTo(2);
+            assertThat(result.getResponses().size()).isEqualTo(3);
+
+            batchOptions
+                    .skipResult()
+                    .sync(0, Duration.ofSeconds(1));
+
+            batch = redisson.createBatch(batchOptions);
+            batch.getBucket("{a}Test1").getAsync();
+            batch.getBucket("{a}Test2").getAsync();
+            batch.getBucket("{b}Test3").getAsync();
+            result = batch.execute();
+            assertThat(result.getResponses().size()).isEqualTo(0);
+
+            redisson.shutdown();
+        });
+    }
+
+    @ParameterizedTest
+    @MethodSource("data")
     public void testSlotMigrationInCluster(BatchOptions batchOptions) {
         withNewCluster((nodes, redissonClient) -> {
             Config config = redissonClient.getConfig();
