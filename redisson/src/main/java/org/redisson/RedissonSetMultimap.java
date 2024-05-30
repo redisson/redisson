@@ -170,8 +170,13 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
 
         String setName = getValuesName(keyHash);
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN_AMOUNT,
-                "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); " +
-                "return redis.call('sadd', KEYS[2], unpack(ARGV, 3, #ARGV)); ",
+                  "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); " +
+                        "local n = 0; " +
+                        "for i=3, #ARGV, 5000 do " +
+                            "n = n + redis.call('sadd', KEYS[2], unpack(ARGV, i, math.min(i+4999, table.getn(ARGV)))) " +
+                        "end; " +
+
+                        "return n; ",
             Arrays.<Object>asList(getRawName(), setName), params.toArray());
     }
 
@@ -208,7 +213,11 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
                 encode(args, c);
                 
                 return commandExecutor.evalWriteAsync(RedissonSetMultimap.this.getRawName(), codec, RedisCommands.EVAL_BOOLEAN_AMOUNT,
-                        "local count = redis.call('srem', KEYS[2], unpack(ARGV, 2, #ARGV));" +
+                  "local count = 0;" +
+                        "for i=2, #ARGV, 5000 do " +
+                           "count = count + redis.call('srem', KEYS[2], unpack(ARGV, i, math.min(i+4999, table.getn(ARGV)))) " +
+                        "end; " +
+
                         "if count > 0 then " +
                             "if redis.call('scard', KEYS[2]) == 0 then " +
                                 "redis.call('hdel', KEYS[1], ARGV[1]); " +
@@ -335,7 +344,9 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
                 "local members = redis.call('smembers', KEYS[2]); " +
                 "redis.call('del', KEYS[2]); " +
                 "if #ARGV > 2 then " +
-                    "redis.call('sadd', KEYS[2], unpack(ARGV, 3, #ARGV)); " +
+                    "for i=3, #ARGV, 5000 do "
+                      + "redis.call('sadd', KEYS[2], unpack(ARGV, i, math.min(i+4999, table.getn(ARGV)))) "
+                  + "end; " +
                 "end; " +
                 "return members; ",
             Arrays.<Object>asList(getRawName(), setName), params.toArray());

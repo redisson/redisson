@@ -365,12 +365,18 @@ public class RedissonSetMultimapTest extends RedisDockerTest {
 
     @Test
     public void testPutAll() {
-        RSetMultimap<SimpleKey, SimpleValue> map = redisson.getSetMultimap("test1");
-        List<SimpleValue> values = Arrays.asList(new SimpleValue("1"), new SimpleValue("2"), new SimpleValue("3"));
-        assertThat(map.putAll(new SimpleKey("0"), values)).isTrue();
-        assertThat(map.putAll(new SimpleKey("0"), Arrays.asList(new SimpleValue("1")))).isFalse();
+        RSetMultimap<String, String> map = redisson.getSetMultimap("test1");
+        List<String> values = Arrays.asList("1", "2", "3");
+        assertThat(map.putAll("0", values)).isTrue();
+        assertThat(map.putAll("0", Arrays.asList("1"))).isFalse();
 
-        assertThat(map.get(new SimpleKey("0"))).containsOnlyElementsOf(values);
+        assertThat(map.get("0")).containsOnlyElementsOf(values);
+
+        List<String> vals = new ArrayList<>();
+        for (int i = 0; i < 10000; i++) {
+            vals.add("" + i);
+        }
+        map.putAll("0", vals);
     }
 
     @Test
