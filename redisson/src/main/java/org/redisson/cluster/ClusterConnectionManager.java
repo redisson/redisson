@@ -477,11 +477,20 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                         .thenCompose(r -> newPartitionsFuture)
                         .thenCompose(newPartitions -> checkSlaveNodesChange(newPartitions))
                         .thenCompose(r -> newPartitionsFuture)
-                        .thenApply(newPartitions -> {
-                            checkSlotsMigration(newPartitions);
-                            checkSlotsChange(newPartitions);
+                        .whenComplete((newPartitions, ex) -> {
+                            if (newPartitions != null) {
+                                try {
+                                    checkSlotsMigration(newPartitions);
+                                    checkSlotsChange(newPartitions);
+                                } catch (Exception exc) {
+                                    log.error(exc.getMessage(), exc);
+                                }
+                            }
+                            if (ex != null) {
+                                log.error(ex.getMessage(), ex);
+                            }
+
                             scheduleClusterChangeCheck(cfg);
-                            return newPartitions;
                         });
         });
     }
