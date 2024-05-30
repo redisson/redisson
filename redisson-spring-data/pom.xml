@@ -28,6 +28,7 @@
         <module>redisson-spring-data-30</module>
         <module>redisson-spring-data-31</module>
         <module>redisson-spring-data-32</module>
+        <module>redisson-spring-data-33</module>
     </modules>
 
     <build>
