@@ -9,7 +9,7 @@
     </parent>
 
     <properties>
-        <spring-boot.version>3.2.5</spring-boot.version>
+        <spring-boot.version>3.3.0</spring-boot.version>
     </properties>
 
     <artifactId>redisson-spring-boot-starter</artifactId>
@@ -131,7 +131,7 @@
 
         <dependency>
             <groupId>org.redisson</groupId>
-            <artifactId>redisson-spring-data-32</artifactId>
+            <artifactId>redisson-spring-data-33</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -161,13 +161,13 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.4.13</version>
+            <version>1.5.5</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>
-            <version>1.4.14</version>
+            <version>1.5.5</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
