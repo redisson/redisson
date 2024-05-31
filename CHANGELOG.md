@@ -3,6 +3,33 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
+### 31-May-2024 - 3.31.0 released
+
+Feature - Spring Boot 3.3.0 integration  
+Feature - Spring Data Redis 3.3.0 integration  
+Feature - allow retry of `NOREPLICAS` error (thanks to @ghollies)  
+
+Improvement - `SequentialDnsAddressResolverFactory` default `concurrencyLevel` set to 2  
+Improvement - `ThreadLocalRandom` replaced with `xoshiro256**` RNG to avoid collisions  
+
+Fixed - cluster failover handling  
+Fixed - cluster topology scan shouldn't be stopped by any exception  
+Fixed - `RSetMultiMap` throws `too many results to unpack` error  
+Fixed - append commands error when using batch mode (thanks to @seakider)  
+Fixed - `ERR unknown command EVALSHA_RO` error shouldn't be logged  
+Fixed - `TransactionalBucket#set(V, Duration)` `PSETEX` command is called before `MULTI` command (thanks to @seakider)  
+Fixed - `CommandMapper` isn't applied to Lua scripts  
+Fixed - incorrect connection release if `BatchOptions.executionMode` = `REDIS_WRITE_ATOMIC` or `REDIS_READ_ATOMIC` (thanks to @seakider)  
+Fixed - `RFairLock` methods throw 'attempt to compare nil with number' error  
+Fixed - Spring Data Redis `RedissonConnectionFactory.getSentinelConnection()` method throws error on the first offline sentinel  
+Fixed - read mode = SLAVE isn't applied for `RSet.random()` methods  
+Fixed - Keyspace notifications should be listened only on master nodes  
+Fixed - `RListMultimap.removeAll()` method always deletes link to list  
+Fixed - `RLockReactive` methods don't work in native image  
+Fixed - Correctly update shutdown timeout after each step in connection manager shutdown (thanks to @MartinEkInsurely)  
+Fixed - broken tck `JCache` tests  
+Fixed - not all sentinels defined in the configuration are registered  
+
 ### 10-May-2024 - 3.30.0 released
 Feature - `sslKeystoreType` setting added  
 Feature - `RPatternTopic.getActiveTopic()` method added (thanks to @MasterShi)  
