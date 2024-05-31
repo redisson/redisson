@@ -965,7 +965,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private Collection<ClusterPartition> getLastPartitions() {
-        return lastUri2Partition.values();
+        return new HashSet<>(lastUri2Partition.values());
     }
 
     public int getSlot(MasterSlaveEntry entry) {
