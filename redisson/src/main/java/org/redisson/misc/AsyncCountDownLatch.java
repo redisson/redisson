@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Nikita Koksharov
  *
  */
-public class AsyncCountDownLatch {
+public final class AsyncCountDownLatch {
 
     private final AtomicInteger commandsSent = new AtomicInteger();
     private volatile Runnable callback;

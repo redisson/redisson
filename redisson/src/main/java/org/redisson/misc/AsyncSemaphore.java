@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Nikita Koksharov
  *
  */
-public class AsyncSemaphore {
+public final class AsyncSemaphore {
 
     private final AtomicInteger counter;
     private final Queue<CompletableFuture<Void>> listeners = new ConcurrentLinkedQueue<>();

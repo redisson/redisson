@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.AtomicStampedReference;
  * @author Una Thompson &lt;una@unascribed.com> (Java port)
  * @author Nikita Koksharov
  */
-public class RandomXoshiro256StarStar extends Random {
+public final class RandomXoshiro256StarStar extends Random {
 
     private static final long serialVersionUID = -2837799889588687855L;
 

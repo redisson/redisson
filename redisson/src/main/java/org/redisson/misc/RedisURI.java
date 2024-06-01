@@ -27,7 +27,7 @@ import java.util.Objects;
  * @author Nikita Koksharov
  *
  */
-public class RedisURI {
+public final class RedisURI {
 
     private final boolean ssl;
     private final String host;
