@@ -24,7 +24,7 @@ import java.util.function.Supplier;
  * @author Nikita Koksharov
  *
  */
-public class WrappedLock {
+public final class WrappedLock {
 
     private final Lock lock = new ReentrantLock();
 
