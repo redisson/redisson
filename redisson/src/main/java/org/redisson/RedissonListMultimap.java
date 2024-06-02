@@ -190,8 +190,12 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
 
         String setName = getValuesName(keyHash);
         return commandExecutor.evalWriteNoRetryAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN_AMOUNT,
-                "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); " +
-                "return redis.call('rpush', KEYS[2], unpack(ARGV, 3, #ARGV)); ",
+                  "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); " +
+                        "local n = 0; " +
+                        "for i=3, #ARGV, 5000 do " +
+                            "n = n + redis.call('rpush', KEYS[2], unpack(ARGV, i, math.min(i+4999, table.getn(ARGV)))) " +
+                        "end; " +
+                        "return n; ",
             Arrays.<Object>asList(getRawName(), setName), params.toArray());
     }
 
@@ -338,7 +342,9 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
                 "local members = redis.call('lrange', KEYS[2], 0, -1); " +
                 "redis.call('del', KEYS[2]); " +
                 "if #ARGV > 2 then " +
-                    "redis.call('rpush', KEYS[2], unpack(ARGV, 3, #ARGV)); " +
+                    "for i=3, #ARGV, 5000 do " +
+                        "redis.call('rpush', KEYS[2], unpack(ARGV, i, math.min(i+4999, table.getn(ARGV)))) " +
+                    "end; " +
                 "end; " +
                 "return members; ",
             Arrays.<Object>asList(getRawName(), setName), params.toArray());
