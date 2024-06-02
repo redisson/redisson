@@ -46,7 +46,7 @@ Maven
          <artifactId>redisson-hibernate-53</artifactId>
          <!-- for Hibernate v6.0.2+ - v6.x.x -->
          <artifactId>redisson-hibernate-6</artifactId>
-         <version>3.30.0</version>
+         <version>3.31.0</version>
      </dependency>
 ```
 
@@ -54,15 +54,15 @@ Gradle
 
 ```groovy
      // for Hibernate v4.x
-     compile 'org.redisson:redisson-hibernate-4:3.30.0'
+     compile 'org.redisson:redisson-hibernate-4:3.31.0'
      // for Hibernate v5.0.x - v5.1.x
-     compile 'org.redisson:redisson-hibernate-5:3.30.0'
+     compile 'org.redisson:redisson-hibernate-5:3.31.0'
      // for Hibernate v5.2.x
-     compile 'org.redisson:redisson-hibernate-52:3.30.0'
+     compile 'org.redisson:redisson-hibernate-52:3.31.0'
      // for Hibernate v5.3.3+ - v5.6.x
-     compile 'org.redisson:redisson-hibernate-53:3.30.0'
+     compile 'org.redisson:redisson-hibernate-53:3.31.0'
      // for Hibernate v6.0.2+ - v6.x.x
-     compile 'org.redisson:redisson-hibernate-6:3.30.0'
+     compile 'org.redisson:redisson-hibernate-6:3.31.0'
 ```
 
 ### 2. Specify hibernate cache settings
