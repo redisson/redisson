@@ -114,7 +114,7 @@
         <dependency>
             <groupId>io.micronaut.cache</groupId>
             <artifactId>micronaut-cache-core</artifactId>
-            <version>3.5.0</version>
+            <version>4.3.0</version>
             <optional>true</optional>
         </dependency>
 
