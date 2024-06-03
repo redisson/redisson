@@ -43,6 +43,8 @@ public class ClusterPartition {
     private Set<ClusterSlotRange> slotRanges = Collections.emptySet();
 
     private ClusterPartition parent;
+
+    private int references;
     
     public ClusterPartition(String nodeId) {
         super();
@@ -140,7 +142,14 @@ public class ClusterPartition {
         slaveAddresses.remove(uri);
         failedSlaves.remove(uri);
     }
-    
+
+    public void incReference() {
+        references++;
+    }
+    public int decReference() {
+        return --references;
+    }
+
     @Override
     public int hashCode() {
         return Objects.hash(nodeId);
