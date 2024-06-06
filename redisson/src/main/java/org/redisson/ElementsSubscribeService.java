@@ -81,6 +81,10 @@ public class ElementsSubscribeService {
 
         f.whenComplete((r, e) -> {
             if (e != null) {
+                if (e.getCause() instanceof RedissonShutdownException) {
+                    return;
+                }
+
                 serviceManager.newTimeout(t -> {
                     resubscribe(func, consumer);
                 }, 1, TimeUnit.SECONDS);
@@ -103,6 +107,10 @@ public class ElementsSubscribeService {
 
         f.thenCompose(consumer).whenComplete((r, ex) -> {
             if (ex != null) {
+                if (ex.getCause() instanceof RedissonShutdownException) {
+                    return;
+                }
+
                 log.error(ex.getMessage(), ex);
                 serviceManager.newTimeout(t -> {
                     resubscribe(func, consumer);
