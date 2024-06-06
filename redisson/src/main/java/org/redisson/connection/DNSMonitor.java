@@ -56,8 +56,6 @@ public class DNSMonitor {
 
     private boolean printed;
 
-    private final long seed = ThreadLocalRandom.current().nextLong();
-
     public DNSMonitor(ConnectionManager connectionManager, RedisClient masterHost, Collection<RedisURI> slaveHosts, long dnsMonitoringInterval, AddressResolverGroup<InetSocketAddress> resolverGroup) {
         this.resolver = resolverGroup.getResolver(connectionManager.getServiceManager().getGroup().next());
         
@@ -129,8 +127,6 @@ public class DNSMonitor {
                 int index = 0;
                 if (addresses.size() > 1) {
                     addresses.sort(Comparator.comparing(RedisURI::getHost));
-                    SplittableRandom r = new SplittableRandom(seed);
-                    index = r.nextInt(addresses.size());
                 }
 
                 RedisURI address = addresses.get(index);
