@@ -78,6 +78,10 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     @Override
     public void doConnect(Function<RedisURI, String> hostnameMapper) {
+        if (cfg.getScanInterval() <= 0) {
+            throw new IllegalArgumentException("scanInterval setting can't be 0 or less");
+        }
+
         if (cfg.getNodeAddresses().isEmpty()) {
             throw new IllegalArgumentException("At least one cluster node should be defined!");
         }
