@@ -51,6 +51,7 @@ public class ElementsSubscribeService {
         return id;
     }
 
+    @Deprecated
     public <V> int subscribeOnElements(Supplier<CompletionStage<V>> func, Consumer<V> consumer) {
         int id = System.identityHashCode(consumer);
         CompletableFuture<?> currentFuture = subscribeListeners.putIfAbsent(id, CompletableFuture.completedFuture(null));
@@ -68,6 +69,7 @@ public class ElementsSubscribeService {
         }
     }
 
+    @Deprecated
     private <V> void resubscribe(Supplier<CompletionStage<V>> func, Consumer<V> consumer) {
         int listenerId = System.identityHashCode(consumer);
         CompletionStage<V> f = (CompletionStage<V>) subscribeListeners.computeIfPresent(listenerId, (k, v) -> {
