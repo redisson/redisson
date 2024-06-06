@@ -205,10 +205,12 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                     // check if the thread is already in the queue
                     "local timeout = redis.call('zscore', KEYS[3], ARGV[2]);" +
                     "if timeout ~= false then " +
+                            "local ttl = redis.call('pttl', KEYS[1]);" +
+                            "return math.max(0, ttl); " +
                         // the real timeout is the timeout of the prior thread
                         // in the queue, but this is approximately correct, and
                         // avoids having to traverse the queue
-                        "return timeout - tonumber(ARGV[3]) - tonumber(ARGV[4]);" +
+//                        "return timeout - tonumber(ARGV[3]) - tonumber(ARGV[4]);" +
                     "end;" +
 
                     // add the thread to the queue at the end, and set its timeout in the timeout set to the timeout of
