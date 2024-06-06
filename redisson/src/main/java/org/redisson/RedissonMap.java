@@ -597,6 +597,9 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public Map<K, V> getAll(Set<K> keys) {
+        if (keys.getClass().getPackage().getName().startsWith("org.redisson")) {
+            keys = new HashSet<>(keys);
+        }
         return get(getAllAsync(keys));
     }
 
