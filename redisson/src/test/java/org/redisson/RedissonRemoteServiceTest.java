@@ -401,6 +401,35 @@ public class RedissonRemoteServiceTest extends RedisDockerTest {
     }
     
     @Test
+    public void testCancelRxJava() throws InterruptedException {
+        RedissonRxClient r1 = Redisson.create(createConfig()).rxJava();
+        AtomicInteger iterations = new AtomicInteger();
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        r1.getKeys().flushall();
+        r1.getRemoteService().register(RemoteInterface.class, new RemoteImpl(iterations), 1, executor);
+        
+        RedissonRxClient r2 = Redisson.create(createConfig()).rxJava();
+        RemoteInterfaceRx ri = r2.getRemoteService().get(RemoteInterfaceRx.class);
+        
+        Completable f = ri.cancelMethod();
+        io.reactivex.rxjava3.disposables.Disposable t = f.subscribe();
+        Thread.sleep(500);
+        t.dispose();
+        
+        Thread.sleep(500);
+        int disposedIterations = iterations.get();
+        Thread.sleep(500);
+        
+        executor.shutdown();
+        r1.shutdown();
+        r2.shutdown();
+        
+        assertThat(iterations.get()).isEqualTo(disposedIterations);
+        
+        assertThat(executor.awaitTermination(2, TimeUnit.SECONDS)).isTrue();
+    }
+    
+    @Test
     public void testWrongMethodAsync() {
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
             redisson.getRemoteService().get(RemoteInterfaceWrongMethodAsync.class);
