@@ -28,6 +28,7 @@ import org.redisson.liveobject.core.RedissonObjectBuilder;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  *
@@ -61,39 +62,37 @@ public class CommandRxService extends CommandAsyncService implements CommandRxEx
     @Override
     public <R> Flowable<R> flowable(Callable<RFuture<R>> supplier) {
         ReplayProcessor<R> p = ReplayProcessor.create();
-        return p.doOnRequest(new LongConsumer() {
-            @Override
-            public void accept(long t) throws Exception {
-                RFuture<R> future;
-                try {
-                    future = supplier.call();
-                } catch (Exception e) {
-                    p.onError(e);
-                    return;
-                }
-                p.doOnCancel(new Action() {
-                    @Override
-                    public void run() throws Exception {
+        AtomicReference<RFuture<R>> futureRef = new AtomicReference<>();
+        return p.doOnRequest(t -> {
+                    RFuture<R> future;
+                    try {
+                        future = supplier.call();
+                        futureRef.set(future);
+                    } catch (Exception e) {
+                        p.onError(e);
+                        return;
+                    }
+
+                    future.whenComplete((res, e) -> {
+                       if (e != null) {
+                           if (e instanceof CompletionException) {
+                               e = e.getCause();
+                           }
+                           p.onError(e);
+                           return;
+                       }
+
+                       if (res != null) {
+                           p.onNext(res);
+                       }
+                       p.onComplete();
+                    });
+                }).doOnCancel(() -> {
+                    RFuture<R> future = futureRef.get();
+                    if (future != null) {
                         future.cancel(true);
                     }
                 });
-                
-                future.whenComplete((res, e) -> {
-                   if (e != null) {
-                       if (e instanceof CompletionException) {
-                           e = e.getCause();
-                       }
-                       p.onError(e);
-                       return;
-                   }
-                   
-                   if (res != null) {
-                       p.onNext(res);
-                   }
-                   p.onComplete();
-                });
-            }
-        });
     }
 
 }
