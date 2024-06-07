@@ -378,12 +378,12 @@ public class RedissonRemoteServiceTest extends RedisDockerTest {
 
     @Test
     public void testCancelReactive() throws InterruptedException {
-        RedissonReactiveClient r1 = Redisson.create(createConfig()).reactive();
+        RedissonReactiveClient r1 = createInstance().reactive();
         AtomicInteger iterations = new AtomicInteger();
         ExecutorService executor = Executors.newSingleThreadExecutor();
         r1.getRemoteService().register(RemoteInterface.class, new RemoteImpl(iterations), 1, executor);
         
-        RedissonReactiveClient r2 = Redisson.create(createConfig()).reactive();
+        RedissonReactiveClient r2 = createInstance().reactive();
         RemoteInterfaceReactive ri = r2.getRemoteService().get(RemoteInterfaceReactive.class);
         
         Mono<Void> f = ri.cancelMethod();
@@ -402,13 +402,12 @@ public class RedissonRemoteServiceTest extends RedisDockerTest {
     
     @Test
     public void testCancelRxJava() throws InterruptedException {
-        RedissonRxClient r1 = Redisson.create(createConfig()).rxJava();
+        RedissonRxClient r1 = createInstance().rxJava();
         AtomicInteger iterations = new AtomicInteger();
         ExecutorService executor = Executors.newSingleThreadExecutor();
-        r1.getKeys().flushall();
         r1.getRemoteService().register(RemoteInterface.class, new RemoteImpl(iterations), 1, executor);
         
-        RedissonRxClient r2 = Redisson.create(createConfig()).rxJava();
+        RedissonRxClient r2 = createInstance().rxJava();
         RemoteInterfaceRx ri = r2.getRemoteService().get(RemoteInterfaceRx.class);
         
         Completable f = ri.cancelMethod();
@@ -463,10 +462,10 @@ public class RedissonRemoteServiceTest extends RedisDockerTest {
 
     @Test
     public void testReactive() {
-        RedissonReactiveClient r1 = Redisson.create(createConfig()).reactive();
+        RedissonReactiveClient r1 = createInstance().reactive();
         r1.getRemoteService().register(RemoteInterface.class, new RemoteImpl());
         
-        RedissonClient r2 = Redisson.create(createConfig());
+        RedissonClient r2 = createInstance();
         RemoteInterfaceReactive ri = r2.getRemoteService().get(RemoteInterfaceReactive.class);
         
         Mono<Void> f = ri.voidMethod("someName", 100L);
@@ -480,10 +479,10 @@ public class RedissonRemoteServiceTest extends RedisDockerTest {
 
     @Test
     public void testRx() {
-        RedissonRxClient r1 = Redisson.create(createConfig()).rxJava();
+        RedissonRxClient r1 = createInstance().rxJava();
         r1.getRemoteService().register(RemoteInterface.class, new RemoteImpl());
         
-        RedissonRxClient r2 = Redisson.create(createConfig()).rxJava();
+        RedissonRxClient r2 = createInstance().rxJava();
         RemoteInterfaceRx ri = r2.getRemoteService().get(RemoteInterfaceRx.class);
         
         Completable f = ri.voidMethod("someName", 100L);
