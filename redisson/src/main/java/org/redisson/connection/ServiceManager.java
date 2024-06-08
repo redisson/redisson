@@ -58,7 +58,7 @@ import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.Protocol;
 import org.redisson.config.TransportMode;
 import org.redisson.misc.CompletableFutureWrapper;
-import org.redisson.misc.RandomXoshiro256StarStar;
+import org.redisson.misc.RandomXoshiro256PlusPlus;
 import org.redisson.misc.RedisURI;
 import org.redisson.remote.ResponseEntry;
 import org.slf4j.Logger;
@@ -545,7 +545,7 @@ public final class ServiceManager {
         });
     }
 
-    private final Random random = RandomXoshiro256StarStar.create();
+    private final Random random = RandomXoshiro256PlusPlus.create();
 
     public String generateId() {
         return ByteBufUtil.hexDump(generateIdArray());

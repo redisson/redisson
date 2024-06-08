@@ -41,17 +41,17 @@ import java.util.concurrent.atomic.AtomicStampedReference;
  * @author Una Thompson &lt;una@unascribed.com> (Java port)
  * @author Nikita Koksharov
  */
-public final class RandomXoshiro256StarStar extends Random {
+public final class RandomXoshiro256PlusPlus extends Random {
 
     private static final long serialVersionUID = -2837799889588687855L;
 
     public static Random create() {
         byte[] seed = SecureRandom.getSeed(32);
         ByteBuffer bbw = ByteBuffer.wrap(seed);
-        return new RandomXoshiro256StarStar(bbw.getLong(), bbw.getLong(), bbw.getLong(), bbw.getLong());
+        return new RandomXoshiro256PlusPlus(bbw.getLong(), bbw.getLong(), bbw.getLong(), bbw.getLong());
     }
 
-    RandomXoshiro256StarStar(long s1, long s2, long s3, long s4) {
+    RandomXoshiro256PlusPlus(long s1, long s2, long s3, long s4) {
         setState(s1, s2, s3, s4);
     }
 
