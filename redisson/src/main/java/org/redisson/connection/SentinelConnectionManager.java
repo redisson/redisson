@@ -103,61 +103,63 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     continue;
                 }
 
-                RedisURI master = connection.sync(masterHostCommand, cfg.getMasterName());
-                if (master == null) {
-                    throw new RedisConnectionException("Master node is undefined! SENTINEL GET-MASTER-ADDR-BY-NAME command returns empty result!");
-                }
-
-                InetSocketAddress masterHost = resolveIP(master.getHost(), String.valueOf(master.getPort())).join();
-                RedisURI masterUri = toURI(masterHost);
-                if (!master.isIP()) {
-                    uri2hostname.put(masterUri, master.getHost());
-                }
-                this.config.setMasterAddress(masterUri.toString());
-                currentMaster.set(masterUri);
-                log.info("master: {} added", masterHost);
-
-                List<Map<String, String>> sentinelSlaves = connection.sync(StringCodec.INSTANCE, RedisCommands.SENTINEL_SLAVES, cfg.getMasterName());
-                for (Map<String, String> map : sentinelSlaves) {
-                    if (map.isEmpty()) {
-                        continue;
-                    }
-
-                    String host = map.get("ip");
-                    String port = map.get("port");
-                    String flags = map.getOrDefault("flags", "");
-                    String masterLinkStatus = map.getOrDefault("master-link-status", "");
-
-                    InetSocketAddress slaveAddr = resolveIP(host, port).join();
-                    RedisURI uri = toURI(slaveAddr);
-                    if (isHostname(host)) {
-                        uri2hostname.put(uri, host);
-                    }
-
-                    log.debug("slave {} state: {}", slaveAddr, map);
-
-                    if (isSlaveDown(flags, masterLinkStatus)) {
-                        log.warn("slave: {} is down", slaveAddr);
-                    } else {
-                        this.config.addSlaveAddress(uri.toString());
-                        log.info("slave: {} added", slaveAddr);
-                    }
-                }
-
                 List<CompletableFuture<Void>> connectionFutures = new LinkedList<>();
-                if (cfg.isSentinelsDiscovery()) {
-                    List<Map<String, String>> sentinelSentinels = connection.sync(StringCodec.INSTANCE, RedisCommands.SENTINEL_SENTINELS, cfg.getMasterName());
-                    for (Map<String, String> map : sentinelSentinels) {
+                if (currentMaster.get() == null) {
+                    RedisURI master = connection.sync(masterHostCommand, cfg.getMasterName());
+                    if (master == null) {
+                        throw new RedisConnectionException("Master node is undefined! SENTINEL GET-MASTER-ADDR-BY-NAME command returns empty result!");
+                    }
+
+                    InetSocketAddress masterHost = resolveIP(master.getHost(), String.valueOf(master.getPort())).join();
+                    RedisURI masterUri = toURI(masterHost);
+                    if (!master.isIP()) {
+                        uri2hostname.put(masterUri, master.getHost());
+                    }
+                    this.config.setMasterAddress(masterUri.toString());
+                    currentMaster.set(masterUri);
+                    log.info("master: {} added", masterHost);
+
+                    List<Map<String, String>> sentinelSlaves = connection.sync(StringCodec.INSTANCE, RedisCommands.SENTINEL_SLAVES, cfg.getMasterName());
+                    for (Map<String, String> map : sentinelSlaves) {
                         if (map.isEmpty()) {
                             continue;
                         }
 
-                        String ip = map.get("ip");
+                        String host = map.get("ip");
                         String port = map.get("port");
+                        String flags = map.getOrDefault("flags", "");
+                        String masterLinkStatus = map.getOrDefault("master-link-status", "");
 
-                        InetSocketAddress sentinelAddr = resolveIP(ip, port).join();
-                        CompletionStage<Void> future = registerSentinel(sentinelAddr);
-                        connectionFutures.add(future.toCompletableFuture());
+                        InetSocketAddress slaveAddr = resolveIP(host, port).join();
+                        RedisURI uri = toURI(slaveAddr);
+                        if (isHostname(host)) {
+                            uri2hostname.put(uri, host);
+                        }
+
+                        log.debug("slave {} state: {}", slaveAddr, map);
+
+                        if (isSlaveDown(flags, masterLinkStatus)) {
+                            log.warn("slave: {} is down", slaveAddr);
+                        } else {
+                            this.config.addSlaveAddress(uri.toString());
+                            log.info("slave: {} added", slaveAddr);
+                        }
+                    }
+
+                    if (cfg.isSentinelsDiscovery()) {
+                        List<Map<String, String>> sentinelSentinels = connection.sync(StringCodec.INSTANCE, RedisCommands.SENTINEL_SENTINELS, cfg.getMasterName());
+                        for (Map<String, String> map : sentinelSentinels) {
+                            if (map.isEmpty()) {
+                                continue;
+                            }
+
+                            String ip = map.get("ip");
+                            String port = map.get("port");
+
+                            InetSocketAddress sentinelAddr = resolveIP(ip, port).join();
+                            CompletionStage<Void> future = registerSentinel(sentinelAddr);
+                            connectionFutures.add(future.toCompletableFuture());
+                        }
                     }
                 }
 
@@ -170,6 +172,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 } catch (Exception e) {
                     // skip
                 }
+                break;
             } catch (RedisConnectionException e) {
                 internalShutdown();
                 throw e;
