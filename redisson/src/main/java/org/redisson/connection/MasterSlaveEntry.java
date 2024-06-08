@@ -157,7 +157,7 @@ public class MasterSlaveEntry {
     private CompletableFuture<RedisClient> setupMasterEntry(RedisClient client) {
         CompletableFuture<InetSocketAddress> addrFuture = client.resolveAddr();
         return addrFuture.thenCompose(res -> {
-            masterEntry = new ClientConnectionsEntry(
+            ClientConnectionsEntry entry = new ClientConnectionsEntry(
                     client,
                     config.getMasterConnectionMinimumIdleSize(),
                     config.getMasterConnectionPoolSize(),
@@ -165,31 +165,30 @@ public class MasterSlaveEntry {
                     NodeType.MASTER,
                     config);
 
-            if (!config.isSlaveNotUsed()) {
-                addSlaveEntry(masterEntry);
-            }
-
-            if (masterEntry.isFreezed()) {
-                return CompletableFuture.completedFuture(null);
-            }
-
             List<CompletableFuture<Void>> futures = new ArrayList<>();
-            CompletableFuture<Void> writeFuture = masterEntry.initConnections(config.getMasterConnectionMinimumIdleSize());
+            CompletableFuture<Void> writeFuture = entry.initConnections(config.getMasterConnectionMinimumIdleSize());
             futures.add(writeFuture);
 
             if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
-                CompletableFuture<Void> pubSubFuture = masterEntry.initPubSubConnections(config.getSubscriptionConnectionMinimumIdleSize());
+                CompletableFuture<Void> pubSubFuture = entry.initPubSubConnections(config.getSubscriptionConnectionMinimumIdleSize());
                 futures.add(pubSubFuture);
             }
-            return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+            return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                    .thenApply(r -> {
+                        masterEntry = entry;
+
+                        if (!config.isSlaveNotUsed()) {
+                            addSlaveEntry(masterEntry);
+                        }
+
+                        masterConnectionPool.addEntry(masterEntry);
+                        masterPubSubConnectionPool.addEntry(masterEntry);
+                        return client;
+                    });
         }).whenComplete((r, e) -> {
             if (e != null) {
                 client.shutdownAsync();
             }
-        }).thenApply(r -> {
-            masterConnectionPool.addEntry(masterEntry);
-            masterPubSubConnectionPool.addEntry(masterEntry);
-            return client;
         });
     }
 
@@ -344,13 +343,9 @@ public class MasterSlaveEntry {
                     NodeType.SLAVE,
                     config);
 
-            CompletableFuture<Void> future = CompletableFuture.completedFuture(null);
-            if (!entry.isFreezed()) {
-                CompletableFuture<Void> slaveFuture = entry.initConnections(config.getSlaveConnectionMinimumIdleSize());
-                CompletableFuture<Void> pubSubFuture = entry.initPubSubConnections(config.getSubscriptionConnectionMinimumIdleSize());
-                future = CompletableFuture.allOf(slaveFuture, pubSubFuture);
-            }
-            return future.thenAccept(r -> {
+            CompletableFuture<Void> slaveFuture = entry.initConnections(config.getSlaveConnectionMinimumIdleSize());
+            CompletableFuture<Void> pubSubFuture = entry.initPubSubConnections(config.getSubscriptionConnectionMinimumIdleSize());
+            return CompletableFuture.allOf(slaveFuture, pubSubFuture).thenAccept(r -> {
                 addSlaveEntry(entry);
             });
         }).whenComplete((r, ex) -> {
