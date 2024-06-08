@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicStampedReference;
 
 /**
  * Implementation of Random based on the xoshiro256** RNG. No-dependencies
- * Java port of the <a href="http://xoshiro.di.unimi.it/xoshiro256starstar.c">original C code</a>,
+ * Java port of the <a href="http://xoshiro.di.unimi.it/xoshiro256plusplus.c">original C code</a>,
  * which is public domain. This Java port is similarly dedicated to the public
  * domain.
  * <p>
