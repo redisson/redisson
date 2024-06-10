@@ -709,7 +709,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
         for (Integer slot : removedSlots) {
             ClusterPartition p = lastPartitions.remove(slot);
-            if (p != null && p.decReference() == 0) {
+            if (p != null
+                    && p.decReference() == 0
+                        && lastUri2Partition.size() > 1) {
                 lastUri2Partition.remove(p.getMasterAddress());
             }
             removeEntry(slot);
@@ -776,7 +778,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
                 removedSlots.stream().forEach(slot -> {
                     if (lastPartitions.remove(slot, currentPartition)) {
-                        if (currentPartition.decReference() == 0) {
+                        if (currentPartition.decReference() == 0
+                                && lastUri2Partition.size() > 1) {
                             lastUri2Partition.remove(currentPartition.getMasterAddress());
                         }
                         removeEntry(slot, entry);
