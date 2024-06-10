@@ -59,26 +59,26 @@ public class RedissonSpringCacheTest extends RedisDockerTest {
     @Service
     public static class SampleBean {
 
-        @CachePut(cacheNames = "testMap", key = "#key")
+        @CachePut(cacheNames = "testMap", key = "#p0")
         public SampleObject store(String key, SampleObject object) {
             return object;
         }
 
-        @CachePut(cacheNames = "testMap", key = "#key")
+        @CachePut(cacheNames = "testMap", key = "#p0")
         public SampleObject storeNull(String key) {
             return null;
         }
 
-        @CacheEvict(cacheNames = "testMap", key = "#key")
+        @CacheEvict(cacheNames = "testMap", key = "#p0")
         public void remove(String key) {
         }
 
-        @Cacheable(cacheNames = "testMap", key = "#key")
+        @Cacheable(cacheNames = "testMap", key = "#p0")
         public SampleObject read(String key) {
             throw new IllegalStateException();
         }
 
-        @Cacheable(cacheNames = "testMap", key = "#key")
+        @Cacheable(cacheNames = "testMap", key = "#p0")
         public SampleObject readNull(String key) {
             return null;
         }
