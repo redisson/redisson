@@ -173,7 +173,7 @@ class CommandPubSubDecoderTest {
       fail(e);
     }
     // WHEN
-    Decoder<Object> actualDecoder = decoder.selectDecoder(null, parts, 0);
+    Decoder<Object> actualDecoder = decoder.selectDecoder(null, parts, 0, null);
     //THEN
     assertEquals(multiDecoder.getDecoder(null, 0, null, 0), actualDecoder);
   }
@@ -188,7 +188,7 @@ class CommandPubSubDecoderTest {
     CommandPubSubDecoder decoder = new CommandPubSubDecoder(config);
     Decoder<Object> expectedDecoder = ByteArrayCodec.INSTANCE.getValueDecoder();
     // WHEN
-    Decoder<Object> actualDecoder = decoder.selectDecoder(null, parts, 0);
+    Decoder<Object> actualDecoder = decoder.selectDecoder(null, parts, 0, null);
     //THEN
     assertEquals(expectedDecoder, actualDecoder);
   }
@@ -219,7 +219,7 @@ class CommandPubSubDecoderTest {
       fail(e);
     }
     // WHEN
-    Decoder<Object> actualDecoder = decoder.selectDecoder(null, parts, 0);
+    Decoder<Object> actualDecoder = decoder.selectDecoder(null, parts, 0, null);
     //THEN
     assertNotEquals(multiDecoder.getDecoder(null, 0, null, 0), actualDecoder);
     assertEquals(ByteArrayCodec.INSTANCE.getValueDecoder(), actualDecoder);

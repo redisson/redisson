@@ -81,7 +81,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
     }
 
     @Override
-    protected void decodeCommand(Channel channel, ByteBuf in, QueueCommand data, int endIndex) throws Exception {
+    protected void decodeCommand(Channel channel, ByteBuf in, QueueCommand data, int endIndex, State state) throws Exception {
         try {
             while (in.writerIndex() > in.readerIndex()) {
                 if (data != null) {
@@ -89,7 +89,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
                         data = null;
                     }
                 }
-                decode(in, (CommandData<Object, Object>) data, null, channel, false, null, 0);
+                decode(in, (CommandData<Object, Object>) data, null, channel, false, null, 0, state);
             }
             sendNext(channel, data);
         } catch (Exception e) {
@@ -270,7 +270,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
     }
 
     @Override
-    protected Decoder<Object> selectDecoder(CommandData<Object, Object> data, List<Object> parts, long size) {
+    protected Decoder<Object> selectDecoder(CommandData<Object, Object> data, List<Object> parts, long size, State state) {
         if (parts != null) {
             if (data != null && parts.size() == 1 && "pong".equals(parts.get(0))) {
                 return data.getCodec().getValueDecoder();
@@ -295,7 +295,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
             return StringCodec.INSTANCE.getValueDecoder();
         }
         
-        return super.selectDecoder(data, parts, size);
+        return super.selectDecoder(data, parts, size, state);
     }
 
     private Decoder<Object> getDecoder(Codec codec, List<Object> parts, byte[] name, long size) {
