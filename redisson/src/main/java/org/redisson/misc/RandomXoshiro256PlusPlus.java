@@ -99,7 +99,7 @@ public final class RandomXoshiro256PlusPlus extends Random {
 
     void setState(long s0, long s1, long s2, long s4) {
         if (s0 == 0 && s1 == 0 && s2 == 0 && s4 == 0)
-            throw new IllegalArgumentException("xoshiro256** state cannot be all zeroes");
+            throw new IllegalArgumentException("xoshiro256++ state cannot be all zeroes");
         int[] stamp = {0};
         long[] oldState = stateRef.get(stamp);
         long[] state = new long[4];
