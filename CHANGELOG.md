@@ -10,7 +10,7 @@ Feature - Spring Data Redis 3.3.0 integration
 Feature - allow retry of `NOREPLICAS` error (thanks to @ghollies)  
 
 Improvement - `SequentialDnsAddressResolverFactory` default `concurrencyLevel` set to 2  
-Improvement - `ThreadLocalRandom` replaced with `xoshiro256**` RNG to avoid collisions  
+Improvement - `ThreadLocalRandom` replaced with `xoshiro256++` RNG to avoid collisions  
 
 Fixed - cluster failover handling  
 Fixed - cluster topology scan shouldn't be stopped by any exception  
