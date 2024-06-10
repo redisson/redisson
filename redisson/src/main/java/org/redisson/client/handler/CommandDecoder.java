@@ -120,7 +120,6 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 return;
             }
 
-            decode(ctx, in, data, endIndex);
             decode(ctx, in, data, endIndex, state());
         }
     }
