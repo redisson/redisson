@@ -375,7 +375,7 @@
             <groupId>org.springframework.session</groupId>
             <artifactId>spring-session-core</artifactId>
             <!-- 2.0.0+ -->
-            <version>3.2.2</version>
+            <version>3.3.0</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
