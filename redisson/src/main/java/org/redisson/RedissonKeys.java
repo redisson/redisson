@@ -48,6 +48,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -235,6 +236,29 @@ public class RedissonKeys implements RKeys {
 
     @Override
     public RFuture<Long> deleteByPatternAsync(String pattern) {
+        return eraseByPatternAsync(false, pattern);
+    }
+
+    @Override
+    public long unlinkByPattern(String pattern) {
+        return commandExecutor.get(unlinkByPatternAsync(pattern));
+    }
+
+    @Override
+    public RFuture<Long> unlinkByPatternAsync(String pattern) {
+        return eraseByPatternAsync(true, pattern);
+    }
+
+    private RFuture<Long> eraseByPatternAsync(boolean unlinkMode, String pattern) {
+        String commandName;
+        Function<String[], Long> delegate;
+        if (unlinkMode) {
+            commandName = RedisCommands.UNLINK.getName();
+            delegate = this::unlink;
+        } else {
+            commandName = RedisCommands.DEL.getName();
+            delegate = this::delete;
+        }
         if (commandExecutor instanceof CommandBatchService
                 || commandExecutor instanceof CommandReactiveBatchService
                     || commandExecutor instanceof CommandRxBatchService) {
@@ -246,9 +270,9 @@ public class RedissonKeys implements RKeys {
                             "local keys = redis.call('keys', ARGV[1]) "
                               + "local n = 0 "
                               + "for i=1, #keys,5000 do "
-                                  + "n = n + redis.call('del', unpack(keys, i, math.min(i+4999, table.getn(keys)))) "
+                                  + "n = n + redis.call(ARGV[2], unpack(keys, i, math.min(i+4999, table.getn(keys)))) "
                               + "end "
-                          + "return n;", Collections.emptyList(), pattern);
+                          + "return n;", Collections.emptyList(), pattern, commandName);
         }
         
         int batchSize = 500;
@@ -266,13 +290,13 @@ public class RedissonKeys implements RKeys {
                         keys.add(key);
 
                         if (keys.size() % batchSize == 0) {
-                            count += delete(keys.toArray(new String[0]));
+                            count += delegate.apply(keys.toArray(new String[0]));
                             keys.clear();
                         }
                     }
 
                     if (!keys.isEmpty()) {
-                        count += delete(keys.toArray(new String[0]));
+                        count += delegate.apply(keys.toArray(new String[0]));
                         keys.clear();
                     }
 

@@ -305,6 +305,21 @@ public interface RKeys extends RKeysAsync {
     long deleteByPattern(String pattern);
 
     /**
+     * Unlink multiple objects by a key pattern.
+     * <p>
+     * Method executes in <b>NON atomic way</b> in cluster mode due to lua script limitations.
+     * <p>
+     *  Supported glob-style patterns:
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    h*llo subscribes to hllo and heeeello
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     *
+     * @param pattern - match pattern
+     * @return number of removed keys
+     */
+    long unlinkByPattern(String pattern);
+
+    /**
      * Delete multiple objects
      *
      * @param objects of Redisson

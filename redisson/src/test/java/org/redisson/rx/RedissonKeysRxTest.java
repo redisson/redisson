@@ -63,6 +63,16 @@ public class RedissonKeysRxTest extends BaseRxTest {
     }
 
     @Test
+    public void testUnlinkByPattern() {
+        RBucketRx<String> bucket = redisson.getBucket("test1");
+        sync(bucket.set("someValue"));
+        RMapRx<String, String> map = redisson.getMap("test2");
+        sync(map.fastPut("1", "2"));
+
+        Assertions.assertEquals(2, sync(redisson.getKeys().unlinkByPattern("test?")).intValue());
+    }
+
+    @Test
     public void testMassDelete() {
         RBucketRx<String> bucket = redisson.getBucket("test");
         sync(bucket.set("someValue"));
