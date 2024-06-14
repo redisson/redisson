@@ -13,21 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.reactive;
+package org.redisson.api.listener;
 
-import org.redisson.api.RMap;
+import org.redisson.api.ObjectListener;
 
 /**
+ * Redisson Object Event listener for <b>hset</b> event published by Redis.
+ * <p>
+ * Redis notify-keyspace-events setting should contain Eh letters
  *
  * @author Nikita Koksharov
- *
- * @param <K> key
- * @param <V> value
  */
-public class RedissonMapCacheReactive<K, V> extends RedissonMapReactive<K, V> {
+@FunctionalInterface
+public interface MapExpiredListener extends ObjectListener {
 
-    public RedissonMapCacheReactive(RMap<K, V> map, CommandReactiveExecutor commandExecutor) {
-        super(map, commandExecutor);
-    }
+    /**
+     * Invoked when entry expired
+     *
+     * @param name object name
+     */
+    void onExpired(String name);
 
 }

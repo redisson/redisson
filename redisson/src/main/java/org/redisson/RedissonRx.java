@@ -529,8 +529,10 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public <K, V> RMapRx<K, V> getMap(org.redisson.api.options.MapOptions<K, V> options) {
         MapParams<K, V> params = (MapParams<K, V>) options;
+        MapOptions<K, V> ops = createOptions(params);
+
         CommandRxExecutor ce = commandExecutor.copy(params);
-        RedissonMap<K, V> map = new RedissonMap<>(params.getCodec(), ce, params.getName(), null, null, writeBehindService);
+        RedissonMap<K, V> map = new RedissonMap<>(params.getCodec(), ce, params.getName(), null, ops, writeBehindService);
         return RxProxyBuilder.create(commandExecutor, map,
                 new RedissonMapRx<>(map, ce), RMapRx.class);
     }
@@ -994,6 +996,50 @@ public class RedissonRx implements RedissonRxClient {
         RMap<K, V> map = new RedissonMapCache<K, V>(evictionScheduler, commandExecutor, name, null, options, writeBehindService);
         return RxProxyBuilder.create(commandExecutor, map, 
                 new RedissonMapCacheRx<K, V>(map, commandExecutor), RMapCacheRx.class);
+    }
+
+    @Override
+    public <K, V> RMapCacheNativeRx<K, V> getMapCacheNative(String name) {
+        RMap<K, V> map = new RedissonMapCacheNative<>(commandExecutor, name, null, null, null);
+        return RxProxyBuilder.create(commandExecutor, map,
+                new RedissonMapCacheRx<K, V>(map, commandExecutor), RMapCacheNativeRx.class);
+    }
+
+    @Override
+    public <K, V> RMapCacheNativeRx<K, V> getMapCacheNative(String name, Codec codec) {
+        RMap<K, V> map = new RedissonMapCacheNative<>(codec, commandExecutor, name, null, null, null);
+        return RxProxyBuilder.create(commandExecutor, map,
+                new RedissonMapCacheRx<K, V>(map, commandExecutor), RMapCacheNativeRx.class);
+    }
+
+    @Override
+    public <K, V> RMapCacheNativeRx<K, V> getMapCacheNative(org.redisson.api.options.MapOptions<K, V> options) {
+        MapParams<K, V> params = (MapParams<K, V>) options;
+        MapOptions<K, V> ops = createOptions(params);
+
+        CommandRxExecutor ce = commandExecutor.copy(params);
+        RMap<K, V> map = new RedissonMapCacheNative<>(params.getCodec(), ce, params.getName(), null, ops, writeBehindService);
+        return RxProxyBuilder.create(commandExecutor, map,
+                new RedissonMapCacheRx<>(map, ce), RMapCacheNativeRx.class);
+    }
+
+    private static <K, V> MapOptions<K, V> createOptions(MapParams<K, V> params) {
+        MapOptions<K, V> ops = MapOptions.<K, V>defaults()
+                .loader(params.getLoader())
+                .loaderAsync(params.getLoaderAsync())
+                .writer(params.getWriter())
+                .writerAsync(params.getWriterAsync())
+                .writeBehindDelay(params.getWriteBehindDelay())
+                .writeBehindBatchSize(params.getWriteBehindBatchSize())
+                .writerRetryInterval(Duration.ofMillis(params.getWriteRetryInterval()));
+
+        if (params.getWriteMode() != null) {
+            ops.writeMode(MapOptions.WriteMode.valueOf(params.getWriteMode().toString()));
+        }
+        if (params.getWriteRetryAttempts() > 0) {
+            ops.writerRetryAttempts(params.getWriteRetryAttempts());
+        }
+        return ops;
     }
 
     @Override

@@ -479,6 +479,48 @@ public interface RedissonRxClient {
     <K, V> RMapCacheRx<K, V> getMapCache(org.redisson.api.options.MapCacheOptions<K, V> options);
 
     /**
+     * Returns map instance by name.
+     * Supports entry eviction with a given TTL.
+     * <p>
+     * Requires <b>Redis 7.4.0 and higher.</b>
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name name of object
+     * @return Map object
+     */
+    <K, V> RMapCacheNativeRx<K, V> getMapCacheNative(String name);
+
+    /**
+     * Returns map instance by name
+     * using provided codec for both map keys and values.
+     * Supports entry eviction with a given TTL.
+     * <p>
+     * Requires <b>Redis 7.4.0 and higher.</b>
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name name of object
+     * @param codec codec for keys and values
+     * @return Map object
+     */
+    <K, V> RMapCacheNativeRx<K, V> getMapCacheNative(String name, Codec codec);
+
+    /**
+     * Returns map instance.
+     * Supports entry eviction with a given TTL.
+     * Configured by the parameters of the options-object.
+     * <p>
+     * Requires <b>Redis 7.4.0 and higher.</b>
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param options instance options
+     * @return Map object
+     */
+    <K, V> RMapCacheNativeRx<K, V> getMapCacheNative(org.redisson.api.options.MapOptions<K, V> options);
+
+    /**
      * Returns object holder instance by name
      * 
      * @param <V> type of value

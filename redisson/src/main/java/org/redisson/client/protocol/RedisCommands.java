@@ -506,6 +506,8 @@ public interface RedisCommands {
     RedisStrictCommand<Void> MSET = new RedisStrictCommand<Void>("MSET", new VoidReplayConvertor());
     RedisStrictCommand<Boolean> MSETNX = new RedisStrictCommand<Boolean>("MSETNX", new BooleanReplayConvertor());
 
+    RedisStrictCommand<Boolean> HPERSIST = new RedisStrictCommand<Boolean>("HPERSIST", new BooleanReplayConvertor());
+    RedisCommand<Long> HPTTL = new RedisCommand("HPTTL", new ListFirstObjectDecoder(), new LongReplayConvertor());
     RedisStrictCommand<Boolean> HSETNX = new RedisStrictCommand<Boolean>("HSETNX", new BooleanReplayConvertor());
     RedisStrictCommand<Boolean> HSET = new RedisStrictCommand<Boolean>("HSET", new BooleanReplayConvertor());
     RedisStrictCommand<Void> HSET_VOID = new RedisStrictCommand<Void>("HSET", new VoidReplayConvertor());

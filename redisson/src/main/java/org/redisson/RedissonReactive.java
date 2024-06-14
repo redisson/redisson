@@ -281,25 +281,95 @@ public class RedissonReactive implements RedissonReactiveClient {
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec) {
         RMapCache<K, V> map = new RedissonMapCache<K, V>(codec, evictionScheduler, commandExecutor, name, null, null, writeBehindService);
-        return ReactiveProxyBuilder.create(commandExecutor, map, 
-                new RedissonMapCacheReactive<K, V>(map, commandExecutor), RMapCacheReactive.class);
+        return ReactiveProxyBuilder.create(commandExecutor, map,
+                new RedissonMapCacheReactive<>(map, commandExecutor), RMapCacheReactive.class);
     }
 
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name) {
         RMapCache<K, V> map = new RedissonMapCache<K, V>(evictionScheduler, commandExecutor, name, null, null, writeBehindService);
-        return ReactiveProxyBuilder.create(commandExecutor, map, 
-                new RedissonMapCacheReactive<K, V>(map, commandExecutor), RMapCacheReactive.class);
+        return ReactiveProxyBuilder.create(commandExecutor, map,
+                new RedissonMapCacheReactive<>(map, commandExecutor), RMapCacheReactive.class);
     }
 
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(org.redisson.api.options.MapCacheOptions<K, V> options) {
         MapCacheParams<K, V> params = (MapCacheParams) options;
+        MapCacheOptions<K, V> ops = createOptions(params);
+
         CommandReactiveExecutor ca = commandExecutor.copy(params);
         RMapCache<K, V> map = new RedissonMapCache<>(params.getCodec(), evictionScheduler, ca,
-                params.getName(), null, null, writeBehindService);
+                params.getName(), null, ops, writeBehindService);
         return ReactiveProxyBuilder.create(commandExecutor, map,
-                new RedissonMapCacheReactive<K, V>(map, ca), RMapCacheReactive.class);
+                new RedissonMapCacheReactive<>(map, ca), RMapCacheReactive.class);
+    }
+
+    @Override
+    public <K, V> RMapCacheNativeReactive<K, V> getMapCacheNative(String name) {
+        RMapCacheNative<K, V> map = new RedissonMapCacheNative<>(commandExecutor, name, null, null, writeBehindService);
+        return ReactiveProxyBuilder.create(commandExecutor, map,
+                new RedissonMapCacheReactive<>(map, commandExecutor), RMapCacheNativeReactive.class);
+    }
+
+    @Override
+    public <K, V> RMapCacheNativeReactive<K, V> getMapCacheNative(String name, Codec codec) {
+        RMapCacheNative<K, V> map = new RedissonMapCacheNative<>(codec, commandExecutor, name, null, null, writeBehindService);
+        return ReactiveProxyBuilder.create(commandExecutor, map,
+                new RedissonMapCacheReactive<>(map, commandExecutor), RMapCacheNativeReactive.class);
+    }
+
+    @Override
+    public <K, V> RMapCacheNativeReactive<K, V> getMapCacheNative(org.redisson.api.options.MapOptions<K, V> options) {
+        MapParams<K, V> params = (MapParams<K, V>) options;
+        MapOptions<K, V> ops = createOptions(params);
+
+        CommandReactiveExecutor ca = commandExecutor.copy(params);
+        RMapCacheNative<K, V> map = new RedissonMapCacheNative<>(params.getCodec(), ca,
+                params.getName(), null, ops, writeBehindService);
+        return ReactiveProxyBuilder.create(commandExecutor, map,
+                new RedissonMapCacheReactive<>(map, ca), RMapCacheNativeReactive.class);
+    }
+
+    private static <K, V> MapOptions<K, V> createOptions(MapParams<K, V> params) {
+        MapOptions<K, V> ops = MapOptions.<K, V>defaults()
+                .loader(params.getLoader())
+                .loaderAsync(params.getLoaderAsync())
+                .writer(params.getWriter())
+                .writerAsync(params.getWriterAsync())
+                .writeBehindDelay(params.getWriteBehindDelay())
+                .writeBehindBatchSize(params.getWriteBehindBatchSize())
+                .writerRetryInterval(Duration.ofMillis(params.getWriteRetryInterval()));
+
+        if (params.getWriteMode() != null) {
+            ops.writeMode(MapOptions.WriteMode.valueOf(params.getWriteMode().toString()));
+        }
+        if (params.getWriteRetryAttempts() > 0) {
+            ops.writerRetryAttempts(params.getWriteRetryAttempts());
+        }
+        return ops;
+    }
+
+    private static <K, V> MapCacheOptions<K, V> createOptions(MapCacheParams<K, V> params) {
+        MapCacheOptions<K, V> ops = MapCacheOptions.<K, V>defaults()
+                .loader(params.getLoader())
+                .loaderAsync(params.getLoaderAsync())
+                .writer(params.getWriter())
+                .writerAsync(params.getWriterAsync())
+                .writeBehindDelay(params.getWriteBehindDelay())
+                .writeBehindBatchSize(params.getWriteBehindBatchSize())
+                .writerRetryInterval(Duration.ofMillis(params.getWriteRetryInterval()));
+
+        if (params.getWriteMode() != null) {
+            ops.writeMode(MapOptions.WriteMode.valueOf(params.getWriteMode().toString()));
+        }
+        if (params.getWriteRetryAttempts() > 0) {
+            ops.writerRetryAttempts(params.getWriteRetryAttempts());
+        }
+
+        if (params.isRemoveEmptyEvictionTask()) {
+            ops.removeEmptyEvictionTask();
+        }
+        return ops;
     }
 
     @Override
@@ -517,8 +587,10 @@ public class RedissonReactive implements RedissonReactiveClient {
     @Override
     public <K, V> RMapReactive<K, V> getMap(org.redisson.api.options.MapOptions<K, V> options) {
         MapParams<K, V> params = (MapParams<K, V>) options;
+        MapOptions<K, V> ops = createOptions(params);
+
         CommandReactiveExecutor ca = commandExecutor.copy(params);
-        RedissonMap<K, V> map = new RedissonMap<>(params.getCodec(), ca, params.getName(), null, null, writeBehindService);
+        RedissonMap<K, V> map = new RedissonMap<>(params.getCodec(), ca, params.getName(), null, ops, writeBehindService);
         return ReactiveProxyBuilder.create(commandExecutor, map,
                 new RedissonMapReactive<K, V>(map, ca), RMapReactive.class);
     }

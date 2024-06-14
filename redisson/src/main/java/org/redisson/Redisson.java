@@ -421,6 +421,39 @@ public final class Redisson implements RedissonClient {
     }
 
     @Override
+    public <K, V> RMapCacheNative<K, V> getMapCacheNative(String name) {
+        return new RedissonMapCacheNative<>(commandExecutor, name, this, null, null);
+    }
+
+    @Override
+    public <K, V> RMapCacheNative<K, V> getMapCacheNative(String name, Codec codec) {
+        return new RedissonMapCacheNative<>(codec, commandExecutor, name, this, null, null);
+    }
+
+    @Override
+    public <K, V> RMapCacheNative<K, V> getMapCacheNative(org.redisson.api.options.MapOptions<K, V> options) {
+        MapParams<K, V> params = (MapParams<K, V>) options;
+        MapOptions<K, V> ops = MapOptions.<K, V>defaults()
+                .loader(params.getLoader())
+                .loaderAsync(params.getLoaderAsync())
+                .writer(params.getWriter())
+                .writerAsync(params.getWriterAsync())
+                .writeBehindDelay(params.getWriteBehindDelay())
+                .writeBehindBatchSize(params.getWriteBehindBatchSize())
+                .writerRetryInterval(Duration.ofMillis(params.getWriteRetryInterval()));
+
+        if (params.getWriteMode() != null) {
+            ops.writeMode(MapOptions.WriteMode.valueOf(params.getWriteMode().toString()));
+        }
+        if (params.getWriteRetryAttempts() > 0) {
+            ops.writerRetryAttempts(params.getWriteRetryAttempts());
+        }
+
+        return new RedissonMapCacheNative<>(params.getCodec(), commandExecutor.copy(params), params.getName(),
+                this, ops, writeBehindService);
+    }
+
+    @Override
     public <K, V> RSetMultimap<K, V> getSetMultimap(String name) {
         return new RedissonSetMultimap<K, V>(commandExecutor, name);
     }
@@ -510,6 +543,12 @@ public final class Redisson implements RedissonClient {
     @Override
     public <K, V> RMapCache<K, V> getMapCache(org.redisson.api.options.MapCacheOptions<K, V> options) {
         MapCacheParams<K, V> params = (MapCacheParams<K, V>) options;
+        MapCacheOptions<K, V> ops = createOptions(params);
+        return new RedissonMapCache<>(params.getCodec(), evictionScheduler,
+                commandExecutor, params.getName(), this, ops, writeBehindService);
+    }
+
+    private static <K, V> MapCacheOptions<K, V> createOptions(MapCacheParams<K, V> params) {
         MapCacheOptions<K, V> ops = MapCacheOptions.<K, V>defaults()
                 .loader(params.getLoader())
                 .loaderAsync(params.getLoaderAsync())
@@ -529,8 +568,7 @@ public final class Redisson implements RedissonClient {
         if (params.isRemoveEmptyEvictionTask()) {
             ops.removeEmptyEvictionTask();
         }
-        return new RedissonMapCache<>(params.getCodec(), evictionScheduler,
-                commandExecutor, params.getName(), this, ops, writeBehindService);
+        return ops;
     }
 
     @Override
