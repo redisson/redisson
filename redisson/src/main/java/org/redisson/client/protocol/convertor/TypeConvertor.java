@@ -27,7 +27,7 @@ public class TypeConvertor implements Convertor<RType> {
     @Override
     public RType convert(Object obj) {
         RType rType = RType.parse(obj.toString());
-        if(rType == null) {
+        if (rType == null) {
             throw new IllegalStateException("Can't recognize redis type: " + obj);
         }
         return rType;

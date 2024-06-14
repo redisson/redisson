@@ -72,8 +72,7 @@ public enum RType {
      * redis none type, one of :
      * - key not exist.
      */
-    NONE("none"),
-    ;
+    NONE("none");
 
     private final String name;
 
