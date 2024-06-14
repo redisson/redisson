@@ -198,7 +198,7 @@ public interface RLiveObjectService {
      *
      * @param <T> Entity type
      * @param attachedObject - proxied object
-     * @return proxied object
+     * @return detachedObject object - not proxied object
      */
     <T> T detach(T attachedObject);
 
