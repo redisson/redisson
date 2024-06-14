@@ -26,27 +26,11 @@ public class TypeConvertor implements Convertor<RType> {
 
     @Override
     public RType convert(Object obj) {
-        String val = obj.toString();
-        if ("string".equals(val)) {
-            return RType.OBJECT;
+        RType rType = RType.parse(obj.toString());
+        if(rType == null) {
+            throw new IllegalStateException("Can't recognize redis type: " + obj);
         }
-        if ("list".equals(val)) {
-            return RType.LIST;
-        }
-        if ("set".equals(val)) {
-            return RType.SET;
-        }
-        if ("zset".equals(val)) {
-            return RType.ZSET;
-        }
-        if ("hash".equals(val)) {
-            return RType.MAP;
-        }
-        if ("none".equals(val)) {
-            return null;
-        }
-
-        throw new IllegalStateException("Can't recognize redis type: " + obj);
+        return rType;
     }
 
 }

@@ -186,7 +186,7 @@ public class RedissonKeysTest extends RedisDockerTest {
         redisson.getSet("test").add("1");
 
         assertThat(redisson.getKeys().getType("test")).isEqualTo(RType.SET);
-        assertThat(redisson.getKeys().getType("test1")).isNull();
+        assertThat(redisson.getKeys().getType("test1")).isEqualTo(RType.NONE);
     }
 
     @Test
