@@ -45,6 +45,8 @@ public class ClusterPartition {
     private ClusterPartition parent;
 
     private int references;
+
+    private long time = System.currentTimeMillis();
     
     public ClusterPartition(String nodeId) {
         super();
@@ -148,6 +150,10 @@ public class ClusterPartition {
     }
     public int decReference() {
         return --references;
+    }
+
+    public long getTime() {
+        return time;
     }
 
     @Override

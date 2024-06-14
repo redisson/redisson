@@ -36,6 +36,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -983,7 +984,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private Collection<ClusterPartition> getLastPartitions() {
-        return new HashSet<>(lastUri2Partition.values());
+        return lastUri2Partition.values().stream().collect(Collectors.toMap(e -> e.getNodeId(), Function.identity(),
+                                                                BinaryOperator.maxBy(Comparator.comparing(e -> e.getTime())))).values();
     }
 
     public int getSlot(MasterSlaveEntry entry) {
