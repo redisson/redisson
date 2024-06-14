@@ -3,6 +3,8 @@ package org.redisson;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.redisson.api.*;
 import org.redisson.api.listener.FlushListener;
 import org.redisson.api.listener.NewObjectListener;
@@ -292,8 +294,9 @@ public class RedissonKeysTest extends RedisDockerTest {
         });
     }
 
-    @Test
-    public void testDeleteByPattern() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testDeleteByPattern(boolean unlinkMode) {
         RBucket<String> bucket = redisson.getBucket("test0");
         bucket.set("someValue3");
         assertThat(bucket.isExists()).isTrue();
@@ -310,13 +313,20 @@ public class RedissonKeysTest extends RedisDockerTest {
         map2.fastPut("1", "5");
         assertThat(map2.isExists()).isTrue();
 
-        assertThat(redisson.getKeys().deleteByPattern("test?")).isEqualTo(4);
-        assertThat(redisson.getKeys().deleteByPattern("test?")).isZero();
+        if(unlinkMode) {
+            assertThat(redisson.getKeys().unlinkByPattern("test?")).isEqualTo(4);
+            assertThat(redisson.getKeys().unlinkByPattern("test?")).isZero();
+        } else {
+            assertThat(redisson.getKeys().deleteByPattern("test?")).isEqualTo(4);
+            assertThat(redisson.getKeys().deleteByPattern("test?")).isZero();
+        }
+
         assertThat(redisson.getKeys().count()).isZero();
     }
 
-    @Test
-    public void testDeleteByPatternBatch() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testDeleteByPatternBatch(boolean unlinkMode) {
         RBucket<String> bucket = redisson.getBucket("test0");
         bucket.set("someValue3");
         assertThat(bucket.isExists()).isTrue();
@@ -335,7 +345,11 @@ public class RedissonKeysTest extends RedisDockerTest {
 
 
         RBatch batch = redisson.createBatch();
-        batch.getKeys().deleteByPatternAsync("test?");
+        if(unlinkMode) {
+            batch.getKeys().unlinkByPatternAsync("test?");
+        } else {
+            batch.getKeys().deleteByPatternAsync("test?");
+        }
         BatchResult<?> r = batch.execute();
         Assertions.assertEquals(4L, r.getResponses().get(0));
     }

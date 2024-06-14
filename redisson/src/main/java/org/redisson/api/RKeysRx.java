@@ -233,6 +233,21 @@ public interface RKeysRx {
     Single<Long> deleteByPattern(String pattern);
 
     /**
+     * Unlink multiple objects by a key pattern.
+     *
+     * Uses Lua script.
+     *
+     *  Supported glob-style patterns:
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    h*llo subscribes to hllo and heeeello
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     *
+     * @param pattern - match pattern
+     * @return deleted objects amount
+     */
+    Single<Long> unlinkByPattern(String pattern);
+
+    /**
      * Delete multiple objects by name.
      *
      * Uses <code>DEL</code> Redis command.

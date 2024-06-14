@@ -136,6 +136,16 @@ public class RedissonKeysReactiveTest extends BaseReactiveTest {
     }
 
     @Test
+    public void testUnlinkByPattern() {
+        RBucketReactive<String> bucket = redisson.getBucket("test1");
+        sync(bucket.set("someValue"));
+        RMapReactive<String, String> map = redisson.getMap("test2");
+        sync(map.fastPut("1", "2"));
+
+        Assertions.assertEquals(2, sync(redisson.getKeys().unlinkByPattern("test?")).intValue());
+    }
+
+    @Test
     public void testMassDelete() {
         RBucketReactive<String> bucket = redisson.getBucket("test");
         sync(bucket.set("someValue"));
