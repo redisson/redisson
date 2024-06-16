@@ -410,8 +410,26 @@ public class RedissonSearchTest extends DockerRedisStackTest {
         FieldIndex[] fields = new FieldIndex[]{
                 FieldIndex.tag("$.name")
                         .caseSensitive()
+                        .withSuffixTrie()
                         .noIndex()
                         .separator("a")
+                        .sortMode(SortMode.NORMALIZED)
+                        .as("name")
+        };
+        RSearch s = redisson.getSearch();
+        s.createIndex("itemIndex", indexOptions, fields);
+    }
+
+    @Test
+    public void testFieldText() {
+        IndexOptions indexOptions = IndexOptions.defaults()
+                .on(IndexType.JSON)
+                .prefix(Arrays.asList("items"));
+
+        FieldIndex[] fields = new FieldIndex[]{
+                FieldIndex.text("$.name")
+                        .noStem()
+                        .noIndex()
                         .sortMode(SortMode.NORMALIZED)
                         .as("name")
         };
