@@ -144,9 +144,13 @@ public class RedissonSessionManager extends ManagerBase {
         return redisson.getSet(name, StringCodec.INSTANCE);
     }
     
-    public RMap<String, Object> getMap(String sessionId) {
+    public String getTomcatSessionKeyName(String sessionId) {
         String separator = keyPrefix == null || keyPrefix.isEmpty() ? "" : ":";
-        String name = keyPrefix + separator + "redisson:tomcat_session:" + sessionId;
+        return keyPrefix + separator + "redisson:tomcat_session:" + sessionId;
+    }
+
+    public RMap<String, Object> getMap(String sessionId) {
+        String name = getTomcatSessionKeyName(sessionId);
         return redisson.getMap(name, new CompositeCodec(StringCodec.INSTANCE, codecToUse, codecToUse));
     }
 
@@ -212,6 +216,10 @@ public class RedissonSessionManager extends ManagerBase {
         return session;
     }
     
+    public void superRemove(Session session) {
+        super.remove(session, false);
+    }
+
     @Override
     public void remove(Session session, boolean update) {
         super.remove(session, update);
@@ -221,6 +229,10 @@ public class RedissonSessionManager extends ManagerBase {
         }
     }
     
+    public void superAdd(Session session) {
+        super.add(session);
+    }
+
     @Override
     public void add(Session session) {
         super.add(session);
