@@ -66,7 +66,7 @@ public class IndexInfo {
     private Double bytesPerRecordAverage;
 
     private Double offsetsPerTermAverage;
-    private Long offsetBitsPerRecordAverage;
+    private Double offsetBitsPerRecordAverage;
 
     private Long hashIndexingFailures;
 
@@ -267,11 +267,11 @@ public class IndexInfo {
         return this;
     }
 
-    public Long getOffsetBitsPerRecordAverage() {
+    public Double getOffsetBitsPerRecordAverage() {
         return offsetBitsPerRecordAverage;
     }
 
-    public IndexInfo setOffsetBitsPerRecordAverage(Long offsetBitsPerRecordAverage) {
+    public IndexInfo setOffsetBitsPerRecordAverage(Double offsetBitsPerRecordAverage) {
         this.offsetBitsPerRecordAverage = offsetBitsPerRecordAverage;
         return this;
     }

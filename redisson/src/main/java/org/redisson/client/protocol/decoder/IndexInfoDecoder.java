@@ -60,11 +60,11 @@ public class IndexInfoDecoder implements MultiDecoder<Object> {
             ii.setRecordsPerDocAverage(toDouble(result, "records_per_doc_avg"));
             ii.setBytesPerRecordAverage(toDouble(result, "bytes_per_record_avg"));
             ii.setOffsetsPerTermAverage(toDouble(result, "offsets_per_term_avg"));
-            ii.setOffsetBitsPerRecordAverage(toLong(result, "offset_bits_per_record_avg"));
+            ii.setOffsetBitsPerRecordAverage(toDouble(result, "offset_bits_per_record_avg"));
             ii.setHashIndexingFailures(toLong(result, "hash_indexing_failures"));
-            ii.setTotalIndexingTime(Double.valueOf(result.get("total_indexing_time").toString()));
+            ii.setTotalIndexingTime(toDouble(result, "total_indexing_time"));
             ii.setIndexing(toLong(result, "indexing"));
-            ii.setPercentIndexed(Double.valueOf(result.get("percent_indexed").toString()));
+            ii.setPercentIndexed(toDouble(result, "percent_indexed"));
             ii.setNumberOfUses(toLong(result, "number_of_uses"));
             ii.setGcStats((Map<String, Object>) result.get("gc_stats"));
             ii.setCursorStats((Map<String, Object>) result.get("cursor_stats"));
