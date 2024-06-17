@@ -410,6 +410,32 @@ public class RedissonSession extends StandardSession {
         }
     }
 
+    @Override
+    public void setId(String id, boolean notify) {
+        if ((this.id != null) && (manager != null)) {
+            redissonManager.superRemove(this);
+            if (map == null) {
+                map = redissonManager.getMap(this.id);
+            }
+            map.rename(redissonManager.getTomcatSessionKeyName(id));
+        }
+
+        boolean idWasNull = this.id == null;
+        this.id = id;
+
+        if (manager != null) {
+            if (idWasNull) {
+                redissonManager.add(this);
+            } else {
+                redissonManager.superAdd(this);
+            }
+        }
+
+        if (notify) {
+            tellNew();
+        }
+    }
+
     public void save() {
         if (map == null) {
             map = redissonManager.getMap(id);
