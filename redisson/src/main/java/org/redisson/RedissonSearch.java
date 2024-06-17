@@ -269,6 +269,9 @@ public class RedissonSearch implements RSearch {
                 args.add("SEPARATOR");
                 args.add(params.getSeparator());
             }
+            if (params.isWithSuffixTrie()) {
+                args.add("WITHSUFFIXTRIE");
+            }
             if (params.getSortMode() != null) {
                 args.add("SORTABLE");
                 if (params.getSortMode() == SortMode.UNNORMALIZED) {
@@ -277,9 +280,6 @@ public class RedissonSearch implements RSearch {
             }
             if (params.isNoIndex()) {
                 args.add("NOINDEX");
-            }
-            if (params.isWithSuffixTrie()) {
-                args.add("WITHSUFFIXTRIE");
             }
         }
     }
@@ -293,17 +293,8 @@ public class RedissonSearch implements RSearch {
                 args.add(params.getAs());
             }
             args.add("TEXT");
-            if (params.getSortMode() != null) {
-                args.add("SORTABLE");
-                if (params.getSortMode() == SortMode.UNNORMALIZED) {
-                    args.add("UNF");
-                }
-            }
             if (params.isNoStem()) {
                 args.add("NOSTEM");
-            }
-            if (params.isNoIndex()) {
-                args.add("NOINDEX");
             }
             if (params.getMatcher() != null) {
                 args.add("PHONETIC");
@@ -315,6 +306,15 @@ public class RedissonSearch implements RSearch {
             }
             if (params.isWithSuffixTrie()) {
                 args.add("WITHSUFFIXTRIE");
+            }
+            if (params.getSortMode() != null) {
+                args.add("SORTABLE");
+                if (params.getSortMode() == SortMode.UNNORMALIZED) {
+                    args.add("UNF");
+                }
+            }
+            if (params.isNoIndex()) {
+                args.add("NOINDEX");
             }
         }
     }
