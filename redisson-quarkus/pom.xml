@@ -21,7 +21,7 @@
 
      <properties>
        <compiler-plugin.version>3.13.0</compiler-plugin.version>
-       <surefire-plugin.version>3.2.5</surefire-plugin.version>
+       <surefire-plugin.version>3.3.0</surefire-plugin.version>
        <failsafe-plugin.version>${surefire-plugin.version}</failsafe-plugin.version>
      </properties>
 
