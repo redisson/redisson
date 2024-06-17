@@ -29,24 +29,25 @@ import java.util.concurrent.TimeUnit;
 public interface RRateLimiterRx extends RExpirableRx {
 
     /**
-     * Initializes RateLimiter's state and stores config to Redis server.
+     * Sets the rate limit only if it hasn't been set before.
      * 
-     * @param mode - rate mode
-     * @param rate - rate
-     * @param rateInterval - rate time interval
-     * @param rateIntervalUnit - rate time interval unit
+     * @param mode rate mode
+     * @param rate rate
+     * @param rateInterval rate time interval
+     * @param rateIntervalUnit rate time interval unit
      * @return {@code true} if rate was set and {@code false}
      *         otherwise
      */
     Single<Boolean> trySetRate(RateType mode, long rate, long rateInterval, RateIntervalUnit rateIntervalUnit);
 
     /**
-     * Updates RateLimiter's state and stores config to Redis server.
+     * Sets the rate limit and clears state.
+     * Overrides both limit and state if they haven't been set before.
      *
-     * @param mode - rate mode
-     * @param rate - rate
-     * @param rateInterval - rate time interval
-     * @param rateIntervalUnit - rate time interval unit
+     * @param mode rate mode
+     * @param rate rate
+     * @param rateInterval rate time interval
+     * @param rateIntervalUnit rate time interval unit
      *
      */
     Single<Void> setRate(RateType mode, long rate, long rateInterval, RateIntervalUnit rateIntervalUnit);
