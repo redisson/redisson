@@ -224,37 +224,15 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
     }
 
     @Override
-    public RFuture<Boolean> addAsync(final V value) {
-        CompletableFuture<Boolean> promise = new CompletableFuture<>();
-        commandExecutor.getServiceManager().getExecutor().execute(new Runnable() {
-            public void run() {
-                try {
-                    boolean res = add(value);
-                    promise.complete(res);
-                } catch (Exception e) {
-                    promise.completeExceptionally(e);
-                }
-            }
-        });
-        return new CompletableFutureWrapper<>(promise);
+    public RFuture<Boolean> addAsync(V value) {
+        CompletableFuture<Boolean> f = CompletableFuture.supplyAsync(() -> add(value), getServiceManager().getExecutor());
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
-    public RFuture<Boolean> removeAsync(final Object value) {
-        CompletableFuture<Boolean> promise = new CompletableFuture<>();
-        commandExecutor.getServiceManager().getExecutor().execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    boolean result = remove(value);
-                    promise.complete(result);
-                } catch (Exception e) {
-                    promise.completeExceptionally(e);
-                }
-            }
-        });
-
-        return new CompletableFutureWrapper<>(promise);
+    public RFuture<Boolean> removeAsync(Object value) {
+        CompletableFuture<Boolean> f = CompletableFuture.supplyAsync(() -> remove(value), getServiceManager().getExecutor());
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
