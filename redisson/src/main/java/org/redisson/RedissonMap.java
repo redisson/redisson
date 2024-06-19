@@ -217,20 +217,10 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         CompletionStage<V> f = lock.lockAsync(threadId).thenCompose(r -> {
             RFuture<V> oldValueFuture = getAsync(key, threadId);
             return oldValueFuture.thenCompose(oldValue -> {
-                CompletableFuture<V> newValuePromise = new CompletableFuture<>();
+                CompletableFuture<V> newValuePromise = CompletableFuture.completedFuture(value);
                 if (oldValue != null) {
-                    getServiceManager().getExecutor().execute(() -> {
-                        V newValue;
-                        try {
-                            newValue = remappingFunction.apply(oldValue, value);
-                        } catch (Exception exception) {
-                            newValuePromise.completeExceptionally(exception);
-                            return;
-                        }
-                        newValuePromise.complete(newValue);
-                    });
-                } else {
-                    newValuePromise.complete(value);
+                    newValuePromise = CompletableFuture.supplyAsync(() -> remappingFunction.apply(oldValue, value),
+                            getServiceManager().getExecutor());
                 }
                 return newValuePromise
                         .thenCompose(newValue -> {
@@ -262,47 +252,22 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
         RLock lock = getLock(key);
         long threadId = Thread.currentThread().getId();
-        CompletionStage<V> f = lock.lockAsync(threadId)
+        CompletionStage<V> f = (CompletionStage<V>) lock.lockAsync(threadId)
                 .thenCompose(r -> {
                 RFuture<V> oldValueFuture = getAsync(key, threadId);
                 return oldValueFuture.thenCompose(oldValue -> {
-                    CompletableFuture<V> result = new CompletableFuture<>();
-                    getServiceManager().getExecutor().execute(() -> {
-                        V newValue;
-                        try {
-                            newValue = remappingFunction.apply(key, oldValue);
-                        } catch (Exception exception) {
-                            result.completeExceptionally(exception);
-                            return;
-                        }
-
-                        if (newValue == null) {
-                            if (oldValue != null) {
-                                fastRemoveAsync(key).whenComplete((res, exc) -> {
-                                    if (exc != null) {
-                                        result.completeExceptionally(exc);
-                                        return;
+                    return CompletableFuture.supplyAsync(() -> remappingFunction.apply(key, oldValue), getServiceManager().getExecutor())
+                            .thenCompose(newValue -> {
+                                if (newValue != null) {
+                                    if (oldValue != null) {
+                                        return fastPutAsync(key, newValue)
+                                                .thenApply(rr -> newValue);
                                     }
-
-                                    result.complete(newValue);
-                                });
-                                return;
-                            }
-                        } else {
-                            fastPutAsync(key, newValue).whenComplete((res, exc) -> {
-                                if (exc != null) {
-                                    result.completeExceptionally(exc);
-                                    return;
+                                    return CompletableFuture.completedFuture(newValue);
                                 }
-
-                                result.complete(newValue);
+                                return fastRemoveAsync(key)
+                                        .thenApply(rr -> newValue);
                             });
-                            return;
-                        }
-
-                        result.complete(newValue);
-                    });
-                    return result;
                 }).whenComplete((c, e) -> {
                     lock.unlockAsync(threadId);
                 });
@@ -362,25 +327,13 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                             return CompletableFuture.completedFuture(oldValue);
                         }
 
-                        CompletableFuture<V> result = new CompletableFuture<>();
-                        getServiceManager().getExecutor().execute(() -> {
-                            V newValue;
-                            try {
-                                newValue = mappingFunction.apply(key);
-                            } catch (Exception exception) {
-                                result.completeExceptionally(exception);
-                                return;
-                            }
-                            if (newValue != null) {
-                                fastPutAsync(key, newValue).thenAccept(res -> {
-                                    result.complete(newValue);
+                        return CompletableFuture.supplyAsync(() -> mappingFunction.apply(key), getServiceManager().getExecutor())
+                                .thenCompose(newValue -> {
+                                    if (newValue != null) {
+                                        return fastPutAsync(key, newValue).thenApply(rr -> newValue);
+                                    }
+                                    return CompletableFuture.completedFuture(null);
                                 });
-                                return;
-                            }
-
-                            result.complete(null);
-                        });
-                        return result;
                     }).whenComplete((c, e) -> {
                         lock.unlockAsync(threadId);
                     });
@@ -431,7 +384,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
         RLock lock = getLock(key);
         long threadId = Thread.currentThread().getId();
-        CompletionStage<V> f = lock.lockAsync(threadId)
+        CompletionStage<V> f = (CompletionStage<V>) lock.lockAsync(threadId)
                 .thenCompose(r -> {
                     RFuture<V> oldValueFuture = getAsync(key, threadId);
                     return oldValueFuture.thenCompose(oldValue -> {
@@ -439,38 +392,13 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                             return CompletableFuture.completedFuture(null);
                         }
 
-                        CompletableFuture<V> result = new CompletableFuture<>();
-                        getServiceManager().getExecutor().execute(() -> {
-                            V newValue;
-                            try {
-                                newValue = remappingFunction.apply(key, oldValue);
-                            } catch (Exception exception) {
-                                result.completeExceptionally(exception);
-                                return;
-                            }
-                            if (newValue != null) {
-                                RFuture<Boolean> fastPutFuture = fastPutAsync(key, newValue);
-                                fastPutFuture.whenComplete((re, ex1) -> {
-                                    if (ex1 != null) {
-                                        result.completeExceptionally(ex1);
-                                        return;
+                        return CompletableFuture.supplyAsync(() -> remappingFunction.apply(key, oldValue), getServiceManager().getExecutor())
+                                .thenCompose(newValue -> {
+                                    if (newValue != null) {
+                                        return fastPutAsync(key, newValue).thenApply(rr -> newValue);
                                     }
-
-                                    result.complete(newValue);
+                                    return fastRemoveAsync(key).thenApply(rr -> null);
                                 });
-                            } else {
-                                RFuture<Long> removeFuture = fastRemoveAsync(key);
-                                removeFuture.whenComplete((re, ex1) -> {
-                                    if (ex1 != null) {
-                                        result.completeExceptionally(ex1);
-                                        return;
-                                    }
-
-                                    result.complete(null);
-                                });
-                            }
-                        });
-                        return result;
                     }).whenComplete((c, e) -> {
                         lock.unlockAsync(threadId);
                     });
@@ -753,21 +681,14 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         CompletionStage<M> f = future.thenCompose(res -> {
             if (condition.apply(res)) {
                 if (options.getWriter() != null) {
-                    CompletableFuture<M> promise = new CompletableFuture<>();
-                    getServiceManager().getExecutor().execute(() -> {
-                        try {
-                            if (task instanceof MapWriterTask.Add) {
-                                options.getWriter().write(task.getMap());
-                            } else {
-                                options.getWriter().delete(task.getKeys());
-                            }
-                        } catch (Exception ex) {
-                            promise.completeExceptionally(ex);
-                            return;
+                    return CompletableFuture.supplyAsync(() -> {
+                        if (task instanceof MapWriterTask.Add) {
+                            options.getWriter().write(task.getMap());
+                        } else {
+                            options.getWriter().delete(task.getKeys());
                         }
-                        promise.complete(res);
-                    });
-                    return promise;
+                        return res;
+                    }, getServiceManager().getExecutor());
                 }
 
                 if (task instanceof MapWriterTask.Add) {
@@ -1430,17 +1351,10 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                 return CompletableFuture.completedFuture((long) deletedKeys.size());
             } else {
                 if (options.getWriter() != null) {
-                    CompletableFuture<Long> future = new CompletableFuture<>();
-                    getServiceManager().getExecutor().execute(() -> {
-                        try {
-                            options.getWriter().delete(deletedKeys);
-                        } catch (Exception ex) {
-                            future.completeExceptionally(ex);
-                            return;
-                        }
-                        future.complete((long) deletedKeys.size());
-                    });
-                    return future;
+                    return CompletableFuture.runAsync(() -> {
+                        options.getWriter().delete(deletedKeys);
+                    }, getServiceManager().getExecutor())
+                            .thenApply(r -> (long) deletedKeys.size());
                 }
 
                 return options.getWriterAsync().delete(deletedKeys)
@@ -1743,60 +1657,18 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     
     private CompletableFuture<V> loadValue(K key, RLock lock, long threadId) {
         if (options.getLoader() != null) {
-            CompletableFuture<V> result = new CompletableFuture<>();
-            getServiceManager().getExecutor().execute(new Runnable() {
-                @Override
-                public void run() {
-                    V value;
-                    try {
-                        value = options.getLoader().load(key);
-                        if (value == null) {
-                            lock.unlockAsync(threadId)
-                                    .whenComplete((r, e) -> {
-                                        if (e != null) {
-                                            result.completeExceptionally(e);
-                                            return;
-                                        }
-
-                                        result.complete(value);
-                                    });
-                            return;
+            return CompletableFuture
+                    .supplyAsync(() -> options.getLoader().load(key), getServiceManager().getExecutor())
+                    .thenCompose(value -> {
+                        if (value != null) {
+                            return putOperationAsync(key, value)
+                                    .thenApply(r -> value);
                         }
-                    } catch (Exception e) {
-                        log.error("Unable to load value by key {} for map {}", key, getRawName(), e);
-                        lock.unlockAsync(threadId)
-                                .whenComplete((r, ex) -> {
-                                    if (ex != null) {
-                                        result.completeExceptionally(ex);
-                                        return;
-                                    }
-
-                                    result.complete(null);
-                                });
-                        return;
-                    }
-
-                    putOperationAsync(key, value)
-                            .whenComplete((res, e) -> {
-                                if (e != null) {
-                                    lock.unlockAsync(threadId);
-                                    result.completeExceptionally(e);
-                                    return;
-                                }
-
-                                lock.unlockAsync(threadId)
-                                        .whenComplete((r, ex) -> {
-                                            if (ex != null) {
-                                                result.completeExceptionally(ex);
-                                                return;
-                                            }
-
-                                            result.complete(value);
-                                        });
-                            });
-                }
-            });
-            return result;
+                        return CompletableFuture.completedFuture(null);
+                    })
+                    .whenComplete((r, e) -> {
+                        lock.unlockAsync(threadId);
+                    }).exceptionally(e -> null);
         }
 
         CompletionStage<V> valueFuture = options.getLoaderAsync().load(key);
