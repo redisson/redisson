@@ -61,9 +61,11 @@ quarkus.cache.type=redisson
 
 # Default configuration
 quarkus.cache.redisson.expire-after-write=5s
+quarkus.cache.redisson.expire-after-access=1s
 
 # Configuration for `sampleCache`
-quarkus.cache.redisson.sampleCache.expire-after-write=10s
+quarkus.cache.redisson.sampleCache.expire-after-write=100s
+quarkus.cache.redisson.sampleCache.expire-after-access=10s
 ```
 
 ## Redisson usage  
