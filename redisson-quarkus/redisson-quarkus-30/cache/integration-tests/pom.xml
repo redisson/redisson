@@ -4,14 +4,14 @@
 
     <parent>
         <groupId>org.redisson</groupId>
-        <artifactId>redisson-quarkus-30-parent</artifactId>
+        <artifactId>redisson-quarkus-30-cache-parent</artifactId>
         <version>3.31.1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
-    <artifactId>redisson-quarkus-30-integration-tests</artifactId>
+    <artifactId>redisson-quarkus-30-cache-integration-tests</artifactId>
 
-    <name>Redisson/Quarkus v3.x.x integration Tests</name>
+    <name>Redisson/Quarkus v3.x.x Cache integration Tests</name>
 
     <dependencies>
       <dependency>
@@ -20,7 +20,7 @@
       </dependency>
       <dependency>
         <groupId>org.redisson</groupId>
-        <artifactId>redisson-quarkus-30</artifactId>
+        <artifactId>redisson-quarkus-30-cache</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -43,6 +43,10 @@
           <artifactId>junit-jupiter</artifactId>
           <scope>test</scope>
       </dependency>
+        <dependency>
+            <groupId>jakarta.enterprise</groupId>
+            <artifactId>jakarta.enterprise.cdi-api</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
@@ -53,7 +57,7 @@
             <version>4.5</version>
             <configuration>
                 <basedir>${basedir}</basedir>
-                <header>${basedir}/../../../header.txt</header>
+                <header>${basedir}/../../../../header.txt</header>
                 <quiet>false</quiet>
                 <failIfMissing>true</failIfMissing>
                 <aggregate>false</aggregate>

@@ -5,7 +5,9 @@ metadata:
   keywords:
     - "redis"
     - "redis-client"
-  guide: "https://github.com/redisson/redisson/blob/master/redisson-quarkus/README.md"
+  guide: "https://github.com/redisson/redisson/tree/master/redisson-quarkus"
   categories:
     - "data"
-  status: "preview"
+  status: "stable"
+  config:
+    - "quarkus.redisson"
