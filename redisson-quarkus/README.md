@@ -31,6 +31,8 @@ reflection-config.json:
 
 ## Cache usage
 
+### 1. Add `redisson-quarkus-cache` dependency into your project:  
+
 Maven  
 
 ```xml  
