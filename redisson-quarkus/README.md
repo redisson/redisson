@@ -1,6 +1,6 @@
 # Quarkus extension for Redis
 
-Integrates Redisson with [Quarkus](https://quarkus.io/) framework.  
+Integrates Redisson with [Quarkus](https://quarkus.io/) framework. Implements [Quarkus Cache](https://quarkus.io/extensions/io.quarkus/quarkus-cache/).
 
 <details>
     <summary><b>Native image with RemoteService</b>. Click to expand!</summary>
@@ -29,7 +29,42 @@ reflection-config.json:
 ``` 
 </details>
 
-## Usage  
+## Cache usage
+
+Maven  
+
+```xml  
+<dependency>
+    <groupId>org.redisson</groupId>
+    <!-- for Quarkus v3.x.x -->
+    <artifactId>redisson-quarkus-30-cache</artifactId>
+    <version>3.31.0</version>
+</dependency>
+```
+
+Gradle
+
+```groovy
+// for Quarkus v3.x.x
+compile 'org.redisson:redisson-quarkus-30-cache:3.31.0'
+```
+
+### 2. Add settings into `application.properties` file
+
+`expire-after-write` setting defines time to live of the item stored in the cache  
+`expire-after-access` setting defines time to live added to the item after read operation  
+
+```
+quarkus.cache.type=redisson
+
+# Default configuration
+quarkus.cache.redisson.expire-after-write=5s
+
+# Configuration for `sampleCache`
+quarkus.cache.redisson.sampleCache.expire-after-write=10s
+```
+
+## Redisson usage  
 
 ### 1. Add `redisson-quarkus` dependency into your project:  
 
