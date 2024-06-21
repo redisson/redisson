@@ -62,7 +62,7 @@ public class RedissonCacheImpl extends AbstractCache implements RedissonCache {
                 this.mapCacheNative = redisson.getMapCacheNative(cacheInfo.name);
                 this.map = this.mapCacheNative;
             } else {
-                throw new IllegalArgumentException("" + impl + " implementation is available only in PRO version");
+                throw new IllegalArgumentException("" + impl + " implementation is available only in PRO version. Please contact sales@redisson.pro");
             }
         } else {
             if (impl == CacheImplementation.STANDARD) {
@@ -70,7 +70,7 @@ public class RedissonCacheImpl extends AbstractCache implements RedissonCache {
             } else if (impl == CacheImplementation.NATIVE) {
                 this.map = redisson.getMapCacheNative(cacheInfo.name);
             } else {
-                throw new IllegalArgumentException("" + impl + " implementation is available only in PRO version");
+                throw new IllegalArgumentException("" + impl + " implementation is available only in PRO version. Please contact sales@redisson.pro");
             }
         }
     }
