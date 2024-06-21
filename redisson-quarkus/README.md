@@ -1,6 +1,6 @@
 # Quarkus extension for Redis
 
-Integrates Redisson with [Quarkus](https://quarkus.io/) framework. Implements [Quarkus Cache](https://quarkus.io/extensions/io.quarkus/quarkus-cache/).
+Integrates Redisson with [Quarkus](https://quarkus.io/) framework. Implements [Quarkus Cache](https://quarkus.io/guides/cache).
 
 <details>
     <summary><b>Native image with RemoteService</b>. Click to expand!</summary>
