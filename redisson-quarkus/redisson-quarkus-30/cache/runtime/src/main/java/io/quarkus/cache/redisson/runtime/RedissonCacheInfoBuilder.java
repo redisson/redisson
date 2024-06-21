@@ -43,6 +43,12 @@ public class RedissonCacheInfoBuilder {
             RedissonCacheRuntimeConfig defaultRuntimeConfig = runtimeConfig.defaultConfig;
             RedissonCacheRuntimeConfig namedRuntimeConfig = runtimeConfig.cachesConfig.get(cacheInfo.name);
 
+            if (namedRuntimeConfig != null && namedRuntimeConfig.implementation.isPresent()) {
+                cacheInfo.implementation = namedRuntimeConfig.implementation;
+            } else if (defaultRuntimeConfig.implementation.isPresent()) {
+                cacheInfo.implementation = defaultRuntimeConfig.implementation;
+            }
+
             if (namedRuntimeConfig != null && namedRuntimeConfig.expireAfterAccess.isPresent()) {
                 cacheInfo.expireAfterAccess = namedRuntimeConfig.expireAfterAccess;
             } else if (defaultRuntimeConfig.expireAfterAccess.isPresent()) {

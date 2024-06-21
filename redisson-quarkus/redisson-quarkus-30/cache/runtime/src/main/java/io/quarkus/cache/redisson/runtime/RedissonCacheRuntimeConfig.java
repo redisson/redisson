@@ -43,4 +43,10 @@ public class RedissonCacheRuntimeConfig {
     @ConfigItem
     Optional<Duration> expireAfterAccess;
 
+    /**
+     * Specifies the cache implementation.
+     */
+    @ConfigItem
+    Optional<CacheImplementation> implementation;
+
 }

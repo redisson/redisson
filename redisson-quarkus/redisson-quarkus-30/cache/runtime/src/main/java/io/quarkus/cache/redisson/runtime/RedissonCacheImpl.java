@@ -21,6 +21,7 @@ import io.smallrye.mutiny.Uni;
 import org.redisson.RedissonObject;
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
+import org.redisson.api.RMapCacheNative;
 import org.redisson.api.RedissonClient;
 
 import java.time.Duration;
@@ -43,16 +44,34 @@ public class RedissonCacheImpl extends AbstractCache implements RedissonCache {
     private RedissonCacheInfo cacheInfo;
     private RMap map;
     private RMapCache mapCache;
+    private RMapCacheNative mapCacheNative;
 
     public RedissonCacheImpl(RedissonCacheInfo cacheInfo) {
         RedissonClient redisson = Arc.container().select(RedissonClient.class).get();
+        CacheImplementation impl = cacheInfo.implementation.orElse(CacheImplementation.STANDARD);
         this.cacheInfo = cacheInfo;
         if (cacheInfo.expireAfterAccess.isPresent()
                 || cacheInfo.expireAfterWrite.isPresent()) {
-            this.mapCache = redisson.getMapCache(cacheInfo.name);
-            this.map = this.mapCache;
+            if (impl == CacheImplementation.STANDARD) {
+                this.mapCache = redisson.getMapCache(cacheInfo.name);
+                this.map = this.mapCache;
+            } else if (impl == CacheImplementation.NATIVE) {
+                if (cacheInfo.expireAfterAccess.isPresent()) {
+                    throw new IllegalArgumentException("expireAfterAccess isn't supported by NATIVE implementation");
+                }
+                this.mapCacheNative = redisson.getMapCacheNative(cacheInfo.name);
+                this.map = this.mapCacheNative;
+            } else {
+                throw new IllegalArgumentException("" + impl + " implementation is available only in PRO version");
+            }
         } else {
-            this.map = redisson.getMap(cacheInfo.name);
+            if (impl == CacheImplementation.STANDARD) {
+                this.map = redisson.getMap(cacheInfo.name);
+            } else if (impl == CacheImplementation.NATIVE) {
+                this.map = redisson.getMapCacheNative(cacheInfo.name);
+            } else {
+                throw new IllegalArgumentException("" + impl + " implementation is available only in PRO version");
+            }
         }
     }
 
@@ -66,6 +85,9 @@ public class RedissonCacheImpl extends AbstractCache implements RedissonCache {
                 long maxIdleTime = cacheInfo.expireAfterAccess.orElse(Duration.ZERO).toMillis();
 
                 if (maxIdleTime > 0 || ttl > 0) {
+                    if (mapCacheNative != null) {
+                        return mapCacheNative.putAsync(key, value, Duration.ofMillis(ttl));
+                    }
                     return mapCache.putAsync(key, value, ttl, TimeUnit.MILLISECONDS, maxIdleTime, TimeUnit.MILLISECONDS);
                 }
                 return map.putAsync(key, value);
@@ -83,6 +105,9 @@ public class RedissonCacheImpl extends AbstractCache implements RedissonCache {
                 long maxIdleTime = cacheInfo.expireAfterAccess.orElse(Duration.ZERO).toMillis();
 
                 if (maxIdleTime > 0 || ttl > 0) {
+                    if (mapCacheNative != null) {
+                        return mapCacheNative.fastPutAsync(key, value, Duration.ofMillis(ttl));
+                    }
                     return mapCache.fastPutAsync(key, value, ttl, TimeUnit.MILLISECONDS, maxIdleTime, TimeUnit.MILLISECONDS);
                 }
                 return map.fastPutAsync(key, value);
@@ -100,6 +125,9 @@ public class RedissonCacheImpl extends AbstractCache implements RedissonCache {
                 long maxIdleTime = cacheInfo.expireAfterAccess.orElse(Duration.ZERO).toMillis();
 
                 if (maxIdleTime > 0 || ttl > 0) {
+                    if (mapCacheNative != null) {
+                        return mapCacheNative.putIfAbsentAsync(key, value, Duration.ofMillis(ttl));
+                    }
                     return mapCache.putIfAbsentAsync(key, value, ttl, TimeUnit.MILLISECONDS, maxIdleTime, TimeUnit.MILLISECONDS);
                 }
                 return map.putIfAbsentAsync(key, value);
@@ -128,6 +156,9 @@ public class RedissonCacheImpl extends AbstractCache implements RedissonCache {
                 long maxIdleTime = cacheInfo.expireAfterAccess.orElse(Duration.ZERO).toMillis();
 
                 if (maxIdleTime > 0 || ttl > 0) {
+                    if (mapCacheNative != null) {
+                        return mapCacheNative.fastPutIfAbsentAsync(key, value, Duration.ofMillis(ttl));
+                    }
                     return mapCache.fastPutIfAbsentAsync(key, value, ttl, TimeUnit.MILLISECONDS, maxIdleTime, TimeUnit.MILLISECONDS);
                 }
                 return map.fastPutIfAbsentAsync(key, value);

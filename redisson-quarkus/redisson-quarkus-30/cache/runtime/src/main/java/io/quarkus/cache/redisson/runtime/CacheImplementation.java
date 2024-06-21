@@ -15,31 +15,20 @@
  */
 package io.quarkus.cache.redisson.runtime;
 
-import java.time.Duration;
-import java.util.Optional;
+public enum CacheImplementation {
 
-/**
- *
- * @author Nikita Koksharov
- *
- */
-public class RedissonCacheInfo {
+    STANDARD,
 
-    /**
-     * The cache name
-     */
-    public String name;
+    NATIVE,
 
-    /**
-     * The default time to live of the item stored in the cache
-     */
-    public Optional<Duration> expireAfterAccess = Optional.empty();
+    V2,
 
-    /**
-     * The default time to live to add to the item once read
-     */
-    public Optional<Duration> expireAfterWrite = Optional.empty();
+    LOCALCACHE,
 
-    public Optional<CacheImplementation> implementation = Optional.empty();
+    LOCALCACHE_V2,
+
+    CLUSTERED,
+
+    CLUSTERED_LOCALCACHE
 
 }
