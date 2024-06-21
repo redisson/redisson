@@ -18,6 +18,7 @@ package io.quarkus.cache.redisson.runtime;
 import io.quarkus.runtime.configuration.HashSetFactory;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -31,32 +32,31 @@ public class RedissonCacheInfoBuilder {
                                                RedissonCachesConfig runtimeConfig) {
         if (cacheNames.isEmpty()) {
             return Collections.emptySet();
-        } else {
-            Set<RedissonCacheInfo> result = HashSetFactory.<RedissonCacheInfo> getInstance().apply(cacheNames.size());
-            ;
-            for (String cacheName : cacheNames) {
-
-                RedissonCacheInfo cacheInfo = new RedissonCacheInfo();
-                cacheInfo.name = cacheName;
-
-                RedissonCacheRuntimeConfig defaultRuntimeConfig = runtimeConfig.defaultConfig;
-                RedissonCacheRuntimeConfig namedRuntimeConfig = runtimeConfig.cachesConfig.get(cacheInfo.name);
-
-                if (namedRuntimeConfig != null && namedRuntimeConfig.expireAfterAccess.isPresent()) {
-                    cacheInfo.expireAfterAccess = namedRuntimeConfig.expireAfterAccess;
-                } else if (defaultRuntimeConfig.expireAfterAccess.isPresent()) {
-                    cacheInfo.expireAfterAccess = defaultRuntimeConfig.expireAfterAccess;
-                }
-
-                if (namedRuntimeConfig != null && namedRuntimeConfig.expireAfterWrite.isPresent()) {
-                    cacheInfo.expireAfterWrite = namedRuntimeConfig.expireAfterWrite;
-                } else if (defaultRuntimeConfig.expireAfterWrite.isPresent()) {
-                    cacheInfo.expireAfterWrite = defaultRuntimeConfig.expireAfterWrite;
-                }
-
-                result.add(cacheInfo);
-            }
-            return result;
         }
+
+        Set<RedissonCacheInfo> result = new HashSet<>(cacheNames.size());
+        for (String cacheName : cacheNames) {
+
+            RedissonCacheInfo cacheInfo = new RedissonCacheInfo();
+            cacheInfo.name = cacheName;
+
+            RedissonCacheRuntimeConfig defaultRuntimeConfig = runtimeConfig.defaultConfig;
+            RedissonCacheRuntimeConfig namedRuntimeConfig = runtimeConfig.cachesConfig.get(cacheInfo.name);
+
+            if (namedRuntimeConfig != null && namedRuntimeConfig.expireAfterAccess.isPresent()) {
+                cacheInfo.expireAfterAccess = namedRuntimeConfig.expireAfterAccess;
+            } else if (defaultRuntimeConfig.expireAfterAccess.isPresent()) {
+                cacheInfo.expireAfterAccess = defaultRuntimeConfig.expireAfterAccess;
+            }
+
+            if (namedRuntimeConfig != null && namedRuntimeConfig.expireAfterWrite.isPresent()) {
+                cacheInfo.expireAfterWrite = namedRuntimeConfig.expireAfterWrite;
+            } else if (defaultRuntimeConfig.expireAfterWrite.isPresent()) {
+                cacheInfo.expireAfterWrite = defaultRuntimeConfig.expireAfterWrite;
+            }
+
+            result.add(cacheInfo);
+        }
+        return result;
     }
 }
