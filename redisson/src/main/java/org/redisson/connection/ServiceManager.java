@@ -340,8 +340,12 @@ public final class ServiceManager {
     }
 
     private final Set<CompletableFuture<?>> futures = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final int limits = (int) Runtime.getRuntime().maxMemory() / (1024*1024);
 
     public void addFuture(CompletableFuture<?> future) {
+        while (futures.size() > limits){
+            Thread.yield();
+        }
         futures.add(future);
     }
 
