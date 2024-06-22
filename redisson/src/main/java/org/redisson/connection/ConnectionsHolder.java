@@ -246,7 +246,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
         } else {
             releaseConnection(connection);
         }
-        releaseConnection();
+        serviceManager.getGroup().submit(() -> releaseConnection());
     }
 
 }
