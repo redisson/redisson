@@ -281,4 +281,19 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
      */
     int expireEntriesIfNotSet(Set<K> keys, Duration ttl);
 
+    /**
+     * Adds object event listener
+     *
+     * @see org.redisson.api.listener.TrackingListener
+     * @see org.redisson.api.listener.MapPutListener
+     * @see org.redisson.api.listener.MapRemoveListener
+     * @see org.redisson.api.listener.MapExpiredListener
+     * @see org.redisson.api.ExpiredObjectListener
+     * @see org.redisson.api.DeletedObjectListener
+     *
+     * @param listener object event listener
+     * @return listener id
+     */
+    int addListener(ObjectListener listener);
+
 }

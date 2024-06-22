@@ -284,4 +284,19 @@ public interface RMapCacheNativeRx<K, V> extends RMapRx<K, V>, RDestroyable {
      */
     Single<Integer> expireEntriesIfNotSet(Set<K> keys, Duration ttl);
 
+    /**
+     * Adds object event listener
+     *
+     * @see org.redisson.api.listener.TrackingListener
+     * @see org.redisson.api.listener.MapPutListener
+     * @see org.redisson.api.listener.MapRemoveListener
+     * @see org.redisson.api.listener.MapExpiredListener
+     * @see org.redisson.api.ExpiredObjectListener
+     * @see org.redisson.api.DeletedObjectListener
+     *
+     * @param listener object event listener
+     * @return listener id
+     */
+    Single<Integer> addListener(ObjectListener listener);
+
 }
