@@ -250,10 +250,6 @@ public class CommandDecoder extends ReplayingDecoder<State> {
     }
 
     protected void sendNext(Channel channel) {
-        if (!(Thread.currentThread() instanceof FastThreadLocalThread)) {
-            return;
-        }
-
         Queue<QueueCommandHolder> queue = channel.attr(CommandsQueue.COMMANDS_QUEUE).get();
         queue.poll();
         state(null);
