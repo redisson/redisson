@@ -16,7 +16,9 @@ Below is the list of all available implementations with local cache and/or data 
 | ------------- | :-----------: | :----------:| :----------:|
 |RedissonCache<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
 |RedissonCache<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
+|RedissonCacheV2<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ✔️ | ✔️ |
 |RedissonLocalCachedCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ❌ | ✔️ |
+|RedissonLocalCachedCacheV2<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ✔️ | ✔️ |
 |RedissonClusteredCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
 |RedissonClusteredLocalCachedCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
 
