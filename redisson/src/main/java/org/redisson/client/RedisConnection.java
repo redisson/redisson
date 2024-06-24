@@ -249,7 +249,7 @@ public class RedisConnection implements RedisCommands {
         }
 
         Timeout scheduledFuture = redisClient.getTimer().newTimeout(t -> {
-            RedisTimeoutException ex = new RedisTimeoutException("Command execution timeout for command: "
+            RedisTimeoutException ex = new RedisTimeoutException("Command execution timeout for "
                     + LogHelper.toString(command, params) + ", Redis client: " + redisClient);
             promise.completeExceptionally(ex);
         }, timeout, TimeUnit.MILLISECONDS);

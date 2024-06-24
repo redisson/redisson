@@ -169,8 +169,8 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
             writeFuture = connection.send(new CommandsData(main, list, true, syncSlaves));
         } else {
             if (log.isDebugEnabled()) {
-                log.debug("acquired connection for command {} and params {} from slot {} using node {}... {}",
-                        command, LogHelper.toString(params), source, connection.getRedisClient().getAddr(), connection);
+                log.debug("acquired connection for {} from slot: {} using node: {}... {}",
+                            LogHelper.toString(command, params), source, connection.getRedisClient().getAddr(), connection);
             }
             
             if (connectionEntry.isFirstCommand()) {

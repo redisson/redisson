@@ -93,8 +93,7 @@ public class CommandData<T, R> implements QueueCommand {
 
     @Override
     public String toString() {
-        return "CommandData [promise=" + promise + ", command=" + command + ", params="
-                + LogHelper.toString(params) + ", codec=" + codec + "]";
+        return "CommandData [command=" + LogHelper.toString(this) + ", codec=" + codec + "]";
     }
 
     @Override

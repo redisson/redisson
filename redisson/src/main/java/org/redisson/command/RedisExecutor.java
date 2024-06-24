@@ -227,7 +227,7 @@ public class RedisExecutor<V, R> {
                 exception = new RedisTimeoutException("Unable to acquire connection! " + this.connectionFuture +
                         "Increase connection pool size or timeout. "
                         + "Node source: " + source
-                        + ", command: " + LogHelper.toString(command, params)
+                        + ", " + LogHelper.toString(command, params)
                         + " after " + attempt + " retry attempts");
 
                 attemptPromise.completeExceptionally(exception);
@@ -250,7 +250,7 @@ public class RedisExecutor<V, R> {
                         "Check CPU usage of the JVM. Check that there are no blocking invocations in async/reactive/rx listeners or subscribeOnElements method. Check connection with Redis node: " + connectionFuture.join().getRedisClient().getAddr() +
                         " for TCP packet drops. Try to increase nettyThreads setting. "
                         + " Node source: " + source + ", connection: " + connectionFuture.join()
-                        + ", command: " + LogHelper.toString(command, params)
+                        + ", " + LogHelper.toString(command, params)
                         + " after " + attempt + " retry attempts");
                 attemptPromise.completeExceptionally(exception);
             }
@@ -276,7 +276,7 @@ public class RedisExecutor<V, R> {
                     exception = new RedisTimeoutException("Unable to acquire connection! " + connectionFuture +
                                 "Increase connection pool size. "
                                 + "Node source: " + source
-                                + ", command: " + LogHelper.toString(command, params)
+                                + ", " + LogHelper.toString(command, params)
                                 + " after " + attempt + " retry attempts");
                 } else {
                     if (connectionFuture.isDone() && !connectionFuture.isCompletedExceptionally()) {
@@ -288,7 +288,7 @@ public class RedisExecutor<V, R> {
                                                 "Check CPU usage of the JVM. Check that there are no blocking invocations in async/reactive/rx listeners or subscribeOnElements method. Check connection with Redis node: " + getNow(connectionFuture).getRedisClient().getAddr() +
                                                 " for TCP packet drops. Try to increase nettyThreads setting. "
                                                 + " Node source: " + source + ", connection: " + getNow(connectionFuture)
-                                                + ", command: " + LogHelper.toString(command, params)
+                                                + ", " + LogHelper.toString(command, params)
                                                 + " after " + attempt + " retry attempts");
                                     }
                                     attemptPromise.completeExceptionally(exception);
@@ -330,8 +330,8 @@ public class RedisExecutor<V, R> {
 
                 attempt++;
                 if (log.isDebugEnabled()) {
-                    log.debug("attempt {} for command {} and params {} to {}",
-                            attempt, command, LogHelper.toString(params), source);
+                    log.debug("attempt {} for {} to {}",
+                            attempt, LogHelper.toString(command, params), source);
                 }
 
                 mainPromiseListener = null;
@@ -363,7 +363,7 @@ public class RedisExecutor<V, R> {
             exception = new WriteRedisConnectionException(
                     "Unable to write command into connection! Check CPU usage of the JVM. Try to increase nettyThreads setting. Node source: "
                     + source + ", connection: " + connection +
-                    ", command: " + LogHelper.toString(command, params)
+                    ", " + LogHelper.toString(command, params)
                     + " after " + attempt + " retry attempts", future.cause());
             tryComplete(attemptPromise, exception);
             return;
@@ -379,8 +379,8 @@ public class RedisExecutor<V, R> {
             attempt++;
 
             if (log.isDebugEnabled()) {
-                log.debug("attempt {} for command {} and params {} to {}",
-                        attempt, command, LogHelper.toString(params), source);
+                log.debug("attempt {} for {} to {}",
+                        attempt, LogHelper.toString(command, params), source);
             }
 
             mainPromiseListener = null;
@@ -428,8 +428,8 @@ public class RedisExecutor<V, R> {
                 connectionManager.getServiceManager().newTimeout(t -> {
                     attempt++;
                     if (log.isDebugEnabled()) {
-                        log.debug("response timeout. new attempt {} for command {} and params {} node {}",
-                                attempt, command, LogHelper.toString(params), source);
+                        log.debug("response timeout. new attempt {} for {} node {}",
+                                attempt, LogHelper.toString(command, params), source);
                     }
 
                     mainPromiseListener = null;
@@ -443,7 +443,7 @@ public class RedisExecutor<V, R> {
                             + " after " + attempt + " retry attempts,"
                             + " is non-idempotent command: " + (command != null && command.isNoRetry())
                             + " Check connection with Redis node: " + connection.getRedisClient().getAddr() + " for TCP packet drops or bandwidth limits. "
-                            + " Try to increase nettyThreads and/or timeout settings. Command: "
+                            + " Try to increase nettyThreads and/or timeout settings. "
                             + LogHelper.toString(command, params) + ", channel: " + connection.getChannel()));
         };
 
@@ -667,8 +667,8 @@ public class RedisExecutor<V, R> {
                 if (connection instanceof RedisPubSubConnection) {
                     connectionType = " pubsub ";
                 }
-                log.debug("acquired{}connection for command {} and params {} from slot {} using node {}... {}",
-                        connectionType, command, LogHelper.toString(params), source, connection.getRedisClient().getAddr(), connection);
+                log.debug("acquired{}connection for {} from slot {} using node {}... {}",
+                        connectionType, LogHelper.toString(command, params), source, connection.getRedisClient().getAddr(), connection);
             }
             writeFuture = connection.send(new CommandData<>(attemptPromise, codec, command, params));
 
@@ -707,8 +707,8 @@ public class RedisExecutor<V, R> {
                 connectionType = " pubsub ";
             }
 
-            log.debug("connection{}released for command {} and params {} from slot {} using connection {}",
-                    connectionType, command, LogHelper.toString(params), source, connection);
+            log.debug("connection{}released for {} from slot {} using connection {}",
+                    connectionType, LogHelper.toString(command, params), source, connection);
         }
     }
 
