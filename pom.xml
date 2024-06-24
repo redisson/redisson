@@ -144,7 +144,7 @@
             <dependency>
                <groupId>com.github.hazendaz.jmockit</groupId>
                <artifactId>jmockit</artifactId>
-               <version>1.52.0</version>
+               <version>1.54.0</version>
                <scope>test</scope>
             </dependency>
             <dependency>
