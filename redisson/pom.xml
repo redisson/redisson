@@ -196,7 +196,7 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-webflux</artifactId>
             <!-- 4.1+ -->            
-            <version>6.1.6</version>
+            <version>6.1.10</version>
             <scope>test</scope>
         </dependency>
 
