@@ -14,7 +14,7 @@ Fixed - RSearch parse params error (thanks to @seakider)
 Fixed - RSearch.info() throws `NumberFormatException` (thanks to @seakider)  
 Fixed - cluster failover handling  
 Fixed - last master node shouldn't be removed in cluster topology  
-Fixed - duplicated master/slave added log output in sentinel mode
+Fixed - duplicated master/slave added log output in sentinel mode  
 Fixed - connection leak if master change operation failed during failover  
 Fixed - `RxJava3` request can't be canceled  
 Fixed - `RFairLock` doesn't calculate remaining ttl properly before next acquisition attempt  
