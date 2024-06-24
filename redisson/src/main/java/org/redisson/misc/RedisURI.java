@@ -17,9 +17,12 @@ package org.redisson.misc;
 
 import io.netty.util.NetUtil;
 
+import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 /**
@@ -60,15 +63,15 @@ public final class RedisURI {
                 String[] details = url.getUserInfo().split(":", 2);
                 if (details.length == 2) {
                     if (!details[0].isEmpty()) {
-                        username = details[0];
+                        username = URLDecoder.decode(details[0], StandardCharsets.UTF_8.toString());
                     }
-                    password = details[1];
+                    password = URLDecoder.decode(details[1], StandardCharsets.UTF_8.toString());
                 }
             }
             host = url.getHost();
             port = url.getPort();
             ssl = uri.startsWith("rediss://");
-        } catch (MalformedURLException e) {
+        } catch (MalformedURLException | UnsupportedEncodingException e) {
             throw new IllegalArgumentException(e);
         }
     }
