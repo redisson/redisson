@@ -3,6 +3,29 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
+### 24-Jun-2024 - 3.32.0 released
+
+Feature - Quarkus Cache implementation added  
+Feature - `RMapCacheNative` implementation which uses Redis 7.4+ commands  
+Feature - unlinkByPattern() method added to RKeys interface (thanks to @seakider)  
+
+Fixed - Apache Tomcat request.changeSessionId() method does not change the session id in Redis (thanks to @bclay2116)  
+Fixed - RSearch parse params error (thanks to @seakider)  
+Fixed - RSearch.info() throws `NumberFormatException` (thanks to @seakider)  
+Fixed - cluster failover handling  
+Fixed - last master node shouldn't be removed in cluster topology  
+Fixed - duplicated master/slave added log output in sentinel mode  
+Fixed - connection leak if master change operation failed during failover  
+Fixed - `RxJava3` request can't be canceled  
+Fixed - `RFairLock` doesn't calculate remaining ttl properly before next acquisition attempt  
+Fixed - `scanInterval` setting check  
+Fixed - `ElementsSubscribeService.resubscribe()` method throws `RedissonShutdownException`  
+Fixed - `RMap.getAll()` method throws an exception if result of `RMap.keySet()` method passed as an argument  
+Fixed - Redis node random selection doesn't work properly  
+Fixed - concurrency problem during RLock expiration renewal (thanks to @seakider)  
+Fixed - `RListMultimap` throws too many results to unpack error  
+Fixed - entry shutdown during cluster slots migration check  
+
 ### 31-May-2024 - 3.31.0 released
 
 Feature - Spring Boot 3.3.0 integration  
