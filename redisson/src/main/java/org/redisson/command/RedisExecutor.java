@@ -118,9 +118,6 @@ public class RedisExecutor<V, R> {
 
         if (getClass() == RedisExecutor.class) {
             connectionManager.getServiceManager().addFuture(mainPromise);
-            mainPromise.whenComplete((r, e) -> {
-                connectionManager.getServiceManager().removeFuture(mainPromise);
-            });
         }
 
         if (connectionManager.getServiceManager().isShuttingDown()) {

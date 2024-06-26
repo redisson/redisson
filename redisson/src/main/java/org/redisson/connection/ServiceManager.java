@@ -339,25 +339,26 @@ public final class ServiceManager {
         return socketChannelClass;
     }
 
-    private final Set<CompletableFuture<?>> futures = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final AtomicInteger lastFuturesCounter = new AtomicInteger();
+    private final Deque<CompletableFuture<?>> lastFutures = new ConcurrentLinkedDeque<>();
 
     public void addFuture(CompletableFuture<?> future) {
-        futures.add(future);
-    }
-
-    public void removeFuture(CompletableFuture<?> future) {
-        futures.remove(future);
+        lastFutures.addLast(future);
+        if (lastFuturesCounter.incrementAndGet() > 100) {
+            lastFutures.pollFirst();
+            lastFuturesCounter.decrementAndGet();
+        }
     }
 
     public void shutdownFutures(long timeout, TimeUnit unit) {
-        CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        CompletableFuture<Void> future = CompletableFuture.allOf(lastFutures.toArray(new CompletableFuture[0]));
         try {
             future.get(timeout, unit);
         } catch (Exception e) {
             // skip
         }
-        futures.forEach(f -> f.completeExceptionally(new RedissonShutdownException("Redisson is shutdown")));
-        futures.clear();
+        lastFutures.forEach(f -> f.completeExceptionally(new RedissonShutdownException("Redisson is shutdown")));
+        lastFutures.clear();
     }
 
     public void close() {
