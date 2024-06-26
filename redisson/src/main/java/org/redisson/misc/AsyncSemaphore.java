@@ -62,7 +62,7 @@ public final class AsyncSemaphore {
     private void tryForkAndRun() {
         if (executorService != null) {
             int val = tasksLatch.get();
-            if (stackSize.get() > 100 * val
+            if (stackSize.get() > 25 * val
                     && tasksLatch.compareAndSet(val, val+1)) {
                 executorService.submit(() -> {
                     tasksLatch.decrementAndGet();
