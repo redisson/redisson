@@ -54,7 +54,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
     public ConnectionsHolder(RedisClient client, int poolMaxSize,
                              Function<RedisClient, CompletionStage<T>> connectionCallback,
                              ServiceManager serviceManager, boolean changeUsage) {
-        this.freeConnectionsCounter = new AsyncSemaphore(poolMaxSize);
+        this.freeConnectionsCounter = new AsyncSemaphore(poolMaxSize, serviceManager.getGroup());
         this.client = client;
         this.connectionCallback = connectionCallback;
         this.serviceManager = serviceManager;
@@ -215,9 +215,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
 
     private void connectTo(CompletableFuture<T> promise, RedisCommand<?> command) {
         if (promise.isDone()) {
-            serviceManager.getGroup().submit(() -> {
-                releaseConnection();
-            });
+            releaseConnection();
             return;
         }
 
@@ -249,5 +247,8 @@ public class ConnectionsHolder<T extends RedisConnection> {
         releaseConnection();
     }
 
+    public ServiceManager getServiceManager() {
+        return serviceManager;
+    }
 }
 

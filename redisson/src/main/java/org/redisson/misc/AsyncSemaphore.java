@@ -18,6 +18,7 @@ package org.redisson.misc;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -27,13 +28,22 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public final class AsyncSemaphore {
 
+    private final ExecutorService executorService;
+    private final AtomicInteger tasksLatch = new AtomicInteger(1);
+    private final AtomicInteger stackSize = new AtomicInteger();
+
     private final AtomicInteger counter;
     private final Queue<CompletableFuture<Void>> listeners = new ConcurrentLinkedQueue<>();
 
     public AsyncSemaphore(int permits) {
-        counter = new AtomicInteger(permits);
+        this(permits, null);
     }
-    
+
+    public AsyncSemaphore(int permits, ExecutorService executorService) {
+        counter = new AtomicInteger(permits);
+        this.executorService = executorService;
+    }
+
     public int queueSize() {
         return listeners.size();
     }
@@ -45,8 +55,24 @@ public final class AsyncSemaphore {
     public CompletableFuture<Void> acquire() {
         CompletableFuture<Void> future = new CompletableFuture<>();
         listeners.add(future);
-        tryRun();
+        tryForkAndRun();
         return future;
+    }
+
+    private void tryForkAndRun() {
+        if (executorService != null) {
+            int val = tasksLatch.get();
+            if (stackSize.get() > 100 * val
+                    && tasksLatch.compareAndSet(val, val+1)) {
+                executorService.submit(() -> {
+                    tasksLatch.decrementAndGet();
+                    tryRun();
+                });
+                return;
+            }
+        }
+
+        tryRun();
     }
 
     private void tryRun() {
@@ -58,7 +84,15 @@ public final class AsyncSemaphore {
                     return;
                 }
 
-                if (future.complete(null)) {
+                boolean complete;
+                if (executorService != null) {
+                    stackSize.incrementAndGet();
+                    complete = future.complete(null);
+                    stackSize.decrementAndGet();
+                } else {
+                    complete = future.complete(null);
+                }
+                if (complete) {
                     return;
                 }
             }
@@ -75,7 +109,7 @@ public final class AsyncSemaphore {
 
     public void release() {
         counter.incrementAndGet();
-        tryRun();
+        tryForkAndRun();
     }
 
     @Override

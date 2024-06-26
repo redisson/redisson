@@ -42,7 +42,7 @@ public class TrackedConnectionsHolder extends ConnectionsHolder<RedisConnection>
     private final AtomicInteger usage = new AtomicInteger();
 
     public TrackedConnectionsHolder(ConnectionsHolder<RedisConnection> holder) {
-        super(null, 0, null, null, false);
+        super(null, 0, null, holder.getServiceManager(), false);
         this.holder = holder;
     }
 
