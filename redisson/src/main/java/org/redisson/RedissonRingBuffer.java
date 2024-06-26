@@ -68,8 +68,10 @@ public class RedissonRingBuffer<V> extends RedissonQueue<V> implements RRingBuff
     public RFuture<Void> setCapacityAsync(int capacity) {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 "redis.call('set', KEYS[2], ARGV[1]); " +
-                      "local len = redis.call('llen', KEYS[1]); " +
-                      "redis.call('ltrim', KEYS[1], len - tonumber(ARGV[1]), len - 1); ",
+                        "local len = redis.call('llen', KEYS[1]); " +
+                        "if len > tonumber(ARGV[1]) then " +
+                            "redis.call('ltrim', KEYS[1], len - tonumber(ARGV[1]), -1); " +
+                        "end; ",
              Arrays.asList(getRawName(), settingsName), capacity);
     }
 

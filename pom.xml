@@ -144,7 +144,7 @@
             <dependency>
                <groupId>com.github.hazendaz.jmockit</groupId>
                <artifactId>jmockit</artifactId>
-               <version>1.52.0</version>
+               <version>1.54.0</version>
                <scope>test</scope>
             </dependency>
             <dependency>
@@ -208,7 +208,7 @@
           <plugin>
          	<groupId>org.sonatype.plugins</groupId>
          	<artifactId>nexus-staging-maven-plugin</artifactId>
-         	<version>1.6.13</version>
+         	<version>1.7.0</version>
          	<extensions>true</extensions>
                 <configuration>
                     <serverId>ossrepo</serverId>
