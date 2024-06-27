@@ -52,7 +52,7 @@ public class RedissonCache implements Cache {
     @Override
     public void putObject(Object o, Object o1) {
         check();
-        mapCache.put(o, o1, timeToLive, TimeUnit.MILLISECONDS, maxIdleTime, TimeUnit.MILLISECONDS);
+        mapCache.fastPut(o, o1, timeToLive, TimeUnit.MILLISECONDS, maxIdleTime, TimeUnit.MILLISECONDS);
     }
 
     @Override
