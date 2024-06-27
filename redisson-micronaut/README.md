@@ -58,7 +58,7 @@ redisson:
 
 #### 2.2 Cache settings
 
-|Setting prefix | Local cache | Data<br/>partitioning | Ultra-fast read/write |
+|Setting prefix | Local cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
 | ------------- | :-----------: | :----------:| :----------:|
 |redisson.caches.*<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
 |redisson.caches-native.*<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
