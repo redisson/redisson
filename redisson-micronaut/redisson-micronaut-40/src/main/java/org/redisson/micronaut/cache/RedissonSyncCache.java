@@ -37,7 +37,7 @@ public class RedissonSyncCache extends AbstractMapBasedSyncCache<RMap<Object, Ob
 
     private final ConversionService conversionService;
     private final ExecutorService executorService;
-    private final RedissonCacheConfiguration configuration;
+    private final BaseCacheConfiguration configuration;
     private final RMapCache<Object, Object> mapCache;
     private final RMap<Object, Object> map;
 
@@ -45,7 +45,7 @@ public class RedissonSyncCache extends AbstractMapBasedSyncCache<RMap<Object, Ob
                              RMapCache<Object, Object> mapCache,
                              RMap<Object, Object> map,
                              ExecutorService executorService,
-                             RedissonCacheConfiguration configuration) {
+                             BaseCacheConfiguration configuration) {
         super(conversionService, map);
         this.executorService = executorService;
         this.configuration = configuration;
