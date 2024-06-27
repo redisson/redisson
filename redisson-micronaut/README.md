@@ -61,8 +61,10 @@ redisson:
 |Setting prefix | Local cache | Data<br/>partitioning | Ultra-fast read/write |
 | ------------- | :-----------: | :----------:| :----------:|
 |redisson.caches.*<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
+|redisson.caches-native.*<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
 |redisson.caches.*<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
-|redisson.caches-v2.*<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ✔️ | ✔️ |
+|redisson.caches-native.*<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
+|redisson.caches-v2.*<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
 |redisson.local-caches.*<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ❌ | ✔️ |
 |redisson.local-caches-v2.*<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ✔️ | ✔️ |
 |redisson.clustered-caches.*<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
