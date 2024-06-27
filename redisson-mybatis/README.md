@@ -24,7 +24,7 @@ Below is the list of all MyBatis Cache implementations:
 |RedissonCacheNative<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | **native**| ❌ |
 |RedissonCache<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ | **scripted** | ✔️ |
 |RedissonCacheNative<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ | **native**| ✔️ |
-|RedissonCacheV2<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ✔️ | **advanced** | ✔️ |
+|RedissonCacheV2<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ | **advanced** | ✔️ |
 |RedissonLocalCachedCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ❌ |  **scripted** | ✔️ |
 |RedissonLocalCachedCacheV2<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ✔️ | **advanced** | ✔️ |
 |RedissonClusteredCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ |  **scripted** | ✔️ |
