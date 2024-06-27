@@ -74,7 +74,7 @@ Redisson allows to define follow settings per Cache instance:
 
 `redissonConfig` - defines path to redisson config in YAML format
 
-Examples:
+Example cache definitions:
 
 ```xml
 <cache type="org.redisson.mybatis.RedissonCache">
@@ -84,7 +84,16 @@ Examples:
   <property name="redissonConfig" value="redisson.yaml"/>
 </cache>
 
-<!-- or -->
+<cache type="org.redisson.mybatis.RedissonCacheNative">
+  <property name="timeToLive" value="200000"/>
+  <property name="redissonConfig" value="redisson.yaml"/>
+</cache>
+
+<cache type="org.redisson.mybatis.RedissonCacheV2">
+  <property name="timeToLive" value="200000"/>
+  <property name="redissonConfig" value="redisson.yaml"/>
+</cache>
+
 <cache type="org.redisson.mybatis.RedissonLocalCachedCache">
   <property name="timeToLive" value="200000"/>
   <property name="maxIdleTime" value="100000"/>
@@ -99,7 +108,18 @@ Examples:
   <property name="redissonConfig" value="redisson.yaml"/>
 </cache>
 
-<!-- or -->
+<cache type="org.redisson.mybatis.RedissonLocalCachedCacheV2">
+  <property name="timeToLive" value="200000"/>
+
+  <property name="localCacheEvictionPolicy" value="LRU"/>
+  <property name="localCacheSize" value="1000"/>
+  <property name="localCacheTimeToLive" value="2000000"/>
+  <property name="localCacheMaxIdleTime" value="1000000"/>
+  <property name="localCacheSyncStrategy" value="INVALIDATE"/>
+     
+  <property name="redissonConfig" value="redisson.yaml"/>
+</cache>
+
 <cache type="org.redisson.mybatis.RedissonClusteredCache">
   <property name="timeToLive" value="200000"/>
   <property name="maxIdleTime" value="100000"/>
@@ -107,7 +127,6 @@ Examples:
   <property name="redissonConfig" value="redisson.yaml"/>
 </cache>
 
-<!-- or -->
 <cache type="org.redisson.mybatis.RedissonClusteredLocalCachedCache">
   <property name="timeToLive" value="200000"/>
   <property name="maxIdleTime" value="100000"/>
