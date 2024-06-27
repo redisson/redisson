@@ -69,7 +69,7 @@ Below is the list of all Cache implementations:
 
 |`impementation`<br/>setting value | Local<br/>cache | Data<br/>partitioning | Entry<br/>eviction | Ultra-fast<br/>read/write |
 | ------------- | :-----------: | :-----------:| :----------:| :---------:|
-|`standard`<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ | ❌ |
+|`standard`<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | **scripted** | ❌ |
 |`native`<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | **native**| ❌ |
 |`standard`<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ❌ | ❌ | **scripted** | ✔️ |
 |`native`<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ❌ | ❌ | **native**| ✔️ |
