@@ -59,11 +59,11 @@ Redisson provides various Cache implementations with multiple important features
 
 **data partitioning** - although Map object is cluster compatible its content isn't scaled/partitioned across multiple Redis master nodes in cluster. Data partitioning allows to scale available memory, read/write operations and entry eviction process for individual Map instance in Redis cluster.  
 
-**scripted entry eviction** - allows to define `time to live` or `max idle time` parameters per map entry. Redis hash structure doesn't support eviction thus it's done on Redisson side through a custom scheduled task which removes expired entries using Lua script. Eviction task is started once by getMapCache() method execution per unique object name. So even if instance isn't used and has expired entries it should be get through getMapCache() method to start the eviction process. This leads to extra Redis calls and eviction task per unique map object name.
+**`scripted` entry eviction** - allows to define `time to live` or `max idle time` parameters per map entry. Redis hash structure doesn't support eviction thus it's done on Redisson side through a custom scheduled task which removes expired entries using Lua script. Eviction task is started once by getMapCache() method execution per unique object name. So even if instance isn't used and has expired entries it should be get through getMapCache() method to start the eviction process. This leads to extra Redis calls and eviction task per unique map object name.
 
-**advanced entry eviction** - allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task.
+**`advanced` entry eviction** - allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task.
 
-**native entry eviction** - allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task. Requires **Redis 7.4+**.
+**`native` entry eviction** - allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task. Requires **Redis 7.4+**.
 
 Below is the list of all Cache implementations:  
 
