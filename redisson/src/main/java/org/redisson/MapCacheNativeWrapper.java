@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import org.redisson.api.RFuture;
 import org.redisson.api.RMapCacheNative;
 
 import java.time.Duration;
@@ -35,8 +36,23 @@ public class MapCacheNativeWrapper<K, V> extends RedissonMapCache<K, V> {
     }
 
     @Override
+    public boolean fastPut(K key, V value) {
+        return cache.fastPut(key, value);
+    }
+
+    @Override
+    public RFuture<Boolean> fastPutAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
+        return cache.fastPutAsync(key, value, Duration.ofMillis(ttlUnit.toMillis(ttl)));
+    }
+
+    @Override
     public boolean fastPut(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
         return cache.fastPut(key, value, Duration.ofMillis(ttlUnit.toMillis(ttl)));
+    }
+
+    @Override
+    public RFuture<V> putIfAbsentAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
+        return cache.putIfAbsentAsync(key, value, Duration.ofMillis(ttlUnit.toMillis(ttl)));
     }
 
     @Override
@@ -52,6 +68,11 @@ public class MapCacheNativeWrapper<K, V> extends RedissonMapCache<K, V> {
     @Override
     public void clear() {
         cache.clear();
+    }
+
+    @Override
+    public RFuture<Boolean> clearAsync() {
+        return cache.clearAsync();
     }
 
     @Override
