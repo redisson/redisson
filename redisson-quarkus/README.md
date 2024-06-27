@@ -69,15 +69,15 @@ Below is the list of all Cache implementations:
 
 |`impementation`<br/>setting value | Local<br/>cache | Data<br/>partitioning | Entry<br/>eviction | Ultra-fast<br/>read/write |
 | ------------- | :-----------: | :-----------:| :----------:| :---------:|
-|standard<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ | ❌ |
-|native<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | **native**| ❌ |
-|standard<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ❌ | ❌ | **scripted** | ✔️ |
-|native<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ❌ | ❌ | **native**| ✔️ |
-|v2<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | **advanced** | ✔️ |
-|localcache<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ❌ | **scripted** | ✔️ |
-|localcache_v2<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ✔️ | **advanced** | ✔️ |
-|clustered<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | **scripted** | ✔️ |
-|clustered_localcache<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ✔️ | **scripted** | ✔️ |
+|`standard`<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ | ❌ |
+|`native`<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | **native**| ❌ |
+|`standard`<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ❌ | ❌ | **scripted** | ✔️ |
+|`native`<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ❌ | ❌ | **native**| ✔️ |
+|`v2`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | **advanced** | ✔️ |
+|`localcache`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ❌ | **scripted** | ✔️ |
+|`localcache_v2`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ✔️ | **advanced** | ✔️ |
+|`clustered`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | **scripted** | ✔️ |
+|`clustered_localcache`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ✔️ | **scripted** | ✔️ |
 
 `expire-after-write` setting defines time to live of the item stored in the cache. Default value is `0`.  
 `expire-after-access` setting defines time to live added to the item after read operation. Default value is `0`.  
