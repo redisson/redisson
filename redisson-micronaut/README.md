@@ -62,7 +62,9 @@ redisson:
 | ------------- | :-----------: | :----------:| :----------:|
 |redisson.caches.*<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
 |redisson.caches.*<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
+|redisson.caches-v2.*<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ✔️ | ✔️ |
 |redisson.local-caches.*<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ❌ | ✔️ |
+|redisson.local-caches-v2.*<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ✔️ | ✔️ |
 |redisson.clustered-caches.*<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
 |redisson.clustered-local-caches.*<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
 
