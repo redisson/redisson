@@ -117,7 +117,7 @@ public class RedissonCache implements Cache {
     @Override
     public void put(Object key, Object value) {
         if (!allowNullValues && value == null) {
-            map.remove(key);
+            map.fastRemove(key);
             return;
         }
         
