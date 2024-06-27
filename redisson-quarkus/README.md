@@ -79,9 +79,9 @@ Below is the list of all Cache implementations:
 |clustered<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | **scripted** | ✔️ |
 |clustered_localcache<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ✔️ | **scripted** | ✔️ |
 
-`expire-after-write` setting defines time to live of the item stored in the cache  
-`expire-after-access` setting defines time to live added to the item after read operation  
-`implementation` setting defines the type of cache used
+`expire-after-write` setting defines time to live of the item stored in the cache. Default value is `0`.  
+`expire-after-access` setting defines time to live added to the item after read operation. Default value is `0`.  
+`implementation` setting defines the type of cache used. Default value is `standard`. 
 
 ```
 quarkus.cache.type=redisson
