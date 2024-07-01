@@ -19,7 +19,7 @@ Below is the list of all available factories with local cache and/or data partit
 
 |Class name | Local cache | Data<br/>partitioning | Entry<br/>eviction | Advanced<br/>entry eviction | Ultra-fast<br/>read/write |
 | ------------- | :-----------: | :----------:| :----------:| :----------:| :----------:|
-|RedissonRegionFactory<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ | ❌ | ❌ |
+|RedissonRegionFactory<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ✔️ | ❌ | ❌ |
 |RedissonRegionFactory<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ | ❌ | ✔️ |
 |RedissonRegionV2Factory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ❌ | ✔️ | ❌ | ✔️ | ✔️ |
 |RedissonLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ❌ | ✔️ | ❌ | ✔️ |
