@@ -87,10 +87,10 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
         encode(params, c);
         return commandExecutor.evalReadAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "local fromIndex = table.remove(ARGV, 1);" +
-                "local toIndex = table.remove(ARGV, 2);" +
+                "local toIndex = table.remove(ARGV, 1);" +
                 "local items = redis.call('lrange', KEYS[1], tonumber(fromIndex), tonumber(toIndex)) " +
                 "for i=1, #items do " +
-                    "for j = 1, #ARGV, 1 do " +
+                    "for j = #ARGV, 1, -1 do " +
                         "if items[i] == ARGV[j] then " +
                             "table.remove(ARGV, j) " +
                         "end " +
@@ -163,7 +163,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "local v = 0; " +
                 "local fromIndex = table.remove(ARGV, 1);" +
-                "local toIndex = table.remove(ARGV, 2);" +
+                "local toIndex = table.remove(ARGV, 1);" +
                 "local count = table.remove(ARGV, 3);" +
                 "local items = redis.call('lrange', KEYS[1], fromIndex, toIndex); " +
 
@@ -189,7 +189,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "local changed = 0 " +
                 "local fromIndex = table.remove(ARGV, 1);" +
-                "local toIndex = table.remove(ARGV, 2);" +
+                "local toIndex = table.remove(ARGV, 1);" +
                 "local items = redis.call('lrange', KEYS[1], fromIndex, toIndex) "
                    + "local i = 1 "
                    + "while i <= #items do "

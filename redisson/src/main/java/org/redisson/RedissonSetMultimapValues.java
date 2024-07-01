@@ -454,7 +454,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
               + "end; " +
                 "local s = redis.call('smembers', KEYS[2]);" +
                         "for i = 1, #s, 1 do " +
-                            "for j = 2, #ARGV, 1 do "
+                            "for j = #ARGV, 3, -1 do "
                             + "if ARGV[j] == s[i] "
                             + "then table.remove(ARGV, j) end "
                         + "end; "
@@ -536,7 +536,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
                        + "while i <= #s do "
                             + "local element = s[i] "
                             + "local isInAgrs = false "
-                            + "for j = 2, #ARGV, 1 do "
+                            + "for j = 3, #ARGV, 1 do "
                                 + "if ARGV[j] == element then "
                                     + "isInAgrs = true "
                                     + "break "
@@ -570,7 +570,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
                       + "end; " +
                 
                         "local v = 0 " +
-                        "for i = 2, #ARGV, 1 do "
+                        "for i = 3, #ARGV, 1 do "
                             + "if redis.call('srem', KEYS[2], ARGV[i]) == 1 "
                             + "then v = 1 end "
                         +"end "
