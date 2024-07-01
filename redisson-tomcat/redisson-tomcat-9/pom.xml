@@ -29,7 +29,7 @@
         <dependency>
             <groupId>org.apache.tomcat</groupId>
             <artifactId>tomcat-jasper</artifactId>
-            <version>9.0.74</version>
+            <version>10.1.25</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
