@@ -392,7 +392,7 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-autoconfigure</artifactId>
             <!-- 2.0.0+ -->
-            <version>3.2.5</version>
+            <version>3.3.1</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
