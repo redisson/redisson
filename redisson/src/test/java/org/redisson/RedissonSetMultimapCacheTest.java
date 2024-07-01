@@ -42,7 +42,7 @@ public class RedissonSetMultimapCacheTest extends RedissonBaseMultimapCacheTest 
         multimap.put("1", "3");
         multimap.put("1", "3");
 
-        assertThat(multimap.get("1").containsAll(List.of("1", "2"))).isTrue();
+        assertThat(multimap.get("1").containsAll(List.of("1", "1", "1"))).isTrue();
         assertThat(multimap.get("1").containsAll(List.of("1", "2", "4"))).isFalse();
         assertThat(multimap.get("1").containsAll(List.of("1", "2", "1"))).isTrue();
         assertThat(multimap.get("1").containsAll(List.of("1", "1"))).isTrue();
