@@ -14,8 +14,8 @@
     <name>Redisson/Quarkus v3.x.x cache</name>
 
      <modules>
-       <module>deployment</module>
        <module>runtime</module>
+       <module>deployment</module>
        <module>integration-tests</module>
      </modules>
 
