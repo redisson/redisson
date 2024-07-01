@@ -73,7 +73,7 @@ public class RedissonRegionFactory extends RegionFactoryTemplate {
 
     public static final String FALLBACK = CONFIG_PREFIX + "fallback";
 
-    private RedissonClient redisson;
+    RedissonClient redisson;
     private CacheKeysFactory cacheKeysFactory;
     protected boolean fallback;
 
