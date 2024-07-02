@@ -807,7 +807,7 @@ public class RedissonSearch implements RSearch {
 
     @Override
     public RFuture<List<String>> dumpDictAsync(String dictionary) {
-        return commandExecutor.readAsync(dictionary, LongCodec.INSTANCE, RedisCommands.FT_DICTDUMP, dictionary);
+        return commandExecutor.readAsync(dictionary, StringCodec.INSTANCE, RedisCommands.FT_DICTDUMP, dictionary);
     }
 
     @Override
@@ -907,5 +907,15 @@ public class RedissonSearch implements RSearch {
         args.add(synonymGroupId);
         args.addAll(Arrays.asList(terms));
         return commandExecutor.writeAsync(indexName, StringCodec.INSTANCE, RedisCommands.FT_SYNUPDATE, args.toArray());
+    }
+
+    @Override
+    public List<String> getIndexes() {
+        return commandExecutor.get(getIndexesAsync());
+    }
+
+    @Override
+    public RFuture<List<String>> getIndexesAsync() {
+        return commandExecutor.readAsync((String) null, StringCodec.INSTANCE, RedisCommands.FT_LIST);
     }
 }

@@ -877,6 +877,7 @@ public interface RedisCommands {
     RedisStrictCommand<Long> FT_DICTDEL = new RedisStrictCommand<>("FT.DICTDEL");
 
     RedisStrictCommand<List<String>> FT_DICTDUMP = new RedisStrictCommand<>("FT.DICTDUMP", new StringListReplayDecoder());
+    RedisStrictCommand<List<String>> FT_LIST = new RedisStrictCommand<>("FT._LIST", new StringListReplayDecoder());
 
     RedisStrictCommand<Void> FT_DROPINDEX = new RedisStrictCommand<>("FT.DROPINDEX", new VoidReplayConvertor());
     RedisStrictCommand<Void> FT_CURSOR_DEL = new RedisStrictCommand<>("FT.CURSOR", "DEL", new VoidReplayConvertor());

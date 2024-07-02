@@ -210,7 +210,7 @@ public interface RSearchRx {
      * @param indexName index name
      * @return index info
      */
-    IndexInfo info(String indexName);
+    Single<IndexInfo> info(String indexName);
 
     /**
      * Executes spell checking by defined index name and query.
@@ -220,11 +220,11 @@ public interface RSearchRx {
      * </pre>
      *
      * @param indexName index name
-     * @param query query
-     * @param options spell checking options
+     * @param query     query
+     * @param options   spell checking options
      * @return result
      */
-    Map<String, Map<String, Double>> spellcheck(String indexName, String query, SpellcheckOptions options);
+    Single<Map<String, Map<String, Double>>> spellcheck(String indexName, String query, SpellcheckOptions options);
 
     /**
      * Returns synonyms mapped by word by defined index name
@@ -232,7 +232,7 @@ public interface RSearchRx {
      * @param indexName index name
      * @return synonyms map
      */
-    Map<String, List<String>> dumpSynonyms(String indexName);
+    Single<Map<String, List<String>>> dumpSynonyms(String indexName);
 
     /**
      * Updates synonyms
@@ -242,5 +242,12 @@ public interface RSearchRx {
      * @param terms terms
      */
     Completable updateSynonyms(String indexName, String synonymGroupId, String... terms);
+
+    /**
+     * Returns list of all created indexes
+     *
+     * @return list of indexes
+     */
+    Single<List<String>> getIndexes();
 
 }

@@ -240,4 +240,11 @@ public interface RSearch extends RSearchAsync {
      */
     void updateSynonyms(String indexName, String synonymGroupId, String... terms);
 
+    /**
+     * Returns list of all created indexes
+     *
+     * @return list of indexes
+     */
+    List<String> getIndexes();
+
 }

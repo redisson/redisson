@@ -240,4 +240,11 @@ public interface RSearchAsync {
      */
     RFuture<Void> updateSynonymsAsync(String indexName, String synonymGroupId, String... terms);
 
+    /**
+     * Returns list of all created indexes
+     *
+     * @return list of indexes
+     */
+    RFuture<List<String>> getIndexesAsync();
+
 }

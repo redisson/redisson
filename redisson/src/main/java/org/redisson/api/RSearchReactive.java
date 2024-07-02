@@ -241,4 +241,10 @@ public interface RSearchReactive {
      */
     Mono<Void> updateSynonyms(String indexName, String synonymGroupId, String... terms);
 
+    /**
+     * Returns list of all created indexes
+     *
+     * @return list of indexes
+     */
+    Mono<List<String>> getIndexes();
 }
