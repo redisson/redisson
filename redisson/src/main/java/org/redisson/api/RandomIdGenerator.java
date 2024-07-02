@@ -28,12 +28,12 @@ import java.util.Random;
  */
 public class RandomIdGenerator implements IdGenerator {
 
-    private static final Random random = RandomXoshiro256PlusPlus.create();
+    private static final Random RANDOM = RandomXoshiro256PlusPlus.create();
 
     @Override
     public String generateId() {
         byte[] id = new byte[16];
-        random.nextBytes(id);
+        RANDOM.nextBytes(id);
         return ByteBufUtil.hexDump(id);
     }
 
