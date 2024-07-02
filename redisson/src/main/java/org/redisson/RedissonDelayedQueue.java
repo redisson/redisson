@@ -320,7 +320,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
                     + "local v = redis.call('lindex', KEYS[1], i);"
                     + "local randomId, value = struct.unpack('Bc0Lc0', v);"
                     
-                    + "for j = 1, #ARGV, 1 do "
+                    + "for j = #ARGV, 1, -1 do "
                         + "if value == ARGV[j] then "
                           + "table.remove(ARGV, j) "
                         + "end; "

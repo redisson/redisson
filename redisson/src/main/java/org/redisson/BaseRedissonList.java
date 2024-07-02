@@ -139,7 +139,7 @@ public class BaseRedissonList<V> extends RedissonExpirable {
         return commandExecutor.evalReadAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "local items = redis.call('lrange', KEYS[1], 0, -1) " +
                 "for i=1, #items do " +
-                    "for j = 1, #ARGV, 1 do " +
+                    "for j = #ARGV, 1, -1 do " +
                         "if items[i] == ARGV[j] then " +
                             "table.remove(ARGV, j) " +
                         "end " +

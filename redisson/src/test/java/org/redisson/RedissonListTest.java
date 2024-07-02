@@ -758,6 +758,26 @@ public class RedissonListTest extends RedisDockerTest {
     }
 
     @Test
+    public void testSubListContainsAll() {
+        List<Integer> list = redisson.getList("list");
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+        list.add(6);
+        list.add(7);
+        list.add(8);
+        list.add(9);
+        list.add(10);
+
+        List<Integer> subList = list.subList(3, 7);
+        assertThat(subList.containsAll(List.of(4, 5))).isTrue();
+        assertThat(subList.containsAll(List.of(4, 4))).isTrue();
+        assertThat(subList.containsAll(List.of(4, 5, 4))).isTrue();
+    }
+
+    @Test
     public void testSubListMiddle() {
         List<Integer> list = redisson.getList("list");
         list.add(1);
@@ -1160,6 +1180,9 @@ public class RedissonListTest extends RedisDockerTest {
         Assertions.assertTrue(list.containsAll(Arrays.asList(30, 11)));
         Assertions.assertFalse(list.containsAll(Arrays.asList(30, 711, 11)));
         Assertions.assertTrue(list.containsAll(Arrays.asList(30)));
+
+        Assertions.assertTrue(list.containsAll(Arrays.asList(30, 30)));
+        Assertions.assertTrue(list.containsAll(Arrays.asList(30, 11, 30)));
     }
 
     @Test

@@ -105,7 +105,10 @@ public class RedissonDelayedQueueTest extends RedisDockerTest {
         
         assertThat(dealyedQueue.containsAll(Arrays.asList(1, 2))).isTrue();
         assertThat(dealyedQueue.containsAll(Arrays.asList(1, 2, 4))).isFalse();
-        
+
+        assertThat(dealyedQueue.containsAll(Arrays.asList(1, 1))).isTrue();
+        assertThat(dealyedQueue.containsAll(Arrays.asList(1, 2, 1))).isTrue();
+
         dealyedQueue.destroy();
     }
     

@@ -232,7 +232,7 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
               + "end; " +
                 "local items = redis.call('lrange', KEYS[2], 0, -1);" +
                         "for i = 1, #items, 1 do " +
-                            "for j = 2, #ARGV, 1 do "
+                            "for j = #ARGV, 3, -1 do "
                             + "if ARGV[j] == items[i] "
                             + "then table.remove(ARGV, j) end "
                         + "end; "
@@ -285,7 +285,7 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
                       + "end; " +
                 
                         "local v = 0 " +
-                        "for i = 2, #ARGV, 1 do "
+                        "for i = 3, #ARGV, 1 do "
                             + "if redis.call('lrem', KEYS[2], 0, ARGV[i]) == 1 "
                             + "then v = 1 end "
                         +"end "
@@ -326,7 +326,7 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
                        + "while i <= #s do "
                             + "local element = s[i]; "
                             + "local isInAgrs = false; "
-                            + "for j = 2, #ARGV, 1 do "
+                            + "for j = 3, #ARGV, 1 do "
                                 + "if ARGV[j] == element then "
                                     + "isInAgrs = true; "
                                     + "break; "
