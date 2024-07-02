@@ -16,8 +16,9 @@
 package org.redisson.api;
 
 import io.netty.buffer.ByteBufUtil;
+import org.redisson.misc.RandomXoshiro256PlusPlus;
 
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Random;
 
 /**
  * Random identifier
@@ -27,10 +28,12 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public class RandomIdGenerator implements IdGenerator {
 
+    private static final Random random = RandomXoshiro256PlusPlus.create();
+
     @Override
     public String generateId() {
         byte[] id = new byte[16];
-        ThreadLocalRandom.current().nextBytes(id);
+        random.nextBytes(id);
         return ByteBufUtil.hexDump(id);
     }
 
