@@ -68,7 +68,7 @@ public final class AggregationOptions {
     }
 
     public AggregationOptions loadAll() {
-        this.loadAll = loadAll;
+        this.loadAll = true;
         return this;
     }
 
