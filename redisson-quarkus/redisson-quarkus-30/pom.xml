@@ -14,8 +14,8 @@
     <name>Redisson/Quarkus integration</name>
 
     <modules>
-        <module>cache</module>
         <module>cdi</module>
+        <module>cache</module>
     </modules>
 
      <properties>
