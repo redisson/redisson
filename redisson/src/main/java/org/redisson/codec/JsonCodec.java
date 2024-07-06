@@ -19,7 +19,7 @@ import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 
 /**
- * Json codec interface.
+ * Json codec interface for RJsonBucket object.
  *
  * @author Nikita Koksharov
  *
