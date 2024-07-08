@@ -439,7 +439,7 @@
         <dependency>
             <groupId>org.apache.tomcat</groupId>
             <artifactId>tomcat-annotations-api</artifactId>
-            <version>9.0.82</version>
+            <version>10.1.25</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
