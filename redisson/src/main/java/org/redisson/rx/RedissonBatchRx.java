@@ -62,7 +62,7 @@ public class RedissonBatchRx implements RBatchRx {
     }
 
     @Override
-    public <V> RJsonBucketRx<V> getJsonBucket(String name, JsonCodec<V> codec) {
+    public <V> RJsonBucketRx<V> getJsonBucket(String name, JsonCodec codec) {
         return RxProxyBuilder.create(executorService, new RedissonJsonBucket<V>(codec, executorService, name), RJsonBucketRx.class);
     }
 

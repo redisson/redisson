@@ -37,7 +37,7 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
      *
      * @param <T> the type of object
      */
-    <T> Mono<T> get(JsonCodec<T> codec, String... paths);
+    <T> Mono<T> get(JsonCodec codec, String... paths);
 
     /**
      * Sets Json object by JSONPath only if previous value is empty
@@ -92,7 +92,7 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
      * @param newValue value to set
      * @return previous value
      */
-    <T> Mono<T> getAndSet(JsonCodec<T> codec, String path, Object newValue);
+    <T> Mono<T> getAndSet(JsonCodec codec, String path, Object newValue);
 
     /**
      * Stores object into element by specified JSONPath.
@@ -259,7 +259,7 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
      *
      * @param <T> the type of object
      */
-    <T> Mono<T> arrayPollLast(JsonCodec<T> codec, String path);
+    <T> Mono<T> arrayPollLast(JsonCodec codec, String path);
 
     /**
      * Polls last element of arrays specified by JSONPath.
@@ -271,7 +271,7 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
      *
      * @param <T> the type of object
      */
-    <T> Mono<List<T>> arrayPollLastMulti(JsonCodec<T> codec, String path);
+    <T> Mono<List<T>> arrayPollLastMulti(JsonCodec codec, String path);
 
     /**
      * Polls first element of array specified by JSONPath.
@@ -282,7 +282,7 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
      *
      * @param <T> the type of object
      */
-    <T> Mono<T> arrayPollFirst(JsonCodec<T> codec, String path);
+    <T> Mono<T> arrayPollFirst(JsonCodec codec, String path);
 
     /**
      * Polls first element of arrays specified by JSONPath.
@@ -294,7 +294,7 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
      *
      * @param <T> the type of object
      */
-    <T> Mono<List<T>> arrayPollFirstMulti(JsonCodec<T> codec, String path);
+    <T> Mono<List<T>> arrayPollFirstMulti(JsonCodec codec, String path);
 
     /**
      * Pops element located at index of array specified by JSONPath.
@@ -306,7 +306,7 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
      *
      * @param <T> the type of object
      */
-    <T> Mono<T> arrayPop(JsonCodec<T> codec, String path, Mono<Long> index);
+    <T> Mono<T> arrayPop(JsonCodec codec, String path, Mono<Long> index);
 
     /**
      * Pops elements located at index of arrays specified by JSONPath.
@@ -319,7 +319,7 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
      *
      * @param <T> the type of object
      */
-    <T> Mono<List<T>> arrayPopMulti(JsonCodec<T> codec, String path, Mono<Long> index);
+    <T> Mono<List<T>> arrayPopMulti(JsonCodec codec, String path, Mono<Long> index);
 
     /**
      * Trims array specified by JSONPath in range

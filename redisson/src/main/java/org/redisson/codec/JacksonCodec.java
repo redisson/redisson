@@ -44,7 +44,7 @@ import java.io.OutputStream;
  * @author Nikita Koksharov
  *
  */
-public class JacksonCodec<T> implements JsonCodec<T> {
+public class JacksonCodec<T> implements JsonCodec {
 
     private final Encoder encoder = new Encoder() {
         @Override
@@ -143,12 +143,12 @@ public class JacksonCodec<T> implements JsonCodec<T> {
     }
 
     @Override
-    public Encoder getValueEncoder() {
+    public Encoder getEncoder() {
         return encoder;
     }
 
     @Override
-    public Decoder<Object> getValueDecoder() {
+    public Decoder<Object> getDecoder() {
         return decoder;
     }
 }

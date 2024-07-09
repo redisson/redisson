@@ -61,7 +61,7 @@ public class RedissonBatchReactive implements RBatchReactive {
     }
 
     @Override
-    public <V> RJsonBucketReactive<V> getJsonBucket(String name, JsonCodec<V> codec) {
+    public <V> RJsonBucketReactive<V> getJsonBucket(String name, JsonCodec codec) {
         return ReactiveProxyBuilder.create(executorService, new RedissonJsonBucket<>(codec, executorService, name), RJsonBucketReactive.class);
     }
 

@@ -357,7 +357,7 @@ public class RedissonRx implements RedissonRxClient {
     }
 
     @Override
-    public <V> RJsonBucketRx<V> getJsonBucket(String name, JsonCodec<V> codec) {
+    public <V> RJsonBucketRx<V> getJsonBucket(String name, JsonCodec codec) {
         return RxProxyBuilder.create(commandExecutor, new RedissonJsonBucket<>(codec, commandExecutor, name), RJsonBucketRx.class);
     }
 

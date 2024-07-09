@@ -422,7 +422,7 @@ public class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
-    public <V> RJsonBucketReactive<V> getJsonBucket(String name, JsonCodec<V> codec) {
+    public <V> RJsonBucketReactive<V> getJsonBucket(String name, JsonCodec codec) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonJsonBucket<V>(codec, commandExecutor, name), RJsonBucketReactive.class);
     }
 

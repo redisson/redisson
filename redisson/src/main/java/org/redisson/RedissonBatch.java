@@ -49,7 +49,7 @@ public class RedissonBatch implements RBatch {
     }
 
     @Override
-    public <V> RJsonBucketAsync<V> getJsonBucket(String name, JsonCodec<V> codec) {
+    public <V> RJsonBucketAsync<V> getJsonBucket(String name, JsonCodec codec) {
         return new RedissonJsonBucket<>(codec, executorService, name);
     }
 

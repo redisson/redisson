@@ -592,7 +592,7 @@ public interface RedissonReactiveClient {
      * @param codec codec for values
      * @return JsonBucket object
      */
-    <V> RJsonBucketReactive<V> getJsonBucket(String name, JsonCodec<V> codec);
+    <V> RJsonBucketReactive<V> getJsonBucket(String name, JsonCodec codec);
 
     /**
      * Returns JSON data holder instance with specified <code>options</code>.

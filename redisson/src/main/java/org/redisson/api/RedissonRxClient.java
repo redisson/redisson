@@ -581,7 +581,7 @@ public interface RedissonRxClient {
      * @param codec codec for values
      * @return JsonBucket object
      */
-    <V> RJsonBucketRx<V> getJsonBucket(String name, JsonCodec<V> codec);
+    <V> RJsonBucketRx<V> getJsonBucket(String name, JsonCodec codec);
 
     /**
      * Returns JSON data holder instance with specified <code>options</code>.

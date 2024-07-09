@@ -15,24 +15,23 @@
  */
 package org.redisson.client.codec;
 
-import java.io.IOException;
-import java.nio.charset.Charset;
-
-import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Decoder;
-import org.redisson.client.protocol.Encoder;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.util.CharsetUtil;
+import org.redisson.client.handler.State;
+import org.redisson.client.protocol.Decoder;
+import org.redisson.client.protocol.Encoder;
 import org.redisson.codec.JsonCodec;
+
+import java.io.IOException;
+import java.nio.charset.Charset;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class StringCodec extends BaseCodec implements JsonCodec<String > {
+public class StringCodec extends BaseCodec implements JsonCodec {
 
     public static final StringCodec INSTANCE = new StringCodec();
 
@@ -82,4 +81,13 @@ public class StringCodec extends BaseCodec implements JsonCodec<String > {
         return encoder;
     }
 
+    @Override
+    public Encoder getEncoder() {
+        return encoder;
+    }
+
+    @Override
+    public Decoder<Object> getDecoder() {
+        return decoder;
+    }
 }

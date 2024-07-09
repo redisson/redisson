@@ -283,7 +283,7 @@ public final class Redisson implements RedissonClient {
     }
 
     @Override
-    public <V> RJsonBucket<V> getJsonBucket(String name, JsonCodec<V> codec) {
+    public <V> RJsonBucket<V> getJsonBucket(String name, JsonCodec codec) {
         return new RedissonJsonBucket<>(codec, commandExecutor, name);
     }
 

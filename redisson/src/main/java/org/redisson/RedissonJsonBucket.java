@@ -52,7 +52,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBucket<V> {
 
-    public RedissonJsonBucket(JsonCodec<V> codec, CommandAsyncExecutor connectionManager, String name) {
+    public RedissonJsonBucket(JsonCodec codec, CommandAsyncExecutor connectionManager, String name) {
         super(new JsonCodecWrapper(codec), connectionManager, name);
     }
 
@@ -101,12 +101,12 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
     }
 
     @Override
-    public <T> T get(JsonCodec<T> codec, String... paths) {
+    public <T> T get(JsonCodec codec, String... paths) {
         return get(getAsync(codec, paths));
     }
 
     @Override
-    public <T> RFuture<T> getAsync(JsonCodec<T> codec, String... paths) {
+    public <T> RFuture<T> getAsync(JsonCodec codec, String... paths) {
         if (getServiceManager().getCfg().getProtocol() == Protocol.RESP3) {
             if (paths.length == 0) {
                 paths = new String[]{"."};
@@ -356,12 +356,12 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
     }
 
     @Override
-    public <T> T getAndSet(JsonCodec<T> codec, String path, Object newValue) {
+    public <T> T getAndSet(JsonCodec codec, String path, Object newValue) {
         return get(getAndSetAsync(codec, path, newValue));
     }
 
     @Override
-    public <T> RFuture<T> getAndSetAsync(JsonCodec<T> codec, String path, Object newValue) {
+    public <T> RFuture<T> getAndSetAsync(JsonCodec codec, String path, Object newValue) {
         if (newValue == null) {
             return commandExecutor.evalWriteAsync(getRawName(), new JsonCodecWrapper(codec), RedisCommands.EVAL_OBJECT,
                     "local v = redis.call('json.get', KEYS[1], ARGV[1]); " +
@@ -671,62 +671,62 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
     }
 
     @Override
-    public <T> T arrayPollLast(JsonCodec<T> codec, String path) {
+    public <T> T arrayPollLast(JsonCodec codec, String path) {
         return get(arrayPollLastAsync(codec, path));
     }
 
     @Override
-    public <T> RFuture<T> arrayPollLastAsync(JsonCodec<T> codec, String path) {
+    public <T> RFuture<T> arrayPollLastAsync(JsonCodec codec, String path) {
         return commandExecutor.writeAsync(getRawName(), new JsonCodecWrapper(codec), RedisCommands.JSON_ARRPOP, getRawName(), path);
     }
 
     @Override
-    public <T> List<T> arrayPollLastMulti(JsonCodec<T> codec, String path) {
+    public <T> List<T> arrayPollLastMulti(JsonCodec codec, String path) {
         return get(arrayPollLastMultiAsync(codec, path));
     }
 
     @Override
-    public <T> RFuture<List<T>> arrayPollLastMultiAsync(JsonCodec<T> codec, String path) {
+    public <T> RFuture<List<T>> arrayPollLastMultiAsync(JsonCodec codec, String path) {
         return commandExecutor.writeAsync(getRawName(), new JsonCodecWrapper(codec), RedisCommands.JSON_ARRPOP_LIST, getRawName(), path);
     }
 
     @Override
-    public <T> T arrayPollFirst(JsonCodec<T> codec, String path) {
+    public <T> T arrayPollFirst(JsonCodec codec, String path) {
         return get(arrayPollFirstAsync(codec, path));
     }
 
     @Override
-    public <T> RFuture<T> arrayPollFirstAsync(JsonCodec<T> codec, String path) {
+    public <T> RFuture<T> arrayPollFirstAsync(JsonCodec codec, String path) {
         return commandExecutor.writeAsync(getRawName(), new JsonCodecWrapper(codec), RedisCommands.JSON_ARRPOP, getRawName(), path, 0);
     }
 
     @Override
-    public <T> List<T> arrayPollFirstMulti(JsonCodec<T> codec, String path) {
+    public <T> List<T> arrayPollFirstMulti(JsonCodec codec, String path) {
         return get(arrayPollFirstMultiAsync(codec, path));
     }
 
     @Override
-    public <T> RFuture<List<T>> arrayPollFirstMultiAsync(JsonCodec<T> codec, String path) {
+    public <T> RFuture<List<T>> arrayPollFirstMultiAsync(JsonCodec codec, String path) {
         return commandExecutor.writeAsync(getRawName(), new JsonCodecWrapper(codec), RedisCommands.JSON_ARRPOP_LIST, getRawName(), path, 0);
     }
 
     @Override
-    public <T> T arrayPop(JsonCodec<T> codec, String path, long index) {
+    public <T> T arrayPop(JsonCodec codec, String path, long index) {
         return get(arrayPopAsync(codec, path, index));
     }
 
     @Override
-    public <T> RFuture<T> arrayPopAsync(JsonCodec<T> codec, String path, long index) {
+    public <T> RFuture<T> arrayPopAsync(JsonCodec codec, String path, long index) {
         return commandExecutor.writeAsync(getRawName(), new JsonCodecWrapper(codec), RedisCommands.JSON_ARRPOP, getRawName(), path, index);
     }
 
     @Override
-    public <T> List<T> arrayPopMulti(JsonCodec<T> codec, String path, long index) {
+    public <T> List<T> arrayPopMulti(JsonCodec codec, String path, long index) {
         return get(arrayPopMultiAsync(codec, path, index));
     }
 
     @Override
-    public <T> RFuture<List<T>> arrayPopMultiAsync(JsonCodec<T> codec, String path, long index) {
+    public <T> RFuture<List<T>> arrayPopMultiAsync(JsonCodec codec, String path, long index) {
         return commandExecutor.writeAsync(getRawName(), new JsonCodecWrapper(codec), RedisCommands.JSON_ARRPOP_LIST, getRawName(), path, index);
     }
 

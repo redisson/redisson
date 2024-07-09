@@ -23,7 +23,7 @@ import org.redisson.codec.JsonCodec;
  * @author Nikita Koksharov
  *
  */
-public interface JsonBucketOptions<V> extends CodecOptions<JsonBucketOptions<V>, JsonCodec<V>> {
+public interface JsonBucketOptions<V> extends CodecOptions<JsonBucketOptions<V>, JsonCodec> {
 
     /**
      * Creates options with the name of object instance

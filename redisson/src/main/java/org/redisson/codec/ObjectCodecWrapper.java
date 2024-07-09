@@ -26,15 +26,15 @@ import java.util.Objects;
  * @author Nikita Koksharov
  *
  */
-public class JsonCodecWrapper extends BaseCodec {
+public class ObjectCodecWrapper extends BaseCodec {
 
-    private JsonCodec innerCodec;
+    private final ObjectCodec innerCodec;
 
-    public JsonCodecWrapper(JsonCodec innerCodec) {
+    public ObjectCodecWrapper(ObjectCodec innerCodec) {
         this.innerCodec = innerCodec;
     }
 
-    public JsonCodecWrapper(ClassLoader classLoader, JsonCodecWrapper codec) throws ReflectiveOperationException {
+    public ObjectCodecWrapper(ClassLoader classLoader, ObjectCodecWrapper codec) throws ReflectiveOperationException {
         this(copy(classLoader, codec.innerCodec));
     }
 
@@ -52,7 +52,7 @@ public class JsonCodecWrapper extends BaseCodec {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        JsonCodecWrapper that = (JsonCodecWrapper) o;
+        ObjectCodecWrapper that = (ObjectCodecWrapper) o;
         return Objects.equals(innerCodec, that.innerCodec);
     }
 

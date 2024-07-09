@@ -13,25 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api.options;
+package org.redisson.codec;
 
-import org.redisson.codec.JsonCodec;
+import org.redisson.client.protocol.Decoder;
+import org.redisson.client.protocol.Encoder;
 
 /**
+ * Object codec interface.
  *
  * @author Nikita Koksharov
  *
  */
-public final class JsonBucketParams<V> extends BaseOptions<JsonBucketOptions<V>, JsonCodec> implements JsonBucketOptions<V> {
+public interface ObjectCodec {
 
-    private final String name;
+    /**
+     * Returns object encoder
+     *
+     * @return encoder
+     */
+    Encoder getEncoder();
 
-    JsonBucketParams(String name) {
-        this.name = name;
-    }
-
-    public String getName() {
-        return name;
-    }
+    /**
+     * Returns object decoder
+     *
+     * @return decoder
+     */
+    Decoder<Object> getDecoder();
 
 }

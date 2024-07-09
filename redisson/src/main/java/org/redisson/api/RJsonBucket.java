@@ -36,7 +36,7 @@ public interface RJsonBucket<V> extends RBucket<V>, RJsonBucketAsync<V> {
      *
      * @param <T> the type of object
      */
-    <T> T get(JsonCodec<T> codec, String... paths);
+    <T> T get(JsonCodec codec, String... paths);
 
     /**
      * Sets Json object by JSONPath only if previous value is empty
@@ -91,7 +91,7 @@ public interface RJsonBucket<V> extends RBucket<V>, RJsonBucketAsync<V> {
      * @param newValue value to set
      * @return previous value
      */
-    <T> T getAndSet(JsonCodec<T> codec, String path, Object newValue);
+    <T> T getAndSet(JsonCodec codec, String path, Object newValue);
 
     /**
      * Stores object into element by specified JSONPath.
@@ -257,7 +257,7 @@ public interface RJsonBucket<V> extends RBucket<V>, RJsonBucketAsync<V> {
      *
      * @param <T> the type of object
      */
-    <T> T arrayPollLast(JsonCodec<T> codec, String path);
+    <T> T arrayPollLast(JsonCodec codec, String path);
 
     /**
      * Polls last element of arrays specified by JSONPath.
@@ -269,7 +269,7 @@ public interface RJsonBucket<V> extends RBucket<V>, RJsonBucketAsync<V> {
      *
      * @param <T> the type of object
      */
-    <T> List<T> arrayPollLastMulti(JsonCodec<T> codec, String path);
+    <T> List<T> arrayPollLastMulti(JsonCodec codec, String path);
 
     /**
      * Polls first element of array specified by JSONPath.
@@ -280,7 +280,7 @@ public interface RJsonBucket<V> extends RBucket<V>, RJsonBucketAsync<V> {
      *
      * @param <T> the type of object
      */
-    <T> T arrayPollFirst(JsonCodec<T> codec, String path);
+    <T> T arrayPollFirst(JsonCodec codec, String path);
 
     /**
      * Polls first element of arrays specified by JSONPath.
@@ -292,7 +292,7 @@ public interface RJsonBucket<V> extends RBucket<V>, RJsonBucketAsync<V> {
      *
      * @param <T> the type of object
      */
-    <T> List<T> arrayPollFirstMulti(JsonCodec<T> codec, String path);
+    <T> List<T> arrayPollFirstMulti(JsonCodec codec, String path);
 
     /**
      * Pops element located at index of array specified by JSONPath.
@@ -304,7 +304,7 @@ public interface RJsonBucket<V> extends RBucket<V>, RJsonBucketAsync<V> {
      *
      * @param <T> the type of object
      */
-    <T> T arrayPop(JsonCodec<T> codec, String path, long index);
+    <T> T arrayPop(JsonCodec codec, String path, long index);
 
     /**
      * Pops elements located at index of arrays specified by JSONPath.
@@ -317,7 +317,7 @@ public interface RJsonBucket<V> extends RBucket<V>, RJsonBucketAsync<V> {
      *
      * @param <T> the type of object
      */
-    <T> List<T> arrayPopMulti(JsonCodec<T> codec, String path, long index);
+    <T> List<T> arrayPopMulti(JsonCodec codec, String path, long index);
 
     /**
      * Trims array specified by JSONPath in range

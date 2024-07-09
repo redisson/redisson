@@ -15,30 +15,13 @@
  */
 package org.redisson.codec;
 
-import org.redisson.client.protocol.Decoder;
-import org.redisson.client.protocol.Encoder;
-
 /**
- * Json codec interface for RJsonBucket object.
+ * Json codec interface.
  *
  * @author Nikita Koksharov
  *
  * @param <T> object type
  */
-public interface JsonCodec<T> {
-
-    /**
-     * Returns object encoder used for any objects stored Redis structure except HMAP
-     *
-     * @return encoder
-     */
-    Encoder getValueEncoder();
-
-    /**
-     * Returns object decoder used for any objects stored Redis structure except HMAP
-     *
-     * @return decoder
-     */
-    Decoder<Object> getValueDecoder();
+public interface JsonCodec extends ObjectCodec {
 
 }
