@@ -3,6 +3,7 @@ package org.redisson;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RMultimapCache;
@@ -32,5 +33,19 @@ public class RedissonSetMultimapCacheTest extends RedissonBaseMultimapCacheTest 
         assertThat(multimap.get("1").retainAll(Arrays.asList("1"))).isTrue();
         assertThat(multimap.get("1").removeAll(Arrays.asList("1"))).isTrue();
     }
-    
+
+    @Test
+    public void testContainsAll() {
+        RMultimapCache<String, String> multimap = getMultimapCache("test");
+        multimap.put("1", "1");
+        multimap.put("1", "2");
+        multimap.put("1", "3");
+        multimap.put("1", "3");
+
+        assertThat(multimap.get("1").containsAll(List.of("1", "1", "1"))).isTrue();
+        assertThat(multimap.get("1").containsAll(List.of("1", "2", "4"))).isFalse();
+        assertThat(multimap.get("1").containsAll(List.of("1", "2", "1"))).isTrue();
+        assertThat(multimap.get("1").containsAll(List.of("1", "1"))).isTrue();
+
+    }
 }
