@@ -34,6 +34,7 @@ import org.redisson.pubsub.PublishSubscribeService;
 import javax.servlet.http.HttpSession;
 import java.io.File;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.*;
 
 /**
@@ -335,6 +336,7 @@ public class RedissonSessionManager extends ManagerBase {
                                 }
                                 RSet<String> set = getNotifiedNodes(msg.getSessionId());
                                 set.add(nodeId);
+                                set.expire(Duration.ofSeconds(60));
                             }
                             
                         }
