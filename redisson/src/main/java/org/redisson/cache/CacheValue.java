@@ -16,6 +16,7 @@
 package org.redisson.cache;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 
 /**
@@ -42,7 +43,12 @@ public class CacheValue implements Serializable {
     public Object getValue() {
         return value;
     }
-    
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(value);
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
