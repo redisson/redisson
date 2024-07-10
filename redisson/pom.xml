@@ -156,13 +156,13 @@
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-jasper</artifactId>
-            <version>10.1.2</version>
+            <version>10.1.25</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat</groupId>
             <artifactId>tomcat-jasper</artifactId>
-            <version>10.1.2</version>
+            <version>10.1.25</version>
             <scope>test</scope>
         </dependency>
         <dependency>
