@@ -901,7 +901,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 RedisURI address = addresses.get(index);
 
                 if (addresses.size() == 1) {
-                    log.debug("{} resolved to {}", clusterNodeInfo.getAddress(), address);
+                    if (!clusterNodeInfo.getAddress().equals(address)) {
+                        log.debug("{} resolved to {}", clusterNodeInfo.getAddress(), address);
+                    }
                 } else {
                     log.debug("{} resolved to {} and {} selected", clusterNodeInfo.getAddress(), addresses, address);
                 }
