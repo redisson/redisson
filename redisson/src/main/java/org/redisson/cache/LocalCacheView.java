@@ -164,7 +164,8 @@ public class LocalCacheView<K, V> {
                 @Override
                 public Map.Entry<K, V> next() {
                     CacheValue e = iter.next();
-                    return new AbstractMap.SimpleEntry<K, V>((K) e.getKey(), (V) e.getValue());
+                    V val = toValue(e);
+                    return new AbstractMap.SimpleEntry<K, V>((K) e.getKey(), val);
                 }
                 
                 @Override
@@ -240,7 +241,11 @@ public class LocalCacheView<K, V> {
         }
 
     }
-    
+
+    protected V toValue(CacheValue cv) {
+        return (V) cv.getValue();
+    }
+
     public CacheKey toCacheKey(Object key) {
         ByteBuf encoded = object.encodeMapKey(key);
         try {
