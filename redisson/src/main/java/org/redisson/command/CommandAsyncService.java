@@ -456,6 +456,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
+    public <T, R> RFuture<R> evalReadAsync(ByteBuf key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
+        NodeSource source = getNodeSource(key);
+        return evalAsync(source, true, codec, evalCommandType, script, keys, false, params);
+    }
+
+    @Override
     public <T, R> RFuture<R> evalWriteNoRetryAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
         NodeSource source = getNodeSource(key);
         return evalAsync(source, false, codec, evalCommandType, script, keys, true, params);
