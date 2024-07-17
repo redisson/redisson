@@ -461,7 +461,7 @@ public abstract class RedissonObject implements RObject {
         return new CompletableFutureWrapper<>(r);
     }
 
-    protected final <T extends ObjectListener> int addListener(String name, T listener, BiConsumer<T, String> consumer) {
+    protected <T extends ObjectListener> int addListener(String name, T listener, BiConsumer<T, String> consumer) {
         RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, name);
         return topic.addListener(String.class, (pattern, channel, msg) -> {
             if (msg.equals(getRawName())) {
@@ -470,7 +470,7 @@ public abstract class RedissonObject implements RObject {
         });
     }
 
-    protected final <T extends ObjectListener> RFuture<Integer> addListenerAsync(String name, T listener, BiConsumer<T, String> consumer) {
+    protected <T extends ObjectListener> RFuture<Integer> addListenerAsync(String name, T listener, BiConsumer<T, String> consumer) {
         RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, name);
         return topic.addListenerAsync(String.class, (pattern, channel, msg) -> {
             if (msg.equals(getRawName())) {
