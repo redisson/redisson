@@ -345,8 +345,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             return f.thenCompose(masterClient -> {
                 for (Integer slot : partition.getSlots()) {
                     addEntry(slot, entry);
-                    lastPartitions.put(slot, partition);
-                    partition.incReference();
+                    addPartition(slot, partition);
                 }
                 if (partition.getSlotsAmount() > 0) {
                     lastUri2Partition.put(partition.getMasterAddress(), partition);
@@ -372,6 +371,15 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 return CompletableFuture.completedFuture(null);
             });
         });
+    }
+
+    private void addPartition(Integer slot, ClusterPartition partition) {
+        partition.incReference();
+        ClusterPartition prevPartiton = lastPartitions.put(slot, partition);
+        if (prevPartiton != null
+                && prevPartiton.decReference() == 0) {
+            lastUri2Partition.remove(prevPartiton.getMasterAddress());
+        }
     }
 
     private void scheduleClusterChangeCheck(ClusterServersConfig cfg) {
@@ -731,8 +739,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
                 if (entry != null) {
                     addEntry(slot, entry);
-                    lastPartitions.put(slot, clusterPartition);
-                    clusterPartition.incReference();
+                    addPartition(slot, clusterPartition);
                     lastUri2Partition.put(clusterPartition.getMasterAddress(), clusterPartition);
                     addedSlots++;
                 }
@@ -765,8 +772,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
                 addedSlots.stream().forEach(slot -> {
                     addEntry(slot, entry);
-                    lastPartitions.put(slot, currentPartition);
-                    currentPartition.incReference();
+                    addPartition(slot, currentPartition);
                     changedSlots.add(slot);
                 });
                 if (!addedSlots.isEmpty()) {
