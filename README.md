@@ -52,6 +52,7 @@ Based on high-performance async and lock-free Java Redis client and [Netty](http
 * Lua scripting  
 * [RediSearch](https://github.com/redisson/redisson/wiki/9.-distributed-services/#96-redisearch-service)
 * [JSON datatype](https://github.com/redisson/redisson/wiki/6.-distributed-objects/#615-json-object-holder)
+* [JSON Store](https://github.com/redisson/redisson/wiki/7.-distributed-collections/#724-json-store) 
 * [Reactive Streams](https://github.com/redisson/redisson/wiki/3.-operations-execution#32-reactive-way) API  
 * [RxJava3](https://github.com/redisson/redisson/wiki/3.-operations-execution#32-reactive-way) API  
 * [Asynchronous](https://github.com/redisson/redisson/wiki/3.-operations-execution#31-async-way) API  

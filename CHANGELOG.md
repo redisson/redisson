@@ -3,6 +3,30 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
+### 17-Jul-2024 - 3.33.0 released
+
+Feature - [RJsonStore](https://github.com/redisson/redisson/wiki/7.-distributed-collections/#724-json-store) object added  
+Feature - [RLocalCachedJsonStore](https://github.com/redisson/redisson/wiki/7.-distributed-collections/#7241-json-store-local-cache) object added  
+Feature - `RSearch.getIndexes()` method added  
+Feature - `RedissonRegionNativeFactory` added for Hibernate module. Requires Redis 7.4+  
+Feature - `RedissonSpringCacheNativeManager` implemented. Requires Redis 7.4+  
+Feature - `RedissonCacheNative` implementation added for Mybatis cache. Requires Redis 7.4+  
+Feature - `caches-native` cache type added to Micronaut module. Requires Redis 7.4+    
+
+Improvement - Spring Cache `RedissonCache.put()` method optimization  
+
+__Breaking change - JsonCodec interface refactoring__
+
+Fixed - re-added master node isn't updated in Cluster topology  
+Fixed - expiration time isn't set for Apacht Tomcat Manager `redisson:tomcat_notified_nodes` keys (thanks to @ehardy)  
+Fixed - RSearch `AggregationOptions.loadAll()` setting isn't applied  
+Fixed - containsAll() method of RList, RQueue, RMultimap objects returns incorrect result (thanks to @seakider)  
+Fixed - too many requests with small threads amount may cause OOM  
+Fixed - connection leak during high load with few connections  
+Fixed - RingBuffer#setCapacity, trim list incorrect (thanks to @seakider)  
+Fixed - password shouldn't be printed in logs  
+Fixed - encoded user/password in URL aren't accepted  
+
 ### 24-Jun-2024 - 3.32.0 released
 
 Feature - Quarkus Cache implementation added  
