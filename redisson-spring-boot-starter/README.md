@@ -14,14 +14,14 @@ Maven
 <dependency>
      <groupId>org.redisson</groupId>
      <artifactId>redisson-spring-boot-starter</artifactId>
-     <version>3.32.0</version>
+     <version>3.33.0</version>
 </dependency>
 ```
 
 Gradle
 
 ```groovy
-compile 'org.redisson:redisson-spring-boot-starter:3.32.0'
+compile 'org.redisson:redisson-spring-boot-starter:3.33.0'
 ```
 
 `redisson-spring-boot-starter` depends on `redisson-spring-data` module compatible with the latest version of Spring Boot. Downgrade `redisson-spring-data` module if necessary to support previous Spring Boot versions:
@@ -37,10 +37,10 @@ compile 'org.redisson:redisson-spring-boot-starter:3.32.0'
 For Gradle, you can downgrade to `redisson-spring-data-27` this way:
 
 ```groovy
-implementation ("org.redisson:redisson-spring-boot-starter:3.32.0") {
+implementation ("org.redisson:redisson-spring-boot-starter:3.33.0") {
    exclude group: 'org.redisson', module: 'redisson-spring-data-33'
 }
-implementation "org.redisson:redisson-spring-data-27:3.32.0"
+implementation "org.redisson:redisson-spring-data-27:3.33.0"
 ```
 
 ### 2. Add settings into `application.settings` file

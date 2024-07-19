@@ -142,14 +142,14 @@ Used by
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>3.32.0</version>
+       <version>3.33.0</version>
     </dependency>  
 
 #### Gradle
-    compile 'org.redisson:redisson:3.32.0'  
+    compile 'org.redisson:redisson:3.33.0'  
 
 #### SBT
-    libraryDependencies += "org.redisson" % "redisson" % "3.32.0"
+    libraryDependencies += "org.redisson" % "redisson" % "3.33.0"
 
 #### Java
 
@@ -207,8 +207,8 @@ Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
 ## Downloads
    
-[Redisson 3.32.0](https://repo1.maven.org/maven2/org/redisson/redisson/3.32.0/redisson-3.32.0.jar),
-[Redisson node 3.32.0](https://repo1.maven.org/maven2/org/redisson/redisson-all/3.32.0/redisson-all-3.32.0.jar)  
+[Redisson 3.33.0](https://repo1.maven.org/maven2/org/redisson/redisson/3.33.0/redisson-3.33.0.jar),
+[Redisson node 3.33.0](https://repo1.maven.org/maven2/org/redisson/redisson-all/3.33.0/redisson-all-3.33.0.jar)  
 
 ## FAQs
 
