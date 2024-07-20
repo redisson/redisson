@@ -179,6 +179,13 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
 
         @Override
         public SeekableByteChannel truncate(long size) throws IOException {
+            if (size < 0) {
+                throw new IllegalArgumentException("Negative size");
+            }
+            if (size == 0) {
+                delete();
+                return this;
+            }
             get(commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 "local len = redis.call('strlen', KEYS[1]); " +
                         "if tonumber(ARGV[1]) >= len then " +
