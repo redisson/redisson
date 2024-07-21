@@ -75,6 +75,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
             throw new IllegalArgumentException("At least one Redis node should be defined!");
         }
 
+        Exception ex = null;
         for (String address : cfg.getNodeAddresses()) {
             RedisURI addr = new RedisURI(address);
             CompletionStage<RedisConnection> connectionFuture = connectToNode(cfg, addr, addr.getHost());
@@ -82,7 +83,11 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
             try {
                 connection = connectionFuture.toCompletableFuture().join();
             } catch (Exception e) {
-                // skip
+                if (ex != null) {
+                    ex.addSuppressed(e);
+                } else {
+                    ex = e;
+                }
             }
             if (connection == null) {
                 continue;
@@ -101,7 +106,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
 
         if (currentMaster.get() == null) {
             internalShutdown();
-            throw new RedisConnectionException("Can't connect to servers!");
+            throw new RedisConnectionException("Can't connect to servers!", ex);
         }
         if (this.config.getReadMode() != ReadMode.MASTER && this.config.getSlaveAddresses().isEmpty()) {
             log.warn("ReadMode = {}, but slave nodes are not found! Please specify all nodes in replicated mode.", this.config.getReadMode());
