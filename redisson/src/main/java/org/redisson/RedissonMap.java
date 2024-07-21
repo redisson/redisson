@@ -258,11 +258,14 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                 return oldValueFuture.thenCompose(oldValue -> {
                     return CompletableFuture.supplyAsync(() -> remappingFunction.apply(key, oldValue), getServiceManager().getExecutor())
                             .thenCompose(newValue -> {
-                                if (newValue != null) {
-                                    return fastPutAsync(key, newValue)
-                                            .thenApply(rr -> newValue);
+                                if (newValue == null) {
+                                    if (oldValue != null) {
+                                        return fastRemoveAsync(key)
+                                                .thenApply(rr -> newValue);
+                                    }
+                                    return CompletableFuture.completedFuture(newValue);
                                 }
-                                return fastRemoveAsync(key)
+                                return fastPutAsync(key, newValue)
                                         .thenApply(rr -> newValue);
                             });
                 }).whenComplete((c, e) -> {
