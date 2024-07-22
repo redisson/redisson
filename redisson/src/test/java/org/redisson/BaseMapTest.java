@@ -269,14 +269,43 @@ public abstract class BaseMapTest extends RedisDockerTest {
     @Test
     public void testCompute() {
         RMap<String, String> map = getMap("map");
+
         map.compute("1", (key, oldValue) -> {
             return "12";
         });
         assertThat(map.get("1")).isEqualTo("12");
 
         map.compute("1", (key, oldValue) -> {
+            return (oldValue == null) ? "12" : oldValue.concat("34");
+        });
+        assertThat(map.get("1")).isEqualTo("1234");
+
+        map.compute("1", (key, oldValue) -> {
             return null;
         });
+        assertThat(map.get("1")).isNull();
+    }
+
+    @Test
+    public void testComputeAsync() {
+        RMap<String, String> map = getMap("mapAsync");
+
+        RFuture<String> res1 = map.computeAsync("1", (key, oldValue) -> {
+            return "12";
+        });
+        assertThat(res1.toCompletableFuture().join()).isEqualTo("12");
+        assertThat(map.get("1")).isEqualTo("12");
+
+        RFuture<String> res2 = map.computeAsync("1", (key, oldValue) -> {
+            return (oldValue == null) ? "12" : oldValue.concat("34");
+        });
+        assertThat(res2.toCompletableFuture().join()).isEqualTo("1234");
+        assertThat(map.get("1")).isEqualTo("1234");
+
+        RFuture<String> res3 = map.computeAsync("1", (key, oldValue) -> {
+            return null;
+        });
+        assertThat(res3.toCompletableFuture().join()).isNull();
         assertThat(map.get("1")).isNull();
     }
 
