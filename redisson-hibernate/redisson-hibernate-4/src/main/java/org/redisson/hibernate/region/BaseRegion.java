@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class BaseRegion implements TransactionalDataRegion, GeneralDataRegion {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private static final Logger logger = LoggerFactory.getLogger(BaseRegion.class);
 
     final RMapCache<Object, Object> mapCache;
     final RegionFactory regionFactory;

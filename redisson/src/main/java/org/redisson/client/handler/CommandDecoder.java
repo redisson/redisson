@@ -57,7 +57,7 @@ import java.util.concurrent.CompletableFuture;
  */
 public class CommandDecoder extends ReplayingDecoder<State> {
     
-    final Logger log = LoggerFactory.getLogger(getClass());
+    private static final Logger log = LoggerFactory.getLogger(CommandDecoder.class);
 
     private static final char CR = '\r';
     private static final char LF = '\n';

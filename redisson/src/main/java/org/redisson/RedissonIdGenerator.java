@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class RedissonIdGenerator extends RedissonExpirable implements RIdGenerator {
 
-    final Logger log = LoggerFactory.getLogger(getClass());
+    private static final Logger log = LoggerFactory.getLogger(RedissonIdGenerator.class);
 
     RedissonIdGenerator(CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);

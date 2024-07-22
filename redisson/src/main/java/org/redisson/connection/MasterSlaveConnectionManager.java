@@ -46,7 +46,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected final ClusterSlotRange singleSlotRange = new ClusterSlotRange(0, MAX_SLOT-1);
 
-    private final Logger log = LoggerFactory.getLogger(getClass());
+    private static final Logger log = LoggerFactory.getLogger(MasterSlaveConnectionManager.class);
 
     protected DNSMonitor dnsMonitor;
 

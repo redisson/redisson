@@ -51,7 +51,7 @@ import java.util.function.Function;
  */
 public class MasterSlaveEntry {
 
-    final Logger log = LoggerFactory.getLogger(getClass());
+    private static final Logger log = LoggerFactory.getLogger(MasterSlaveEntry.class);
 
     volatile ClientConnectionsEntry masterEntry;
 

@@ -47,7 +47,7 @@ import java.util.stream.Collectors;
  */
 public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
-    private final Logger log = LoggerFactory.getLogger(getClass());
+    private static final Logger log = LoggerFactory.getLogger(ClusterConnectionManager.class);
 
     private final Map<Integer, ClusterPartition> lastPartitions = new ConcurrentHashMap<>();
     private final Map<RedisURI, ClusterPartition> lastUri2Partition = new ConcurrentHashMap<>();

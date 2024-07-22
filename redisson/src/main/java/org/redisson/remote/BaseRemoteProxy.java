@@ -44,7 +44,7 @@ import java.util.function.BiConsumer;
  */
 public abstract class BaseRemoteProxy {
 
-    private final Logger log = LoggerFactory.getLogger(getClass());
+    private static final Logger log = LoggerFactory.getLogger(BaseRemoteProxy.class);
     
     final CommandAsyncExecutor commandExecutor;
     private final String name;

@@ -44,7 +44,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 abstract class ConnectionPool<T extends RedisConnection> {
 
-    private final Logger log = LoggerFactory.getLogger(getClass());
+    private static final Logger log = LoggerFactory.getLogger(ConnectionPool.class);
 
     protected final Queue<ClientConnectionsEntry> entries = new ConcurrentLinkedQueue<>();
 

@@ -41,7 +41,7 @@ import java.util.concurrent.TimeUnit;
 @Sharable
 public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
-    private final Logger log = LoggerFactory.getLogger(getClass());
+    private static final Logger log = LoggerFactory.getLogger(ConnectionWatchdog.class);
 
     private final Timer timer;
     private final Bootstrap bootstrap;

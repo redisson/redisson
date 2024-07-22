@@ -66,7 +66,7 @@ import java.util.stream.StreamSupport;
  */
 public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
-    private final Logger log = LoggerFactory.getLogger(getClass());
+    private static final Logger log = LoggerFactory.getLogger(RedissonMap.class);
     
     final RedissonClient redisson;
     final MapOptions<K, V> options;

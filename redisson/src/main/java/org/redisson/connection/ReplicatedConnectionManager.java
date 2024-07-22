@@ -52,7 +52,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
 
     private static final String ROLE_KEY = "role";
 
-    private final Logger log = LoggerFactory.getLogger(getClass());
+    private static final Logger log = LoggerFactory.getLogger(ReplicatedConnectionManager.class);
 
     private final AtomicReference<InetSocketAddress> currentMaster = new AtomicReference<>();
 
