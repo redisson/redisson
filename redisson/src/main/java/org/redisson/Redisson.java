@@ -292,7 +292,12 @@ public final class Redisson implements RedissonClient {
         JsonBucketParams<V> params = (JsonBucketParams) options;
         return new RedissonJsonBucket<>(params.getCodec(), commandExecutor, params.getName());
     }
-
+    
+    @Override
+    public RJsonBuckets getJsonBuckets(JsonCodec codec) {
+        return new RedissonJsonBuckets(codec, commandExecutor);
+    }
+    
     @Override
     public <V> RHyperLogLog<V> getHyperLogLog(String name) {
         return new RedissonHyperLogLog<V>(commandExecutor, name);
