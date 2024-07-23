@@ -69,7 +69,7 @@ public interface RScript extends RScriptAsync {
      * @param shaDigest - SHA-1 digest
      * @param returnType - return type
      * @param keys - keys available through KEYS param in script
-     * @param values - values available through VALUES param in script
+     * @param values - values available through ARGV param in script
      * @return result object
      */
     <R> R evalSha(Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
@@ -83,7 +83,7 @@ public interface RScript extends RScriptAsync {
      * @param shaDigest - SHA-1 digest
      * @param returnType - return type
      * @param keys - keys available through KEYS param in script
-     * @param values - values available through VALUES param in script
+     * @param values - values available through ARGV param in script
      * @return result object
      */
     <R> R evalSha(String key, Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
@@ -108,7 +108,7 @@ public interface RScript extends RScriptAsync {
      * @param luaScript - lua script
      * @param returnType - return type
      * @param keys - keys available through KEYS param in script
-     * @param values - values available through VALUES param in script
+     * @param values - values available through ARGV param in script
      * @return result object
      */
     <R> R eval(String key, Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
@@ -121,7 +121,7 @@ public interface RScript extends RScriptAsync {
      * @param luaScript - lua script
      * @param returnType - return type
      * @param keys - keys available through KEYS param in script 
-     * @param values - values available through VALUES param in script
+     * @param values - values available through ARGV param in script
      * @return result object
      */
     <R> R eval(Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
