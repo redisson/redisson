@@ -119,7 +119,11 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
                     value.getPromise().completeExceptionally(e);
                     return;
                 }
-                value.getPromise().complete(value);
+                if (!value.getPromise().complete(value)) {
+                    if (value.getPromise().isCompletedExceptionally()) {
+                        entries.remove(entryName);
+                    }
+                }
             });
 
         });
