@@ -15,8 +15,8 @@
  */
 package org.redisson;
 
+import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  *
@@ -24,8 +24,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  */
 public class IntegerSlotCallback implements SlotCallback<Integer, Integer> {
-
-    private final AtomicInteger results = new AtomicInteger();
 
     private final Object[] params;
 
@@ -38,13 +36,8 @@ public class IntegerSlotCallback implements SlotCallback<Integer, Integer> {
     }
 
     @Override
-    public void onSlotResult(List<Object> keys, Integer result) {
-        results.addAndGet(result);
-    }
-
-    @Override
-    public Integer onFinish() {
-        return results.get();
+    public Integer onResult(Collection<Integer> result) {
+        return result.stream().mapToInt(r -> r).sum();
     }
 
     @Override

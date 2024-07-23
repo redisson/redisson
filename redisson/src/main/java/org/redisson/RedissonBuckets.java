@@ -29,8 +29,6 @@ import org.redisson.misc.CompletableFutureWrapper;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
@@ -82,23 +80,18 @@ public class RedissonBuckets implements RBuckets {
 
         Codec commandCodec = new CompositeCodec(StringCodec.INSTANCE, codec, codec);
         
-        RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("MGET", new MapGetAllDecoder(keysList, 0));
+        RedisCommand<Map<Object, Object>> command = new RedisCommand<>("MGET", new MapGetAllDecoder(keysList, 0));
         return commandExecutor.readBatchedAsync(commandCodec, command, new SlotCallback<Map<Object, Object>, Map<String, V>>() {
-            final Map<String, V> results = new ConcurrentHashMap<>();
 
             @Override
-            public void onSlotResult(List<Object> keys, Map<Object, Object> result) {
-                for (Map.Entry<Object, Object> entry : result.entrySet()) {
-                    if (entry.getKey() != null && entry.getValue() != null) {
-                        String key = commandExecutor.getServiceManager().getConfig().getNameMapper().unmap((String) entry.getKey());
-                        results.put(key, (V) entry.getValue());
-                    }
-                }
-            }
-
-            @Override
-            public Map<String, V> onFinish() {
-                return results;
+            public Map<String, V> onResult(Collection<Map<Object, Object>> result) {
+                return result.stream()
+                        .flatMap(c -> c.entrySet().stream())
+                        .filter(e -> e.getKey() != null && e.getValue() != null)
+                        .map(e -> {
+                            String key = commandExecutor.getServiceManager().getConfig().getNameMapper().unmap((String) e.getKey());
+                            return new AbstractMap.SimpleEntry<>(key, (V) e.getValue());
+                        }).collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
             }
 
             @Override
@@ -116,21 +109,7 @@ public class RedissonBuckets implements RBuckets {
 
         Map<String, ?> mappedBuckets = map(buckets);
 
-        return commandExecutor.writeBatchedAsync(codec, RedisCommands.MSETNX, new SlotCallback<Boolean, Boolean>() {
-            final AtomicBoolean result = new AtomicBoolean(true);
-
-            @Override
-            public void onSlotResult(List<Object> keys, Boolean result) {
-                if (!result && this.result.get()){
-                    this.result.set(result);
-                }
-            }
-
-            @Override
-            public Boolean onFinish() {
-                return this.result.get();
-            }
-
+        return commandExecutor.writeBatchedAsync(codec, RedisCommands.MSETNX, new BooleanSlotCallback() {
             @Override
             public Object[] createParams(List<Object> keys) {
                 List<Object> params = new ArrayList<>(keys.size());
@@ -161,16 +140,7 @@ public class RedissonBuckets implements RBuckets {
 
         Map<String, ?> mappedBuckets = map(buckets);
 
-        return commandExecutor.writeBatchedAsync(codec, RedisCommands.MSET, new SlotCallback<Void, Void>() {
-            @Override
-            public void onSlotResult(List<Object> keys, Void result) {
-            }
-
-            @Override
-            public Void onFinish() {
-                return null;
-            }
-
+        return commandExecutor.writeBatchedAsync(codec, RedisCommands.MSET, new VoidSlotCallback() {
             @Override
             public Object[] createParams(List<Object> keys) {
                 List<Object> params = new ArrayList<>(keys.size());

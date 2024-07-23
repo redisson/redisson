@@ -15,8 +15,8 @@
  */
 package org.redisson;
 
+import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  *
@@ -24,8 +24,6 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  */
 public class LongSlotCallback implements SlotCallback<Long, Long> {
-
-    private final AtomicLong results = new AtomicLong();
 
     private final Object[] params;
 
@@ -38,13 +36,8 @@ public class LongSlotCallback implements SlotCallback<Long, Long> {
     }
 
     @Override
-    public void onSlotResult(List<Object> keys, Long result) {
-        results.addAndGet(result);
-    }
-
-    @Override
-    public Long onFinish() {
-        return results.get();
+    public Long onResult(Collection<Long> result) {
+        return result.stream().mapToLong(r -> r).sum();
     }
 
     @Override
