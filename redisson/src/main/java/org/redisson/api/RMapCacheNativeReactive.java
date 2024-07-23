@@ -19,6 +19,7 @@ import org.redisson.api.map.MapWriter;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -107,12 +108,23 @@ public interface RMapCacheNativeReactive<K, V> extends RMapReactive<K, V>, RDest
     /**
      * Remaining time to live of map entry associated with a <code>key</code>.
      *
-     * @param key - map key
+     * @param key map key
      * @return time in milliseconds
      *          -2 if the key does not exist.
      *          -1 if the key exists but has no associated expire.
      */
     Mono<Long> remainTimeToLive(K key);
+
+    /**
+     * Remaining time to live of map entries associated with <code>keys</code>.
+     *
+     * @param keys map keys
+     * @return Time to live mapped by key.
+     *          Time in milliseconds
+     *          -2 if the key does not exist.
+     *          -1 if the key exists but has no associated expire.
+     */
+    Mono<Map<K, Long>> remainTimeToLive(Set<K> keys);
 
     /**
      * Associates the specified <code>value</code> with the specified <code>key</code>
@@ -127,13 +139,25 @@ public interface RMapCacheNativeReactive<K, V> extends RMapReactive<K, V>, RDest
     Mono<Void> putAll(java.util.Map<? extends K, ? extends V> map, Duration ttl);
 
     /**
-     * Clear an expire timeout or expire date of specified entry by key.
+     * Clears an expiration timeout or date of specified entry by key.
      *
      * @param key map key
      * @return <code>true</code> if timeout was removed
-     *         <code>false</code> if object does not exist or does not have an associated timeout
+     *         <code>false</code> if entry does not have an associated timeout
+     *         <code>null</code> if entry does not exist
      */
     Mono<Boolean> clearExpire(K key);
+
+    /**
+     * Clears an expiration timeout or date of specified entries by keys.
+     *
+     * @param keys map keys
+     * @return Boolean mapped by key.
+     *         <code>true</code> if timeout was removed
+     *         <code>false</code> if entry does not have an associated timeout
+     *         <code>null</code> if entry does not exist
+     */
+    Mono<Map<K, Boolean>> clearExpire(Set<K> keys);
 
     /**
      * Updates time to live of specified entry by key.

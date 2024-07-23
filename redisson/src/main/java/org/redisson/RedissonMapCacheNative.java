@@ -20,8 +20,10 @@ import org.redisson.api.listener.MapExpiredListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.connection.decoder.MapNativeAllDecoder;
 import org.redisson.misc.CompletableFutureWrapper;
 
 import java.time.Duration;
@@ -246,6 +248,26 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
     }
 
     @Override
+    public Map<K, Long> remainTimeToLive(Set<K> keys) {
+        return get(remainTimeToLiveAsync(keys));
+    }
+
+    @Override
+    public RFuture<Map<K, Long>> remainTimeToLiveAsync(Set<K> keys) {
+        List<Object> plainKeys = new ArrayList<>(keys);
+
+        List<Object> params = new ArrayList<>(keys.size() + 1);
+        params.add(getRawName());
+        params.add("FIELDS");
+        params.add(plainKeys.size());
+        encodeMapKeys(params, plainKeys);
+
+        RedisCommand<Map<Object, Object>> command = new RedisCommand<>("HPTTL",
+                new MapNativeAllDecoder(plainKeys, Long.class));
+        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, command, params.toArray());
+    }
+
+    @Override
     public void putAll(Map<? extends K, ? extends V> map, Duration ttl) {
         get(putAllAsync(map, ttl));
     }
@@ -412,14 +434,34 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
     }
 
     @Override
-    public boolean clearExpire(K key) {
+    public Boolean clearExpire(K key) {
         return get(clearExpireAsync(key));
     }
 
     @Override
     public RFuture<Boolean> clearExpireAsync(K key) {
         String name = getRawName(key);
-        return commandExecutor.writeAsync(name, StringCodec.INSTANCE, RedisCommands.HPERSIST, name, encodeMapKey(key));
+        return commandExecutor.writeAsync(name, LongCodec.INSTANCE, RedisCommands.HPERSIST, name, "FIELDS", 1, encodeMapKey(key));
+    }
+
+    @Override
+    public Map<K, Boolean> clearExpire(Set<K> keys) {
+        return get(clearExpireAsync(keys));
+    }
+
+    @Override
+    public RFuture<Map<K, Boolean>> clearExpireAsync(Set<K> keys) {
+        List<Object> plainKeys = new ArrayList<>(keys);
+
+        List<Object> params = new ArrayList<>(keys.size() + 1);
+        params.add(getRawName());
+        params.add("FIELDS");
+        params.add(plainKeys.size());
+        encodeMapKeys(params, plainKeys);
+
+        RedisCommand<Map<Object, Object>> command = new RedisCommand<>("HPERSIST",
+                new MapNativeAllDecoder(plainKeys, Boolean.class));
+        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, command, params.toArray());
     }
 
     @Override
