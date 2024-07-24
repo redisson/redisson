@@ -15,7 +15,9 @@
  */
 package org.redisson.api;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.function.Function;
 
 import org.redisson.api.RScript.Mode;
 import org.redisson.api.RScript.ReturnType;
@@ -47,7 +49,7 @@ public interface RScriptRx {
      * @param shaDigest - SHA-1 digest
      * @param returnType - return type
      * @param keys - keys available through KEYS param in script
-     * @param values - values available through VALUES param in script
+     * @param values - values available through ARGV param in script
      * @return result object
      */
     <R> Maybe<R> evalSha(Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
@@ -61,11 +63,11 @@ public interface RScriptRx {
      * @param shaDigest - SHA-1 digest
      * @param returnType - return type
      * @param keys - keys available through KEYS param in script
-     * @param values - values available through VALUES param in script
+     * @param values - values available through ARGV param in script
      * @return result object
      */
     <R> Maybe<R> evalSha(String key, Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
-    
+
     /**
      * Executes Lua script stored in Redis scripts cache by SHA-1 digest
      * 
@@ -78,6 +80,21 @@ public interface RScriptRx {
     <R> Maybe<R> evalSha(Mode mode, String shaDigest, ReturnType returnType);
 
     /**
+     * Executes a Lua script stored in Redis scripts cache by SHA-1 digest <code>shaDigest</code>.
+     * The script is executed over all Redis master or slave nodes in cluster depending on <code>mode</code> value.
+     * <code>resultMapper</code> function reduces all results from Redis nodes into one.
+     *
+     * @param mode - execution mode
+     * @param shaDigest - SHA-1 digest
+     * @param returnType - return type
+     * @param resultMapper - function for reducing multiple results into one
+     * @param values - values available through ARGV param in script
+     * @return result object
+     * @param <R> - type of result
+     */
+    <R> Maybe<R> evalSha(Mode mode, String shaDigest, ReturnType returnType, Function<Collection<R>, R> resultMapper, Object... values);
+
+    /**
      * Executes Lua script
      * 
      * @param <R> - type of result
@@ -85,7 +102,7 @@ public interface RScriptRx {
      * @param luaScript - lua script
      * @param returnType - return type
      * @param keys - keys available through KEYS param in script 
-     * @param values - values available through VALUES param in script
+     * @param values - values available through ARGV param in script
      * @return result object
      */
     <R> Maybe<R> eval(Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
@@ -110,10 +127,25 @@ public interface RScriptRx {
      * @param luaScript - lua script
      * @param returnType - return type
      * @param keys - keys available through KEYS param in script
-     * @param values - values available through VALUES param in script
+     * @param values - values available through ARGV param in script
      * @return result object
      */
     <R> Maybe<R> eval(String key, Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
+
+    /**
+     * Executes a Lua script.
+     * The script is executed over all Redis master or slave nodes in cluster depending on <code>mode</code> value.
+     * <code>resultMapper</code> function reduces all results from Redis nodes into one.
+     *
+     * @param mode - execution mode
+     * @param luaScript - lua script
+     * @param returnType - return type
+     * @param resultMapper - function for reducing multiple results into one
+     * @param values - values available through ARGV param in script
+     * @return result object
+     * @param <R> - type of result
+     */
+    <R> Maybe<R> eval(Mode mode, String luaScript, ReturnType returnType, Function<Collection<R>, R> resultMapper, Object... values);
 
     /**
      * Loads Lua script into Redis scripts cache and returns its SHA-1 digest

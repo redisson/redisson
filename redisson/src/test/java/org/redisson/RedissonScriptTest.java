@@ -102,7 +102,17 @@ public class RedissonScriptTest extends RedisDockerTest {
         RFuture<List<Object>> res = script.evalAsync(RScript.Mode.READ_ONLY, "return {'1','2','3.3333','foo',nil,'bar'}", RScript.ReturnType.MULTI, Collections.emptyList());
         assertThat(res.toCompletableFuture().join()).containsExactly("1", "2", "3.3333", "foo");
     }
-    
+
+    @Test
+    public void testEvalResultMapping() {
+        testInCluster(redissonClient -> {
+            RScript script = redissonClient.getScript(StringCodec.INSTANCE);
+            Long res = script.eval(RScript.Mode.READ_ONLY, "return 1;", RScript.ReturnType.INTEGER,
+                    integers -> integers.stream().mapToLong(r -> r).sum());
+            assertThat(res).isEqualTo(3);
+        });
+    }
+
     @Test
     public void testScriptEncoding() {
         RScript script = redisson.getScript();

@@ -15,8 +15,8 @@
  */
 package org.redisson;
 
+import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  *
@@ -24,8 +24,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  */
 public class BooleanSlotCallback implements SlotCallback<Boolean, Boolean> {
-
-    private final AtomicBoolean r = new AtomicBoolean();
 
     private final Object[] params;
 
@@ -38,15 +36,8 @@ public class BooleanSlotCallback implements SlotCallback<Boolean, Boolean> {
     }
 
     @Override
-    public void onSlotResult(List<Object> keys, Boolean res) {
-        if (res) {
-            r.set(true);
-        }
-    }
-
-    @Override
-    public Boolean onFinish() {
-        return r.get();
+    public Boolean onResult(Collection<Boolean> res) {
+        return res.contains(true);
     }
 
     @Override

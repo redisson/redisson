@@ -506,7 +506,17 @@ public interface RedisCommands {
     RedisStrictCommand<Void> MSET = new RedisStrictCommand<Void>("MSET", new VoidReplayConvertor());
     RedisStrictCommand<Boolean> MSETNX = new RedisStrictCommand<Boolean>("MSETNX", new BooleanReplayConvertor());
 
-    RedisStrictCommand<Boolean> HPERSIST = new RedisStrictCommand<Boolean>("HPERSIST", new BooleanReplayConvertor());
+    RedisCommand<Boolean> HPERSIST = new RedisCommand("HPERSIST", new ListFirstObjectDecoder(), new Convertor<Boolean>() {
+        @Override
+        public Boolean convert(Object obj) {
+            Long val = (Long) obj;
+            if (val == -2) {
+                return null;
+            }
+
+            return val == 1;
+        }
+    });
     RedisCommand<Long> HPTTL = new RedisCommand("HPTTL", new ListFirstObjectDecoder(), new LongReplayConvertor());
     RedisStrictCommand<Boolean> HSETNX = new RedisStrictCommand<Boolean>("HSETNX", new BooleanReplayConvertor());
     RedisStrictCommand<Boolean> HSET = new RedisStrictCommand<Boolean>("HSET", new BooleanReplayConvertor());

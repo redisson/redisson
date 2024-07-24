@@ -21,6 +21,7 @@ import io.reactivex.rxjava3.core.Single;
 import org.redisson.api.map.MapWriter;
 
 import java.time.Duration;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -110,12 +111,23 @@ public interface RMapCacheNativeRx<K, V> extends RMapRx<K, V>, RDestroyable {
     /**
      * Remaining time to live of map entry associated with a <code>key</code>.
      *
-     * @param key - map key
+     * @param key map key
      * @return time in milliseconds
      *          -2 if the key does not exist.
      *          -1 if the key exists but has no associated expire.
      */
     Single<Long> remainTimeToLive(K key);
+
+    /**
+     * Remaining time to live of map entries associated with <code>keys</code>.
+     *
+     * @param keys map keys
+     * @return Time to live mapped by key.
+     *          Time in milliseconds
+     *          -2 if the key does not exist.
+     *          -1 if the key exists but has no associated expire.
+     */
+    Single<Map<K, Long>> remainTimeToLive(Set<K> keys);
 
     /**
      * Associates the specified <code>value</code> with the specified <code>key</code>
@@ -130,13 +142,25 @@ public interface RMapCacheNativeRx<K, V> extends RMapRx<K, V>, RDestroyable {
     Completable putAll(java.util.Map<? extends K, ? extends V> map, Duration ttl);
 
     /**
-     * Clear an expire timeout or expire date of specified entry by key.
+     * Clears an expiration timeout or date of specified entry by key.
      *
      * @param key map key
      * @return <code>true</code> if timeout was removed
-     *         <code>false</code> if object does not exist or does not have an associated timeout
+     *         <code>false</code> if entry does not have an associated timeout
+     *         <code>null</code> if entry does not exist
      */
-    Single<Boolean> clearExpire(K key);
+    Maybe<Boolean> clearExpire(K key);
+
+    /**
+     * Clears an expiration timeout or date of specified entries by keys.
+     *
+     * @param keys map keys
+     * @return Boolean mapped by key.
+     *         <code>true</code> if timeout was removed
+     *         <code>false</code> if entry does not have an associated timeout
+     *         <code>null</code> if entry does not exist
+     */
+    Single<Map<K, Boolean>> clearExpire(Set<K> keys);
 
     /**
      * Updates time to live of specified entry by key.

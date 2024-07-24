@@ -216,7 +216,13 @@ public class RedissonMapCacheNativeTest extends BaseMapTest {
 
         map.put("5", "6", Duration.ofSeconds(20));
         assertThat(map.remainTimeToLive("1")).isLessThan(9900);
-        map.destroy();
+
+        Map<String, Long> r = map.remainTimeToLive(Set.of("0", "1", "3", "5", "6"));
+        assertThat(r.get("0")).isEqualTo(-2);
+        assertThat(r.get("1")).isGreaterThan(1);
+        assertThat(r.get("3")).isEqualTo(-1);
+        assertThat(r.get("5")).isGreaterThan(1);
+        assertThat(r.get("6")).isEqualTo(-2);
     }
     
     @Test
@@ -383,6 +389,23 @@ public class RedissonMapCacheNativeTest extends BaseMapTest {
 
         Assertions.assertEquals(0, cache.size());
         cache.destroy();
+    }
+
+    @Test
+    public void testClear() {
+        RMapCacheNative<String, String> cache = redisson.getMapCacheNative("simple");
+        cache.put("0", "8", Duration.ofSeconds(1));
+        cache.put("02", "18", Duration.ofSeconds(1));
+        cache.put("03", "38", Duration.ofSeconds(1));
+
+        assertThat(cache.clearExpire("0")).isTrue();
+        assertThat(cache.clearExpire("01")).isNull();
+
+        Map<String, Boolean> r = cache.clearExpire(Set.of("0", "02", "03", "04"));
+        assertThat(r.get("0")).isFalse();
+        assertThat(r.get("02")).isTrue();
+        assertThat(r.get("03")).isTrue();
+        assertThat(r.get("04")).isNull();
     }
     
     @Test

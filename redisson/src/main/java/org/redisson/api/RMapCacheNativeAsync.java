@@ -18,6 +18,7 @@ package org.redisson.api;
 import org.redisson.api.map.MapWriter;
 
 import java.time.Duration;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -114,6 +115,8 @@ public interface RMapCacheNativeAsync<K, V> extends RMapAsync<K, V> {
      */
     RFuture<Long> remainTimeToLiveAsync(K key);
 
+    RFuture<Map<K, Long>> remainTimeToLiveAsync(Set<K> keys);
+
     /**
      * Associates the specified <code>value</code> with the specified <code>key</code>
      * in batch.
@@ -127,13 +130,25 @@ public interface RMapCacheNativeAsync<K, V> extends RMapAsync<K, V> {
     RFuture<Void> putAllAsync(java.util.Map<? extends K, ? extends V> map, Duration ttl);
 
     /**
-     * Clear an expire timeout or expire date of specified entry by key.
+     * Clears an expiration timeout or date of specified entry by key.
      *
      * @param key map key
      * @return <code>true</code> if timeout was removed
-     *         <code>false</code> if object does not exist or does not have an associated timeout
+     *         <code>false</code> if entry does not have an associated timeout
+     *         <code>null</code> if entry does not exist
      */
     RFuture<Boolean> clearExpireAsync(K key);
+
+    /**
+     * Clears an expiration timeout or date of specified entries by keys.
+     *
+     * @param keys map keys
+     * @return Boolean mapped by key.
+     *         <code>true</code> if timeout was removed
+     *         <code>false</code> if entry does not have an associated timeout
+     *         <code>null</code> if entry does not exist
+     */
+    RFuture<Map<K, Boolean>> clearExpireAsync(Set<K> keys);
 
     /**
      * Updates time to live and max idle time of specified entry by key.

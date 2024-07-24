@@ -15,8 +15,8 @@
  */
 package org.redisson;
 
+import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  *
@@ -24,8 +24,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  */
 public class VoidSlotCallback implements SlotCallback<Void, Void> {
-
-    private final AtomicBoolean r = new AtomicBoolean();
 
     private final Object[] params;
 
@@ -38,11 +36,7 @@ public class VoidSlotCallback implements SlotCallback<Void, Void> {
     }
 
     @Override
-    public void onSlotResult(List<Object> keys, Void res) {
-    }
-
-    @Override
-    public Void onFinish() {
+    public Void onResult(Collection<Void> result) {
         return null;
     }
 
