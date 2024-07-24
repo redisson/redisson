@@ -292,17 +292,18 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     @Override
     public <T> RFuture<Void> writeAllVoidAsync(RedisCommand<T> command, Object... params) {
-        List<CompletableFuture<Void>> futures = writeAllAsync(command, StringCodec.INSTANCE, params);
+        List<CompletableFuture<Void>> futures = writeAllAsync(StringCodec.INSTANCE, command, params);
         CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
         return new CompletableFutureWrapper<>(f);
     }
 
     @Override
     public <R> List<CompletableFuture<R>> writeAllAsync(RedisCommand<?> command, Object... params) {
-        return writeAllAsync(command, codec, params);
+        return writeAllAsync(codec, command, params);
     }
 
-    private <R> List<CompletableFuture<R>> writeAllAsync(RedisCommand<?> command, Codec codec, Object... params) {
+    @Override
+    public <R> List<CompletableFuture<R>> writeAllAsync(Codec codec, RedisCommand<?> command, Object... params) {
         List<CompletableFuture<R>> futures = connectionManager.getEntrySet().stream().map(e -> {
             RFuture<R> f = async(false, new NodeSource(e),
                     codec, command, params, true, false);
@@ -506,7 +507,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     public void setEvalShaROSupported(boolean value) {
-        this.EVAL_SHA_RO_SUPPORTED.set(value);
+        EVAL_SHA_RO_SUPPORTED.set(value);
     }
 
     private static final Pattern COMMANDS_PATTERN = Pattern.compile("redis\\.call\\(['\"]{1}([\\w.]+)['\"]{1}");
