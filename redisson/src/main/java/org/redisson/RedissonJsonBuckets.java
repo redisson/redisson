@@ -28,7 +28,6 @@ import org.redisson.misc.CompletableFutureWrapper;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class RedissonJsonBuckets implements RJsonBuckets {
@@ -71,21 +70,15 @@ public class RedissonJsonBuckets implements RJsonBuckets {
         JsonCodecWrapper jsonCodec = new JsonCodecWrapper(codec);
         RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("JSON.MGET", new MapGetAllDecoder(keysList, 0));
         return commandExecutor.readBatchedAsync(jsonCodec, command, new SlotCallback<Map<Object, Object>, Map<String, V>>() {
-            final Map<String, V> results = new ConcurrentHashMap<>();
             
-            @Override
-            public void onSlotResult(List<Object> keys, Map<Object, Object> result) {
-                for (Map.Entry<Object, Object> entry : result.entrySet()) {
-                    if (entry.getKey() != null && entry.getValue() != null) {
-                        String key = commandExecutor.getServiceManager().getConfig().getNameMapper().unmap((String) entry.getKey());
-                        results.put(key, (V) entry.getValue());
-                    }
-                }
-            }
-            
-            @Override
-            public Map<String, V> onFinish() {
-                return results;
+            public Map<String, V> onResult(Collection<Map<Object, Object>> result) {
+                return result.stream()
+                        .flatMap(c -> c.entrySet().stream())
+                        .filter(e -> e.getKey() != null && e.getValue() != null)
+                        .map(e -> {
+                            String key = commandExecutor.getServiceManager().getConfig().getNameMapper().unmap((String) e.getKey());
+                            return new AbstractMap.SimpleEntry<>(key, (V) e.getValue());
+                        }).collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
             }
             
             @Override
