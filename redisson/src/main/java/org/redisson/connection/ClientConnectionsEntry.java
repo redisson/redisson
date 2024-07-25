@@ -170,27 +170,7 @@ public class ClientConnectionsEntry {
             return;
         }
 
-        String key = null;
-        for (int i = 0; i < commandData.getParams().length; i++) {
-            Object param = commandData.getParams()[i];
-            if ("STREAMS".equals(param)) {
-                Object k = commandData.getParams()[i+1];
-                if (k instanceof byte[]) {
-                    key = new String((byte[]) k, StandardCharsets.UTF_8);
-                } else {
-                    key = (String) k;
-                }
-                break;
-            }
-        }
-        if (key == null) {
-            Object k = commandData.getParams()[0];
-            if (k instanceof byte[]) {
-                key = new String((byte[]) k, StandardCharsets.UTF_8);
-            } else {
-                key = (String) k;
-            }
-        }
+        String key = getKey(commandData);
 
         MasterSlaveEntry entry = connectionManager.getEntry(key);
         if (entry == null) {
@@ -224,6 +204,31 @@ public class ClientConnectionsEntry {
                 log.info("command '{}' has been resent to '{}'", commandData, newConnection.getRedisClient());
             });
         });
+    }
+
+    private String getKey(CommandData<?, ?> commandData) {
+        String key = null;
+        for (int i = 0; i < commandData.getParams().length; i++) {
+            Object param = commandData.getParams()[i];
+            if ("STREAMS".equals(param)) {
+                Object k = commandData.getParams()[i+1];
+                if (k instanceof byte[]) {
+                    key = new String((byte[]) k, StandardCharsets.UTF_8);
+                } else {
+                    key = (String) k;
+                }
+                break;
+            }
+        }
+        if (key == null) {
+            Object k = commandData.getParams()[0];
+            if (k instanceof byte[]) {
+                key = new String((byte[]) k, StandardCharsets.UTF_8);
+            } else {
+                key = (String) k;
+            }
+        }
+        return key;
     }
 
     public ConnectionsHolder<RedisConnection> getConnectionsHolder() {
