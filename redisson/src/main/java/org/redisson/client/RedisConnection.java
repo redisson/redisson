@@ -138,6 +138,22 @@ public class RedisConnection implements RedisCommands {
         return null;
     }
 
+    public QueueCommand getCurrentCommandData() {
+        Queue<QueueCommandHolder> queue = channel.attr(CommandsQueue.COMMANDS_QUEUE).get();
+        if (queue != null) {
+            QueueCommandHolder holder = queue.peek();
+            if (holder != null) {
+                return holder.getCommand();
+            }
+        }
+
+        QueueCommandHolder holder = channel.attr(CommandsQueuePubSub.CURRENT_COMMAND).get();
+        if (holder != null) {
+            return holder.getCommand();
+        }
+        return null;
+    }
+
     public CommandData<?, ?> getCurrentCommand() {
         Queue<QueueCommandHolder> queue = channel.attr(CommandsQueue.COMMANDS_QUEUE).get();
         if (queue != null) {
@@ -296,7 +312,7 @@ public class RedisConnection implements RedisCommands {
     }
 
     private void closeInternal() {
-        CommandData<?, ?> command = getCurrentCommand();
+        QueueCommand command = getCurrentCommandData();
         if ((command != null && command.isBlockingCommand())
                     || !connectionPromise.isDone()) {
             channel.close();
@@ -350,7 +366,11 @@ public class RedisConnection implements RedisCommands {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "@" + System.identityHashCode(this) + " [redisClient=" + redisClient + ", channel=" + channel + ", currentCommand=" + getCurrentCommand() + ", usage=" + usage + "]";
+        return getClass().getSimpleName() + "@" + System.identityHashCode(this)
+                        + " [redisClient=" + redisClient
+                        + ", channel=" + channel
+                        + ", currentCommand=" + getCurrentCommandData()
+                        + ", usage=" + usage + "]";
     }
 
 }

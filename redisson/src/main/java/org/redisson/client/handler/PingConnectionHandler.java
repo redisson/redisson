@@ -19,9 +19,11 @@ import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.redisson.api.RFuture;
-import org.redisson.client.*;
+import org.redisson.client.RedisClientConfig;
+import org.redisson.client.RedisConnection;
+import org.redisson.client.RedisRetryException;
 import org.redisson.client.codec.StringCodec;
-import org.redisson.client.protocol.CommandData;
+import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,7 +66,7 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
         }
 
         RFuture<String> future;
-        CommandData<?, ?> currentCommand = connection.getCurrentCommand();
+        QueueCommand currentCommand = connection.getCurrentCommandData();
         if (connection.getUsage() == 0 && (currentCommand == null || !currentCommand.isBlockingCommand())) {
             int timeout = Math.max(config.getCommandTimeout(), config.getPingConnectionInterval() / 2);
             future = connection.async(timeout, StringCodec.INSTANCE, RedisCommands.PING);
@@ -77,7 +79,7 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
                 return;
             }
 
-            CommandData<?, ?> cd = connection.getCurrentCommand();
+            QueueCommand cd = connection.getCurrentCommandData();
             if (cd != null && cd.isBlockingCommand()) {
                 sendPing(ctx);
                 return;

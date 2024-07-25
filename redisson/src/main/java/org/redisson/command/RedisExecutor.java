@@ -583,7 +583,9 @@ public class RedisExecutor<V, R> {
             }
 
             if (cause instanceof RedisRetryException
-                    || cause instanceof RedisReadonlyException) {
+                    || cause instanceof RedisReadonlyException
+                        || (cause instanceof RedisReconnectedException
+                                && (writeFuture.cancel(false) || isResendAllowed(attempt, attempts)))) {
                 if (attempt < attempts) {
                     onException();
                     connectionManager.getServiceManager().newTimeout(timeout -> {

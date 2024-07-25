@@ -20,11 +20,10 @@ import io.netty.channel.*;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.util.Timer;
-import org.redisson.client.ChannelName;
-import org.redisson.client.RedisConnection;
-import org.redisson.client.RedisPubSubConnection;
+import org.redisson.client.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.CommandData;
+import org.redisson.client.protocol.QueueCommand;
 import org.redisson.misc.AsyncSemaphore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -149,7 +148,7 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
                                         channel.close();
                                         return;
                                     } else {
-                                        log.debug("{} connected to {}, command: {}", connection, connection.getRedisClient().getAddr(), connection.getCurrentCommand());
+                                        log.debug("{} connected to {}, command: {}", connection, connection.getRedisClient().getAddr(), connection.getCurrentCommandData());
                                     }
                                     refresh(connection, channel);
                                 } else {
@@ -185,7 +184,7 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
     }
 
     private void refresh(RedisConnection connection, Channel channel) {
-        CommandData<?, ?> currentCommand = connection.getCurrentCommand();
+        QueueCommand currentCommand = connection.getCurrentCommandData();
         connection.fireConnected();
         connection.updateChannel(channel);
         
@@ -193,8 +192,16 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
             connection.clearFastReconnect();
         }
 
-        reattachBlockingQueue(connection, currentCommand);            
+        if (currentCommand instanceof CommandData) {
+            reattachBlockingQueue(connection, (CommandData<?, ?>) currentCommand);
+        }
         reattachPubSub(connection);
+
+        if (currentCommand != null
+                && !currentCommand.isBlockingCommand()
+                    && !(connection instanceof RedisPubSubConnection)) {
+            currentCommand.tryFailure(new RedisReconnectedException("Channel has been reconnected"));
+        }
     }
 
     private void reattachBlockingQueue(RedisConnection connection, CommandData<?, ?> currentCommand) {
