@@ -602,7 +602,16 @@ public interface RedissonReactiveClient {
      * @return JsonBucket object
      */
     <V> RJsonBucketReactive<V> getJsonBucket(JsonBucketOptions<V> options);
-
+    
+    /**
+     * Returns API for mass operations over JsonBucket objects
+     * using provided codec for JSON object with default path.
+     *
+     * @param codec using provided codec for JSON object with default path.
+     * @return JsonBuckets
+     */
+    RJsonBucketsReactive getJsonBuckets(JsonCodec codec);
+    
     /**
      * Returns HyperLogLog instance by name.
      * 

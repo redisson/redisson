@@ -433,7 +433,12 @@ public class RedissonReactive implements RedissonReactiveClient {
         return ReactiveProxyBuilder.create(commandExecutor,
                 new RedissonJsonBucket<V>(params.getCodec(), ca, params.getName()), RJsonBucketReactive.class);
     }
-
+    
+    @Override
+    public RJsonBucketsReactive getJsonBuckets(JsonCodec codec) {
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonJsonBuckets(codec, commandExecutor), RJsonBucketsReactive.class);
+    }
+    
     @Override
     public <V> RHyperLogLogReactive<V> getHyperLogLog(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonHyperLogLog<V>(commandExecutor, name), RHyperLogLogReactive.class);

@@ -371,7 +371,16 @@ public interface RedissonClient {
      * @return JsonBucket object
      */
     <V> RJsonBucket<V> getJsonBucket(JsonBucketOptions<V> options);
-
+    
+    /**
+     * Returns API for mass operations over JsonBucket objects
+     * using provided codec for JSON object with default path.
+     *
+     * @param codec using provided codec for JSON object with default path.
+     * @return JsonBuckets
+     */
+    RJsonBuckets getJsonBuckets(JsonCodec codec);
+    
     /**
      * Returns HyperLogLog instance by name.
      *
