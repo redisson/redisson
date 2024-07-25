@@ -15,6 +15,8 @@
  */
 package org.redisson.client.protocol;
 
+import org.redisson.misc.LogHelper;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -101,7 +103,7 @@ public class CommandsData implements QueueCommand {
     @Override
     public String toString() {
         return "CommandsData{" +
-                "commands=" + commands +
+                "commands=" + LogHelper.toString(commands) +
                 ", promise=" + promise +
                 ", skipResult=" + skipResult +
                 ", atomic=" + atomic +
