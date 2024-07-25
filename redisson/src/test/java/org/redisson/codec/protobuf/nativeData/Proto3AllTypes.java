@@ -48,12 +48,12 @@ public final class Proto3AllTypes {
     double getDoubleType(int index);
 
     /**
-     * <code>float floatType = 2;</code>
+     * <code>optional float floatType = 2;</code>
      * @return Whether the floatType field is set.
      */
     boolean hasFloatType();
     /**
-     * <code>float floatType = 2;</code>
+     * <code>optional float floatType = 2;</code>
      * @return The floatType.
      */
     float getFloatType();
@@ -167,144 +167,6 @@ public final class Proto3AllTypes {
       return new AllTypes3();
     }
 
-    @Override
-    public final com.google.protobuf.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
-    private AllTypes3(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      this();
-      if (extensionRegistry == null) {
-        throw new NullPointerException();
-      }
-      int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
-      try {
-        boolean done = false;
-        while (!done) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              done = true;
-              break;
-            case 9: {
-              if (!((mutable_bitField0_ & 0x00000001) != 0)) {
-                doubleType_ = newDoubleList();
-                mutable_bitField0_ |= 0x00000001;
-              }
-              doubleType_.addDouble(input.readDouble());
-              break;
-            }
-            case 10: {
-              int length = input.readRawVarint32();
-              int limit = input.pushLimit(length);
-              if (!((mutable_bitField0_ & 0x00000001) != 0) && input.getBytesUntilLimit() > 0) {
-                doubleType_ = newDoubleList();
-                mutable_bitField0_ |= 0x00000001;
-              }
-              while (input.getBytesUntilLimit() > 0) {
-                doubleType_.addDouble(input.readDouble());
-              }
-              input.popLimit(limit);
-              break;
-            }
-            case 21: {
-              bitField0_ |= 0x00000001;
-              floatType_ = input.readFloat();
-              break;
-            }
-            case 24: {
-
-              int32Type_ = input.readInt32();
-              break;
-            }
-            case 32: {
-
-              int64Type_ = input.readInt64();
-              break;
-            }
-            case 40: {
-
-              uint32Type_ = input.readUInt32();
-              break;
-            }
-            case 48: {
-
-              uint64Type_ = input.readUInt64();
-              break;
-            }
-            case 56: {
-
-              sint32Type_ = input.readSInt32();
-              break;
-            }
-            case 64: {
-
-              sint64Type_ = input.readSInt64();
-              break;
-            }
-            case 77: {
-
-              fixed32Type_ = input.readFixed32();
-              break;
-            }
-            case 81: {
-
-              fixed64Type_ = input.readFixed64();
-              break;
-            }
-            case 93: {
-
-              sfixed32Type_ = input.readSFixed32();
-              break;
-            }
-            case 97: {
-
-              sfixed64Type_ = input.readSFixed64();
-              break;
-            }
-            case 104: {
-
-              boolType_ = input.readBool();
-              break;
-            }
-            case 114: {
-              String s = input.readStringRequireUtf8();
-
-              stringType_ = s;
-              break;
-            }
-            case 122: {
-
-              bytesType_ = input.readBytes();
-              break;
-            }
-            default: {
-              if (!parseUnknownField(
-                  input, unknownFields, extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
-          }
-        }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
-      } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
-            e).setUnfinishedMessage(this);
-      } finally {
-        if (((mutable_bitField0_ & 0x00000001) != 0)) {
-          doubleType_.makeImmutable(); // C
-        }
-        this.unknownFields = unknownFields.build();
-        makeExtensionsImmutable();
-      }
-    }
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return Proto3AllTypes.internal_static_org_redisson_codec_protobuf_raw_AllTypes3_descriptor;
@@ -315,12 +177,14 @@ public final class Proto3AllTypes {
         internalGetFieldAccessorTable() {
       return Proto3AllTypes.internal_static_org_redisson_codec_protobuf_raw_AllTypes3_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              AllTypes3.class, Builder.class);
+              Proto3AllTypes.AllTypes3.class, Proto3AllTypes.AllTypes3.Builder.class);
     }
 
     private int bitField0_;
     public static final int DOUBLETYPE_FIELD_NUMBER = 1;
-    private com.google.protobuf.Internal.DoubleList doubleType_;
+    @SuppressWarnings("serial")
+    private com.google.protobuf.Internal.DoubleList doubleType_ =
+        emptyDoubleList();
     /**
      * <pre>
      *types from https://protobuf.dev/programming-guides/proto3/
@@ -360,9 +224,9 @@ public final class Proto3AllTypes {
     private int doubleTypeMemoizedSerializedSize = -1;
 
     public static final int FLOATTYPE_FIELD_NUMBER = 2;
-    private float floatType_;
+    private float floatType_ = 0F;
     /**
-     * <code>float floatType = 2;</code>
+     * <code>optional float floatType = 2;</code>
      * @return Whether the floatType field is set.
      */
     @Override
@@ -370,7 +234,7 @@ public final class Proto3AllTypes {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
-     * <code>float floatType = 2;</code>
+     * <code>optional float floatType = 2;</code>
      * @return The floatType.
      */
     @Override
@@ -379,7 +243,7 @@ public final class Proto3AllTypes {
     }
 
     public static final int INT32TYPE_FIELD_NUMBER = 3;
-    private int int32Type_;
+    private int int32Type_ = 0;
     /**
      * <code>int32 int32Type = 3;</code>
      * @return The int32Type.
@@ -390,7 +254,7 @@ public final class Proto3AllTypes {
     }
 
     public static final int INT64TYPE_FIELD_NUMBER = 4;
-    private long int64Type_;
+    private long int64Type_ = 0L;
     /**
      * <code>int64 int64Type = 4;</code>
      * @return The int64Type.
@@ -401,7 +265,7 @@ public final class Proto3AllTypes {
     }
 
     public static final int UINT32TYPE_FIELD_NUMBER = 5;
-    private int uint32Type_;
+    private int uint32Type_ = 0;
     /**
      * <code>uint32 uint32Type = 5;</code>
      * @return The uint32Type.
@@ -412,7 +276,7 @@ public final class Proto3AllTypes {
     }
 
     public static final int UINT64TYPE_FIELD_NUMBER = 6;
-    private long uint64Type_;
+    private long uint64Type_ = 0L;
     /**
      * <code>uint64 uint64Type = 6;</code>
      * @return The uint64Type.
@@ -423,7 +287,7 @@ public final class Proto3AllTypes {
     }
 
     public static final int SINT32TYPE_FIELD_NUMBER = 7;
-    private int sint32Type_;
+    private int sint32Type_ = 0;
     /**
      * <code>sint32 sint32Type = 7;</code>
      * @return The sint32Type.
@@ -434,7 +298,7 @@ public final class Proto3AllTypes {
     }
 
     public static final int SINT64TYPE_FIELD_NUMBER = 8;
-    private long sint64Type_;
+    private long sint64Type_ = 0L;
     /**
      * <code>sint64 sint64Type = 8;</code>
      * @return The sint64Type.
@@ -445,7 +309,7 @@ public final class Proto3AllTypes {
     }
 
     public static final int FIXED32TYPE_FIELD_NUMBER = 9;
-    private int fixed32Type_;
+    private int fixed32Type_ = 0;
     /**
      * <code>fixed32 fixed32Type = 9;</code>
      * @return The fixed32Type.
@@ -456,7 +320,7 @@ public final class Proto3AllTypes {
     }
 
     public static final int FIXED64TYPE_FIELD_NUMBER = 10;
-    private long fixed64Type_;
+    private long fixed64Type_ = 0L;
     /**
      * <code>fixed64 fixed64Type = 10;</code>
      * @return The fixed64Type.
@@ -467,7 +331,7 @@ public final class Proto3AllTypes {
     }
 
     public static final int SFIXED32TYPE_FIELD_NUMBER = 11;
-    private int sfixed32Type_;
+    private int sfixed32Type_ = 0;
     /**
      * <code>sfixed32 sfixed32Type = 11;</code>
      * @return The sfixed32Type.
@@ -478,7 +342,7 @@ public final class Proto3AllTypes {
     }
 
     public static final int SFIXED64TYPE_FIELD_NUMBER = 12;
-    private long sfixed64Type_;
+    private long sfixed64Type_ = 0L;
     /**
      * <code>sfixed64 sfixed64Type = 12;</code>
      * @return The sfixed64Type.
@@ -489,7 +353,7 @@ public final class Proto3AllTypes {
     }
 
     public static final int BOOLTYPE_FIELD_NUMBER = 13;
-    private boolean boolType_;
+    private boolean boolType_ = false;
     /**
      * <code>bool boolType = 13;</code>
      * @return The boolType.
@@ -500,7 +364,8 @@ public final class Proto3AllTypes {
     }
 
     public static final int STRINGTYPE_FIELD_NUMBER = 14;
-    private volatile Object stringType_;
+    @SuppressWarnings("serial")
+    private volatile Object stringType_ = "";
     /**
      * <code>string stringType = 14;</code>
      * @return The stringType.
@@ -538,7 +403,7 @@ public final class Proto3AllTypes {
     }
 
     public static final int BYTESTYPE_FIELD_NUMBER = 15;
-    private com.google.protobuf.ByteString bytesType_;
+    private com.google.protobuf.ByteString bytesType_ = com.google.protobuf.ByteString.EMPTY;
     /**
      * <code>bytes bytesType = 15;</code>
      * @return The bytesType.
@@ -606,13 +471,13 @@ public final class Proto3AllTypes {
       if (boolType_ != false) {
         output.writeBool(13, boolType_);
       }
-      if (!getStringTypeBytes().isEmpty()) {
+      if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(stringType_)) {
         com.google.protobuf.GeneratedMessageV3.writeString(output, 14, stringType_);
       }
       if (!bytesType_.isEmpty()) {
         output.writeBytes(15, bytesType_);
       }
-      unknownFields.writeTo(output);
+      getUnknownFields().writeTo(output);
     }
 
     @Override
@@ -680,14 +545,14 @@ public final class Proto3AllTypes {
         size += com.google.protobuf.CodedOutputStream
           .computeBoolSize(13, boolType_);
       }
-      if (!getStringTypeBytes().isEmpty()) {
+      if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(stringType_)) {
         size += com.google.protobuf.GeneratedMessageV3.computeStringSize(14, stringType_);
       }
       if (!bytesType_.isEmpty()) {
         size += com.google.protobuf.CodedOutputStream
           .computeBytesSize(15, bytesType_);
       }
-      size += unknownFields.getSerializedSize();
+      size += getUnknownFields().getSerializedSize();
       memoizedSize = size;
       return size;
     }
@@ -697,10 +562,10 @@ public final class Proto3AllTypes {
       if (obj == this) {
        return true;
       }
-      if (!(obj instanceof AllTypes3)) {
+      if (!(obj instanceof Proto3AllTypes.AllTypes3)) {
         return super.equals(obj);
       }
-      AllTypes3 other = (AllTypes3) obj;
+      Proto3AllTypes.AllTypes3 other = (Proto3AllTypes.AllTypes3) obj;
 
       if (!getDoubleTypeList()
           .equals(other.getDoubleTypeList())) return false;
@@ -736,7 +601,7 @@ public final class Proto3AllTypes {
           .equals(other.getStringType())) return false;
       if (!getBytesType()
           .equals(other.getBytesType())) return false;
-      if (!unknownFields.equals(other.unknownFields)) return false;
+      if (!getUnknownFields().equals(other.getUnknownFields())) return false;
       return true;
     }
 
@@ -788,74 +653,76 @@ public final class Proto3AllTypes {
       hash = (53 * hash) + getStringType().hashCode();
       hash = (37 * hash) + BYTESTYPE_FIELD_NUMBER;
       hash = (53 * hash) + getBytesType().hashCode();
-      hash = (29 * hash) + unknownFields.hashCode();
+      hash = (29 * hash) + getUnknownFields().hashCode();
       memoizedHashCode = hash;
       return hash;
     }
 
-    public static AllTypes3 parseFrom(
+    public static Proto3AllTypes.AllTypes3 parseFrom(
         java.nio.ByteBuffer data)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static AllTypes3 parseFrom(
+    public static Proto3AllTypes.AllTypes3 parseFrom(
         java.nio.ByteBuffer data,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static AllTypes3 parseFrom(
+    public static Proto3AllTypes.AllTypes3 parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static AllTypes3 parseFrom(
+    public static Proto3AllTypes.AllTypes3 parseFrom(
         com.google.protobuf.ByteString data,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static AllTypes3 parseFrom(byte[] data)
+    public static Proto3AllTypes.AllTypes3 parseFrom(byte[] data)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static AllTypes3 parseFrom(
+    public static Proto3AllTypes.AllTypes3 parseFrom(
         byte[] data,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static AllTypes3 parseFrom(java.io.InputStream input)
+    public static Proto3AllTypes.AllTypes3 parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return com.google.protobuf.GeneratedMessageV3
           .parseWithIOException(PARSER, input);
     }
-    public static AllTypes3 parseFrom(
+    public static Proto3AllTypes.AllTypes3 parseFrom(
         java.io.InputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return com.google.protobuf.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
-    public static AllTypes3 parseDelimitedFrom(java.io.InputStream input)
+
+    public static Proto3AllTypes.AllTypes3 parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return com.google.protobuf.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
-    public static AllTypes3 parseDelimitedFrom(
+
+    public static Proto3AllTypes.AllTypes3 parseDelimitedFrom(
         java.io.InputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return com.google.protobuf.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
-    public static AllTypes3 parseFrom(
+    public static Proto3AllTypes.AllTypes3 parseFrom(
         com.google.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return com.google.protobuf.GeneratedMessageV3
           .parseWithIOException(PARSER, input);
     }
-    public static AllTypes3 parseFrom(
+    public static Proto3AllTypes.AllTypes3 parseFrom(
         com.google.protobuf.CodedInputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
@@ -868,7 +735,7 @@ public final class Proto3AllTypes {
     public static Builder newBuilder() {
       return DEFAULT_INSTANCE.toBuilder();
     }
-    public static Builder newBuilder(AllTypes3 prototype) {
+    public static Builder newBuilder(Proto3AllTypes.AllTypes3 prototype) {
       return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
     }
     @Override
@@ -889,7 +756,7 @@ public final class Proto3AllTypes {
     public static final class Builder extends
         com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
         // @@protoc_insertion_point(builder_implements:org.redisson.codec.protobuf.raw.AllTypes3)
-        AllTypes3OrBuilder {
+        Proto3AllTypes.AllTypes3OrBuilder {
       public static final com.google.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return Proto3AllTypes.internal_static_org_redisson_codec_protobuf_raw_AllTypes3_descriptor;
@@ -900,57 +767,38 @@ public final class Proto3AllTypes {
           internalGetFieldAccessorTable() {
         return Proto3AllTypes.internal_static_org_redisson_codec_protobuf_raw_AllTypes3_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                AllTypes3.class, Builder.class);
+                Proto3AllTypes.AllTypes3.class, Proto3AllTypes.AllTypes3.Builder.class);
       }
 
-      // Construct using org.redisson.codec.protobuf.raw.Proto3AllTypes.AllTypes3.newBuilder()
+      // Construct using org.redisson.codec.protobuf.nativeData.Proto3AllTypes.AllTypes3.newBuilder()
       private Builder() {
-        maybeForceBuilderInitialization();
+
       }
 
       private Builder(
           com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
-        maybeForceBuilderInitialization();
-      }
-      private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessageV3
-                .alwaysUseFieldBuilders) {
-        }
+
       }
       @Override
       public Builder clear() {
         super.clear();
+        bitField0_ = 0;
         doubleType_ = emptyDoubleList();
-        bitField0_ = (bitField0_ & ~0x00000001);
         floatType_ = 0F;
-        bitField0_ = (bitField0_ & ~0x00000002);
         int32Type_ = 0;
-
         int64Type_ = 0L;
-
         uint32Type_ = 0;
-
         uint64Type_ = 0L;
-
         sint32Type_ = 0;
-
         sint64Type_ = 0L;
-
         fixed32Type_ = 0;
-
         fixed64Type_ = 0L;
-
         sfixed32Type_ = 0;
-
         sfixed64Type_ = 0L;
-
         boolType_ = false;
-
         stringType_ = "";
-
         bytesType_ = com.google.protobuf.ByteString.EMPTY;
-
         return this;
       }
 
@@ -961,13 +809,13 @@ public final class Proto3AllTypes {
       }
 
       @Override
-      public AllTypes3 getDefaultInstanceForType() {
-        return AllTypes3.getDefaultInstance();
+      public Proto3AllTypes.AllTypes3 getDefaultInstanceForType() {
+        return Proto3AllTypes.AllTypes3.getDefaultInstance();
       }
 
       @Override
-      public AllTypes3 build() {
-        AllTypes3 result = buildPartial();
+      public Proto3AllTypes.AllTypes3 build() {
+        Proto3AllTypes.AllTypes3 result = buildPartial();
         if (!result.isInitialized()) {
           throw newUninitializedMessageException(result);
         }
@@ -975,35 +823,64 @@ public final class Proto3AllTypes {
       }
 
       @Override
-      public AllTypes3 buildPartial() {
-        AllTypes3 result = new AllTypes3(this);
+      public Proto3AllTypes.AllTypes3 buildPartial() {
+        Proto3AllTypes.AllTypes3 result = new Proto3AllTypes.AllTypes3(this);
+        if (bitField0_ != 0) { buildPartial0(result); }
+        onBuilt();
+        return result;
+      }
+
+      private void buildPartial0(Proto3AllTypes.AllTypes3 result) {
         int from_bitField0_ = bitField0_;
-        int to_bitField0_ = 0;
-        if (((bitField0_ & 0x00000001) != 0)) {
+        if (((from_bitField0_ & 0x00000001) != 0)) {
           doubleType_.makeImmutable();
-          bitField0_ = (bitField0_ & ~0x00000001);
+          result.doubleType_ = doubleType_;
         }
-        result.doubleType_ = doubleType_;
+        int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000002) != 0)) {
           result.floatType_ = floatType_;
           to_bitField0_ |= 0x00000001;
         }
-        result.int32Type_ = int32Type_;
-        result.int64Type_ = int64Type_;
-        result.uint32Type_ = uint32Type_;
-        result.uint64Type_ = uint64Type_;
-        result.sint32Type_ = sint32Type_;
-        result.sint64Type_ = sint64Type_;
-        result.fixed32Type_ = fixed32Type_;
-        result.fixed64Type_ = fixed64Type_;
-        result.sfixed32Type_ = sfixed32Type_;
-        result.sfixed64Type_ = sfixed64Type_;
-        result.boolType_ = boolType_;
-        result.stringType_ = stringType_;
-        result.bytesType_ = bytesType_;
-        result.bitField0_ = to_bitField0_;
-        onBuilt();
-        return result;
+        if (((from_bitField0_ & 0x00000004) != 0)) {
+          result.int32Type_ = int32Type_;
+        }
+        if (((from_bitField0_ & 0x00000008) != 0)) {
+          result.int64Type_ = int64Type_;
+        }
+        if (((from_bitField0_ & 0x00000010) != 0)) {
+          result.uint32Type_ = uint32Type_;
+        }
+        if (((from_bitField0_ & 0x00000020) != 0)) {
+          result.uint64Type_ = uint64Type_;
+        }
+        if (((from_bitField0_ & 0x00000040) != 0)) {
+          result.sint32Type_ = sint32Type_;
+        }
+        if (((from_bitField0_ & 0x00000080) != 0)) {
+          result.sint64Type_ = sint64Type_;
+        }
+        if (((from_bitField0_ & 0x00000100) != 0)) {
+          result.fixed32Type_ = fixed32Type_;
+        }
+        if (((from_bitField0_ & 0x00000200) != 0)) {
+          result.fixed64Type_ = fixed64Type_;
+        }
+        if (((from_bitField0_ & 0x00000400) != 0)) {
+          result.sfixed32Type_ = sfixed32Type_;
+        }
+        if (((from_bitField0_ & 0x00000800) != 0)) {
+          result.sfixed64Type_ = sfixed64Type_;
+        }
+        if (((from_bitField0_ & 0x00001000) != 0)) {
+          result.boolType_ = boolType_;
+        }
+        if (((from_bitField0_ & 0x00002000) != 0)) {
+          result.stringType_ = stringType_;
+        }
+        if (((from_bitField0_ & 0x00004000) != 0)) {
+          result.bytesType_ = bytesType_;
+        }
+        result.bitField0_ |= to_bitField0_;
       }
 
       @Override
@@ -1040,20 +917,21 @@ public final class Proto3AllTypes {
       }
       @Override
       public Builder mergeFrom(com.google.protobuf.Message other) {
-        if (other instanceof AllTypes3) {
-          return mergeFrom((AllTypes3)other);
+        if (other instanceof Proto3AllTypes.AllTypes3) {
+          return mergeFrom((Proto3AllTypes.AllTypes3)other);
         } else {
           super.mergeFrom(other);
           return this;
         }
       }
 
-      public Builder mergeFrom(AllTypes3 other) {
-        if (other == AllTypes3.getDefaultInstance()) return this;
+      public Builder mergeFrom(Proto3AllTypes.AllTypes3 other) {
+        if (other == Proto3AllTypes.AllTypes3.getDefaultInstance()) return this;
         if (!other.doubleType_.isEmpty()) {
           if (doubleType_.isEmpty()) {
             doubleType_ = other.doubleType_;
-            bitField0_ = (bitField0_ & ~0x00000001);
+            doubleType_.makeImmutable();
+            bitField0_ |= 0x00000001;
           } else {
             ensureDoubleTypeIsMutable();
             doubleType_.addAll(other.doubleType_);
@@ -1098,12 +976,13 @@ public final class Proto3AllTypes {
         }
         if (!other.getStringType().isEmpty()) {
           stringType_ = other.stringType_;
+          bitField0_ |= 0x00002000;
           onChanged();
         }
         if (other.getBytesType() != com.google.protobuf.ByteString.EMPTY) {
           setBytesType(other.getBytesType());
         }
-        this.mergeUnknownFields(other.unknownFields);
+        this.mergeUnknownFields(other.getUnknownFields());
         onChanged();
         return this;
       }
@@ -1118,27 +997,133 @@ public final class Proto3AllTypes {
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
-        AllTypes3 parsedMessage = null;
+        if (extensionRegistry == null) {
+          throw new NullPointerException();
+        }
         try {
-          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+          boolean done = false;
+          while (!done) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                done = true;
+                break;
+              case 9: {
+                double v = input.readDouble();
+                ensureDoubleTypeIsMutable();
+                doubleType_.addDouble(v);
+                break;
+              } // case 9
+              case 10: {
+                int length = input.readRawVarint32();
+                int limit = input.pushLimit(length);
+                int alloc = length > 4096 ? 4096 : length;
+                ensureDoubleTypeIsMutable(alloc / 8);
+                while (input.getBytesUntilLimit() > 0) {
+                  doubleType_.addDouble(input.readDouble());
+                }
+                input.popLimit(limit);
+                break;
+              } // case 10
+              case 21: {
+                floatType_ = input.readFloat();
+                bitField0_ |= 0x00000002;
+                break;
+              } // case 21
+              case 24: {
+                int32Type_ = input.readInt32();
+                bitField0_ |= 0x00000004;
+                break;
+              } // case 24
+              case 32: {
+                int64Type_ = input.readInt64();
+                bitField0_ |= 0x00000008;
+                break;
+              } // case 32
+              case 40: {
+                uint32Type_ = input.readUInt32();
+                bitField0_ |= 0x00000010;
+                break;
+              } // case 40
+              case 48: {
+                uint64Type_ = input.readUInt64();
+                bitField0_ |= 0x00000020;
+                break;
+              } // case 48
+              case 56: {
+                sint32Type_ = input.readSInt32();
+                bitField0_ |= 0x00000040;
+                break;
+              } // case 56
+              case 64: {
+                sint64Type_ = input.readSInt64();
+                bitField0_ |= 0x00000080;
+                break;
+              } // case 64
+              case 77: {
+                fixed32Type_ = input.readFixed32();
+                bitField0_ |= 0x00000100;
+                break;
+              } // case 77
+              case 81: {
+                fixed64Type_ = input.readFixed64();
+                bitField0_ |= 0x00000200;
+                break;
+              } // case 81
+              case 93: {
+                sfixed32Type_ = input.readSFixed32();
+                bitField0_ |= 0x00000400;
+                break;
+              } // case 93
+              case 97: {
+                sfixed64Type_ = input.readSFixed64();
+                bitField0_ |= 0x00000800;
+                break;
+              } // case 97
+              case 104: {
+                boolType_ = input.readBool();
+                bitField0_ |= 0x00001000;
+                break;
+              } // case 104
+              case 114: {
+                stringType_ = input.readStringRequireUtf8();
+                bitField0_ |= 0x00002000;
+                break;
+              } // case 114
+              case 122: {
+                bytesType_ = input.readBytes();
+                bitField0_ |= 0x00004000;
+                break;
+              } // case 122
+              default: {
+                if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                  done = true; // was an endgroup tag
+                }
+                break;
+              } // default:
+            } // switch (tag)
+          } // while (!done)
         } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-          parsedMessage = (AllTypes3) e.getUnfinishedMessage();
           throw e.unwrapIOException();
         } finally {
-          if (parsedMessage != null) {
-            mergeFrom(parsedMessage);
-          }
-        }
+          onChanged();
+        } // finally
         return this;
       }
       private int bitField0_;
 
       private com.google.protobuf.Internal.DoubleList doubleType_ = emptyDoubleList();
       private void ensureDoubleTypeIsMutable() {
-        if (!((bitField0_ & 0x00000001) != 0)) {
-          doubleType_ = mutableCopy(doubleType_);
-          bitField0_ |= 0x00000001;
-         }
+        if (!doubleType_.isModifiable()) {
+          doubleType_ = makeMutableCopy(doubleType_);
+        }
+        bitField0_ |= 0x00000001;
+      }
+      private void ensureDoubleTypeIsMutable(int capacity) {
+        if (!doubleType_.isModifiable()) {
+          doubleType_ = makeMutableCopy(doubleType_, capacity);
+        }
+        bitField0_ |= 0x00000001;
       }
       /**
        * <pre>
@@ -1150,8 +1135,8 @@ public final class Proto3AllTypes {
        */
       public java.util.List<Double>
           getDoubleTypeList() {
-        return ((bitField0_ & 0x00000001) != 0) ?
-                 java.util.Collections.unmodifiableList(doubleType_) : doubleType_;
+        doubleType_.makeImmutable();
+        return doubleType_;
       }
       /**
        * <pre>
@@ -1188,8 +1173,10 @@ public final class Proto3AllTypes {
        */
       public Builder setDoubleType(
           int index, double value) {
+
         ensureDoubleTypeIsMutable();
         doubleType_.setDouble(index, value);
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -1203,8 +1190,10 @@ public final class Proto3AllTypes {
        * @return This builder for chaining.
        */
       public Builder addDoubleType(double value) {
+
         ensureDoubleTypeIsMutable();
         doubleType_.addDouble(value);
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -1222,6 +1211,7 @@ public final class Proto3AllTypes {
         ensureDoubleTypeIsMutable();
         com.google.protobuf.AbstractMessageLite.Builder.addAll(
             values, doubleType_);
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -1242,7 +1232,7 @@ public final class Proto3AllTypes {
 
       private float floatType_ ;
       /**
-       * <code>float floatType = 2;</code>
+       * <code>optional float floatType = 2;</code>
        * @return Whether the floatType field is set.
        */
       @Override
@@ -1250,7 +1240,7 @@ public final class Proto3AllTypes {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
-       * <code>float floatType = 2;</code>
+       * <code>optional float floatType = 2;</code>
        * @return The floatType.
        */
       @Override
@@ -1258,18 +1248,19 @@ public final class Proto3AllTypes {
         return floatType_;
       }
       /**
-       * <code>float floatType = 2;</code>
+       * <code>optional float floatType = 2;</code>
        * @param value The floatType to set.
        * @return This builder for chaining.
        */
       public Builder setFloatType(float value) {
-        bitField0_ |= 0x00000002;
+
         floatType_ = value;
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
       /**
-       * <code>float floatType = 2;</code>
+       * <code>optional float floatType = 2;</code>
        * @return This builder for chaining.
        */
       public Builder clearFloatType() {
@@ -1294,8 +1285,9 @@ public final class Proto3AllTypes {
        * @return This builder for chaining.
        */
       public Builder setInt32Type(int value) {
-        
+
         int32Type_ = value;
+        bitField0_ |= 0x00000004;
         onChanged();
         return this;
       }
@@ -1304,7 +1296,7 @@ public final class Proto3AllTypes {
        * @return This builder for chaining.
        */
       public Builder clearInt32Type() {
-        
+        bitField0_ = (bitField0_ & ~0x00000004);
         int32Type_ = 0;
         onChanged();
         return this;
@@ -1325,8 +1317,9 @@ public final class Proto3AllTypes {
        * @return This builder for chaining.
        */
       public Builder setInt64Type(long value) {
-        
+
         int64Type_ = value;
+        bitField0_ |= 0x00000008;
         onChanged();
         return this;
       }
@@ -1335,7 +1328,7 @@ public final class Proto3AllTypes {
        * @return This builder for chaining.
        */
       public Builder clearInt64Type() {
-        
+        bitField0_ = (bitField0_ & ~0x00000008);
         int64Type_ = 0L;
         onChanged();
         return this;
@@ -1356,8 +1349,9 @@ public final class Proto3AllTypes {
        * @return This builder for chaining.
        */
       public Builder setUint32Type(int value) {
-        
+
         uint32Type_ = value;
+        bitField0_ |= 0x00000010;
         onChanged();
         return this;
       }
@@ -1366,7 +1360,7 @@ public final class Proto3AllTypes {
        * @return This builder for chaining.
        */
       public Builder clearUint32Type() {
-        
+        bitField0_ = (bitField0_ & ~0x00000010);
         uint32Type_ = 0;
         onChanged();
         return this;
@@ -1387,8 +1381,9 @@ public final class Proto3AllTypes {
        * @return This builder for chaining.
        */
       public Builder setUint64Type(long value) {
-        
+
         uint64Type_ = value;
+        bitField0_ |= 0x00000020;
         onChanged();
         return this;
       }
@@ -1397,7 +1392,7 @@ public final class Proto3AllTypes {
        * @return This builder for chaining.
        */
       public Builder clearUint64Type() {
-        
+        bitField0_ = (bitField0_ & ~0x00000020);
         uint64Type_ = 0L;
         onChanged();
         return this;
@@ -1418,8 +1413,9 @@ public final class Proto3AllTypes {
        * @return This builder for chaining.
        */
       public Builder setSint32Type(int value) {
-        
+
         sint32Type_ = value;
+        bitField0_ |= 0x00000040;
         onChanged();
         return this;
       }
@@ -1428,7 +1424,7 @@ public final class Proto3AllTypes {
        * @return This builder for chaining.
        */
       public Builder clearSint32Type() {
-        
+        bitField0_ = (bitField0_ & ~0x00000040);
         sint32Type_ = 0;
         onChanged();
         return this;
@@ -1449,8 +1445,9 @@ public final class Proto3AllTypes {
        * @return This builder for chaining.
        */
       public Builder setSint64Type(long value) {
-        
+
         sint64Type_ = value;
+        bitField0_ |= 0x00000080;
         onChanged();
         return this;
       }
@@ -1459,7 +1456,7 @@ public final class Proto3AllTypes {
        * @return This builder for chaining.
        */
       public Builder clearSint64Type() {
-        
+        bitField0_ = (bitField0_ & ~0x00000080);
         sint64Type_ = 0L;
         onChanged();
         return this;
@@ -1480,8 +1477,9 @@ public final class Proto3AllTypes {
        * @return This builder for chaining.
        */
       public Builder setFixed32Type(int value) {
-        
+
         fixed32Type_ = value;
+        bitField0_ |= 0x00000100;
         onChanged();
         return this;
       }
@@ -1490,7 +1488,7 @@ public final class Proto3AllTypes {
        * @return This builder for chaining.
        */
       public Builder clearFixed32Type() {
-        
+        bitField0_ = (bitField0_ & ~0x00000100);
         fixed32Type_ = 0;
         onChanged();
         return this;
@@ -1511,8 +1509,9 @@ public final class Proto3AllTypes {
        * @return This builder for chaining.
        */
       public Builder setFixed64Type(long value) {
-        
+
         fixed64Type_ = value;
+        bitField0_ |= 0x00000200;
         onChanged();
         return this;
       }
@@ -1521,7 +1520,7 @@ public final class Proto3AllTypes {
        * @return This builder for chaining.
        */
       public Builder clearFixed64Type() {
-        
+        bitField0_ = (bitField0_ & ~0x00000200);
         fixed64Type_ = 0L;
         onChanged();
         return this;
@@ -1542,8 +1541,9 @@ public final class Proto3AllTypes {
        * @return This builder for chaining.
        */
       public Builder setSfixed32Type(int value) {
-        
+
         sfixed32Type_ = value;
+        bitField0_ |= 0x00000400;
         onChanged();
         return this;
       }
@@ -1552,7 +1552,7 @@ public final class Proto3AllTypes {
        * @return This builder for chaining.
        */
       public Builder clearSfixed32Type() {
-        
+        bitField0_ = (bitField0_ & ~0x00000400);
         sfixed32Type_ = 0;
         onChanged();
         return this;
@@ -1573,8 +1573,9 @@ public final class Proto3AllTypes {
        * @return This builder for chaining.
        */
       public Builder setSfixed64Type(long value) {
-        
+
         sfixed64Type_ = value;
+        bitField0_ |= 0x00000800;
         onChanged();
         return this;
       }
@@ -1583,7 +1584,7 @@ public final class Proto3AllTypes {
        * @return This builder for chaining.
        */
       public Builder clearSfixed64Type() {
-        
+        bitField0_ = (bitField0_ & ~0x00000800);
         sfixed64Type_ = 0L;
         onChanged();
         return this;
@@ -1604,8 +1605,9 @@ public final class Proto3AllTypes {
        * @return This builder for chaining.
        */
       public Builder setBoolType(boolean value) {
-        
+
         boolType_ = value;
+        bitField0_ |= 0x00001000;
         onChanged();
         return this;
       }
@@ -1614,7 +1616,7 @@ public final class Proto3AllTypes {
        * @return This builder for chaining.
        */
       public Builder clearBoolType() {
-        
+        bitField0_ = (bitField0_ & ~0x00001000);
         boolType_ = false;
         onChanged();
         return this;
@@ -1661,11 +1663,9 @@ public final class Proto3AllTypes {
        */
       public Builder setStringType(
           String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  
+        if (value == null) { throw new NullPointerException(); }
         stringType_ = value;
+        bitField0_ |= 0x00002000;
         onChanged();
         return this;
       }
@@ -1674,8 +1674,8 @@ public final class Proto3AllTypes {
        * @return This builder for chaining.
        */
       public Builder clearStringType() {
-        
         stringType_ = getDefaultInstance().getStringType();
+        bitField0_ = (bitField0_ & ~0x00002000);
         onChanged();
         return this;
       }
@@ -1686,12 +1686,10 @@ public final class Proto3AllTypes {
        */
       public Builder setStringTypeBytes(
           com.google.protobuf.ByteString value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  checkByteStringIsUtf8(value);
-        
+        if (value == null) { throw new NullPointerException(); }
+        checkByteStringIsUtf8(value);
         stringType_ = value;
+        bitField0_ |= 0x00002000;
         onChanged();
         return this;
       }
@@ -1711,11 +1709,9 @@ public final class Proto3AllTypes {
        * @return This builder for chaining.
        */
       public Builder setBytesType(com.google.protobuf.ByteString value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  
+        if (value == null) { throw new NullPointerException(); }
         bytesType_ = value;
+        bitField0_ |= 0x00004000;
         onChanged();
         return this;
       }
@@ -1724,7 +1720,7 @@ public final class Proto3AllTypes {
        * @return This builder for chaining.
        */
       public Builder clearBytesType() {
-        
+        bitField0_ = (bitField0_ & ~0x00004000);
         bytesType_ = getDefaultInstance().getBytesType();
         onChanged();
         return this;
@@ -1746,12 +1742,12 @@ public final class Proto3AllTypes {
     }
 
     // @@protoc_insertion_point(class_scope:org.redisson.codec.protobuf.raw.AllTypes3)
-    private static final AllTypes3 DEFAULT_INSTANCE;
+    private static final Proto3AllTypes.AllTypes3 DEFAULT_INSTANCE;
     static {
-      DEFAULT_INSTANCE = new AllTypes3();
+      DEFAULT_INSTANCE = new Proto3AllTypes.AllTypes3();
     }
 
-    public static AllTypes3 getDefaultInstance() {
+    public static Proto3AllTypes.AllTypes3 getDefaultInstance() {
       return DEFAULT_INSTANCE;
     }
 
@@ -1762,7 +1758,18 @@ public final class Proto3AllTypes {
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws com.google.protobuf.InvalidProtocolBufferException {
-        return new AllTypes3(input, extensionRegistry);
+        Builder builder = newBuilder();
+        try {
+          builder.mergeFrom(input, extensionRegistry);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          throw e.setUnfinishedMessage(builder.buildPartial());
+        } catch (com.google.protobuf.UninitializedMessageException e) {
+          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
+        } catch (java.io.IOException e) {
+          throw new com.google.protobuf.InvalidProtocolBufferException(e)
+              .setUnfinishedMessage(builder.buildPartial());
+        }
+        return builder.buildPartial();
       }
     };
 
@@ -1776,7 +1783,7 @@ public final class Proto3AllTypes {
     }
 
     @Override
-    public AllTypes3 getDefaultInstanceForType() {
+    public Proto3AllTypes.AllTypes3 getDefaultInstanceForType() {
       return DEFAULT_INSTANCE;
     }
 
@@ -1818,7 +1825,7 @@ public final class Proto3AllTypes {
     internal_static_org_redisson_codec_protobuf_raw_AllTypes3_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_org_redisson_codec_protobuf_raw_AllTypes3_descriptor,
-        new String[] { "DoubleType", "FloatType", "Int32Type", "Int64Type", "Uint32Type", "Uint64Type", "Sint32Type", "Sint64Type", "Fixed32Type", "Fixed64Type", "Sfixed32Type", "Sfixed64Type", "BoolType", "StringType", "BytesType", "FloatType", });
+        new String[] { "DoubleType", "FloatType", "Int32Type", "Int64Type", "Uint32Type", "Uint64Type", "Sint32Type", "Sint64Type", "Fixed32Type", "Fixed64Type", "Sfixed32Type", "Sfixed64Type", "BoolType", "StringType", "BytesType", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)
