@@ -76,20 +76,22 @@ public class IndexInfoDecoder implements MultiDecoder<Object> {
     }
 
     private Long toLong(Map<String, Object> result, String prop) {
-        if (result.get(prop).toString().contains("nan")) {
+        Object val = result.getOrDefault(prop, "nan");
+        if (val.toString().contains("nan")) {
             return 0L;
         }
-        if (result.get(prop) instanceof Double) {
-            Double d = (Double) result.get(prop);
+        if (val instanceof Double) {
+            Double d = (Double) val;
             return d.longValue();
         }
-        return Long.valueOf(result.get(prop).toString());
+        return Long.valueOf(val.toString());
     }
-    
+
     private Double toDouble(Map<String, Object> result, String prop) {
-        if (result.get(prop).toString().contains("nan")) {
+        Object val = result.getOrDefault(prop, "nan");
+        if (val.toString().contains("nan")) {
             return 0D;
         }
-        return Double.valueOf(result.get(prop).toString());
+        return Double.valueOf(val.toString());
     }
 }
