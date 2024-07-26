@@ -127,6 +127,8 @@ public class RedissonBucketTest extends RedisDockerTest {
 
             RBucket<String> bs = rc.getBucket(b.getName());
             assertThat(bs.get()).isEqualTo("123");
+
+            assertThat(rc.getKeys().count()).isEqualTo(1);
         });
     }
 

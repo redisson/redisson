@@ -167,13 +167,11 @@ public abstract class RedissonObject implements RObject {
         if (getServiceManager().getCfg().isClusterConfig()) {
             checkNotBatch();
 
-            RFuture<byte[]> r = commandExecutor.evalWriteAsync(getRawName(), ByteArrayCodec.INSTANCE, RedisCommands.EVAL_OBJECT,
-                                              "local result = redis.call('dump', KEYS[1]);" +
-                                                    "redis.call('del', KEYS[1]);" +
-                                                    "return result;",
-                                            Arrays.asList(getRawName()));
-            CompletionStage<Void> f = r.thenCompose(val -> commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.RESTORE, mapName(newName), 0, val))
-                                       .thenAccept(rr -> setName(newName));
+            String nn = mapName(newName);
+            CompletionStage<Void> f = dumpAsync()
+                                       .thenCompose(val -> commandExecutor.writeAsync(nn, StringCodec.INSTANCE, RedisCommands.RESTORE, nn, 0, val))
+                                       .thenAccept(rr -> setName(newName))
+                                       .thenCompose(val -> deleteAsync().thenApply(r -> null));
             return new CompletableFutureWrapper<>(f);
         }
 
