@@ -33,14 +33,11 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.NumberConvertor;
 import org.redisson.client.protocol.decoder.*;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.command.CommandBatchService;
 import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.iterator.RedissonMapIterator;
 import org.redisson.iterator.RedissonMapKeyIterator;
 import org.redisson.mapreduce.RedissonMapReduce;
 import org.redisson.misc.CompletableFutureWrapper;
-import org.redisson.reactive.CommandReactiveBatchService;
-import org.redisson.rx.CommandRxBatchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

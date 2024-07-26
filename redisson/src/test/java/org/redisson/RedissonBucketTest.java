@@ -116,6 +116,20 @@ public class RedissonBucketTest extends RedisDockerTest {
         rs.shutdown();
     }
 
+    @Test
+    public void testRenameInCluster() {
+        testInCluster(rc -> {
+            RBucket<String> b = rc.getBucket("test1234");
+            b.set("123");
+
+            b.rename("test347834");
+            assertThat(b.getName()).isEqualTo("test347834");
+
+            RBucket<String> bs = rc.getBucket(b.getName());
+            assertThat(bs.get()).isEqualTo("123");
+        });
+    }
+
     @ParameterizedTest
     @MethodSource("trackingData")
     public void testTrackingCluster(List<Object> params) {

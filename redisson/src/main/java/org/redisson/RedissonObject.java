@@ -25,6 +25,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
+import org.redisson.command.BatchService;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.config.Protocol;
 import org.redisson.connection.ServiceManager;
@@ -116,7 +117,7 @@ public abstract class RedissonObject implements RObject {
     }
 
     protected final void setName(String name) {
-        this.name = commandExecutor.getServiceManager().getConfig().getNameMapper().map(name);
+        this.name = mapName(name);
     }
 
     @Override
@@ -156,16 +157,27 @@ public abstract class RedissonObject implements RObject {
     }
 
     protected final void checkNotBatch() {
-        if (commandExecutor instanceof CommandBatchService
-                || commandExecutor instanceof CommandReactiveBatchService
-                    || commandExecutor instanceof CommandRxBatchService) {
+        if (commandExecutor instanceof BatchService) {
             throw new IllegalStateException("This method doesn't work in batch mode.");
         }
     }
 
     @Override
     public RFuture<Void> renameAsync(String newName) {
-        RFuture<Void> future = commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.RENAME, getRawName(), newName);
+        if (getServiceManager().getCfg().isClusterConfig()) {
+            checkNotBatch();
+
+            RFuture<byte[]> r = commandExecutor.evalWriteAsync(getRawName(), ByteArrayCodec.INSTANCE, RedisCommands.EVAL_OBJECT,
+                                              "local result = redis.call('dump', KEYS[1]);" +
+                                                    "redis.call('del', KEYS[1]);" +
+                                                    "return result;",
+                                            Arrays.asList(getRawName()));
+            CompletionStage<Void> f = r.thenCompose(val -> commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.RESTORE, mapName(newName), 0, val))
+                                       .thenAccept(rr -> setName(newName));
+            return new CompletableFutureWrapper<>(f);
+        }
+
+        RFuture<Void> future = commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.RENAME, getRawName(), mapName(newName));
         CompletionStage<Void> f = future.thenAccept(r -> setName(newName));
         return new CompletableFutureWrapper<>(f);
     }
@@ -550,7 +562,7 @@ public abstract class RedissonObject implements RObject {
 
     protected final List<String> map(String[] keys) {
         return Arrays.stream(keys)
-                .map(k -> commandExecutor.getServiceManager().getConfig().getNameMapper().map(k))
+                .map(k -> mapName(k))
                 .collect(Collectors.toList());
     }
 

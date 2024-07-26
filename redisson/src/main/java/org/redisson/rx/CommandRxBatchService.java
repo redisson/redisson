@@ -21,6 +21,7 @@ import org.redisson.api.BatchResult;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
+import org.redisson.command.BatchService;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.ConnectionManager;
@@ -37,7 +38,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Nikita Koksharov
  *
  */
-public class CommandRxBatchService extends CommandRxService {
+public class CommandRxBatchService extends CommandRxService implements BatchService {
 
     private final CommandBatchService batchService;
 

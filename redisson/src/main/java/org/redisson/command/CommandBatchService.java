@@ -50,7 +50,7 @@ import java.util.stream.Collectors;
  * @author Nikita Koksharov
  *
  */
-public class CommandBatchService extends CommandAsyncService {
+public class CommandBatchService extends CommandAsyncService implements BatchService {
 
     public static class ConnectionEntry {
 
