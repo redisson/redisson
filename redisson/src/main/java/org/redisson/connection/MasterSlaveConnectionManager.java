@@ -506,7 +506,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         serviceManager.getResolverGroup().close();
 
         long startTime = System.nanoTime();
-        serviceManager.shutdownFutures(quietPeriod, unit);
+        serviceManager.shutdownFutures(timeout, unit);
         timeoutInNanos = Math.max(0, timeoutInNanos - (System.nanoTime() - startTime));
 
         if (isInitialized()) {
