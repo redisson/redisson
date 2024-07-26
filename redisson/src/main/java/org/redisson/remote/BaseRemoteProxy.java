@@ -17,7 +17,6 @@ package org.redisson.remote;
 
 import io.netty.util.Timeout;
 import org.redisson.RedissonBlockingQueue;
-import org.redisson.RedissonShutdownException;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RFuture;
 import org.redisson.api.RemoteInvocationOptions;
