@@ -151,6 +151,18 @@ public abstract class RedissonObject implements RObject {
         return get(sizeInMemoryAsync());
     }
 
+    protected final String mapName(String name) {
+        return commandExecutor.getServiceManager().getConfig().getNameMapper().map(name);
+    }
+
+    protected final void checkNotBatch() {
+        if (commandExecutor instanceof CommandBatchService
+                || commandExecutor instanceof CommandReactiveBatchService
+                    || commandExecutor instanceof CommandRxBatchService) {
+            throw new IllegalStateException("This method doesn't work in batch mode.");
+        }
+    }
+
     @Override
     public RFuture<Void> renameAsync(String newName) {
         RFuture<Void> future = commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.RENAME, getRawName(), newName);
