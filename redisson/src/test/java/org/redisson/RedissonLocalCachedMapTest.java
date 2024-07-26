@@ -211,6 +211,29 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
     }
 
     @Test
+    public void testLocalCachedClear() throws InterruptedException {
+        LocalCachedMapOptions<String, String> options = LocalCachedMapOptions.<String, String>name("test")
+                .storeMode(LocalCachedMapOptions.StoreMode.LOCALCACHE);
+        RMap<String, String> map1 =  redisson.getLocalCachedMap(options);
+        RMap<String, String> map2 =  redisson.getLocalCachedMap(options);
+
+        map1.put("1", "0");
+        map1.put("2", "0");
+
+        map2.put("3", "0");
+        map2.put("4", "0");
+
+        map1.clear();
+
+        Thread.sleep(100);
+
+        assertThat(map1.get("1")).isNull();
+        assertThat(map1.get("2")).isNull();
+        assertThat(map2.get("3")).isNull();
+        assertThat(map2.get("4")).isNull();
+    }
+
+    @Test
     public void testMapLoaderGet() {
         Map<String, String> cache = new HashMap<>();
         cache.put("1", "11");

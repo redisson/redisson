@@ -616,6 +616,12 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     @Override
     public RFuture<Boolean> deleteAsync() {
         cache.clear();
+
+        if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
+            CompletionStage<Boolean> f = clearLocalCacheAsync().thenApply(r -> true);
+            return new CompletableFutureWrapper<>(f);
+        }
+
         ByteBuf msgEncoded = encode(new LocalCachedMapClear(instanceId, getServiceManager().generateIdArray(), false));
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('del', KEYS[1], KEYS[3]) > 0 and ARGV[2] ~= '0' then "
