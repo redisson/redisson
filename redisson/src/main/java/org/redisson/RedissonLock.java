@@ -110,6 +110,9 @@ public class RedissonLock extends RedissonBaseLock {
         if (ttl == null) {
             return;
         }
+        if (ttl == Long.MIN_VALUE) {
+            throw new InterruptedException();
+        }
 
         CompletableFuture<RedissonLockEntry> future = subscribe(threadId);
         pubSub.timeout(future);
@@ -126,6 +129,9 @@ public class RedissonLock extends RedissonBaseLock {
                 // lock acquired
                 if (ttl == null) {
                     break;
+                }
+                if (ttl == Long.MIN_VALUE) {
+                    throw new InterruptedException();
                 }
 
                 // waiting for message
@@ -157,7 +163,7 @@ public class RedissonLock extends RedissonBaseLock {
     }
 
     private RFuture<Long> tryAcquireAsync0(long waitTime, long leaseTime, TimeUnit unit, long threadId) {
-        return getServiceManager().execute(() -> tryAcquireAsync(waitTime, leaseTime, unit, threadId));
+        return getServiceManager().execute(() -> tryAcquireAsync(waitTime, leaseTime, unit, threadId), Long.MIN_VALUE);
     }
 
     private RFuture<Boolean> tryAcquireOnceAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId) {
@@ -233,6 +239,9 @@ public class RedissonLock extends RedissonBaseLock {
         long current = System.currentTimeMillis();
         long threadId = Thread.currentThread().getId();
         Long ttl = tryAcquire(waitTime, leaseTime, unit, threadId);
+        if (ttl == Long.MIN_VALUE) {
+            return false;
+        }
         // lock acquired
         if (ttl == null) {
             return true;
@@ -279,6 +288,9 @@ public class RedissonLock extends RedissonBaseLock {
                 // lock acquired
                 if (ttl == null) {
                     return true;
+                }
+                if (ttl == Long.MIN_VALUE) {
+                    return false;
                 }
 
                 time -= System.currentTimeMillis() - currentTime;
@@ -447,7 +459,7 @@ public class RedissonLock extends RedissonBaseLock {
 
     @Override
     public RFuture<Boolean> tryLockAsync(long threadId) {
-        return getServiceManager().execute(() -> tryAcquireOnceAsync(-1, -1, null, threadId));
+        return getServiceManager().execute(() -> tryAcquireOnceAsync(-1, -1, null, threadId), false);
     }
 
     @Override
