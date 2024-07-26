@@ -218,6 +218,14 @@ public class RedissonSession extends StandardSession {
         expireSession();
     }
 
+    public void superAccess() {
+        super.access();
+    }
+
+    public void superEndAccess() {
+        super.endAccess();
+    }
+
     protected void expireSession() {
         RMap<String, Object> m = map;
         if (isExpirationLocked || m == null) {
@@ -393,7 +401,10 @@ public class RedissonSession extends StandardSession {
             if (map == null) {
                 map = redissonManager.getMap(this.id);
             }
-            map.rename(redissonManager.getTomcatSessionKeyName(id));
+            String newName = redissonManager.getTomcatSessionKeyName(id);
+            if (!map.getName().equals(newName)) {
+                map.rename(newName);
+            }
         }
 
         boolean idWasNull = this.id == null;

@@ -171,7 +171,7 @@ public class RedissonSessionManager extends ManagerBase {
     }
     
     private Session findSession(String id, boolean notify) throws IOException {
-        Session result = super.findSession(id);
+        RedissonSession result = (RedissonSession) super.findSession(id);
         if (result == null) {
             if (id != null) {
                 Map<String, Object> attrs = new HashMap<String, Object>();
@@ -190,14 +190,14 @@ public class RedissonSessionManager extends ManagerBase {
                 session.load(attrs);
                 session.setId(id, notify);
                 
-                session.access();
+                session.superAccess();
                 session.endAccess();
                 return session;
             }
             return null;
         }
 
-        result.access();
+        result.superAccess();
         result.endAccess();
         
         return result;
@@ -426,8 +426,8 @@ public class RedissonSessionManager extends ManagerBase {
         
         RedissonSession sess = (RedissonSession) super.findSession(session.getId());
         if (sess != null) {
-            sess.access();
-            sess.endAccess();
+            sess.superAccess();
+            sess.superEndAccess();
             sess.save();
         }
     }
