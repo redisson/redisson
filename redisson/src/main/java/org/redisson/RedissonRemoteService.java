@@ -242,7 +242,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                 }
                 
                 if (e != null) {
-                    if (e instanceof RedissonShutdownException) {
+                    if (commandExecutor.getServiceManager().isShuttingDown(e)) {
                         return;
                     }
                     log.error("Can't process the remote service request. A new attempt has been made.", e);
@@ -277,7 +277,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                 RFuture<RemoteServiceRequest> taskFuture = getTask(requestId, tasks);
                 taskFuture.whenComplete((request, exc) -> {
                     if (exc != null) {
-                        if (exc instanceof RedissonShutdownException) {
+                        if (commandExecutor.getServiceManager().isShuttingDown(exc)) {
                             return;
                         }
                         log.error("Can't process the remote service request with id {}. Try to increase 'retryInterval' and/or 'retryAttempts' settings", requestId, exc);
@@ -327,7 +327,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
 
                                 ackClientsFuture.whenComplete((r, ex) -> {
                                     if (ex != null) {
-                                        if (ex instanceof RedissonShutdownException) {
+                                        if (commandExecutor.getServiceManager().isShuttingDown(ex)) {
                                             return;
                                         }
                                         log.error("Can't send ack for request: {}. Try to increase 'retryInterval' and/or 'retryAttempts' settings", request, ex);
@@ -347,7 +347,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                                     RFuture<Boolean> addFuture = list.addAsync(new RemoteServiceAck(request.getId()));
                                     addFuture.whenComplete((res, exce) -> {
                                         if (exce != null) {
-                                            if (exce instanceof RedissonShutdownException) {
+                                            if (commandExecutor.getServiceManager().isShuttingDown(exce)) {
                                                 return;
                                             }
                                             log.error("Can't send ack for request: {}. Try to increase 'retryInterval' and/or 'retryAttempts' settings", request, exce);
@@ -365,7 +365,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                                         executeMethod(remoteInterface, requestQueue, executor, request, bean);
                                     })
                                     .exceptionally(exack -> {
-                                        if (exack instanceof RedissonShutdownException) {
+                                        if (commandExecutor.getServiceManager().isShuttingDown(exack)) {
                                             return null;
                                         }
                                         log.error("Can't send ack for request: {}", request, exack);
@@ -377,7 +377,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                     }
                 })
                 .exceptionally(exc -> {
-                    if (exc instanceof RedissonShutdownException) {
+                    if (commandExecutor.getServiceManager().isShuttingDown(exc)) {
                         return null;
                     }
                     log.error("Can't process the remote service request with id {}", requestId, exc);
@@ -424,7 +424,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
 
                     clientsFuture.whenComplete((res, exc) -> {
                         if (exc != null) {
-                            if (exc instanceof RedissonShutdownException) {
+                            if (commandExecutor.getServiceManager().isShuttingDown(exc)) {
                                 return;
                             }
                             log.error("Can't send response: {} for request: {}. Try to increase 'retryInterval' and/or 'retryAttempts' settings", response, request, exc);

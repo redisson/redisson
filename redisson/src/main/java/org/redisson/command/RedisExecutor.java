@@ -487,7 +487,7 @@ public class RedisExecutor<V, R> {
                 return;
             }
 
-            if (e instanceof RedissonShutdownException) {
+            if (connectionManager.getServiceManager().isShuttingDown(e)) {
                 attemptPromise.completeExceptionally(e);
             }
         });

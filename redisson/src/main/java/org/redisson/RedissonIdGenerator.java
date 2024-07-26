@@ -125,7 +125,7 @@ public class RedissonIdGenerator extends RedissonExpirable implements RIdGenerat
                     Arrays.asList(getRawName(), getAllocationSizeName()));
             future.whenComplete((res, ex) -> {
                 if (ex != null) {
-                    if (ex instanceof RedissonShutdownException) {
+                    if (getServiceManager().isShuttingDown(ex)) {
                         return;
                     }
 

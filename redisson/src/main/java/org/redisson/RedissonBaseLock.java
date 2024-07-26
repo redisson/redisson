@@ -144,11 +144,11 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
                 
                 CompletionStage<Boolean> future = renewExpirationAsync(threadId);
                 future.whenComplete((res, e) -> {
-                    if (e instanceof RedissonShutdownException) {
-                        return;
-                    }
-
                     if (e != null) {
+                        if (getServiceManager().isShuttingDown(e)) {
+                            return;
+                        }
+
                         log.error("Can't update lock {} expiration", getRawName(), e);
                         EXPIRATION_RENEWAL_MAP.remove(getEntryName());
                         return;
@@ -291,7 +291,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
 
     @Override
     public RFuture<Void> unlockAsync(long threadId) {
-        return getServiceManager().execute(() -> unlockAsync0(threadId), null);
+        return getServiceManager().execute(() -> unlockAsync0(threadId));
     }
 
     private RFuture<Void> unlockAsync0(long threadId) {

@@ -143,7 +143,7 @@ public abstract class QueueTransferTask {
         RFuture<Long> startTimeFuture = pushTaskAsync();
         startTimeFuture.whenComplete((res, e) -> {
             if (e != null) {
-                if (e instanceof RedissonShutdownException) {
+                if (serviceManager.isShuttingDown(e)) {
                     return;
                 }
                 log.error(e.getMessage(), e);

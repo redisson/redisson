@@ -183,7 +183,7 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
 
         ff.whenComplete((res, ex) -> {
             if (ex != null) {
-                if (ex instanceof RedissonShutdownException) {
+                if (getServiceManager().isShuttingDown(ex)) {
                     return;
                 }
 
@@ -250,7 +250,7 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
 
                 updateFuture.whenComplete((re, exc) -> {
                     if (exc != null) {
-                        if (exc instanceof RedissonShutdownException) {
+                        if (getServiceManager().isShuttingDown(exc)) {
                             return;
                         }
                         log.error("Unable to update subscriber status", exc);

@@ -263,7 +263,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
         return commandExecutor.getServiceManager().execute(() -> {
             RFuture<Boolean> future = tryAcquireAsync0(permits);
             return commandExecutor.handleNoSync(future, () -> releaseAsync(permits));
-        }, false);
+        });
     }
 
     private RFuture<Boolean> tryAcquireAsync0(int permits) {

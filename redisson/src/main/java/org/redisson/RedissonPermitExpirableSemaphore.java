@@ -371,7 +371,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         return getServiceManager().execute(() -> {
             RFuture<List<String>> future = tryAcquireAsync(ids, timeoutDate);
             return commandExecutor.handleNoSync(future, () -> releaseAsync(ids));
-        }, Collections.emptyList());
+        });
     }
 
     private RFuture<List<String>> tryAcquireAsync(List<String> ids, long timeoutDate) {

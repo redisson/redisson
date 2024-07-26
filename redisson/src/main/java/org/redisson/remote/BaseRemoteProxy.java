@@ -183,7 +183,7 @@ public abstract class BaseRemoteProxy {
     private BiConsumer<RRemoteServiceResponse, Throwable> createResponseListener() {
         return (response, e) -> {
             if (e != null) {
-                if (e instanceof RedissonShutdownException) {
+                if (commandExecutor.getServiceManager().isShuttingDown(e)) {
                     return;
                 }
 

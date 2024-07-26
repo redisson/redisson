@@ -275,6 +275,11 @@ public final class ServiceManager {
         return shutdownLatch.get();
     }
 
+    public boolean isShuttingDown(Throwable e) {
+        return e instanceof RedissonShutdownException
+                    || e.getCause() instanceof RedissonShutdownException;
+    }
+
     public boolean isShutdown() {
         return group.isTerminated();
     }
@@ -503,22 +508,18 @@ public final class ServiceManager {
         });
     }
 
-    public <T> RFuture<T> execute(Supplier<CompletionStage<T>> supplier, T defaultValue) {
+    public <T> RFuture<T> execute(Supplier<CompletionStage<T>> supplier) {
         CompletableFuture<T> result = new CompletableFuture<>();
         int retryAttempts = config.getRetryAttempts();
         AtomicInteger attempts = new AtomicInteger(retryAttempts);
-        execute(attempts, result, supplier, defaultValue);
+        execute(attempts, result, supplier);
         return new CompletableFutureWrapper<>(result);
     }
 
-    private <T> void execute(AtomicInteger attempts, CompletableFuture<T> result, Supplier<CompletionStage<T>> supplier, T defaultValue) {
+    private <T> void execute(AtomicInteger attempts, CompletableFuture<T> result, Supplier<CompletionStage<T>> supplier) {
         CompletionStage<T> future = supplier.get();
         future.whenComplete((r, e) -> {
             if (e != null) {
-                if (e instanceof RedissonShutdownException) {
-                    result.complete(defaultValue);
-                    return;
-                }
                 if (e.getCause().getMessage() != null
                         && e.getCause().getMessage().equals("None of slaves were synced")) {
                     if (attempts.decrementAndGet() < 0) {
@@ -526,7 +527,7 @@ public final class ServiceManager {
                         return;
                     }
 
-                    newTimeout(t -> execute(attempts, result, supplier, defaultValue),
+                    newTimeout(t -> execute(attempts, result, supplier),
                             config.getRetryInterval(), TimeUnit.MILLISECONDS);
                     return;
                 }
