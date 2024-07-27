@@ -503,7 +503,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                         .thenCompose(newPartitions -> checkSlaveNodesChange(newPartitions))
                         .thenCompose(r -> newPartitionsFuture)
                         .whenComplete((newPartitions, ex) -> {
-                            if (newPartitions != null) {
+                            if (newPartitions != null
+                                    && !newPartitions.isEmpty()) {
                                 try {
                                     checkSlotsMigration(newPartitions);
                                     checkSlotsChange(newPartitions);
@@ -755,16 +756,16 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
         // https://github.com/redisson/redisson/issues/3635
         Map<String, MasterSlaveEntry> nodeEntries = clusterLastPartitions.stream()
-                                                                          .filter(e -> getEntry(e.getSlotRanges().iterator().next().getStartSlot()) != null)
+//                                                                          .filter(e -> getEntry(e.getSlotRanges().iterator().next().getStartSlot()) != null)
                                                                           .collect(Collectors.toMap(p -> p.getNodeId(),
                                                                                     p -> getEntry(p.getSlotRanges().iterator().next().getStartSlot())));
 
         Set<Integer> changedSlots = new HashSet<>();
         for (ClusterPartition currentPartition : clusterLastPartitions) {
             String nodeId = currentPartition.getNodeId();
-            if (!nodeEntries.containsKey(nodeId)) {
-                continue;
-            }
+//            if (!nodeEntries.containsKey(nodeId)) {
+//                continue;
+//            }
 
             for (ClusterPartition newPartition : newPartitions) {
                 if (!Objects.equals(nodeId, newPartition.getNodeId())
