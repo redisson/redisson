@@ -199,7 +199,7 @@ public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDo
 
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
-        return removeListenerAsync(super.removeListenerAsync(listenerId), listenerId, "__keyevent@*:incrby");
+        return removeListenerAsync(listenerId, "__keyevent@*:incrby");
     }
 
 }

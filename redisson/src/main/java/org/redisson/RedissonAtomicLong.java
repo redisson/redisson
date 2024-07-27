@@ -197,7 +197,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
-        return removeListenerAsync(super.removeListenerAsync(listenerId), listenerId, "__keyevent@*:incrby");
+        return removeListenerAsync(listenerId, "__keyevent@*:incrby");
     }
 
 }

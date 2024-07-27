@@ -1770,7 +1770,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
         RFuture<Void> f1 = removeTrackingListenerAsync(listenerId);
-        RFuture<Void> f2 = removeListenerAsync(super.removeListenerAsync(listenerId), listenerId, "__keyevent@*:hset", "__keyevent@*:hdel");
+        RFuture<Void> f2 = removeListenerAsync(listenerId, "__keyevent@*:hset", "__keyevent@*:hdel");
         return new CompletableFutureWrapper<>(CompletableFuture.allOf(f1.toCompletableFuture(), f2.toCompletableFuture()));
     }
 
