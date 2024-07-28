@@ -385,11 +385,15 @@ redisson:
       max-size: 1000
       codec: org.redisson.codec.Kryo5Codec
       store-сache-miss: true
-      eviction-policy: `WEAK`
+      eviction-policy: `LFU`
       cache-size: 5000
+      time-to-live: 2s
+      max-idle: 1s
     my-cache2: 
       expire-after-write: 200s
       expire-after-access: 30s
+      time-to-live: 10s
+      max-idle: 5s
 ```
 </details>
     
@@ -494,14 +498,14 @@ _This feature is available only in [Redisson PRO](https://redisson.pro)_
 | | |
 |-|-|
 |Setting&nbsp;name| `redisson.local-caches.[CACHE_NAME].time-to-live` |
-|Type| `java.lang.String` |
+|Type| `java.time.Duration` |
 |Description| Time to live duration of each map entry in local cache. If value equals to <code>0</code> then timeout is not applied. |
 |Default value| `0` |
 
 | | |
 |-|-|
 |Setting&nbsp;name| `redisson.local-caches.[CACHE_NAME].max-idle` |
-|Type| `java.lang.String` |
+|Type| `java.time.Duration` |
 |Description| Defines max idle time duration of each map entry in local cache. If value equals to <code>0</code> then timeout is not applied. |
 |Default value| `0` |
 
@@ -515,7 +519,7 @@ _This feature is available only in [Redisson PRO](https://redisson.pro)_
 | | |
 |-|-|
 |Setting&nbsp;name| `redisson.local-caches.[CACHE_NAME].store-сache-miss` |
-|Type| `java.lang.String` |
+|Type| `java.lang.Boolean` |
 |Description| Defines whether to store a cache miss into the local cache. |
 |Default value| `false` |
 
@@ -533,11 +537,17 @@ redisson:
       max-size: 1000
       codec: org.redisson.codec.Kryo5Codec
       store-сache-miss: true
-      eviction-policy: `WEAK`
+      eviction-policy: `LFU`
       cache-size: 5000
+      time-to-live: 1s
+      max-idle: 1s
     my-cache2: 
       expire-after-write: 200s
       expire-after-access: 30s
+      eviction-policy: `LFU`
+      cache-size: 5000
+      time-to-live: 10s
+      max-idle: 5s
 ```
 </details>
     
