@@ -340,7 +340,7 @@ _This feature is available only in [Redisson PRO](https://redisson.pro)_
 |-|-|
 |Setting&nbsp;name| `redisson.clustered-local-caches.[CACHE_NAME].eviction-policy` |
 |Type| `java.lang.String` |
-|Description| Used to synchronize local cache changes. <br/>`LRU` - uses local cache with LRU (least recently used) eviction policy. <br/>`LFU` - uses local cache with LFU (least frequently used) eviction policy. <br/>`SOFT` - uses local cache with soft references. The garbage collector will evict items from the local cache when the JVM is running out of memory. <br/>`WEAK` - uses local cache with weak references. The garbage collector will evict items from the local cache when it became weakly reachable. <br/>`NONE` - doesn't use eviction policy, but timeToLive and maxIdleTime params are still working. |
+|Description| Defines local cache eviction policy.<br/>`LRU` - uses local cache with LRU (least recently used) eviction policy. <br/>`LFU` - uses local cache with LFU (least frequently used) eviction policy. <br/>`SOFT` - uses local cache with soft references. The garbage collector will evict items from the local cache when the JVM is running out of memory. <br/>`WEAK` - uses local cache with weak references. The garbage collector will evict items from the local cache when it became weakly reachable. <br/>`NONE` - doesn't use eviction policy, but timeToLive and maxIdleTime params are still working. |
 |Default value| `NONE` |
 
 | | |
@@ -492,7 +492,7 @@ _This feature is available only in [Redisson PRO](https://redisson.pro)_
 |-|-|
 |Setting&nbsp;name| `redisson.local-caches.[CACHE_NAME].eviction-policy` |
 |Type| `java.lang.String` |
-|Description| Used to synchronize local cache changes. <br/>`LRU` - uses local cache with LRU (least recently used) eviction policy. <br/>`LFU` - uses local cache with LFU (least frequently used) eviction policy. <br/>`SOFT` - uses local cache with soft references. The garbage collector will evict items from the local cache when the JVM is running out of memory. <br/>`WEAK` - uses local cache with weak references. The garbage collector will evict items from the local cache when it became weakly reachable. <br/>`NONE` - doesn't use eviction policy, but timeToLive and maxIdleTime params are still working. |
+|Description| Defines local cache eviction policy. <br/>`LRU` - uses local cache with LRU (least recently used) eviction policy. <br/>`LFU` - uses local cache with LFU (least frequently used) eviction policy. <br/>`SOFT` - uses local cache with soft references. The garbage collector will evict items from the local cache when the JVM is running out of memory. <br/>`WEAK` - uses local cache with weak references. The garbage collector will evict items from the local cache when it became weakly reachable. <br/>`NONE` - doesn't use eviction policy, but timeToLive and maxIdleTime params are still working. |
 |Default value| `NONE` |
 
 | | |
