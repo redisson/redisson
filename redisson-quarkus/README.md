@@ -79,9 +79,13 @@ Below is the list of all Cache implementations:
 |`clustered`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | **scripted** | ✔️ |
 |`clustered_localcache`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ✔️ | **scripted** | ✔️ |
 
-`expire-after-write` setting defines time to live of the item stored in the cache. Default value is `0`.  
-`expire-after-access` setting defines time to live added to the item after read operation. Default value is `0`.  
-`implementation` setting defines the type of cache used. Default value is `standard`. 
+#### 2.1. Cache settings
+
+`expire-after-write` - setting defines time to live of the item stored in the cache. Default value is `0`.  
+`expire-after-access` - setting defines time to live added to the item after read operation. Default value is `0`.  
+`implementation` - setting defines the type of cache used. Default value is `standard`. 
+
+Below is the cache configuration example.
 
 ```
 quarkus.cache.type=redisson
@@ -95,6 +99,68 @@ quarkus.cache.redisson.expire-after-access=1s
 quarkus.cache.redisson.sampleCache.expire-after-write=100s
 quarkus.cache.redisson.sampleCache.expire-after-access=10s
 ```
+
+#### 2.2. Local cache settings
+
+`quarkus.cache.redisson.[CACHE_NAME].max-size` - max size of this cache. Superfluous elements are evicted using LRU algorithm. If 0 the cache is unbounded. Default value is `0`. 
+
+`quarkus.cache.redisson.[CACHE_NAME].cache-size` - local cache size. If size is 0 then local cache is unbounded. Default value is `0`. 
+
+`quarkus.cache.redisson.[CACHE_NAME].reconnection-strategy` - used to load missed updates during any connection failures to Redis. Default value is`CLEAR`. Since, local cache updates can't be executed in absence of connection to Redis. Available values: 
+ * `CLEAR` - Clear local cache if map instance has been disconnected for a while.
+ * `LOAD` - Store invalidated entry hash in invalidation log for 10 minutes. Cache keys for stored invalidated entry hashes will be removed if LocalCachedMap instance has been disconnected less than 10 minutes or whole cache will be cleaned otherwise.
+ * `NONE` - No reconnection handling
+
+`redisson.cache.redisson.[CACHE_NAME].sync-strategy` - used to synchronize local cache changes. Default value is`INVALIDATE`. Available values: 
+* `INVALIDATE` - Invalidate cache entry across all LocalCachedMap instances on map entry change.
+* `UPDATE` - Insert/update cache entry across all LocalCachedMap instances on map entry change.
+* `NONE` - No synchronizations on map changes.
+
+`redisson.cache.redisson.[CACHE_NAME].eviction-policy` - defines local cache eviction policy. Default value is`NONE`. Available values:
+* `LRU` - uses local cache with LRU (least recently used) eviction policy.
+* `LFU` - uses local cache with LFU (least frequently used) eviction policy.
+* `SOFT` - uses local cache with soft references. The garbage collector will evict items from the local cache when the JVM is running out of memory.
+* `WEAK` - uses local cache with weak references. The garbage collector will evict items from the local cache when it became weakly reachable.
+* `NONE` - doesn't use eviction policy, but timeToLive and maxIdleTime params are still working.
+
+`redisson.cache.redisson.[CACHE_NAME].time-to-live` - time to live duration of each map entry in local cache. If value equals to 0 then timeout is not applied. Default value is `0`. 
+
+`redisson.cache.redisson.[CACHE_NAME].max-idle` - defines max idle time duration of each map entry in local cache. If value equals to 0 then timeout is not applied. Default value is `0`. 
+
+`redisson.cache.redisson.[CACHE_NAME].store-mode` - defines store mode of cache data. Default value is `LOCALCACHE_REDIS`. Available values:
+* `LOCALCACHE` - store data in local cache only and use Redis only for data update/invalidation  
+* `LOCALCACHE_REDIS` - store data in both Redis and local cache  
+
+`redisson.cache.redisson.[CACHE_NAME].cache-provider` - defines Cache provider used as local cache store. Default value is `REDISSON`. Available values:
+* `REDISSON` - uses Redisson own implementation
+* `CAFFEINE` - uses Caffeine implementation
+
+`redisson.cache.redisson.[CACHE_NAME].store-cache-miss` - defines whether to store a cache miss into the local cache. Default value is `false`.
+
+Below is the local cache configuration example.
+
+```
+quarkus.cache.type=redisson
+# possible values for localcache: localcache, localcache_v2, clustered_localcache
+quarkus.cache.redisson.implementation=localcache
+
+# Default configuration for all caches
+quarkus.cache.redisson.expire-after-write=5s
+quarkus.cache.redisson.expire-after-access=1s
+quarkus.cache.redisson.cache-size=100
+quarkus.cache.redisson.eviction-policy=LFU
+quarkus.cache.redisson.time-to-live=10s
+quarkus.cache.redisson.max-idle=5s
+
+# Configuration for `sampleCache` cache
+quarkus.cache.redisson.sampleCache.expire-after-write=100s
+quarkus.cache.redisson.sampleCache.expire-after-access=10s
+quarkus.cache.redisson.sampleCache.cache-size=100
+quarkus.cache.redisson.sampleCache.eviction-policy=LFU
+quarkus.cache.redisson.sampleCache.time-to-live=10s
+quarkus.cache.redisson.sampleCache.max-idle=5s
+```
+
 
 ## Redisson usage  
 
