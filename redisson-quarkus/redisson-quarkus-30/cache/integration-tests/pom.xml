@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-quarkus-30-cache-parent</artifactId>
-        <version>3.34.0</version>
+        <version>3.34.1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
