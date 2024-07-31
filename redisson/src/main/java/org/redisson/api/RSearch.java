@@ -211,6 +211,8 @@ public interface RSearch extends RSearchAsync {
 
     /**
      * Executes spell checking by defined index name and query.
+     * Returns a map of misspelled terms and their score.
+     *
      * <pre>
      * Map<String, Map<String, Double>> res = s.spellcheck("idx", "Hocke sti", SpellcheckOptions.defaults()
      *                                                                                          .includedTerms("name"));
@@ -219,7 +221,7 @@ public interface RSearch extends RSearchAsync {
      * @param indexName index name
      * @param query query
      * @param options spell checking options
-     * @return result
+     * @return map of misspelled terms and their score
      */
     Map<String, Map<String, Double>> spellcheck(String indexName, String query, SpellcheckOptions options);
 
