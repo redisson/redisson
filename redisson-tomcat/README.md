@@ -67,14 +67,14 @@ Amount of Redisson instances created by Tomcat for multiple contexts could be re
 ### 2. Copy two jars into `TOMCAT_BASE/lib` directory:
 
   
-[redisson-all-3.33.0.jar](https://repo1.maven.org/maven2/org/redisson/redisson-all/3.33.0/redisson-all-3.33.0.jar)
+[redisson-all-3.34.1.jar](https://repo1.maven.org/maven2/org/redisson/redisson-all/3.34.1/redisson-all-3.34.1.jar)
   
-Tomcat 7.x - [redisson-tomcat-7-3.33.0.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-7/3.33.0/redisson-tomcat-7-3.33.0.jar)  
+Tomcat 7.x - [redisson-tomcat-7-3.34.1.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-7/3.34.1/redisson-tomcat-7-3.34.1.jar)  
 
-Tomcat 8.x - [redisson-tomcat-8-3.33.0.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-8/3.33.0/redisson-tomcat-8-3.33.0.jar)  
+Tomcat 8.x - [redisson-tomcat-8-3.34.1.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-8/3.34.1/redisson-tomcat-8-3.34.1.jar)  
 
-Tomcat 9.x - [redisson-tomcat-9-3.33.0.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-9/3.33.0/redisson-tomcat-9-3.33.0.jar)  
+Tomcat 9.x - [redisson-tomcat-9-3.34.1.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-9/3.34.1/redisson-tomcat-9-3.34.1.jar)  
 
-Tomcat 10.x - [redisson-tomcat-10-3.33.0.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-10/3.33.0/redisson-tomcat-10-3.33.0.jar)  
+Tomcat 10.x - [redisson-tomcat-10-3.34.1.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-10/3.34.1/redisson-tomcat-10-3.34.1.jar)  
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.

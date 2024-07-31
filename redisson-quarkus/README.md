@@ -40,7 +40,7 @@ Maven
     <groupId>org.redisson</groupId>
     <!-- for Quarkus v3.x.x -->
     <artifactId>redisson-quarkus-30-cache</artifactId>
-    <version>3.33.0</version>
+    <version>3.34.1</version>
 </dependency>
 ```
 
@@ -48,7 +48,7 @@ Gradle
 
 ```groovy
 // for Quarkus v3.x.x
-compile 'org.redisson:redisson-quarkus-30-cache:3.33.0'
+compile 'org.redisson:redisson-quarkus-30-cache:3.34.1'
 ```
 
 ### 2. Add settings into `application.properties` file
@@ -177,7 +177,7 @@ Maven
     <artifactId>redisson-quarkus-20</artifactId>
     <!-- for Quarkus v3.x.x -->
     <artifactId>redisson-quarkus-30</artifactId>
-    <version>3.33.0</version>
+    <version>3.34.1</version>
 </dependency>
 ```
 
@@ -185,11 +185,11 @@ Gradle
 
 ```groovy
 // for Quarkus v1.6.x - v1.13.x
-compile 'org.redisson:redisson-quarkus-16:3.33.0'
+compile 'org.redisson:redisson-quarkus-16:3.34.1'
 // for Quarkus v2.x.x
-compile 'org.redisson:redisson-quarkus-20:3.33.0'
+compile 'org.redisson:redisson-quarkus-20:3.34.1'
 // for Quarkus v3.x.x
-compile 'org.redisson:redisson-quarkus-30:3.33.0'
+compile 'org.redisson:redisson-quarkus-30:3.34.1'
 ```
 
 ### 2. Add settings into `application.properties` file
