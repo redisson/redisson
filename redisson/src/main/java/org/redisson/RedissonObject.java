@@ -168,10 +168,13 @@ public abstract class RedissonObject implements RObject {
             checkNotBatch();
 
             String nn = mapName(newName);
+            String oldName = getRawName();
             CompletionStage<Void> f = dumpAsync()
                                        .thenCompose(val -> commandExecutor.writeAsync(nn, StringCodec.INSTANCE, RedisCommands.RESTORE, nn, 0, val))
-                                       .thenAccept(rr -> setName(newName))
-                                       .thenCompose(val -> deleteAsync().thenApply(r -> null));
+                                       .thenCompose(val -> {
+                                           setName(newName);
+                                           return deleteAsync(oldName).thenApply(r -> null);
+                                       });
             return new CompletableFutureWrapper<>(f);
         }
 
@@ -239,7 +242,7 @@ public abstract class RedissonObject implements RObject {
     }
 
     protected RFuture<Boolean> deleteAsync(String... keys) {
-        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.DEL_OBJECTS, keys);
+        return commandExecutor.writeAsync(keys[0], StringCodec.INSTANCE, RedisCommands.DEL_OBJECTS, keys);
     }
 
     @Override
