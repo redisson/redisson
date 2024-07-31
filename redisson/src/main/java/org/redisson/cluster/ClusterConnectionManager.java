@@ -26,7 +26,6 @@ import org.redisson.cluster.ClusterNodeInfo.Flag;
 import org.redisson.cluster.ClusterPartition.Type;
 import org.redisson.config.*;
 import org.redisson.connection.*;
-import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.RedisURI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -555,7 +554,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 .collect(Collectors.toList());
         nonFailedSlaves.forEach(uri -> {
             if (entry.hasSlave(uri)) {
-                CompletableFuture<Boolean> f = entry.slaveUpNoMasterExclusionAsync(uri, FreezeReason.MANAGER);
+                CompletableFuture<Boolean> f = entry.slaveUpNoMasterExclusionAsync(uri);
                 f = f.thenApply(v -> {
                     if (v) {
                         log.info("slave: {} is up for slot ranges: {}", uri, currentPart.getSlotRanges());
@@ -572,7 +571,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 .filter(uri -> !currentPart.getFailedSlaveAddresses().contains(uri))
                 .forEach(uri -> {
                     currentPart.addFailedSlaveAddress(uri);
-                    boolean slaveDown = entry.slaveDown(uri, FreezeReason.MANAGER);
+                    boolean slaveDown = entry.slaveDown(uri);
                     if (config.isSlaveNotUsed() || slaveDown) {
                         disconnectNode(uri);
                         log.warn("slave: {} has down for slot ranges: {}", uri, currentPart.getSlotRanges());
@@ -593,7 +592,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         for (RedisURI uri : removedSlaves) {
             currentPart.removeSlaveAddress(uri);
 
-            boolean slaveDown = entry.slaveDown(uri, FreezeReason.MANAGER);
+            boolean slaveDown = entry.slaveDown(uri);
             if (config.isSlaveNotUsed() || slaveDown) {
                 disconnectNode(uri);
                 log.info("slave {} removed for master {} and slot ranges: {}",
@@ -616,7 +615,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         for (RedisURI uri : addedSlaves) {
             ClientConnectionsEntry slaveEntry = entry.getEntry(uri);
             if (slaveEntry != null) {
-                CompletableFuture<Boolean> slaveUpFuture = entry.slaveUpNoMasterExclusionAsync(uri, FreezeReason.MANAGER);
+                CompletableFuture<Boolean> slaveUpFuture = entry.slaveUpNoMasterExclusionAsync(uri);
                 slaveUpFuture = slaveUpFuture.thenApply(v -> {
                     if (v) {
                         currentPart.addSlaveAddress(uri);

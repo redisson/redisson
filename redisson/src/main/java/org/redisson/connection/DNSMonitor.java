@@ -22,7 +22,6 @@ import io.netty.util.Timeout;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import org.redisson.client.RedisClient;
-import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.RedisURI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -200,7 +199,7 @@ public class DNSMonitor {
 
                         slaveFound = true;
                         if (masterSlaveEntry.hasSlave(newSlaveAddr)) {
-                            CompletableFuture<Boolean> slaveUpFuture = masterSlaveEntry.slaveUpAsync(newSlaveAddr, FreezeReason.MANAGER);
+                            CompletableFuture<Boolean> slaveUpFuture = masterSlaveEntry.slaveUpAsync(newSlaveAddr);
                             slaveUpFuture.whenComplete((r, e) -> {
                                 if (e != null) {
                                     promise.complete(null);
@@ -208,7 +207,7 @@ public class DNSMonitor {
                                 }
                                 if (r) {
                                     slaves.put(entry.getKey(), newSlaveAddr);
-                                    masterSlaveEntry.slaveDown(currentSlaveAddr, FreezeReason.MANAGER);
+                                    masterSlaveEntry.slaveDown(currentSlaveAddr);
                                 }
                                 promise.complete(null);
                             });
@@ -222,7 +221,7 @@ public class DNSMonitor {
                                 }
 
                                 slaves.put(entry.getKey(), newSlaveAddr);
-                                masterSlaveEntry.slaveDown(currentSlaveAddr, FreezeReason.MANAGER);
+                                masterSlaveEntry.slaveDown(currentSlaveAddr);
                                 promise.complete(null);
                             });
                         }

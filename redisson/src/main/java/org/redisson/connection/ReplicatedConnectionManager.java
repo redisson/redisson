@@ -22,7 +22,6 @@ import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.*;
-import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.RedisURI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -174,7 +173,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                 .collect(Collectors.toSet());
 
         for (RedisClient slave : failedSlaves) {
-            if (config.isSlaveNotUsed() || entry.slaveDown(slave.getAddr(), FreezeReason.MANAGER)) {
+            if (config.isSlaveNotUsed() || entry.slaveDown(slave.getAddr())) {
                 log.info("slave: {} is down", slave);
                 disconnectNode(new RedisURI(slave.getConfig().getAddress().getScheme(),
                                             slave.getAddr().getAddress().getHostAddress(),
@@ -257,7 +256,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
             });
         }
 
-        return entry.slaveUpAsync(address, FreezeReason.MANAGER).thenAccept(r -> {
+        return entry.slaveUpAsync(address).thenAccept(r -> {
             if (r) {
                 log.info("slave: {} is up", address);
             }

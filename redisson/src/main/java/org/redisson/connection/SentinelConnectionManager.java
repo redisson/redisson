@@ -25,7 +25,6 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.config.*;
-import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.RedisURI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -615,7 +614,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             });
         }
 
-        CompletableFuture<Boolean> f = entry.slaveUpNoMasterExclusionAsync(addr, FreezeReason.MANAGER);
+        CompletableFuture<Boolean> f = entry.slaveUpNoMasterExclusionAsync(addr);
         return f.thenApply(e -> {
                             if (e) {
                                 log.info("slave: {} is up", addr);
@@ -630,7 +629,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             log.warn("slave: {} is down", addr);
         } else {
             MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
-            if (entry.slaveDown(addr, FreezeReason.MANAGER)) {
+            if (entry.slaveDown(addr)) {
                 log.warn("slave: {} is down", addr);
             }
         }
