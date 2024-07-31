@@ -3,6 +3,10 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
+### 31-Jul-2024 - 3.34.1 released
+
+Fixed - RObject.rename() method doesn't work in cluster
+
 ### 30-Jul-2024 - 3.34.0 released
 
 Feature - RJsonBuckets object added (thanks to @seakider)  
