@@ -3,6 +3,28 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
+### 30-Jul-2024 - 3.34.0 released
+
+Feature - RJsonBuckets object added (thanks to @seakider)  
+Feature - `remainTimeToLive(Set keys)` and `clearExpire(Set keys)` methods added to `RMapCacheNative` object  
+Feature - `eval()` and `evalSha()` methods added to `RScript` object for execution on all nodes in Redis Cluster  
+
+Improvement - performance optimization for Apache Tomcat Session management  
+Improvement - default value of quietPeriod set to 0 in `RedissonClient.shutdown()` method  
+Improvement - upgrade protobuf from 3.16.3 to 4.27.2 (thanks to @zzhlhc)  
+
+Fixed - Apache Tomcat Session Manager throws CROSSSLOT Keys in request don't hash to the same slot (regression since 3.32.0)  
+Fixed - empty partitions shouldn't be skipped in cluster topology scan  
+Fixed - `ClusterConnectionManager.checkSlotsMigration()` method throws NPE  
+Fixed - RSearch IndexInfoDecoder may throw NPE  
+Fixed - local cached Map implementations don't emit cache clear event on `clear()` or `delete()` methods call  
+Fixed - `RObject.rename()` method doesn't work in cluster  
+Fixed - a new attempt to send a command should be made right after channel reconnection  
+Fixed - 'race condition' while calling RLock.tryLock() method (thanks to @pad-master82)  
+Fixed - Can't connect to servers error doesn't show exception reported during connection  
+Fixed - `SeekableByteChannel.truncate()` method (thanks to @seakider)  
+Fixed - `RMap.computeAsync()` method doesn't handle empty keys properly (thanks to @phrone)  
+
 ### 17-Jul-2024 - 3.33.0 released
 
 Feature - [RJsonStore](https://github.com/redisson/redisson/wiki/7.-distributed-collections/#724-json-store) object added  
