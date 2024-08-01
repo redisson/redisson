@@ -46,4 +46,11 @@ public interface GeoIndex extends FieldIndex {
      */
     GeoIndex noIndex();
 
+    /**
+     * Defines to index documents that don't contain this attribute
+     *
+     * @return options object
+     */
+    GeoIndex indexMissing();
+
 }

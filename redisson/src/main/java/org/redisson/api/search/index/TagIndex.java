@@ -79,5 +79,12 @@ public interface TagIndex extends FieldIndex {
      */
     TagIndex indexEmpty();
 
+    /**
+     * Defines to index documents that don't contain this attribute
+     *
+     * @return options object
+     */
+    TagIndex indexMissing();
+
 }
 

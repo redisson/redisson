@@ -229,6 +229,9 @@ public class RedissonSearch implements RSearch {
             if (params.isNoIndex()) {
                 args.add("NOINDEX");
             }
+            if (params.isIndexMissing()) {
+                args.add("INDEXMISSING");
+            }
         }
     }
 
@@ -249,6 +252,9 @@ public class RedissonSearch implements RSearch {
             }
             if (params.isNoIndex()) {
                 args.add("NOINDEX");
+            }
+            if (params.isIndexMissing()) {
+                args.add("INDEXMISSING");
             }
         }
     }
@@ -283,6 +289,9 @@ public class RedissonSearch implements RSearch {
             }
             if (params.isIndexEmpty()) {
                 args.add("INDEXEMPTY");
+            }
+            if (params.isIndexMissing()) {
+                args.add("INDEXMISSING");
             }
         }
     }
@@ -321,6 +330,9 @@ public class RedissonSearch implements RSearch {
             }
             if (params.isIndexEmpty()) {
                 args.add("INDEXEMPTY");
+            }
+            if (params.isIndexMissing()) {
+                args.add("INDEXMISSING");
             }
         }
     }

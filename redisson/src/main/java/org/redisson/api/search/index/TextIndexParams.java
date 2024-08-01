@@ -31,48 +31,63 @@ public final class TextIndexParams implements TextIndex {
     private boolean withSuffixTrie;
     private Double weight;
     private boolean indexEmpty;
+    private boolean indexMissing;
 
     TextIndexParams(String name) {
         this.fieldName = name;
     }
 
+    @Override
     public TextIndexParams as(String as) {
         this.as = as;
         return this;
     }
 
+    @Override
     public TextIndexParams sortMode(SortMode sortMode) {
         this.sortMode = sortMode;
         return this;
     }
 
+    @Override
     public TextIndexParams noStem() {
         noStem = true;
         return this;
     }
 
+    @Override
     public TextIndexParams noIndex() {
         noIndex = true;
         return this;
     }
 
+    @Override
     public TextIndexParams withSuffixTrie() {
         withSuffixTrie = true;
         return this;
     }
 
+    @Override
     public TextIndexParams phonetic(PhoneticMatcher matcher) {
         this.matcher = matcher;
         return this;
     }
 
+    @Override
     public TextIndexParams weight(Double weight) {
         this.weight = weight;
         return this;
     }
 
+    @Override
     public TextIndexParams indexEmpty() {
         this.indexEmpty = true;
+        return this;
+    }
+
+    @Override
+    public TextIndexParams indexMissing() {
+        this.indexMissing = true;
         return this;
     }
 
@@ -112,4 +127,7 @@ public final class TextIndexParams implements TextIndex {
         return indexEmpty;
     }
 
+    public boolean isIndexMissing() {
+        return indexMissing;
+    }
 }

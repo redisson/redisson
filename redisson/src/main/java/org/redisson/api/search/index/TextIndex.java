@@ -84,4 +84,11 @@ public interface TextIndex extends FieldIndex {
      */
     TextIndex indexEmpty();
 
+    /**
+     * Defines to index documents that don't contain this attribute
+     *
+     * @return options object
+     */
+    TextIndex indexMissing();
+
 }

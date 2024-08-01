@@ -46,4 +46,11 @@ public interface NumericIndex extends FieldIndex {
      */
     NumericIndex noIndex();
 
+    /**
+     * Defines to index documents that don't contain this attribute
+     *
+     * @return options object
+     */
+    NumericIndex indexMissing();
+
 }

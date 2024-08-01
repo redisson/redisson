@@ -30,16 +30,19 @@ public final class TagIndexParams implements TagIndex {
     private boolean withSuffixTrie;
     private String separator;
     private boolean indexEmpty;
+    private boolean indexMissing;
 
     TagIndexParams(String name) {
         this.fieldName = name;
     }
 
+    @Override
     public TagIndexParams as(String as) {
         this.as = as;
         return this;
     }
 
+    @Override
     public TagIndexParams separator(String separator) {
         if (separator.length() != 1) {
             throw new IllegalArgumentException("Separator should be a single character");
@@ -48,28 +51,39 @@ public final class TagIndexParams implements TagIndex {
         return this;
     }
 
+    @Override
     public TagIndexParams sortMode(SortMode sortMode) {
         this.sortMode = sortMode;
         return this;
     }
 
+    @Override
     public TagIndexParams caseSensitive() {
         caseSensitive = true;
         return this;
     }
 
+    @Override
     public TagIndexParams noIndex() {
         noIndex = true;
         return this;
     }
 
+    @Override
     public TagIndexParams withSuffixTrie() {
         withSuffixTrie = true;
         return this;
     }
 
+    @Override
     public TagIndexParams indexEmpty() {
         this.indexEmpty = true;
+        return this;
+    }
+
+    @Override
+    public TagIndexParams indexMissing() {
+        this.indexMissing = true;
         return this;
     }
 
@@ -103,6 +117,10 @@ public final class TagIndexParams implements TagIndex {
 
     public boolean isIndexEmpty() {
         return indexEmpty;
+    }
+
+    public boolean isIndexMissing() {
+        return indexMissing;
     }
 
 }
