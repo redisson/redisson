@@ -281,6 +281,9 @@ public class RedissonSearch implements RSearch {
             if (params.isNoIndex()) {
                 args.add("NOINDEX");
             }
+            if (params.isIndexEmpty()) {
+                args.add("INDEXEMPTY");
+            }
         }
     }
 
@@ -315,6 +318,9 @@ public class RedissonSearch implements RSearch {
             }
             if (params.isNoIndex()) {
                 args.add("NOINDEX");
+            }
+            if (params.isIndexEmpty()) {
+                args.add("INDEXEMPTY");
             }
         }
     }

@@ -77,5 +77,11 @@ public interface TextIndex extends FieldIndex {
      */
     TextIndex weight(Double weight);
 
+    /**
+     * Defines whether to index an empty value.
+     *
+     * @return options object
+     */
+    TextIndex indexEmpty();
 
 }

@@ -30,6 +30,7 @@ public final class TextIndexParams implements TextIndex {
     private PhoneticMatcher matcher;
     private boolean withSuffixTrie;
     private Double weight;
+    private boolean indexEmpty;
 
     TextIndexParams(String name) {
         this.fieldName = name;
@@ -70,6 +71,11 @@ public final class TextIndexParams implements TextIndex {
         return this;
     }
 
+    public TextIndexParams indexEmpty() {
+        this.indexEmpty = true;
+        return this;
+    }
+
     public String getFieldName() {
         return fieldName;
     }
@@ -101,4 +107,9 @@ public final class TextIndexParams implements TextIndex {
     public Double getWeight() {
         return weight;
     }
+
+    public boolean isIndexEmpty() {
+        return indexEmpty;
+    }
+
 }

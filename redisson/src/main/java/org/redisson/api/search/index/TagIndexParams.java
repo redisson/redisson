@@ -29,8 +29,9 @@ public final class TagIndexParams implements TagIndex {
     private boolean caseSensitive;
     private boolean withSuffixTrie;
     private String separator;
+    private boolean indexEmpty;
 
-    protected TagIndexParams(String name) {
+    TagIndexParams(String name) {
         this.fieldName = name;
     }
 
@@ -67,6 +68,11 @@ public final class TagIndexParams implements TagIndex {
         return this;
     }
 
+    public TagIndexParams indexEmpty() {
+        this.indexEmpty = true;
+        return this;
+    }
+
     public String getFieldName() {
         return fieldName;
     }
@@ -94,5 +100,10 @@ public final class TagIndexParams implements TagIndex {
     public String getSeparator() {
         return separator;
     }
+
+    public boolean isIndexEmpty() {
+        return indexEmpty;
+    }
+
 }
 

@@ -72,5 +72,12 @@ public interface TagIndex extends FieldIndex {
      */
     TagIndex withSuffixTrie();
 
+    /**
+     * Defines whether to index an empty value.
+     *
+     * @return options object
+     */
+    TagIndex indexEmpty();
+
 }
 
