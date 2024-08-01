@@ -59,6 +59,13 @@ public class StreamMessageId {
     public static final StreamMessageId NEWEST = new StreamMessageId(-1);
 
     /**
+     * Defines id to receive Stream entries since the last message.
+     * <p>
+     * Used in {@link RStream#read}, {@link RStream#createGroup} methods
+     */
+    public static final StreamMessageId LAST = new StreamMessageId(-1);
+
+    /**
      * Defines id to receive all Stream entries.
      * <p>
      * Used in {@link RStream#read}, {@link RStream#createGroup} methods
@@ -134,6 +141,9 @@ public class StreamMessageId {
     public String toString() {
         if (this == NEVER_DELIVERED) {
             return ">";
+        }
+        if (this == LAST) {
+            return "+";
         }
         if (this == NEWEST) {
             return "$";
