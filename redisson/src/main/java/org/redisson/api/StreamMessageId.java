@@ -62,6 +62,9 @@ public class StreamMessageId {
      * Defines id to receive Stream entries since the last message.
      * <p>
      * Used in {@link RStream#read}, {@link RStream#createGroup} methods
+     * <p>
+     * Requires Redis 7.4+
+     *
      */
     public static final StreamMessageId LAST = new StreamMessageId(-1);
 
