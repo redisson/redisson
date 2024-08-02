@@ -13,8 +13,8 @@ Based on high-performance async and lock-free Java Redis client and [Netty](http
 * Thread-safe implementation
 * JDK 1.8+ compatible
 * Android compatible
-* [Redis](https://redis.io) 3.0 - 7.4 compatible
-* [Valkey](https://valkey.io) 7.2.5+ compatible
+* [Redis](https://redis.io) compatible - from 3.0 up to the latest version
+* [Valkey](https://valkey.io) compatible - from 7.2.5 up to the latest version
 * Supported deployment types
     * [Proxy](https://github.com/redisson/redisson/wiki/2.-Configuration/#29-proxy-mode)
     * [Multi-Cluster](https://github.com/redisson/redisson/wiki/2.-Configuration/#210-multi-cluster-mode)
