@@ -35,7 +35,7 @@ public interface RObject extends RObjectAsync {
     Long getIdleTime();
 
     /**
-     * Returns bytes amount used by object in Redis memory. 
+     * Returns bytes amount used by object in Redis memory.
      * 
      * @return size in bytes
      */
@@ -106,7 +106,41 @@ public interface RObject extends RObjectAsync {
      * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
      */
     void copy(String host, int port, int database, long timeout);
-    
+
+    /**
+     * Copy this object instance to the new instance with a defined name.
+     *
+     * @param destination name of the destination instance
+     * @return <code>true</code> if this object instance was copied else <code>false</code>
+     */
+    boolean copy(String destination);
+
+    /**
+     * Copy this object instance to the new instance with a defined name and database.
+     *
+     * @param destination name of the destination instance
+     * @param database database number
+     * @return <code>true</code> if this object instance was copied else <code>false</code>
+     */
+    boolean copy(String destination, int database);
+
+    /**
+     * Copy this object instance to the new instance with a defined name, and replace it if it already exists.
+     *
+     * @param destination name of the destination instance
+     * @return <code>true</code> if this object instance was copied else <code>false</code>
+     */
+    boolean copyAndReplace(String destination);
+
+    /**
+     * Copy this object instance to the new instance with a defined name and database, and replace it if it already exists.
+     *
+     * @param destination name of the destination instance
+     * @param database database number
+     * @return <code>true</code> if this object instance was copied else <code>false</code>
+     */
+    boolean copyAndReplace(String destination, int database);
+
     /**
      * Move object to another database
      *

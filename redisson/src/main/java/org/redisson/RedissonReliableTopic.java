@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -74,6 +75,7 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
     private volatile Timeout timeoutTask;
     private final RStream<String, Object> stream;
     private final AtomicBoolean subscribed = new AtomicBoolean();
+    private final String timeoutName;
 
     public RedissonReliableTopic(Codec codec, CommandAsyncExecutor commandExecutor, String name, String subscriberId) {
         super(codec, commandExecutor, name);
@@ -82,14 +84,15 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
             subscriberId = getServiceManager().generateId();
         }
         this.subscriberId = subscriberId;
+        this.timeoutName = getTimeout(getRawName());
     }
 
     public RedissonReliableTopic(CommandAsyncExecutor commandExecutor, String name, String subscriberId) {
         this(commandExecutor.getServiceManager().getCfg().getCodec(), commandExecutor, name, subscriberId);
     }
 
-    private String getTimeout() {
-        return suffixName(getRawName(), "timeout");
+    private String getTimeout(String name) {
+        return suffixName(name, "timeout");
     }
 
     @Override
@@ -153,7 +156,7 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
         RFuture<Void> addFuture = commandExecutor.evalWriteNoRetryAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
                           "redis.call('zadd', KEYS[2], ARGV[3], ARGV[2]);" +
                                 "redis.call('xgroup', 'create', KEYS[1], ARGV[2], ARGV[1], 'MKSTREAM'); ",
-                Arrays.asList(getRawName(), getTimeout()),
+                Arrays.asList(getRawName(), timeoutName),
         StreamMessageId.ALL, subscriberId, System.currentTimeMillis() + getServiceManager().getCfg().getReliableTopicWatchdogTimeout());
 
         CompletionStage<String> f = addFuture.thenApply(r -> {
@@ -245,7 +248,7 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
                                     + "redis.call('xtrim', KEYS[1], 'maxlen', #range); "
                                 + "end;"
                                 + "return r ~= false; ",
-                        Arrays.asList(getRawName(), getTimeout()),
+                        Arrays.asList(getRawName(), timeoutName),
                         id, time);
 
                 updateFuture.whenComplete((re, exc) -> {
@@ -270,27 +273,35 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
 
     @Override
     public RFuture<Boolean> deleteAsync() {
-        return deleteAsync(getRawName(), getTimeout());
+        return deleteAsync(getRawName(), timeoutName);
     }
 
     @Override
     public RFuture<Long> sizeInMemoryAsync() {
-        return super.sizeInMemoryAsync(Arrays.asList(getRawName(), getTimeout()));
+        return super.sizeInMemoryAsync(Arrays.asList(getRawName(), timeoutName));
+    }
+
+    @Override
+    public RFuture<Boolean> copyAsync(List<Object> keys, int database, boolean replace) {
+        String newName = (String) keys.get(1);
+        List<Object> kks = Arrays.asList(getRawName(), timeoutName,
+                newName, getTimeout(newName));
+        return super.copyAsync(kks, database, replace);
     }
 
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
-        return super.expireAsync(timeToLive, timeUnit, param, getRawName(), getTimeout());
+        return super.expireAsync(timeToLive, timeUnit, param, getRawName(), timeoutName);
     }
 
     @Override
     protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
-        return super.expireAtAsync(timestamp, param, getRawName(), getTimeout());
+        return super.expireAtAsync(timestamp, param, getRawName(), timeoutName);
     }
 
     @Override
     public RFuture<Boolean> clearExpireAsync() {
-        return clearExpireAsync(getRawName(), getTimeout());
+        return clearExpireAsync(getRawName(), timeoutName);
     }
 
     @Override
@@ -311,7 +322,7 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
         return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 "redis.call('xgroup', 'destroy', KEYS[1], ARGV[1]); "
                       + "redis.call('zrem', KEYS[2], ARGV[1]); ",
-                Arrays.asList(getRawName(), getTimeout()),
+                Arrays.asList(getRawName(), timeoutName),
                 subscriberId);
     }
 
@@ -340,7 +351,7 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
                       + "end; "
                       + "redis.call('zadd', KEYS[1], ARGV[1], ARGV[2]); "
                       + "return 1; ",
-                Arrays.asList(getTimeout()),
+                Arrays.asList(timeoutName),
                 System.currentTimeMillis() + getServiceManager().getCfg().getReliableTopicWatchdogTimeout(), subscriberId);
             future.whenComplete((res, e) -> {
                 if (e != null) {

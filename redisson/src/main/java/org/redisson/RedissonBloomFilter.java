@@ -261,8 +261,16 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
     }
 
     @Override
+    public RFuture<Boolean> copyAsync(List<Object> keys, int database, boolean replace) {
+        String newName = (String) keys.get(1);
+        List<Object> kks = Arrays.asList(getRawName(), configName,
+                                         newName, suffixName(newName, "config"));
+        return super.copyAsync(kks, database, replace);
+    }
+
+    @Override
     public RFuture<Long> sizeInMemoryAsync() {
-        List<Object> keys = Arrays.<Object>asList(getRawName(), configName);
+        List<Object> keys = Arrays.asList(getRawName(), configName);
         return super.sizeInMemoryAsync(keys);
     }
     
@@ -398,13 +406,13 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
 
     @Override
     public RFuture<Void> renameAsync(String newName) {
-        String newConfigName = suffixName(newName, "config");
+        String newConfigName = suffixName(mapName(newName), "config");
         RFuture<Void> future = commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
                      "if redis.call('exists', KEYS[1]) == 1 then " +
                               "redis.call('rename', KEYS[1], ARGV[1]); " +
                           "end; " +
                           "return redis.call('rename', KEYS[2], ARGV[2]); ",
-                Arrays.<Object>asList(getRawName(), configName), newName, newConfigName);
+                Arrays.asList(getRawName(), configName), mapName(newName), newConfigName);
         CompletionStage<Void> f = future.thenApply(value -> {
             setName(newName);
             this.configName = newConfigName;
@@ -415,7 +423,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
 
     @Override
     public RFuture<Boolean> renamenxAsync(String newName) {
-        String newConfigName = suffixName(newName, "config");
+        String newConfigName = suffixName(mapName(newName), "config");
         RFuture<Boolean> future = commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local r = redis.call('renamenx', KEYS[1], ARGV[1]); "
                         + "if r == 0 then "
@@ -423,7 +431,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
                         + "else  "
                         + "  return redis.call('renamenx', KEYS[2], ARGV[2]); "
                         + "end; ",
-                Arrays.asList(getRawName(), configName), newName, newConfigName);
+                Arrays.asList(getRawName(), configName), mapName(newName), newConfigName);
         CompletionStage<Boolean> f = future.thenApply(value -> {
             if (value) {
                 setName(newName);

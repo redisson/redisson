@@ -112,7 +112,41 @@ public interface RObjectAsync {
      * @return void
      */
     RFuture<Void> copyAsync(String host, int port, int database, long timeout);
-    
+
+    /**
+     * Copy this object instance to the new instance with a defined name.
+     *
+     * @param destination name of the destination instance
+     * @return <code>true</code> if this object instance was copied else <code>false</code>
+     */
+    RFuture<Boolean> copyAsync(String destination);
+
+    /**
+     * Copy this object instance to the new instance with a defined name and database.
+     *
+     * @param destination name of the destination instance
+     * @param database database number
+     * @return <code>true</code> if this object instance was copied else <code>false</code>
+     */
+    RFuture<Boolean> copyAsync(String destination, int database);
+
+    /**
+     * Copy this object instance to the new instance with a defined name, and replace it if it already exists.
+     *
+     * @param destination name of the destination instance
+     * @return <code>true</code> if this object instance was copied else <code>false</code>
+     */
+    RFuture<Boolean> copyAndReplaceAsync(String destination);
+
+    /**
+     * Copy this object instance to the new instance with a defined name and database, and replace it if it already exists.
+     *
+     * @param destination name of the destination instance
+     * @param database database number
+     * @return <code>true</code> if this object instance was copied else <code>false</code>
+     */
+    RFuture<Boolean> copyAndReplaceAsync(String destination, int database);
+
     /**
      * Move object to another database in async mode
      *

@@ -1098,7 +1098,17 @@ public abstract class BaseMapTest extends RedisDockerTest {
         assertThat(map.valueSize("1")).isEqualTo(5);
         destroy(map);
     }
-    
+
+    @Test
+    public void testCopy() {
+        RMap<String, String> map = getMap("test");
+        map.put("1", "2");
+        map.copy("test2");
+
+        RMap<String, String> mapCopy = getMap("test2");
+        assertThat(mapCopy.get("1")).isEqualTo("2");
+    }
+
     @Test
     public void testGetAllOrder() {
         RMap<Integer, Integer> map = getMap("getAll");

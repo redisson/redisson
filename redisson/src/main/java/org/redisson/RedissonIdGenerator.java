@@ -43,12 +43,15 @@ public class RedissonIdGenerator extends RedissonExpirable implements RIdGenerat
 
     final Logger log = LoggerFactory.getLogger(getClass());
 
+    private final String allocationSizeName;
+
     RedissonIdGenerator(CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);
+        allocationSizeName = getAllocationSizeName(getRawName());
     }
 
-    private String getAllocationSizeName() {
-        return suffixName(getRawName(), "allocation");
+    private String getAllocationSizeName(String name) {
+        return suffixName(name, "allocation");
     }
 
     @Override
@@ -66,7 +69,7 @@ public class RedissonIdGenerator extends RedissonExpirable implements RIdGenerat
         return commandExecutor.evalWriteNoRetryAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                           "redis.call('setnx', KEYS[1], ARGV[1]); "
                         + "return redis.call('setnx', KEYS[2], ARGV[2]); ",
-                Arrays.asList(getRawName(), getAllocationSizeName()), value, allocationSize);
+                Arrays.asList(getRawName(), allocationSizeName), value, allocationSize);
     }
 
     private final AtomicLong start = new AtomicLong();
@@ -122,7 +125,7 @@ public class RedissonIdGenerator extends RedissonExpirable implements RIdGenerat
                         "end; " +
                         "redis.call('incrby', KEYS[1], allocationSize); " +
                         "return {value, allocationSize}; ",
-                    Arrays.asList(getRawName(), getAllocationSizeName()));
+                    Arrays.asList(getRawName(), allocationSizeName));
             future.whenComplete((res, ex) -> {
                 if (ex != null) {
                     if (getServiceManager().isShuttingDown(ex)) {
@@ -162,27 +165,35 @@ public class RedissonIdGenerator extends RedissonExpirable implements RIdGenerat
 
     @Override
     public RFuture<Boolean> deleteAsync() {
-        return deleteAsync(getRawName(), getAllocationSizeName());
+        return deleteAsync(getRawName(), allocationSizeName);
     }
 
     @Override
     public RFuture<Long> sizeInMemoryAsync() {
-        return super.sizeInMemoryAsync(Arrays.asList(getRawName(), getAllocationSizeName()));
+        return super.sizeInMemoryAsync(Arrays.asList(getRawName(), allocationSizeName));
+    }
+
+    @Override
+    public RFuture<Boolean> copyAsync(List<Object> keys, int database, boolean replace) {
+        String newName = (String) keys.get(1);
+        List<Object> kks = Arrays.asList(getRawName(), allocationSizeName,
+                                         newName, getAllocationSizeName(newName));
+        return super.copyAsync(kks, database, replace);
     }
 
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
-        return super.expireAsync(timeToLive, timeUnit, param, getRawName(), getAllocationSizeName());
+        return super.expireAsync(timeToLive, timeUnit, param, getRawName(), allocationSizeName);
     }
 
     @Override
     protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
-        return super.expireAtAsync(timestamp, param, getRawName(), getAllocationSizeName());
+        return super.expireAtAsync(timestamp, param, getRawName(), allocationSizeName);
     }
 
     @Override
     public RFuture<Boolean> clearExpireAsync() {
-        return clearExpireAsync(getRawName(), getAllocationSizeName());
+        return clearExpireAsync(getRawName(), allocationSizeName);
     }
 
 }

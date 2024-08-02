@@ -46,23 +46,26 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
     private final RedissonBlockingQueue<V> blockingQueue;
     private final RedissonQueueSemaphore semaphore;
     private final String channelName;
+    private final String semaphoreName;
 
     protected RedissonBoundedBlockingQueue(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name, redisson);
         blockingQueue = new RedissonBlockingQueue<>(commandExecutor, name, redisson);
-        semaphore = new RedissonQueueSemaphore(commandExecutor, getSemaphoreName(), getServiceManager().getCfg().getCodec());
+        semaphoreName = getSemaphoreName(getRawName());
+        semaphore = new RedissonQueueSemaphore(commandExecutor, semaphoreName, getServiceManager().getCfg().getCodec());
         channelName = RedissonSemaphore.getChannelName(semaphore.getRawName());
     }
 
     protected RedissonBoundedBlockingQueue(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(codec, commandExecutor, name, redisson);
         blockingQueue = new RedissonBlockingQueue<>(commandExecutor, name, redisson);
-        semaphore = new RedissonQueueSemaphore(commandExecutor, getSemaphoreName(), codec);
+        semaphoreName = getSemaphoreName(getRawName());
+        semaphore = new RedissonQueueSemaphore(commandExecutor, semaphoreName, codec);
         channelName = RedissonSemaphore.getChannelName(semaphore.getRawName());
     }
     
-    private String getSemaphoreName() {
-        return prefixName("redisson_bqs", getRawName());
+    private String getSemaphoreName(String name) {
+        return prefixName("redisson_bqs", name);
     }
     
     @Override
@@ -88,7 +91,7 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
     }
 
     private RedissonQueueSemaphore createSemaphore(V e) {
-        RedissonQueueSemaphore semaphore = new RedissonQueueSemaphore(commandExecutor, getSemaphoreName(), getCodec());
+        RedissonQueueSemaphore semaphore = new RedissonQueueSemaphore(commandExecutor, semaphoreName, getCodec());
         semaphore.setQueueName(getRawName());
         semaphore.setValue(e);
         return semaphore;
@@ -379,28 +382,36 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
     
     @Override
     public RFuture<Boolean> deleteAsync() {
-        return deleteAsync(getRawName(), getSemaphoreName());
+        return deleteAsync(getRawName(), semaphoreName);
     }
-    
+
+    @Override
+    public RFuture<Boolean> copyAsync(List<Object> keys, int database, boolean replace) {
+        String newName = (String) keys.get(1);
+        List<Object> kks = Arrays.asList(getRawName(), semaphoreName,
+                                         newName, getSemaphoreName(newName));
+        return super.copyAsync(kks, database, replace);
+    }
+
     @Override
     public RFuture<Long> sizeInMemoryAsync() {
-        List<Object> keys = Arrays.<Object>asList(getRawName(), getSemaphoreName());
+        List<Object> keys = Arrays.<Object>asList(getRawName(), semaphoreName);
         return super.sizeInMemoryAsync(keys);
     }
 
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
-        return super.expireAsync(timeToLive, timeUnit, param, getRawName(), getSemaphoreName());
+        return super.expireAsync(timeToLive, timeUnit, param, getRawName(), semaphoreName);
     }
 
     @Override
     protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
-        return super.expireAtAsync(timestamp, param, getRawName(), getSemaphoreName());
+        return super.expireAtAsync(timestamp, param, getRawName(), semaphoreName);
     }
 
     @Override
     public RFuture<Boolean> clearExpireAsync() {
-        return clearExpireAsync(getRawName(), getSemaphoreName());
+        return clearExpireAsync(getRawName(), semaphoreName);
     }
 
     @Override
@@ -409,7 +420,7 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
             return new CompletableFutureWrapper<>(false);
         }
 
-        RedissonQueueSemaphore semaphore = new RedissonQueueSemaphore(commandExecutor, getSemaphoreName(), getCodec());
+        RedissonQueueSemaphore semaphore = new RedissonQueueSemaphore(commandExecutor, semaphoreName, getCodec());
         semaphore.setQueueName(getRawName());
         semaphore.setValues(c);
         return semaphore.tryAcquireAsync();

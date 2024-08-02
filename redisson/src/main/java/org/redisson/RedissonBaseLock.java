@@ -407,4 +407,9 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
         return commandExecutor.handleNoSync(ttlRemainingFuture, () -> unlockInnerAsync(threadId));
     }
 
+    @Override
+    public RFuture<Boolean> copyAsync(List<Object> keys, int database, boolean replace) {
+        throw new UnsupportedOperationException();
+    }
+
 }

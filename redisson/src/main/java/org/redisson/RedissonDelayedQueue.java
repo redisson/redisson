@@ -43,7 +43,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
         super(codec, commandExecutor, name);
         channelName = prefixName("redisson_delay_queue_channel", getRawName());
         queueName = prefixName("redisson_delay_queue", getRawName());
-        timeoutSetName = prefixName("redisson_delay_queue_timeout", getRawName());
+        timeoutSetName = getTimeoutSetName(getRawName());
         
         QueueTransferTask task = new QueueTransferTask(commandExecutor.getServiceManager()) {
             
@@ -76,6 +76,10 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
         };
 
         commandExecutor.getServiceManager().getQueueTransferService().schedule(queueName, task);
+    }
+
+    private String getTimeoutSetName(String rawName) {
+        return prefixName("redisson_delay_queue_timeout", rawName);
     }
 
     @Override
@@ -423,6 +427,14 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
     public RFuture<Long> sizeInMemoryAsync() {
         List<Object> keys = Arrays.asList(queueName, timeoutSetName);
         return super.sizeInMemoryAsync(keys);
+    }
+
+    @Override
+    public RFuture<Boolean> copyAsync(List<Object> keys, int database, boolean replace) {
+        String newName = (String) keys.get(1);
+        List<Object> kks = Arrays.asList(queueName, timeoutSetName,
+                newName, getTimeoutSetName(newName));
+        return super.copyAsync(kks, database, replace);
     }
 
     @Override

@@ -685,7 +685,12 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         List<Object> keys = Arrays.<Object>asList(getRawName(), timeoutName);
         return super.sizeInMemoryAsync(keys);
     }
-    
+
+    @Override
+    public RFuture<Boolean> copyAsync(List<Object> keys, int database, boolean replace) {
+        throw new UnsupportedOperationException();
+    }
+
     @Override
     public RFuture<Boolean> deleteAsync() {
         return deleteAsync(getRawName(), timeoutName);

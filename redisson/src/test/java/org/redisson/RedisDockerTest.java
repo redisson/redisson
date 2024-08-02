@@ -49,7 +49,7 @@ public class RedisDockerTest {
     }
 
     protected static GenericContainer<?> createRedis(String... params) {
-        return createRedisWithVersion("redis:7.4-rc1", params);
+        return createRedisWithVersion("redis:latest", params);
     }
 
     static {

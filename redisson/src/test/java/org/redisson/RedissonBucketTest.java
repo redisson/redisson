@@ -630,6 +630,16 @@ public class RedissonBucketTest extends RedisDockerTest {
     }
 
     @Test
+    public void testCopy2()  {
+        RBucket<String> bucket = redisson.getBucket("test");
+        bucket.set("someValue");
+        bucket.copy("test2");
+
+        RBucket<String> bucket2 = redisson.getBucket("test2");
+        assertThat(bucket2.get()).isEqualTo("someValue");
+    }
+
+    @Test
     public void testRename() {
         RBucket<String> bucket = redisson.getBucket("test");
         bucket.set("someValue");

@@ -116,7 +116,7 @@ public abstract class RedissonObject implements RObject {
         return getRawName();
     }
 
-    protected final void setName(String name) {
+    protected void setName(String name) {
         this.name = mapName(name);
     }
 
@@ -150,6 +150,89 @@ public abstract class RedissonObject implements RObject {
     @Override
     public long sizeInMemory() {
         return get(sizeInMemoryAsync());
+    }
+
+    @Override
+    public final RFuture<Boolean> copyAsync(String destination) {
+        return copyAsync(destination, -1);
+    }
+
+    @Override
+    public final RFuture<Boolean> copyAsync(String destination, int database) {
+        return copyAsync(Arrays.asList(getRawName(), mapName(destination)), database, false);
+    }
+
+    @Override
+    public final RFuture<Boolean> copyAndReplaceAsync(String destination) {
+        return copyAndReplaceAsync(destination, -1);
+    }
+
+    @Override
+    public final RFuture<Boolean> copyAndReplaceAsync(String destination, int database) {
+        return copyAsync(Arrays.asList(getRawName(), mapName(destination)), database, true);
+    }
+
+    protected RFuture<Boolean> copyAsync(List<Object> keys, int database, boolean replace) {
+        return copyAsync(commandExecutor, keys, database, replace);
+    }
+
+    private RFuture<Boolean> copyAsync(CommandAsyncExecutor commandExecutor, List<Object> keys,
+                                                int database, boolean replace) {
+        if (keys.size() == 2) {
+            List<Object> args = new LinkedList<>();
+            args.add(keys.get(0));
+            args.add(keys.get(1));
+            if (database > 0) {
+                args.add("DB");
+                args.add(database);
+            }
+            if (replace) {
+                args.add("REPLACE");
+            }
+            return commandExecutor.writeAsync((String) keys.get(0), StringCodec.INSTANCE, RedisCommands.COPY, args.toArray());
+        }
+
+        return commandExecutor.evalWriteAsync((String) keys.get(0), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "local res = 0;" +
+                      "local newKeysIndex = #KEYS/2; "
+                    + "for j = 1, newKeysIndex, 1 do " +
+                          "if tonumber(ARGV[1]) >= 0 then "
+                            + "if ARGV[2] == '1' then "
+                                + "res = res + redis.call('copy', KEYS[j], KEYS[newKeysIndex + j], 'db', ARGV[1], 'replace'); "
+                            + "else "
+                                + "res = res + redis.call('copy', KEYS[j], KEYS[newKeysIndex + j], 'db', ARGV[1]); "
+                            + "end; "
+                        + "end; "
+                        + "if ARGV[2] == '1' then "
+                            + "res = res + redis.call('copy', KEYS[j], KEYS[newKeysIndex + j], 'replace'); "
+                        + "else "
+                            + "res = res + redis.call('copy', KEYS[j], KEYS[newKeysIndex + j]); "
+                        + "end; "
+                    + "end; "
+                    + "return math.min(res, 1); ",
+                    keys,
+                    database, Boolean.compare(replace, false));
+
+    }
+
+    @Override
+    public final boolean copy(String destination) {
+        return get(copyAsync(destination));
+    }
+
+    @Override
+    public final boolean copy(String destination, int database) {
+        return get(copyAsync(destination, database));
+    }
+
+    @Override
+    public final boolean copyAndReplace(String destination) {
+        return get(copyAndReplaceAsync(destination));
+    }
+
+    @Override
+    public final boolean copyAndReplace(String destination, int database) {
+        return get(copyAndReplaceAsync(destination, database));
     }
 
     protected final String mapName(String name) {
@@ -241,7 +324,7 @@ public abstract class RedissonObject implements RObject {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.DEL_BOOL, getRawName());
     }
 
-    protected RFuture<Boolean> deleteAsync(String... keys) {
+    protected final RFuture<Boolean> deleteAsync(String... keys) {
         return commandExecutor.writeAsync(keys[0], StringCodec.INSTANCE, RedisCommands.DEL_OBJECTS, keys);
     }
 
