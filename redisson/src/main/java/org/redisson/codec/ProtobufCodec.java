@@ -21,6 +21,7 @@ import com.google.protobuf.MessageLite;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufInputStream;
+import io.netty.buffer.ByteBufOutputStream;
 import io.protostuff.LinkedBuffer;
 import io.protostuff.ProtostuffIOUtil;
 import io.protostuff.Schema;
@@ -33,6 +34,7 @@ import org.redisson.client.protocol.Encoder;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -177,7 +179,8 @@ public class ProtobufCodec extends BaseCodec {
                     out.writeBytes(((MessageLite) in).toByteArray());
                 } else {
                     //protostuff
-                    out.writeBytes(ProtostuffUtils.serialize(in));
+                    ByteBufOutputStream os = new ByteBufOutputStream(out);
+                    ProtostuffUtils.serialize(os, in);
                 }
                 return out;
             }
@@ -187,10 +190,10 @@ public class ProtobufCodec extends BaseCodec {
     private static final class ProtostuffUtils {
 
         @SuppressWarnings("unchecked")
-        public static <T> byte[] serialize(T obj) {
+        public static <T> void serialize(OutputStream os, T obj) throws IOException {
             LinkedBuffer buffer = LinkedBuffer.allocate(LinkedBuffer.DEFAULT_BUFFER_SIZE);
             try {
-                return ProtostuffIOUtil.toByteArray(obj, RuntimeSchema.getSchema((Class<T>) obj.getClass()), buffer);
+                ProtostuffIOUtil.writeTo(os, obj, RuntimeSchema.getSchema((Class<T>) obj.getClass()), buffer);
             } finally {
                 buffer.clear();
             }
