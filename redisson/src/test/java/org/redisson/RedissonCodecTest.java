@@ -25,11 +25,11 @@ import java.util.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonCodecTest extends RedisDockerTest {
+    private Codec furyCodec = new FuryCodec();
     private Codec smileCodec = new SmileJacksonCodec();
     private Codec codec = new SerializationCodec();
     private Codec jsonCodec = new JsonJacksonCodec();
     private Codec cborCodec = new CborJacksonCodec();
-    private Codec snappyCodec = new SnappyCodec();
     private Codec snappyCodecV2 = new SnappyCodecV2();
     //    private Codec msgPackCodec = new MsgPackJacksonCodec();
     private Codec lz4Codec = new LZ4Codec();
@@ -44,6 +44,15 @@ public class RedissonCodecTest extends RedisDockerTest {
     public void testLZ4() {
         Config config = createConfig();
         config.setCodec(lz4Codec);
+        RedissonClient redisson = Redisson.create(config);
+
+        test(redisson);
+    }
+
+    @Test
+    public void testFury() {
+        Config config = createConfig();
+        config.setCodec(furyCodec);
         RedissonClient redisson = Redisson.create(config);
 
         test(redisson);
@@ -99,15 +108,6 @@ public class RedissonCodecTest extends RedisDockerTest {
         ByteBuf g = sc.getValueEncoder().encode(randomData);
         String decompressedData = (String) sc.getValueDecoder().decode(g, null);
         assertThat(decompressedData).isEqualTo(randomData);
-    }
-    
-    @Test
-    public void testSnappy() {
-        Config config = createConfig();
-        config.setCodec(snappyCodec);
-        RedissonClient redisson = Redisson.create(config);
-
-        test(redisson);
     }
     
     @Test
@@ -250,7 +250,7 @@ public class RedissonCodecTest extends RedisDockerTest {
     public void test(RedissonClient redisson) {
         RMap<Integer, Map<String, Object>> map = redisson.getMap("getAll");
         Map<String, Object> a = new HashMap<String, Object>();
-        a.put("double", new Double(100000.0));
+        a.put("double", 100000.0);
         a.put("float", 100.0f);
         a.put("int", 100);
         a.put("long", 10000000000L);
