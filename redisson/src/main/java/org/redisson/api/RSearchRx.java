@@ -198,7 +198,9 @@ public interface RSearchRx {
     Completable dropIndex(String indexName);
 
     /**
-     * Deletes index by name and associated documents
+     * Deletes index by name and associated documents.
+     * Associated documents are deleted asynchronously.
+     * Method {@link #info(String)} can be used to check for process completion.
      *
      * @param indexName index name
      */

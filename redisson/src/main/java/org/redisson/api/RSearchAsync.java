@@ -188,7 +188,9 @@ public interface RSearchAsync {
     RFuture<List<String>> dumpDictAsync(String dictionary);
 
     /**
-     * Deletes index by name
+     * Deletes index by name and associated documents.
+     * Associated documents are deleted asynchronously.
+     * Method {@link #infoAsync(String)} can be used to check for process completion.
      *
      * @param indexName index name
      */
