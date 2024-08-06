@@ -3,6 +3,7 @@
 .settings
 
 .idea
+!/.idea/icon.png
 *.iml
 
 target
