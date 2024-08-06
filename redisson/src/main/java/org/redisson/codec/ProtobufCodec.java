@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ser.BasicSerializerFactory;
 import com.google.protobuf.MessageLite;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.ByteBufInputStream;
 import io.protostuff.LinkedBuffer;
 import io.protostuff.ProtostuffIOUtil;
 import io.protostuff.Schema;
@@ -31,6 +32,7 @@ import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -141,18 +143,17 @@ public class ProtobufCodec extends BaseCodec {
                     return blacklistDecoder.decode(buf, state);
                 }
 
-                byte[] bytes = new byte[buf.readableBytes()];
-                buf.readBytes(bytes);
+                InputStream is = new ByteBufInputStream(buf);
                 if (MessageLite.class.isAssignableFrom(clazz)) {
                     //native deserialize
                     try {
-                        return clazz.getDeclaredMethod("parseFrom", byte[].class).invoke(clazz, bytes);
+                        return clazz.getDeclaredMethod("parseFrom", InputStream.class).invoke(clazz, is);
                     } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
-                        throw new RuntimeException(e);
+                        throw new IOException(e);
                     }
                 } else {
                     //protostuff
-                    return ProtostuffUtils.deserialize(bytes, clazz);
+                    return ProtostuffUtils.deserialize(is, clazz);
                 }
             }
         };
@@ -195,10 +196,10 @@ public class ProtobufCodec extends BaseCodec {
             }
         }
 
-        public static <T> T deserialize(byte[] data, Class<T> clazz) {
+        public static <T> T deserialize(InputStream is, Class<T> clazz) throws IOException {
             Schema<T> schema = RuntimeSchema.getSchema(clazz);
             T obj = schema.newMessage();
-            ProtostuffIOUtil.mergeFrom(data, obj, schema);
+            ProtostuffIOUtil.mergeFrom(is, obj, schema);
             return obj;
         }
 
