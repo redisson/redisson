@@ -91,14 +91,13 @@ public class FuryCodec extends BaseCodec {
 
     private final Encoder encoder = new Encoder() {
         @Override
-        @SuppressWarnings("IllegalCatch")
         public ByteBuf encode(Object in) throws IOException {
             ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
             try {
                 ByteBufOutputStream baos = new ByteBufOutputStream(out);
                 fury.serialize(baos, in);
                 return baos.buffer();
-            } catch (RuntimeException e) {
+            } catch (Exception e) {
                 out.release();
                 throw e;
             }
