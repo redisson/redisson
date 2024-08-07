@@ -18,6 +18,9 @@ package org.redisson;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.ReferenceCountUtil;
 import org.redisson.api.*;
+import org.redisson.api.listener.SetAddListener;
+import org.redisson.api.listener.SetRemoveListener;
+import org.redisson.api.listener.TrackingListener;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
@@ -32,6 +35,7 @@ import org.redisson.misc.CompletableFutureWrapper;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -1423,4 +1427,50 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                         "return result; ",
                 Arrays.asList(getRawName()), params.toArray());
     }
+
+    @Override
+    public int addListener(ObjectListener listener) {
+        if (listener instanceof SetAddListener) {
+            return addListener("__keyevent@*:zadd", (SetAddListener) listener, SetAddListener::onAdd);
+        }
+        if (listener instanceof SetRemoveListener) {
+            return addListener("__keyevent@*:zrem", (SetRemoveListener) listener, SetRemoveListener::onRemove);
+        }
+        if (listener instanceof TrackingListener) {
+            return addTrackingListener((TrackingListener) listener);
+        }
+
+        return super.addListener(listener);
+    }
+
+    @Override
+    public RFuture<Integer> addListenerAsync(ObjectListener listener) {
+        if (listener instanceof SetAddListener) {
+            return addListenerAsync("__keyevent@*:zadd", (SetAddListener) listener, SetAddListener::onAdd);
+        }
+        if (listener instanceof SetRemoveListener) {
+            return addListenerAsync("__keyevent@*:zrem", (SetRemoveListener) listener, SetRemoveListener::onRemove);
+        }
+        if (listener instanceof TrackingListener) {
+            return addTrackingListenerAsync((TrackingListener) listener);
+        }
+
+        return super.addListenerAsync(listener);
+    }
+
+    @Override
+    public void removeListener(int listenerId) {
+        removeTrackingListener(listenerId);
+        removeListener(listenerId, "__keyevent@*:zadd", "__keyevent@*:zrem");
+        super.removeListener(listenerId);
+    }
+
+    @Override
+    public RFuture<Void> removeListenerAsync(int listenerId) {
+        RFuture<Void> f1 = removeTrackingListenerAsync(listenerId);
+        RFuture<Void> f2 = removeListenerAsync(listenerId,
+                "__keyevent@*:zadd", "__keyevent@*:zrem");
+        return new CompletableFutureWrapper<>(CompletableFuture.allOf(f1.toCompletableFuture(), f2.toCompletableFuture()));
+    }
+
 }

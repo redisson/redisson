@@ -1,9 +1,11 @@
 package org.redisson;
 
+import org.awaitility.Awaitility;
 import org.joor.Reflect;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RSetCache;
+import org.redisson.api.listener.SetAddListener;
 import org.redisson.client.codec.IntegerCodec;
 import org.redisson.eviction.EvictionScheduler;
 
@@ -12,6 +14,7 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -646,5 +649,30 @@ public class RedissonSetCacheTest extends RedisDockerTest {
         assertThat(redisson.getKeys().getKeys()).containsExactlyInAnyOrder("cache1", "cache2");
     }
 
+    @Test
+    public void testAddListener() {
+        testWithParams(redisson -> {
+            RSetCache<Integer> ss = redisson.getSetCache("test");
+            AtomicInteger latch = new AtomicInteger();
+            int id = ss.addListener(new SetAddListener() {
+                @Override
+                public void onAdd(String name) {
+                    latch.incrementAndGet();
+                }
+            });
+            ss.add(1, 10, TimeUnit.SECONDS);
+
+            Awaitility.await().atMost(Duration.ofSeconds(1)).untilAsserted(() -> {
+                assertThat(latch.get()).isEqualTo(1);
+            });
+
+            ss.destroy();
+
+            ss.add(1, 10, TimeUnit.SECONDS);
+
+            Awaitility.await().pollDelay(Duration.ofSeconds(1)).atMost(Duration.ofSeconds(2))
+                    .untilAsserted(() -> assertThat(latch.get()).isEqualTo(1));
+        }, NOTIFY_KEYSPACE_EVENTS, "Ez");
+    }
 
 }

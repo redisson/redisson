@@ -215,4 +215,18 @@ public interface RSetCacheRx<V> extends RCollectionRx<V>, RDestroyable {
      */
     Single<Integer> addAllIfLess(Map<V, Duration> objects);
 
+    /**
+     * Adds object event listener
+     *
+     * @see org.redisson.api.listener.TrackingListener
+     * @see org.redisson.api.listener.SetAddListener
+     * @see org.redisson.api.listener.SetRemoveListener
+     * @see org.redisson.api.ExpiredObjectListener
+     * @see org.redisson.api.DeletedObjectListener
+     *
+     * @param listener - object event listener
+     * @return listener id
+     */
+    Single<Integer> addListener(ObjectListener listener);
+
 }

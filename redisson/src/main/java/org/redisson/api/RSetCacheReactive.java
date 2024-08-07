@@ -214,4 +214,18 @@ public interface RSetCacheReactive<V> extends RCollectionReactive<V>, RDestroyab
      */
     Mono<Integer> addAllIfLess(Map<V, Duration> objects);
 
+    /**
+     * Adds object event listener
+     *
+     * @see org.redisson.api.listener.TrackingListener
+     * @see org.redisson.api.listener.SetAddListener
+     * @see org.redisson.api.listener.SetRemoveListener
+     * @see org.redisson.api.ExpiredObjectListener
+     * @see org.redisson.api.DeletedObjectListener
+     *
+     * @param listener - object event listener
+     * @return listener id
+     */
+    Mono<Integer> addListener(ObjectListener listener);
+
 }
