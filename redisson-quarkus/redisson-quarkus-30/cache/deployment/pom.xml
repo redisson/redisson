@@ -14,20 +14,30 @@
     <name>Redisson/Quarkus v3.x.x Cache deployment</name>
 
     <dependencies>
-      <dependency>
-        <groupId>org.redisson</groupId>
-        <artifactId>redisson-quarkus-30-cache</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.redisson</groupId>
-        <artifactId>redisson-quarkus-30-deployment</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-cache-deployment</artifactId>
-      </dependency>
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson-quarkus-30-cache</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson-quarkus-30-deployment</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-cache-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5-internal</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <build>
       <plugins>
