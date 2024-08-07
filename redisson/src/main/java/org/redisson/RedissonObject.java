@@ -629,7 +629,7 @@ public abstract class RedissonObject implements RObject {
     protected final void removeListeners() {
         for (Map.Entry<String, Collection<Integer>> entry : listeners.entrySet()) {
             for (Integer id : entry.getValue()) {
-                removeListener(id, name);
+                removeListener(id, entry.getKey());
             }
         }
     }
@@ -653,7 +653,7 @@ public abstract class RedissonObject implements RObject {
         if (listener instanceof DeletedObjectListener) {
             return addListenerAsync("__keyevent@*:del", (DeletedObjectListener) listener, DeletedObjectListener::onDeleted);
         }
-        throw new IllegalArgumentException();
+        throw new IllegalArgumentException("This type of listener can't be added to this object");
     }
     
     @Override
