@@ -981,6 +981,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
         if (evictionScheduler != null) {
             evictionScheduler.remove(getRawName());
         }
+        removeListeners();
     }
 
     @Override

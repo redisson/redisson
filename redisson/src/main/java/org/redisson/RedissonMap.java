@@ -1728,6 +1728,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         if (writeBehindService != null) {
             writeBehindService.stop(getRawName());
         }
+        removeListeners();
     }
 
     @Override

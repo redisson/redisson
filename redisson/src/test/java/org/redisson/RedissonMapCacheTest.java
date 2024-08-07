@@ -210,12 +210,31 @@ public class RedissonMapCacheTest extends BaseMapTest {
     @Test
     public void testDestroy() {
         RMapCache<String, String> cache = redisson.getMapCache("test");
-        
+        AtomicInteger counter = new AtomicInteger();
+        cache.addListener(new EntryCreatedListener<>() {
+            @Override
+            public void onCreated(EntryEvent<Object, Object> event) {
+                counter.incrementAndGet();
+            }
+        });
+
+        cache.fastPut("1", "2");
+
+        Awaitility.await().atMost(Duration.ofSeconds(1))
+                            .untilAsserted(() -> assertThat(counter.get()).isEqualTo(1));
+
         EvictionScheduler evictionScheduler = ((Redisson)redisson).getEvictionScheduler();
         Map<?, ?> map = Reflect.on(evictionScheduler).get("tasks");
         assertThat(map.isEmpty()).isFalse();
         cache.destroy();
         assertThat(map.isEmpty()).isTrue();
+
+        RMapCache<String, String> cache2 = redisson.getMapCache("test");
+        cache2.fastPut("3", "4");
+
+        Awaitility.await().pollDelay(Duration.ofSeconds(1)).atMost(Duration.ofSeconds(2))
+                .untilAsserted(() -> assertThat(counter.get()).isEqualTo(1));
+
     }
     
     @Override

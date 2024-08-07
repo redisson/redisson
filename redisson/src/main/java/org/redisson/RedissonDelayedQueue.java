@@ -534,6 +534,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
     @Override
     public void destroy() {
         commandExecutor.getServiceManager().getQueueTransferService().remove(queueName);
+        removeListeners();
     }
     
 }

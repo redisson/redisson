@@ -36,6 +36,7 @@ import org.redisson.pubsub.PublishSubscribeService;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -53,6 +54,7 @@ public abstract class RedissonObject implements RObject {
     protected CommandAsyncExecutor commandExecutor;
     protected String name;
     protected final Codec codec;
+    private final Map<String, Collection<Integer>> listeners = new ConcurrentHashMap<>();
 
     public RedissonObject(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         this.codec = commandExecutor.getServiceManager().getCodec(codec);
@@ -536,7 +538,31 @@ public abstract class RedissonObject implements RObject {
         for (String name : names) {
             RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, name);
             topic.removeListener(listenerId);
+            removeListenerId(name, listenerId);
         }
+    }
+
+    protected final Collection<Integer> getListenerIdsByName(String name) {
+        return listeners.getOrDefault(name, Collections.emptyList());
+    }
+
+    protected final String getNameByListenerId(int listenerId) {
+        for (Map.Entry<String, Collection<Integer>> entry : listeners.entrySet()) {
+            if (entry.getValue().contains(listenerId)) {
+                return entry.getKey();
+            }
+        }
+        return null;
+    }
+
+    protected final void removeListenerId(String name, int listenerId) {
+        listeners.computeIfPresent(name, (k, ids) -> {
+            ids.remove(listenerId);
+            if (ids.isEmpty()) {
+                return null;
+            }
+            return ids;
+        });
     }
 
     protected final RFuture<Void> removeListenerAsync(RFuture<Void> future, int listenerId, String... names) {
@@ -548,6 +574,7 @@ public abstract class RedissonObject implements RObject {
             RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, name);
             RFuture<Void> f1 = topic.removeListenerAsync(listenerId);
             futures.add(f1.toCompletableFuture());
+            removeListenerId(name, listenerId);
         }
         CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
         return new CompletableFutureWrapper<>(f);
@@ -571,20 +598,40 @@ public abstract class RedissonObject implements RObject {
 
     protected <T extends ObjectListener> int addListener(String name, T listener, BiConsumer<T, String> consumer) {
         RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, name);
-        return topic.addListener(String.class, (pattern, channel, msg) -> {
+        int id = topic.addListener(String.class, (pattern, channel, msg) -> {
             if (msg.equals(getRawName())) {
                 consumer.accept(listener, msg);
             }
         });
+        addListenerId(name, id);
+        return id;
     }
 
     protected <T extends ObjectListener> RFuture<Integer> addListenerAsync(String name, T listener, BiConsumer<T, String> consumer) {
         RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, name);
-        return topic.addListenerAsync(String.class, (pattern, channel, msg) -> {
+        RFuture<Integer> f = topic.addListenerAsync(String.class, (pattern, channel, msg) -> {
             if (msg.equals(getRawName())) {
                 consumer.accept(listener, msg);
             }
         });
+        CompletionStage<Integer> r = f.thenApply(id -> {
+            addListenerId(name, id);
+            return id;
+        });
+        return new CompletableFutureWrapper<>(r);
+    }
+
+    protected final void addListenerId(String name, Integer id) {
+        Collection<Integer> ids = listeners.computeIfAbsent(name, k -> Collections.newSetFromMap(new ConcurrentHashMap<>()));
+        ids.add(id);
+    }
+
+    protected final void removeListeners() {
+        for (Map.Entry<String, Collection<Integer>> entry : listeners.entrySet()) {
+            for (Integer id : entry.getValue()) {
+                removeListener(id, name);
+            }
+        }
     }
 
     @Override

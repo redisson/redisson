@@ -2896,6 +2896,21 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             res.completeExceptionally(new IllegalArgumentException("Wrong listener type " + listener.getClass()));
             return res;
         });
+        f = f.thenApply(id -> {
+            if (listener instanceof EntryRemovedListener) {
+                addListenerId(getRemovedChannelName(), id);
+            }
+            if (listener instanceof EntryUpdatedListener) {
+                addListenerId(getUpdatedChannelName(), id);
+            }
+            if (listener instanceof EntryCreatedListener) {
+                addListenerId(getCreatedChannelName(), id);
+            }
+            if (listener instanceof EntryExpiredListener) {
+                addListenerId(getExpiredChannelName(), id);
+            }
+            return id;
+        });
         return new CompletableFutureWrapper<>(f);
     }
 
@@ -2903,22 +2918,33 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     public void removeListener(int listenerId) {
         super.removeListener(listenerId);
 
-        RTopic removedTopic = getTopic(getRemovedChannelName());
-        removedTopic.removeListener(listenerId);
+        String topicName = getNameByListenerId(listenerId);
+        if (topicName != null) {
+            RTopic topic = getTopic(topicName);
+            removeListenerId(topicName, listenerId);
+            topic.removeListener(listenerId);
+        }
+    }
 
-        RTopic createdTopic = getTopic(getCreatedChannelName());
-        createdTopic.removeListener(listenerId);
+    @Override
+    public RFuture<Void> removeListenerAsync(int listenerId) {
+        CompletionStage<Void> r = super.removeListenerAsync(listenerId);
+        r = r.thenCompose(v -> {
+            String topicName = getNameByListenerId(listenerId);
+            if (topicName != null) {
+                RTopic topic = getTopic(topicName);
+                removeListenerId(topicName, listenerId);
+                return topic.removeListenerAsync(listenerId);
+            }
+            return CompletableFuture.completedFuture(null);
+        });
 
-        RTopic updatedTopic = getTopic(getUpdatedChannelName());
-        updatedTopic.removeListener(listenerId);
-
-        RTopic expiredTopic = getTopic(getExpiredChannelName());
-        expiredTopic.removeListener(listenerId);
+        return new CompletableFutureWrapper<>(r);
     }
 
     @Override
     public RFuture<Long> sizeInMemoryAsync() {
-        List<Object> keys = Arrays.<Object>asList(getRawName(), timeoutSetName, idleSetName, lastAccessTimeSetName, optionsName);
+        List<Object> keys = Arrays.asList(getRawName(), timeoutSetName, idleSetName, lastAccessTimeSetName, optionsName);
         return super.sizeInMemoryAsync(keys);
     }
 
@@ -3253,5 +3279,19 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             evictionScheduler.remove(getRawName());
         }
         super.destroy();
+
+        List<String> channels = Arrays.asList(getCreatedChannelName(), getRemovedChannelName(), getUpdatedChannelName(), getExpiredChannelName());
+        for (String channel : channels) {
+            Collection<Integer> ids = getListenerIdsByName(channel);
+            if (ids.isEmpty()) {
+                continue;
+            }
+
+            RTopic topic = getTopic(channel);
+            for (Integer listenerId : ids) {
+                removeListenerId(channel, listenerId);
+                topic.removeListener(listenerId);
+            }
+        }
     }
 }

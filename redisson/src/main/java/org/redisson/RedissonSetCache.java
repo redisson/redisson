@@ -449,6 +449,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         if (evictionScheduler != null) {
             evictionScheduler.remove(getRawName());
         }
+        removeListeners();
     }
 
     @Override
