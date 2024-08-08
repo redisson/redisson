@@ -15,7 +15,7 @@
  */
 package org.redisson.api;
 
-import io.reactivex.rxjava3.core.Single;
+import reactor.core.publisher.Mono;
 
 import java.util.concurrent.TimeUnit;
 
@@ -38,5 +38,5 @@ public interface RMultimapCacheReactive<K, V> {
      * @return A Single that will emit <code>true</code> if key exists and the timeout was set and <code>false</code>
      * if key not exists
      */
-    Single<Boolean> expireKey(K key, long timeToLive, TimeUnit timeUnit);
+    Mono<Boolean> expireKey(K key, long timeToLive, TimeUnit timeUnit);
 }
