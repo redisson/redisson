@@ -24,12 +24,15 @@ import org.apache.fury.ThreadSafeFury;
 import org.apache.fury.config.FuryBuilder;
 import org.apache.fury.config.Language;
 import org.apache.fury.io.FuryStreamReader;
+import org.apache.fury.memory.MemoryBuffer;
+import org.apache.fury.memory.MemoryUtils;
 import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * <a href="https://github.com/apache/fury">Apache Fury</a> codec
@@ -85,7 +88,12 @@ public class FuryCodec extends BaseCodec {
     private final Decoder<Object> decoder = new Decoder<Object>() {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
-            return fury.deserialize(FuryStreamReader.of(new ByteBufInputStream(buf)));
+            MemoryBuffer furyBuffer = MemoryUtils.wrap(buf.nioBuffer());
+            try {
+                return fury.deserialize(furyBuffer);
+            } finally {
+                buf.writerIndex(buf.writerIndex() + furyBuffer.writerIndex());
+            }
         }
     };
 
