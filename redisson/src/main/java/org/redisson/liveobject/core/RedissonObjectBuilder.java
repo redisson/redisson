@@ -157,7 +157,7 @@ public class RedissonObjectBuilder {
             return codecProvider.getCodec(anno, rEntity, rObjectClass, fieldName, config);
         } else {
             REntity anno = ClassUtils.getAnnotation(rEntity, REntity.class);
-            return codecProvider.getCodec(anno, (Class<?>) rEntity, config);
+            return codecProvider.getCodec(anno, rEntity, config);
         }
     }
     
@@ -321,9 +321,11 @@ public class RedissonObjectBuilder {
     private <T extends RObject, K extends Codec> T createRObject(RedissonClient redisson, Class<T> expectedType, String name, K codec) throws ReflectiveOperationException {
         Class<?>[] interfaces = expectedType.getInterfaces();
         for (Class<?> iType : interfaces) {
-            if (REFERENCES.containsKey(iType)) {// user cache to speed up things a little.
-                Method builder = REFERENCES.get(iType).get(codec != null);
-                if (codec != null) {
+            if (REFERENCES.containsKey(iType)) {
+                boolean isDefaultCodec = codec.getClass() == config.getCodec().getClass();
+
+                Method builder = REFERENCES.get(iType).get(isDefaultCodec);
+                if (isDefaultCodec) {
                     return (T) builder.invoke(redisson, name);
                 }
                 return (T) builder.invoke(redisson, name, codec);
