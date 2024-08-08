@@ -79,7 +79,7 @@ public class DefaultReferenceCodecProvider implements ReferenceCodecProvider {
             codecClass = anno.codec();
         }
         
-        return this.<T>getCodec((Class<T>) codecClass);
+        return this.getCodec((Class<T>) codecClass);
     }
     
     @Override
