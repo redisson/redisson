@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Timeout;
 import org.redisson.api.*;
 import org.redisson.api.annotation.*;
 import org.redisson.api.condition.Conditions;
+import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.liveobject.resolver.DefaultNamingScheme;
 import org.redisson.liveobject.resolver.LongGenerator;
 import org.redisson.liveobject.resolver.UUIDGenerator;
@@ -2005,7 +2006,8 @@ public class RedissonLiveObjectServiceTest extends RedisDockerTest {
         
         @RId(generator = LongGenerator.class)
         private Long id;
-        
+
+        @RObjectField(codec = JsonJacksonCodec.class)
         private Map<String, Integer> map;
         
         public SetterEncapsulation() {
