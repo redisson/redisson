@@ -84,8 +84,17 @@ public class PropertiesConvertor {
                             Arrays.asList("node-addresses", "nodeaddresses", "slave-addresses", "slaveaddresses", "addresses"));
 
     private static final Set<String> CLASS_PROPERTIES = new HashSet<>(
-            Arrays.asList("codec", "load-balancer", "loadbalancer", "address-resolver-group-factory", "addressresolvergroupfactory",
-                    "netty-hook", "nettyhook", "connection-listener", "connectionlistener"));
+            Arrays.asList("codec",
+                    "load-balancer", "loadbalancer",
+                    "address-resolver-group-factory", "addressresolvergroupfactory",
+                    "netty-hook", "nettyhook",
+                    "nat-mapper", "natmapper",
+                    "name-mapper", "namemapper",
+                    "command-mapper", "commandmapper",
+                    "failed-slave-node-detector", "failedSlaveNodeDetector",
+                    "connection-listener", "connectionlistener",
+                    "credentials-resolver", "credentialsresolver"
+                    ));
 
     private static void addValue(StringBuilder yaml, Map.Entry<String, Object> subEntry) {
         String value = (String) subEntry.getValue();
