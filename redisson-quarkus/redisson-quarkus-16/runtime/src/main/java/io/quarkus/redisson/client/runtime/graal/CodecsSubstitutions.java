@@ -39,6 +39,7 @@ final class JsonJacksonCodecSubstitute {
 
 }
 
+@Deprecated
 @TargetClass(className = "org.redisson.codec.MarshallingCodec")
 final class MarshallingCodecSubstitute {
 
