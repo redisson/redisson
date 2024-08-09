@@ -57,7 +57,7 @@ import static com.esotericsoftware.kryo.util.Util.className;
 public class Kryo5Codec extends BaseCodec {
 
     private static final Logger logger = LoggerFactory.getLogger(Kryo5Codec.class);
-    public static final List<String> MISSED_COLLECTION_CLASSES = Arrays.asList("Unmodifiable", "Synchronized", "Checked");
+    private static final List<String> MISSED_COLLECTION_CLASSES = Arrays.asList("Unmodifiable", "Synchronized", "Checked");
 
     private static final class SimpleInstantiatorStrategy implements org.objenesis.strategy.InstantiatorStrategy {
 
