@@ -17,13 +17,12 @@ package org.redisson.codec;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.ByteBufInputStream;
-import io.netty.buffer.ByteBufOutputStream;
 import org.apache.fury.Fury;
 import org.apache.fury.ThreadSafeFury;
 import org.apache.fury.config.FuryBuilder;
 import org.apache.fury.config.Language;
-import org.apache.fury.io.FuryStreamReader;
+import org.apache.fury.memory.MemoryBuffer;
+import org.apache.fury.memory.MemoryUtils;
 import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
@@ -85,7 +84,12 @@ public class FuryCodec extends BaseCodec {
     private final Decoder<Object> decoder = new Decoder<Object>() {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
-            return fury.deserialize(FuryStreamReader.of(new ByteBufInputStream(buf)));
+            MemoryBuffer furyBuffer = MemoryUtils.wrap(buf.nioBuffer());
+            try {
+                return fury.deserialize(furyBuffer);
+            } finally {
+                buf.readerIndex(buf.readerIndex() + furyBuffer.readerIndex());
+            }
         }
     };
 
@@ -93,14 +97,22 @@ public class FuryCodec extends BaseCodec {
         @Override
         public ByteBuf encode(Object in) throws IOException {
             ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
-            try {
-                ByteBufOutputStream baos = new ByteBufOutputStream(out);
-                fury.serialize(baos, in);
-                return baos.buffer();
-            } catch (Exception e) {
-                out.release();
-                throw e;
+            MemoryBuffer furyBuffer;
+            int remainingSize = out.capacity() - out.writerIndex();
+            if (out.hasArray()) {
+                furyBuffer = MemoryUtils.wrap(out.array(), out.arrayOffset() + out.writerIndex(),
+                  remainingSize);
+            } else {
+                furyBuffer =  MemoryUtils.buffer(out.memoryAddress() + out.writerIndex(), remainingSize);
             }
+            int size = furyBuffer.size();
+            fury.serialize(furyBuffer, in);
+            if (furyBuffer.size() > size) {
+                out.writeBytes(furyBuffer.getHeapMemory(), 0, furyBuffer.size());
+            } else {
+                out.writerIndex(out.writerIndex() + furyBuffer.writerIndex());
+            }
+            return out;
         }
     };
 
