@@ -19,8 +19,8 @@
     </modules>
 
      <properties>
-       <quarkus.version>3.12.2</quarkus.version>
-       <quarkus.plugin.version>3.12.2</quarkus.plugin.version>
+       <quarkus.version>3.13.1</quarkus.version>
+       <quarkus.plugin.version>3.13.1</quarkus.plugin.version>
        <maven.compiler.source>11</maven.compiler.source>
        <maven.compiler.target>11</maven.compiler.target>
      </properties>
