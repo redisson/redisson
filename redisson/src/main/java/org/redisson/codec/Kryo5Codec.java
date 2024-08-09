@@ -22,6 +22,7 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import com.esotericsoftware.kryo.util.Pool;
+import de.javakaffee.kryoserializers.SynchronizedCollectionsSerializer;
 import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -142,6 +143,7 @@ public class Kryo5Codec extends BaseCodec {
         kryo.addDefaultSerializer(URI.class, new DefaultSerializers.URISerializer());
         kryo.addDefaultSerializer(Pattern.class, new DefaultSerializers.PatternSerializer());
         UnmodifiableCollectionsSerializer.registerSerializers(kryo);
+        SynchronizedCollectionsSerializer.registerSerializers(kryo);
         return kryo;
     }
 
