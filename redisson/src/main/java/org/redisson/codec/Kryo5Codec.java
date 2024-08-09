@@ -22,8 +22,6 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import com.esotericsoftware.kryo.util.Pool;
-import de.javakaffee.kryoserializers.SynchronizedCollectionsSerializer;
-import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufInputStream;
@@ -34,10 +32,15 @@ import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.net.URI;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -52,6 +55,9 @@ import static com.esotericsoftware.kryo.util.Util.className;
  *
  */
 public class Kryo5Codec extends BaseCodec {
+
+    private static final Logger logger = LoggerFactory.getLogger(Kryo5Codec.class);
+    public static final List<String> MISSED_COLLECTION_CLASSES = Arrays.asList("Unmodifiable", "Synchronized", "Checked");
 
     private static final class SimpleInstantiatorStrategy implements org.objenesis.strategy.InstantiatorStrategy {
 
@@ -138,12 +144,21 @@ public class Kryo5Codec extends BaseCodec {
         kryo.setInstantiatorStrategy(new SimpleInstantiatorStrategy());
         kryo.setRegistrationRequired(registrationRequired);
         kryo.setReferences(false);
+
+        try {
+            Class<?>[] f = Collections.class.getDeclaredClasses();
+            Arrays.stream(f)
+                    .filter(cls -> MISSED_COLLECTION_CLASSES.stream().anyMatch(s -> cls.getName().contains(s)))
+                    .forEach(cls -> {
+                        kryo.addDefaultSerializer(cls, new JavaSerializer());
+                    });
+        } catch (Exception e) {
+            logger.warn("Unable to register Collections serializer", e);
+        }
         kryo.addDefaultSerializer(Throwable.class, new JavaSerializer());
         kryo.addDefaultSerializer(UUID.class, new DefaultSerializers.UUIDSerializer());
         kryo.addDefaultSerializer(URI.class, new DefaultSerializers.URISerializer());
         kryo.addDefaultSerializer(Pattern.class, new DefaultSerializers.PatternSerializer());
-        UnmodifiableCollectionsSerializer.registerSerializers(kryo);
-        SynchronizedCollectionsSerializer.registerSerializers(kryo);
         return kryo;
     }
 

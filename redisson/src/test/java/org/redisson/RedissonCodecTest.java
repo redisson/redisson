@@ -25,6 +25,7 @@ import java.util.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonCodecTest extends RedisDockerTest {
+    private Codec kryo5Codec = new Kryo5Codec();
     private Codec furyCodec = new FuryCodec();
     private Codec smileCodec = new SmileJacksonCodec();
     private Codec codec = new SerializationCodec();
@@ -39,6 +40,28 @@ public class RedissonCodecTest extends RedisDockerTest {
     private Codec protobufV3Codec = new ProtobufCodec(String.class, Proto3AllTypes.AllTypes3.class,new JsonJacksonCodec());
     private Codec protobufStuffDataCodec = new ProtobufCodec( StuffData.class);
 
+
+    @Test
+    public void testKryo5Codec() {
+        Config config = createConfig();
+        config.setCodec(kryo5Codec);
+        RedissonClient redisson = Redisson.create(config);
+
+        RBucket<Object> bucket = redisson.getBucket("test");
+        bucket.set(Collections.unmodifiableList(new ArrayList<>()));
+        List s = (List) bucket.get();
+        assertThat(s).isEmpty();
+
+        bucket.set(Collections.checkedList(new ArrayList<>(), Object.class));
+        List s4 = (List) bucket.get();
+        assertThat(s4).isEmpty();
+
+        bucket.set(Collections.synchronizedMap(Map.of("1", "2")));
+        Map s2 = (Map) bucket.get();
+        assertThat(s2).hasSize(1);
+
+        redisson.shutdown();
+    }
 
     @Test
     public void testLZ4() {
