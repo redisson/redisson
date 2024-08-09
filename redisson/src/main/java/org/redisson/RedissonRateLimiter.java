@@ -185,7 +185,7 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
                   + "permitsName = KEYS[5];"
               + "end;"
 
-              + "assert(tonumber(rate) >= tonumber(ARGV[1]), 'Requested permits amount could not exceed defined rate'); "
+              + "assert(tonumber(rate) >= tonumber(ARGV[1]), 'Requested permits amount cannot exceed defined rate'); "
 
               + "local currentValue = redis.call('get', valueName); "
               + "local res;"
@@ -200,7 +200,13 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
                      + "if released > 0 then "
                           + "redis.call('zremrangebyscore', permitsName, 0, tonumber(ARGV[2]) - interval); "
                           + "if tonumber(currentValue) + released > tonumber(rate) then "
-                               + "currentValue = tonumber(rate) - redis.call('zcard', permitsName); "
+                               + "local values = redis.call('zrange', permitsName, 0, -1); "
+                               + "local used = 0; "
+                               + "for i, v in ipairs(values) do "
+                                    + "local random, permits = struct.unpack('Bc0I', v);"
+                                    + "used = used + permits;"
+                               + "end; "
+                               + "currentValue = tonumber(rate) - used; "
                           + "else "
                                + "currentValue = tonumber(currentValue) + released; "
                           + "end; "
