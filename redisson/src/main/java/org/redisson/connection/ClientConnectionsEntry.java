@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class ClientConnectionsEntry {
 
-    final Logger log = LoggerFactory.getLogger(getClass());
+    private static final Logger log = LoggerFactory.getLogger(ClientConnectionsEntry.class);
 
     private final ConnectionsHolder<RedisConnection> connectionsHolder;
 

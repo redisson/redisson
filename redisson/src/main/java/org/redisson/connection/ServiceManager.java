@@ -83,7 +83,7 @@ import java.util.stream.Collectors;
  */
 public final class ServiceManager {
 
-    private final Logger log = LoggerFactory.getLogger(getClass());
+    private static final Logger log = LoggerFactory.getLogger(ServiceManager.class);
 
     public static final Timeout DUMMY_TIMEOUT = new Timeout() {
         @Override

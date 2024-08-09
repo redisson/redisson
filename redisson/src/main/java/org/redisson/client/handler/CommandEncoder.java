@@ -57,7 +57,7 @@ import java.util.stream.LongStream;
 @Sharable
 public class CommandEncoder extends MessageToByteEncoder<CommandData<?, ?>> {
 
-    private final Logger log = LoggerFactory.getLogger(getClass());
+    private static final Logger log = LoggerFactory.getLogger(CommandEncoder.class);
 
     private static final char ARGS_PREFIX = '*';
     private static final char BYTES_PREFIX = '$';

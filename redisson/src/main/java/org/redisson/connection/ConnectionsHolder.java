@@ -37,7 +37,7 @@ import java.util.function.Function;
  */
 public class ConnectionsHolder<T extends RedisConnection> {
 
-    final Logger log = LoggerFactory.getLogger(getClass());
+    private static final Logger log = LoggerFactory.getLogger(ConnectionsHolder.class);
 
     private final Queue<T> allConnections = new ConcurrentLinkedQueue<>();
     private final Queue<T> freeConnections = new ConcurrentLinkedQueue<>();

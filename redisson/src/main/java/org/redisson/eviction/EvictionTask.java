@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
  */
 abstract class EvictionTask implements TimerTask {
 
-    private final Logger log = LoggerFactory.getLogger(getClass());
+    private static final Logger log = LoggerFactory.getLogger(EvictionTask.class);
     
     final Deque<Integer> sizeHistory = new LinkedList<>();
     final int minDelay;
