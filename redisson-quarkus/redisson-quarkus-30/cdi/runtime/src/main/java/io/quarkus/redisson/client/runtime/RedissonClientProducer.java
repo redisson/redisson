@@ -61,6 +61,9 @@ public class RedissonClientProducer {
         Optional<String> configFile = ConfigProvider.getConfig().getOptionalValue("quarkus.redisson.file", String.class);
         if (configFile.isPresent()) {
             configStream = getClass().getResourceAsStream(configFile.get());
+            if (configStream == null) {
+                configStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(configFile.get());
+            }
         } else {
             configStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("redisson.yaml");
         }
