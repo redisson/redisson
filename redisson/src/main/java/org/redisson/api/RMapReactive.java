@@ -417,15 +417,24 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * Returns iterator over map entries collection.
      * Map entries are loaded in batch. Batch size is <code>10</code>. 
      * If <code>keyPattern</code> is not null then only entries mapped by matched keys of this pattern are loaded.
-     * 
+     * <p>
+     * Use <code>org.redisson.client.codec.StringCodec</code> for Map keys.
+     * <p>
+     * Usage example:
+     * <pre>
+     *     Codec valueCodec = ...
+     *     RMapReactive<String, MyObject> map = redissonClient.getMap("simpleMap", new CompositeCodec(StringCodec.INSTANCE, valueCodec, valueCodec));
+     *
+     *     // or
+     *
+     *     RMapReactive<String, String> map = redissonClient.getMap("simpleMap", StringCodec.INSTANCE);
+     * </pre>
+     * <pre>
      *  Supported glob-style patterns:
-     *  <p>
      *    h?llo subscribes to hello, hallo and hxllo
-     *    <p>
      *    h*llo subscribes to hllo and heeeello
-     *    <p>
      *    h[ae]llo subscribes to hello and hallo, but not hillo
-     * 
+     * </pre>
      * @see #readAllEntrySet()
      * 
      * @param pattern - key pattern
@@ -437,15 +446,24 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * Returns iterator over map entries collection.
      * Map entries are loaded in batch. Batch size is defined by <code>count</code> param. 
      * If <code>keyPattern</code> is not null then only entries mapped by matched keys of this pattern are loaded.
-     * 
+     * <p>
+     * Use <code>org.redisson.client.codec.StringCodec</code> for Map keys.
+     * <p>
+     * Usage example:
+     * <pre>
+     *     Codec valueCodec = ...
+     *     RMapReactive<String, MyObject> map = redissonClient.getMap("simpleMap", new CompositeCodec(StringCodec.INSTANCE, valueCodec, valueCodec));
+     *
+     *     // or
+     *
+     *     RMapReactive<String, String> map = redissonClient.getMap("simpleMap", StringCodec.INSTANCE);
+     * </pre>
+     * <pre>
      *  Supported glob-style patterns:
-     *  <p>
      *    h?llo subscribes to hello, hallo and hxllo
-     *    <p>
      *    h*llo subscribes to hllo and heeeello
-     *    <p>
      *    h[ae]llo subscribes to hello and hallo, but not hillo
-     * 
+     * </pre>
      * @see #readAllEntrySet()
      * 
      * @param pattern - key pattern
@@ -482,15 +500,21 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * <p>
      * Use <code>org.redisson.client.codec.StringCodec</code> for Map keys.
      * <p>
+     * Usage example:
+     * <pre>
+     *     Codec valueCodec = ...
+     *     RMapReactive<String, MyObject> map = redissonClient.getMap("simpleMap", new CompositeCodec(StringCodec.INSTANCE, valueCodec, valueCodec));
      *
+     *     // or
+     *
+     *     RMapReactive<String, String> map = redissonClient.getMap("simpleMap", StringCodec.INSTANCE);
+     * </pre>
+     * <pre>
      *  Supported glob-style patterns:
-     *  <p>
      *    h?llo subscribes to hello, hallo and hxllo
-     *    <p>
      *    h*llo subscribes to hllo and heeeello
-     *    <p>
      *    h[ae]llo subscribes to hello and hallo, but not hillo
-     * 
+     * </pre>
      * @see #readAllValues()
      * 
      * @param pattern - key pattern
@@ -505,15 +529,21 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * <p>
      * Use <code>org.redisson.client.codec.StringCodec</code> for Map keys.
      * <p>
+     * Usage example:
+     * <pre>
+     *     Codec valueCodec = ...
+     *     RMapReactive<String, MyObject> map = redissonClient.getMap("simpleMap", new CompositeCodec(StringCodec.INSTANCE, valueCodec, valueCodec));
      *
+     *     // or
+     *
+     *     RMapReactive<String, String> map = redissonClient.getMap("simpleMap", StringCodec.INSTANCE);
+     * </pre>
+     * <pre>
      *  Supported glob-style patterns:
-     *  <p>
      *    h?llo subscribes to hello, hallo and hxllo
-     *    <p>
      *    h*llo subscribes to hllo and heeeello
-     *    <p>
      *    h[ae]llo subscribes to hello and hallo, but not hillo
-     * 
+     * </pre>
      * @see #readAllValues()
      * 
      * @param pattern - key pattern

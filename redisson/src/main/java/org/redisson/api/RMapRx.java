@@ -485,15 +485,21 @@ public interface RMapRx<K, V> extends RExpirableRx {
      * <p>
      * Use <code>org.redisson.client.codec.StringCodec</code> for Map keys.
      * <p>
+     * Usage example:
+     * <pre>
+     *     Codec valueCodec = ...
+     *     RMapRx<String, MyObject> map = redissonClient.getMap("simpleMap", new CompositeCodec(StringCodec.INSTANCE, valueCodec, valueCodec));
      *
+     *     // or
+     *
+     *     RMapRx<String, String> map = redissonClient.getMap("simpleMap", StringCodec.INSTANCE);
+     * </pre>
+     * <pre>
      *  Supported glob-style patterns:
-     *  <p>
      *    h?llo subscribes to hello, hallo and hxllo
-     *    <p>
      *    h*llo subscribes to hllo and heeeello
-     *    <p>
      *    h[ae]llo subscribes to hello and hallo, but not hillo
-     * 
+     * </pre>
      * @see #readAllValues()
      * 
      * @param pattern - key pattern
@@ -508,15 +514,21 @@ public interface RMapRx<K, V> extends RExpirableRx {
      * <p>
      * Use <code>org.redisson.client.codec.StringCodec</code> for Map keys.
      * <p>
+     * Usage example:
+     * <pre>
+     *     Codec valueCodec = ...
+     *     RMapRx<String, MyObject> map = redissonClient.getMap("simpleMap", new CompositeCodec(StringCodec.INSTANCE, valueCodec, valueCodec));
      *
+     *     // or
+     *
+     *     RMapRx<String, String> map = redissonClient.getMap("simpleMap", StringCodec.INSTANCE);
+     * </pre>
+     * <pre>
      *  Supported glob-style patterns:
-     *  <p>
      *    h?llo subscribes to hello, hallo and hxllo
-     *    <p>
      *    h*llo subscribes to hllo and heeeello
-     *    <p>
      *    h[ae]llo subscribes to hello and hallo, but not hillo
-     * 
+     * </pre>
      * @see #readAllValues()
      * 
      * @param pattern - key pattern
@@ -552,18 +564,24 @@ public interface RMapRx<K, V> extends RExpirableRx {
      * <p>
      * Use <code>org.redisson.client.codec.StringCodec</code> for Map keys.
      * <p>
+     * Usage example:
+     * <pre>
+     *     Codec valueCodec = ...
+     *     RMapRx<String, MyObject> map = redissonClient.getMap("simpleMap", new CompositeCodec(StringCodec.INSTANCE, valueCodec, valueCodec));
      *
+     *     // or
+     *
+     *     RMapRx<String, String> map = redissonClient.getMap("simpleMap", StringCodec.INSTANCE);
+     * </pre>
+     * <pre>
      *  Supported glob-style patterns:
-     *  <p>
      *    h?llo subscribes to hello, hallo and hxllo
-     *    <p>
      *    h*llo subscribes to hllo and heeeello
-     *    <p>
      *    h[ae]llo subscribes to hello and hallo, but not hillo
-     * 
+     * </pre>
      * @see #readAllKeySet()
      * 
-     * @param pattern - key pattern
+     * @param pattern key pattern
      * @return iterator
      */
     Flowable<K> keyIterator(String pattern);
@@ -575,19 +593,25 @@ public interface RMapRx<K, V> extends RExpirableRx {
      * <p>
      * Use <code>org.redisson.client.codec.StringCodec</code> for Map keys.
      * <p>
+     * Usage example:
+     * <pre>
+     *     Codec valueCodec = ...
+     *     RMapRx<String, MyObject> map = redissonClient.getMap("simpleMap", new CompositeCodec(StringCodec.INSTANCE, valueCodec, valueCodec));
      *
+     *     // or
+     *
+     *     RMapRx<String, String> map = redissonClient.getMap("simpleMap", StringCodec.INSTANCE);
+     * </pre>
+     * <pre>
      *  Supported glob-style patterns:
-     *  <p>
      *    h?llo subscribes to hello, hallo and hxllo
-     *    <p>
      *    h*llo subscribes to hllo and heeeello
-     *    <p>
      *    h[ae]llo subscribes to hello and hallo, but not hillo
-     * 
+     * </pre>
      * @see #readAllKeySet()
      * 
-     * @param pattern - key pattern
-     * @param count - size of keys batch
+     * @param pattern key pattern
+     * @param count size of keys batch
      * @return iterator
      */
     Flowable<K> keyIterator(String pattern, int count);
