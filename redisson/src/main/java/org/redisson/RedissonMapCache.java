@@ -2957,6 +2957,36 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
+    public RFuture<Void> renameAsync(String nn) {
+        String newName = mapName(nn);
+        List<Object> kks = Arrays.asList(getRawName(), timeoutSetName, idleSetName, lastAccessTimeSetName, optionsName,
+                newName, getTimeoutSetName(newName), getIdleSetName(newName), getLastAccessTimeSetName(newName), getOptionsName(newName));
+        return renameAsync(commandExecutor, kks, () -> {
+            setName(nn);
+            this.timeoutSetName = getTimeoutSetName(getRawName());
+            this.idleSetName = getIdleSetName(getRawName());
+            this.lastAccessTimeSetName = getLastAccessTimeSetName(getRawName());
+            this.optionsName = getOptionsName(getRawName());
+        });
+    }
+
+    @Override
+    public RFuture<Boolean> renamenxAsync(String nn) {
+        String newName = mapName(nn);
+        List<Object> kks = Arrays.asList(getRawName(), timeoutSetName, idleSetName, lastAccessTimeSetName, optionsName,
+                newName, getTimeoutSetName(newName), getIdleSetName(newName), getLastAccessTimeSetName(newName), getOptionsName(newName));
+        return renamenxAsync(commandExecutor, kks, value -> {
+            if (value) {
+                setName(nn);
+                this.timeoutSetName = getTimeoutSetName(getRawName());
+                this.idleSetName = getIdleSetName(getRawName());
+                this.lastAccessTimeSetName = getLastAccessTimeSetName(getRawName());
+                this.optionsName = getOptionsName(getRawName());
+            }
+        });
+    }
+
+    @Override
     public void clear() {
         get(clearAsync());
     }

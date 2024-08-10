@@ -406,40 +406,28 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
 
     @Override
     public RFuture<Void> renameAsync(String newName) {
-        String newConfigName = suffixName(mapName(newName), "config");
-        RFuture<Void> future = commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
-                     "if redis.call('exists', KEYS[1]) == 1 then " +
-                              "redis.call('rename', KEYS[1], ARGV[1]); " +
-                          "end; " +
-                          "return redis.call('rename', KEYS[2], ARGV[2]); ",
-                Arrays.asList(getRawName(), configName), mapName(newName), newConfigName);
-        CompletionStage<Void> f = future.thenApply(value -> {
+        String nn = mapName(newName);
+        String newConfigName = suffixName(nn, "config");
+        List<Object> kks = Arrays.asList(getRawName(), configName,
+                nn, newConfigName);
+        return renameAsync(commandExecutor, kks, () -> {
             setName(newName);
             this.configName = newConfigName;
-            return value;
         });
-        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
     public RFuture<Boolean> renamenxAsync(String newName) {
-        String newConfigName = suffixName(mapName(newName), "config");
-        RFuture<Boolean> future = commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                "local r = redis.call('renamenx', KEYS[1], ARGV[1]); "
-                        + "if r == 0 then "
-                        + "  return 0; "
-                        + "else  "
-                        + "  return redis.call('renamenx', KEYS[2], ARGV[2]); "
-                        + "end; ",
-                Arrays.asList(getRawName(), configName), mapName(newName), newConfigName);
-        CompletionStage<Boolean> f = future.thenApply(value -> {
+        String nn = mapName(newName);
+        String newConfigName = suffixName(nn, "config");
+        List<Object> kks = Arrays.asList(getRawName(), configName,
+                nn, newConfigName);
+        return renamenxAsync(commandExecutor, kks, value -> {
             if (value) {
                 setName(newName);
                 this.configName = newConfigName;
             }
-            return value;
         });
-        return new CompletableFutureWrapper<>(f);
     }
 
 }

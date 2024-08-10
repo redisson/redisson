@@ -39,6 +39,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -178,7 +179,15 @@ public abstract class RedissonObject implements RObject {
         return copyAsync(commandExecutor, keys, database, replace);
     }
 
-    private RFuture<Boolean> copyAsync(CommandAsyncExecutor commandExecutor, List<Object> keys,
+    protected final RFuture<Void> renameAsync(List<Object> keys) {
+        return renameAsync(commandExecutor, keys, () -> {});
+    }
+
+    protected final RFuture<Void> renamenxAsync(List<Object> keys) {
+        return renameAsync(commandExecutor, keys, () -> {});
+    }
+
+    protected final RFuture<Boolean> copyAsync(CommandAsyncExecutor commandExecutor, List<Object> keys,
                                                 int database, boolean replace) {
         if (keys.size() == 2) {
             List<Object> args = new LinkedList<>();
@@ -215,6 +224,62 @@ public abstract class RedissonObject implements RObject {
                     keys,
                     database, Boolean.compare(replace, false));
 
+    }
+
+    protected final RFuture<Void> renameAsync(CommandAsyncExecutor commandExecutor, List<Object> keys, Runnable runnable) {
+        if (keys.size() == 2) {
+            List<Object> args = new LinkedList<>();
+            args.add(keys.get(0));
+            args.add(keys.get(1));
+            CompletionStage<Void> f = commandExecutor.writeAsync((String) keys.get(0), StringCodec.INSTANCE, RedisCommands.RENAME, args.toArray());
+            f = f.thenAccept(r -> setName((String) keys.get(1)));
+            return new CompletableFutureWrapper<>(f);
+        }
+
+        CompletionStage<Void> f = commandExecutor.evalWriteAsync((String) keys.get(0), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
+                "local newKeysIndex = #KEYS/2; "
+                        + "for j = 1, newKeysIndex, 1 do "
+                          +  "if redis.call('exists', KEYS[j]) == 1 then "
+                               + "redis.call('rename', KEYS[j], KEYS[newKeysIndex + j]); "
+                           + "end; "
+                        + "end; ",
+                keys);
+        f = f.thenAccept(r -> runnable.run());
+        return new CompletableFutureWrapper<>(f);
+    }
+
+    protected final RFuture<Boolean> renamenxAsync(CommandAsyncExecutor commandExecutor, List<Object> keys, Consumer<Boolean> callback) {
+        if (keys.size() == 2) {
+            List<Object> args = new LinkedList<>();
+            args.add(keys.get(0));
+            args.add(keys.get(1));
+            CompletionStage<Boolean> f = commandExecutor.writeAsync((String) keys.get(0), StringCodec.INSTANCE, RedisCommands.RENAMENX, args.toArray());
+            f = f.thenApply(value -> {
+                if (value) {
+                    setName((String) keys.get(1));
+                }
+                return value;
+            });
+            return new CompletableFutureWrapper<>(f);
+        }
+
+        CompletionStage<Boolean> f = commandExecutor.evalWriteAsync((String) keys.get(0), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "local newKeysIndex = #KEYS/2; "
+                        + "for j = newKeysIndex+1, #KEYS, 1 do "
+                          +  "if redis.call('exists', KEYS[j]) == 1 then "
+                               + "return 0; "
+                           + "end; "
+                        + "end; "
+                        + "for j = 1, newKeysIndex, 1 do "
+                               + "redis.call('renamenx', KEYS[j], KEYS[newKeysIndex + j]); "
+                        + "end; "
+                        + "return 1;",
+                keys);
+        f = f.thenApply(r -> {
+            callback.accept(r);
+            return r;
+        });
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override

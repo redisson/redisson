@@ -43,7 +43,7 @@ public class RedissonIdGenerator extends RedissonExpirable implements RIdGenerat
 
     final Logger log = LoggerFactory.getLogger(getClass());
 
-    private final String allocationSizeName;
+    private String allocationSizeName;
 
     RedissonIdGenerator(CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);
@@ -179,6 +179,30 @@ public class RedissonIdGenerator extends RedissonExpirable implements RIdGenerat
         List<Object> kks = Arrays.asList(getRawName(), allocationSizeName,
                                          newName, getAllocationSizeName(newName));
         return super.copyAsync(kks, database, replace);
+    }
+
+    @Override
+    public RFuture<Void> renameAsync(String nn) {
+        String newName = mapName(nn);
+        List<Object> kks = Arrays.asList(getRawName(), allocationSizeName,
+                newName, getAllocationSizeName(newName));
+        return renameAsync(commandExecutor, kks, () -> {
+            setName(nn);
+            this.allocationSizeName = getAllocationSizeName(newName);
+        });
+    }
+
+    @Override
+    public RFuture<Boolean> renamenxAsync(String nn) {
+        String newName = mapName(nn);
+        List<Object> kks = Arrays.asList(getRawName(), allocationSizeName,
+                newName, getAllocationSizeName(newName));
+        return renamenxAsync(commandExecutor, kks, value -> {
+            if (value) {
+                setName(nn);
+                this.allocationSizeName = getAllocationSizeName(newName);
+            }
+        });
     }
 
     @Override

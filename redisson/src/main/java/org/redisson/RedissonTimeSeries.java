@@ -45,7 +45,7 @@ import java.util.stream.Stream;
 public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTimeSeries<V, L> {
 
     private final EvictionScheduler evictionScheduler;
-    private final String timeoutSetName;
+    private String timeoutSetName;
 
     public RedissonTimeSeries(EvictionScheduler evictionScheduler, CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);
@@ -1016,6 +1016,30 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
         List<Object> kks = Arrays.asList(getRawName(), timeoutSetName,
                 newName, getTimeoutSetName(newName));
         return super.copyAsync(kks, database, replace);
+    }
+
+    @Override
+    public RFuture<Void> renameAsync(String nn) {
+        String newName = mapName(nn);
+        List<Object> kks = Arrays.asList(getRawName(), timeoutSetName,
+                newName, getTimeoutSetName(newName));
+        return renameAsync(commandExecutor, kks, () -> {
+            setName(nn);
+            this.timeoutSetName = getTimeoutSetName(newName);
+        });
+    }
+
+    @Override
+    public RFuture<Boolean> renamenxAsync(String nn) {
+        String newName = mapName(nn);
+        List<Object> kks = Arrays.asList(getRawName(), timeoutSetName,
+                newName, getTimeoutSetName(newName));
+        return renamenxAsync(commandExecutor, kks, value -> {
+            if (value) {
+                setName(nn);
+                this.timeoutSetName = getTimeoutSetName(newName);
+            }
+        });
     }
 
 }
