@@ -959,7 +959,42 @@ public class RedissonListTest extends RedisDockerTest {
         assertThat(val1).isEqualTo(6);
         assertThat(subList.iterator()).toIterable().containsExactly(3, 4);
     }
-
+    
+    @Test
+    public void testSubListRemoveAll() {
+        List<Integer> list = redisson.getList("list");
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+        list.add(6);
+        list.add(7);
+        list.add(8);
+        
+        List<Integer> subList = list.subList(2, 6);
+        assertThat(subList.iterator()).toIterable().containsExactly(3, 4, 5, 6);
+        assertThat(subList.removeAll(List.of(3, 5))).isTrue();
+        assertThat(subList.iterator()).toIterable().containsExactly(4, 6, 7, 8);
+    }
+    
+    @Test
+    public void testSubListLastIndexOf() {
+        List<Integer> list = redisson.getList("list");
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+        list.add(5);
+        list.add(6);
+        list.add(7);
+        
+        List<Integer> subList = list.subList(2, 6);
+        assertThat(subList.lastIndexOf(3)).isEqualTo(2);
+        assertThat(subList.lastIndexOf(4)).isEqualTo(3);
+        assertThat(subList.lastIndexOf(5)).isEqualTo(5);
+    }
 
     @Test
     public void testSet() {
