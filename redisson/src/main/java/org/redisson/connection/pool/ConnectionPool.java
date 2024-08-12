@@ -95,7 +95,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
             errorMsg.append(" Disconnected hosts: ").append(freezed);
         }
         if (!failed.isEmpty()) {
-            errorMsg.append(" Hosts disconnected due to errors during `failedSlaveCheckInterval`: ").append(failed);
+            errorMsg.append(" Hosts disconnected by 'failedNodeDetector:' ").append(failed);
         }
 
         RedisConnectionException exception = new RedisConnectionException(errorMsg.toString());
