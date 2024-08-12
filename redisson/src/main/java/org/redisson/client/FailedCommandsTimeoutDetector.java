@@ -24,6 +24,9 @@ package org.redisson.client;
  */
 public class FailedCommandsTimeoutDetector extends FailedCommandsDetector {
 
+    public FailedCommandsTimeoutDetector() {
+    }
+
     public FailedCommandsTimeoutDetector(long checkInterval, int failedCommandsLimit) {
         super(checkInterval, failedCommandsLimit);
     }

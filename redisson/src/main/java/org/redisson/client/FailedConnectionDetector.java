@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class FailedConnectionDetector implements FailedNodeDetector {
 
-    private final long checkInterval;
+    private long checkInterval;
 
     private final AtomicLong firstFailTime = new AtomicLong(0);
 
@@ -34,6 +34,18 @@ public class FailedConnectionDetector implements FailedNodeDetector {
     }
 
     public FailedConnectionDetector(long checkInterval) {
+        if (checkInterval == 0) {
+            throw new IllegalArgumentException("checkInterval value");
+        }
+
+        this.checkInterval = checkInterval;
+    }
+
+    public void setCheckInterval(long checkInterval) {
+        if (checkInterval == 0) {
+            throw new IllegalArgumentException("checkInterval value");
+        }
+
         this.checkInterval = checkInterval;
     }
 

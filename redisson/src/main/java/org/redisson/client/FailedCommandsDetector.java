@@ -27,14 +27,37 @@ import java.util.concurrent.ConcurrentSkipListSet;
  */
 public class FailedCommandsDetector implements FailedNodeDetector {
 
-    private final long checkInterval;
+    private long checkInterval;
 
     private long failedCommandsLimit;
 
     private final NavigableSet<Long> failedCommands = new ConcurrentSkipListSet<>();
 
+    public FailedCommandsDetector() {
+    }
+
     public FailedCommandsDetector(long checkInterval, int failedCommandsLimit) {
+        if (checkInterval == 0) {
+            throw new IllegalArgumentException("checkInterval value");
+        }
+        if (failedCommandsLimit == 0) {
+            throw new IllegalArgumentException("failedCommandsLimit value");
+        }
         this.checkInterval = checkInterval;
+        this.failedCommandsLimit = failedCommandsLimit;
+    }
+
+    public void setCheckInterval(long checkInterval) {
+        if (checkInterval == 0) {
+            throw new IllegalArgumentException("checkInterval value");
+        }
+        this.checkInterval = checkInterval;
+    }
+
+    public void setFailedCommandsLimit(long failedCommandsLimit) {
+        if (failedCommandsLimit == 0) {
+            throw new IllegalArgumentException("failedCommandsLimit value");
+        }
         this.failedCommandsLimit = failedCommandsLimit;
     }
 
@@ -65,6 +88,10 @@ public class FailedCommandsDetector implements FailedNodeDetector {
 
     @Override
     public boolean isNodeFailed() {
+        if (failedCommandsLimit == 0) {
+            throw new IllegalArgumentException("failedCommandsLimit isn't set");
+        }
+
         long start = System.currentTimeMillis() - checkInterval;
         failedCommands.headSet(start).clear();
 
