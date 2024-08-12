@@ -25,6 +25,7 @@ import org.w3c.dom.NodeList;
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
+@Deprecated
 public class RedissonNestedElementAwareDecorator implements RedissonNamespaceDecorator {
 
     private final String[] nestedElements;

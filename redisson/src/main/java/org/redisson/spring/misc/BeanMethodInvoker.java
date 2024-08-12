@@ -23,6 +23,7 @@ import org.springframework.beans.support.ArgumentConvertingMethodInvoker;
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
+@Deprecated
 public class BeanMethodInvoker extends ArgumentConvertingMethodInvoker
         implements InitializingBean {
 

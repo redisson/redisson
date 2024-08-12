@@ -36,6 +36,7 @@ import org.w3c.dom.Node;
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
+@Deprecated
 public class RedissonNamespaceParserSupport {
     
     public static final String REDISSON_NAMESPACE

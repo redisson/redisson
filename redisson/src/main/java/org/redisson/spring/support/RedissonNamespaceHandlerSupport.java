@@ -23,6 +23,7 @@ import org.springframework.beans.factory.xml.NamespaceHandlerSupport;
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
+@Deprecated
 public class RedissonNamespaceHandlerSupport extends NamespaceHandlerSupport {
 
     static final Logger log = LoggerFactory.getLogger(RedissonNamespaceHandlerSupport.class);

@@ -23,6 +23,7 @@ import org.w3c.dom.Element;
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
+@Deprecated
 public class RedissonNamespaceDefaultDecorator implements RedissonNamespaceDecorator {
 
     @Override

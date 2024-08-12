@@ -26,6 +26,7 @@ import org.w3c.dom.Element;
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
+@Deprecated
 public class DelayedQueueDecorator implements RedissonNamespaceDecorator {
 
     private static final String DESTINATION_QUEUE_REF = "destination-queue-ref";

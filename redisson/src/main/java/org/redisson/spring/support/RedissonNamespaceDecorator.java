@@ -23,6 +23,7 @@ import org.w3c.dom.Element;
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
+@Deprecated
 public interface RedissonNamespaceDecorator {
 
     void decorate(Element element, ParserContext parserContext, BeanDefinitionBuilder builder, RedissonNamespaceParserSupport helper);
