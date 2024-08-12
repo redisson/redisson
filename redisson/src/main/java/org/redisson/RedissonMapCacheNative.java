@@ -467,7 +467,7 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
     @Override
     public int addListener(ObjectListener listener) {
         if (listener instanceof MapExpiredListener) {
-            return addListener("__keyevent@*:hexpire", (MapExpiredListener) listener, MapExpiredListener::onExpired);
+            return addListener("__keyevent@*:hexpired", (MapExpiredListener) listener, MapExpiredListener::onExpired);
         }
 
         return super.addListener(listener);
@@ -476,7 +476,7 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
     @Override
     public RFuture<Integer> addListenerAsync(ObjectListener listener) {
         if (listener instanceof MapExpiredListener) {
-            return addListenerAsync("__keyevent@*:hexpire", (MapExpiredListener) listener, MapExpiredListener::onExpired);
+            return addListenerAsync("__keyevent@*:hexpired", (MapExpiredListener) listener, MapExpiredListener::onExpired);
         }
 
         return super.addListenerAsync(listener);
@@ -484,13 +484,13 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
 
     @Override
     public void removeListener(int listenerId) {
-        removeListener(listenerId, "__keyevent@*:hexpire");
+        removeListener(listenerId, "__keyevent@*:hexpired");
         super.removeListener(listenerId);
     }
 
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
-        return removeListenerAsync(super.removeListenerAsync(listenerId), listenerId, "__keyevent@*:hexpire");
+        return removeListenerAsync(super.removeListenerAsync(listenerId), listenerId, "__keyevent@*:hexpired");
     }
 
 
