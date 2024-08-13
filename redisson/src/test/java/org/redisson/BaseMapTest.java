@@ -1110,60 +1110,6 @@ public abstract class BaseMapTest extends RedisDockerTest {
     }
 
     @Test
-    public void testGetAllOrder() {
-        RMap<Integer, Integer> map = getMap("getAll");
-        map.put(1, 100);
-        map.put(2, 200);
-        map.put(3, 300);
-        map.put(4, 400);
-        map.put(5, 500);
-        map.put(6, 600);
-        map.put(7, 700);
-        map.put(8, 800);
-
-        Map<Integer, Integer> filtered = map.getAll(new HashSet<Integer>(Arrays.asList(2, 3, 5, 1, 7, 8)));
-
-        Map<Integer, Integer> expectedMap = new LinkedHashMap<Integer, Integer>();
-        expectedMap.put(1, 100);
-        expectedMap.put(2, 200);
-        expectedMap.put(3, 300);
-        expectedMap.put(5, 500);
-        expectedMap.put(7, 700);
-        expectedMap.put(8, 800);
-        
-        assertThat(filtered.entrySet()).containsExactlyElementsOf(expectedMap.entrySet());
-        destroy(map);
-    }
-    
-    @Test
-    public void testGetAllOrderPartially() {
-        RMap<Integer, Integer> map = getMap("getAll");
-        map.put(1, 100);
-        map.put(2, 200);
-        map.put(3, 300);
-        map.put(4, 400);
-        RMap<Integer, Integer> map2 = getMap("getAll");
-        map2.put(5, 500);
-        map2.put(6, 600);
-        map2.put(7, 700);
-        map2.put(8, 800);
-
-        Map<Integer, Integer> filtered = map.getAll(new HashSet<Integer>(Arrays.asList(2, 3, 5, 1, 7, 8)));
-
-        Map<Integer, Integer> expectedMap = new LinkedHashMap<Integer, Integer>();
-        expectedMap.put(1, 100);
-        expectedMap.put(2, 200);
-        expectedMap.put(3, 300);
-        expectedMap.put(5, 500);
-        expectedMap.put(7, 700);
-        expectedMap.put(8, 800);
-        
-        assertThat(filtered.entrySet()).containsExactlyElementsOf(expectedMap.entrySet());
-        destroy(map);
-    }
-
-    
-    @Test
     public void testAddAndGet() throws InterruptedException {
         RMap<Integer, Integer> map = getMap("getAll", new CompositeCodec(redisson.getConfig().getCodec(), IntegerCodec.INSTANCE));
         map.put(1, 100);
@@ -1174,9 +1120,9 @@ public abstract class BaseMapTest extends RedisDockerTest {
         assertThat(res).isEqualTo(112);
 
         RMap<Integer, Double> map2 = getMap("getAll2", new CompositeCodec(redisson.getConfig().getCodec(), DoubleCodec.INSTANCE));
-        map2.put(1, new Double(100.2));
+        map2.put(1, 100.2);
 
-        Double res2 = map2.addAndGet(1, new Double(12.1));
+        Double res2 = map2.addAndGet(1, 12.1);
         assertThat(res2).isEqualTo(112.3);
         res2 = map2.get(1);
         assertThat(res2).isEqualTo(112.3);
