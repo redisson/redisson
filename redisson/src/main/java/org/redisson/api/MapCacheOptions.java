@@ -30,6 +30,7 @@ import java.time.Duration;
  * @param <K> key type
  * @param <V> value type
  */
+@Deprecated
 public class MapCacheOptions<K, V> extends MapOptions<K, V> {
 
     private boolean removeEmptyEvictionTask;
