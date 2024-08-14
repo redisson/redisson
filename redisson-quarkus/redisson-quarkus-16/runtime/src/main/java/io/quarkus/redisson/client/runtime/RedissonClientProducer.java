@@ -34,7 +34,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.*;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -57,27 +57,24 @@ public class RedissonClientProducer {
     @Singleton
     @DefaultBean
     public RedissonClient create() throws IOException {
-        InputStream configStream;
+        String config = null;
         Optional<String> configFile = ConfigProvider.getConfig().getOptionalValue("quarkus.redisson.file", String.class);
-        if (configFile.isPresent()) {
-            configStream = getClass().getResourceAsStream(configFile.get());
-            if (configStream == null) {
-                configStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(configFile.get());
+        String configFileName = configFile.orElse("redisson.yaml");
+        try (InputStream configStream = Optional.ofNullable(getClass().getResourceAsStream(configFileName))
+                .orElse(Thread.currentThread().getContextClassLoader().getResourceAsStream(configFileName))
+        ) {
+            if (configStream != null) {
+                byte[] array = new byte[configStream.available()];
+                if (configStream.read(array) != -1) {
+                    config = new String(array, StandardCharsets.UTF_8);
+                }
             }
-        } else {
-            configStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("redisson.yaml");
         }
-        String config;
-        if (configStream != null) {
-            byte[] array = new byte[configStream.available()];
-            configStream.read(array);
-            config = new String(array, StandardCharsets.UTF_8);
-        } else {
+        if (config == null) {
             Stream<String> s = StreamSupport.stream(ConfigProvider.getConfig().getPropertyNames().spliterator(), false);
-            String yaml = PropertiesConvertor.toYaml("quarkus.redisson.", s.sorted().collect(Collectors.toList()), prop -> {
+            config = PropertiesConvertor.toYaml("quarkus.redisson.", s.sorted().collect(Collectors.toList()), prop -> {
                 return ConfigProvider.getConfig().getValue(prop, String.class);
             }, false);
-            config = yaml;
         }
 
         ConfigSupport support = new ConfigSupport() {
