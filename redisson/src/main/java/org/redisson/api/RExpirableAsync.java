@@ -172,7 +172,7 @@ public interface RExpirableAsync extends RObjectAsync {
     RFuture<Boolean> clearExpireAsync();
 
     /**
-     * Remaining time to live of Redisson object that has a timeout 
+     * Returns remaining time of the object in milliseconds.
      *
      * @return time in milliseconds
      *          -2 if the key does not exist.
@@ -181,11 +181,13 @@ public interface RExpirableAsync extends RObjectAsync {
     RFuture<Long> remainTimeToLiveAsync();
 
     /**
-     * Expiration time of Redisson object that has a timeout
+     * Returns expiration time of the object as the absolute Unix expiration timestamp in milliseconds.
      * <p>
      * Requires <b>Redis 7.0.0 and higher.</b>
      *
-     * @return expiration time
+     * @return Unix time in milliseconds
+     *          -2 if the key does not exist.
+     *          -1 if the key exists but has no associated expiration time.
      */
     RFuture<Long> getExpireTimeAsync();
 

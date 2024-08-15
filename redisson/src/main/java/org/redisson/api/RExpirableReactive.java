@@ -174,7 +174,7 @@ public interface RExpirableReactive extends RObjectReactive {
     Mono<Boolean> clearExpire();
 
     /**
-     * Get remaining time to live of object in milliseconds.
+     * Returns remaining time of the object in milliseconds.
      *
      * @return time in milliseconds
      *          -2 if the key does not exist.
@@ -183,11 +183,13 @@ public interface RExpirableReactive extends RObjectReactive {
     Mono<Long> remainTimeToLive();
 
     /**
-     * Expiration time of Redisson object that has a timeout
+     * Returns expiration time of the object as the absolute Unix expiration timestamp in milliseconds.
      * <p>
      * Requires <b>Redis 7.0.0 and higher.</b>
      *
-     * @return expiration time
+     * @return Unix time in milliseconds
+     *          -2 if the key does not exist.
+     *          -1 if the key exists but has no associated expiration time.
      */
     Mono<Long> getExpireTime();
 
