@@ -290,7 +290,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public <V> RJsonBucket<V> getJsonBucket(JsonBucketOptions<V> options) {
         JsonBucketParams<V> params = (JsonBucketParams) options;
-        return new RedissonJsonBucket<>(params.getCodec(), commandExecutor, params.getName());
+        return new RedissonJsonBucket<>(params.getCodec(), commandExecutor.copy(params), params.getName());
     }
     
     @Override
@@ -550,7 +550,7 @@ public final class Redisson implements RedissonClient {
         MapCacheParams<K, V> params = (MapCacheParams<K, V>) options;
         MapCacheOptions<K, V> ops = createOptions(params);
         return new RedissonMapCache<>(params.getCodec(), evictionScheduler,
-                commandExecutor, params.getName(), this, ops, writeBehindService);
+                commandExecutor.copy(params), params.getName(), this, ops, writeBehindService);
     }
 
     private static <K, V> MapCacheOptions<K, V> createOptions(MapCacheParams<K, V> params) {
