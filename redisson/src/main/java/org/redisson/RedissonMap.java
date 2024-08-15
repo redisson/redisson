@@ -325,10 +325,15 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         checkKey(key);
         Objects.requireNonNull(mappingFunction);
 
+        V value = get(key);
+        if (value != null) {
+            return value;
+        }
+
         RLock lock = getLock(key);
         lock.lock();
         try {
-            V value = get(key);
+            value = get(key);
             if (value == null) {
                 V newValue = mappingFunction.apply(key);
                 if (newValue != null) {
