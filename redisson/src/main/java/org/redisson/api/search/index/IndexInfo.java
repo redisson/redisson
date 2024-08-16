@@ -39,13 +39,13 @@ public class IndexInfo {
 
     private Map<String, Object> dialectStats;
 
-    private Long docs;
+    private Double docs;
 
-    private Long maxDocId;
+    private Double maxDocId;
 
-    private Long terms;
+    private Double terms;
 
-    private Long records;
+    private Double records;
 
     private Double invertedSize;
 
@@ -141,38 +141,38 @@ public class IndexInfo {
         return this;
     }
 
-    public Long getDocs() {
+    public Double getDocs() {
         return docs;
     }
 
-    public IndexInfo setDocs(Long docs) {
+    public IndexInfo setDocs(Double docs) {
         this.docs = docs;
         return this;
     }
 
-    public Long getMaxDocId() {
+    public Double getMaxDocId() {
         return maxDocId;
     }
 
-    public IndexInfo setMaxDocId(Long maxDocId) {
+    public IndexInfo setMaxDocId(Double maxDocId) {
         this.maxDocId = maxDocId;
         return this;
     }
 
-    public Long getTerms() {
+    public Double getTerms() {
         return terms;
     }
 
-    public IndexInfo setTerms(Long terms) {
+    public IndexInfo setTerms(Double terms) {
         this.terms = terms;
         return this;
     }
 
-    public Long getRecords() {
+    public Double getRecords() {
         return records;
     }
 
-    public IndexInfo setRecords(Long records) {
+    public IndexInfo setRecords(Double records) {
         this.records = records;
         return this;
     }

@@ -46,10 +46,10 @@ public class IndexInfoDecoder implements MultiDecoder<Object> {
             ii.setOptions((Map<String, Object>) result.get("index_options"));
             ii.setDefinition((Map<String, Object>) result.get("index_definition"));
             ii.setAttributes((List<Map<String, Object>>) result.get("attributes"));
-            ii.setDocs(toLong(result, "num_docs"));
-            ii.setMaxDocId(toLong(result, "max_doc_id"));
-            ii.setTerms(toLong(result, "num_terms"));
-            ii.setRecords(toLong(result, "num_records"));
+            ii.setDocs(toDouble(result, "num_docs"));
+            ii.setMaxDocId(toDouble(result, "max_doc_id"));
+            ii.setTerms(toDouble(result, "num_terms"));
+            ii.setRecords(toDouble(result, "num_records"));
             ii.setInvertedSize(toDouble(result, "inverted_sz_mb"));
             ii.setVectorIndexSize(toDouble(result, "vector_index_sz_mb"));
             ii.setTotalInvertedIndexBlocks(toDouble(result, "total_inverted_index_blocks"));
