@@ -13,7 +13,7 @@
 
     <organization>
        <name>Redisson</name>
-       <url>https://redisson.org/</url>
+       <url>https://redisson.pro/</url>
     </organization>
 
     <properties>
@@ -101,7 +101,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>3.2.4</version>
+                        <version>3.2.5</version>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
@@ -139,7 +139,7 @@
             <dependency>
                 <groupId>org.awaitility</groupId>
                 <artifactId>awaitility</artifactId>
-                <version>4.2.1</version>
+                <version>4.2.2</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
@@ -157,13 +157,13 @@
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter-engine</artifactId>
-                <version>5.10.2</version>
+                <version>5.11.0</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter-params</artifactId>
-                <version>5.10.2</version>
+                <version>5.11.0</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
@@ -176,7 +176,7 @@
             <dependency>
                 <groupId>org.testcontainers</groupId>
                 <artifactId>testcontainers-bom</artifactId>
-                <version>1.19.8</version>
+                <version>1.20.1</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -222,7 +222,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-release-plugin</artifactId>
-            <version>3.0.1</version>
+            <version>3.1.1</version>
             <configuration>
                 <autoVersionSubmodules>true</autoVersionSubmodules>
                 <useReleaseProfile>true</useReleaseProfile>
@@ -319,7 +319,7 @@
             <plugin>
          	<groupId>org.apache.maven.plugins</groupId>
          	<artifactId>maven-javadoc-plugin</artifactId>
-         	<version>3.6.3</version>
+         	<version>3.8.0</version>
          	<executions>
                    <execution>
                      <id>attach-javadocs</id>
