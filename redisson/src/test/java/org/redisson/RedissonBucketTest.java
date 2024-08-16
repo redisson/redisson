@@ -638,6 +638,33 @@ public class RedissonBucketTest extends RedisDockerTest {
         RBucket<String> bucket2 = redisson.getBucket("test2");
         assertThat(bucket2.get()).isEqualTo("someValue");
     }
+    
+    @Test
+    public void testCopy3() {
+        testTwoDatabase((r1, r2) -> {
+            // normal test
+            RBucket<String> bucket1 = r1.getBucket("test");
+            bucket1.set("someValue");
+            bucket1.copy("test", 1);
+            
+            RBucket<String> bucket2 = r2.getBucket("test");
+            assertThat(bucket2.get()).isEqualTo("someValue");
+        });
+    }
+    
+    @Test
+    public void testCopy4() {
+        testTwoDatabase((r1, r2) -> {
+            // database1 copy to database0
+            // this will cause a RedisException
+            RBucket<String> bucket2 = r2.getBucket("test");
+            bucket2.set("database1");
+            bucket2.copy("test", 0);
+            
+            RBucket<String> bucket1 = r1.getBucket("test");
+            assertThat(bucket1.get()).isEqualTo("database1");
+        });
+    }
 
     @Test
     public void testRename() {

@@ -193,7 +193,7 @@ public abstract class RedissonObject implements RObject {
             List<Object> args = new LinkedList<>();
             args.add(keys.get(0));
             args.add(keys.get(1));
-            if (database > 0) {
+            if (database >= 0) {
                 args.add("DB");
                 args.add(database);
             }
@@ -213,11 +213,12 @@ public abstract class RedissonObject implements RObject {
                             + "else "
                                 + "res = res + redis.call('copy', KEYS[j], KEYS[newKeysIndex + j], 'db', ARGV[1]); "
                             + "end; "
-                        + "end; "
-                        + "if ARGV[2] == '1' then "
-                            + "res = res + redis.call('copy', KEYS[j], KEYS[newKeysIndex + j], 'replace'); "
                         + "else "
-                            + "res = res + redis.call('copy', KEYS[j], KEYS[newKeysIndex + j]); "
+                            + "if ARGV[2] == '1' then "
+                                + "res = res + redis.call('copy', KEYS[j], KEYS[newKeysIndex + j], 'replace'); "
+                            + "else "
+                                + "res = res + redis.call('copy', KEYS[j], KEYS[newKeysIndex + j]); "
+                            + "end; "
                         + "end; "
                     + "end; "
                     + "return math.min(res, 1); ",

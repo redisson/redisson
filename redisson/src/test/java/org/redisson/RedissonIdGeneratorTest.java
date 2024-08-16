@@ -30,5 +30,17 @@ public class RedissonIdGeneratorTest extends RedisDockerTest {
             assertThat(generator.nextId()).isEqualTo(i);
         }
     }
+    
+    @Test
+    public void testCopy() {
+        testTwoDatabase((r1, r2) -> {
+            RIdGenerator generator = r1.getIdGenerator("test");
+            generator.tryInit(12, 2931);
+            
+            generator.copy("test1", 1);
+            assertThat(r1.getKeys().count()).isEqualTo(2);
+            assertThat(r2.getKeys().count()).isEqualTo(2);
+        });
+    }
 
 }

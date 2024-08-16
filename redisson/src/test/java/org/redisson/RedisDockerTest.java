@@ -87,7 +87,21 @@ public class RedisDockerTest {
         Config config = createConfig();
         return Redisson.create(config);
     }
-
+    
+    protected void testTwoDatabase(BiConsumer<RedissonClient, RedissonClient> consumer) {
+        Config config1 = createConfig();
+        config1.useSingleServer().setDatabase(0);
+        RedissonClient r1 = Redisson.create(config1);
+        Config config2 = createConfig();
+        config2.useSingleServer().setDatabase(1);
+        RedissonClient r2 = Redisson.create(config2);
+        
+        consumer.accept(r1, r2);
+        
+        r1.shutdown();
+        r2.shutdown();
+    }
+    
     protected void testWithParams(Consumer<RedissonClient> redissonCallback, String... params) {
         GenericContainer<?> redis = createRedis(params);
         redis.start();
