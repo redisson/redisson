@@ -476,6 +476,7 @@
                 <configuration>
                     <testSource>21</testSource>
                     <testTarget>21</testTarget>
+                    <testRelease>21</testRelease>
                 </configuration>
             </plugin>
 
