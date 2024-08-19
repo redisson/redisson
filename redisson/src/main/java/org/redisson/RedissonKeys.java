@@ -617,7 +617,8 @@ public class RedissonKeys implements RKeys {
     public RFuture<Void> removeListenerAsync(int listenerId) {
         PublishSubscribeService subscribeService = commandExecutor.getConnectionManager().getSubscribeService();
         CompletableFuture<Void> f = subscribeService.removeFlushListenerAsync(listenerId);
-        f = f.thenCompose(r -> removeListenerAsync(null, listenerId, "__keyevent@*:expired", "__keyevent@*:del"));
+        f = f.thenCompose(r -> removeListenerAsync(null, listenerId,
+                "__keyevent@*:expired", "__keyevent@*:del", "__keyevent@*:set", "__keyevent@*:new"));
         return new CompletableFutureWrapper<>(f);
     }
 
