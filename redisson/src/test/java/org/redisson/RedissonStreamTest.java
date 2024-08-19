@@ -40,6 +40,14 @@ public class RedissonStreamTest extends RedisDockerTest {
     }
 
     @Test
+    public void testType() {
+        RStream<Object, Object> stream = redisson.getStream("stream");
+        stream.createGroup(StreamCreateGroupArgs.name("group").makeStream());
+        stream.add(StreamAddArgs.entry("key", "value"));
+        assertThat(redisson.getKeys().getType("stream")).isEqualTo(RType.STREAM);
+    }
+
+    @Test
     public void testEmptyMap() {
         RStream<Object, Object> stream = redisson.getStream("stream");
         stream.createGroup(StreamCreateGroupArgs.name("group").makeStream());

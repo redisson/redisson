@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.JsonType;
 import org.redisson.api.RJsonBucket;
+import org.redisson.api.RType;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.JacksonCodec;
 
@@ -87,6 +88,8 @@ public class RedissonJsonBucketTest extends DockerRedisStackTest {
         TestType t = new TestType();
         t.setName("name1");
         al.set(t);
+
+        assertThat(redisson.getKeys().getType("test")).isEqualTo(RType.JSON);
 
         JsonType s = al.getType();
         assertThat(s).isEqualTo(JsonType.OBJECT);

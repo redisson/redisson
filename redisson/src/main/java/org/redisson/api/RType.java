@@ -22,6 +22,6 @@ package org.redisson.api;
  */
 public enum RType {
 
-    OBJECT, MAP, LIST, SET, ZSET
+    OBJECT, MAP, LIST, SET, ZSET, STREAM, JSON
     
 }

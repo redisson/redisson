@@ -42,6 +42,12 @@ public class TypeConvertor implements Convertor<RType> {
         if ("hash".equals(val)) {
             return RType.MAP;
         }
+        if ("stream".equals(val)) {
+            return RType.STREAM;
+        }
+        if ("ReJSON-RL".equals(val)) {
+            return RType.JSON;
+        }
         if ("none".equals(val)) {
             return null;
         }
