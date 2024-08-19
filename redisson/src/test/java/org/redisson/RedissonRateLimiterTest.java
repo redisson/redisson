@@ -122,7 +122,7 @@ public class RedissonRateLimiterTest extends RedisDockerTest {
         limiter.trySetRate(RateType.PER_CLIENT, 1, 1, RateIntervalUnit.SECONDS);
         
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> limiter.tryAcquire(20))
-                    .hasMessageContaining("Requested permits amount could not exceed defined rate");
+                    .hasMessageContaining("Requested permits amount cannot exceed defined rate");
         assertThat(limiter.tryAcquire()).isTrue();
     }
 
