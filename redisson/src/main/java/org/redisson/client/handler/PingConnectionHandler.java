@@ -61,7 +61,7 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
 
     private void sendPing(ChannelHandlerContext ctx) {
         RedisConnection connection = RedisConnection.getFrom(ctx.channel());
-        if (connection.getRedisClient().isShutdown()) {
+        if (isClosed(ctx, connection)) {
             return;
         }
 
@@ -75,7 +75,7 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
         }
 
         config.getTimer().newTimeout(timeout -> {
-            if (connection.isClosed() || ctx.isRemoved()) {
+            if (isClosed(ctx, connection)) {
                 return;
             }
 
@@ -96,10 +96,6 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
                         log.error("Unable to send PING command over channel: {}", ctx.channel(), cause);
                     }
 
-                    if (connection.getRedisClient().isShutdown()) {
-                        return;
-                    }
-
                     log.debug("channel: {} closed due to PING response timeout set in {} ms", ctx.channel(), config.getPingConnectionInterval());
                     ctx.channel().close();
                     connection.getRedisClient().getConfig().getFailedNodeDetector().onPingFailed();
@@ -112,6 +108,12 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
                 sendPing(ctx);
             }
         }, config.getPingConnectionInterval(), TimeUnit.MILLISECONDS);
+    }
+
+    private static boolean isClosed(ChannelHandlerContext ctx, RedisConnection connection) {
+        return connection.isClosed()
+                            || ctx.isRemoved()
+                                || connection.getRedisClient().isShutdown();
     }
 
     protected Throwable cause(RFuture<?> future) {
