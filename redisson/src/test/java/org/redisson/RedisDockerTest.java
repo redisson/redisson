@@ -294,7 +294,7 @@ public class RedisDockerTest {
         List<GenericContainer<? extends GenericContainer<?>>> nodes = new ArrayList<>();
 
         GenericContainer<?> master =
-                new GenericContainer<>("bitnami/redis:7.2.4")
+                new GenericContainer<>("bitnami/redis:latest")
                         .withNetwork(network)
                         .withEnv("REDIS_REPLICATION_MODE", "master")
                         .withEnv("REDIS_PASSWORD", password)
@@ -312,7 +312,7 @@ public class RedisDockerTest {
 
         for (int i = 0; i < slaves; i++) {
             GenericContainer<?> slave =
-                    new GenericContainer<>("bitnami/redis:7.2.4")
+                    new GenericContainer<>("bitnami/redis:latest")
                             .withNetwork(network)
                             .withEnv("REDIS_REPLICATION_MODE", "slave")
                             .withEnv("REDIS_MASTER_HOST", "redis")
