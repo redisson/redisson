@@ -389,7 +389,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             return CompletableFuture.completedFuture(null);
         }
 
-        RFuture<List<Map<String, String>>> sentinelsFuture = connection.async(StringCodec.INSTANCE, RedisCommands.SENTINEL_SENTINELS, cfg.getMasterName());
+        RFuture<List<Map<String, String>>> sentinelsFuture = connection.async(cfg.getRetryAttempts(), cfg.getRetryInterval(), cfg.getTimeout(),
+                                                                                StringCodec.INSTANCE, RedisCommands.SENTINEL_SENTINELS, cfg.getMasterName());
         return sentinelsFuture.thenCompose(list -> {
             if (list.isEmpty()) {
                 return CompletableFuture.completedFuture(null);
@@ -431,7 +432,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private CompletionStage<Void> checkSlavesChange(SentinelServersConfig cfg, RedisConnection connection) {
-        RFuture<List<Map<String, String>>> slavesFuture = connection.async(StringCodec.INSTANCE, RedisCommands.SENTINEL_SLAVES, cfg.getMasterName());
+        RFuture<List<Map<String, String>>> slavesFuture = connection.async(cfg.getRetryAttempts(), cfg.getRetryInterval(), cfg.getTimeout(),
+                                                                            StringCodec.INSTANCE, RedisCommands.SENTINEL_SLAVES, cfg.getMasterName());
         return slavesFuture.thenCompose(slavesMap -> {
             Set<RedisURI> currentSlaves = Collections.newSetFromMap(new ConcurrentHashMap<>(slavesMap.size()));
             List<CompletableFuture<Void>> futures = new ArrayList<>();
@@ -499,7 +501,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private CompletionStage<RedisClient> checkMasterChange(SentinelServersConfig cfg, RedisConnection connection) {
-        RFuture<RedisURI> masterFuture = connection.async(StringCodec.INSTANCE, masterHostCommand, cfg.getMasterName());
+        RFuture<RedisURI> masterFuture = connection.async(cfg.getRetryAttempts(), cfg.getRetryInterval(), cfg.getTimeout(),
+                                                            StringCodec.INSTANCE, masterHostCommand, cfg.getMasterName());
         return masterFuture
                 .thenCompose(u -> serviceManager.resolveIP(scheme, u))
                 .thenCompose(newMaster -> {

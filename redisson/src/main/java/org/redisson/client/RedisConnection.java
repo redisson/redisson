@@ -249,11 +249,37 @@ public class RedisConnection implements RedisCommands {
         return async(timeout, null, command, params);
     }
 
-    public <T, R> RFuture<R> async(Codec encoder, RedisCommand<T> command, Object... params) {
-        return async(-1, encoder, command, params);
+    public <T, R> RFuture<R> async(Codec codec, RedisCommand<T> command, Object... params) {
+        return async(-1, codec, command, params);
     }
 
-    public <T, R> RFuture<R> async(long timeout, Codec encoder, RedisCommand<T> command, Object... params) {
+    public <T, R> RFuture<R> async(int retryAttempts, int retryInterval, long timeout, Codec codec, RedisCommand<T> command, Object... params) {
+        CompletableFuture<R> result = new CompletableFuture<>();
+        AtomicInteger attempts = new AtomicInteger(retryAttempts);
+        async(result, attempts, retryInterval, timeout, codec, command, params);
+        return new CompletableFutureWrapper<>(result);
+    }
+
+    private <T, R> void async(CompletableFuture<R> promise, AtomicInteger attempts, int retryInterval, long timeout, Codec codec, RedisCommand<T> command, Object... params) {
+        RFuture<R> f = async(timeout, codec, command, params);
+        f.whenComplete((r, e) -> {
+            if (e != null) {
+                if (attempts.decrementAndGet() >= 0) {
+                    redisClient.getTimer().newTimeout(t -> {
+                        async(promise, attempts, retryInterval, timeout, codec, command, params);
+                    }, retryInterval, TimeUnit.MILLISECONDS);
+                    return;
+                }
+
+                promise.completeExceptionally(e);
+                return;
+            }
+
+            promise.complete(r);
+        });
+    }
+
+    public <T, R> RFuture<R> async(long timeout, Codec codec, RedisCommand<T> command, Object... params) {
         CompletableFuture<R> promise = new CompletableFuture<>();
         if (timeout == -1) {
             timeout = redisClient.getCommandTimeout();
@@ -274,7 +300,7 @@ public class RedisConnection implements RedisCommands {
             scheduledFuture.cancel();
         });
         
-        ChannelFuture writeFuture = send(new CommandData<>(promise, encoder, command, params));
+        ChannelFuture writeFuture = send(new CommandData<>(promise, codec, command, params));
         writeFuture.addListener((ChannelFutureListener) future -> {
             if (!future.isSuccess()) {
                 promise.completeExceptionally(future.cause());

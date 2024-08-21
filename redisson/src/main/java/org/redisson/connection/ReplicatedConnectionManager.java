@@ -20,6 +20,7 @@ import org.redisson.api.NodeType;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.*;
 import org.redisson.misc.RedisURI;
@@ -203,7 +204,8 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                         return CompletableFuture.<Map<String, String>>completedFuture(null);
                     }
 
-                    return connection.async(RedisCommands.INFO_REPLICATION);
+                    return connection.async(cfg.getRetryAttempts(), cfg.getRetryInterval(), cfg.getTimeout(),
+                                                StringCodec.INSTANCE, RedisCommands.INFO_REPLICATION);
                 })
                 .thenCompose(r -> {
                     if (r == null) {

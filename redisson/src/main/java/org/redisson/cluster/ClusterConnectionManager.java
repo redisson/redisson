@@ -20,6 +20,7 @@ import io.netty.util.Timeout;
 import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
 import org.redisson.client.*;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.cluster.ClusterNodeInfo.Flag;
@@ -454,7 +455,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     private void updateClusterState(ClusterServersConfig cfg, RedisConnection connection,
             Iterator<RedisURI> iterator, RedisURI uri, AtomicReference<Throwable> lastException, List<RedisURI> allNodes) {
-        RFuture<List<ClusterNodeInfo>> future = connection.async(clusterNodesCommand);
+        RFuture<List<ClusterNodeInfo>> future = connection.async(cfg.getRetryAttempts(), cfg.getRetryInterval(), cfg.getTimeout(),
+                                                                        StringCodec.INSTANCE, clusterNodesCommand);
         future.whenComplete((nodes, e) -> {
                 if (e != null) {
                     log.error("Unable to execute {}", clusterNodesCommand, e);
