@@ -3,6 +3,50 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
+### 22-Aug-2024 - 3.35.0 released
+
+Feature - `INDEXEMPTY` option added to tag and text fields in `RSearch.createIndex()` method  
+Feature - `INDEXMISSING` option added to all fields in `RSearch.createIndex()` method  
+Feature - `StreamMessageId.LAST` option added  
+Feature - `copy()` and `copyAndReplace()` methods added to `RObject` interface  
+Feature - [Apache Fury](https://github.com/apache/fury) codec support  
+Feature - `RSetCache` object supports `TrackingListener`, `SetAddListener` and `SetRemoveListener` listeners  
+Feature - `RClusteredMapCacheNative` object implemented. Requires Redis 7.4+  
+Feature - `RLocalCachedMapCacheNative` object implemented. Requires Redis 7.4+  
+Feature - `localcache_native` and `clustered_native` implementations added to Quarkus module. Requires Redis 7.4+  
+Feature - `RedissonClusteredCacheNative` and `RedissonLocalCachedCacheNative` implementations added to MyBatis module. Requires Redis 7.4+
+Feature - `RedissonClusteredSpringCacheNativeManager` and `RedissonSpringLocalCachedCacheNativeManager` implementations added to Spring Cache module. Requires Redis 7.4+  
+Feature - `RedissonClusteredNativeRegionFactory` and `RedissonLocalCachedNativeRegionFactory` added to Hibernate module. Requires Redis 7.4+  
+Feature - `local-caches-native` and `clustered-caches-native` implementations added to Micronaut module. Requires Redis 7.4+  
+
+Improvement - `ProtobufCodec` memory allocation optimization  
+Improvement - [Apache Fury](https://github.com/apache/fury) codec optimization (thanks to @chaokunyang)  
+Improvement - quarkus should make an attempt to read config file using Thread's ContextClassLoader  
+Improvement - quarkus should make an attempt to read config file using Thread's ContextClassLoader (thanks to @seakider)  
+Improvement - don't take lock for `RMap.computeIfAbsent()` if only get is needed (thanks to @shreyas-sprinklr)  
+
+Fixed - writer, writeMode, writerAsync, writeBehindDelay, writeBehindBatchSize, loader, loaderAsync settings aren't applied to caches-native in Micronaut module  
+Fixed - missed `caches-native` implementation for Micronaut 3.x and Micronaut 2.x  
+Fixed - a new retry attempt to the same node isn't made for INFO_REPLICATION, SENTINEL_GET_MASTER_ADDR_BY_NAME, SENTINEL_SENTINELS, SENTINEL_SLAVES and CLUSTER_NODES commands  
+Fixed - `RType.JSON` and `RType.STREAM` can't be resolved by `RKey.getType()` method  
+Fixed - `RKeys.removeListener()` method doesn't remove `NewObjectListener` and `SetObjectListener`  
+Fixed - `copy()` method doesn't works with db (thanks to @seakider)  
+Fixed - `maven.compiler.release` setting isn't defined  
+Fixed - `RSearch.info()` method throws `NumberFormatException` (thanks to @iamtakingiteasy)  
+Fixed - timeout parameters defined per object aren't applied to `RJsonBuckets` and `RJsonBucket` objects  
+Fixed - RedisException is thrown by `.removeAll()` and `.indexOf()` methods of `RedissonSubList` object (thanks to @seakider)  
+Fixed - wrong event keyspace name for `MapCacheNative` object (thanks to @larryTheCoder)  
+Fixed - missed `rename()` and `renamenx()` methods implementation for `RIdGenerator`, `RMapCache` and `RTimeSeries` objects  
+Fixed - `Kryo5Codec` doesn't handle `UnmodifiableCollection`, `SynchronizedCollection` and `CheckedCollection`  
+Fixed - `RRateLimiter` incorrect rate count in the event of an attempt to exceed the limit  
+Fixed - `credentials-resolver`, `failed-slave-node-detector`, `command-mapper`, `name-mapper`, `nat-mapper` settings aren't recognized by Helidon and Quarkus  
+Fixed - `RMultimapCacheReactive.expireKey()` method returns Single instead of Reactor Mono  
+Fixed - `@RObjectField` annotation with codec option has no effect  
+Fixed - an exception is thrown if the `@RObjectField` annotation is defined on a field  
+Fixed - `RDestroyable.destroy()` method doesn't remove listeners  
+Fixed - FailedSlaveNodeDetector's parameters by can't be defined in YAML config  
+
+
 ### 31-Jul-2024 - 3.34.1 released
 
 Fixed - RObject.rename() method doesn't work in cluster
