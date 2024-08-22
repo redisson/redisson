@@ -36,7 +36,7 @@ public class BaseCacheConfiguration implements Named {
     private final String name;
 
     private Codec codec;
-    private Duration expireAfterWrite;
+    private Duration expireAfterWrite = Duration.ZERO;
     private Duration expireAfterAccess = Duration.ZERO;
     private int maxSize;
 
