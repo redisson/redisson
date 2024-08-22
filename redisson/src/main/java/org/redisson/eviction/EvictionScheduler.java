@@ -18,8 +18,9 @@ package org.redisson.eviction;
 import org.redisson.api.MapCacheOptions;
 import org.redisson.command.CommandAsyncExecutor;
 
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.function.Supplier;
 
 /**
  * Eviction scheduler.
@@ -32,66 +33,56 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class EvictionScheduler {
 
-    private final ConcurrentMap<String, EvictionTask> tasks = new ConcurrentHashMap<>();
+    private final Map<String, EvictionTask> tasks = new ConcurrentHashMap<>();
     private final CommandAsyncExecutor executor;
 
     public EvictionScheduler(CommandAsyncExecutor executor) {
         this.executor = executor;
     }
 
-    public void scheduleCleanMultimap(String name, String timeoutSetName) {
-        EvictionTask task = new MultimapEvictionTask(name, timeoutSetName, executor);
-        EvictionTask prevTask = tasks.putIfAbsent(name, task);
-        if (prevTask == null) {
+    private void addTask(String name, Supplier<EvictionTask> supplier) {
+        tasks.computeIfAbsent(name, k -> {
+            EvictionTask task = supplier.get();
             task.schedule();
-        }
+            return task;
+        });
+    }
+
+    public void scheduleCleanMultimap(String name, String timeoutSetName) {
+        addTask(name, () -> new MultimapEvictionTask(name, timeoutSetName, executor));
     }
 
     public void scheduleJCache(String name, String timeoutSetName, String expiredChannelName) {
-        EvictionTask task = new JCacheEvictionTask(name, timeoutSetName, expiredChannelName, executor);
-        EvictionTask prevTask = tasks.putIfAbsent(name, task);
-        if (prevTask == null) {
-            task.schedule();
-        }
+        addTask(name, () -> new JCacheEvictionTask(name, timeoutSetName, expiredChannelName, executor));
     }
 
     public void scheduleTimeSeries(String name, String timeoutSetName) {
-        EvictionTask task = new TimeSeriesEvictionTask(name, timeoutSetName, executor);
-        EvictionTask prevTask = tasks.putIfAbsent(name, task);
-        if (prevTask == null) {
-            task.schedule();
-        }
+        addTask(name, () -> new TimeSeriesEvictionTask(name, timeoutSetName, executor));
     }
 
     public void schedule(String name, long shiftInMilliseconds) {
-        EvictionTask task = new ScoredSetEvictionTask(name, executor, shiftInMilliseconds);
-        EvictionTask prevTask = tasks.putIfAbsent(name, task);
-        if (prevTask == null) {
-            task.schedule();
-        }
+        addTask(name, () -> new ScoredSetEvictionTask(name, executor, shiftInMilliseconds));
     }
 
     public void schedule(String name, String timeoutSetName, String maxIdleSetName,
                          String expiredChannelName, String lastAccessTimeSetName, MapCacheOptions<?, ?> options,
                          String publishCommand) {
-        boolean removeEmpty = false;
+        boolean removeEmpty;
         if (options != null) {
             removeEmpty = options.isRemoveEmptyEvictionTask();
+        } else {
+            removeEmpty = false;
         }
 
-        EvictionTask task = new MapCacheEvictionTask(name, timeoutSetName, maxIdleSetName, expiredChannelName, lastAccessTimeSetName,
-                executor, removeEmpty, this, publishCommand);
-        EvictionTask prevTask = tasks.putIfAbsent(name, task);
-        if (prevTask == null) {
-            task.schedule();
-        }
+        addTask(name, () -> new MapCacheEvictionTask(name, timeoutSetName, maxIdleSetName, expiredChannelName, lastAccessTimeSetName,
+                executor, removeEmpty, this, publishCommand));
     }
 
     public void remove(String name) {
-        EvictionTask task = tasks.remove(name);
-        if (task != null) {
+        tasks.computeIfPresent(name, (k, task) -> {
             task.cancel();
-        }
+            return null;
+        });
     }
 
 }
