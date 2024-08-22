@@ -72,10 +72,14 @@ public class RedissonFactory {
                                    RedissonClient redisson,
                                    ConversionService conversionService,
                                    @Named(TaskExecutors.IO) ExecutorService executorService) {
-        Codec codec = Optional.ofNullable(configuration.getCodec())
-                .orElse(redisson.getConfig().getCodec());
-        RMapCacheNative<Object, Object> mapCache = redisson.getMapCacheNative(configuration.getName(), codec);
-        return new RedissonSyncCache(conversionService, new MapCacheNativeWrapper<>(mapCache, (Redisson) redisson), mapCache, executorService, configuration);
+
+        RMapCache<Object, Object> mapCache = null;
+        RMapCacheNative<Object, Object> map = redisson.getMapCacheNative(configuration.getMapOptions());
+        if (configuration.getExpireAfterWrite().toMillis() != 0) {
+            mapCache = new MapCacheNativeWrapper<>(map, (Redisson) redisson);
+        }
+
+        return new RedissonSyncCache(conversionService, mapCache, map, executorService, configuration);
     }
 
 }
