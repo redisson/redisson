@@ -37,21 +37,15 @@ import java.util.concurrent.TimeUnit;
 public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> implements RListMultimapCache<K, V> {
 
     private final RedissonMultimapCache<K> baseCache;
-    
+
     public RedissonListMultimapCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);
-        if (evictionScheduler != null) {
-            evictionScheduler.scheduleCleanMultimap(name, getTimeoutSetName());
-        }
-        baseCache = new RedissonMultimapCache<K>(connectionManager, this, getTimeoutSetName(), prefix);
+        baseCache = new RedissonMultimapCache<>(connectionManager, evictionScheduler, this, getTimeoutSetName(), prefix);
     }
 
     public RedissonListMultimapCache(EvictionScheduler evictionScheduler, Codec codec, CommandAsyncExecutor connectionManager, String name) {
         super(codec, connectionManager, name);
-        if (evictionScheduler != null) {
-            evictionScheduler.scheduleCleanMultimap(name, getTimeoutSetName());
-        }
-        baseCache = new RedissonMultimapCache<K>(connectionManager, this, getTimeoutSetName(), prefix);
+        baseCache = new RedissonMultimapCache<>(connectionManager, evictionScheduler, this, getTimeoutSetName(), prefix);
     }
 
     @Override
@@ -75,7 +69,7 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
                     + "return redis.call('llen', ARGV[3]) > 0 and 1 or 0;" +
                 "end;" +
                 "return 0; ",
-               Arrays.<Object>asList(getRawName(), getTimeoutSetName()), System.currentTimeMillis(), keyState, valuesName);
+               Arrays.asList(getRawName(), getTimeoutSetName()), System.currentTimeMillis(), keyState, valuesName);
     }
     
     String getTimeoutSetName() {
@@ -109,7 +103,7 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
                     "end;" +
                 "end; " +
                 "return 0; ",
-                Arrays.<Object>asList(getRawName(), getTimeoutSetName()),
+                Arrays.asList(getRawName(), getTimeoutSetName()),
                 valueState, System.currentTimeMillis(), prefix);
     }
 
@@ -135,7 +129,7 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
                   "end; " +
                 "end; " +
                 "return 0; ",
-                Arrays.<Object>asList(valuesName, getTimeoutSetName()), 
+                Arrays.asList(valuesName, getTimeoutSetName()),
                 System.currentTimeMillis(), keyState, valueState);
     }
 
@@ -144,7 +138,7 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
         String keyHash = keyHash(key);
         String valuesName = getValuesName(keyHash);
 
-        return new RedissonListMultimapValues<V>(codec, commandExecutor, valuesName, getTimeoutSetName(), key);
+        return new RedissonListMultimapValues<>(codec, commandExecutor, valuesName, getTimeoutSetName(), key);
     }
 
     @Override
@@ -163,7 +157,7 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
                    "return redis.call('lrange', KEYS[1], 0, -1); " +
                 "end; " +
                 "return {}; ",
-            Arrays.<Object>asList(valuesName, getTimeoutSetName()), System.currentTimeMillis(), keyState);
+            Arrays.asList(valuesName, getTimeoutSetName()), System.currentTimeMillis(), keyState);
     }
 
     @Override
@@ -178,7 +172,7 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
                 "redis.call('del', KEYS[2]); " +
                 "redis.call('zrem', KEYS[3], ARGV[1]); " +
                 "return members; ",
-            Arrays.<Object>asList(getRawName(), valuesName, getTimeoutSetName()), keyState);
+            Arrays.asList(getRawName(), valuesName, getTimeoutSetName()), keyState);
     }
 
     @Override
@@ -215,5 +209,9 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
     public RFuture<Boolean> clearExpireAsync() {
         return baseCache.clearExpireAsync();
     }
-    
+
+    @Override
+    public void destroy() {
+        baseCache.destroy();
+    }
 }

@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
  * @param <K> key type
  * @param <V> value type
  */
-public interface RMultimapCache<K, V> extends RMultimap<K, V>, RMultimapCacheAsync<K, V> {
+public interface RMultimapCache<K, V> extends RMultimap<K, V>, RMultimapCacheAsync<K, V>, RDestroyable {
 
     /**
      * Set a timeout for key. After the timeout has expired,

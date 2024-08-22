@@ -24,6 +24,7 @@ import org.redisson.api.RObject;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.eviction.EvictionScheduler;
 
 /**
  * 
@@ -31,18 +32,24 @@ import org.redisson.command.CommandAsyncExecutor;
  *
  * @param <K> key type
  */
-public class RedissonMultimapCache<K> {
+class RedissonMultimapCache<K> {
 
     private final CommandAsyncExecutor commandExecutor;
     private final RObject object;
     private final String timeoutSetName;
     private final String prefix;
+    private final EvictionScheduler evictionScheduler;
     
-    public RedissonMultimapCache(CommandAsyncExecutor commandExecutor, RObject object, String timeoutSetName, String prefix) {
+    RedissonMultimapCache(CommandAsyncExecutor commandExecutor, EvictionScheduler evictionScheduler,
+                          RObject object, String timeoutSetName, String prefix) {
         this.commandExecutor = commandExecutor;
         this.object = object;
         this.timeoutSetName = timeoutSetName;
         this.prefix = prefix;
+        this.evictionScheduler = evictionScheduler;
+        if (evictionScheduler != null) {
+            evictionScheduler.scheduleCleanMultimap(((RedissonObject) object).getRawName(), timeoutSetName);
+        }
     }
 
     public RFuture<Boolean> expireKeyAsync(K key, long timeToLive, TimeUnit timeUnit) {
@@ -152,5 +159,11 @@ public class RedissonMultimapCache<K> {
                 prefix);
     }
 
+    public void destroy() {
+        if (evictionScheduler != null) {
+            evictionScheduler.remove(((RedissonObject) object).getRawName());
+        }
+        ((RedissonObject) object).removeListeners();
+    }
     
 }
