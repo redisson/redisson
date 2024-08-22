@@ -19,8 +19,8 @@ Feature - `RedissonClusteredSpringCacheNativeManager` and `RedissonSpringLocalCa
 Feature - `RedissonClusteredNativeRegionFactory` and `RedissonLocalCachedNativeRegionFactory` added to Hibernate module. Requires Redis 7.4+  
 Feature - `local-caches-native` and `clustered-caches-native` implementations added to Micronaut module. Requires Redis 7.4+  
 
-Improvement - `ProtobufCodec` memory allocation optimization (thanks to @chaokunyang)  
-Improvement - [Apache Fury](https://github.com/apache/fury) codec optimization (thanks to @seakider)  
+Improvement - `ProtobufCodec` memory allocation optimization  
+Improvement - [Apache Fury](https://github.com/apache/fury) codec optimization (thanks to @chaokunyang)  
 Improvement - quarkus should make an attempt to read config file using Thread's ContextClassLoader  
 Improvement - quarkus should make an attempt to read config file using Thread's ContextClassLoader (thanks to @seakider)  
 Improvement - don't take lock for `RMap.computeIfAbsent()` if only get is needed (thanks to @shreyas-sprinklr)  
