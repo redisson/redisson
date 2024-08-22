@@ -237,7 +237,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                 })
                 .whenComplete((r, ex) -> {
                     if (ex != null) {
-                        log.error(ex.getMessage(), ex);
+                        log.error("Unable to update node {} status. A new attempt will be made.", uri, ex);
                     }
                 })
                 .toCompletableFuture();

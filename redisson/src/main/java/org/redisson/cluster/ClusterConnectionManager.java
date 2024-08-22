@@ -430,7 +430,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     private void checkClusterState(ClusterServersConfig cfg, Iterator<RedisURI> iterator, AtomicReference<Throwable> lastException, List<RedisURI> allNodes) {
         if (!iterator.hasNext()) {
             if (lastException.get() != null) {
-                log.error("Can't update cluster state using nodes: {}", allNodes, lastException.getAndSet(null));
+                log.error("Can't update cluster state using nodes: {}. A new attempt will be made.", allNodes, lastException.getAndSet(null));
             }
             scheduleClusterChangeCheck(cfg);
             return;
@@ -455,11 +455,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     private void updateClusterState(ClusterServersConfig cfg, RedisConnection connection,
             Iterator<RedisURI> iterator, RedisURI uri, AtomicReference<Throwable> lastException, List<RedisURI> allNodes) {
-        RFuture<List<ClusterNodeInfo>> future = connection.async(cfg.getRetryAttempts(), cfg.getRetryInterval(), cfg.getTimeout(),
-                                                                        StringCodec.INSTANCE, clusterNodesCommand);
+        RFuture<List<ClusterNodeInfo>> future = connection.async(StringCodec.INSTANCE, clusterNodesCommand);
         future.whenComplete((nodes, e) -> {
                 if (e != null) {
-                    log.error("Unable to execute {}", clusterNodesCommand, e);
                     if (!lastException.compareAndSet(null, e)) {
                         lastException.get().addSuppressed(e);
                     }

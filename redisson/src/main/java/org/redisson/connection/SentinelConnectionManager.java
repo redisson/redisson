@@ -206,7 +206,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
         super.doConnect(uri2hostname::get);
 
-        scheduleChangeCheck(cfg, null);
+        scheduleChangeCheck(cfg, null, null);
     }
 
     private static boolean isHostname(String host) {
@@ -310,28 +310,30 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
     }
     
-    private void scheduleChangeCheck(SentinelServersConfig cfg, Iterator<RedisClient> iterator) {
+    private void scheduleChangeCheck(SentinelServersConfig cfg, Iterator<RedisClient> iterator, AtomicReference<Throwable> lastException) {
+        AtomicReference<Throwable> exceptionReference = Optional.ofNullable(lastException)
+                                                                .orElseGet(() -> new AtomicReference<>());
         monitorFuture = serviceManager.newTimeout(t -> {
-            AtomicReference<Throwable> lastException = new AtomicReference<Throwable>();
-            Iterator<RedisClient> iter = iterator;
-            if (iter == null) {
-                // Shuffle the list so all clients don't prefer the same sentinel
-                List<RedisClient> clients = new ArrayList<>(sentinels.values());
-                Collections.shuffle(clients);
-                iter = clients.iterator();
-            }
-            checkState(cfg, iter, lastException);
+            Iterator<RedisClient> iter = Optional.ofNullable(iterator)
+                                                    .orElseGet(() -> {
+                                                        // Shuffle the list so all clients don't prefer the same sentinel
+                                                        List<RedisClient> clients = new ArrayList<>(sentinels.values());
+                                                        Collections.shuffle(clients);
+                                                        return clients.iterator();
+                                                    });
+
+            checkState(cfg, iter, exceptionReference);
         }, cfg.getScanInterval(), TimeUnit.MILLISECONDS);
     }
 
     private void checkState(SentinelServersConfig cfg, Iterator<RedisClient> iterator, AtomicReference<Throwable> lastException) {
         if (!iterator.hasNext()) {
             if (lastException.get() != null) {
-                log.error("Can't update cluster state", lastException.get());
+                log.error("Can't update cluster state. A new attempt will be made.", lastException.getAndSet(null));
             }
             disconnectedSentinels.clear();
             CompletableFuture<Void> f = performSentinelDNSCheck();
-            f.whenComplete((r, e) -> scheduleChangeCheck(cfg, null));
+            f.whenComplete((r, e) -> scheduleChangeCheck(cfg, null, null));
             return;
         }
         if (serviceManager.isShuttingDown()) {
@@ -347,17 +349,20 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         CompletionStage<RedisConnection> connectionFuture = connectToNode(NodeType.SENTINEL, cfg, addr, hostname);
         connectionFuture.whenComplete((connection, e) -> {
             if (e != null) {
-                lastException.set(e);
+                if (!lastException.compareAndSet(null, e)) {
+                    lastException.get().addSuppressed(e);
+                }
                 checkState(cfg, iterator, lastException);
                 return;
             }
 
-            updateState(cfg, connection, iterator);
+            updateState(cfg, connection, iterator, lastException);
         });
 
     }
 
-    private void updateState(SentinelServersConfig cfg, RedisConnection connection, Iterator<RedisClient> iterator) {
+    private void updateState(SentinelServersConfig cfg, RedisConnection connection, Iterator<RedisClient> iterator,
+                             AtomicReference<Throwable> lastException) {
         List<CompletableFuture<?>> futures = new ArrayList<>();
         CompletionStage<RedisClient> masterFuture = checkMasterChange(cfg, connection);
         futures.add(masterFuture.toCompletableFuture());
@@ -373,14 +378,14 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
         future.whenComplete((r, e) -> {
             if (e != null) {
-                log.error("Can't execute SENTINEL commands on {}", connection.getRedisClient().getAddr(), e);
+                if (!lastException.compareAndSet(null, e)) {
+                    lastException.get().addSuppressed(e);
+                }
+                scheduleChangeCheck(cfg, iterator, lastException);
+                return;
             }
 
-            if (e != null) {
-                scheduleChangeCheck(cfg, iterator);
-            } else {
-                scheduleChangeCheck(cfg, null);
-            }
+            scheduleChangeCheck(cfg, null, null);
         });
     }
 
