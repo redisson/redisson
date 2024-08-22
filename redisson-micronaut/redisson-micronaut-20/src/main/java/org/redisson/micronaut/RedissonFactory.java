@@ -18,12 +18,15 @@ package org.redisson.micronaut;
 import io.micronaut.context.annotation.*;
 import io.micronaut.core.convert.ConversionService;
 import io.micronaut.scheduling.TaskExecutors;
+import org.redisson.MapCacheNativeWrapper;
 import org.redisson.Redisson;
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
+import org.redisson.api.RMapCacheNative;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.config.Config;
+import org.redisson.micronaut.cache.RedissonCacheNativeConfiguration;
 import org.redisson.micronaut.cache.RedissonSyncCache;
 import org.redisson.micronaut.cache.RedissonCacheConfiguration;
 
@@ -64,5 +67,15 @@ public class RedissonFactory {
         return new RedissonSyncCache(conversionService, null, map, executorService, configuration);
     }
 
+    @EachBean(RedissonCacheNativeConfiguration.class)
+    public RedissonSyncCache cache(@Parameter RedissonCacheNativeConfiguration configuration,
+                                   RedissonClient redisson,
+                                   ConversionService conversionService,
+                                   @Named(TaskExecutors.IO) ExecutorService executorService) {
+        Codec codec = Optional.ofNullable(configuration.getCodec())
+                .orElse(redisson.getConfig().getCodec());
+        RMapCacheNative<Object, Object> mapCache = redisson.getMapCacheNative(configuration.getName(), codec);
+        return new RedissonSyncCache(conversionService, new MapCacheNativeWrapper<>(mapCache, (Redisson) redisson), mapCache, executorService, configuration);
+    }
 
 }
