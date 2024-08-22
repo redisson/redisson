@@ -3141,6 +3141,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
             for (CacheEntryListenerConfiguration<K, V> config : listeners.keySet()) {
                 deregisterCacheEntryListener(config);
             }
+            redisson.getEvictionScheduler().remove(getRawName());
         }
     }
 
