@@ -62,33 +62,51 @@ Redisson provides various Cache implementations with multiple important features
 
 **local cache** - so called `near cache` used to speed up read operations and avoid network roundtrips. It caches Map entries on Redisson side and executes read operations up to **45x faster** in comparison with common implementation. Local cache instances with the same name connected to the same pub/sub channel. This channel is used for exchanging of update/invalidate events between all instances. Local cache store doesn't use `hashCode()`/`equals()` methods of key object, instead it uses hash of serialized state.
 
-**data partitioning** - although Map object is cluster compatible its content isn't scaled/partitioned across multiple Redis master nodes in cluster. Data partitioning allows to scale available memory, read/write operations and entry eviction process for individual Map instance in Redis cluster.  
+**data partitioning** - although any Cache object is cluster compatible its content isn't scaled/partitioned across multiple Redis master nodes in cluster. Data partitioning allows to scale available memory, read/write operations and entry eviction process for individual Map instance in Redis cluster.  
 
-**`scripted` entry eviction** - allows to define `time to live` or `max idle time` parameters per map entry. Redis hash structure doesn't support eviction thus it's done on Redisson side through a custom scheduled task which removes expired entries using Lua script. Eviction task is started once by getMapCache() method execution per unique object name. So even if instance isn't used and has expired entries it should be get through getMapCache() method to start the eviction process. This leads to extra Redis calls and eviction task per unique map object name.
+#### 1. Scripted eviction
 
-**`advanced` entry eviction** - allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task.
+Allows to define `time to live` or `max idle time` parameters per map entry. Redis hash structure doesn't support eviction thus it's done on Redisson side through a custom scheduled task which removes expired entries using Lua script. Eviction task is started once per unique object name at the moment of getting Map instance. If instance isn't used and has expired entries it should be get again to start the eviction process. This leads to extra Redis calls and eviction task per unique map object name. 
 
-**`native` entry eviction** - allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task. Requires **Redis 7.4+**.
+Entries are cleaned time to time by `org.redisson.eviction.EvictionScheduler`. By default, it removes 100 expired entries at a time. This can be changed through [cleanUpKeysAmount](https://github.com/redisson/redisson/wiki/2.-Configuration#cleanupkeysamount) setting. Task launch time tuned automatically and depends on expired entries amount deleted in previous time and varies between 5 second to 30 minutes by default. This time interval can be changed through [minCleanUpDelay](https://github.com/redisson/redisson/wiki/2.-Configuration#mincleanupdelay) and [maxCleanUpDelay](https://github.com/redisson/redisson/wiki/2.-Configuration#maxcleanupdelay). For example, if clean task deletes 100 entries each time it will be executed every 5 seconds (minimum execution delay). But if current expired entries amount is lower than previous one then execution delay will be increased by 1.5 times and decreased otherwise.
+
+Available implementations:
 
 |Setting prefix | Local cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
 | ------------- | :-----------: | :----------:| :----------:|
 |redisson.caches.*<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
-|redisson.caches-native.*<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
 |redisson.caches.*<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
-|redisson.caches-native.*<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
-|redisson.caches-v2.*<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
 |redisson.local-caches.*<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ❌ | ✔️ |
-|redisson.local-caches-v2.*<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ✔️ | ✔️ |
-|redisson.local-caches-native.*<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ✔️ | ✔️ |
 |redisson.clustered-caches.*<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
-|redisson.clustered-caches-native.*<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
 |redisson.clustered-local-caches.*<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
 
-<br/>
+#### 2. Advanced eviction
+
+Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis side.
+
+Available implementations:
+
+|Setting prefix | Local cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
+| ------------- | :-----------: | :----------:| :----------:|
+|redisson.caches-v2.*<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
+|redisson.local-caches-v2.*<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ✔️ | ✔️ |
+
+#### 3. Native eviction
+
+Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis side.  
+Requires **Redis 7.4+**.
+
+Available implementations:
+
+|Setting prefix | Local cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
+| ------------- | :-----------: | :----------:| :----------:|
+|redisson.caches-native.*<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
+|redisson.caches-native.*<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
+|redisson.local-caches-native.*<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ✔️ | ✔️ |
+|redisson.clustered-caches-native.*<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
 
 <details>
     <summary><b>Map Cache</b> settings. Click to expand!</summary>
-
 <br/>
     
 | | |
