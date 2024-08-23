@@ -44,7 +44,7 @@ Config structure is a flat Redisson YAML configuration -
 [proxy mode](https://github.com/redisson/redisson/wiki/2.-Configuration#292-proxy-mode-yaml-config-format),
 [multi cluster mode](https://github.com/redisson/redisson/wiki/2.-Configuration/#2102-cluster-yaml-config-format)
 
-Below is the configuration for Redisson instance named `simple`.
+Below is the configuration example for Redisson instance named `simple`.
 ```
 org.redisson.Redisson.simple.singleServerConfig.address=redis://127.0.0.1:6379
 org.redisson.Redisson.simple.singleServerConfig.connectionPoolSize=64
