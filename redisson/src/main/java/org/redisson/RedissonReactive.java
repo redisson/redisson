@@ -553,6 +553,29 @@ public class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
+    public <K, V> RListMultimapCacheNativeReactive<K, V> getListMultimapCacheNative(String name) {
+        RedissonListMultimapCacheNative<K, V> listMultimap = new RedissonListMultimapCacheNative<>(commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, listMultimap,
+                new RedissonListMultimapCacheReactive<>(listMultimap, commandExecutor), RListMultimapCacheNativeReactive.class);
+    }
+
+    @Override
+    public <K, V> RListMultimapCacheNativeReactive<K, V> getListMultimapCacheNative(String name, Codec codec) {
+        RedissonListMultimapCacheNative<K, V> listMultimap = new RedissonListMultimapCacheNative<>(codec, commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, listMultimap,
+                new RedissonListMultimapCacheReactive<>(listMultimap, commandExecutor), RListMultimapCacheNativeReactive.class);
+    }
+
+    @Override
+    public <K, V> RListMultimapCacheNativeReactive<K, V> getListMultimapCacheNative(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        CommandReactiveExecutor ca = commandExecutor.copy(params);
+        RedissonListMultimapCacheNative<K, V> listMultimap = new RedissonListMultimapCacheNative<>(params.getCodec(), ca, params.getName());
+        return ReactiveProxyBuilder.create(commandExecutor, listMultimap,
+                new RedissonListMultimapCacheReactive<>(listMultimap, ca), RListMultimapCacheNativeReactive.class);
+    }
+
+    @Override
     public <K, V> RSetMultimapCacheReactive<K, V> getSetMultimapCache(String name) {
         RedissonSetMultimapCache<K, V> setMultimap = new RedissonSetMultimapCache<>(evictionScheduler, commandExecutor, name);
         return ReactiveProxyBuilder.create(commandExecutor, setMultimap,
@@ -573,6 +596,29 @@ public class RedissonReactive implements RedissonReactiveClient {
         RedissonSetMultimapCache<K, V> setMultimap = new RedissonSetMultimapCache<>(evictionScheduler, params.getCodec(), ca, params.getName());
         return ReactiveProxyBuilder.create(commandExecutor, setMultimap,
                 new RedissonSetMultimapCacheReactive<K, V>(setMultimap, ca, this), RSetMultimapCacheReactive.class);
+    }
+
+    @Override
+    public <K, V> RSetMultimapCacheNativeReactive<K, V> getSetMultimapCacheNative(String name) {
+        RedissonSetMultimapCacheNative<K, V> setMultimap = new RedissonSetMultimapCacheNative<>(commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, setMultimap,
+                new RedissonSetMultimapCacheReactive<K, V>(setMultimap, commandExecutor, this), RSetMultimapCacheNativeReactive.class);
+    }
+
+    @Override
+    public <K, V> RSetMultimapCacheNativeReactive<K, V> getSetMultimapCacheNative(String name, Codec codec) {
+        RedissonSetMultimapCacheNative<K, V> setMultimap = new RedissonSetMultimapCacheNative<>(codec, commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, setMultimap,
+                new RedissonSetMultimapCacheReactive<K, V>(setMultimap, commandExecutor, this), RSetMultimapCacheNativeReactive.class);
+    }
+
+    @Override
+    public <K, V> RSetMultimapCacheNativeReactive<K, V> getSetMultimapCacheNative(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        CommandReactiveExecutor ca = commandExecutor.copy(params);
+        RedissonSetMultimapCacheNative<K, V> setMultimap = new RedissonSetMultimapCacheNative<>(params.getCodec(), ca, params.getName());
+        return ReactiveProxyBuilder.create(commandExecutor, setMultimap,
+                new RedissonSetMultimapCacheReactive<K, V>(setMultimap, ca, this), RSetMultimapCacheNativeReactive.class);
     }
 
     @Override

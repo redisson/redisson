@@ -481,6 +481,22 @@ public final class Redisson implements RedissonClient {
     }
 
     @Override
+    public <K, V> RSetMultimapCacheNative<K, V> getSetMultimapCacheNative(String name) {
+        return new RedissonSetMultimapCacheNative<>(commandExecutor, name);
+    }
+
+    @Override
+    public <K, V> RSetMultimapCacheNative<K, V> getSetMultimapCacheNative(String name, Codec codec) {
+        return new RedissonSetMultimapCacheNative<>(codec, commandExecutor, name);
+    }
+
+    @Override
+    public <K, V> RSetMultimapCacheNative<K, V> getSetMultimapCacheNative(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        return new RedissonSetMultimapCacheNative<>(params.getCodec(), commandExecutor.copy(params), params.getName());
+    }
+
+    @Override
     public <K, V> RListMultimapCache<K, V> getListMultimapCache(String name) {
         return new RedissonListMultimapCache<K, V>(evictionScheduler, commandExecutor, name);
     }
@@ -494,6 +510,23 @@ public final class Redisson implements RedissonClient {
     public <K, V> RListMultimapCache<K, V> getListMultimapCache(PlainOptions options) {
         PlainParams params = (PlainParams) options;
         return new RedissonListMultimapCache<K, V>(evictionScheduler, params.getCodec(),
+                commandExecutor.copy(params), params.getName());
+    }
+
+    @Override
+    public <K, V> RListMultimapCacheNative<K, V> getListMultimapCacheNative(String name) {
+        return new RedissonListMultimapCacheNative<K, V>(commandExecutor, name);
+    }
+
+    @Override
+    public <K, V> RListMultimapCacheNative<K, V> getListMultimapCacheNative(String name, Codec codec) {
+        return new RedissonListMultimapCacheNative<>(codec, commandExecutor, name);
+    }
+
+    @Override
+    public <K, V> RListMultimapCacheNative<K, V> getListMultimapCacheNative(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        return new RedissonListMultimapCacheNative<>(params.getCodec(),
                 commandExecutor.copy(params), params.getName());
     }
 

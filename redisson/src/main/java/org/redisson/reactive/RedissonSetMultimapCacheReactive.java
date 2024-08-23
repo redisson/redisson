@@ -16,7 +16,7 @@
 package org.redisson.reactive;
 
 import org.redisson.RedissonSet;
-import org.redisson.RedissonSetMultimapCache;
+import org.redisson.api.RSetMultimap;
 import org.redisson.api.RSetReactive;
 import org.redisson.api.RedissonReactiveClient;
 
@@ -29,11 +29,11 @@ import org.redisson.api.RedissonReactiveClient;
  */
 public class RedissonSetMultimapCacheReactive<K, V> {
 
-    private final RedissonSetMultimapCache<K, V> instance;
+    private final RSetMultimap<K, V> instance;
     private final CommandReactiveExecutor commandExecutor;
     private final RedissonReactiveClient redisson;
 
-    public RedissonSetMultimapCacheReactive(RedissonSetMultimapCache<K, V> instance, CommandReactiveExecutor commandExecutor,
+    public RedissonSetMultimapCacheReactive(RSetMultimap<K, V> instance, CommandReactiveExecutor commandExecutor,
                                             RedissonReactiveClient redisson) {
         this.instance = instance;
         this.redisson = redisson;

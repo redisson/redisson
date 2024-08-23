@@ -472,6 +472,29 @@ public class RedissonRx implements RedissonRxClient {
     }
 
     @Override
+    public <K, V> RListMultimapCacheNativeRx<K, V> getListMultimapCacheNative(String name) {
+        RedissonListMultimapCacheNative<K, V> listMultimap = new RedissonListMultimapCacheNative<>(commandExecutor, name);
+        return RxProxyBuilder.create(commandExecutor, listMultimap,
+                new RedissonListMultimapCacheRx<K, V>(listMultimap, commandExecutor), RListMultimapCacheNativeRx.class);
+    }
+
+    @Override
+    public <K, V> RListMultimapCacheNativeRx<K, V> getListMultimapCacheNative(String name, Codec codec) {
+        RedissonListMultimapCacheNative<K, V> listMultimap = new RedissonListMultimapCacheNative<>(codec, commandExecutor, name);
+        return RxProxyBuilder.create(commandExecutor, listMultimap,
+                new RedissonListMultimapCacheRx<K, V>(listMultimap, commandExecutor), RListMultimapCacheNativeRx.class);
+    }
+
+    @Override
+    public <K, V> RListMultimapCacheNativeRx<K, V> getListMultimapCacheNative(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        CommandRxExecutor ce = commandExecutor.copy(params);
+        RedissonListMultimapCacheNative<K, V> listMultimap = new RedissonListMultimapCacheNative<>(params.getCodec(), ce, params.getName());
+        return RxProxyBuilder.create(commandExecutor, listMultimap,
+                new RedissonListMultimapCacheRx<K, V>(listMultimap, ce), RListMultimapCacheNativeRx.class);
+    }
+
+    @Override
     public <K, V> RSetMultimapRx<K, V> getSetMultimap(String name) {
         RedissonSetMultimap<K, V> setMultimap = new RedissonSetMultimap<>(commandExecutor, name);
         return RxProxyBuilder.create(commandExecutor, setMultimap,
@@ -515,6 +538,29 @@ public class RedissonRx implements RedissonRxClient {
         RedissonSetMultimapCache<K, V> setMultimap = new RedissonSetMultimapCache<>(evictionScheduler, params.getCodec(), ce, params.getName());
         return RxProxyBuilder.create(commandExecutor, setMultimap,
                 new RedissonSetMultimapCacheRx<>(setMultimap, ce, this), RSetMultimapCacheRx.class);
+    }
+
+    @Override
+    public <K, V> RSetMultimapCacheNativeRx<K, V> getSetMultimapCacheNative(String name) {
+        RedissonSetMultimapCacheNative<K, V> setMultimap = new RedissonSetMultimapCacheNative<>(commandExecutor, name);
+        return RxProxyBuilder.create(commandExecutor, setMultimap,
+                new RedissonSetMultimapCacheRx<>(setMultimap, commandExecutor, this), RSetMultimapCacheNativeRx.class);
+    }
+
+    @Override
+    public <K, V> RSetMultimapCacheNativeRx<K, V> getSetMultimapCacheNative(String name, Codec codec) {
+        RedissonSetMultimapCacheNative<K, V> setMultimap = new RedissonSetMultimapCacheNative<>(codec, commandExecutor, name);
+        return RxProxyBuilder.create(commandExecutor, setMultimap,
+                new RedissonSetMultimapCacheRx<>(setMultimap, commandExecutor, this), RSetMultimapCacheNativeRx.class);
+    }
+
+    @Override
+    public <K, V> RSetMultimapCacheNativeRx<K, V> getSetMultimapCacheNative(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        CommandRxExecutor ce = commandExecutor.copy(params);
+        RedissonSetMultimapCacheNative<K, V> setMultimap = new RedissonSetMultimapCacheNative<>(params.getCodec(), ce, params.getName());
+        return RxProxyBuilder.create(commandExecutor, setMultimap,
+                new RedissonSetMultimapCacheRx<>(setMultimap, ce, this), RSetMultimapCacheNativeRx.class);
     }
 
     @Override
