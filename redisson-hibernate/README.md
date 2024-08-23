@@ -11,27 +11,46 @@ Redisson provides various Hibernate Cache factories including those with feature
 
 **data partitioning** - although all implementations are cluster compatible thier content isn't scaled/partitioned across multiple Redis master nodes in cluster. Data partitioning allows to scale available memory, read/write operations and entry eviction process for individual Hibernate Cache instance in Redis cluster.  
 
-**`scripted` entry eviction** - allows to define `time to live` or `max idle time` parameters per map entry. Redis hash structure doesn't support eviction thus it's done on Redisson side through a custom scheduled task which removes expired entries using Lua script. Eviction task is started upon first Cache access moment and unique per cache name. This leads to extra Redis calls and eviction task per unique map object name.
+#### 1. Scripted eviction
 
-**`advanced` entry eviction** - allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task.
+Allows to define `time to live` or `max idle time` parameters per map entry. Redis hash structure doesn't support eviction thus it's done on Redisson side through a custom scheduled task which removes expired entries using Lua script. Eviction task is started once per unique object name at the moment of getting Map instance. If instance isn't used and has expired entries it should be get again to start the eviction process. This leads to extra Redis calls and eviction task per unique map object name. 
 
-**`native` entry eviction** - allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task. Requires **Redis 7.4+**.
+Entries are cleaned time to time by `org.redisson.eviction.EvictionScheduler`. By default, it removes 100 expired entries at a time. This can be changed through [cleanUpKeysAmount](https://github.com/redisson/redisson/wiki/2.-Configuration#cleanupkeysamount) setting. Task launch time tuned automatically and depends on expired entries amount deleted in previous time and varies between 5 second to 30 minutes by default. This time interval can be changed through [minCleanUpDelay](https://github.com/redisson/redisson/wiki/2.-Configuration#mincleanupdelay) and [maxCleanUpDelay](https://github.com/redisson/redisson/wiki/2.-Configuration#maxcleanupdelay). For example, if clean task deletes 100 entries each time it will be executed every 5 seconds (minimum execution delay). But if current expired entries amount is lower than previous one then execution delay will be increased by 1.5 times and decreased otherwise.
 
-Below is the list of all available factories with local cache and/or data partitioning support:
+Available implementations:
 
-|Class name | Local cache | Data<br/>partitioning | Entry<br/>eviction | Ultra-fast<br/>read/write |
-| ------------- | :-----------: | :----------:| :----------:| :----------:|
-|RedissonRegionFactory<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | **scripted** | ❌ |
-|RedissonRegionNativeFactory<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | **native** | ❌ |
-|RedissonRegionFactory<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ | **scripted** | ✔️ |
-|RedissonRegionNativeFactory<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ | **native** | ✔️ |
-|RedissonRegionV2Factory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ❌ | ✔️ | **advanced** | ✔️ |
-|RedissonLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ❌ | **scripted** | ✔️ |
-|RedissonLocalCachedV2RegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ✔️ | **advanced** | ✔️ |
-|RedissonLocalCachedNativeRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ✔️ | **native** | ✔️ |
-|RedissonClusteredRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ | **scripted** | ✔️ |
-|RedissonClusteredNativeRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ | **native** | ✔️ |
-|RedissonClusteredLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ✔️ | ✔️ | **scripted** | ✔️ |
+|Class name | Local cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
+| ------------- | :-----------: | :----------:| :----------:|
+|RedissonRegionFactory<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
+|RedissonRegionFactory<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
+|RedissonLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ❌ | ✔️ |
+|RedissonClusteredRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
+|RedissonClusteredLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
+
+#### 2. Advanced eviction
+
+Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis side.
+
+Available implementations:
+
+|Class name | Local cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
+| ------------- | :-----------: | :----------:| :----------:|
+|RedissonRegionV2Factory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ❌ | ✔️ | ✔️ |
+|RedissonLocalCachedV2RegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ✔️ | ✔️ |
+
+#### 3. Native eviction
+
+Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis side.  
+Requires **Redis 7.4+**.
+
+Available implementations:
+
+|Class name | Local cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
+| ------------- | :-----------: | :----------:| :----------:|
+|RedissonRegionNativeFactory<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
+|RedissonRegionNativeFactory<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
+|RedissonLocalCachedNativeRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ✔️ | ✔️ |
+|RedissonClusteredNativeRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
 
 ## Hibernate Cache Usage
 
