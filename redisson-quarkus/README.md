@@ -97,7 +97,7 @@ Available implementations:
 | ------------- | :-----------: | :-----------:| :----------:|
 |`native`<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
 |`native`<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
-|`localcache_native`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
+|`localcache_native`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ❌ | ✔️ |
 |`clustered_native`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
 
 #### 2.1. Cache settings
