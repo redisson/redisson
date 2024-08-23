@@ -41,7 +41,7 @@ Maven
          <artifactId>redisson-spring-data-32</artifactId>
          <!-- for Spring Data Redis v.3.3.x -->
          <artifactId>redisson-spring-data-33</artifactId>
-         <version>3.34.1</version>
+         <version>3.35.0</version>
      </dependency>
 ```
 
@@ -49,35 +49,35 @@ Gradle
 
 ```groovy
      // for Spring Data Redis v.1.6.x
-     compile 'org.redisson:redisson-spring-data-16:3.34.1'
+     compile 'org.redisson:redisson-spring-data-16:3.35.0'
      // for Spring Data Redis v.1.7.x
-     compile 'org.redisson:redisson-spring-data-17:3.34.1'
+     compile 'org.redisson:redisson-spring-data-17:3.35.0'
      // for Spring Data Redis v.1.8.x
-     compile 'org.redisson:redisson-spring-data-18:3.34.1'
+     compile 'org.redisson:redisson-spring-data-18:3.35.0'
      // for Spring Data Redis v.2.0.x
-     compile 'org.redisson:redisson-spring-data-20:3.34.1'
+     compile 'org.redisson:redisson-spring-data-20:3.35.0'
      // for Spring Data Redis v.2.1.x
-     compile 'org.redisson:redisson-spring-data-21:3.34.1'
+     compile 'org.redisson:redisson-spring-data-21:3.35.0'
      // for Spring Data Redis v.2.2.x
-     compile 'org.redisson:redisson-spring-data-22:3.34.1'
+     compile 'org.redisson:redisson-spring-data-22:3.35.0'
      // for Spring Data Redis v.2.3.x
-     compile 'org.redisson:redisson-spring-data-23:3.34.1'
+     compile 'org.redisson:redisson-spring-data-23:3.35.0'
      // for Spring Data Redis v.2.4.x
-     compile 'org.redisson:redisson-spring-data-24:3.34.1'
+     compile 'org.redisson:redisson-spring-data-24:3.35.0'
      // for Spring Data Redis v.2.5.x
-     compile 'org.redisson:redisson-spring-data-25:3.34.1'
+     compile 'org.redisson:redisson-spring-data-25:3.35.0'
      // for Spring Data Redis v.2.6.x
-     compile 'org.redisson:redisson-spring-data-26:3.34.1'
+     compile 'org.redisson:redisson-spring-data-26:3.35.0'
      // for Spring Data Redis v.2.7.x
-     compile 'org.redisson:redisson-spring-data-27:3.34.1'
+     compile 'org.redisson:redisson-spring-data-27:3.35.0'
      // for Spring Data Redis v.3.0.x
-     compile 'org.redisson:redisson-spring-data-30:3.34.1'
+     compile 'org.redisson:redisson-spring-data-30:3.35.0'
      // for Spring Data Redis v.3.1.x
-     compile 'org.redisson:redisson-spring-data-31:3.34.1'
+     compile 'org.redisson:redisson-spring-data-31:3.35.0'
      // for Spring Data Redis v.3.2.x
-     compile 'org.redisson:redisson-spring-data-32:3.34.1'
+     compile 'org.redisson:redisson-spring-data-32:3.35.0'
      // for Spring Data Redis v.3.3.x
-     compile 'org.redisson:redisson-spring-data-33:3.34.1'
+     compile 'org.redisson:redisson-spring-data-33:3.35.0'
 ```
 
 ### 2. Register `RedissonConnectionFactory` in Spring context
