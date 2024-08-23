@@ -11,7 +11,7 @@ Based on high-performance async and lock-free Java Redis client and [Netty](http
 ## Features
 
 * Thread-safe implementation
-* JDK 1.8+ compatible
+* JDK 1.8+ up to the latest version compatible
 * Android compatible
 * [Redis](https://redis.io) compatible - from 3.0 up to the latest version
 * [Valkey](https://valkey.io) compatible - from 7.2.5 up to the latest version
