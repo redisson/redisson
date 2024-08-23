@@ -92,30 +92,33 @@ public class Kryo5Codec extends BaseCodec {
     private final Pool<Input> inputPool;
     private final Pool<Output> outputPool;
     private final Set<String> allowedClasses;
+    private final boolean useReferences;
 
     public Kryo5Codec() {
-        this(null, Collections.emptySet());
+        this(null, Collections.emptySet(), false);
     }
 
-    public Kryo5Codec(Set<String> allowedClasses) {
-        this(null, allowedClasses);
+    public Kryo5Codec(Set<String> allowedClasses, boolean useReferences) {
+        this(null, allowedClasses, useReferences);
     }
 
     public Kryo5Codec(ClassLoader classLoader, Kryo5Codec codec) {
-        this(classLoader, codec.allowedClasses);
+        this(classLoader, codec.allowedClasses, codec.useReferences);
     }
 
     public Kryo5Codec(ClassLoader classLoader) {
-        this(classLoader, Collections.emptySet());
+        this(classLoader, Collections.emptySet(), false);
     }
 
-    public Kryo5Codec(ClassLoader classLoader, Set<String> allowedClasses) {
+    public Kryo5Codec(ClassLoader classLoader, Set<String> allowedClasses, boolean useReferences) {
         this.allowedClasses = allowedClasses;
+        this.useReferences = useReferences;
+
         this.kryoPool = new Pool<Kryo>(true, false, 1024) {
             @Override
             protected Kryo create() {
                 try {
-                    return createKryo(classLoader);
+                    return createKryo(classLoader, useReferences);
                 } catch (ClassNotFoundException e) {
                     throw new IllegalArgumentException(e);
                 }
@@ -137,14 +140,14 @@ public class Kryo5Codec extends BaseCodec {
         };
     }
 
-    protected Kryo createKryo(ClassLoader classLoader) throws ClassNotFoundException {
+    protected Kryo createKryo(ClassLoader classLoader, boolean useReferences) throws ClassNotFoundException {
         Kryo kryo = new Kryo();
         if (classLoader != null) {
             kryo.setClassLoader(classLoader);
         }
         kryo.setInstantiatorStrategy(new SimpleInstantiatorStrategy());
         kryo.setRegistrationRequired(!allowedClasses.isEmpty());
-        kryo.setReferences(false);
+        kryo.setReferences(useReferences);
 
         for (String allowedClass : allowedClasses) {
             kryo.register(Class.forName(allowedClass));
