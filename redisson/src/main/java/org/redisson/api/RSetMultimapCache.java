@@ -22,6 +22,6 @@ package org.redisson.api;
  * @param <K> key type
  * @param <V> value type
  */
-public interface RSetMultimapCache<K, V> extends RSetMultimap<K, V>, RMultimapCache<K, V> {
+public interface RSetMultimapCache<K, V> extends RSetMultimap<K, V>, RMultimapCache<K, V>, RDestroyable {
 
 }

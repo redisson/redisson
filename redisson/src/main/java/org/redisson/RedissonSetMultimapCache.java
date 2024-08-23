@@ -45,9 +45,6 @@ public class RedissonSetMultimapCache<K, V> extends RedissonSetMultimap<K, V> im
 
     public RedissonSetMultimapCache(EvictionScheduler evictionScheduler, Codec codec, CommandAsyncExecutor connectionManager, String name) {
         super(codec, connectionManager, name);
-        if (evictionScheduler != null) {
-            evictionScheduler.scheduleCleanMultimap(name, getTimeoutSetName());
-        }
         baseCache = new RedissonMultimapCache<>(connectionManager, evictionScheduler, this, getTimeoutSetName(), prefix);
     }
 
