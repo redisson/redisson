@@ -476,6 +476,9 @@ public class RedissonSearch implements RSearch {
             if (options.getSortOrder() != null) {
                 args.add(options.getSortOrder());
             }
+            if (options.isWithCount()) {
+                args.add("WITHCOUNT");
+            }
         }
         if (options.getOffset() != null
                 && options.getCount() != null) {
@@ -587,6 +590,9 @@ public class RedissonSearch implements RSearch {
             if (options.getSortedByMax() != null) {
                 args.add("MAX");
                 args.add(options.getSortedByMax());
+            }
+            if (options.isSortedByWithCount()) {
+                args.add("WITHCOUNT");
             }
         }
         for (Expression expression : options.getExpressions()) {
