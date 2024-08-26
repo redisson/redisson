@@ -48,8 +48,9 @@ class RedissonMultimapCacheNative<K> {
         String keyHash = object.hash(keyState);
         String setName = object.getValuesName(keyHash);
 
-        return commandExecutor.evalWriteAsync(object.getRawName(), object.getCodec(), RedisCommands.EVAL_BOOLEAN,
-                "if redis.call('hpexpire', KEYS[1], ARGV[1], 'fields', 1, ARGV[2]) == 1 then " +
+        return commandExecutor.evalWriteAsync(object.getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "local res = redis.call('hpexpire', KEYS[1], ARGV[1], 'fields', 1, ARGV[2])" +
+                      "if res[1] == 1 then " +
                          "redis.call('pexpire', KEYS[2], ARGV[1]); " +
                          "return 1;" +
                       "end; "
