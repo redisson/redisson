@@ -506,29 +506,7 @@
             </plugin>
 
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>3.4.0</version>
-                <executions>
-                    <execution>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <consoleOutput>true</consoleOutput>
-                    <configLocation>/checkstyle.xml</configLocation>
-                    <propertyExpansion>checkstyle.config.path=${basedir}</propertyExpansion>
-                </configuration>
-                <dependencies>
-                    <dependency>
-                       <groupId>com.puppycrawl.tools</groupId>
-                       <artifactId>checkstyle</artifactId>
-                       <version>10.16.0</version>
-                  </dependency>
-                </dependencies>
             </plugin>
 
             <plugin>

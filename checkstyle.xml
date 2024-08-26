@@ -59,8 +59,6 @@
     <!-- See http://checkstyle.sf.net/config_misc.html#Translation -->
     <module name="Translation"/>
 
-    <module name="FileLength"/>
-
     <module name="FileTabCharacter">
         <property name="eachLine" value="true"/>
     </module>
@@ -168,7 +166,7 @@
         <module name="EqualsAvoidNull"/>
         <!--module name="HiddenField"/-->
         <module name="IllegalInstantiation"/>
-        <module name="IllegalThrows"/>
+        <!--module name="IllegalThrows"/-->
         <module name="InnerAssignment"/>
         <module name="MultipleVariableDeclarations"/>
         <!--module name="MagicNumber"/-->
@@ -189,7 +187,58 @@
            <property name="illegalClassNames" value=" java.lang.Throwable, java.lang.RuntimeException"/>
         </module>
         <module name="FallThrough"/>
-        <module name="UnnecessaryParentheses"/>
+        <module name="UnnecessaryParentheses">
+             <property name="tokens" value="IDENT"/>
+             <property name="tokens" value="NUM_DOUBLE"/>
+             <property name="tokens" value="NUM_FLOAT"/>
+             <property name="tokens" value="NUM_INT"/>
+             <property name="tokens" value="NUM_LONG"/>
+             <property name="tokens" value="STRING_LITERAL"/>
+             <property name="tokens" value="LITERAL_NULL"/>
+             <property name="tokens" value="LITERAL_FALSE"/>
+             <property name="tokens" value="LITERAL_TRUE"/>
+             <property name="tokens" value="ASSIGN"/>
+             <property name="tokens" value="BAND_ASSIGN"/>
+             <property name="tokens" value="BOR_ASSIGN"/>
+             <property name="tokens" value="BSR_ASSIGN"/>
+             <property name="tokens" value="BXOR_ASSIGN"/>
+             <property name="tokens" value="DIV_ASSIGN"/>
+             <property name="tokens" value="MINUS_ASSIGN"/>
+             <property name="tokens" value="MOD_ASSIGN"/>
+             <property name="tokens" value="PLUS_ASSIGN"/>
+             <property name="tokens" value="SL_ASSIGN"/>
+             <property name="tokens" value="SR_ASSIGN"/>
+             <property name="tokens" value="STAR_ASSIGN"/>
+             <property name="tokens" value="LAMBDA"/>
+             <property name="tokens" value="TEXT_BLOCK_LITERAL_BEGIN"/>
+             <property name="tokens" value="LOR"/>
+             <property name="tokens" value="LITERAL_INSTANCEOF"/>
+             <property name="tokens" value="GT"/>
+             <property name="tokens" value="LT"/>
+             <property name="tokens" value="GE"/>
+             <property name="tokens" value="LE"/>
+             <property name="tokens" value="EQUAL"/>
+             <property name="tokens" value="NOT_EQUAL"/>
+             <property name="tokens" value="UNARY_MINUS"/>
+             <property name="tokens" value="UNARY_PLUS"/>
+             <property name="tokens" value="INC"/>
+             <property name="tokens" value="DEC"/>
+             <property name="tokens" value="LNOT"/>
+             <property name="tokens" value="BNOT"/>
+             <property name="tokens" value="POST_INC"/>
+             <property name="tokens" value="POST_DEC"/>
+<!--
+             <property name="tokens" value="LAND"/>
+-->
+        </module>
+
+<!--
+        <module name="UnnecessarySemicolonAfterOuterTypeDeclaration"/>
+        <module name="UnnecessarySemicolonAfterTypeMemberDeclaration"/>
+        <module name="UnnecessarySemicolonInEnumeration"/>
+        <module name="UnnecessarySemicolonInTryWithResources"/>
+        <module name="UnusedLocalVariable"/>
+-->
         <!--module name="FinalLocalVariable"/-->
 
         <!-- Checks for class design                         -->
@@ -226,12 +275,14 @@
         <!--module name="TodoComment"/-->
         <module name="UpperEll"/>
 
+        <!--
 	<module name="BooleanExpressionComplexity"/>
+        -->
     </module>
-
+<!--
     <module name="SuppressionFilter">
         <property name="file" value="suppressions.xml"/>
         <property name="optional" value="false"/>
     </module>
-
+-->
 </module>

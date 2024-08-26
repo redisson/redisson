@@ -63,7 +63,7 @@ public class RedissonExtension implements Extension {
                 .scope(ApplicationScoped.class)
                 .addQualifiers(qualifiers)
                 .addTransitiveTypeClosure(RedissonClient.class)
-                .produceWith((instance) -> {
+                .produceWith(instance -> {
 
                     String instanceName = "default";
                     if (qualifier instanceof Named) {

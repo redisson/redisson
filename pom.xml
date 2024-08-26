@@ -255,6 +255,33 @@
 
       <pluginManagement>
         <plugins>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>3.5.0</version>
+                <executions>
+                    <execution>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <consoleOutput>true</consoleOutput>
+                    <configLocation>/checkstyle.xml</configLocation>
+                    <suppressionsLocation>/checkstyle-suppressions.xml</suppressionsLocation>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                       <groupId>com.puppycrawl.tools</groupId>
+                       <artifactId>checkstyle</artifactId>
+                       <version>10.18.0</version>
+                  </dependency>
+                </dependencies>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
