@@ -35,6 +35,7 @@ public final class AggregationOptions {
     private List<GroupParams> groupByParams = Collections.emptyList();
     private List<SortedField> sortedByFields = Collections.emptyList();
     private Integer sortedByMax;
+    private boolean sortedByWithCount;
     private List<Expression> expressions = Collections.emptyList();
     private Integer offset;
     private Integer count;
@@ -84,6 +85,19 @@ public final class AggregationOptions {
 
     public AggregationOptions sortBy(int max, SortedField... fields) {
         sortedByMax = max;
+        sortedByFields = Arrays.asList(fields);
+        return this;
+    }
+
+    public AggregationOptions sortBy(boolean withCount, SortedField... fields) {
+        sortedByWithCount = withCount;
+        sortedByFields = Arrays.asList(fields);
+        return this;
+    }
+
+    public AggregationOptions sortBy(int max, boolean withCount, SortedField... fields) {
+        sortedByMax = max;
+        sortedByWithCount = withCount;
         sortedByFields = Arrays.asList(fields);
         return this;
     }
@@ -158,6 +172,10 @@ public final class AggregationOptions {
 
     public Integer getSortedByMax() {
         return sortedByMax;
+    }
+
+    public boolean isSortedByWithCount() {
+        return sortedByWithCount;
     }
 
     public List<Expression> getExpressions() {
