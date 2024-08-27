@@ -43,7 +43,10 @@ public class MapValueDecoder<T> implements MultiDecoder<Object> {
 
     @Override
     public T decode(List<Object> parts, State state) {
-        return (T) decoder.decode(parts, state);
+        if (decoder != null) {
+            return (T) decoder.decode(parts, state);
+        }
+        return (T) parts;
     }
 
 }
