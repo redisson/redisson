@@ -13,6 +13,10 @@
 
     <name>Redisson/Spring Data Redis v2.7.x integration</name>
 
+    <properties>
+        <main.basedir>${project.parent.parent.basedir}</main.basedir>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.data</groupId>
@@ -35,40 +39,6 @@
                     </archive> 
                 </configuration>
             </plugin>
-
-            <plugin>
-                <groupId>com.mycila</groupId>
-                <artifactId>license-maven-plugin</artifactId>
-                <version>4.5</version>
-                <configuration>
-                    <basedir>${basedir}</basedir>
-                    <header>${basedir}/../../header.txt</header>
-                    <quiet>false</quiet>
-                    <failIfMissing>true</failIfMissing>
-                    <aggregate>false</aggregate>
-                    <includes>
-                        <include>src/main/java/org/redisson/</include>
-                    </includes>
-                    <excludes>
-                        <exclude>target/**</exclude>
-                    </excludes>
-                    <useDefaultExcludes>true</useDefaultExcludes>
-                    <mapping>
-                        <java>JAVADOC_STYLE</java>
-                    </mapping>
-                    <strictCheck>true</strictCheck>
-                    <useDefaultMapping>true</useDefaultMapping>
-                    <encoding>UTF-8</encoding>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
         </plugins>
     </build>
 

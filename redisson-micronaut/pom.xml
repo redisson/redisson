@@ -24,4 +24,13 @@
         <module>redisson-micronaut-40</module>
     </modules>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>com.mycila</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
 </project>
