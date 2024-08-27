@@ -163,6 +163,7 @@ public class Kryo5Codec extends BaseCodec {
         } catch (Exception e) {
             logger.warn("Unable to register Collections serializer", e);
         }
+        kryo.addDefaultSerializer(EnumMap.class, new JavaSerializer());
         kryo.addDefaultSerializer(Throwable.class, new JavaSerializer());
         kryo.addDefaultSerializer(UUID.class, new DefaultSerializers.UUIDSerializer());
         kryo.addDefaultSerializer(URI.class, new DefaultSerializers.URISerializer());
