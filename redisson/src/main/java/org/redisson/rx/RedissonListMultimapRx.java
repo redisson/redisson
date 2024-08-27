@@ -16,7 +16,7 @@
 package org.redisson.rx;
 
 import org.redisson.RedissonList;
-import org.redisson.RedissonListMultimap;
+import org.redisson.api.RListMultimap;
 import org.redisson.api.RListRx;
 
 /**
@@ -29,9 +29,9 @@ import org.redisson.api.RListRx;
 public class RedissonListMultimapRx<K, V> {
 
     private final CommandRxExecutor commandExecutor;
-    private final RedissonListMultimap<K, V> instance;
+    private final RListMultimap<K, V> instance;
     
-    public RedissonListMultimapRx(RedissonListMultimap<K, V> instance, CommandRxExecutor commandExecutor) {
+    public RedissonListMultimapRx(RListMultimap<K, V> instance, CommandRxExecutor commandExecutor) {
         this.instance = instance;
         this.commandExecutor = commandExecutor;
     }

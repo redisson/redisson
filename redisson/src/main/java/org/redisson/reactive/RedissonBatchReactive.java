@@ -130,6 +130,34 @@ public class RedissonBatchReactive implements RBatchReactive {
     }
 
     @Override
+    public <K, V> RListMultimapCacheReactive<K, V> getListMultimapCacheNative(String name) {
+        RListMultimap<K, V> map = new RedissonListMultimapCacheNative<>(executorService, name);
+        return ReactiveProxyBuilder.create(executorService, map,
+                new RedissonListMultimapCacheReactive<>(map, executorService), RListMultimapCacheReactive.class);
+    }
+
+    @Override
+    public <K, V> RListMultimapCacheReactive<K, V> getListMultimapCacheNative(String name, Codec codec) {
+        RListMultimap<K, V> map = new RedissonListMultimapCacheNative<>(codec, executorService, name);
+        return ReactiveProxyBuilder.create(executorService, map,
+                new RedissonListMultimapCacheReactive<>(map, executorService), RListMultimapCacheReactive.class);
+    }
+
+    @Override
+    public <K, V> RSetMultimapCacheReactive<K, V> getSetMultimapCacheNative(String name) {
+        RSetMultimap<K, V> map = new RedissonSetMultimapCacheNative<>(executorService, name);
+        return ReactiveProxyBuilder.create(executorService, map,
+                new RedissonSetMultimapCacheReactive<>(map, executorService, null), RSetMultimapCacheReactive.class);
+    }
+
+    @Override
+    public <K, V> RSetMultimapCacheReactive<K, V> getSetMultimapCacheNative(String name, Codec codec) {
+        RSetMultimap<K, V> map = new RedissonSetMultimapCacheNative<>(codec, executorService, name);
+        return ReactiveProxyBuilder.create(executorService, map,
+                new RedissonSetMultimapCacheReactive<>(map, executorService, null), RSetMultimapCacheReactive.class);
+    }
+
+    @Override
     public <V> RSetReactive<V> getSet(String name) {
         RedissonSet<V> set = new RedissonSet<V>(executorService, name, null);
         return ReactiveProxyBuilder.create(executorService, set, 

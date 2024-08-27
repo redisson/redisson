@@ -16,7 +16,7 @@
 package org.redisson.rx;
 
 import org.redisson.RedissonSet;
-import org.redisson.RedissonSetMultimap;
+import org.redisson.api.RSetMultimap;
 import org.redisson.api.RSetRx;
 import org.redisson.api.RedissonRxClient;
 
@@ -31,9 +31,9 @@ public class RedissonSetMultimapRx<K, V> {
 
     private final RedissonRxClient redisson;
     private final CommandRxExecutor commandExecutor;
-    private final RedissonSetMultimap<K, V> instance;
+    private final RSetMultimap<K, V> instance;
     
-    public RedissonSetMultimapRx(RedissonSetMultimap<K, V> instance, CommandRxExecutor commandExecutor, RedissonRxClient redisson) {
+    public RedissonSetMultimapRx(RSetMultimap<K, V> instance, CommandRxExecutor commandExecutor, RedissonRxClient redisson) {
         this.instance = instance;
         this.redisson = redisson;
         this.commandExecutor = commandExecutor;
