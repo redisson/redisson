@@ -32,6 +32,8 @@ import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Set;
 
 /**
  * <a href="https://github.com/apache/fury">Apache Fury</a> codec
@@ -44,35 +46,35 @@ import java.io.IOException;
 public class FuryCodec extends BaseCodec {
 
     private final ThreadSafeFury fury;
-    private final boolean registrationRequired;
+    private final Set<String> allowedClasses;
     private final Language language;
 
     public FuryCodec() {
-        this(null, false, Language.JAVA);
+        this(null, Collections.emptySet(), Language.JAVA);
     }
 
-    public FuryCodec(boolean registrationRequired) {
-        this(null, registrationRequired, Language.JAVA);
+    public FuryCodec(Set<String> allowedClasses) {
+        this(null, allowedClasses, Language.JAVA);
     }
 
     public FuryCodec(Language language) {
-        this(null, false, language);
+        this(null, Collections.emptySet(), language);
     }
 
-    public FuryCodec(boolean registrationRequired, Language language) {
-        this(null, registrationRequired, language);
+    public FuryCodec(Set<String> allowedClasses, Language language) {
+        this(null, allowedClasses, language);
     }
 
     public FuryCodec(ClassLoader classLoader, FuryCodec codec) {
-        this(classLoader, codec.registrationRequired, codec.language);
+        this(classLoader, codec.allowedClasses, codec.language);
     }
 
     public FuryCodec(ClassLoader classLoader) {
-        this(classLoader, false, Language.JAVA);
+        this(classLoader, Collections.emptySet(), Language.JAVA);
     }
 
-    public FuryCodec(ClassLoader classLoader, boolean registrationRequired, Language language) {
-        this.registrationRequired = registrationRequired;
+    public FuryCodec(ClassLoader classLoader, Set<String> allowedClasses, Language language) {
+        this.allowedClasses = allowedClasses;
         this.language = language;
 
         FuryBuilder builder = Fury.builder();
@@ -80,8 +82,16 @@ public class FuryCodec extends BaseCodec {
             builder.withClassLoader(classLoader);
         }
         builder.withLanguage(language);
-        builder.requireClassRegistration(registrationRequired);
+        builder.requireClassRegistration(!allowedClasses.isEmpty());
         fury = builder.buildThreadSafeFuryPool(10, 512);
+
+        for (String allowedClass : allowedClasses) {
+            try {
+                fury.register(Class.forName(allowedClass));
+            } catch (ClassNotFoundException e) {
+                throw new IllegalStateException(e);
+            }
+        }
     }
 
     private final Decoder<Object> decoder = new Decoder<Object>() {
