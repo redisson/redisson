@@ -194,6 +194,16 @@ public class RedissonBatch implements RBatch {
     }
 
     @Override
+    public <K, V> RMapCacheNativeAsync<K, V> getMapCacheNative(String name) {
+        return new RedissonMapCacheNative<>(executorService, name, null, null, null);
+    }
+
+    @Override
+    public <K, V> RMapCacheNativeAsync<K, V> getMapCacheNative(String name, Codec codec) {
+        return new RedissonMapCacheNative<>(codec, executorService, name, null, null, null);
+    }
+
+    @Override
     public RScriptAsync getScript() {
         return new RedissonScript(executorService);
     }

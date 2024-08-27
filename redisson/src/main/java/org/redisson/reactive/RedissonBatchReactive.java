@@ -116,6 +116,20 @@ public class RedissonBatchReactive implements RBatchReactive {
     }
 
     @Override
+    public <K, V> RMapCacheNativeReactive<K, V> getMapCacheNative(String name) {
+        RMap<K, V> map = new RedissonMapCacheNative<>(executorService, name, null, null, null);
+        return ReactiveProxyBuilder.create(executorService, map,
+                new RedissonMapCacheReactive<K, V>(map, commandExecutor), RMapCacheNativeReactive.class);
+    }
+
+    @Override
+    public <K, V> RMapCacheNativeReactive<K, V> getMapCacheNative(String name, Codec codec) {
+        RMap<K, V> map = new RedissonMapCacheNative<>(codec, executorService, name, null, null, null);
+        return ReactiveProxyBuilder.create(executorService, map,
+                new RedissonMapCacheReactive<K, V>(map, commandExecutor), RMapCacheNativeReactive.class);
+    }
+
+    @Override
     public <V> RSetReactive<V> getSet(String name) {
         RedissonSet<V> set = new RedissonSet<V>(executorService, name, null);
         return ReactiveProxyBuilder.create(executorService, set, 
