@@ -1684,8 +1684,9 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "local currentTime = tonumber(table.remove(ARGV, 1)); " + // index is the first parameter
                         "local hasExpire = #expireHead == 2 and tonumber(expireHead[2]) <= currentTime; " +
                         "local map = {}; " +
-                        "for i = 1, #ARGV, 1 do " +
-                        "    local value = redis.call('hget', KEYS[1], ARGV[i]); " +
+                        "local values = redis.call('hmget', KEYS[1], unpack(ARGV));" +
+                        "for i = 1, #values, 1 do " +
+                        "    local value = values[i]; " +
                         "    map[i] = false;" +
                         "    if value ~= false then " +
                         "        local key = ARGV[i]; " +
