@@ -1306,7 +1306,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                   "local result = 0; " +
                         "for i=2, #ARGV, 2 do " +
                             "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[i+1]); " +
-                            "if expireDateScore ~= false and tonumber(expireDateScore) <= tonumber(ARGV[1]) then " +
+                            "if expireDateScore == false or tonumber(expireDateScore) <= tonumber(ARGV[1]) then " +
                                 "result = result + 1; " +
                                 "redis.call('zadd', KEYS[1], ARGV[i], ARGV[i+1]); " +
                             "end; " +

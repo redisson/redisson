@@ -35,6 +35,28 @@ public class RedissonSetCacheTest extends RedisDockerTest {
     }
 
     @Test
+    public void testAddIfAbsent() throws InterruptedException {
+        Map<String, Duration> map = new HashMap<>();
+        map.put("200", Duration.ofSeconds(2));
+        RSetCache<String> test = redisson.getSetCache("test");
+        assertThat(test.addAllIfAbsent(map)).isEqualTo(1);
+        assertThat(test.addAllIfAbsent(map)).isZero();
+        assertThat(test.contains("200")).isTrue();
+
+        assertThat(test.addIfAbsent(Duration.ofSeconds(2), "100")).isTrue();
+        assertThat(test.addIfAbsent(Duration.ofSeconds(2), "100")).isFalse();
+        assertThat(test.contains("100")).isTrue();
+
+        Thread.sleep(2000);
+
+        assertThat(test.contains("100")).isFalse();
+        assertThat(test.contains("200")).isFalse();
+
+        assertThat(test.addIfAbsent(Duration.ofSeconds(2), "100")).isTrue();
+        assertThat(test.addAllIfAbsent(map)).isEqualTo(1);
+    }
+
+    @Test
     public void testAddIfExists() throws InterruptedException {
         RSetCache<String> cache = redisson.getSetCache("list");
         cache.add("a", 1, TimeUnit.SECONDS);
