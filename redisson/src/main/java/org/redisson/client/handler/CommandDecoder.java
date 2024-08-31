@@ -46,6 +46,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
@@ -207,7 +209,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
     }
     
     private void skipString(ByteBuf in) {
-        int len = in.bytesBefore((byte) '\r');
+        int len = in.bytesBefore((byte) CR);
         in.skipBytes(len + 2);
     }
     
@@ -354,11 +356,11 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             Object result = null;
             handleResult(data, parts, result, false);
         } else if (code == '+') {
-            String result = readString(in);
+            String result = readString(in, StandardCharsets.UTF_8);
 
             handleResult(data, parts, result, skipConvertor);
         } else if (code == ',') {
-            String str = readString(in);
+            String str = readString(in, StandardCharsets.US_ASCII);
             Double result = Double.NaN;
             if (!"nan".equals(str)) {
                 result = Double.valueOf(str);
@@ -366,7 +368,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
             handleResult(data, parts, result, skipConvertor);
         } else if (code == '-') {
-            String error = readString(in);
+            String error = readString(in, StandardCharsets.US_ASCII);
 
             if (error.startsWith("MOVED")) {
                 String[] errorParts = error.split(" ");
@@ -471,9 +473,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         log.error("Error message from Redis: {} channel: {}", error, channel);
     }
 
-    private String readString(ByteBuf in) {
-        int len = in.bytesBefore((byte) '\r');
-        String result = in.toString(in.readerIndex(), len, CharsetUtil.UTF_8);
+    private String readString(ByteBuf in, Charset charset) {
+        int len = in.bytesBefore((byte) CR);
+        String result = in.toString(in.readerIndex(), len, charset);
         in.skipBytes(len + 2);
         return result;
     }
@@ -574,30 +576,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         is.skipBytes(2);
     }
 
-    private long readLong(ByteBuf is) throws IOException {
-        long size = 0;
-        int sign = 1;
-        int read = is.readByte();
-        if (read == '-') {
-            read = is.readByte();
-            sign = -1;
-        }
-        do {
-            if (read == CR) {
-                if (is.readByte() == LF) {
-                    break;
-                }
-            }
-            int value = read - ZERO;
-            if (value >= 0 && value < 10) {
-                size *= 10;
-                size += value;
-            } else {
-                throw new IOException("Invalid character in integer");
-            }
-            read = is.readByte();
-        } while (true);
-        return size * sign;
+    private long readLong(ByteBuf is) {
+        String value = readString(is, StandardCharsets.US_ASCII);
+        return Long.parseLong(value);
     }
 
 }
