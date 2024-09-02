@@ -445,8 +445,8 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             }
             handleResult(data, parts, result, false);
         } else if (code == '*' || code == '>' || code == '~') {
-            long size = readLong(in);
-            List<Object> respParts = new ArrayList<Object>(Math.max((int) size, 0));
+            Long size = readLong(in);
+            List<Object> respParts = new ArrayList<Object>(Math.max(size.intValue(), 0));
             
             state.incLevel();
             
@@ -576,7 +576,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         is.skipBytes(2);
     }
 
-    private long readLong(ByteBuf is) {
+    private Long readLong(ByteBuf is) {
         String value = readString(is, StandardCharsets.US_ASCII);
         return Long.parseLong(value);
     }
