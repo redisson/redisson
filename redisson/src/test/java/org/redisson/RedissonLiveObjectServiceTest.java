@@ -601,7 +601,47 @@ public class RedissonLiveObjectServiceTest extends RedisDockerTest {
                                                                      Conditions.and(Conditions.eq("name1", "test41"), Conditions.lt("num1", 43))));
         assertThat(objects6.iterator().next().getId()).isEqualTo("4");
     }
-    
+
+    @Test
+    public void testIndexRemoval2() throws InterruptedException {
+        RLiveObjectService liveObjectService = redisson.getLiveObjectService();
+
+        TestIndexed myEntity = new TestIndexed("id");
+        myEntity.setName1("1");
+
+        liveObjectService.persist(myEntity);
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        Runnable setterRunnable = () -> {
+            while (true) {
+                TestIndexed liveEntity = liveObjectService.get(TestIndexed.class, "id");
+                liveEntity.setName1("2");
+            }
+        };
+        Runnable getterRunnable = () -> {
+            int steps = 1;
+            while (true) {
+                final TestIndexed liveEntity = liveObjectService.get(TestIndexed.class, "id");
+                if (liveEntity.getName1() == null) {
+                    System.out.println("IS NULL ON STEP " + steps);
+                    latch.countDown();
+                }
+                steps++;
+            }
+        };
+
+        try (ExecutorService pool = Executors.newFixedThreadPool(2)) {
+            pool.submit(setterRunnable);
+            pool.submit(getterRunnable);
+
+            assertThat(latch.await(5, TimeUnit.SECONDS)).isFalse();
+
+            pool.shutdownNow();
+        }
+    }
+
+
     @Test
     public void testFindGe() {
         RLiveObjectService s = redisson.getLiveObjectService();

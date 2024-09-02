@@ -215,9 +215,9 @@ public class AccessorInterceptor {
                     || commandExecutor.getServiceManager().getCfg().isClusterConfig()) {
                 CompletableFuture<Object> f;
                 if (commandExecutor instanceof CommandBatchService) {
-                    f = liveMap.removeAsync(field.getName()).toCompletableFuture();
+                    f = liveMap.getAsync(field.getName()).toCompletableFuture();
                 } else {
-                    Object value = liveMap.remove(field.getName());
+                    Object value = liveMap.get(field.getName());
                     f = CompletableFuture.completedFuture(value);
                 }
                 f.thenAccept(value -> {
@@ -248,7 +248,6 @@ public class AccessorInterceptor {
                         "if oldArg == false then " +
                             "return; " +
                         "end;" +
-                        "redis.call('hdel', KEYS[2], ARGV[2]); " +
                         "local hash = redis.call('hget', KEYS[1], oldArg); " +
                         "local setName = KEYS[1] .. ':' .. hash; " +
                         "local res = redis.call('srem', setName, ARGV[1]); " +
