@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import org.redisson.config.BaseConfig;
+
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
@@ -92,8 +94,8 @@ public final class BatchOptions {
      * Defines timeout for Redis response. 
      * Starts to countdown when Redis command has been successfully sent.
      * <p>
-     * Default is <code>3000 milliseconds</code>
-     * 
+     * Default is <code>{@link BaseConfig#getTimeout()}</code>
+     *
      * @param timeout value
      * @param unit value
      * @return self instance
@@ -111,7 +113,7 @@ public final class BatchOptions {
      * Defines attempts amount to send Redis commands batch
      * if it hasn't been sent already.
      * <p>
-     * Default is <code>3 attempts</code>
+     * Default is <code>{@link BaseConfig#getRetryAttempts()}</code>
      * 
      * @param retryAttempts value
      * @return self instance
@@ -129,7 +131,7 @@ public final class BatchOptions {
      * Defines time interval for each attempt to send Redis commands batch 
      * if it hasn't been sent already.
      * <p>
-     * Default is <code>1500 milliseconds</code>
+     * Default is <code>{@link BaseConfig#getRetryInterval()}</code>
      * 
      * @param retryInterval time interval
      * @param retryIntervalUnit time interval unit
