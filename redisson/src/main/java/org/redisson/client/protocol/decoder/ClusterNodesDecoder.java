@@ -64,18 +64,10 @@ public class ClusterNodesDecoder implements Decoder<List<ClusterNodeInfo>> {
             }
             
             if (!node.containsFlag(Flag.NOADDR)) {
-                String protocol = "redis://";
-                if (ssl) {
-                    protocol = "rediss://";
-                }
-                
-                String addr = params[1].split("@")[0];
-                String name = addr.substring(0, addr.lastIndexOf(":"));
-                if (name.isEmpty()) {
-                    // skip nodes with empty address
+                String uri = createUri(params);
+                if (uri == null) {
                     continue;
                 }
-                String uri = protocol + addr;
                 node.setAddress(uri);
             }
 
@@ -102,6 +94,27 @@ public class ClusterNodesDecoder implements Decoder<List<ClusterNodeInfo>> {
             nodes.add(node);
         }
         return nodes;
+    }
+
+    private String createUri(String[] params) {
+        String protocol = "redis://";
+        if (ssl) {
+            protocol = "rediss://";
+        }
+
+        String[] parts = params[1].split(",");
+        String addr = parts[0].split("@")[0];
+        String name = addr.substring(0, addr.lastIndexOf(":"));
+        if (name.isEmpty()) {
+            // skip nodes with empty address
+            return null;
+        }
+
+        if (parts.length == 2) {
+            String port = addr.substring(name.length() + 1);
+            addr = parts[1] + ":" + port;
+        }
+        return protocol + addr;
     }
 
 }
