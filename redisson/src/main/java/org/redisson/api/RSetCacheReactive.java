@@ -110,6 +110,8 @@ public interface RSetCacheReactive<V> extends RCollectionReactive<V>, RDestroyab
     Mono<Boolean> tryAdd(V... values);
 
     /**
+     * Use {@link #addIfAbsent(Map)} instead
+     *
      * Tries to add elements only if none of them in set.
      *
      * @param values - values to add
@@ -119,6 +121,7 @@ public interface RSetCacheReactive<V> extends RCollectionReactive<V>, RDestroyab
      * @return <code>true</code> if elements successfully added,
      *          otherwise <code>false</code>.
      */
+    @Deprecated
     Mono<Boolean> tryAdd(long ttl, TimeUnit unit, V... values);
 
     /**
@@ -131,6 +134,16 @@ public interface RSetCacheReactive<V> extends RCollectionReactive<V>, RDestroyab
      * @return <code>true</code> if element added and <code>false</code> if not.
      */
     Mono<Boolean> addIfAbsent(Duration ttl, V object);
+
+    /**
+     * Adds elements to this set only if all of them haven't been added before.
+     * <p>
+     * Requires <b>Redis 3.0.2 and higher.</b>
+     *
+     * @param objects map of elements to add
+     * @return <code>true</code> if elements added and <code>false</code> if not.
+     */
+    Mono<Boolean> addIfAbsent(Map<V, Duration> objects);
 
     /**
      * Adds element to this set only if it's already exists.
