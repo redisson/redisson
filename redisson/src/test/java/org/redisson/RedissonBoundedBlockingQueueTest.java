@@ -621,6 +621,20 @@ public class RedissonBoundedBlockingQueueTest extends RedisDockerTest {
         assertThat(queue.remainingCapacity()).isEqualTo(100);
         Assertions.assertEquals(0, queue.size());
     }
+    
+    @Test
+    public void testDrainToAsync() throws ExecutionException, InterruptedException {
+        RBoundedBlockingQueue<Integer> queue = redisson.getBoundedBlockingQueue("queue");
+        queue.trySetCapacity(100);
+        for (int i = 0 ; i < 100; i++) {
+            assertThat(queue.offer(i)).isTrue();
+        }
+        Assertions.assertEquals(100, queue.size());
+        Set<Integer> batch = new HashSet<Integer>();
+        RFuture<Integer> future = queue.drainToAsync(batch, 0);
+        Assertions.assertEquals(future.get(), 0);
+        Assertions.assertEquals(batch.size(), 0);
+    }
 
     @Test
     public void testBlockingQueue() {
