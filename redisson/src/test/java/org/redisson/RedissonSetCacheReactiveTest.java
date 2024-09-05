@@ -3,11 +3,8 @@ package org.redisson;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
+import java.time.Duration;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -319,6 +316,25 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
 
         Assertions.assertEquals(0, sync(cache.size()).intValue());
 
+    }
+
+    @Test
+    public void testAddIfAbsentWithMapParam() throws InterruptedException {
+        sync(redisson.getKeys().flushall());
+        RSetCacheReactive<String> cache = redisson.getSetCache("cache");
+        Map<String, Duration> map = new HashMap<>();
+        map.put("key1", Duration.ofMinutes(1));
+        map.put("key2", Duration.ofMinutes(1));
+        assertThat(sync(cache.addIfAbsent(map))).isTrue();
+        map = new HashMap<>();
+        map.put("key1", Duration.ofMinutes(1));
+        assertThat(sync(cache.addIfAbsent(map))).isFalse();
+        map = new HashMap<>();
+        map.put("key3", Duration.ofSeconds(1));
+        assertThat(sync(cache.addIfAbsent(map))).isTrue();
+        Thread.sleep(1200);
+        assertThat(sync(cache.addIfAbsent(map))).isTrue();
+        sync((redisson.getKeys().flushall()));
     }
 
 }

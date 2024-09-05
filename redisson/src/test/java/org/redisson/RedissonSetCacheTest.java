@@ -697,4 +697,22 @@ public class RedissonSetCacheTest extends RedisDockerTest {
         }, NOTIFY_KEYSPACE_EVENTS, "Ez");
     }
 
+    @Test
+    public void testAddIfAbsentWithMapParam() throws InterruptedException {
+        redisson.getKeys().flushall();
+        RSetCache<String> cache = redisson.getSetCache("cache");
+        Map<String, Duration> map = new HashMap<>();
+        map.put("key1", Duration.ofMinutes(1));
+        map.put("key2", Duration.ofMinutes(1));
+        assertThat(cache.addIfAbsent(map)).isTrue();
+        map = new HashMap<>();
+        map.put("key1", Duration.ofMinutes(1));
+        assertThat(cache.addIfAbsent(map)).isFalse();
+        map = new HashMap<>();
+        map.put("key3", Duration.ofSeconds(1));
+        assertThat(cache.addIfAbsent(map)).isTrue();
+        Thread.sleep(1200);
+        assertThat(cache.addIfAbsent(map)).isTrue();
+        redisson.getKeys().flushall();
+    }
 }

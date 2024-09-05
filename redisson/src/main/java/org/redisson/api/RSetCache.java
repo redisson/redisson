@@ -62,7 +62,7 @@ public interface RSetCache<V> extends RSet<V>, RExpirable, RSetCacheAsync<V>, RD
     int size();
 
     /**
-     * Use {@link #addIfAbsent(Duration, Object)} instead
+     * Use {@link #addIfAbsent(Map)} instead
      *
      * @param values - values to add
      * @param ttl - time to live for value.
@@ -136,6 +136,15 @@ public interface RSetCache<V> extends RSet<V>, RExpirable, RSetCacheAsync<V>, RD
      * @return amount of added elements
      */
     int addAllIfAbsent(Map<V, Duration> objects);
+    /**
+     * Adds elements to this set only if all of them haven't been added before.
+     * <p>
+     * Requires <b>Redis 3.0.2 and higher.</b>
+     *
+     * @param objects map of elements to add
+     * @return <code>true</code> if elements added and <code>false</code> if not.
+     */
+    boolean addIfAbsent(Map<V, Duration> objects);
 
     /**
      * Adds elements to this set only if they already exist.

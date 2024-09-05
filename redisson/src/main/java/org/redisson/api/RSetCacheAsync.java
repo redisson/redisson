@@ -52,7 +52,7 @@ public interface RSetCacheAsync<V> extends RSetAsync<V> {
     RFuture<Integer> sizeAsync();
 
     /**
-     * Use {@link #addIfAbsentAsync(Duration, Object)} instead
+     * Use {@link #addIfAbsentAsync(Map)} instead
      *
      * @param values - values to add
      * @param ttl - time to live for value.
@@ -126,6 +126,15 @@ public interface RSetCacheAsync<V> extends RSetAsync<V> {
      * @return amount of added elements
      */
     RFuture<Integer> addAllIfAbsentAsync(Map<V, Duration> objects);
+    /**
+     * Adds elements to this set only if all of them haven't been added before.
+     * <p>
+     * Requires <b>Redis 3.0.2 and higher.</b>
+     *
+     * @param objects map of elements to add
+     * @return amount of added elements
+     */
+    RFuture<Boolean> addIfAbsentAsync(Map<V, Duration> objects);
 
     /**
      * Adds elements to this set only if they already exist.
