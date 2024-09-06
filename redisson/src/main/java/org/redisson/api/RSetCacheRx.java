@@ -110,7 +110,7 @@ public interface RSetCacheRx<V> extends RCollectionRx<V>, RDestroyable {
     Single<Boolean> tryAdd(V... values);
 
     /**
-     * Use {@link #addIfAbsent(Duration, Object)} instead
+     * Use {@link #addIfAbsent(Map)} instead
      *
      * @param values - values to add
      * @param ttl - time to live for value.
@@ -121,6 +121,15 @@ public interface RSetCacheRx<V> extends RCollectionRx<V>, RDestroyable {
      */
     @Deprecated
     Single<Boolean> tryAdd(long ttl, TimeUnit unit, V... values);
+    /**
+     * Adds elements to this set only if all of them haven't been added before.
+     * <p>
+     * Requires <b>Redis 3.0.2 and higher.</b>
+     *
+     * @param objects map of elements to add
+     * @return <code>true</code> if elements added and <code>false</code> if not.
+     */
+    Single<Boolean> addIfAbsent(Map<V, Duration> objects);
 
     /**
      * Adds element to this set only if has not been added before.

@@ -487,7 +487,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-pmd-plugin</artifactId>
-                <version>3.22.0</version>
+                <version>3.25.0</version>
                 <executions>
                     <execution>
                         <phase>verify</phase>
@@ -528,7 +528,7 @@
                         <trimStackTrace>true</trimStackTrace>
                         <forkCount>5</forkCount>
                         <reuseForks>false</reuseForks>
-                        <argLine>${argLine} -javaagent:"${settings.localRepository}"/com/github/hazendaz/jmockit/jmockit/1.52.0/jmockit-1.52.0.jar</argLine>
+                        <argLine>${argLine} -javaagent:"${settings.localRepository}"/com/github/hazendaz/jmockit/jmockit/1.54.0/jmockit-1.54.0.jar</argLine>
                     </configuration>
             </plugin>
 

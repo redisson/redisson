@@ -1274,6 +1274,11 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     }
 
     @Override
+    public boolean addIfAbsent(Map<V, Duration> objects) {
+        return get(addIfAbsentAsync(objects));
+    }
+
+    @Override
     public int addAllIfExist(Map<V, Duration> objects) {
         return get(addAllIfExistAsync(objects));
     }
@@ -1314,7 +1319,33 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                         "return result; ",
                 Arrays.asList(getRawName()), params.toArray());
     }
+    @Override
+    public RFuture<Boolean> addIfAbsentAsync(Map<V, Duration> objects) {
+        List<Object> params = new ArrayList<>();
+        long currentTime = System.currentTimeMillis();
+        params.add(currentTime);
+        for (Map.Entry<V, Duration> entry : objects.entrySet()) {
+            long timeoutDate = currentTime + entry.getValue().toMillis();
+            if (entry.getValue().isZero()) {
+                timeoutDate = 92233720368547758L - currentTime;
+            }
+            params.add(timeoutDate);
+            encode(params, entry.getKey());
+        }
 
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
+            "for i=2, #ARGV, 2 do " +
+                    "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[i+1]); " +
+                    "if expireDateScore ~= false and tonumber(expireDateScore) > tonumber(ARGV[1]) then " +
+                        "return 0; " +
+                    "end; " +
+                 "end; " +
+                 "for i=2, #ARGV, 2 do " +
+                    "redis.call('zadd', KEYS[1], ARGV[i], ARGV[i+1]); " +
+                 "end; " +
+                 "return 1; ",
+                Collections.singletonList(getRawName()), params.toArray());
+    }
     @Override
     public RFuture<Integer> addAllIfExistAsync(Map<V, Duration> objects) {
         List<Object> params = new ArrayList<>();
