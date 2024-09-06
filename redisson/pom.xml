@@ -525,7 +525,8 @@
                             <exclude>RedissonLocalCachedMapSerializationCodecTest</exclude>
                         </excludes>
 
-                        <forkCount>4</forkCount>
+                        <trimStackTrace>true</trimStackTrace>
+                        <forkCount>5</forkCount>
                         <reuseForks>false</reuseForks>
                         <argLine>${argLine} -javaagent:"${settings.localRepository}"/com/github/hazendaz/jmockit/jmockit/1.52.0/jmockit-1.52.0.jar</argLine>
                     </configuration>
