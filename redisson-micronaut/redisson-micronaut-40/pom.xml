@@ -16,7 +16,7 @@
         <main.basedir>${project.parent.parent.basedir}</main.basedir>
     </properties>
 
-    <name>Redisson/Micronaut v4.x.x integration</name>
+    <name>Redisson Micronaut v4.x.x integration</name>
 
     <build>
         <plugins>

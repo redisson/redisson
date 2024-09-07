@@ -11,7 +11,7 @@
     <artifactId>redisson-micronaut-20</artifactId>
     <packaging>jar</packaging>
 
-    <name>Redisson/Micronaut v2.x.x integration</name>
+    <name>Redisson Micronaut v2.x.x integration</name>
 
     <properties>
         <main.basedir>${project.parent.parent.basedir}</main.basedir>

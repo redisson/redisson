@@ -11,7 +11,7 @@
     <artifactId>redisson-micronaut</artifactId>
     <packaging>pom</packaging>
 
-    <name>Redisson/Micronaut integration</name>
+    <name>Redisson Micronaut integration</name>
 
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
