@@ -10,7 +10,7 @@
 
     <artifactId>redisson-quarkus-30-cache</artifactId>
 
-    <name>Redisson/Quarkus v3.x.x Cache runtime</name>
+    <name>Redisson Quarkus v3.x.x Cache runtime implementation</name>
 
     <dependencies>
 

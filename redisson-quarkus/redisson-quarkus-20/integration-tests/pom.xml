@@ -11,7 +11,7 @@
 
     <artifactId>redisson-quarkus-20-integration-tests</artifactId>
 
-    <name>Redisson/Quarkus v2.x.x integration Tests</name>
+    <name>Redisson Quarkus v2.x.x integration Tests</name>
 
     <dependencies>
       <dependency>

@@ -11,7 +11,7 @@
 
     <artifactId>redisson-quarkus-20-deployment</artifactId>
 
-    <name>Redisson/Quarkus v2.x.x deployment</name>
+    <name>Redisson Quarkus v2.x.x deployment</name>
 
     <dependencies>
       <dependency>

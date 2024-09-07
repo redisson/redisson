@@ -11,7 +11,7 @@
 
     <artifactId>redisson-quarkus-16</artifactId>
 
-    <name>Redisson/Quarkus v1.6.x - 1.13.x runtime</name>
+    <name>Redisson Quarkus v1.6.x - 1.13.x runtime</name>
 
     <dependencies>
       <dependency>

@@ -10,7 +10,7 @@
 
     <artifactId>redisson-quarkus-20</artifactId>
 
-    <name>Redisson/Quarkus v2.x.x runtime</name>
+    <name>Redisson Quarkus v2.x.x runtime</name>
 
     <dependencies>
       <dependency>

@@ -11,7 +11,7 @@
     <artifactId>redisson-quarkus-30-cache-parent</artifactId>
     <packaging>pom</packaging>
 
-    <name>Redisson/Quarkus v3.x.x cache</name>
+    <name>Redisson Quarkus v3.x.x cache</name>
 
      <modules>
        <module>runtime</module>

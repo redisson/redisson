@@ -11,7 +11,7 @@
 
     <artifactId>redisson-quarkus-30-cache-deployment</artifactId>
 
-    <name>Redisson/Quarkus v3.x.x Cache deployment</name>
+    <name>Redisson Quarkus v3.x.x Cache deployment</name>
 
     <dependencies>
         <dependency>
