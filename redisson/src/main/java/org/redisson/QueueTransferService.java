@@ -28,27 +28,27 @@ public class QueueTransferService {
     private final Map<String, QueueTransferTask> tasks = new ConcurrentHashMap<>();
     
     public void schedule(String name, QueueTransferTask task) {
-        QueueTransferTask oldTask = tasks.putIfAbsent(name, task);
-        if (oldTask == null) {
-            task.start();
-        } else {
-            oldTask.getLock().execute(() -> {
-                oldTask.incUsage();
-            });
-        }
+        tasks.compute(name, (k, t) -> {
+            if (t == null) {
+                task.start();
+                return task;
+            }
+            t.incUsage();
+            return t;
+        });
     }
     
     public void remove(String name) {
-        QueueTransferTask task = tasks.get(name);
-        if (task == null) {
-            return;
-        }
-
-        task.getLock().execute(() -> {
-            if (task.decUsage() == 0) {
-                tasks.remove(name, task);
-                task.stop();
+        tasks.compute(name, (k, task) -> {
+            if (task == null) {
+                return null;
             }
+
+            if (task.decUsage() == 0) {
+                task.stop();
+                return null;
+            }
+            return task;
         });
     }
     
