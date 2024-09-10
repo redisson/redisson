@@ -3,6 +3,31 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
+### 09-Sep-2024 - 3.36.0 released
+
+Feature - `Kryo5Codec` `useReferences` setting added  
+Feature - `RListMultimapCacheNative` and `RSetMultimapCacheNative` objects added. Require Redis 7.4+ 
+Feature - `AggregationOptions.sortBy()` method with `withCount` parameter added (thanks to @pfyod)  
+Feature - `allowedClasses` setting added to `FuryCodec`  
+Feature - `addIfAbsent(Map)` method added to `RSetCache` object (thanks to @lyrric)  
+
+Improvement - 'hmget' should be instead of 'hget' in `RMapCache.getAllWithTTLOnly()` method  
+
+Fixed - RedisExecutor throws "Failed to submit a listener notification task" error during shutdown  
+Fixed - Keep the jmockit version in the plugin consistent with that in the dependencies (thanks to @lyrric)  
+Fixed - hostname after comma in Redis Cluster topology isn't parsed  
+Fixed - `drainToAsync()` method returns an incorrect value (thanks to @seakider)  
+Fixed - numeric cast in `CommandDecoder`  
+Fixed - `RLiveObject` value shouldn't be deleted during index update  
+Fixed - `RSetCache.addAllIfAbsent()` method doesn't work  
+Fixed - missed `getSetMultimapCache()` and `getListMultimapCache()` methods in `RBatchReactive` object  
+Fixed - missed `getMapCacheNative()` method in `RBatch` object  
+Fixed - `MapValueDecoder` throws NPE  
+Fixed - `EnumMap` type handling by `Kryo5Codec`  
+Fixed - `Kryo5Codec` `registrationRequired` setting replaced with `allowedClasses`  
+Fixed - JCache eviction task isn't removed on `close()` method invocation  
+Fixed - missed `destroy()` method for `RListMultimapCache` and `RSetMultimapCache` objects  
+
 ### 22-Aug-2024 - 3.35.0 released
 
 Feature - `INDEXEMPTY` option added to tag and text fields in `RSearch.createIndex()` method  
