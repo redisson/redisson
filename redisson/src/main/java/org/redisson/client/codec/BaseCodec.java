@@ -21,6 +21,7 @@ import java.util.List;
 import org.redisson.cache.LocalCachedMessageCodec;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
+import org.redisson.codec.ProtobufCodec;
 import org.redisson.jcache.JCacheEventCodec;
 
 /**
@@ -32,7 +33,7 @@ public abstract class BaseCodec implements Codec {
 
     public static final List<Class<?>> SKIPPED_CODECS = Arrays.asList(
             StringCodec.class, ByteArrayCodec.class, LocalCachedMessageCodec.class, BitSetCodec.class,
-            JCacheEventCodec.class, LongCodec.class, IntegerCodec.class);
+            JCacheEventCodec.class, LongCodec.class, IntegerCodec.class, ProtobufCodec.class);
     
     public static <T> T copy(ClassLoader classLoader, T codec) throws ReflectiveOperationException {
         if (codec == null) {
