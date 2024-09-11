@@ -15,13 +15,13 @@
  */
 package org.redisson.cache;
 
-import org.redisson.misc.WrappedLock;
-
 import java.util.*;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 
@@ -488,61 +488,47 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
 
     @Override
     public boolean remove(Object key, Object value) {
-        CachedValue<K, V> e = lock.execute(() -> {
-            CachedValue<K, V> entry = map.get(key);
-            if (entry != null
-                    && entry.getValue().equals(value)
-                        && !isValueExpired(entry)) {
-                map.remove(key);
-                return entry;
+        AtomicBoolean result = new AtomicBoolean();
+        map.computeIfPresent((K) key, (k, entry) -> {
+            if (entry.getValue().equals(value)
+                    && !isValueExpired(entry)) {
+                onValueRemove(entry);
+                result.set(true);
+                return null;
             }
-            return null;
+            return entry;
         });
-        if (e != null) {
-            onValueRemove(e);
-            return true;
-        }
-        return false;
+        return result.get();
     }
-
-    private final WrappedLock lock = new WrappedLock();
 
     @Override
     public boolean replace(K key, V oldValue, V newValue) {
-        CachedValue<K, V> e = lock.execute(() -> {
-            CachedValue<K, V> entry = map.get(key);
-            if (entry != null
-                    && entry.getValue().equals(oldValue)
+        AtomicBoolean result = new AtomicBoolean();
+        map.computeIfPresent(key, (k, entry) -> {
+            if (entry.getValue().equals(oldValue)
                     && !isValueExpired(entry)) {
+                onValueRemove(entry);
+                result.set(true);
                 CachedValue<K, V> newEntry = create(key, newValue, timeToLiveInMillis, maxIdleInMillis);
-                map.put(key, newEntry);
-                return entry;
+                return newEntry;
             }
-            return null;
+            return entry;
         });
-        if (e != null) {
-            onValueRemove(e);
-            return true;
-        }
-        return false;
+        return result.get();
     }
 
     @Override
     public V replace(K key, V value) {
-        CachedValue<K, V> e = lock.execute(() -> {
-            CachedValue<K, V> entry = map.get(key);
-            if (entry != null
-                    && !isValueExpired(entry)) {
+        AtomicReference<V> result = new AtomicReference<>();
+        map.computeIfPresent(key, (k, entry) -> {
+            if (!isValueExpired(entry)) {
+                onValueRemove(entry);
+                result.set(entry.getValue());
                 CachedValue<K, V> newEntry = create(key, value, timeToLiveInMillis, maxIdleInMillis);
-                map.put(key, newEntry);
-                return entry;
+                return newEntry;
             }
-            return null;
+            return entry;
         });
-        if (e != null) {
-            onValueRemove(e);
-            return e.getValue();
-        }
-        return null;
+        return result.get();
     }
 }
