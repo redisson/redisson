@@ -27,7 +27,6 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.ServiceManager;
 import org.redisson.misc.AsyncSemaphore;
-import org.redisson.misc.WrappedLock;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -49,7 +48,6 @@ public class PubSubConnectionEntry {
 
     private final Map<ChannelName, SubscribeListener> subscribeChannelListeners = new ConcurrentHashMap<>();
     private final Map<ChannelName, Queue<RedisPubSubListener<?>>> channelListeners = new ConcurrentHashMap<>();
-    private final Map<ChannelName, WrappedLock> channelLocks = new ConcurrentHashMap<>();
 
     private static final Queue<RedisPubSubListener<?>> EMPTY_QUEUE = new LinkedList<>();
 
@@ -95,22 +93,15 @@ public class PubSubConnectionEntry {
             return;
         }
 
-        Queue<RedisPubSubListener<?>> queue = channelListeners.computeIfAbsent(channelName, k -> new ConcurrentLinkedQueue<>());
-        WrappedLock lock = channelLocks.computeIfAbsent(channelName, k -> new WrappedLock());
-        boolean deleted = lock.execute(() -> {
-            if (channelListeners.get(channelName) != queue) {
-                return true;
-            } else {
-                queue.add(listener);
+        channelListeners.compute(channelName, (k, queue) -> {
+            if (queue == null) {
+                queue = new ConcurrentLinkedQueue<>();
             }
-            return false;
-        });
-        if (deleted) {
-            addListener(channelName, listener);
-            return;
-        }
 
-        conn.addListener(listener);
+            queue.add(listener);
+            conn.addListener(listener);
+            return queue;
+        });
     }
 
     // TODO optimize
@@ -145,14 +136,13 @@ public class PubSubConnectionEntry {
     }
 
     public void removeListener(ChannelName channelName, RedisPubSubListener<?> listener) {
-        Queue<RedisPubSubListener<?>> queue = channelListeners.get(channelName);
-        WrappedLock lock = channelLocks.get(channelName);
-        lock.execute(() -> {
+        channelListeners.computeIfPresent(channelName, (k, queue) -> {
             if (queue.remove(listener) && queue.isEmpty()) {
-                channelListeners.remove(channelName);
-                channelLocks.remove(channelName);
+                return null;
             }
+            return queue;
         });
+
         conn.removeListener(listener);
     }
 
@@ -265,18 +255,16 @@ public class PubSubConnectionEntry {
 
     private void removeListeners(ChannelName channel) {
         conn.removeDisconnectListener(channel);
+
         SubscribeListener s = subscribeChannelListeners.remove(channel);
         conn.removeListener(s);
-        Queue<RedisPubSubListener<?>> queue = channelListeners.get(channel);
-        if (queue != null) {
-            WrappedLock lock = channelLocks.get(channel);
-            lock.execute(() -> {
-                channelListeners.remove(channel);
-                channelLocks.remove(channel);
-            });
-            for (RedisPubSubListener<?> listener : queue) {
-                conn.removeListener(listener);
-            }
+
+        Queue<RedisPubSubListener<?>> queue = channelListeners.remove(channel);
+        if (queue == null) {
+            return;
+        }
+        for (RedisPubSubListener<?> listener : queue) {
+            conn.removeListener(listener);
         }
     }
 
