@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import java.util.Objects;
+
 /**
  * Stream Message ID object 
  * 
@@ -115,28 +117,16 @@ public class StreamMessageId {
     }
 
     @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + (int) (id0 ^ (id0 >>> 32));
-        result = prime * result + (int) (id1 ^ (id1 >>> 32));
-        return result;
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        StreamMessageId that = (StreamMessageId) o;
+        return id0 == that.id0 && id1 == that.id1 && autogenerateSequenceId == that.autogenerateSequenceId;
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        StreamMessageId other = (StreamMessageId) obj;
-        if (id0 != other.id0)
-            return false;
-        if (id1 != other.id1)
-            return false;
-        return autogenerateSequenceId == other.autogenerateSequenceId;
+    public int hashCode() {
+        return Objects.hash(id0, id1, autogenerateSequenceId);
     }
     
     @Override
