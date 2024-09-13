@@ -6,7 +6,7 @@ Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 ### 09-Sep-2024 - 3.36.0 released
 
 Feature - `Kryo5Codec` `useReferences` setting added  
-Feature - `RListMultimapCacheNative` and `RSetMultimapCacheNative` objects added. Require Redis 7.4+ 
+Feature - `RListMultimapCacheNative` and `RSetMultimapCacheNative` objects added. Require Redis 7.4+  
 Feature - `AggregationOptions.sortBy()` method with `withCount` parameter added (thanks to @pfyod)  
 Feature - `allowedClasses` setting added to `FuryCodec`  
 Feature - `addIfAbsent(Map)` method added to `RSetCache` object (thanks to @lyrric)  
