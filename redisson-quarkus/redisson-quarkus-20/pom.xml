@@ -4,14 +4,14 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-quarkus</artifactId>
-        <version>3.35.1-SNAPSHOT</version>
+        <version>3.36.1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
     <artifactId>redisson-quarkus-20-parent</artifactId>
     <packaging>pom</packaging>
 
-    <name>Redisson/Quarkus v2.x.x integration</name>
+    <name>Redisson Quarkus v2.x.x integration with Redis</name>
 
      <modules>
        <module>deployment</module>

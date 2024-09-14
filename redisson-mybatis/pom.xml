@@ -4,14 +4,14 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-parent</artifactId>
-        <version>3.35.1-SNAPSHOT</version>
+        <version>3.36.1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
     <artifactId>redisson-mybatis</artifactId>
     <packaging>jar</packaging>
 
-    <name>Redisson/MyBatis cache</name>
+    <name>Redisson MyBatis Cache implementation based on Redis</name>
 
     <build>
         <plugins>

@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-parent</artifactId>
-        <version>3.35.1-SNAPSHOT</version>
+        <version>3.36.1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
@@ -239,7 +239,7 @@
         <dependency>
             <groupId>org.xerial.snappy</groupId>
             <artifactId>snappy-java</artifactId>
-            <version>1.1.10.5</version>
+            <version>1.1.10.6</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
@@ -525,7 +525,8 @@
                             <exclude>RedissonLocalCachedMapSerializationCodecTest</exclude>
                         </excludes>
 
-                        <forkCount>4</forkCount>
+                        <trimStackTrace>true</trimStackTrace>
+                        <forkCount>5</forkCount>
                         <reuseForks>false</reuseForks>
                         <argLine>${argLine} -javaagent:"${settings.localRepository}"/com/github/hazendaz/jmockit/jmockit/1.54.0/jmockit-1.54.0.jar</argLine>
                     </configuration>

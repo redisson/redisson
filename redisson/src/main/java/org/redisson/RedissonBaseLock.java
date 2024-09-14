@@ -30,7 +30,6 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.misc.CompletableFutureWrapper;
-import org.redisson.misc.WrappedLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,47 +47,39 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
 
     public static class ExpirationEntry {
 
-        private final Map<Long, Integer> threadIds = new LinkedHashMap<>();
+        private final Queue<Long> threadsQueue = new ConcurrentLinkedQueue<>();
+        private final Map<Long, Integer> threadIds = new ConcurrentHashMap<>();
         private volatile Timeout timeout;
-
-        private final WrappedLock lock = new WrappedLock();
 
         public ExpirationEntry() {
             super();
         }
 
         public void addThreadId(long threadId) {
-            lock.execute(() -> {
-                threadIds.compute(threadId, (t, counter) -> {
-                    counter = Optional.ofNullable(counter).orElse(0);
-                    counter++;
-                    return counter;
-                });
+            threadIds.compute(threadId, (t, counter) -> {
+                counter = Optional.ofNullable(counter).orElse(0);
+                counter++;
+                threadsQueue.add(threadId);
+                return counter;
             });
         }
+
         public boolean hasNoThreads() {
-            return lock.execute(() -> threadIds.isEmpty());
+            return threadsQueue.isEmpty();
         }
+
         public Long getFirstThreadId() {
-            return lock.execute(() -> {
-                if (threadIds.isEmpty()) {
+            return threadsQueue.peek();
+        }
+
+        public void removeThreadId(long threadId) {
+            threadIds.computeIfPresent(threadId, (t, counter) -> {
+                counter--;
+                if (counter == 0) {
+                    threadsQueue.remove(threadId);
                     return null;
                 }
-                return threadIds.keySet().iterator().next();
-            });
-        }
-        public void removeThreadId(long threadId) {
-            lock.execute(() -> {
-                threadIds.compute(threadId, (t, counter) -> {
-                    if (counter == null) {
-                        return null;
-                    }
-                    counter--;
-                    if (counter == 0) {
-                        return null;
-                    }
-                    return counter;
-                });
+                return counter;
             });
         }
 

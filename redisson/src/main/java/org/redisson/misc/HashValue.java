@@ -16,13 +16,14 @@
 package org.redisson.misc;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class HashValue {
+public final class HashValue {
 
     private final long[] value;
 
@@ -35,25 +36,15 @@ public class HashValue {
     }
 
     @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + Arrays.hashCode(value);
-        return result;
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        HashValue hashValue = (HashValue) o;
+        return Objects.deepEquals(value, hashValue.value);
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        HashValue other = (HashValue) obj;
-        if (!Arrays.equals(value, other.value))
-            return false;
-        return true;
+    public int hashCode() {
+        return Arrays.hashCode(value);
     }
-    
 }

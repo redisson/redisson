@@ -22,7 +22,6 @@ import org.redisson.api.RTopic;
 import org.redisson.api.listener.BaseStatusListener;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.connection.ServiceManager;
-import org.redisson.misc.WrappedLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,8 +61,7 @@ public abstract class QueueTransferTask {
     private int usage = 1;
     private final AtomicReference<TimeoutTask> lastTimeout = new AtomicReference<TimeoutTask>();
     private final ServiceManager serviceManager;
-    private final WrappedLock lock = new WrappedLock();
-    
+
     public QueueTransferTask(ServiceManager serviceManager) {
         super();
         this.serviceManager = serviceManager;
@@ -157,7 +155,4 @@ public abstract class QueueTransferTask {
         });
     }
 
-    public WrappedLock getLock() {
-        return lock;
-    }
 }

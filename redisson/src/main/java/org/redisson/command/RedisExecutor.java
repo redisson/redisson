@@ -174,6 +174,12 @@ public class RedisExecutor<V, R> {
                     return;
                 }
 
+                if (connectionManager.getServiceManager().isShuttingDown()) {
+                    exception = new RedissonShutdownException("Redisson is shutdown");
+                    tryComplete(attemptPromise, exception);
+                    return;
+                }
+
                 if (connectionFuture.isDone() && connectionFuture.isCompletedExceptionally()) {
                     exception = convertException(connectionFuture);
                     tryComplete(attemptPromise, exception);

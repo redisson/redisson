@@ -23,12 +23,12 @@ import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.QueueCommandHolder;
 import org.redisson.misc.LogHelper;
+import org.redisson.misc.SpinLock;
 
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  *
@@ -65,37 +65,30 @@ public class CommandsQueue extends ChannelDuplexHandler {
         super.channelInactive(ctx);
     }
 
-    private final AtomicBoolean lock = new AtomicBoolean();
+    private final SpinLock lock = new SpinLock();
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         if (msg instanceof QueueCommand) {
             QueueCommand data = (QueueCommand) msg;
             QueueCommandHolder holder = new QueueCommandHolder(data, promise);
-
             Queue<QueueCommandHolder> queue = ctx.channel().attr(COMMANDS_QUEUE).get();
 
-            while (true) {
-                if (lock.compareAndSet(false, true)) {
-                    try {
-                        queue.add(holder);
-                        try {
-                            holder.getChannelPromise().addListener(future -> {
-                                if (!future.isSuccess()) {
-                                    queue.remove(holder);
-                                }
-                            });
-                            ctx.writeAndFlush(data, holder.getChannelPromise());
-                        } catch (Exception e) {
-                            queue.remove(holder);
-                            throw e;
-                        }
-                    } finally {
-                        lock.set(false);
-                    }
-                    break;
+            holder.getChannelPromise().addListener(future -> {
+                if (!future.isSuccess()) {
+                    queue.remove(holder);
                 }
-            }
+            });
+
+            lock.execute(() -> {
+                try {
+                    queue.add(holder);
+                    ctx.writeAndFlush(data, holder.getChannelPromise());
+                } catch (Exception e) {
+                    queue.remove(holder);
+                    throw e;
+                }
+            });
         } else {
             super.write(ctx, msg, promise);
         }

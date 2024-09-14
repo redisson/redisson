@@ -15,9 +15,9 @@
  */
 package org.redisson.cache;
 
-import org.redisson.misc.WrappedLock;
-
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -30,72 +30,75 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class LRUCacheMap<K, V> extends AbstractCacheMap<K, V> {
 
-    static class SortedSet<V> {
+    static class OrderedSet<V> {
 
-        final Set<V> set = new LinkedHashSet<>();
-
-        final WrappedLock lock = new WrappedLock();
+        final Queue<V> queue = new ConcurrentLinkedQueue<>();
+        final Set<V> set = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
         void add(V element) {
-            lock.execute(() -> {
-                set.add(element);
-            });
+            if (set.add(element)) {
+                queue.add(element);
+            }
         }
 
         boolean remove(V element) {
-            return lock.execute(() -> set.remove(element));
+            if (set.remove(element)) {
+                queue.remove(element);
+                return true;
+            }
+            return false;
         }
 
         V removeFirst() {
-            return lock.execute(() -> {
-                Iterator<V> iter = set.iterator();
-                V removedValue = null;
-                if (iter.hasNext()) {
-                    removedValue = iter.next();
-                    iter.remove();
+            while (true) {
+                V v = queue.poll();
+                if (v != null) {
+                    if (set.remove(v)) {
+                        return v;
+                    }
+                } else {
+                    return v;
                 }
-                return removedValue;
-            });
+            }
         }
 
         void clear() {
-            lock.execute(() -> {
-                set.clear();
-            });
+            set.clear();
+            queue.clear();
         }
 
     }
 
     private final AtomicLong index = new AtomicLong();
-    private final List<SortedSet<CachedValue<K, V>>> queues = new ArrayList<>();
+    private final List<OrderedSet<CachedValue<K, V>>> queues = new ArrayList<>();
 
     public LRUCacheMap(int size, long timeToLiveInMillis, long maxIdleInMillis) {
         super(size, timeToLiveInMillis, maxIdleInMillis);
         
         for (int i = 0; i < Runtime.getRuntime().availableProcessors()*2; i++) {
-            queues.add(new SortedSet<>());
+            queues.add(new OrderedSet<>());
         }
     }
 
     @Override
     protected void onValueCreate(CachedValue<K, V> value) {
-        SortedSet<CachedValue<K, V>> queue = getQueue(value);
+        OrderedSet<CachedValue<K, V>> queue = getQueue(value);
         queue.add(value);
     }
 
-    private SortedSet<CachedValue<K, V>> getQueue(CachedValue<K, V> value) {
+    private OrderedSet<CachedValue<K, V>> getQueue(CachedValue<K, V> value) {
         return queues.get(Math.abs(value.hashCode() % queues.size()));
     }
     
     @Override
     protected void onValueRemove(CachedValue<K, V> value) {
-        SortedSet<CachedValue<K, V>> queue = getQueue(value);
+        OrderedSet<CachedValue<K, V>> queue = getQueue(value);
         queue.remove(value);
     }
     
     @Override
     protected void onValueRead(CachedValue<K, V> value) {
-        SortedSet<CachedValue<K, V>> queue = getQueue(value);
+        OrderedSet<CachedValue<K, V>> queue = getQueue(value);
         // move value to the tail of the queue
         if (queue.remove(value)) {
             queue.add(value);
@@ -114,7 +117,7 @@ public class LRUCacheMap<K, V> extends AbstractCacheMap<K, V> {
                 startIndex = queueIndex;
             }
 
-            SortedSet<CachedValue<K, V>> queue = queues.get(queueIndex);
+            OrderedSet<CachedValue<K, V>> queue = queues.get(queueIndex);
             CachedValue<K, V> removedValue = queue.removeFirst();
             if (removedValue != null) {
                 map.remove(removedValue.getKey(), removedValue);
@@ -125,7 +128,7 @@ public class LRUCacheMap<K, V> extends AbstractCacheMap<K, V> {
     
     @Override
     public void clear() {
-        for (SortedSet<CachedValue<K, V>> collection : queues) {
+        for (OrderedSet<CachedValue<K, V>> collection : queues) {
             collection.clear();
         }
         super.clear();

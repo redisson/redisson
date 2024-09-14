@@ -5,13 +5,13 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-quarkus-16-parent</artifactId>
-        <version>3.35.1-SNAPSHOT</version>
+        <version>3.36.1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
     <artifactId>redisson-quarkus-16</artifactId>
 
-    <name>Redisson/Quarkus v1.6.x - 1.13.x runtime</name>
+    <name>Redisson Quarkus v1.6.x - 1.13.x runtime</name>
 
     <dependencies>
       <dependency>
