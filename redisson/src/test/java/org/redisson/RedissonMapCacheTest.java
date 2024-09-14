@@ -1470,5 +1470,20 @@ public class RedissonMapCacheTest extends BaseMapTest {
         map.destroy();
 
     }
+
+    @Test
+    public void testComputeIfAbsentWithTTL() throws Exception{
+        RMapCache<String, String> map = redisson.getMapCache("testMap");
+        map.delete();
+        String value = map.computeIfAbsent("key1", 1, TimeUnit.SECONDS, (t1) -> "value1");
+        assertThat("value1".equals(value)).isTrue();
+        value = map.computeIfAbsent("key1", 1, TimeUnit.MINUTES, (t1) -> "value2");
+        assertThat("value2".equals(value)).isFalse();
+        Thread.sleep(1100);
+        value = map.computeIfAbsent("key1", 1, TimeUnit.MINUTES, (t1) -> "value3");
+        assertThat("value3".equals(value)).isTrue();
+        map.destroy();
+
+    }
 }
 

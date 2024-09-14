@@ -23,6 +23,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 /**
  * <p>Map-based cache with ability to set TTL for each entry via
@@ -81,7 +82,21 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
      * @return <code>true</code> if max size has been successfully set, otherwise <code>false</code>.
      */
     boolean trySetMaxSize(int maxSize, EvictionMode mode);
-
+    /**
+     * If the specified key is not already associated
+     * with a value, attempts to compute its value using the given mapping function and enters it into this map .
+     * <p>
+     * Stores value mapped by key with specified time to live.
+     * Entry expires after specified time to live.
+     *
+     * @param key - map key
+     * @param ttl - time to live for key\value entry.
+     *              If <code>0</code> then stores infinitely.
+     * @param ttlUnit - time unit
+     * @param mappingFunction the mapping function to compute a value
+     * @return current associated value
+     */
+    V computeIfAbsent(K key, long ttl, TimeUnit ttlUnit, Function<? super K, ? extends V> mappingFunction);
     /**
      * If the specified key is not already associated
      * with a value, associate it with the given value.
