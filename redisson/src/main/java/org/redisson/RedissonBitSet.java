@@ -314,10 +314,10 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
         Object[] paramArray = new Object[indexArray.length * 4 + 1];
         int j = 0;
         paramArray[j++] = getRawName();
-        for (int i = 0; i < indexArray.length; i++) {
+        for (long l : indexArray) {
             paramArray[j++] = "set";
             paramArray[j++] = "u1";
-            paramArray[j++] = indexArray[i];
+            paramArray[j++] = l;
             paramArray[j++] = val;
         }
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.BITFIELD_VOID, paramArray);
