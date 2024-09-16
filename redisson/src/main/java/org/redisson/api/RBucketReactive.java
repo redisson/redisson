@@ -244,4 +244,22 @@ public interface RBucketReactive<V> extends RExpirableReactive {
      */
     Mono<Integer> addListener(ObjectListener listener);
 
+    /**
+     * Returns the common part of the data stored in this bucket
+     * and a bucket defined by the <code>name</code>
+     *
+     * @param name second bucket
+     * @return common part of the data
+     */
+    Mono<V> findCommon(String name);
+
+    /**
+     * Returns the length of the common part of the data stored in this bucket
+     * and a bucket defined by the <code>name</code>
+     *
+     * @param name second bucket
+     * @return common part of the data
+     */
+    Mono<Long> findCommonLength(String name);
+
 }

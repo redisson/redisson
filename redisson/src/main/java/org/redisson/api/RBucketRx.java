@@ -246,4 +246,22 @@ public interface RBucketRx<V> extends RExpirableRx {
      */
     Single<Integer> addListener(ObjectListener listener);
 
+    /**
+     * Returns the common part of the data stored in this bucket
+     * and a bucket defined by the <code>name</code>
+     *
+     * @param name second bucket
+     * @return common part of the data
+     */
+    Single<V> findCommon(String name);
+
+    /**
+     * Returns the length of the common part of the data stored in this bucket
+     * and a bucket defined by the <code>name</code>
+     *
+     * @param name second bucket
+     * @return common part of the data
+     */
+    Single<Long> findCommonLength(String name);
+
 }

@@ -938,4 +938,24 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
     public RFuture<Void> mergeAsync(String path, Object value) {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.JSON_MERGE, getRawName(), path, encode(value));
     }
+
+    @Override
+    public V findCommon(String name) {
+        return get(findCommonAsync(name));
+    }
+
+    @Override
+    public RFuture<V> findCommonAsync(String name) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long findCommonLength(String name) {
+        return get(findCommonLengthAsync(name));
+    }
+
+    @Override
+    public RFuture<Long> findCommonLengthAsync(String name) {
+        throw new UnsupportedOperationException();
+    }
 }

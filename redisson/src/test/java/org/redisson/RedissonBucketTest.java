@@ -14,6 +14,7 @@ import org.redisson.api.listener.SetObjectListener;
 import org.redisson.api.listener.TrackingListener;
 import org.redisson.api.options.PlainOptions;
 import org.redisson.client.RedisResponseTimeoutException;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
 import org.redisson.config.Protocol;
 import org.redisson.config.ReadMode;
@@ -728,6 +729,23 @@ public class RedissonBucketTest extends RedisDockerTest {
         bucket.delete();
 
         Assertions.assertFalse(bucket.isExists());
+    }
+
+    @Test
+    public void testCommon() {
+        RBucket<String> bucket1 = redisson.getBucket("test1", StringCodec.INSTANCE);
+        bucket1.set("123243411");
+        RBucket<String> bucket2 = redisson.getBucket("test2", StringCodec.INSTANCE);
+        bucket2.set("aaa232fhdjal11");
+
+        assertThat(bucket1.findCommon("test2")).isEqualTo("23211");
+        assertThat(bucket1.findCommonLength("test2")).isEqualTo(5);
+
+        bucket1.set("tteq");
+        bucket2.set("dfdafsdf");
+
+        assertThat(bucket1.findCommon("test2")).isEmpty();
+        assertThat(bucket1.findCommonLength("test2")).isEqualTo(0);
     }
 
 }

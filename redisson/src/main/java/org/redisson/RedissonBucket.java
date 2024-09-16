@@ -395,4 +395,23 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         return new CompletableFutureWrapper<>(CompletableFuture.allOf(f1.toCompletableFuture(), f2.toCompletableFuture()));
     }
 
+    @Override
+    public V findCommon(String name) {
+        return get(findCommonAsync(name));
+    }
+
+    @Override
+    public RFuture<V> findCommonAsync(String name) {
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.LCS, getRawName(), mapName(name), "MINMATCHLEN", 30);
+    }
+
+    @Override
+    public long findCommonLength(String name) {
+        return get(findCommonLengthAsync(name));
+    }
+
+    @Override
+    public RFuture<Long> findCommonLengthAsync(String name) {
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.LCS, getRawName(), mapName(name), "LEN");
+    }
 }

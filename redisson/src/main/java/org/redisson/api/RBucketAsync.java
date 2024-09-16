@@ -238,4 +238,22 @@ public interface RBucketAsync<V> extends RExpirableAsync {
      */
     RFuture<Integer> addListenerAsync(ObjectListener listener);
 
+    /**
+     * Returns the common part of the data stored in this bucket
+     * and a bucket defined by the <code>name</code>
+     *
+     * @param name second bucket
+     * @return common part of the data
+     */
+    RFuture<V> findCommonAsync(String name);
+
+    /**
+     * Returns the length of the common part of the data stored in this bucket
+     * and a bucket defined by the <code>name</code>
+     *
+     * @param name second bucket
+     * @return common part of the data
+     */
+    RFuture<Long> findCommonLengthAsync(String name);
+
 }
