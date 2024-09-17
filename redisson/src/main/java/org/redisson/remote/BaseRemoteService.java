@@ -186,21 +186,15 @@ public abstract class BaseRemoteService {
     protected abstract CompletableFuture<Boolean> removeAsync(String requestQueueName, String taskId);
 
     protected long[] getMethodSignature(Method method) {
-        long[] result = methodSignaturesCache.get(method);
-        if (result == null) {
-            String str = Arrays.stream(method.getParameterTypes())
+        return methodSignaturesCache.computeIfAbsent(method, m -> {
+            String str = Arrays.stream(m.getParameterTypes())
                                 .map(c -> c.getName())
                                 .collect(Collectors.joining());
             ByteBuf buf = Unpooled.copiedBuffer(str, CharsetUtil.UTF_8);
-            result = Hash.hash128(buf);
+            long[] result = Hash.hash128(buf);
             buf.release();
-            long[] oldResult = methodSignaturesCache.putIfAbsent(method, result);
-            if (oldResult != null) {
-                return oldResult;
-            }
-        }
-        
-        return result;
+            return result;
+        });
     }
 
     protected <V> RBlockingQueue<V> getBlockingQueue(String name, Codec codec) {
