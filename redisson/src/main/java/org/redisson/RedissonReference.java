@@ -33,8 +33,6 @@ public class RedissonReference implements Serializable {
 
     private static final long serialVersionUID = -2378564460151709127L;
     
-    public enum ReferenceType {RXJAVA, REACTIVE, DEFAULT}
-
     private String type;
     private String keyName;
     private String codec;
