@@ -844,6 +844,11 @@ public class PublishSubscribeService {
 
     private void subscribe(ChannelName channelName, Collection<RedisPubSubListener<?>> listeners,
             Codec subscribeCodec) {
+        if (connectionManager.getServiceManager().isShuttingDown()) {
+            log.warn("listeners of '{}' channel haven't been resubscribed due to Redisson shutdown process", channelName);
+            return;
+        }
+
         MasterSlaveEntry entry = getEntry(channelName);
         if (isMultiEntity(channelName)) {
             entry = connectionManager.getEntrySet()
@@ -873,6 +878,11 @@ public class PublishSubscribeService {
 
     private void ssubscribe(ChannelName channelName, Collection<RedisPubSubListener<?>> listeners,
                            Codec subscribeCodec) {
+        if (connectionManager.getServiceManager().isShuttingDown()) {
+            log.warn("listeners of '{}' channel haven't been resubscribed due to Redisson shutdown process", channelName);
+            return;
+        }
+
         CompletableFuture<PubSubConnectionEntry> subscribeFuture =
                                         ssubscribe(subscribeCodec, channelName, listeners.toArray(new RedisPubSubListener[0]));
         subscribeFuture.whenComplete((res, e) -> {
@@ -889,6 +899,11 @@ public class PublishSubscribeService {
 
     private void psubscribe(MasterSlaveEntry oldEntry, ChannelName channelName, Collection<RedisPubSubListener<?>> listeners,
                             Codec subscribeCodec) {
+        if (connectionManager.getServiceManager().isShuttingDown()) {
+            log.warn("listeners of '{}' channel-pattern haven't been resubscribed due to Redisson shutdown process", channelName);
+            return;
+        }
+
         MasterSlaveEntry entry = getEntry(channelName);
         if (isMultiEntity(channelName)) {
             entry = connectionManager.getEntrySet()
@@ -940,11 +955,18 @@ public class PublishSubscribeService {
         AsyncSemaphore semaphore = getSemaphore(channelName);
         CompletableFuture<Void> sf = semaphore.acquire();
         int timeout = config.getSubscriptionTimeout();
-        connectionManager.getServiceManager().newTimeout(t -> {
-            sf.completeExceptionally(new RedisTimeoutException("Remove listeners operation timeout: (" + timeout + "ms) for " + channelName + " topic"));
+
+        Exception stackTrace = new Exception("Stack trace");
+        Timeout r = connectionManager.getServiceManager().newTimeout(t -> {
+            RedisTimeoutException ee = new RedisTimeoutException("Remove listeners operation timeout: (" + timeout + "ms) for "
+                    + channelName + " topic");
+            ee.addSuppressed(stackTrace);
+            sf.completeExceptionally(ee);
         }, timeout, TimeUnit.MILLISECONDS);
 
         return sf.thenCompose(res -> {
+            r.cancel();
+
             Collection<PubSubConnectionEntry> entries = name2entry.get(channelName);
             if (entries == null
                     || entries.isEmpty()
