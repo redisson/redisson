@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+@Timeout(value = 8, unit = TimeUnit.MINUTES)
 public class RedissonExecutorServiceTest extends RedisDockerTest {
 
     private static RedissonNode node;
