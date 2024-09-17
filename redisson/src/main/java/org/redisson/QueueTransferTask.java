@@ -98,8 +98,7 @@ public abstract class QueueTransferTask {
     
     public void stop() {
         RTopic schedulerTopic = getTopic();
-        schedulerTopic.removeListener(messageListenerId);
-        schedulerTopic.removeListener(statusListenerId);
+        schedulerTopic.removeListenerAsync(messageListenerId, statusListenerId);
     }
 
     private void scheduleTask(final Long startTime) {
