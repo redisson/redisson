@@ -51,10 +51,6 @@ import java.util.concurrent.TimeUnit;
  */
 public final class Redisson implements RedissonClient {
 
-    static {
-        RedissonReference.warmUp();
-    }
-
     private final EvictionScheduler evictionScheduler;
     private final WriteBehindService writeBehindService;
     private final ConnectionManager connectionManager;
