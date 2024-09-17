@@ -17,6 +17,7 @@ package org.redisson;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 
@@ -39,17 +40,22 @@ public class QueueTransferService {
     }
     
     public void remove(String name) {
+        AtomicReference<QueueTransferTask> ref = new AtomicReference<>();
         tasks.compute(name, (k, task) -> {
             if (task == null) {
                 return null;
             }
 
             if (task.decUsage() == 0) {
-                task.stop();
+                ref.set(task);
                 return null;
             }
             return task;
         });
+
+        if (ref.get() != null) {
+            ref.get().stop();
+        }
     }
     
     
