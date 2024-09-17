@@ -203,14 +203,12 @@ public class RedissonObjectBuilder {
     
     private Object fromReference(RedissonClient redisson, RedissonReference rr) throws ReflectiveOperationException {
         Class<?> type = rr.getType();
-        if (type != null) {
-            if (ClassUtils.isAnnotationPresent(type, REntity.class)) {
-                RedissonLiveObjectService liveObjectService = (RedissonLiveObjectService) redisson.getLiveObjectService();
-                
-                NamingScheme ns = getNamingScheme(type);
-                Object id = ns.resolveId(rr.getKeyName());
-                return liveObjectService.createLiveObject(type, id);
-            }
+        if (ClassUtils.isAnnotationPresent(type, REntity.class)) {
+            RedissonLiveObjectService liveObjectService = (RedissonLiveObjectService) redisson.getLiveObjectService();
+
+            NamingScheme ns = getNamingScheme(type);
+            Object id = ns.resolveId(rr.getKeyName());
+            return liveObjectService.createLiveObject(type, id);
         }
 
         return getObject(redisson, rr, type, codecProvider);
