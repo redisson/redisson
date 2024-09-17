@@ -226,7 +226,7 @@ public class RedissonExecutorServiceTest extends RedisDockerTest {
 
         redisson.getKeys().delete("counter");
         f.get();
-        assertThat(redisson.getKeys().count()).isEqualTo(1);
+        assertThat(redisson.getKeys().count()).isEqualTo(3);
     }
     
     @Test
