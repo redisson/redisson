@@ -16,6 +16,7 @@
 package org.redisson.remote;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * 
@@ -48,38 +49,17 @@ public class RemoteServiceKey {
     }
 
     @Override
-    @SuppressWarnings("AvoidInlineConditionals")
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((methodName == null) ? 0 : methodName.hashCode());
-        result = prime * result + ((serviceInterface == null) ? 0 : serviceInterface.getName().hashCode());
-        result = prime * result + Arrays.hashCode(signature);
-        return result;
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        RemoteServiceKey that = (RemoteServiceKey) o;
+        return Objects.equals(serviceInterface, that.serviceInterface)
+                    && Objects.equals(methodName, that.methodName)
+                        && Objects.deepEquals(signature, that.signature);
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        RemoteServiceKey other = (RemoteServiceKey) obj;
-        if (methodName == null) {
-            if (other.methodName != null)
-                return false;
-        } else if (!methodName.equals(other.methodName))
-            return false;
-        if (serviceInterface == null) {
-            if (other.serviceInterface != null)
-                return false;
-        } else if (!serviceInterface.equals(other.serviceInterface))
-            return false;
-        if (!Arrays.equals(signature, other.signature))
-            return false;
-        return true;
+    public int hashCode() {
+        return Objects.hash(serviceInterface, methodName, Arrays.hashCode(signature));
     }
-
 }
