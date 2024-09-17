@@ -43,7 +43,7 @@ public class JCacheTest {
 
     @Container
     private static final GenericContainer<?> REDIS =
-            new GenericContainer<>("redis:7.2")
+            new GenericContainer<>("redis:latest")
                     .withCreateContainerCmdModifier(cmd -> {
                         cmd.withCmd("redis-server", "--save", "''");
                     })
