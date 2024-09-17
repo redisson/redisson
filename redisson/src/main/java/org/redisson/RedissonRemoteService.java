@@ -27,6 +27,7 @@ import org.redisson.remote.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
@@ -385,15 +386,19 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                 });
         });
     }
-    
+
+    private final Map<RemoteServiceKey, Method> methodsCache = new ConcurrentHashMap<>();
+
     private <T> RFuture<RRemoteServiceResponse> executeMethod(Class<T> remoteInterface, RBlockingQueue<String> requestQueue,
             ExecutorService executor, RemoteServiceRequest request, Object bean) {
-        RemoteServiceMethod method = Arrays.stream(remoteInterface.getMethods())
-                .filter(m -> m.getName().equals(request.getMethodName())
-                                && Arrays.equals(getMethodSignature(m), request.getSignature()))
-                .map(m -> new RemoteServiceMethod(m, bean))
-                .findFirst().get();
 
+        RemoteServiceKey key = new RemoteServiceKey(remoteInterface, request.getMethodName(), request.getSignature());
+        Method rm = methodsCache.computeIfAbsent(key, k -> Arrays.stream(k.getServiceInterface().getMethods())
+                                                          .filter(m -> m.getName().equals(k.getMethodName())
+                                                                         && Arrays.equals(getMethodSignature(m), k.getSignature()))
+                                                          .findFirst().get());
+
+        RemoteServiceMethod method = new RemoteServiceMethod(rm, bean);
         String responseName = getResponseQueueName(request.getExecutorId());
 
         CompletableFuture<RRemoteServiceResponse> responsePromise = new CompletableFuture<>();
