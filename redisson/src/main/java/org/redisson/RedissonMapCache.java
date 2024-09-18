@@ -129,6 +129,35 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
+    public V computeIfAbsent(K key, Duration ttl, Function<? super K, ? extends V> mappingFunction) {
+        checkNotBatch();
+
+        checkKey(key);
+        Objects.requireNonNull(mappingFunction);
+
+        V value = get(key);
+        if (value != null) {
+            return value;
+        }
+        RLock lock = getLock(key);
+        lock.lock();
+        try {
+            value = get(key);
+            if (value == null) {
+                V newValue = mappingFunction.apply(key);
+                if (newValue != null) {
+                    fastPut(key, newValue, ttl.toMillis(), TimeUnit.MILLISECONDS);
+                    return newValue;
+                }
+                return null;
+            }
+            return value;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
     public void setMaxSize(int maxSize) {
         get(setMaxSizeAsync(maxSize));
     }
