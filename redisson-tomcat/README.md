@@ -34,7 +34,7 @@ Add `RedissonSessionManager` in global context - `tomcat/conf/context.xml` or pe
        * In `readMode=MEMORY` all session attributes are always stored into Redis after the end of the request regardless of the `Session.setAttribute` method invocation. It is useful in case when some objects stored in session change their own state without `Session.setAttribute` method execution. Updated attributes are removed from all other Session instances if `broadcastSessionUpdates=true` and reloaded from Redis when these attributes are requested.  
    <br/>
 
-   `configPath` - path to Redisson YAML config. See [configuration wiki page](https://github.com/redisson/redisson/wiki/2.-Configuration) for more details.
+   `configPath` - path to Redisson YAML config. See [configuration wiki page](https://github.com/redisson/redisson/wiki/2.-Configuration) for more details. In case session manager is configured programatically, a config object can be passed using the `setConfig()` method
 
 #### Shared Redisson instance
 

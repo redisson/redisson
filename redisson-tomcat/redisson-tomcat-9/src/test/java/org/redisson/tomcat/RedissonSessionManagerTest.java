@@ -1,9 +1,11 @@
 package org.redisson.tomcat;
 
+import org.apache.catalina.Manager;
 import org.apache.http.client.fluent.Executor;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.cookie.Cookie;
 import org.apache.http.impl.client.BasicCookieStore;
+import org.junit.Test;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -17,6 +19,9 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
+
+import static org.redisson.tomcat.RedissonSessionManager.ReadMode.MEMORY;
+import static org.redisson.tomcat.RedissonSessionManager.UpdateMode.AFTER_REQUEST;
 
 public class RedissonSessionManagerTest {
 
@@ -33,6 +38,48 @@ public class RedissonSessionManagerTest {
         String basePath = "src/test/webapp/META-INF/";
         Files.deleteIfExists(Paths.get(basePath + "context.xml"));
         Files.copy(Paths.get(basePath + contextName), Paths.get(basePath + "context.xml"));
+    }
+
+    private Manager prepareManager() {
+        Config config = new Config();
+        config.useSingleServer().setAddress("redis://127.0.0.1:6379");
+
+        RedissonSessionManager redissonSessionManager = new RedissonSessionManager();
+        redissonSessionManager.setReadMode(MEMORY.name());
+        redissonSessionManager.setUpdateMode(AFTER_REQUEST.name());
+        redissonSessionManager.setBroadcastSessionEvents(true);
+        redissonSessionManager.setBroadcastSessionUpdates(true);
+        redissonSessionManager.setConfig(config);
+
+        return redissonSessionManager;
+    }
+
+    @Test
+    public void testProgrammaticManagerConfigurationUpdateTwoServers_readValue() throws Exception {
+        prepare("context_empty.xml");
+        TomcatServer server1 = new TomcatServer("myapp", 8080, "src/test/");
+        server1.setManager(prepareManager());
+        TomcatServer server2 = new TomcatServer("myapp", 8081, "src/test/");
+        server2.setManager(prepareManager());
+        try {
+            server1.start();
+            server2.start();
+
+            Executor executor = Executor.newInstance();
+            BasicCookieStore cookieStore = new BasicCookieStore();
+            executor.use(cookieStore);
+
+            write(8080, executor, "test", "from_server1");
+            write(8081, executor, "test", "from_server2");
+
+            read(8080, executor, "test", "from_server2");
+            read(8081, executor, "test", "from_server2");
+
+        } finally {
+            Executor.closeIdleConnections();
+            server1.stop();
+            server2.stop();
+        }
     }
 
     @ParameterizedTest

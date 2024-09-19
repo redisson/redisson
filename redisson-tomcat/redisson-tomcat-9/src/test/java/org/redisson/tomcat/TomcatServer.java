@@ -4,7 +4,9 @@ import java.net.MalformedURLException;
 
 import javax.servlet.ServletException;
 
+import org.apache.catalina.Context;
 import org.apache.catalina.LifecycleException;
+import org.apache.catalina.Manager;
 import org.apache.catalina.startup.Tomcat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +14,7 @@ import org.slf4j.LoggerFactory;
 public class TomcatServer {
     
     private Tomcat tomcat = new Tomcat();
+    private Context context;
     private int port;
     private boolean isRunning;
 
@@ -30,7 +33,14 @@ public class TomcatServer {
         tomcat.setPort(port);
         tomcat.getHost().setAppBase(".");
 
-        tomcat.addWebapp(contextPath, appBase + "/webapp");
+        context = tomcat.addWebapp(contextPath, appBase + "/webapp");
+    }
+
+    void setManager(Manager manager) {
+        if (context.getManager() != null) {
+            throw new IllegalArgumentException("Manager already configured");
+        }
+        context.setManager(manager);
     }
 
     /**
