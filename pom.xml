@@ -134,7 +134,7 @@
             <dependency>
                 <groupId>org.assertj</groupId>
                 <artifactId>assertj-core</artifactId>
-                <version>3.26.0</version>
+                <version>3.26.3</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
@@ -184,7 +184,7 @@
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-bom</artifactId>
-                <version>4.1.112.Final</version>
+                <version>4.1.113.Final</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
