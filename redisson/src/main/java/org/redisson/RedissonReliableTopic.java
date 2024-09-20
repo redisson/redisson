@@ -190,11 +190,12 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
                     return;
                 }
 
-                if (ex.getCause().getMessage().contains("NOGROUP")) {
+                if (ex.getCause() != null
+                        && ex.getCause().getMessage().contains("NOGROUP")) {
                     return;
                 }
 
-                log.error(ex.getCause().getMessage(), ex.getCause());
+                log.error("Unable to poll a new element. Subscriber id: {}", id, ex.getCause());
 
                 getServiceManager().newTimeout(task -> {
                     if (getServiceManager().isShuttingDown()) {
