@@ -294,8 +294,11 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
         String tempName = suffixName(getRawName(), "redisson_temp");
         
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
-                        "redis.call('sadd', KEYS[2], unpack(ARGV)); "
-                        + "local size = redis.call('sdiff', KEYS[2], KEYS[1]);"
+                    "for i=1, #ARGV, 5000 do " +
+                              "redis.call('sadd', KEYS[2], unpack(ARGV, i, math.min(i+4999, #ARGV))); " +
+                          "end; " +
+
+                          "local size = redis.call('sdiff', KEYS[2], KEYS[1]);"
                         + "redis.call('del', KEYS[2]); "
                         + "return #size == 0 and 1 or 0; ",
                        Arrays.<Object>asList(getRawName(), tempName), encode(c).toArray());
@@ -349,8 +352,11 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
         String tempName = suffixName(getRawName(), "redisson_temp");
         
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
-               "redis.call('sadd', KEYS[2], unpack(ARGV)); "
-                + "local prevSize = redis.call('scard', KEYS[1]); "
+            "for i=1, #ARGV, 5000 do " +
+                      "redis.call('sadd', KEYS[2], unpack(ARGV, i, math.min(i+4999, #ARGV))); " +
+                  "end; " +
+
+                  "local prevSize = redis.call('scard', KEYS[1]); "
                 + "local size = redis.call('sinterstore', KEYS[1], KEYS[1], KEYS[2]);"
                 + "redis.call('del', KEYS[2]); "
                 + "return size ~= prevSize and 1 or 0; ",
