@@ -55,7 +55,7 @@ public class RedissonReadLock extends RedissonLock implements RLock {
     
     @Override
     <T> RFuture<T> tryLockInnerAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
-        return commandExecutor.syncedEval(getRawName(), LongCodec.INSTANCE, command,
+        return commandExecutor.syncedEvalNoRetry(getRawName(), LongCodec.INSTANCE, command,
                                 "local mode = redis.call('hget', KEYS[1], 'mode'); " +
                                 "if (mode == false) then " +
                                   "redis.call('hset', KEYS[1], 'mode', 'read'); " +
@@ -84,7 +84,7 @@ public class RedissonReadLock extends RedissonLock implements RLock {
         String timeoutPrefix = getReadWriteTimeoutNamePrefix(threadId);
         String keyPrefix = getKeyPrefix(threadId, timeoutPrefix);
 
-        return evalWriteSyncedAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return evalWriteSyncedNoRetryAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
           "local val = redis.call('get', KEYS[5]); " +
                 "if val ~= false then " +
                     "return tonumber(val);" +
@@ -149,7 +149,7 @@ public class RedissonReadLock extends RedissonLock implements RLock {
         String timeoutPrefix = getReadWriteTimeoutNamePrefix(threadId);
         String keyPrefix = getKeyPrefix(threadId, timeoutPrefix);
         
-        return evalWriteSyncedAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.syncedEval(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local counter = redis.call('hget', KEYS[1], ARGV[2]); " +
                 "if (counter ~= false) then " +
                     "redis.call('pexpire', KEYS[1], ARGV[1]); " +

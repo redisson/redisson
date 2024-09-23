@@ -267,7 +267,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
     }
 
     private RFuture<Boolean> tryAcquireAsync0(int permits) {
-        return commandExecutor.syncedEval(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.syncedEvalNoRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                   "local value = redis.call('get', KEYS[1]); " +
                   "if (value ~= false and tonumber(value) >= tonumber(ARGV[1])) then " +
                       "local val = redis.call('decrby', KEYS[1], ARGV[1]); " +
@@ -459,7 +459,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
             return new CompletableFutureWrapper<>((Void) null);
         }
 
-        RFuture<Void> future = commandExecutor.syncedEval(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
+        RFuture<Void> future = commandExecutor.syncedEvalNoRetry(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 "local value = redis.call('incrby', KEYS[1], ARGV[1]); " +
                         "redis.call(ARGV[2], KEYS[2], value); ",
                 Arrays.asList(getRawName(), getChannelName()), permits, getSubscribeService().getPublishCommand());

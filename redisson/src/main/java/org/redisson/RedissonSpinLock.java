@@ -128,7 +128,7 @@ public class RedissonSpinLock extends RedissonBaseLock {
     <T> RFuture<T> tryLockInnerAsync(long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
         internalLockLeaseTime = unit.toMillis(leaseTime);
 
-        return commandExecutor.syncedEval(getRawName(), LongCodec.INSTANCE, command,
+        return commandExecutor.syncedEvalNoRetry(getRawName(), LongCodec.INSTANCE, command,
                 "if (redis.call('exists', KEYS[1]) == 0) then " +
                         "redis.call('hincrby', KEYS[1], ARGV[2], 1); " +
                         "redis.call('pexpire', KEYS[1], ARGV[1]); " +
@@ -200,7 +200,7 @@ public class RedissonSpinLock extends RedissonBaseLock {
 
 
     protected RFuture<Boolean> unlockInnerAsync(long threadId, String requestId, int timeout) {
-        return evalWriteSyncedAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return evalWriteSyncedNoRetryAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local val = redis.call('get', KEYS[2]); " +
                       "if val ~= false then " +
                         "return tonumber(val);" +

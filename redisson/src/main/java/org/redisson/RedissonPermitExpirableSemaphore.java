@@ -386,7 +386,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             params.add(ByteBufUtil.decodeHexDump(permitId));
         }
         
-        CompletionStage<List<String>> future = commandExecutor.syncedEval(getRawName(), ByteArrayCodec.INSTANCE, RedisCommands.EVAL_STRING,
+        CompletionStage<List<String>> future = commandExecutor.syncedEvalNoRetry(getRawName(), ByteArrayCodec.INSTANCE, RedisCommands.EVAL_STRING,
                   "local expiredIds = redis.call('zrangebyscore', KEYS[2], 0, ARGV[3], 'limit', 0, ARGV[1]); " +
                   "if #expiredIds > 0 then " +
                       "redis.call('zrem', KEYS[2], unpack(expiredIds)); " +

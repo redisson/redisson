@@ -992,11 +992,23 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
+    public <T> RFuture<T> syncedEvalNoRetry(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
+        return syncedEval(false, key, codec, evalCommandType, script, keys, params);
+    }
+
+    @Override
     public <T> RFuture<T> syncedEval(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
+        return syncedEval(true, key, codec, evalCommandType, script, keys, params);
+    }
+
+    private <T> RFuture<T> syncedEval(boolean retry, String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
         if (getServiceManager().getCfg().isSingleConfig()
                 || this instanceof CommandBatchService
                     || (WAIT_SUPPORTED.get() != null && !WAIT_SUPPORTED.get())) {
-            return evalWriteAsync(key, codec, evalCommandType, script, keys, params);
+            if (retry) {
+                return evalWriteAsync(key, codec, evalCommandType, script, keys, params);
+            }
+            return evalWriteNoRetryAsync(key, codec, evalCommandType, script, keys, params);
         }
 
         CompletionStage<Integer> waitFuture = CompletableFuture.completedFuture(0);

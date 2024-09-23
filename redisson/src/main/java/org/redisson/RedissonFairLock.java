@@ -77,7 +77,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
             wait = unit.toMillis(waitTime);
         }
 
-        RFuture<Void> f = evalWriteSyncedAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
+        RFuture<Void> f = evalWriteSyncedNoRetryAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 // get the existing timeout for the thread to remove
                 "local queue = redis.call('lrange', KEYS[1], 0, -1);" +
                         // find the location in the queue where the thread is
@@ -109,7 +109,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
 
         long currentTime = System.currentTimeMillis();
         if (command == RedisCommands.EVAL_NULL_BOOLEAN) {
-            return commandExecutor.syncedEval(getRawName(), LongCodec.INSTANCE, command,
+            return commandExecutor.syncedEvalNoRetry(getRawName(), LongCodec.INSTANCE, command,
                     // remove stale threads
                     "while true do " +
                         "local firstThreadId2 = redis.call('lindex', KEYS[2], 0);" +
@@ -154,7 +154,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
         }
 
         if (command == RedisCommands.EVAL_LONG) {
-            return commandExecutor.syncedEval(getRawName(), LongCodec.INSTANCE, command,
+            return commandExecutor.syncedEvalNoRetry(getRawName(), LongCodec.INSTANCE, command,
                     // remove stale threads
                     "while true do " +
                         "local firstThreadId2 = redis.call('lindex', KEYS[2], 0);" +
@@ -237,7 +237,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
 
     @Override
     protected RFuture<Boolean> unlockInnerAsync(long threadId, String requestId, int timeout) {
-        return evalWriteSyncedAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return evalWriteSyncedNoRetryAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
           "local val = redis.call('get', KEYS[5]); " +
                 "if val ~= false then " +
                     "return tonumber(val);" +
