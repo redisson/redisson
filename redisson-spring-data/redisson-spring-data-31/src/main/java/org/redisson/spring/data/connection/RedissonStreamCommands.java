@@ -80,7 +80,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
         params.add(key);
         params.add(group);
         params.add(newOwner);
-        params.add(Objects.requireNonNull(options.getIdleTime()).toMillis());
+        params.add(Objects.requireNonNull(options.getMinIdleTime()).toMillis());
         params.addAll(Arrays.asList(options.getIdsAsStringArray()));
         params.add("JUSTID");
 
@@ -98,7 +98,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
         params.add(key);
         params.add(group);
         params.add(newOwner);
-        params.add(Objects.requireNonNull(options.getIdleTime()).toMillis());
+        params.add(Objects.requireNonNull(options.getMinIdleTime()).toMillis());
         params.addAll(Arrays.asList(options.getIdsAsStringArray()));
 
         return connection.write(key, ByteArrayCodec.INSTANCE, new RedisCommand<List<ByteRecord>>("XCLAIM",
