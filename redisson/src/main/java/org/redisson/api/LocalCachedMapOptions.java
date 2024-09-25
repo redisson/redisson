@@ -161,6 +161,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     private StoreMode storeMode;
     private boolean storeCacheMiss;
     private ExpirationEventPolicy expirationEventPolicy;
+    private boolean storeCacheKey;
 
     protected LocalCachedMapOptions() {
     }
@@ -175,6 +176,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
         this.cacheProvider = copy.cacheProvider;
         this.storeMode = copy.storeMode;
         this.storeCacheMiss = copy.storeCacheMiss;
+        this.storeCacheKey = copy.storeCacheKey;
     }
     
     /**
@@ -206,6 +208,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
                     .storeMode(StoreMode.LOCALCACHE_REDIS)
                     .syncStrategy(SyncStrategy.INVALIDATE)
                     .storeCacheMiss(false)
+                    .storeCacheKey(false)
                     .expirationEventPolicy(ExpirationEventPolicy.SUBSCRIBE_WITH_KEYEVENT_PATTERN);
     }
 
@@ -389,6 +392,10 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
         return this.storeCacheMiss;
     }
 
+    public boolean isStoreCacheKey() {
+        return storeCacheKey;
+    }
+
     /**
      * Defines whether to store a cache miss into the local cache.
      *
@@ -397,6 +404,18 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
      */
     public LocalCachedMapOptions<K, V> storeCacheMiss(boolean storeCacheMiss) {
         this.storeCacheMiss = storeCacheMiss;
+        return this;
+    }
+
+    /**
+     * Defines whether to store CacheKey of an object key into the local cache. <br>
+     * This indicator only affects when {@link LocalCachedMapOptions#cacheProvider} != {@link CacheProvider#CAFFEINE}
+     *
+     * @param storeCacheKey - whether to store CacheKey of an object key into the local cache
+     * @return LocalCachedMapOptions instance
+     */
+    public LocalCachedMapOptions<K, V> storeCacheKey(boolean storeCacheKey) {
+        this.storeCacheKey = storeCacheKey;
         return this;
     }
 
