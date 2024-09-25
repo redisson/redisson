@@ -70,7 +70,7 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
             params.add(k);
             params.add(command.getGroupName());
             params.add(command.getNewOwner());
-            params.add(Objects.requireNonNull(command.getOptions().getIdleTime()).toMillis());
+            params.add(Objects.requireNonNull(command.getOptions().getMinIdleTime()).toMillis());
             params.addAll(Arrays.asList(command.getOptions().getIdsAsStringArray()));
             params.add("JUSTID");
 
@@ -95,7 +95,7 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
             params.add(k);
             params.add(command.getGroupName());
             params.add(command.getNewOwner());
-            params.add(Objects.requireNonNull(command.getOptions().getIdleTime()).toMillis());
+            params.add(Objects.requireNonNull(command.getOptions().getMinIdleTime()).toMillis());
             params.addAll(Arrays.asList(command.getOptions().getIdsAsStringArray()));
 
             Mono<Map<StreamMessageId, Map<byte[], byte[]>>> m = write(k, ByteArrayCodec.INSTANCE, RedisCommands.XCLAIM, params.toArray());
