@@ -38,10 +38,14 @@ public class LocalCacheView<K, V> {
 
     private final RedissonObject object;
     private final ConcurrentMap<CacheKey, CacheValue> cache;
-    
+    private final ConcurrentMap<Object, CacheKey> cacheKeyMap;
+    private final boolean storeCacheKey;
+
     public LocalCacheView(LocalCachedMapOptions<?, ?> options, RedissonObject object) {
         this.cache = createCache(options);
         this.object = object;
+        this.cacheKeyMap = createCache(options);
+        this.storeCacheKey = options.isStoreCacheKey();
     }
 
     public Set<K> cachedKeySet() {
@@ -68,6 +72,9 @@ public class LocalCacheView<K, V> {
                 
                 @Override
                 public void remove() {
+                    if (storeCacheKey) {
+                        cacheKeyMap.remove(((AbstractCacheMap.MapIterator) iter).cursorValue().getKey());
+                    }
                     iter.remove();
                 }
             };
@@ -82,6 +89,9 @@ public class LocalCacheView<K, V> {
         @Override
         public boolean remove(Object o) {
             CacheKey cacheKey = toCacheKey(o);
+            if (storeCacheKey) {
+                cacheKeyMap.remove(o);
+            }
             return cache.remove(cacheKey) != null;
         }
 
@@ -92,6 +102,9 @@ public class LocalCacheView<K, V> {
 
         @Override
         public void clear() {
+            if (storeCacheKey) {
+                cacheKeyMap.clear();
+            }
             cache.clear();
         }
 
@@ -121,6 +134,9 @@ public class LocalCacheView<K, V> {
                 
                 @Override
                 public void remove() {
+                    if (storeCacheKey) {
+                        cacheKeyMap.remove(((AbstractCacheMap.MapIterator) iter).cursorValue().getKey());
+                    }
                     iter.remove();
                 }
             };
@@ -140,6 +156,9 @@ public class LocalCacheView<K, V> {
         @Override
         public void clear() {
             cache.clear();
+            if (storeCacheKey) {
+                cacheKeyMap.clear();
+            }
         }
 
     }
@@ -170,6 +189,9 @@ public class LocalCacheView<K, V> {
                 
                 @Override
                 public void remove() {
+                    if (storeCacheKey) {
+                        cacheKeyMap.remove(((AbstractCacheMap.MapIterator) iter).cursorValue().getKey());
+                    }
                     iter.remove();
                 }
             };
@@ -190,6 +212,9 @@ public class LocalCacheView<K, V> {
             if (o instanceof Map.Entry) {
                 Map.Entry<?, ?> e = (Map.Entry<?, ?>) o;
                 CacheKey cacheKey = toCacheKey(e.getKey());
+                if (storeCacheKey) {
+                    cacheKeyMap.remove(e.getKey());
+                }
                 return cache.remove(cacheKey) != null;
             }
             return false;
@@ -247,9 +272,20 @@ public class LocalCacheView<K, V> {
     }
 
     public CacheKey toCacheKey(Object key) {
+        CacheKey cacheKey;
+        if (storeCacheKey) {
+            cacheKey = cacheKeyMap.get(key);
+            if (cacheKey != null) {
+                return cacheKey;
+            }
+        }
         ByteBuf encoded = object.encodeMapKey(key);
         try {
-            return toCacheKey(encoded);
+            cacheKey = toCacheKey(encoded);
+            if (storeCacheKey) {
+                cacheKeyMap.put(key, cacheKey);
+            }
+            return cacheKey;
         } finally {
             encoded.release();
         }
@@ -263,9 +299,13 @@ public class LocalCacheView<K, V> {
         return (ConcurrentMap<K1, V1>) cache;
     }
 
-    public ConcurrentMap<CacheKey, CacheValue> createCache(LocalCachedMapOptions<?, ?> options) {
+    public ConcurrentMap<Object, CacheKey> getCacheKeyMap() {
+        return cacheKeyMap;
+    }
+
+    public <K1, V1> ConcurrentMap<K1, V1> createCache(LocalCachedMapOptions<?, ?> options) {
         if (options.getCacheSize() == -1) {
-            return new NoOpCacheMap<CacheKey, CacheValue>();
+            return new NoOpCacheMap<K1, V1>();
         }
 
         if (options.getCacheProvider() == LocalCachedMapOptions.CacheProvider.CAFFEINE) {
@@ -285,7 +325,7 @@ public class LocalCacheView<K, V> {
             if (options.getEvictionPolicy() == LocalCachedMapOptions.EvictionPolicy.WEAK) {
                 caffeineBuilder.weakValues();
             }
-            return caffeineBuilder.<CacheKey, CacheValue>build().asMap();
+            return caffeineBuilder.<K1, V1>build().asMap();
         }
 
         if (options.getEvictionPolicy() == LocalCachedMapOptions.EvictionPolicy.NONE) {

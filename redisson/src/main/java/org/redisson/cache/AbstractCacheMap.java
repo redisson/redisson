@@ -319,6 +319,12 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
             return mapEntry != null;
         }
 
+        public CachedValue<K, V> cursorValue() {
+            if (mapEntry == null) {
+                throw new IllegalStateException();
+            }
+            return mapEntry.getValue();
+        }
     }
 
     final class KeySet extends AbstractSet<K> {
