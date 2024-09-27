@@ -23,12 +23,12 @@ import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.QueueCommandHolder;
 import org.redisson.misc.LogHelper;
-import org.redisson.misc.SpinLock;
 
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  *
@@ -65,7 +65,7 @@ public class CommandsQueue extends ChannelDuplexHandler {
         super.channelInactive(ctx);
     }
 
-    private final SpinLock lock = new SpinLock();
+    private final ReentrantLock lock = new ReentrantLock();
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
@@ -80,15 +80,20 @@ public class CommandsQueue extends ChannelDuplexHandler {
                 }
             });
 
-            lock.execute(() -> {
-                try {
-                    queue.add(holder);
-                    ctx.writeAndFlush(data, holder.getChannelPromise());
-                } catch (Exception e) {
-                    queue.remove(holder);
-                    throw e;
+            while (true) {
+                if (lock.tryLock()) {
+                    try {
+                        queue.add(holder);
+                        ctx.writeAndFlush(data, holder.getChannelPromise());
+                    } catch (Exception e) {
+                        queue.remove(holder);
+                        throw e;
+                    } finally {
+                        lock.unlock();
+                    }
+                    break;
                 }
-            });
+            }
         } else {
             super.write(ctx, msg, promise);
         }
