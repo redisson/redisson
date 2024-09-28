@@ -1,3 +1,6 @@
+## The documentation has been moved to [https://redisson.org/docs/integration-with-spring/#spring-boot-starter](https://redisson.org/docs/integration-with-spring/#spring-boot-starter)
+
+<!--
 # Spring Boot Starter
 
 Integrates Redisson with Spring Boot library. Depends on [Spring Data Redis](https://github.com/redisson/redisson/tree/master/redisson-spring-data#spring-data-redis-integration) module.
@@ -218,3 +221,4 @@ spring:
     exclude:
       - org.redisson.spring.starter.RedissonAutoConfiguration
 ```
+-->

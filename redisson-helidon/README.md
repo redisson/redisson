@@ -1,3 +1,6 @@
+## The documentation has been moved to [https://redisson.org/docs/microservices-integration/#helidon](https://redisson.org/docs/microservices-integration/#helidon)
+
+<!--
 # Helidon CDI extension for Redis
 
 Integrates Redisson with [Helidon](https://helidon.io/) framework.  
@@ -13,11 +16,8 @@ Maven
 ```xml  
 <dependency>
     <groupId>org.redisson</groupId>
-    <!-- for Helidon v1.4.x - v2.5.x -->
     <artifactId>redisson-helidon-20</artifactId>
-    <!-- for Helidon v3.x.x -->
     <artifactId>redisson-helidon-30</artifactId>
-    <!-- for Helidon v4.x.x -->
     <artifactId>redisson-helidon-40</artifactId>
     <version>3.36.0</version>
 </dependency>
@@ -63,3 +63,4 @@ private RedissonClient redisson;
 For injection without @Named annotation use instance name - `default`. 
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
+-->
