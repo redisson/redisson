@@ -60,7 +60,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     private SyncStrategy syncStrategy;
     private LocalCachedMapOptions.StoreMode storeMode;
     private boolean storeCacheMiss;
-    private boolean isStoreCacheKey;
+    private boolean isUseObjectAsCacheKey;
 
     private LocalCacheListener listener;
     private LocalCacheView<K, V> localCacheView;
@@ -80,12 +80,12 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
 
     private void init(LocalCachedMapOptions<K, V> options, EvictionScheduler evictionScheduler) {
         if (options.getCacheProvider() == LocalCachedMapOptions.CacheProvider.CAFFEINE) {
-            options.storeCacheKey(false);
+            options.useObjectAsCacheKey(false);
         }
         syncStrategy = options.getSyncStrategy();
         storeMode = options.getStoreMode();
         storeCacheMiss = options.isStoreCacheMiss();
-        isStoreCacheKey = options.isStoreCacheKey();
+        isUseObjectAsCacheKey = options.isUseObjectAsCacheKey();
         publishCommand = commandExecutor.getConnectionManager().getSubscribeService().getPublishCommand();
         localCacheView = new LocalCacheView<>(options, this);
         cache = localCacheView.getCache();
@@ -198,7 +198,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         if (listener.isDisabled(cacheKey)) {
             return false;
         }
-        if (isStoreCacheKey) {
+        if (isUseObjectAsCacheKey) {
             cacheKeyMap.remove(key);
         }
         return cache.remove(cacheKey, new CacheValue(key, value));
@@ -206,7 +206,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
 
     private CacheValue cacheRemove(CacheKey cacheKey) {
         CacheValue v = cache.remove(cacheKey);
-        if (isStoreCacheKey && v != null) {
+        if (isUseObjectAsCacheKey && v != null) {
             cacheKeyMap.remove(v.getKey());
         }
         listener.notifyInvalidate(v);
@@ -406,7 +406,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     public void destroy() {
         super.destroy();
         cache.clear();
-        if (isStoreCacheKey) {
+        if (isUseObjectAsCacheKey) {
             cacheKeyMap.clear();
         }
         listener.remove();
@@ -630,7 +630,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     @Override
     public RFuture<Boolean> deleteAsync() {
         cache.clear();
-        if (isStoreCacheKey) {
+        if (isUseObjectAsCacheKey) {
             cacheKeyMap.clear();
         }
         if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {

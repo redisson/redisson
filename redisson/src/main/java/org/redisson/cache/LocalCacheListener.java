@@ -112,7 +112,7 @@ public abstract class LocalCacheListener {
             expireListenerId = topic.addListener(String.class, (pattern, channel, msg) -> {
                 if (msg.equals(name)) {
                     cache.clear();
-                    if (options.isStoreCacheKey()) {
+                    if (options.isUseObjectAsCacheKey()) {
                         cacheKeyMap.clear();
                     }
                 }
@@ -122,7 +122,7 @@ public abstract class LocalCacheListener {
             expireListenerId = topic.addListener(String.class, (channel, msg) -> {
                 if (msg.equals("expired")) {
                     cache.clear();
-                    if (options.isStoreCacheKey()) {
+                    if (options.isUseObjectAsCacheKey()) {
                         cacheKeyMap.clear();
                     }
                 }
@@ -209,7 +209,7 @@ public abstract class LocalCacheListener {
             LocalCachedMapClear clearMsg = (LocalCachedMapClear) msg;
             if (!Arrays.equals(clearMsg.getExcludedId(), instanceId)) {
                 cache.clear();
-                if (options.isStoreCacheKey()) {
+                if (options.isUseObjectAsCacheKey()) {
                     cacheKeyMap.clear();
                 }
                 if (clearMsg.isReleaseSemaphore()) {
@@ -228,7 +228,7 @@ public abstract class LocalCacheListener {
                     if (value == null) {
                         continue;
                     }
-                    if (options.isStoreCacheKey()) {
+                    if (options.isUseObjectAsCacheKey()) {
                         cacheKeyMap.remove(value.getKey());
                     }
                     notifyInvalidate(value);
@@ -264,7 +264,7 @@ public abstract class LocalCacheListener {
     final void onSubscribe() {
         if (options.getReconnectionStrategy() == ReconnectionStrategy.CLEAR) {
             cache.clear();
-            if (options.isStoreCacheKey()) {
+            if (options.isUseObjectAsCacheKey()) {
                 cacheKeyMap.clear();
             }
         }
@@ -290,7 +290,7 @@ public abstract class LocalCacheListener {
 
     public RFuture<Void> clearLocalCacheAsync() {
         cache.clear();
-        if (options.isStoreCacheKey()) {
+        if (options.isUseObjectAsCacheKey()) {
             cacheKeyMap.clear();
         }
         if (syncListenerId == 0) {
@@ -332,7 +332,7 @@ public abstract class LocalCacheListener {
         for (CacheKey key : keys) {
             disabledKeys.put(key, requestId);
             CacheValue cacheValue = cache.remove(key);
-            if (options.isStoreCacheKey() && cacheValue != null) {
+            if (options.isUseObjectAsCacheKey() && cacheValue != null) {
                 cacheKeyMap.remove(cacheValue.getValue());
             }
         }
@@ -374,7 +374,7 @@ public abstract class LocalCacheListener {
     private void loadAfterReconnection() {
         if (System.currentTimeMillis() - lastInvalidate > cacheUpdateLogTime) {
             cache.clear();
-            if (options.isStoreCacheKey()) {
+            if (options.isUseObjectAsCacheKey()) {
                 cacheKeyMap.clear();
             }
             return;
@@ -388,7 +388,7 @@ public abstract class LocalCacheListener {
 
             if (!res) {
                 cache.clear();
-                if (options.isStoreCacheKey()) {
+                if (options.isUseObjectAsCacheKey()) {
                     cacheKeyMap.clear();
                 }
                 return;
@@ -406,7 +406,7 @@ public abstract class LocalCacheListener {
                             byte[] keyHash = Arrays.copyOf(entry, 16);
                             CacheKey key = new CacheKey(keyHash);
                             CacheValue cacheValue = cache.remove(key);
-                            if (options.isStoreCacheKey() && cacheValue != null) {
+                            if (options.isUseObjectAsCacheKey() && cacheValue != null) {
                                 cacheKeyMap.remove(cacheValue.getValue());
                             }
                         }
