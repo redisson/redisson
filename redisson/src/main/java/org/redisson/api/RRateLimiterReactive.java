@@ -17,6 +17,7 @@ package org.redisson.api;
 
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -28,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 public interface RRateLimiterReactive extends RExpirableReactive {
 
     /**
-     * Sets the rate limit only if it hasn't been set before.
+     * Use {@link #trySetRate(RateType, long, Duration)} instead
      * 
      * @param mode rate mode
      * @param rate rate
@@ -37,7 +38,32 @@ public interface RRateLimiterReactive extends RExpirableReactive {
      * @return {@code true} if rate was set and {@code false}
      *         otherwise
      */
+    @Deprecated
     Mono<Boolean> trySetRate(RateType mode, long rate, long rateInterval, RateIntervalUnit rateIntervalUnit);
+
+    /**
+     * Sets the rate limit only if it hasn't been set before.
+     *
+     * @param mode rate mode
+     * @param rate rate
+     * @param rateInterval rate time interval
+     * @return {@code true} if rate was set and {@code false}
+     *         otherwise
+     */
+    Mono<Boolean> trySetRate(RateType mode, long rate, Duration rateInterval);
+
+    /**
+     * Use {@link #setRate(RateType, long, Duration)} instead.
+     *
+     * @param mode rate mode
+     * @param rate rate
+     * @param rateInterval rate time interval
+     * @param timeToLive time interval before the object will be deleted
+     * @return {@code true} if rate was set and {@code false}
+     *         otherwise
+     */
+    @Deprecated
+    Mono<Boolean> trySetRate(RateType mode, long rate, Duration rateInterval, Duration timeToLive);
 
     /**
      * Sets the rate limit and clears state.
@@ -50,6 +76,27 @@ public interface RRateLimiterReactive extends RExpirableReactive {
      *
      */
     Mono<Void> setRate(RateType mode, long rate, long rateInterval, RateIntervalUnit rateIntervalUnit);
+
+    /**
+     * Sets the rate limit and clears the state.
+     * Overrides both limit and state if they haven't been set before.
+     *
+     * @param mode rate mode
+     * @param rate rate
+     * @param rateInterval rate time interval
+     */
+    Mono<Void> setRate(RateType mode, long rate, Duration rateInterval);
+
+    /**
+     * Sets time to live, the rate limit, and clears the state.
+     * Overrides both limit and state if they haven't been set before.
+     *
+     * @param mode rate mode
+     * @param rate rate
+     * @param rateInterval rate time interval
+     * @param timeToLive time interval before the object will be deleted
+     */
+    Mono<Void> setRate(RateType mode, long rate, Duration rateInterval, Duration timeToLive);
 
     /**
      * Acquires a permit only if one is available at the

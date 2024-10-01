@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
  * @author Nikita Koksharov
  *
  */
+@Deprecated
 public enum RateIntervalUnit {
 
     

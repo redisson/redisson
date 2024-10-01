@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -26,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 public interface RRateLimiter extends RRateLimiterAsync, RExpirable {
 
     /**
-     * Sets the rate limit only if it hasn't been set before.
+     * Use {@link #trySetRate(RateType, long, Duration)} instead
      * 
      * @param mode rate mode
      * @param rate rate
@@ -35,19 +36,65 @@ public interface RRateLimiter extends RRateLimiterAsync, RExpirable {
      * @return {@code true} if rate was set and {@code false}
      *         otherwise
      */
+    @Deprecated
     boolean trySetRate(RateType mode, long rate, long rateInterval, RateIntervalUnit rateIntervalUnit);
 
     /**
-     * Sets the rate limit and clears state.
-     * Overrides both limit and state if they haven't been set before.
+     * Sets the rate limit only if it hasn't been set before.
+     *
+     * @param mode rate mode
+     * @param rate rate
+     * @param rateInterval rate time interval
+     * @return {@code true} if rate was set and {@code false}
+     *         otherwise
+     */
+    boolean trySetRate(RateType mode, long rate, Duration rateInterval);
+
+    /**
+     * Sets the rate limit only if it hasn't been set before.
+     * Time to live is applied only if rate limit has been set successfully.
+     *
+     * @param mode rate mode
+     * @param rate rate
+     * @param rateInterval rate time interval
+     * @param timeToLive time interval before the object will be deleted
+     * @return {@code true} if rate was set and {@code false}
+     *         otherwise
+     */
+    boolean trySetRate(RateType mode, long rate, Duration rateInterval, Duration timeToLive);
+
+    /**
+     * Use {@link #setRate(RateType, long, Duration)} instead.
      *
      * @param mode rate mode
      * @param rate rate
      * @param rateInterval rate time interval
      * @param rateIntervalUnit rate time interval unit
      */
+    @Deprecated
     void setRate(RateType mode, long rate, long rateInterval, RateIntervalUnit rateIntervalUnit);
-    
+
+    /**
+     * Sets the rate limit and clears the state.
+     * Overrides both limit and state if they haven't been set before.
+     *
+     * @param mode rate mode
+     * @param rate rate
+     * @param rateInterval rate time interval
+     */
+    void setRate(RateType mode, long rate, Duration rateInterval);
+
+    /**
+     * Sets time to live, the rate limit, and clears the state.
+     * Overrides both limit and state if they haven't been set before.
+     *
+     * @param mode rate mode
+     * @param rate rate
+     * @param rateInterval rate time interval
+     * @param timeToLive time interval before the object will be deleted
+     */
+    void setRate(RateType mode, long rate, Duration rateInterval, Duration timeToLive);
+
     /**
      * Acquires a permit only if one is available at the
      * time of invocation.

@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -26,8 +27,8 @@ import java.util.concurrent.TimeUnit;
 public interface RRateLimiterAsync extends RExpirableAsync {
 
     /**
-     * Sets the rate limit only if it hasn't been set before.
-     * 
+     * Use {@link #trySetRateAsync(RateType, long, Duration)} instead.
+     *
      * @param mode rate mode
      * @param rate rate
      * @param rateInterval rate time interval
@@ -35,7 +36,32 @@ public interface RRateLimiterAsync extends RExpirableAsync {
      * @return {@code true} if rate was set and {@code false}
      *         otherwise
      */
+    @Deprecated
     RFuture<Boolean> trySetRateAsync(RateType mode, long rate, long rateInterval, RateIntervalUnit rateIntervalUnit);
+
+    /**
+     * Sets the rate limit only if it hasn't been set before.
+     *
+     * @param mode rate mode
+     * @param rate rate
+     * @param rateInterval rate time interval
+     * @return {@code true} if rate was set and {@code false}
+     *         otherwise
+     */
+    RFuture<Boolean> trySetRateAsync(RateType mode, long rate, Duration rateInterval);
+
+    /**
+     * Sets the rate limit only if it hasn't been set before.
+     * Time to live is applied only if rate limit has been set successfully.
+     *
+     * @param mode rate mode
+     * @param rate rate
+     * @param rateInterval rate time interval
+     * @param timeToLive time interval before the object will be deleted
+     * @return {@code true} if rate was set and {@code false}
+     *         otherwise
+     */
+    RFuture<Boolean> trySetRateAsync(RateType mode, long rate, Duration rateInterval, Duration timeToLive);
 
     /**
      * Acquires a permit only if one is available at the
@@ -145,9 +171,7 @@ public interface RRateLimiterAsync extends RExpirableAsync {
 
 
     /**
-     * Sets the rate limit and clears state.
-     * Overrides both limit and state if they haven't been set before.
-     *
+     * Use {@link #setRateAsync(RateType, long, Duration)} instead
      *
      * @param mode rate mode
      * @param rate rate
@@ -156,7 +180,29 @@ public interface RRateLimiterAsync extends RExpirableAsync {
      * @return {@code true} if rate was set and {@code false}
      *         otherwise
      */
+    @Deprecated
     RFuture<Void> setRateAsync(RateType mode, long rate, long rateInterval, RateIntervalUnit rateIntervalUnit);
+
+    /**
+     * Sets the rate limit and clears the state.
+     * Overrides both limit and state if they haven't been set before.
+     *
+     * @param mode rate mode
+     * @param rate rate
+     * @param rateInterval rate time interval
+     */
+    RFuture<Void> setRateAsync(RateType mode, long rate, Duration rateInterval);
+
+    /**
+     * Sets time to live, the rate limit, and clears the state.
+     * Overrides both limit and state if they haven't been set before.
+     *
+     * @param mode rate mode
+     * @param rate rate
+     * @param rateInterval rate time interval
+     * @param timeToLive time interval before the object will be deleted
+     */
+    RFuture<Void> setRateAsync(RateType mode, long rate, Duration rateInterval, Duration timeToLive);
 
     /**
      * Returns current configuration of this RateLimiter object.
