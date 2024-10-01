@@ -262,4 +262,14 @@ public interface LocalCachedMapOptions<K, V> extends ExMapOptions<LocalCachedMap
      */
     LocalCachedMapOptions<K, V> expirationEventPolicy(ExpirationEventPolicy expirationEventPolicy);
 
+    /**
+     * Defines whether to store CacheKey of an object key into the local cache. <br>
+     * This indicator only affects when {@link org.redisson.api.LocalCachedMapOptions#cacheProvider} != {@link org.redisson.api.LocalCachedMapOptions.CacheProvider#CAFFEINE}
+     *
+     * @param useObjectAsCacheKey - whether to store CacheKey of an object key into the local cache
+     * @return LocalCachedMapOptions instance
+     */
+    LocalCachedMapOptions<K, V> useObjectAsCacheKey(boolean useObjectAsCacheKey);
+
+
 }

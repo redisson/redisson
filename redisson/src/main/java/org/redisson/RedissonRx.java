@@ -1138,6 +1138,7 @@ public class RedissonRx implements RedissonRxClient {
                 .storeCacheMiss(params.isStoreCacheMiss())
                 .timeToLive(params.getTimeToLiveInMillis())
                 .syncStrategy(LocalCachedMapOptions.SyncStrategy.valueOf(params.getSyncStrategy().toString()))
+                .useObjectAsCacheKey(params.isUseObjectAsCacheKey())
                 .expirationEventPolicy(LocalCachedMapOptions.ExpirationEventPolicy.valueOf(params.getExpirationEventPolicy().toString()))
                 .writer(params.getWriter())
                 .writerAsync(params.getWriterAsync())
