@@ -305,7 +305,7 @@ public class LocalCacheView<K, V> {
 
     public <K1, V1> ConcurrentMap<K1, V1> createCache(LocalCachedMapOptions<?, ?> options) {
         if (options.getCacheSize() == -1) {
-            return new NoOpCacheMap<K1, V1>();
+            return new NoOpCacheMap<>();
         }
 
         if (options.getCacheProvider() == LocalCachedMapOptions.CacheProvider.CAFFEINE) {
