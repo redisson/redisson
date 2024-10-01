@@ -58,6 +58,7 @@ public abstract class LocalCacheListener {
     String name;
     CommandAsyncExecutor commandExecutor;
     private Map<CacheKey, ? extends CacheValue> cache;
+    private Map<Object, CacheKey> cacheKeyMap;
     private RObject object;
     byte[] instanceId;
     private Codec codec;
@@ -101,9 +102,9 @@ public abstract class LocalCacheListener {
         return disabledKeys.containsKey(key);
     }
 
-    public void add(Map<CacheKey, ? extends CacheValue> cache) {
+    public void add(Map<CacheKey, ? extends CacheValue> cache, Map<Object, CacheKey> cacheKeyMap) {
         this.cache = cache;
-
+        this.cacheKeyMap = cacheKeyMap;
         createTopic(name, commandExecutor);
 
         if (options.getExpirationEventPolicy() == LocalCachedMapOptions.ExpirationEventPolicy.SUBSCRIBE_WITH_KEYEVENT_PATTERN) {
@@ -111,6 +112,9 @@ public abstract class LocalCacheListener {
             expireListenerId = topic.addListener(String.class, (pattern, channel, msg) -> {
                 if (msg.equals(name)) {
                     cache.clear();
+                    if (options.isUseObjectAsCacheKey()) {
+                        cacheKeyMap.clear();
+                    }
                 }
             });
         } else if (options.getExpirationEventPolicy() == LocalCachedMapOptions.ExpirationEventPolicy.SUBSCRIBE_WITH_KEYSPACE_CHANNEL) {
@@ -118,6 +122,9 @@ public abstract class LocalCacheListener {
             expireListenerId = topic.addListener(String.class, (channel, msg) -> {
                 if (msg.equals("expired")) {
                     cache.clear();
+                    if (options.isUseObjectAsCacheKey()) {
+                        cacheKeyMap.clear();
+                    }
                 }
             });
         }
@@ -202,7 +209,9 @@ public abstract class LocalCacheListener {
             LocalCachedMapClear clearMsg = (LocalCachedMapClear) msg;
             if (!Arrays.equals(clearMsg.getExcludedId(), instanceId)) {
                 cache.clear();
-
+                if (options.isUseObjectAsCacheKey()) {
+                    cacheKeyMap.clear();
+                }
                 if (clearMsg.isReleaseSemaphore()) {
                     RSemaphore semaphore = getClearSemaphore(clearMsg.getRequestId());
                     semaphore.releaseAsync();
@@ -218,6 +227,9 @@ public abstract class LocalCacheListener {
                     CacheValue value = cache.remove(key);
                     if (value == null) {
                         continue;
+                    }
+                    if (options.isUseObjectAsCacheKey()) {
+                        cacheKeyMap.remove(value.getKey());
                     }
                     notifyInvalidate(value);
                 }
@@ -252,6 +264,9 @@ public abstract class LocalCacheListener {
     final void onSubscribe() {
         if (options.getReconnectionStrategy() == ReconnectionStrategy.CLEAR) {
             cache.clear();
+            if (options.isUseObjectAsCacheKey()) {
+                cacheKeyMap.clear();
+            }
         }
         if (options.getReconnectionStrategy() == ReconnectionStrategy.LOAD
                 // check if instance has already been used
@@ -275,6 +290,9 @@ public abstract class LocalCacheListener {
 
     public RFuture<Void> clearLocalCacheAsync() {
         cache.clear();
+        if (options.isUseObjectAsCacheKey()) {
+            cacheKeyMap.clear();
+        }
         if (syncListenerId == 0) {
             return new CompletableFutureWrapper<>((Void) null);
         }
@@ -313,7 +331,10 @@ public abstract class LocalCacheListener {
     private void disableKeys(final String requestId, final Set<CacheKey> keys, long timeout) {
         for (CacheKey key : keys) {
             disabledKeys.put(key, requestId);
-            cache.remove(key);
+            CacheValue cacheValue = cache.remove(key);
+            if (options.isUseObjectAsCacheKey() && cacheValue != null) {
+                cacheKeyMap.remove(cacheValue.getValue());
+            }
         }
 
         commandExecutor.getServiceManager().newTimeout(t -> {
@@ -353,6 +374,9 @@ public abstract class LocalCacheListener {
     private void loadAfterReconnection() {
         if (System.currentTimeMillis() - lastInvalidate > cacheUpdateLogTime) {
             cache.clear();
+            if (options.isUseObjectAsCacheKey()) {
+                cacheKeyMap.clear();
+            }
             return;
         }
 
@@ -364,6 +388,9 @@ public abstract class LocalCacheListener {
 
             if (!res) {
                 cache.clear();
+                if (options.isUseObjectAsCacheKey()) {
+                    cacheKeyMap.clear();
+                }
                 return;
             }
 
@@ -378,7 +405,10 @@ public abstract class LocalCacheListener {
                         for (byte[] entry : r) {
                             byte[] keyHash = Arrays.copyOf(entry, 16);
                             CacheKey key = new CacheKey(keyHash);
-                            cache.remove(key);
+                            CacheValue cacheValue = cache.remove(key);
+                            if (options.isUseObjectAsCacheKey() && cacheValue != null) {
+                                cacheKeyMap.remove(cacheValue.getValue());
+                            }
                         }
                     });
         });
