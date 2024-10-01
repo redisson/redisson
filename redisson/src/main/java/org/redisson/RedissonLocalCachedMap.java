@@ -79,8 +79,9 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     }
 
     private void init(LocalCachedMapOptions<K, V> options, EvictionScheduler evictionScheduler) {
-        if (options.getCacheProvider() == LocalCachedMapOptions.CacheProvider.CAFFEINE) {
-            options.useObjectAsCacheKey(false);
+        if (options.getCacheProvider() == LocalCachedMapOptions.CacheProvider.CAFFEINE
+                && options.isUseObjectAsCacheKey()) {
+            throw new IllegalArgumentException("useObjectAsCacheKey cannot be true if cacheProvider is CAFFEINE");
         }
         syncStrategy = options.getSyncStrategy();
         storeMode = options.getStoreMode();
