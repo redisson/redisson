@@ -150,6 +150,17 @@ public interface RRateLimiter extends RRateLimiterAsync, RExpirable {
     void acquire(long permits);
     
     /**
+     * Use {@link #tryAcquire(Duration)} instead.
+     *
+     * @param timeout the maximum time to wait for a permit
+     * @param unit the time unit of the {@code timeout} argument
+     * @return {@code true} if a permit was acquired and {@code false}
+     *         if the waiting time elapsed before a permit was acquired
+     */
+    @Deprecated
+    boolean tryAcquire(long timeout, TimeUnit unit);
+    
+    /**
      * Acquires a permit from this RateLimiter, if one becomes available
      * within the given waiting time.
      *
@@ -168,12 +179,23 @@ public interface RRateLimiter extends RRateLimiterAsync, RExpirable {
      * will not wait at all.
      *
      * @param timeout the maximum time to wait for a permit
+     * @return {@code true} if a permit was acquired and {@code false}
+     *         if the waiting time elapsed before a permit was acquired
+     */
+    boolean tryAcquire(Duration timeout);
+
+    /**
+     * Use {@link #tryAcquire(long, Duration)} instead.
+     *
+     * @param permits amount
+     * @param timeout the maximum time to wait for a permit
      * @param unit the time unit of the {@code timeout} argument
      * @return {@code true} if a permit was acquired and {@code false}
      *         if the waiting time elapsed before a permit was acquired
      */
-    boolean tryAcquire(long timeout, TimeUnit unit);
-    
+    @Deprecated
+    boolean tryAcquire(long permits, long timeout, TimeUnit unit);
+
     /**
      * Acquires the given number of <code>permits</code> only if all are available
      * within the given waiting time.
@@ -193,11 +215,10 @@ public interface RRateLimiter extends RRateLimiterAsync, RExpirable {
      *
      * @param permits amount
      * @param timeout the maximum time to wait for a permit
-     * @param unit the time unit of the {@code timeout} argument
      * @return {@code true} if a permit was acquired and {@code false}
      *         if the waiting time elapsed before a permit was acquired
      */
-    boolean tryAcquire(long permits, long timeout, TimeUnit unit);
+    boolean tryAcquire(long permits, Duration timeout);
 
     /**
      * Returns current configuration of this RateLimiter object.

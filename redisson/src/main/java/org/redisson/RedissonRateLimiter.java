@@ -96,7 +96,7 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
 
     @Override
     public RFuture<Void> acquireAsync(long permits) {
-        CompletionStage<Void> f = tryAcquireAsync(permits, -1, null).thenApply(res -> null);
+        CompletionStage<Void> f = tryAcquireAsync(permits, Duration.ofMillis(-1)).thenApply(res -> null);
         return new CompletableFutureWrapper<>(f);
     }
 
@@ -109,7 +109,28 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
     public RFuture<Boolean> tryAcquireAsync(long timeout, TimeUnit unit) {
         return tryAcquireAsync(1, timeout, unit);
     }
-    
+
+    @Override
+    public boolean tryAcquire(Duration timeout) {
+        return get(tryAcquireAsync(timeout));
+    }
+
+    @Override
+    public RFuture<Boolean> tryAcquireAsync(Duration timeout) {
+        return tryAcquireAsync(1, timeout);
+    }
+
+    @Override
+    public boolean tryAcquire(long permits, Duration timeout) {
+        return get(tryAcquireAsync(permits, timeout));
+    }
+
+    @Override
+    public RFuture<Boolean> tryAcquireAsync(long permits, Duration timeout) {
+        CompletableFuture<Boolean> f = tryAcquireAsync(permits, timeout.toMillis());
+        return new CompletableFutureWrapper<>(f);
+    }
+
     @Override
     public boolean tryAcquire(long permits, long timeout, TimeUnit unit) {
         return get(tryAcquireAsync(permits, timeout, unit));
@@ -117,12 +138,7 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
     
     @Override
     public RFuture<Boolean> tryAcquireAsync(long permits, long timeout, TimeUnit unit) {
-        long timeoutInMillis = -1;
-        if (timeout >= 0) {
-            timeoutInMillis = unit.toMillis(timeout);
-        }
-        CompletableFuture<Boolean> f = tryAcquireAsync(permits, timeoutInMillis);
-        return new CompletableFutureWrapper<>(f);
+        return tryAcquireAsync(permits, Duration.ofMillis(unit.toMillis(timeout)));
     }
     
     private CompletableFuture<Boolean> tryAcquireAsync(long permits, long timeoutInMillis) {

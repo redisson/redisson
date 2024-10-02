@@ -120,6 +120,17 @@ public interface RRateLimiterAsync extends RExpirableAsync {
     RFuture<Void> acquireAsync(long permits);
     
     /**
+     * Use {@link #tryAcquireAsync(Duration)} instead.
+     *
+     * @param timeout the maximum time to wait for a permit
+     * @param unit the time unit of the {@code timeout} argument
+     * @return {@code true} if a permit was acquired and {@code false}
+     *         if the waiting time elapsed before a permit was acquired
+     */
+    @Deprecated
+    RFuture<Boolean> tryAcquireAsync(long timeout, TimeUnit unit);
+
+    /**
      * Acquires a permit from this RateLimiter, if one becomes available
      * within the given waiting time.
      *
@@ -138,12 +149,23 @@ public interface RRateLimiterAsync extends RExpirableAsync {
      * will not wait at all.
      *
      * @param timeout the maximum time to wait for a permit
+     * @return {@code true} if a permit was acquired and {@code false}
+     *         if the waiting time elapsed before a permit was acquired
+     */
+    RFuture<Boolean> tryAcquireAsync(Duration timeout);
+
+    /**
+     * Use {@link #tryAcquireAsync(long, Duration)} instead.
+     *
+     * @param permits amount
+     * @param timeout the maximum time to wait for a permit
      * @param unit the time unit of the {@code timeout} argument
      * @return {@code true} if a permit was acquired and {@code false}
      *         if the waiting time elapsed before a permit was acquired
      */
-    RFuture<Boolean> tryAcquireAsync(long timeout, TimeUnit unit);
-    
+    @Deprecated
+    RFuture<Boolean> tryAcquireAsync(long permits, long timeout, TimeUnit unit);
+
     /**
      * Acquires the given number of <code>permits</code> only if all are available
      * within the given waiting time.
@@ -163,12 +185,10 @@ public interface RRateLimiterAsync extends RExpirableAsync {
      *
      * @param permits amount
      * @param timeout the maximum time to wait for a permit
-     * @param unit the time unit of the {@code timeout} argument
      * @return {@code true} if a permit was acquired and {@code false}
      *         if the waiting time elapsed before a permit was acquired
      */
-    RFuture<Boolean> tryAcquireAsync(long permits, long timeout, TimeUnit unit);
-
+    RFuture<Boolean> tryAcquireAsync(long permits, Duration timeout);
 
     /**
      * Use {@link #setRateAsync(RateType, long, Duration)} instead
