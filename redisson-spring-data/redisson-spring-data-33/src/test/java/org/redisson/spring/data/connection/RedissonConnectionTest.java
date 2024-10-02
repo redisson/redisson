@@ -25,11 +25,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class RedissonConnectionTest extends BaseConnectionTest {
 
     @Test
-    public void testZRandMemberScore() {
-        StringRedisTemplate redisTemplate = new StringRedisTemplate();
-        redisTemplate.setConnectionFactory(new RedissonConnectionFactory(redisson));
-        redisTemplate.afterPropertiesSet();
+    public void testMember() {
+        Map<Object, Boolean> r = redisTemplate.opsForSet().isMember("test", "val1", "val2");
+        Map<Object, Boolean> ex = Map.of("val1", false, "val2", false);
+        assertThat(r).isEqualTo(ex);
 
+        redisTemplate.opsForSet().add("test", "val3");
+
+        Map<Object, Boolean> r1 = redisTemplate.opsForSet().isMember("test", "val3", "val1");
+        Map<Object, Boolean> ex2 = Map.of("val3", true, "val1", false);
+        assertThat(r1).isEqualTo(ex2);
+    }
+
+    @Test
+    public void testZRandMemberScore() {
         redisTemplate.boundZSetOps("test").add("1", 10);
         redisTemplate.boundZSetOps("test").add("2", 20);
         redisTemplate.boundZSetOps("test").add("3", 30);
@@ -44,10 +53,6 @@ public class RedissonConnectionTest extends BaseConnectionTest {
 
     @Test
     public void testBZPop() {
-        StringRedisTemplate redisTemplate = new StringRedisTemplate();
-        redisTemplate.setConnectionFactory(new RedissonConnectionFactory(redisson));
-        redisTemplate.afterPropertiesSet();
-
         redisTemplate.boundZSetOps("test").add("1", 10);
         redisTemplate.boundZSetOps("test").add("2", 20);
         redisTemplate.boundZSetOps("test").add("3", 30);
@@ -66,10 +71,6 @@ public class RedissonConnectionTest extends BaseConnectionTest {
 
     @Test
     public void testZPop() {
-        StringRedisTemplate redisTemplate = new StringRedisTemplate();
-        redisTemplate.setConnectionFactory(new RedissonConnectionFactory(redisson));
-        redisTemplate.afterPropertiesSet();
-
         redisTemplate.boundZSetOps("test").add("1", 10);
         redisTemplate.boundZSetOps("test").add("2", 20);
         redisTemplate.boundZSetOps("test").add("3", 30);
@@ -88,10 +89,6 @@ public class RedissonConnectionTest extends BaseConnectionTest {
 
     @Test
     public void testZRangeWithScores() {
-        StringRedisTemplate redisTemplate = new StringRedisTemplate();
-        redisTemplate.setConnectionFactory(new RedissonConnectionFactory(redisson));
-        redisTemplate.afterPropertiesSet();
-
         redisTemplate.boundZSetOps("test").add("1", 10);
         redisTemplate.boundZSetOps("test").add("2", 20);
         redisTemplate.boundZSetOps("test").add("3", 30);
@@ -105,10 +102,6 @@ public class RedissonConnectionTest extends BaseConnectionTest {
 
     @Test
     public void testZDiff() {
-        StringRedisTemplate redisTemplate = new StringRedisTemplate();
-        redisTemplate.setConnectionFactory(new RedissonConnectionFactory(redisson));
-        redisTemplate.afterPropertiesSet();
-
         redisTemplate.boundZSetOps("test").add("1", 10);
         redisTemplate.boundZSetOps("test").add("2", 20);
         redisTemplate.boundZSetOps("test").add("3", 30);
@@ -125,10 +118,6 @@ public class RedissonConnectionTest extends BaseConnectionTest {
 
     @Test
     public void testZLexCount() {
-        StringRedisTemplate redisTemplate = new StringRedisTemplate();
-        redisTemplate.setConnectionFactory(new RedissonConnectionFactory(redisson));
-        redisTemplate.afterPropertiesSet();
-
         redisTemplate.boundZSetOps("test").add("1", 10);
         redisTemplate.boundZSetOps("test").add("2", 20);
         redisTemplate.boundZSetOps("test").add("3", 30);
@@ -139,10 +128,6 @@ public class RedissonConnectionTest extends BaseConnectionTest {
 
     @Test
     public void testZRemLexByRange() {
-        StringRedisTemplate redisTemplate = new StringRedisTemplate();
-        redisTemplate.setConnectionFactory(new RedissonConnectionFactory(redisson));
-        redisTemplate.afterPropertiesSet();
-
         redisTemplate.boundZSetOps("test").add("1", 10);
         redisTemplate.boundZSetOps("test").add("2", 20);
         redisTemplate.boundZSetOps("test").add("3", 30);
@@ -154,10 +139,6 @@ public class RedissonConnectionTest extends BaseConnectionTest {
 
     @Test
     public void testReverseRangeByLex() {
-        StringRedisTemplate redisTemplate = new StringRedisTemplate();
-        redisTemplate.setConnectionFactory(new RedissonConnectionFactory(redisson));
-        redisTemplate.afterPropertiesSet();
-
         redisTemplate.boundZSetOps("test").add("1", 10);
         redisTemplate.boundZSetOps("test").add("2", 20);
 

@@ -299,7 +299,7 @@ public class RedissonReactiveSetCommands extends RedissonBaseReactive implements
         });
     }
 
-    private static final RedisCommand<List<Boolean>> SMISMEMBER = new RedisCommand<>("SMISMEMBER", new ObjectListReplayDecoder<>());
+    private static final RedisCommand<List<Boolean>> SMISMEMBER = new RedisCommand("SMISMEMBER", new ObjectListReplayDecoder<>(), new BooleanReplayConvertor());
 
     @Override
     public Flux<ReactiveRedisConnection.MultiValueResponse<SMIsMemberCommand, Boolean>> sMIsMember(Publisher<SMIsMemberCommand> commands) {

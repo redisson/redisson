@@ -2688,7 +2688,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return write(key, ByteArrayCodec.INSTANCE, RedisCommands.RPOP_LIST, key, count);
     }
 
-    private static final RedisCommand<List<Boolean>> SMISMEMBER = new RedisCommand<>("SMISMEMBER", new ObjectListReplayDecoder<>());
+    private static final RedisCommand<List<Boolean>> SMISMEMBER = new RedisCommand("SMISMEMBER", new ObjectListReplayDecoder<>(), new BooleanReplayConvertor());
 
     @Override
     public List<Boolean> sMIsMember(byte[] key, byte[]... value) {
