@@ -470,17 +470,6 @@
 -->
 
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.13.0</version>
-                <configuration>
-                    <testSource>21</testSource>
-                    <testTarget>21</testTarget>
-                    <testRelease>21</testRelease>
-                </configuration>
-            </plugin>
-
-            <plugin>
          	<artifactId>maven-javadoc-plugin</artifactId>
             </plugin>
 
