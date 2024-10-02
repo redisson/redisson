@@ -724,7 +724,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
             }
         });
 
-        return keys.getKeysByPattern(command, pattern, 0, count);
+        return keys.getKeysByPattern(command, pattern, 0, count, null);
     }
 
     @Override

@@ -22,6 +22,21 @@ package org.redisson.api;
  */
 public enum RType {
 
-    OBJECT, MAP, LIST, SET, ZSET, STREAM, JSON
-    
+    OBJECT("string"),
+    MAP("hash"),
+    LIST("list"),
+    SET("set"),
+    ZSET("zset"),
+    STREAM("stream"),
+    JSON("ReJSON-RL");
+
+    private final String value;
+
+    RType(String value) {
+        this.value = value;
+    }
+
+    public String getValue() {
+        return value;
+    }
 }

@@ -20,6 +20,9 @@ import java.util.List;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonKeys;
+import org.redisson.api.RType;
+import org.redisson.api.options.KeysScanOptions;
+import org.redisson.api.options.KeysScanParams;
 import org.redisson.client.RedisClient;
 import org.redisson.connection.MasterSlaveEntry;
 
@@ -46,23 +49,28 @@ public class RedissonKeysRx {
         return getKeysByPattern(null);
     }
 
-    public Flowable<String> getKeys(int count) {
-        return getKeysByPattern(null, count);
-    }
-
-    public Flowable<String> getKeysByPattern(String pattern) {
-        return getKeysByPattern(pattern, 10);
-    }
-    
-    public Flowable<String> getKeysByPattern(String pattern, int count) {
-        List<Publisher<String>> publishers = new ArrayList<Publisher<String>>();
+    public Flowable<String> getKeys(KeysScanOptions options) {
+        KeysScanParams params = (KeysScanParams) options;
+        List<Publisher<String>> publishers = new ArrayList<>();
         for (MasterSlaveEntry entry : commandExecutor.getConnectionManager().getEntrySet()) {
-            publishers.add(createKeysIterator(entry, pattern, count));
+            publishers.add(createKeysIterator(entry, params.getPattern(), params.getChunkSize(), params.getType()));
         }
         return Flowable.merge(publishers);
     }
 
-    private Publisher<String> createKeysIterator(MasterSlaveEntry entry, String pattern, int count) {
+    public Flowable<String> getKeys(int count) {
+        return getKeys(KeysScanOptions.defaults().chunkSize(count));
+    }
+
+    public Flowable<String> getKeysByPattern(String pattern) {
+        return getKeys(KeysScanOptions.defaults().pattern(pattern));
+    }
+    
+    public Flowable<String> getKeysByPattern(String pattern, int count) {
+        return getKeys(KeysScanOptions.defaults().pattern(pattern).chunkSize(count));
+    }
+
+    private Publisher<String> createKeysIterator(MasterSlaveEntry entry, String pattern, int count, RType type) {
         ReplayProcessor<String> p = ReplayProcessor.create();
         return p.doOnRequest(new LongConsumer() {
 
@@ -78,8 +86,8 @@ public class RedissonKeysRx {
                 nextValues();
             }
             
-            protected void nextValues() {
-                instance.scanIteratorAsync(client, entry, nextIterPos, pattern, count).whenComplete((res, e) -> {
+            private void nextValues() {
+                instance.scanIteratorAsync(client, entry, nextIterPos, pattern, count, type).whenComplete((res, e) -> {
                     if (e != null) {
                         p.onError(e);
                         return;

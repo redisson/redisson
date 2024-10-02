@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.options.KeysScanOptions;
+
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -26,30 +28,22 @@ import java.util.stream.Stream;
 public interface RKeys extends RKeysAsync {
 
     /**
-     * Get keys using iterator with defined <code>limit</code>.
-     * Keys are traversed with SCAN operation.
+     * Use {@link #getKeys(KeysScanOptions)} instead.
      *
      * @param limit - limit of keys amount
      * @return Iterable object
      */
+    @Deprecated
     Iterable<String> getKeysWithLimit(int limit);
 
     /**
-     * Get keys using iterator with defined <code>limit</code>.
-     * Keys are traversed with SCAN operation.
-     * <p>
-     *  Supported glob-style patterns:
-     *  <p>
-     *    h?llo subscribes to hello, hallo and hxllo
-     *    <p>
-     *    h*llo subscribes to hllo and heeeello
-     *    <p>
-     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     * Use {@link #getKeys(KeysScanOptions)} instead.
      *
      * @param limit - limit of keys amount
      * @param pattern - match pattern
      * @return Iterable object
      */
+    @Deprecated
     Iterable<String> getKeysWithLimit(String pattern, int limit);
 
     /**
@@ -175,44 +169,26 @@ public interface RKeys extends RKeysAsync {
     int getSlot(String key);
 
     /**
-     * Get all keys by pattern using iterator. 
-     * Keys traversed with SCAN operation. Each SCAN operation loads 
-     * up to <b>10</b> keys per request. 
-     * <p>
-     *  Supported glob-style patterns:
-     *  <p>
-     *    h?llo subscribes to hello, hallo and hxllo
-     *    <p>
-     *    h*llo subscribes to hllo and heeeello
-     *    <p>
-     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     * Use {@link #getKeys(KeysScanOptions)} instead.
      * 
      * @param pattern - match pattern
      * @return Iterable object
      */
+    @Deprecated
     Iterable<String> getKeysByPattern(String pattern);
 
     /**
-     * Get all keys by pattern using iterator. 
-     * Keys traversed with SCAN operation. Each SCAN operation loads 
-     * up to <code>count</code> keys per request. 
-     * <p>
-     *  Supported glob-style patterns:
-     *  <p>
-     *    h?llo subscribes to hello, hallo and hxllo
-     *    <p>
-     *    h*llo subscribes to hllo and heeeello
-     *    <p>
-     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     * Use {@link #getKeys(KeysScanOptions)} instead.
      *
      * @param pattern - match pattern
      * @param count - keys loaded per request to Redis
      * @return Iterable object
      */
+    @Deprecated
     Iterable<String> getKeysByPattern(String pattern, int count);
 
     /**
-     * Get all keys using iterator. Keys traversing with SCAN operation. 
+     * Get all keys using iterable. Keys traversing with SCAN operation.
      * Each SCAN operation loads up to <code>10</code> keys per request. 
      *
      * @return Iterable object
@@ -220,54 +196,44 @@ public interface RKeys extends RKeysAsync {
     Iterable<String> getKeys();
 
     /**
-     * Get all keys using iterator. Keys traversing with SCAN operation.
-     * Each SCAN operation loads up to <code>count</code> keys per request.
+     * Get all keys using iterable. Keys traversing with SCAN operation.
+     *
+     * @param options scan options
+     * @return Iterable object
+     */
+    Iterable<String> getKeys(KeysScanOptions options);
+
+    /**
+     * Use {@link #getKeys(KeysScanOptions)} instead.
      *
      * @param count - keys loaded per request to Redis
      * @return Iterable object
      */
+    @Deprecated
     Iterable<String> getKeys(int count);
 
     /**
-     * Get all keys by pattern using Stream. 
-     * Keys traversed with SCAN operation. Each SCAN operation loads 
-     * up to <b>10</b> keys per request. 
-     * <p>
-     *  Supported glob-style patterns:
-     *  <p>
-     *    h?llo subscribes to hello, hallo and hxllo
-     *    <p>
-     *    h*llo subscribes to hllo and heeeello
-     *    <p>
-     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     * Use {@link #getKeys(KeysScanOptions)} instead.
      * 
      * @param pattern - match pattern
      * @return Iterable object
      */
+    @Deprecated
     Stream<String> getKeysStreamByPattern(String pattern);
 
     /**
-     * Get all keys by pattern using Stream. 
-     * Keys traversed with SCAN operation. Each SCAN operation loads 
-     * up to <code>count</code> keys per request. 
-     * <p>
-     *  Supported glob-style patterns:
-     *  <p>
-     *    h?llo subscribes to hello, hallo and hxllo
-     *    <p>
-     *    h*llo subscribes to hllo and heeeello
-     *    <p>
-     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     * Use {@link #getKeys(KeysScanOptions)} instead.
      *
      * @param pattern - match pattern
      * @param count - keys loaded per request to Redis
      * @return Iterable object
      */
+    @Deprecated
     Stream<String> getKeysStreamByPattern(String pattern, int count);
     
     /**
-     * Get all keys using Stream. Keys traversing with SCAN operation. 
-     * Each SCAN operation loads up to <code>10</code> keys per request. 
+     * Get all keys using Stream. Keys traversing with SCAN operation.
+     * Each SCAN operation loads up to <code>10</code> keys per request.
      *
      * @return Iterable object
      */
@@ -275,11 +241,19 @@ public interface RKeys extends RKeysAsync {
 
     /**
      * Get all keys using Stream. Keys traversing with SCAN operation.
-     * Each SCAN operation loads up to <code>count</code> keys per request.
+     * Each SCAN operation loads up to <code>10</code> keys per request.
+     *
+     * @return Iterable object
+     */
+    Stream<String> getKeysStream(KeysScanOptions options);
+
+    /**
+     * Use {@link #getKeys(KeysScanOptions)} instead.
      *
      * @param count - keys loaded per request to Redis
      * @return Iterable object
      */
+    @Deprecated
     Stream<String> getKeysStream(int count);
     
     /**
