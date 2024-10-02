@@ -39,6 +39,7 @@ public interface RRateLimiterRx extends RExpirableRx {
      * @return {@code true} if rate was set and {@code false}
      *         otherwise
      */
+    @Deprecated
     Single<Boolean> trySetRate(RateType mode, long rate, long rateInterval, RateIntervalUnit rateIntervalUnit);
 
     /**
@@ -74,6 +75,7 @@ public interface RRateLimiterRx extends RExpirableRx {
      * @param rateIntervalUnit rate time interval unit
      *
      */
+    @Deprecated
     Single<Void> setRate(RateType mode, long rate, long rateInterval, RateIntervalUnit rateIntervalUnit);
 
     /**
@@ -154,6 +156,17 @@ public interface RRateLimiterRx extends RExpirableRx {
     Completable acquire(long permits);
     
     /**
+     * Use {@link #tryAcquire(Duration)} instead.
+     *
+     * @param timeout the maximum time to wait for a permit
+     * @param unit the time unit of the {@code timeout} argument
+     * @return {@code true} if a permit was acquired and {@code false}
+     *         if the waiting time elapsed before a permit was acquired
+     */
+    @Deprecated
+    Single<Boolean> tryAcquire(long timeout, TimeUnit unit);
+
+    /**
      * Acquires a permit from this RateLimiter, if one becomes available
      * within the given waiting time.
      *
@@ -172,12 +185,23 @@ public interface RRateLimiterRx extends RExpirableRx {
      * will not wait at all.
      *
      * @param timeout the maximum time to wait for a permit
+     * @return {@code true} if a permit was acquired and {@code false}
+     *         if the waiting time elapsed before a permit was acquired
+     */
+    Single<Boolean> tryAcquire(Duration timeout);
+
+    /**
+     * Use {@link #tryAcquire(long, Duration)} instead.
+     *
+     * @param permits amount
+     * @param timeout the maximum time to wait for a permit
      * @param unit the time unit of the {@code timeout} argument
      * @return {@code true} if a permit was acquired and {@code false}
      *         if the waiting time elapsed before a permit was acquired
      */
-    Single<Boolean> tryAcquire(long timeout, TimeUnit unit);
-    
+    @Deprecated
+    Single<Boolean> tryAcquire(long permits, long timeout, TimeUnit unit);
+
     /**
      * Acquires the given number of <code>permits</code> only if all are available
      * within the given waiting time.
@@ -197,11 +221,10 @@ public interface RRateLimiterRx extends RExpirableRx {
      *
      * @param permits amount
      * @param timeout the maximum time to wait for a permit
-     * @param unit the time unit of the {@code timeout} argument
      * @return {@code true} if a permit was acquired and {@code false}
      *         if the waiting time elapsed before a permit was acquired
      */
-    Single<Boolean> tryAcquire(long permits, long timeout, TimeUnit unit);
+    Single<Boolean> tryAcquire(long permits, Duration timeout);
 
     /**
      * Returns amount of available permits.
