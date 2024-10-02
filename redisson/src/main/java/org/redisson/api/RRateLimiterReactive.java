@@ -53,7 +53,8 @@ public interface RRateLimiterReactive extends RExpirableReactive {
     Mono<Boolean> trySetRate(RateType mode, long rate, Duration rateInterval);
 
     /**
-     * Use {@link #setRate(RateType, long, Duration)} instead.
+     * Sets the rate limit only if it hasn't been set before.
+     * Time to live is applied only if rate limit has been set successfully.
      *
      * @param mode rate mode
      * @param rate rate
@@ -62,12 +63,10 @@ public interface RRateLimiterReactive extends RExpirableReactive {
      * @return {@code true} if rate was set and {@code false}
      *         otherwise
      */
-    @Deprecated
     Mono<Boolean> trySetRate(RateType mode, long rate, Duration rateInterval, Duration timeToLive);
 
     /**
-     * Sets the rate limit and clears state.
-     * Overrides both limit and state if they haven't been set before.
+     * Use {@link #setRate(RateType, long, Duration)} instead.
      *
      * @param mode rate mode
      * @param rate rate
@@ -75,6 +74,7 @@ public interface RRateLimiterReactive extends RExpirableReactive {
      * @param rateIntervalUnit rate time interval unit
      *
      */
+    @Deprecated
     Mono<Void> setRate(RateType mode, long rate, long rateInterval, RateIntervalUnit rateIntervalUnit);
 
     /**
