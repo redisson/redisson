@@ -16,14 +16,14 @@ High-performance async and lock-free Java client for Redis and Valkey based on [
 * [Redis](https://redis.io) compatible - from 3.0 up to the latest version
 * [Valkey](https://valkey.io) compatible - from 7.2.5 up to the latest version
 * Supported deployment types
-    * [Proxy](configuration.md/#proxy-mode)
-    * [Multi-Cluster](configuration.md/#multi-cluster-mode)
-    * [Multi-Sentinel](configuration.md/#multi-sentinel-mode)
-    * [Single](configuration.md/#single-mode)
-    * [Cluster](configuration.md/#cluster-mode)
-    * [Sentinel](configuration.md/#sentinel-mode)
-    * [Replicated](configuration.md/#replicated-mode)
-    * [Master and Slaves](configuration.md/#master-slave-mode)
+    * [Proxy](https://redisson.org/docs/configuration/#proxy-mode)
+    * [Multi-Cluster](https://redisson.org/docs/configuration/#multi-cluster-mode)
+    * [Multi-Sentinel](https://redisson.org/docs/configuration/#multi-sentinel-mode)
+    * [Single](https://redisson.org/docs/configuration/#single-mode)
+    * [Cluster](https://redisson.org/docs/configuration/#cluster-mode)
+    * [Sentinel](https://redisson.org/docs/configuration/#sentinel-mode)
+    * [Replicated](https://redisson.org/docs/configuration/#replicated-mode)
+    * [Master and Slaves](https://redisson.org/docs/configuration/#master-slave-mode)
 * Amazon Web Services compatible
      * [AWS Elasticache Serverless](https://aws.amazon.com/elasticache/features/#Serverless)
      * [AWS Redis Global Datastore](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Redis-Global-Datastore.html)
@@ -50,33 +50,33 @@ High-performance async and lock-free Java client for Redis and Valkey based on [
 * Supports SSL  
 * Asynchronous connection pool  
 * Lua scripting  
-* [RediSearch](data-and-services/services.md/#redisearch-service)
-* [JSON datatype](data-and-services/objects.md/#json-object-holder)
-* [JSON Store](data-and-services/collections.md/#json-store) 
-* [Reactive Streams](api-models.md/#reactive-api) API  
-* [RxJava3](api-models.md/#rxjava-api) API  
-* [Asynchronous](api-models.md/#synchronous-and-asynchronous-api) API  
+* [RediSearch](https://redisson.org/docs/data-and-services/services/#redisearch-service)
+* [JSON datatype](https://redisson.org/docs/data-and-services/objects/#json-object-holder)
+* [JSON Store](https://redisson.org/docs/data-and-services/collections/#json-store) 
+* [Reactive Streams](https://redisson.org/docs/api-models/#reactive-api) API  
+* [RxJava3](https://redisson.org/docs/api-models/#rxjava-api) API  
+* [Asynchronous](https://redisson.org/docs/api-models/#synchronous-and-asynchronous-api) API  
 * Local cache support including [Caffeine](https://github.com/ben-manes/caffeine)-based implementation
-* [Cache API implementations](cache-api-implementations.md)
+* [Cache API implementations](https://redisson.org/docs/cache-api-implementations)
     Spring Cache, JCache API (JSR-107), Hibernate Cache, MyBatis Cache, Quarkus Cache, Micronaut Cache
-* [Distributed Java objects](data-and-services/objects.md)  
+* [Distributed Java objects](https://redisson.org/docs/data-and-services/objects)  
     Object holder, JSON holder, Binary stream holder, Geospatial holder, BitSet, PublishSubscribe, Bloom filter, HyperLogLog
-* [Distributed Java counters](data-and-services/counters.md)  
+* [Distributed Java counters](https://redisson.org/docs/data-and-services/counters)  
     AtomicLong, AtomicDouble, LongAdder, DoubleAdder
-* [Distributed Java collections](data-and-services/collections.md)  
+* [Distributed Java collections](https://redisson.org/docs/data-and-services/collections)  
     JSON Store, Map, Multimap, Set, List, SortedSet, ScoredSortedSet, LexSortedSet, Queue, Deque, Blocking Queue, Bounded Blocking Queue, Blocking Deque, Delayed Queue, Priority Queue, Priority Deque
-* [Distributed Java locks and synchronizers](data-and-services/locks-and-synchronizers.md)  
+* [Distributed Java locks and synchronizers](https://redisson.org/docs/data-and-services/locks-and-synchronizers)  
     Lock, FairLock, MultiLock, RedLock, ReadWriteLock, Semaphore, PermitExpirableSemaphore, CountDownLatch
-* [Distributed services](data-and-services/services.md)  
+* [Distributed services](https://redisson.org/docs/data-and-services/services)  
     Remote service, Live Object service, Executor service, Scheduler service, MapReduce service
-* [Microservices integration](microservices-integration.md)  
+* [Microservices integration](https://redisson.org/docs/microservices-integration)  
     Helidon, Micronaut, Quarkus
-* [Integration with Spring framework](integration-with-spring.md)  
+* [Integration with Spring framework](https://redisson.org/docs/integration-with-spring)  
     Spring Boot Starter, Spring Cache, Spring Session, Spring Transaction Manager, Spring Cloud Stream, Spring Data Redis
-* [Web Session Management](web-session-management.md)  
+* [Web Session Management](https://redisson.org/docs/web-session-management)  
     Apache Tomcat Session, Spring Session, Micronaut Session
-* [Transactions API](transactions.md)
-* [Redis pipelining](pipelining.md) (command batches)
+* [Transactions API](https://redisson.org/docs/transactions)
+* [Redis pipelining](https://redisson.org/docs/pipelining) (command batches)
 * Supports many popular codecs ([Kryo](https://github.com/EsotericSoftware/kryo), [Jackson JSON](https://github.com/FasterXML/jackson), [Avro](http://avro.apache.org/), [Smile](http://wiki.fasterxml.com/SmileFormatSpec), [CBOR](http://cbor.io/), [MsgPack](http://msgpack.org/), [Amazon Ion](https://amzn.github.io/ion-docs/), [LZ4](https://github.com/jpountz/lz4-java), [Snappy](https://github.com/xerial/snappy-java), [Protobuf](https://github.com/protocolbuffers/protobuf) and JDK Serialization)
 * 2000+ unit tests  
 
