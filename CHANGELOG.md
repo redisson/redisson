@@ -3,6 +3,27 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
+### 02-Oct-2024 - 3.37.0 released
+
+Feature - `findCommon()` and `findCommonLength()` methods added to `RBucket` object  
+Feature - `RMapCache.computeIfAbsent()` method with TTL parameter added (thanks to @lyrric)  
+Feature - Apache Tomcat `RedissonSessionManager.setConfig()` method added (thanks to @jglapa)  
+Feature - `LocalCachedMapOptions.useObjectAsCacheKey()` setting added (thanks to @lehuuthanh5)  
+Feature - `trySetRate()` and `setRate()` methods with TTL parameter added to `RRateLimiter` object  
+Feature - `RKeys.getKeys()` method with type parameter added  
+
+Improvement - `RRemoteService` method calls optimization  
+
+Fixed - Spring Data Redis method `RedisSetCommands.isMember()` doesn't work  
+Fixed - Spring Data Redis `xcaim()` and `xClaimJustId()` methods don't use getMinIdleTime() parameter (thanks to @jinia91)  
+Fixed - `retainAll()` and `containsAll()` methods of `RSet` object throw "too many results to unpack" error  
+Fixed - `ServiceManager.execute()` method may hang in case of exception  
+Fixed - `RedissonNode.shutdown()` method doesn't stop executors  
+Fixed - listeners reattach process should be stopped on Redisson shutdown  
+Fixed - `BiHashMap` usage removed  
+Fixed - 100% CPU usage by CommandsQueue in rare cases  
+Fixed - `ProtobufCodec` doesn't work with `CompositeCodec`  
+
 ### 09-Sep-2024 - 3.36.0 released
 
 Feature - `Kryo5Codec` `useReferences` setting added  
