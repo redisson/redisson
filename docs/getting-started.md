@@ -1,9 +1,5 @@
 **1. Add dependency**
 
-``` python
-import tensorflow as tf
-```
-
 Maven  
 
 ```xml
@@ -28,54 +24,54 @@ libraryDependencies += "org.redisson" % "redisson" % "xVERSIONx"
 
 **2. Start development**
 
-```java
-// 1. Create config object
-Config config = new Config();
-config.useClusterServers()
-       // use "rediss://" for SSL connection
-      .addNodeAddress("redis://127.0.0.1:7181");
+1. Create config object
+   ```java
+   Config config = new Config();
+   config.useClusterServers()
+          // use "rediss://" for SSL connection
+         .addNodeAddress("redis://127.0.0.1:7181");
 
-// or read config from file
-config = Config.fromYAML(new File("config-file.yaml")); 
-```
+   // or read config from file
+   config = Config.fromYAML(new File("config-file.yaml")); 
+   ```
 
-```java
-// 2. Create Redisson instance
+2. Create Redisson instance
+   ```java
+   // Sync and Async API
+   RedissonClient redisson = Redisson.create(config);
 
-// Sync and Async API
-RedissonClient redisson = Redisson.create(config);
+   // Reactive API
+   RedissonReactiveClient redissonReactive = redisson.reactive();
 
-// Reactive API
-RedissonReactiveClient redissonReactive = redisson.reactive();
+   // RxJava3 API
+   RedissonRxClient redissonRx = redisson.rxJava();
+   ```
 
-// RxJava3 API
-RedissonRxClient redissonRx = redisson.rxJava();
-```
+3. Get Redis or Valkey based object or service
+   ```java
+   // java.util.concurrent.ConcurrentMap
 
-```java
-// 3. Get Redis or Valkey based implementation of java.util.concurrent.ConcurrentMap
-RMap<MyKey, MyValue> map = redisson.getMap("myMap");
+   RMap<MyKey, MyValue> map = redisson.getMap("myMap");
 
-RMapReactive<MyKey, MyValue> mapReactive = redissonReactive.getMap("myMap");
+   RMapReactive<MyKey, MyValue> mapReactive = redissonReactive.getMap("myMap");
 
-RMapRx<MyKey, MyValue> mapRx = redissonRx.getMap("myMap");
-```
+   RMapRx<MyKey, MyValue> mapRx = redissonRx.getMap("myMap");
 
-```java
-// 4. Get Redis or Valkey based implementation of java.util.concurrent.locks.Lock
-RLock lock = redisson.getLock("myLock");
+   // java.util.concurrent.locks.Lock
 
-RLockReactive lockReactive = redissonReactive.getLock("myLock");
+   RLock lock = redisson.getLock("myLock");
 
-RLockRx lockRx = redissonRx.getLock("myLock");
-```
+   RLockReactive lockReactive = redissonReactive.getLock("myLock");
 
-```java
-// 4. Get Redis or Valkey based implementation of java.util.concurrent.ExecutorService
-RExecutorService executor = redisson.getExecutorService("myExecutorService");
+   RLockRx lockRx = redissonRx.getLock("myLock");
 
-// over 50 Redis or Valkey based Java objects and services ...
+   // java.util.concurrent.ExecutorService
 
-```
+   RExecutorService executor = redisson.getExecutorService("myExecutorService");
+
+   // over 50 Redis or Valkey based Java objects and services ...
+   ```
+
+More code examples can be found [here](https://github.com/redisson/redisson-examples).
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
