@@ -182,7 +182,7 @@ public interface RObject extends RObjectAsync {
 
     /**
      * Rename current object key to <code>newName</code>
-     * only if new key is not exists
+     * only if new key doesn't exist.
      *
      * @param newName - new name of object
      * @return <code>true</code> if object has been renamed successfully and <code>false</code> otherwise

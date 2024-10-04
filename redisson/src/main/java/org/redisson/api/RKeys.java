@@ -144,7 +144,7 @@ public interface RKeys extends RKeysAsync {
     long touch(String... names);
     
     /**
-     * Checks if provided keys exist
+     * Returns amount of existing keys
      * 
      * @param names of keys
      * @return amount of existing keys
