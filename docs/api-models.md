@@ -35,7 +35,11 @@ future.thenAccept(res -> {
 });
 
 ```
-Avoid to use blocking methods in future listeners. Listeners executed by netty-threads and delays in listeners may cause errors in Redis or Valkey request/response processing. Use follow methods to execute blocking methods in listeners:
+
+!!! note
+    Avoid using blocking methods in RFuture listeners. Listeners executed by netty-threads and delays in listeners may cause errors in Redis or Valkey request/response processing. 
+
+Use the following methods to execute blocking methods in listeners:
 
 ```java
 future.whenCompleteAsync((res, exception) -> {
@@ -105,17 +109,21 @@ Settings above can be overridden per Redisson object instance. These settings ap
 
 Here is an example with `RBucket` object:
 ```java
-RedissonClient client = Redisson.create(config);
-RBucket<MyObject> bucket = client.getBucket('myObject');
+Config config = new Config();
+config.useSingleServer()
+        .setRetryAttempts(2)
+        .setRetryInterval(1800)
+        .setTimeout(5000)
+        .setAddress("redis://127.0.0.1:6789");
 
-// sync way
-bucket.get();
-// async way
-RFuture<MyObject> result = bucket.getAsync();
+
+RedissonClient client = Redisson.create(config);
+
+// instance uses global retryInterval and timeout parameters
+RBucket<MyObject> bucket = client.getBucket('myObject');
 
 // instance with overridden retryInterval and timeout parameters
 RBucket<MyObject> bucket = client.getBucket(PlainOptions.name('myObject')
                                                         .timeout(Duration.ofSeconds(3))
                                                         .retryInterval(Duration.ofSeconds(5)));
-
 ```

@@ -57,6 +57,11 @@ libraryDependencies += "org.redisson" % "redisson" % "xVERSIONx"
 
    RMapRx<MyKey, MyValue> mapRx = redissonRx.getMap("myMap");
 
+   // client side caching
+
+   RLocalCachedMap<MyKey, MyValue> map = redisson.getLocalCachedMap(LocalCachedMapOptions.<MyKey, MyValue>name("myMap"));
+
+
    // java.util.concurrent.locks.Lock
 
    RLock lock = redisson.getLock("myLock");
@@ -65,9 +70,11 @@ libraryDependencies += "org.redisson" % "redisson" % "xVERSIONx"
 
    RLockRx lockRx = redissonRx.getLock("myLock");
 
+
    // java.util.concurrent.ExecutorService
 
    RExecutorService executor = redisson.getExecutorService("myExecutorService");
+
 
    // over 50 Redis or Valkey based Java objects and services ...
    ```
