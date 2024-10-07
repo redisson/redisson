@@ -77,21 +77,32 @@ public class IndexInfoDecoder implements MultiDecoder<Object> {
 
     private Long toLong(Map<String, Object> result, String prop) {
         Object val = result.getOrDefault(prop, "nan");
-        if (val.toString().contains("nan")) {
+        String valstring = val.toString();
+        if (valstring.contains("nan") || valstring.contains("inf")) {
             return 0L;
         }
+
         if (val instanceof Double) {
             Double d = (Double) val;
             return d.longValue();
         }
-        return Long.valueOf(val.toString());
+
+        return Long.valueOf(valstring);
     }
 
     private Double toDouble(Map<String, Object> result, String prop) {
         Object val = result.getOrDefault(prop, "nan");
-        if (val.toString().contains("nan")) {
+        String valstring = val.toString();
+        if (valstring.contains("nan")) {
             return 0D;
+        } else if (valstring.contains("inf")) {
+            if (valstring.contains("-")) {
+                return Double.NEGATIVE_INFINITY;
+            } else {
+                return Double.POSITIVE_INFINITY;
+            }
         }
-        return Double.valueOf(val.toString());
+
+        return Double.valueOf(valstring);
     }
 }
