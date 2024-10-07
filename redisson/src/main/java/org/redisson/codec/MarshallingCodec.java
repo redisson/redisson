@@ -195,7 +195,6 @@ public class MarshallingCodec extends BaseCodec {
         this(Protocol.RIVER, null);
         configuration.setClassResolver(new SimpleClassResolver(classLoader));
         this.classLoader = classLoader;
-        warmup();
     }
     
     public MarshallingCodec(ClassLoader classLoader, MarshallingCodec codec) {
@@ -213,7 +212,6 @@ public class MarshallingCodec extends BaseCodec {
         config.setVersion(codec.configuration.getVersion());
         this.configuration = config;
         this.classLoader = classLoader;
-        warmup();
     }
     
     public MarshallingCodec(Protocol protocol, MarshallingConfiguration configuration) {
@@ -225,25 +223,9 @@ public class MarshallingCodec extends BaseCodec {
             configuration = createConfig();
         }
         this.configuration = configuration;
-        warmup();
     }
 
     private static boolean warmedup = false;
-
-    private void warmup() {
-        if (warmedup) {
-            return;
-        }
-        warmedup = true;
-
-        try {
-            ByteBuf d = getValueEncoder().encode("testValue");
-            getValueDecoder().decode(d, null);
-            d.release();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     @Override
     public Decoder<Object> getValueDecoder() {
