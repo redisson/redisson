@@ -259,7 +259,7 @@
         <dependency>
             <groupId>com.esotericsoftware</groupId>
             <artifactId>kryo</artifactId>
-            <version>5.6.0</version>
+            <version>5.6.1</version>
         </dependency>
         <dependency>
           <groupId>org.apache.fury</groupId>
