@@ -553,4 +553,23 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
         return null;
     }
 
+    @Override
+    public V computeIfPresent(K key, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
+        CachedValue<K, V> v = map.computeIfPresent(key, (k, e) -> {
+            if (!isValueExpired(e)) {
+                V value = remappingFunction.apply(k, e.getValue());
+                if (value == null) {
+                    return null;
+                }
+                CachedValue<K, V> entry = create(key, value, timeToLiveInMillis, maxIdleInMillis);
+                return entry;
+            }
+            return null;
+        });
+        if (v != null) {
+            return v.getValue();
+        }
+        return null;
+    }
+
 }
