@@ -46,7 +46,7 @@ public class ReactiveProxyBuilder {
                 }
                 return result;
             }
-        }, instance, implementation, clazz, commandExecutor.getServiceManager());
+        }, instance, implementation, clazz);
     }
     
 }
