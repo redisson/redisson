@@ -1189,6 +1189,11 @@ public final class Redisson implements RedissonClient {
     }
 
     @Override
+    public RClientSideCaching getClientSideCaching(ClientSideCachingOptions options) {
+        return new RedissonClientSideCaching(commandExecutor, options);
+    }
+
+    @Override
     public void shutdown() {
         writeBehindService.stop();
         connectionManager.shutdown();

@@ -263,6 +263,33 @@ public class PublishSubscribeService {
         return registerClientTrackingListener(commandExecutor, ffs, listenerId, null);
     }
 
+    public CompletableFuture<Integer> subscribe(CommandAsyncExecutor commandExecutor, TrackingListener listener) {
+        int listenerId = System.identityHashCode(listener);
+
+        List<CompletableFuture<PubSubConnectionEntry>> ffs = new ArrayList<>();
+        for (MasterSlaveEntry entry : connectionManager.getEntrySet()) {
+            RedisPubSubListener<Object> entryListener = new RedisPubSubListener<Object>() {
+                @Override
+                public void onMessage(CharSequence channel, Object msg) {
+                    if (msg != null
+                            && channel.equals(ChannelName.TRACKING.toString())) {
+                        listener.onChange((String) msg);
+                    }
+                }
+            };
+            int entryListenerId = System.identityHashCode(entryListener);
+
+            Collection<Integer> listeners = flushListeners.computeIfAbsent(listenerId, k -> new HashSet<>());
+            listeners.add(entryListenerId);
+
+            CompletableFuture<PubSubConnectionEntry> future = subscribe(PubSubType.SUBSCRIBE, StringCodec.INSTANCE,
+                    ChannelName.TRACKING, entry, entry.getEntry(), entryListener);
+            ffs.add(future);
+        }
+
+        return registerClientTrackingListener(commandExecutor, ffs, listenerId, null);
+    }
+
     private CompletableFuture<Integer> registerClientTrackingListener(CommandAsyncExecutor commandExecutor,
                                                                       List<CompletableFuture<PubSubConnectionEntry>> ffs,
                                                                       int listenerId,
