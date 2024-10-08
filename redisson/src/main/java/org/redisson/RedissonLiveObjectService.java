@@ -97,11 +97,15 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     }
 
     private Class<?> resolveEntity(String name) {
+        String className = name.substring(name.lastIndexOf(":")+1);
         try {
-            String className = name.substring(name.lastIndexOf(":")+1);
             return Class.forName(className);
         } catch (ClassNotFoundException e) {
-            return null;
+            return classCache.keySet()
+                             .stream()
+                             .filter(c -> c.getName().equals(className))
+                             .findAny()
+                             .orElse(null);
         }
     }
 
