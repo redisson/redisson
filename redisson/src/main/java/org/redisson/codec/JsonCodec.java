@@ -20,7 +20,6 @@ package org.redisson.codec;
  *
  * @author Nikita Koksharov
  *
- * @param <T> object type
  */
 public interface JsonCodec extends ObjectCodec {
 
