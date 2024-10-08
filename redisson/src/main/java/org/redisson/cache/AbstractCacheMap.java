@@ -542,14 +542,15 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
 
     @Override
     public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) {
-        AtomicReference<V> result = new AtomicReference<>();
-        map.computeIfAbsent(key, k -> {
+        CachedValue<K, V> v = map.computeIfAbsent(key, k -> {
             V value = mappingFunction.apply(k);
-            result.set(value);
             CachedValue<K, V> entry = create(key, value, timeToLiveInMillis, maxIdleInMillis);
             return entry;
         });
-        return result.get();
+        if (v != null) {
+            return v.getValue();
+        }
+        return null;
     }
 
 }
