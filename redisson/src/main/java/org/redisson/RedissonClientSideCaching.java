@@ -74,7 +74,7 @@ public final class RedissonClientSideCaching implements RClientSideCaching {
                         }
 
                         for (CacheKeyParams key : keys) {
-                            cache.keySet().remove(key);
+                            cache.remove(key);
                         }
                     }
                 });
