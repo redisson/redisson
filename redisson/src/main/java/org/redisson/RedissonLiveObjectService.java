@@ -79,13 +79,19 @@ public class RedissonLiveObjectService implements RLiveObjectService {
             String prefix = pp.replace(":redisson_live_object:*", "");
             RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, pp);
             topic.addListenerAsync(String.class, (pattern, channel, msg) -> {
-                if (msg.equals("expired")) {
-                    String name = channel.toString().replace(prefix, "");
-                    Class<?> entity = resolveEntity(name);
-                    NamingScheme scheme = commandExecutor.getObjectBuilder().getNamingScheme(entity);
-                    Object id = scheme.resolveId(name);
-                    deleteExpired(id, entity);
+                if (!msg.equals("expired")) {
+                    return;
                 }
+
+                String name = channel.toString().replace(prefix, "");
+                Class<?> entity = resolveEntity(name);
+                if (entity == null) {
+                    return;
+                }
+
+                NamingScheme scheme = commandExecutor.getObjectBuilder().getNamingScheme(entity);
+                Object id = scheme.resolveId(name);
+                deleteExpired(id, entity);
             });
         }
     }
@@ -95,7 +101,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
             String className = name.substring(name.lastIndexOf(":")+1);
             return Class.forName(className);
         } catch (ClassNotFoundException e) {
-            throw new IllegalStateException("Unable to resolve entity from [" + name + "]", e);
+            return null;
         }
     }
 
