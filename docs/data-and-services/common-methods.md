@@ -130,6 +130,9 @@ int id = keys.addListener((DeletedObjectListener) name -> {
 
 });
 
+
+// Flush listener is executed on flushall/flushdb commands execution.
+
 int id = keys.addListener((FlushListener) address -> {
 
    //...
