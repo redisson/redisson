@@ -27,7 +27,6 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.command.BatchService;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.config.Protocol;
 import org.redisson.connection.ServiceManager;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.Hash;

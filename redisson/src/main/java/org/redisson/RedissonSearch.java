@@ -32,7 +32,6 @@ import org.redisson.client.protocol.convertor.EmptyMapConvertor;
 import org.redisson.client.protocol.decoder.*;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.config.Protocol;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
