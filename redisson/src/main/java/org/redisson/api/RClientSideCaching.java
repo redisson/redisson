@@ -92,6 +92,11 @@ public interface RClientSideCaching extends RDestroyable {
 
     /**
      * Returns map instance by name.
+     * <p>
+     * <strong>
+     * NOTE: client side caching feature invalidates whole Map per entry change which is ineffective.
+     * Use local cached <a href="https://redisson.org/docs/data-and-services/collections/#eviction-local-cache-and-data-partitioning">Map</a>, <a href="https://redisson.org/docs/data-and-services/collections/#local-cache">JSON Store</a> instead.
+     * </strong>
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -103,6 +108,11 @@ public interface RClientSideCaching extends RDestroyable {
     /**
      * Returns map instance by name
      * using provided codec for both map keys and values.
+     * <p>
+     * <strong>
+     * NOTE: client side caching feature invalidates whole Map per entry change which is ineffective.
+     * Use local cached <a href="https://redisson.org/docs/data-and-services/collections/#eviction-local-cache-and-data-partitioning">Map</a>, <a href="https://redisson.org/docs/data-and-services/collections/#local-cache">JSON Store</a> instead.
+     * </strong>
      *
      * @param <K> type of key
      * @param <V> type of value

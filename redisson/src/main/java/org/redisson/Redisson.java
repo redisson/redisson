@@ -1190,6 +1190,12 @@ public final class Redisson implements RedissonClient {
 
     @Override
     public RClientSideCaching getClientSideCaching(ClientSideCachingOptions options) {
+        if (!getServiceManager().isResp3()) {
+            throw new IllegalStateException("'protocol' config setting should be set to RESP3 value. "
+                    + System.lineSeparator() + System.lineSeparator() +
+                    "NOTE: client side caching feature invalidates whole Map per entry change which is ineffective. " +
+                    "Use local cached https://redisson.org/docs/data-and-services/collections/#eviction-local-cache-and-data-partitioning or https://redisson.org/docs/data-and-services/collections/#local-cache instead.");
+        }
         return new RedissonClientSideCaching(commandExecutor, options);
     }
 
