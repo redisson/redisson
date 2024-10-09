@@ -35,12 +35,18 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ *
+ * @author Nikita Koksharov
+ *
+ */
 public final class RedissonClientSideCaching implements RClientSideCaching {
 
     Map<CacheKeyParams, Object> cache;
     final Map<String, Set<CacheKeyParams>> name2cacheKey = new ConcurrentHashMap<>();
 
     final CommandAsyncExecutor commandExecutor;
+    final int listenerId;
 
     RedissonClientSideCaching(CommandAsyncExecutor commandExecutor, ClientSideCachingOptions options) {
         ClientSideCachingParams params = (ClientSideCachingParams) options;
@@ -78,7 +84,7 @@ public final class RedissonClientSideCaching implements RClientSideCaching {
                         }
                     }
                 });
-        r.join();
+        listenerId = r.join();
     }
 
     public <T> T create(Object instance, Class<T> clazz) {
@@ -220,5 +226,11 @@ public final class RedissonClientSideCaching implements RClientSideCaching {
     @Override
     public <V> RGeo<V> getGeo(String name, Codec codec) {
         return new RedissonGeo<>(codec, commandExecutor, name, null);
+    }
+
+    @Override
+    public void destroy() {
+        PublishSubscribeService subscribeService = commandExecutor.getConnectionManager().getSubscribeService();
+        commandExecutor.get(subscribeService.removeFlushListenerAsync(listenerId));
     }
 }

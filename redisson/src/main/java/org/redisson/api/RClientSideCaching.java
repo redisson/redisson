@@ -17,7 +17,12 @@ package org.redisson.api;
 
 import org.redisson.client.codec.Codec;
 
-public interface RClientSideCaching {
+/**
+ *
+ * @author Nikita Koksharov
+ *
+ */
+public interface RClientSideCaching extends RDestroyable {
 
     /**
      * Returns object holder instance by name.
