@@ -500,7 +500,7 @@ public class RedissonSearch implements RSearch {
         }
 
         RedisStrictCommand<SearchResult> command;
-        if (isResp3()) {
+        if (commandExecutor.getServiceManager().isResp3()) {
             command = new RedisStrictCommand<>("FT.SEARCH",
                     new ListMultiDecoder2(new SearchResultDecoderV2(),
                             new ObjectListReplayDecoder(),
@@ -514,10 +514,6 @@ public class RedissonSearch implements RSearch {
         }
 
         return commandExecutor.writeAsync(indexName, StringCodec.INSTANCE, command, args.toArray());
-    }
-
-    private boolean isResp3() {
-        return commandExecutor.getServiceManager().getCfg().getProtocol() == Protocol.RESP3;
     }
 
     private String value(double score, boolean exclusive) {
@@ -639,7 +635,7 @@ public class RedissonSearch implements RSearch {
                                                  .mapToInt(g -> g.getReducers().size())
                                                  .sum();
         RedisStrictCommand<AggregationResult> command;
-        if (isResp3()) {
+        if (commandExecutor.getServiceManager().isResp3()) {
             if (options.isWithCursor()) {
                 command = new RedisStrictCommand<>("FT.AGGREGATE",
                         new ListMultiDecoder2(new AggregationCursorResultDecoderV2(),
@@ -766,7 +762,7 @@ public class RedissonSearch implements RSearch {
     @Override
     public RFuture<AggregationResult> readCursorAsync(String indexName, long cursorId) {
         RedisStrictCommand command;
-        if (isResp3()) {
+        if (commandExecutor.getServiceManager().isResp3()) {
             command = new RedisStrictCommand<>("FT.CURSOR", "READ",
                     new ListMultiDecoder2(new AggregationCursorResultDecoderV2(),
                             new ObjectListReplayDecoder(),
@@ -897,7 +893,7 @@ public class RedissonSearch implements RSearch {
         }
 
         RedisCommand<Map<String, Map<String, Object>>> command = RedisCommands.FT_SPELLCHECK;
-        if (isResp3()) {
+        if (commandExecutor.getServiceManager().isResp3()) {
             command = new RedisCommand<>("FT.SPELLCHECK",
                     new ListMultiDecoder2(
                             new ListObjectDecoder(1),
