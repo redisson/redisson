@@ -33,7 +33,6 @@ import org.redisson.client.protocol.decoder.StringListListReplayDecoder;
 import org.redisson.codec.JsonCodec;
 import org.redisson.codec.JsonCodecWrapper;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.config.Protocol;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -94,7 +93,7 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
 
     @Override
     public RFuture<V> getAsync() {
-        if (getServiceManager().getCfg().getProtocol() == Protocol.RESP3) {
+        if (getServiceManager().isResp3()) {
             return commandExecutor.readAsync(getRawName(), codec, RedisCommands.JSON_GET, getRawName(), ".");
         }
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.JSON_GET, getRawName());
@@ -107,7 +106,7 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
 
     @Override
     public <T> RFuture<T> getAsync(JsonCodec codec, String... paths) {
-        if (getServiceManager().getCfg().getProtocol() == Protocol.RESP3) {
+        if (getServiceManager().isResp3()) {
             if (paths.length == 0) {
                 paths = new String[]{"."};
             }
@@ -778,7 +777,7 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
     @Override
     public <T extends Number> RFuture<T> incrementAndGetAsync(String path, T delta) {
         RedisCommand command;
-        if (getServiceManager().getCfg().getProtocol() == Protocol.RESP3) {
+        if (getServiceManager().isResp3()) {
             command = new RedisCommand<>("JSON.NUMINCRBY", new ListFirstObjectDecoder(), new LongNumberConvertor(delta.getClass()));
         } else {
             command = new RedisCommand<>("JSON.NUMINCRBY", new NumberConvertor(delta.getClass()));
@@ -807,7 +806,7 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
     @Override
     public RFuture<Long> countKeysAsync() {
         RedisStrictCommand command = RedisCommands.JSON_OBJLEN;
-        if (getServiceManager().getCfg().getProtocol() == Protocol.RESP3) {
+        if (getServiceManager().isResp3()) {
             command = new RedisStrictCommand("JSON.OBJLEN", new ListFirstObjectDecoder());
         }
 
@@ -842,7 +841,7 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
     @Override
     public RFuture<List<String>> getKeysAsync() {
         RedisCommand command = RedisCommands.JSON_OBJKEYS;
-        if (getServiceManager().getCfg().getProtocol() == Protocol.RESP3) {
+        if (getServiceManager().isResp3()) {
             command = new RedisCommand("JSON.OBJKEYS",
                     new ListMultiDecoder2(new ListFirstObjectDecoder(), new StringListListReplayDecoder()));
         }
@@ -897,7 +896,7 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
     @Override
     public RFuture<JsonType> getTypeAsync() {
         RedisCommand command = RedisCommands.JSON_TYPE;
-        if (getServiceManager().getCfg().getProtocol() == Protocol.RESP3) {
+        if (getServiceManager().isResp3()) {
             command = new RedisCommand("JSON.TYPE", new ListFirstObjectDecoder(), new JsonTypeConvertor());
         }
 
@@ -912,7 +911,7 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
     @Override
     public RFuture<JsonType> getTypeAsync(String path) {
         RedisCommand command = RedisCommands.JSON_TYPE;
-        if (getServiceManager().getCfg().getProtocol() == Protocol.RESP3) {
+        if (getServiceManager().isResp3()) {
             command = new RedisCommand("JSON.TYPE", new ListFirstObjectDecoder(), new JsonTypeConvertor());
         }
 
