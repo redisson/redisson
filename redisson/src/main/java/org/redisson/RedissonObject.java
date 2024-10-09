@@ -651,7 +651,7 @@ public abstract class RedissonObject implements RObject {
     }
 
     protected final RFuture<Integer> addTrackingListenerAsync(TrackingListener listener) {
-        if (getServiceManager().getCfg().getProtocol() != Protocol.RESP3) {
+        if (!getServiceManager().isResp3()) {
             throw new IllegalStateException("`protocol` config setting should be set to RESP3 value");
         }
 
