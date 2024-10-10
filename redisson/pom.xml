@@ -329,12 +329,12 @@
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
-            <version>1.14.17</version>
+            <version>1.15.3</version>
         </dependency>
         <dependency>
             <groupId>org.jodd</groupId>
             <artifactId>jodd-util</artifactId>
-            <version>6.2.2</version>
+            <version>6.3.0</version>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
