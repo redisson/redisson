@@ -247,4 +247,5 @@ testMap:
     maxIdleInMillis: 0
 ```
 
-_Please note: `localCacheOptions` settings are available for `org.redisson.spring.cache.RedissonSpringLocalCachedCacheManager` and `org.redisson.spring.cache.RedissonSpringClusteredLocalCachedCacheManager` classes only._
+!!! note
+    `localCacheOptions` settings are available for `RedissonSpringLocalCachedCacheManager`, `RedissonClusteredSpringLocalCachedCacheManager`, `RedissonSpringLocalCachedCacheV2Manager` and `RedissonSpringLocalCachedCacheNativeManager` classes only.
