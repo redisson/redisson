@@ -50,7 +50,7 @@ public class RxProxyBuilder {
                 }
                 return flowable.singleElement();
             }
-        }, instance, implementation, clazz);
+        }, instance, implementation, clazz, commandExecutor.getServiceManager());
     }
     
 }

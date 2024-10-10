@@ -16,6 +16,7 @@
 package org.redisson.misc;
 
 import org.redisson.api.RFuture;
+import org.redisson.connection.ServiceManager;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -68,7 +69,7 @@ public class ProxyBuilder {
 
     private static final ConcurrentMap<CacheKey, Method> METHODS_MAPPING = new ConcurrentHashMap<CacheKey, Method>();
 
-    public static <T> T create(Callback commandExecutor, Object instance, Object implementation, Class<T> clazz) {
+    public static <T> T create(Callback commandExecutor, Object instance, Object implementation, Class<T> clazz, ServiceManager serviceManager) {
         InvocationHandler handler = new InvocationHandler() {
             @Override
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
