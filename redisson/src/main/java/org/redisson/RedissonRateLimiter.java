@@ -277,6 +277,9 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
 
     @Override
     public RFuture<Boolean> trySetRateAsync(RateType type, long rate, Duration rateInterval, Duration timeToLive) {
+        if (timeToLive.toMillis() < rateInterval.toMillis()) {
+            throw new IllegalArgumentException("The parameter timeToLive should be greater than or equal to rateInterval");
+        }
         return commandExecutor.evalWriteNoRetryAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                     "redis.call('hsetnx', KEYS[1], 'rate', ARGV[1]);"
                         + "redis.call('hsetnx', KEYS[1], 'interval', ARGV[2]);"
