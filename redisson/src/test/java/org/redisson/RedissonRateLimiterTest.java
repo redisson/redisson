@@ -2,10 +2,8 @@ package org.redisson;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import org.redisson.api.RRateLimiter;
-import org.redisson.api.RScoredSortedSet;
-import org.redisson.api.RateIntervalUnit;
-import org.redisson.api.RateType;
+import org.redisson.api.*;
+import org.redisson.config.Config;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -17,6 +15,21 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonRateLimiterTest extends RedisDockerTest {
+
+    @Test
+    public void testKeepAliveTime() throws InterruptedException {
+        RRateLimiter limiter = redisson.getRateLimiter("testKeepAliveTime");
+        limiter.delete();
+        limiter.trySetRate(RateType.OVERALL, 1, Duration.ofSeconds(1), Duration.ofSeconds(1));
+        Thread.sleep(Duration.ofMillis(1100));
+        assertThat(limiter.isExists()).isFalse();
+        limiter.trySetRate(RateType.OVERALL, 10, Duration.ofSeconds(2), Duration.ofSeconds(2));
+        Thread.sleep(Duration.ofSeconds(1));
+        assertThat(limiter.tryAcquire()).isTrue();
+        assertThat(limiter.remainTimeToLive()).isGreaterThan(1500);
+
+
+    }
 
     @Test
     public void testExpire2() throws InterruptedException {
