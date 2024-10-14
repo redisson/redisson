@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Context>
+
+	<Manager className="org.redisson.tomcat.RedissonSessionManager"
+	         configPath="${catalina.base}/src/test/webapp/WEB-INF/redisson.yaml"
+			 readMode="MEMORY"
+			 updateMode="AFTER_REQUEST"
+			 broadcastSessionEvents="true"/>
+
+</Context>
