@@ -18,6 +18,7 @@
         <module>redisson-tomcat-8</module>
         <module>redisson-tomcat-9</module>
         <module>redisson-tomcat-10</module>
+        <module>redisson-tomcat-11</module>
     </modules>
 
     <build>
