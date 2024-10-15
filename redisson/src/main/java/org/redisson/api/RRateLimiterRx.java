@@ -60,11 +60,11 @@ public interface RRateLimiterRx extends RExpirableRx {
      * @param mode rate mode
      * @param rate rate
      * @param rateInterval rate time interval
-     * @param timeToLive time interval before the object will be deleted
+     * @param keepAliveTime this is the maximum time that key will wait for new acquire before delete
      * @return {@code true} if rate was set and {@code false}
      *         otherwise
      */
-    Single<Boolean> trySetRate(RateType mode, long rate, Duration rateInterval, Duration timeToLive);
+    Single<Boolean> trySetRate(RateType mode, long rate, Duration rateInterval, Duration keepAliveTime);
 
     /**
      * Use {@link #setRate(RateType, long, Duration)} instead.
@@ -95,9 +95,9 @@ public interface RRateLimiterRx extends RExpirableRx {
      * @param mode rate mode
      * @param rate rate
      * @param rateInterval rate time interval
-     * @param timeToLive time interval before the object will be deleted
+     * @param keepAliveTime this is the maximum time that key will wait for new acquire before delete
      */
-    Single<Void> setRate(RateType mode, long rate, Duration rateInterval, Duration timeToLive);
+    Single<Void> setRate(RateType mode, long rate, Duration rateInterval, Duration keepAliveTime);
 
     /**
      * Acquires a permit only if one is available at the

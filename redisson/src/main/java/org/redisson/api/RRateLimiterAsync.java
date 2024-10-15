@@ -57,11 +57,11 @@ public interface RRateLimiterAsync extends RExpirableAsync {
      * @param mode rate mode
      * @param rate rate
      * @param rateInterval rate time interval
-     * @param timeToLive time interval before the object will be deleted
+     * @param keepAliveTime this is the maximum time that key will wait for new acquire before delete
      * @return {@code true} if rate was set and {@code false}
      *         otherwise
      */
-    RFuture<Boolean> trySetRateAsync(RateType mode, long rate, Duration rateInterval, Duration timeToLive);
+    RFuture<Boolean> trySetRateAsync(RateType mode, long rate, Duration rateInterval, Duration keepAliveTime);
 
     /**
      * Acquires a permit only if one is available at the
@@ -220,9 +220,9 @@ public interface RRateLimiterAsync extends RExpirableAsync {
      * @param mode rate mode
      * @param rate rate
      * @param rateInterval rate time interval
-     * @param timeToLive time interval before the object will be deleted
+     * @param keepAliveTime this is the maximum time that key will wait for new acquire before delete
      */
-    RFuture<Void> setRateAsync(RateType mode, long rate, Duration rateInterval, Duration timeToLive);
+    RFuture<Void> setRateAsync(RateType mode, long rate, Duration rateInterval, Duration keepAliveTime);
 
     /**
      * Returns current configuration of this RateLimiter object.
