@@ -31,6 +31,7 @@ import org.redisson.rx.*;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collection;
 
 /**
  * Main infrastructure class allows to get access
@@ -253,6 +254,11 @@ public class RedissonRx implements RedissonRxClient {
                             .map(l -> new RedissonLock(commandExecutor, l.getName()))
                             .toArray(RLock[]::new);
         return RxProxyBuilder.create(commandExecutor, new RedissonMultiLock(ls), RLockRx.class);
+    }
+
+    @Override
+    public RLockRx getMultiLock(String group, Collection<Object> values) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonFasterMultiLock(commandExecutor, group, values), RLockRx.class);
     }
 
     @Override

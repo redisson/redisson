@@ -20,6 +20,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.codec.JsonCodec;
 import org.redisson.config.Config;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -340,7 +341,14 @@ public interface RedissonReactiveClient {
      * @return MultiLock object
      */
     RLockReactive getMultiLock(RLockReactive... locks);
-
+    /**
+     * Returns RedissonFasterMultiLock instance associated with specified <code>group</code> and <code>values</code>
+     *
+     * @param group the group of values
+     * @param values lock values
+     * @return BatchLock object
+     */
+    RLockReactive getMultiLock(String group, Collection<Object> values);
     /*
      * Use getMultiLock(RLockReactive) method instead
      */
