@@ -2,7 +2,7 @@
 
 Redisson implements Redis or Valkey based Tomcat Session Manager. It stores session of [Apache Tomcat](http://tomcat.apache.org) in Redis or Valkey and allows to distribute requests across a cluster of Tomcat servers. Implements non-sticky session management backed by Redis.
 
-Supports Apache Tomcat 7.x, 8.x, 9.x, 10.x
+Supports Apache Tomcat 7.x up to 11.x
 
 Usage:
 
@@ -77,6 +77,8 @@ Tomcat 8.x - [redisson-tomcat-8-3.37.0.jar](https://repo1.maven.org/maven2/org/r
 Tomcat 9.x - [redisson-tomcat-9-3.37.0.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-9/3.37.0/redisson-tomcat-9-3.37.0.jar)  
 
 Tomcat 10.x - [redisson-tomcat-10-3.37.0.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-10/3.37.0/redisson-tomcat-10-3.37.0.jar)  
+
+Tomcat 11.x - [redisson-tomcat-11-3.3x.0.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-11/3.3x.0/redisson-tomcat-11-3.3x.0.jar)  
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 

@@ -251,13 +251,16 @@ processor engine to *lower latency* mode with predefined settings set #1
 * `NORMAL` - switches command processor engine to normal mode
 
 ## Cluster mode
-Cluster mode could be used with any hosting. 
 
 Compatible with:  
 
+* [Redis Cluster](https://redis.io/docs/latest/operate/oss_and_stack/reference/cluster-spec/)
+* [Valkey Cluster](https://valkey.io/topics/cluster-spec/)
 * [AWS ElastiCache Cluster](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/WhatIs.html#WhatIs.Clusters)  
 * [Amazon MemoryDB](https://aws.amazon.com/memorydb)  
 * [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/)  
+
+For multiple Cluster deployments with data replication relationship use [Multi Cluster mode](#multi-cluster-mode).
 
 Programmatic config example:  
 ```java
@@ -874,7 +877,7 @@ transportMode: "NIO"
 
 ## Single mode
 
-Single mode could be used with any hosting. 
+Single mode can be utilized for a single instance of either a Redis or Valkey node.
 
 Compatible with: 
 
@@ -1088,6 +1091,13 @@ transportMode: "NIO"
 ```
 
 ## Sentinel mode
+
+Compatible with:  
+
+* [Redis Sentinel](https://redis.io/learn/operate/redis-at-scale/high-availability/understanding-sentinels)
+* [Valkey Sentinel](https://valkey.io/topics/sentinel/)
+
+For multiple Sentinel deployments with data replication relationship use [Multi Sentinel mode](#multi-sentinel-mode).
 
 Programmatic config example:  
 
@@ -1694,6 +1704,7 @@ transportMode: "NIO"
 Proxy mode supports single or multiple Redis or Valkey databases (including synced with active-active replication) used for read/write operations. Each Redis or Valkey hostname might be resolved to more than one IP address. 
 
 Depending on value of [proxyMode](#proxy-mode) setting there are two modes:  
+
 1. all nodes are primary and used for read/write operation with load balancer  
 2. single primary for read/write operation and the rest are idle secondary nodes  
 
