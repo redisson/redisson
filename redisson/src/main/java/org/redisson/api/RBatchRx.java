@@ -555,6 +555,21 @@ public interface RBatchRx {
     RKeysRx getKeys();
 
     /**
+     * Returns API for RediSearch module
+     *
+     * @return RSearchRx object
+     */
+    RSearchRx getSearch();
+
+    /**
+     * Returns API for RediSearch module using defined codec for attribute values.
+     *
+     * @param codec codec for entry
+     * @return RSearchRx object
+     */
+    RSearchRx getSearch(Codec codec);
+
+    /**
      * Executes all operations accumulated during Reactive methods invocations Reactivehronously.
      *
      * In cluster configurations operations grouped by slot ids

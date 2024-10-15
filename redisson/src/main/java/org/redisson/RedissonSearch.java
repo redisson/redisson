@@ -49,6 +49,11 @@ public class RedissonSearch implements RSearch {
     private final Codec codec;
     private final CommandAsyncExecutor commandExecutor;
 
+    public RedissonSearch(CommandAsyncExecutor commandExecutor) {
+        this.codec = commandExecutor.getServiceManager().getCfg().getCodec();
+        this.commandExecutor = commandExecutor;
+    }
+
     public RedissonSearch(Codec codec, CommandAsyncExecutor commandExecutor) {
         this.codec = commandExecutor.getServiceManager().getCodec(codec);
         this.commandExecutor = commandExecutor;
