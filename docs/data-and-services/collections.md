@@ -258,7 +258,7 @@ map.destroy();
 ```
 
 
-**How to load data to avoid invalidation messages traffic.**
+**How to load data and avoid invalidation messages traffic.**
 
 Code example:
 
