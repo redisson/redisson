@@ -229,6 +229,16 @@ public class RedissonBatch implements RBatch {
     }
 
     @Override
+    public RSearchAsync getSearch() {
+        return new RedissonSearch(executorService);
+    }
+
+    @Override
+    public RSearchAsync getSearch(Codec codec) {
+        return new RedissonSearch(codec, executorService);
+    }
+
+    @Override
     public <V> RSetCacheAsync<V> getSetCache(String name) {
         return new RedissonSetCache<V>(evictionScheduler, executorService, name, null);
     }

@@ -308,6 +308,16 @@ public class RedissonBatchRx implements RBatchRx {
     }
 
     @Override
+    public RSearchRx getSearch() {
+        return RxProxyBuilder.create(executorService, new RedissonSearch(executorService), RSearchRx.class);
+    }
+
+    @Override
+    public RSearchRx getSearch(Codec codec) {
+        return RxProxyBuilder.create(executorService, new RedissonSearch(codec, executorService), RSearchRx.class);
+    }
+
+    @Override
     public Maybe<BatchResult<?>> execute() {
         return commandExecutor.flowable(() -> executorService.executeAsync()).singleElement();
     }

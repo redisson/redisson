@@ -297,6 +297,16 @@ public class RedissonBatchReactive implements RBatchReactive {
     }
 
     @Override
+    public RSearchReactive getSearch() {
+        return ReactiveProxyBuilder.create(executorService, new RedissonSearch(executorService), RSearchReactive.class);
+    }
+
+    @Override
+    public RSearchReactive getSearch(Codec codec) {
+        return ReactiveProxyBuilder.create(executorService, new RedissonSearch(codec, executorService), RSearchReactive.class);
+    }
+
+    @Override
     public Mono<BatchResult<?>> execute() {
         return commandExecutor.reactive(() -> executorService.executeAsync());
     }
