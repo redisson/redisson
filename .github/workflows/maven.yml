@@ -7,24 +7,30 @@ permissions:
 
 jobs:
   build:
-
+    name: Build ${{matrix.java}}
     runs-on: ubuntu-latest
-
+    strategy: 
+      fail-fast: false
+      matrix: 
+        include:
+          - java: 17
+            exclude: -pl '!:redisson-helidon-40'
+          - java: 21
     steps:
     - uses: actions/checkout@v4
-    - name: Set up JDK 21
-      uses: actions/setup-java@v2
+    - name: Set up JDK ${{matrix.java}}
+      uses: actions/setup-java@v4
       with:
-        java-version: 21
+        java-version: ${{matrix.java}}
         distribution: temurin
 
     - name: Cache local Maven repository
       uses: actions/cache@v3
       with:
         path: ~/.m2/repository
-        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        key: ${{ runner.os }}-java-${{matrix.java}}-maven-${{ hashFiles('**/pom.xml') }}
         restore-keys: |
-          ${{ runner.os }}-maven-
+          ${{ runner.os }}-maven-java-${{matrix.java}}
 
     - name: Build with Maven
-      run: mvn -B verify --file pom.xml
+      run: mvn -B verify ${{matrix.exclude}} --file pom.xml
