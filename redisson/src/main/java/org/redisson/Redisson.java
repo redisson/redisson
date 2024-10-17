@@ -38,6 +38,7 @@ import org.redisson.redisnode.RedissonSingleNode;
 import org.redisson.transaction.RedissonTransaction;
 
 import java.time.Duration;
+import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -652,7 +653,12 @@ public final class Redisson implements RedissonClient {
     public RLock getMultiLock(RLock... locks) {
         return new RedissonMultiLock(locks);
     }
-    
+
+    @Override
+    public RLock getMultiLock(String group, Collection<Object> values) {
+        return new RedissonFasterMultiLock(commandExecutor, group, values);
+    }
+
     @Override
     public RLock getRedLock(RLock... locks) {
         return new RedissonRedLock(locks);

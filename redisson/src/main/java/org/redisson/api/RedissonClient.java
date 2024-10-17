@@ -22,6 +22,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.codec.JsonCodec;
 import org.redisson.config.Config;
 
+import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -931,7 +932,14 @@ public interface RedissonClient {
      * @return MultiLock object
      */
     RLock getMultiLock(RLock... locks);
-    
+    /**
+     * Returns RedissonFasterMultiLock instance associated with specified <code>group</code> and <code>values</code>
+     *
+     * @param group the group of values
+     * @param values lock values
+     * @return BatchLock object
+     */
+    RLock getMultiLock(String group, Collection<Object> values);
     /*
      * Use getLock() or getFencedLock() method instead.
      */

@@ -32,6 +32,7 @@ import org.redisson.reactive.*;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -254,6 +255,11 @@ public class RedissonReactive implements RedissonReactiveClient {
                             .map(l -> new RedissonLock(commandExecutor, l.getName()))
                             .toArray(RLock[]::new);
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonMultiLock(ls), RLockReactive.class);
+    }
+
+    @Override
+    public RLockReactive getMultiLock(String group, Collection<Object> values) {
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonFasterMultiLock(commandExecutor, group, values), RLockReactive.class);
     }
 
     @Override

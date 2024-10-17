@@ -555,6 +555,21 @@ public interface RBatch {
     RKeysAsync getKeys();
 
     /**
+     * Returns API for RediSearch module
+     *
+     * @return RSearchAsync object
+     */
+    RSearchAsync getSearch();
+
+    /**
+     * Returns API for RediSearch module using defined codec for attribute values.
+     *
+     * @param codec codec for entry
+     * @return RSearchAsync object
+     */
+    RSearchAsync getSearch(Codec codec);
+
+    /**
      * Executes all operations accumulated during async methods invocations.
      * <p>
      * If cluster configuration used then operations are grouped by slot ids
