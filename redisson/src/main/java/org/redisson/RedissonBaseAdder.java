@@ -49,9 +49,9 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
         super(commandExecutor, name);
 
         if (getSubscribeService().isShardingSupported()) {
-            topic = RedissonShardedTopic.createRaw(StringCodec.INSTANCE, commandExecutor, suffixName(getRawName(), "topic"));
+            topic = RedissonShardedTopic.createRaw(StringCodec.INSTANCE, commandExecutor, suffixName(getRawName(), "adder-topic"));
         } else {
-            topic = RedissonTopic.createRaw(StringCodec.INSTANCE, commandExecutor, suffixName(getRawName(), "topic"));
+            topic = RedissonTopic.createRaw(StringCodec.INSTANCE, commandExecutor, suffixName(getRawName(), "adder-topic"));
         }
 
         this.redisson = redisson;
