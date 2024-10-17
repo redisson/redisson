@@ -99,14 +99,14 @@ public class RedissonPatternTopic implements RPatternTopic {
     }
     
     @Override
-    public RFuture<Void> removeListenerAsync(int listenerId) {
-        CompletableFuture<Void> f = subscribeService.removeListenerAsync(PubSubType.PUNSUBSCRIBE, channelName, listenerId);
+    public RFuture<Void> removeListenerAsync(Integer... ids) {
+        CompletableFuture<Void> f = subscribeService.removeListenerAsync(PubSubType.PUNSUBSCRIBE, channelName, ids);
         return new CompletableFutureWrapper<>(f);
     }
     
     @Override
-    public void removeListener(int listenerId) {
-        commandExecutor.get(removeListenerAsync(listenerId).toCompletableFuture());
+    public void removeListener(Integer... ids) {
+        commandExecutor.get(removeListenerAsync(ids).toCompletableFuture());
     }
     
     @Override

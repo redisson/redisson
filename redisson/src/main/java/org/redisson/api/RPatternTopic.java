@@ -58,12 +58,12 @@ public interface RPatternTopic {
     int addListener(PatternStatusListener listener);
 
     /**
-     * Removes the listener by <code>id</code> for listening this topic
+     * Removes the listeners by <code>ids</code> for listening this topic
      *
-     * @param listenerId - id of message listener
+     * @param ids listener ids
      */
-    void removeListener(int listenerId);
-    
+    void removeListener(Integer... ids);
+
     /**
      * Removes the listener by its instance
      *
@@ -87,7 +87,13 @@ public interface RPatternTopic {
     
     <T> RFuture<Integer> addListenerAsync(Class<T> type, PatternMessageListener<T> listener);
 
-    RFuture<Void> removeListenerAsync(int listenerId);
+    /**
+     * Removes the listeners by <code>ids</code> for listening this topic
+     *
+     * @param ids listener ids
+     * @return void
+     */
+    RFuture<Void> removeListenerAsync(Integer... ids);
 
     /**
      * Returns  active topic list of this pattern
