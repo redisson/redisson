@@ -41,7 +41,6 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.*;
 
-@SuppressWarnings("serial")
 public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements RLocalCachedMap<K, V> {
 
     public static final String TOPIC_SUFFIX = "topic";
@@ -87,7 +86,6 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         storeMode = options.getStoreMode();
         storeCacheMiss = options.isStoreCacheMiss();
         isUseObjectAsCacheKey = options.isUseObjectAsCacheKey();
-        publishCommand = commandExecutor.getConnectionManager().getSubscribeService().getPublishCommand();
         localCacheView = new LocalCacheView<>(options, this);
         cache = localCacheView.getCache();
         cacheKeyMap = localCacheView.getCacheKeyMap();
@@ -105,6 +103,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         };
         listener.add(cache, cacheKeyMap);
         instanceId = listener.getInstanceId();
+        publishCommand = listener.getPublishCommand();
 
         if (options.getSyncStrategy() != SyncStrategy.NONE) {
             invalidateEntryOnChange = 1;
@@ -133,7 +132,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             } else {
                 msg = new LocalCachedMapInvalidate(instanceId, cacheKey.getKeyHash());
             }
-            listener.getInvalidationTopic().publishAsync(msg);
+            listener.publishAsync(msg);
         }
         mapKey.release();
     }
@@ -422,7 +421,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
             keyEncoded.release();
             LocalCachedMapInvalidate msg = new LocalCachedMapInvalidate(instanceId, cacheKey.getKeyHash());
-            listener.getInvalidationTopic().publishAsync(msg);
+            listener.publishAsync(msg);
 
             V val = null;
             if (value != null) {
@@ -546,7 +545,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 if (val != null) {
                     count++;
                     LocalCachedMapInvalidate msg = new LocalCachedMapInvalidate(instanceId, cacheKey.getKeyHash());
-                    listener.getInvalidationTopic().publishAsync(msg);
+                    listener.publishAsync(msg);
                 }
             }
             return new CompletableFutureWrapper<>(count);

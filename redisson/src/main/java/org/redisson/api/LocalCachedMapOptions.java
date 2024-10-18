@@ -162,6 +162,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     private boolean storeCacheMiss;
     private ExpirationEventPolicy expirationEventPolicy;
     private boolean useObjectAsCacheKey;
+    private boolean useTopicPattern;
 
     protected LocalCachedMapOptions() {
     }
@@ -209,6 +210,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
                     .syncStrategy(SyncStrategy.INVALIDATE)
                     .storeCacheMiss(false)
                     .useObjectAsCacheKey(false)
+                    .useTopicPattern(false)
                     .expirationEventPolicy(ExpirationEventPolicy.SUBSCRIBE_WITH_KEYEVENT_PATTERN);
     }
 
@@ -396,6 +398,10 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
         return useObjectAsCacheKey;
     }
 
+    public boolean isUseTopicPattern() {
+        return useTopicPattern;
+    }
+
     /**
      * Defines whether to store a cache miss into the local cache.
      *
@@ -416,6 +422,18 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
      */
     public LocalCachedMapOptions<K, V> useObjectAsCacheKey(boolean useObjectAsCacheKey) {
         this.useObjectAsCacheKey = useObjectAsCacheKey;
+        return this;
+    }
+
+    /**
+     * Defines whether to use a global topic pattern listener
+     * that applies to all local cache instances belonging to the same Redisson instance.
+     *
+     * @param value whether to use a global topic pattern listener
+     * @return LocalCachedMapOptions instance
+     */
+    public LocalCachedMapOptions<K, V> useTopicPattern(boolean value) {
+        this.useTopicPattern = value;
         return this;
     }
 

@@ -271,5 +271,13 @@ public interface LocalCachedMapOptions<K, V> extends ExMapOptions<LocalCachedMap
      */
     LocalCachedMapOptions<K, V> useObjectAsCacheKey(boolean useObjectAsCacheKey);
 
+    /**
+     * Defines whether to use a global topic pattern listener
+     * that applies to all local cache instances belonging to the same Redisson instance.
+     *
+     * @param value whether to use a global topic pattern listener
+     * @return LocalCachedMapOptions instance
+     */
+    LocalCachedMapOptions<K, V> useTopicPattern(boolean value);
 
 }

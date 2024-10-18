@@ -22,13 +22,11 @@ import org.redisson.*;
 import org.redisson.api.*;
 import org.redisson.api.LocalCachedMapOptions.ReconnectionStrategy;
 import org.redisson.api.LocalCachedMapOptions.SyncStrategy;
-import org.redisson.api.listener.BaseStatusListener;
-import org.redisson.api.listener.LocalCacheInvalidateListener;
-import org.redisson.api.listener.LocalCacheUpdateListener;
-import org.redisson.api.listener.MessageListener;
+import org.redisson.api.listener.*;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
@@ -68,6 +66,7 @@ public abstract class LocalCacheListener {
     private long cacheUpdateLogTime;
     private volatile long lastInvalidate;
     private RTopic invalidationTopic;
+    private RPatternTopic patternTopic;
     private int syncListenerId;
     private int reconnectionListenerId;
 
@@ -154,24 +153,44 @@ public abstract class LocalCacheListener {
     }
 
     void createTopic(String name, CommandAsyncExecutor commandExecutor) {
-        if (isSharded) {
+        if (isSharded && !options.isUseTopicPattern()) {
             invalidationTopic = RedissonShardedTopic.createRaw(LocalCachedMessageCodec.INSTANCE, commandExecutor, getInvalidationTopicName());
         } else {
             invalidationTopic = RedissonTopic.createRaw(LocalCachedMessageCodec.INSTANCE, commandExecutor, getInvalidationTopicName());
         }
+        if (options.isUseTopicPattern()) {
+            patternTopic = new RedissonPatternTopic(LocalCachedMessageCodec.INSTANCE, commandExecutor, "*:topic");
+        }
     }
 
     int addMessageListener() {
-        return invalidationTopic.addListener(Object.class, new MessageListener<Object>() {
-            @Override
-            public void onMessage(CharSequence channel, Object msg) {
-                LocalCacheListener.this.onMessage(msg);
-            }
-
-        });
+        if (patternTopic != null) {
+            return patternTopic.addListener(Object.class,
+                    (pattern, channel, msg) -> {
+                        if (!getInvalidationTopicName().equals(channel.toString())) {
+                            return;
+                        }
+                        LocalCacheListener.this.onMessage(msg);
+                    });
+        }
+        return invalidationTopic.addListener(Object.class,
+                (channel, msg) -> LocalCacheListener.this.onMessage(msg));
     }
 
     int addReconnectionListener() {
+        if (patternTopic != null) {
+            return patternTopic.addListener(new PatternStatusListener() {
+                @Override
+                public void onPSubscribe(String pattern) {
+                    LocalCacheListener.this.onSubscribe();
+                }
+
+                @Override
+                public void onPUnsubscribe(String pattern) {
+                    // skip
+                }
+            });
+        }
         return invalidationTopic.addListener(new BaseStatusListener() {
             @Override
             public void onSubscribe(String channel) {
@@ -315,11 +334,18 @@ public abstract class LocalCacheListener {
     }
 
     RFuture<Long> publishAsync(byte[] id) {
-        return invalidationTopic.publishAsync(new LocalCachedMapClear(instanceId, id, true));
+        return publishAsync(new LocalCachedMapClear(instanceId, id, true));
     }
 
-    public RTopic getInvalidationTopic() {
-        return invalidationTopic;
+    public RFuture<Long> publishAsync(Object msg) {
+        return invalidationTopic.publishAsync(msg);
+    }
+
+    public String getPublishCommand() {
+        if (isSharded && !options.isUseTopicPattern()) {
+            return RedisCommands.SPUBLISH.getName();
+        }
+        return RedisCommands.PUBLISH.getName();
     }
 
     public String getInvalidationTopicName() {
@@ -364,6 +390,11 @@ public abstract class LocalCacheListener {
     }
 
     void removeAsync(List<Integer> ids) {
+        if (patternTopic != null) {
+            patternTopic.removeListenerAsync(ids.toArray(new Integer[0]));
+            return;
+        }
+
         invalidationTopic.removeListenerAsync(ids.toArray(new Integer[0]));
     }
 

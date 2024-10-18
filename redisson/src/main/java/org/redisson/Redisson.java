@@ -372,6 +372,7 @@ public final class Redisson implements RedissonClient {
                 .timeToLive(params.getTimeToLiveInMillis())
                 .syncStrategy(LocalCachedMapOptions.SyncStrategy.valueOf(params.getSyncStrategy().toString()))
                 .useObjectAsCacheKey(params.isUseObjectAsCacheKey())
+                .useTopicPattern(params.isUseTopicPattern())
                 .expirationEventPolicy(LocalCachedMapOptions.ExpirationEventPolicy.valueOf(params.getExpirationEventPolicy().toString()))
                 .writer(params.getWriter())
                 .writerAsync(params.getWriterAsync())
