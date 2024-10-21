@@ -245,7 +245,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         }
 
         if (type == RCascadeType.PERSIST) {
-            CommandBatchService checkExecutor = new CommandBatchService(batchService);
+            CommandBatchService checkExecutor = new CommandBatchService(commandExecutor);
             for (Entry<String, Object> entry : name2id.entrySet()) {
                 RMap<String, Object> map = new RedissonMap<>(checkExecutor, entry.getKey(), null, null, null);
                 map.containsKeyAsync("redisson_live_object");
@@ -284,7 +284,15 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         ClassIntrospector.get().reset();
 
         batchService.execute();
-        return new ArrayList<>(detached2Attached.keySet());
+
+        classCache.clear();
+        List<T> attachedObjects = new ArrayList<>();
+        for (Object attachedObject : detached2Attached.values()) {
+            RLiveObject lo = asLiveObject(attachedObject);
+            T nlo = (T) createLiveObject(attachedObject.getClass().getSuperclass(), lo.getLiveObjectId(), commandExecutor, classCache);
+            attachedObjects.add(nlo);
+        }
+        return attachedObjects;
     }
 
     private <T> Object getId(T detachedObject) {

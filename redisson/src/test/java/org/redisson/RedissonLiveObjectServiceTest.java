@@ -1420,6 +1420,7 @@ public class RedissonLiveObjectServiceTest extends RedisDockerTest {
         assertNotNull(service.get(TestClass.class, new ObjectId(100)));
         persisted.setCode("CODE");
         assertNotNull(service.get(TestClass.class, new ObjectId(100)));
+        assertThat(service.get(TestClass.class, new ObjectId(101))).isNull();
     }
 
     @Test
@@ -2435,13 +2436,17 @@ public class RedissonLiveObjectServiceTest extends RedisDockerTest {
 
         objects.clear();
         for (int i = 0; i < objectsAmount; i++) {
-            TestREntity e = (TestREntity) attachedObjects.get(i);
+            TestREntity e = new TestREntity();
             e.setName("" + i);
             e.setValue("value" + i*1000);
             objects.add(e);
         }
         List<Object> attachedObjects2 = s.merge(objects.toArray());
         assertThat(attachedObjects2).hasSize(objectsAmount);
+
+        TestREntity e = (TestREntity) attachedObjects2.get(1);
+        assertThat(e.getName()).isNotNull();
+        assertThat(e.getValue()).isEqualTo("value1000");
 
         assertThat(redisson.getKeys().count()).isEqualTo(objectsAmount);
     }
@@ -2461,6 +2466,14 @@ public class RedissonLiveObjectServiceTest extends RedisDockerTest {
         }
         List<Object> attachedObjects = s.persist(objects.toArray());
         assertThat(attachedObjects).hasSize(objectsAmount);
+
+        TestREntity e = (TestREntity) attachedObjects.get(0);
+        assertThat(e.getName()).isNotNull();
+        e.setValue("test");
+        assertThat(e.getValue()).isEqualTo("test");
+
+        TestREntity rr = s.get(TestREntity.class, "0");
+        assertThat(rr.getValue()).isEqualTo("test");
 
         assertThat(redisson.getKeys().count()).isEqualTo(objectsAmount);
     }
