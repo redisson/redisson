@@ -37,6 +37,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.net.InetAddress;
+import java.net.SocketAddress;
 import java.net.URI;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -157,9 +159,7 @@ public class Kryo5Codec extends BaseCodec {
             Class<?>[] f = Collections.class.getDeclaredClasses();
             Arrays.stream(f)
                     .filter(cls -> MISSED_COLLECTION_CLASSES.stream().anyMatch(s -> cls.getName().contains(s)))
-                    .forEach(cls -> {
-                        kryo.addDefaultSerializer(cls, new JavaSerializer());
-                    });
+                    .forEach(cls -> kryo.addDefaultSerializer(cls, new JavaSerializer()));
         } catch (Exception e) {
             logger.warn("Unable to register Collections serializer", e);
         }
@@ -168,6 +168,8 @@ public class Kryo5Codec extends BaseCodec {
         kryo.addDefaultSerializer(UUID.class, new DefaultSerializers.UUIDSerializer());
         kryo.addDefaultSerializer(URI.class, new DefaultSerializers.URISerializer());
         kryo.addDefaultSerializer(Pattern.class, new DefaultSerializers.PatternSerializer());
+        kryo.addDefaultSerializer(SocketAddress.class, new JavaSerializer());
+        kryo.addDefaultSerializer(InetAddress.class, new JavaSerializer());
         return kryo;
     }
 
