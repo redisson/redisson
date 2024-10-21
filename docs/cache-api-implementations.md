@@ -498,15 +498,19 @@ Below is the complete list of available managers:
       // NONE - No synchronizations on map changes
      .syncStrategy(SyncStrategy.INVALIDATE)
 
-      // time to live for each map entry in local cache
-     .timeToLive(10000)
-      // or
-     .timeToLive(10, TimeUnit.SECONDS)
+      // time to live for each entry in local cache
+     .timeToLive(Duration.ofSeconds(10))
 
-      // max idle time for each map entry in local cache
-     .maxIdle(10000)
-      // or
-     .maxIdle(10, TimeUnit.SECONDS);
+      // max idle time for each entry in local cache
+     .maxIdle(Duration.ofSeconds(10));
+
+     // Defines how to listen expired event sent by Redis or Valkey upon this instance deletion
+     //
+     // Follow expiration policies are available:
+     // DONT_SUBSCRIBE - Don't subscribe on expire event
+     // SUBSCRIBE_WITH_KEYEVENT_PATTERN - Subscribe on expire event using `__keyevent@*:expired` pattern
+     // SUBSCRIBE_WITH_KEYSPACE_CHANNEL - Subscribe on expire event using `__keyspace@N__:name` channel
+     .expirationEventPolicy(ExpirationEventPolicy.SUBSCRIBE_WITH_KEYEVENT_PATTERN)
 ```
 
 Usage example:
@@ -614,15 +618,19 @@ Cache<String, String> cache = manager.createCache("namedCache", rConfig);
       // NONE - No synchronizations on map changes
      .syncStrategy(SyncStrategy.INVALIDATE)
 
-      // time to live for each map entry in local cache
-     .timeToLive(10000)
-      // or
-     .timeToLive(10, TimeUnit.SECONDS)
+      // time to live for each entry in local cache
+     .timeToLive(Duration.ofSeconds(10))
 
-      // max idle time for each map entry in local cache
-     .maxIdle(10000)
-      // or
-     .maxIdle(10, TimeUnit.SECONDS);
+      // max idle time for each entry in local cache
+     .maxIdle(Duration.ofSeconds(10));
+
+     // Defines how to listen expired event sent by Redis or Valkey upon this instance deletion
+     //
+     // Follow expiration policies are available:
+     // DONT_SUBSCRIBE - Don't subscribe on expire event
+     // SUBSCRIBE_WITH_KEYEVENT_PATTERN - Subscribe on expire event using `__keyevent@*:expired` pattern
+     // SUBSCRIBE_WITH_KEYSPACE_CHANNEL - Subscribe on expire event using `__keyspace@N__:name` channel
+     .expirationEventPolicy(ExpirationEventPolicy.SUBSCRIBE_WITH_KEYEVENT_PATTERN)
 ```
 
 Usage examples:
