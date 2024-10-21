@@ -209,7 +209,7 @@ public interface RJsonStoreRx<K, V> extends RExpirableRx {
      * @param end end index, exclusive
      * @return index in array
      */
-    Single<Long> arrayIndex(K key, String path, Object value, Single<Long> start, Single<Long> end);
+    Single<Long> arrayIndex(K key, String path, Object value, Long start, Long end);
 
     /**
      * Returns index of object in arrays by specified key and JSONPath
@@ -224,7 +224,7 @@ public interface RJsonStoreRx<K, V> extends RExpirableRx {
      * @param end end index, exclusive
      * @return list of index in arrays
      */
-    Single<List<Long>> arrayIndexMulti(K key, String path, Object value, Single<Long> start, Single<Long> end);
+    Single<List<Long>> arrayIndexMulti(K key, String path, Object value, Long start, Long end);
 
     /**
      * Inserts values into array by specified key and JSONPath.
@@ -236,7 +236,7 @@ public interface RJsonStoreRx<K, V> extends RExpirableRx {
      * @param values values to insert
      * @return size of array
      */
-    Single<Long> arrayInsert(K key, String path, Single<Long> index, Object... values);
+    Single<Long> arrayInsert(K key, String path, Long index, Object... values);
 
     /**
      * Inserts values into arrays by specified key and JSONPath.
@@ -249,7 +249,7 @@ public interface RJsonStoreRx<K, V> extends RExpirableRx {
      * @param values values to insert
      * @return list of arrays size
      */
-    Single<List<Long>> arrayInsertMulti(K key, String path, Single<Long> index, Object... values);
+    Single<List<Long>> arrayInsertMulti(K key, String path, Long index, Object... values);
 
     /**
      * Returns size of array by specified key and JSONPath.
@@ -331,7 +331,7 @@ public interface RJsonStoreRx<K, V> extends RExpirableRx {
      *
      * @param <T> the type of object
      */
-    <T> Maybe<T> arrayPop(K key, JsonCodec codec, String path, Single<Long> index);
+    <T> Maybe<T> arrayPop(K key, JsonCodec codec, String path, Long index);
 
     /**
      * Pops elements located at index of arrays by specified key and JSONPath.
@@ -345,7 +345,7 @@ public interface RJsonStoreRx<K, V> extends RExpirableRx {
      *
      * @param <T> the type of object
      */
-    <T> Single<List<T>> arrayPopMulti(K key, JsonCodec codec, String path, Single<Long> index);
+    <T> Single<List<T>> arrayPopMulti(K key, JsonCodec codec, String path, Long index);
 
     /**
      * Trims array by specified key and JSONPath in range
@@ -357,7 +357,7 @@ public interface RJsonStoreRx<K, V> extends RExpirableRx {
      * @param end end index, inclusive
      * @return length of array
      */
-    Single<Long> arrayTrim(K key, String path, Single<Long> start, Single<Long> end);
+    Single<Long> arrayTrim(K key, String path, Long start, Long end);
 
     /**
      * Trims arrays by specified key and JSONPath in range
@@ -370,7 +370,7 @@ public interface RJsonStoreRx<K, V> extends RExpirableRx {
      * @param end end index, inclusive
      * @return length of array
      */
-    Single<List<Long>> arrayTrimMulti(K key, String path, Single<Long> start, Single<Long> end);
+    Single<List<Long>> arrayTrimMulti(K key, String path, Long start, Long end);
 
     /**
      * Clears value by specified key
@@ -407,7 +407,7 @@ public interface RJsonStoreRx<K, V> extends RExpirableRx {
      * @param delta increment value
      * @return the updated value
      */
-    <T extends Number> Maybe<T> incrementAndGet(K key, String path, Maybe<T> delta);
+    <T extends Number> Maybe<T> incrementAndGet(K key, String path, T delta);
 
     /**
      * Increments the current values specified by key and JSONPath.
@@ -418,7 +418,7 @@ public interface RJsonStoreRx<K, V> extends RExpirableRx {
      * @param delta increment value
      * @return list of updated value
      */
-    <T extends Number> List<T> incrementAndGetMulti(K key, String path, Maybe<T> delta);
+    <T extends Number> List<T> incrementAndGetMulti(K key, String path, T delta);
 
     /**
      * Merges value into element by the specified key and JSONPath.
@@ -755,73 +755,6 @@ public interface RJsonStoreRx<K, V> extends RExpirableRx {
     Single<Long> remainTimeToLive(K key);
 
     /**
-     * Returns key set of this map.
-     * Keys are loaded in batch. Batch size is <code>10</code>.
-     *
-     * @see #readAllKeySet()
-     *
-     * @return key set
-     */
-    Set<K> keySet();
-
-    /**
-     * Returns key set of this map.
-     * Keys are loaded in batch. Batch size is defined by <code>count</code> param.
-     *
-     * @see #readAllKeySet()
-     *
-     * @param count - size of keys batch
-     * @return key set
-     */
-    Set<K> keySet(int count);
-
-    /**
-     * Returns key set of this map.
-     * If <code>pattern</code> is not null then only keys match this pattern are loaded.
-     * Keys are loaded in batch. Batch size is defined by <code>count</code> param.
-     * <p>
-     * Use <code>org.redisson.client.codec.StringCodec</code> for Map keys.
-     * <p>
-     *
-     *  Supported glob-style patterns:
-     *  <p>
-     *    h?llo subscribes to hello, hallo and hxllo
-     *    <p>
-     *    h*llo subscribes to hllo and heeeello
-     *    <p>
-     *    h[ae]llo subscribes to hello and hallo, but not hillo
-     *
-     * @see #readAllKeySet()
-     *
-     * @param pattern - key pattern
-     * @param count - size of keys batch
-     * @return key set
-     */
-    Set<K> keySet(String pattern, int count);
-
-    /**
-     * Returns key set of this map.
-     * If <code>pattern</code> is not null then only keys match this pattern are loaded.
-     * <p>
-     * Use <code>org.redisson.client.codec.StringCodec</code> for Map keys.
-     * <p>
-     *
-     *  Supported glob-style patterns:
-     *  <p>
-     *    h?llo subscribes to hello, hallo and hxllo
-     *    <p>
-     *    h*llo subscribes to hllo and heeeello
-     *    <p>
-     *    h[ae]llo subscribes to hello and hallo, but not hillo
-     *
-     * @see #readAllKeySet()
-     *
-     * @param pattern - key pattern
-     * @return key set
-     */
-    Set<K> keySet(String pattern);
-
-    /**
      * Returns <code>true</code> if this map contains map entry
      * mapped by specified <code>key</code>, otherwise <code>false</code>
      *
@@ -836,7 +769,7 @@ public interface RJsonStoreRx<K, V> extends RExpirableRx {
      *
      * @return keys
      */
-    Set<K> readAllKeySet();
+    Single<Set<K>> readAllKeySet();
 
     /**
      * Returns entries amount in store

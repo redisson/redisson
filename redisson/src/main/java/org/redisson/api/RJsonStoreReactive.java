@@ -206,7 +206,7 @@ public interface RJsonStoreReactive<K, V> extends RExpirableReactive {
      * @param end end index, exclusive
      * @return index in array
      */
-    Mono<Long> arrayIndex(K key, String path, Object value, Mono<Long> start, Mono<Long> end);
+    Mono<Long> arrayIndex(K key, String path, Object value, Long start, Long end);
 
     /**
      * Returns index of object in arrays by specified key and JSONPath
@@ -221,7 +221,7 @@ public interface RJsonStoreReactive<K, V> extends RExpirableReactive {
      * @param end end index, exclusive
      * @return list of index in arrays
      */
-    Mono<List<Long>> arrayIndexMulti(K key, String path, Object value, Mono<Long> start, Mono<Long> end);
+    Mono<List<Long>> arrayIndexMulti(K key, String path, Object value, Long start, Long end);
 
     /**
      * Inserts values into array by specified key and JSONPath.
@@ -233,7 +233,7 @@ public interface RJsonStoreReactive<K, V> extends RExpirableReactive {
      * @param values values to insert
      * @return size of array
      */
-    Mono<Long> arrayInsert(K key, String path, Mono<Long> index, Object... values);
+    Mono<Long> arrayInsert(K key, String path, Long index, Object... values);
 
     /**
      * Inserts values into arrays by specified key and JSONPath.
@@ -246,7 +246,7 @@ public interface RJsonStoreReactive<K, V> extends RExpirableReactive {
      * @param values values to insert
      * @return list of arrays size
      */
-    Mono<List<Long>> arrayInsertMulti(K key, String path, Mono<Long> index, Object... values);
+    Mono<List<Long>> arrayInsertMulti(K key, String path, Long index, Object... values);
 
     /**
      * Returns size of array by specified key and JSONPath.
@@ -328,7 +328,7 @@ public interface RJsonStoreReactive<K, V> extends RExpirableReactive {
      *
      * @param <T> the type of object
      */
-    <T> Mono<T> arrayPop(K key, JsonCodec codec, String path, Mono<Long> index);
+    <T> Mono<T> arrayPop(K key, JsonCodec codec, String path, Long index);
 
     /**
      * Pops elements located at index of arrays by specified key and JSONPath.
@@ -342,7 +342,7 @@ public interface RJsonStoreReactive<K, V> extends RExpirableReactive {
      *
      * @param <T> the type of object
      */
-    <T> Mono<List<T>> arrayPopMulti(K key, JsonCodec codec, String path, Mono<Long> index);
+    <T> Mono<List<T>> arrayPopMulti(K key, JsonCodec codec, String path, Long index);
 
     /**
      * Trims array by specified key and JSONPath in range
@@ -354,7 +354,7 @@ public interface RJsonStoreReactive<K, V> extends RExpirableReactive {
      * @param end end index, inclusive
      * @return length of array
      */
-    Mono<Long> arrayTrim(K key, String path, Mono<Long> start, Mono<Long> end);
+    Mono<Long> arrayTrim(K key, String path, Long start, Long end);
 
     /**
      * Trims arrays by specified key and JSONPath in range
@@ -367,7 +367,7 @@ public interface RJsonStoreReactive<K, V> extends RExpirableReactive {
      * @param end end index, inclusive
      * @return length of array
      */
-    Mono<List<Long>> arrayTrimMulti(K key, String path, Mono<Long> start, Mono<Long> end);
+    Mono<List<Long>> arrayTrimMulti(K key, String path, Long start, Long end);
 
     /**
      * Clears value by specified key
@@ -384,7 +384,7 @@ public interface RJsonStoreReactive<K, V> extends RExpirableReactive {
      * @param keys entry keys
      * @return number of cleared containers
      */
-    Mono<Long> clear(Mono<Set<K>> keys);
+    Mono<Long> clear(Set<K> keys);
 
     /**
      * Clears json container by specified keys and JSONPath.
@@ -394,7 +394,7 @@ public interface RJsonStoreReactive<K, V> extends RExpirableReactive {
      * @param keys entry keys
      * @return number of cleared containers
      */
-    Mono<Long> clear(String path, Mono<Set<K>> keys);
+    Mono<Long> clear(String path, Set<K> keys);
 
     /**
      * Increments the current value specified by key and JSONPath.
@@ -404,7 +404,7 @@ public interface RJsonStoreReactive<K, V> extends RExpirableReactive {
      * @param delta increment value
      * @return the updated value
      */
-    <T extends Number> Mono<T> incrementAndGet(K key, String path, Mono<T> delta);
+    <T extends Number> Mono<T> incrementAndGet(K key, String path, T delta);
 
     /**
      * Increments the current values specified by key and JSONPath.
@@ -415,7 +415,7 @@ public interface RJsonStoreReactive<K, V> extends RExpirableReactive {
      * @param delta increment value
      * @return list of updated value
      */
-    <T extends Number> Mono<List<T>> incrementAndGetMulti(K key, String path, Mono<T> delta);
+    <T extends Number> Mono<List<T>> incrementAndGetMulti(K key, String path, T delta);
 
     /**
      * Merges value into element by the specified key and JSONPath.
@@ -521,7 +521,7 @@ public interface RJsonStoreReactive<K, V> extends RExpirableReactive {
      * @param keys entry keys
      * @return number of deleted elements
      */
-    Mono<Long> delete(Mono<Set<K>> keys);
+    Mono<Long> delete(Set<K> keys);
 
     /**
      * Deletes JSON elements specified by keys and JSONPath
@@ -530,7 +530,7 @@ public interface RJsonStoreReactive<K, V> extends RExpirableReactive {
      * @param keys entry keys
      * @return number of deleted elements
      */
-    Mono<Long> delete(String path, Mono<Set<K>> keys);
+    Mono<Long> delete(String path, Set<K> keys);
 
     /**
      * Returns size of entry in bytes specified by key.
@@ -554,7 +554,7 @@ public interface RJsonStoreReactive<K, V> extends RExpirableReactive {
      * @param keys entry keys
      * @return map with entries where value mapped by key
      */
-    Mono<Map<K, V>> get(Mono<Set<K>> keys);
+    Mono<Map<K, V>> get(Set<K> keys);
 
     /**
      * Retrieves values by specified keys and JSONPath.
@@ -563,7 +563,7 @@ public interface RJsonStoreReactive<K, V> extends RExpirableReactive {
      * @param keys entry keys
      * @return map with entries where value mapped by key
      */
-    Mono<Map<K, V>> get(String path, Mono<Set<K>> keys);
+    Mono<Map<K, V>> get(String path, Set<K> keys);
 
     /**
      * Retrieves entry value by specified key and removes it.
@@ -693,7 +693,7 @@ public interface RJsonStoreReactive<K, V> extends RExpirableReactive {
      *
      * @param entries entries to store
      */
-    Mono<Void> set(Mono<Map<K, V>> entries);
+    Mono<Void> set(Map<K, V> entries);
 
     /**
      * Stores values by specified keys and JSONPath.
@@ -701,7 +701,7 @@ public interface RJsonStoreReactive<K, V> extends RExpirableReactive {
      * @param path JSONPath
      * @param entries entries to store
      */
-    Mono<Void> set(String path, Mono<Map<K, V>> entries);
+    Mono<Void> set(String path, Map<K, V> entries);
 
     /**
      * Stores value by specified key with defined expiration duration.
@@ -718,7 +718,7 @@ public interface RJsonStoreReactive<K, V> extends RExpirableReactive {
      * @param entries entries to store
      * @param duration expiration duration
      */
-    Mono<Void> set(Mono<Map<K, V>> entries, Duration duration);
+    Mono<Void> set(Map<K, V> entries, Duration duration);
 
     /**
      * Sets value by specified key and keep existing TTL.
@@ -750,73 +750,6 @@ public interface RJsonStoreReactive<K, V> extends RExpirableReactive {
      *          -1 if the key exists but has no associated expire.
      */
     Mono<Long> remainTimeToLive(K key);
-
-    /**
-     * Returns key set of this map.
-     * Keys are loaded in batch. Batch size is <code>10</code>.
-     *
-     * @see #readAllKeySet()
-     *
-     * @return key set
-     */
-    Mono<Set<K>> keySet();
-
-    /**
-     * Returns key set of this map.
-     * Keys are loaded in batch. Batch size is defined by <code>count</code> param.
-     *
-     * @see #readAllKeySet()
-     *
-     * @param count - size of keys batch
-     * @return key set
-     */
-    Mono<Set<K>> keySet(int count);
-
-    /**
-     * Returns key set of this map.
-     * If <code>pattern</code> is not null then only keys match this pattern are loaded.
-     * Keys are loaded in batch. Batch size is defined by <code>count</code> param.
-     * <p>
-     * Use <code>org.redisson.client.codec.StringCodec</code> for Map keys.
-     * <p>
-     *
-     *  Supported glob-style patterns:
-     *  <p>
-     *    h?llo subscribes to hello, hallo and hxllo
-     *    <p>
-     *    h*llo subscribes to hllo and heeeello
-     *    <p>
-     *    h[ae]llo subscribes to hello and hallo, but not hillo
-     *
-     * @see #readAllKeySet()
-     *
-     * @param pattern - key pattern
-     * @param count - size of keys batch
-     * @return key set
-     */
-    Mono<Set<K>> keySet(String pattern, Mono<Integer> count);
-
-    /**
-     * Returns key set of this map.
-     * If <code>pattern</code> is not null then only keys match this pattern are loaded.
-     * <p>
-     * Use <code>org.redisson.client.codec.StringCodec</code> for Map keys.
-     * <p>
-     *
-     *  Supported glob-style patterns:
-     *  <p>
-     *    h?llo subscribes to hello, hallo and hxllo
-     *    <p>
-     *    h*llo subscribes to hllo and heeeello
-     *    <p>
-     *    h[ae]llo subscribes to hello and hallo, but not hillo
-     *
-     * @see #readAllKeySet()
-     *
-     * @param pattern - key pattern
-     * @return key set
-     */
-    Mono<Set<K>> keySet(String pattern);
 
     /**
      * Returns <code>true</code> if this map contains map entry
