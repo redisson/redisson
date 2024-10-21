@@ -182,7 +182,7 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
             <!-- 4.1+ -->
-            <version>6.1.12</version>
+            <version>6.1.14</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
