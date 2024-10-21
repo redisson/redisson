@@ -194,7 +194,7 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
      * @param end end index, exclusive
      * @return index in array
      */
-    Mono<Long> arrayIndex(String path, Object value, Mono<Long> start, Mono<Long> end);
+    Mono<Long> arrayIndex(String path, Object value, Long start, Long end);
 
     /**
      * Returns index of object in arrays specified by JSONPath
@@ -208,7 +208,7 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
      * @param end end index, exclusive
      * @return list of index in arrays
      */
-    Mono<List<Long>> arrayIndexMulti(String path, Object value, Mono<Long> start, Mono<Long> end);
+    Mono<List<Long>> arrayIndexMulti(String path, Object value, Long start, Long end);
 
     /**
      * Inserts values into array specified by JSONPath.
@@ -219,7 +219,7 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
      * @param values values to insert
      * @return size of array
      */
-    Mono<Long> arrayInsert(String path, Mono<Long> index, Object... values);
+    Mono<Long> arrayInsert(String path, Long index, Object... values);
 
     /**
      * Inserts values into arrays specified by JSONPath.
@@ -231,7 +231,7 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
      * @param values values to insert
      * @return list of arrays size
      */
-    Mono<List<Long>> arrayInsertMulti(String path, Mono<Long> index, Object... values);
+    Mono<List<Long>> arrayInsertMulti(String path, Long index, Object... values);
 
     /**
      * Returns size of array specified by JSONPath.
@@ -306,7 +306,7 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
      *
      * @param <T> the type of object
      */
-    <T> Mono<T> arrayPop(JsonCodec codec, String path, Mono<Long> index);
+    <T> Mono<T> arrayPop(JsonCodec codec, String path, Long index);
 
     /**
      * Pops elements located at index of arrays specified by JSONPath.
@@ -319,7 +319,7 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
      *
      * @param <T> the type of object
      */
-    <T> Mono<List<T>> arrayPopMulti(JsonCodec codec, String path, Mono<Long> index);
+    <T> Mono<List<T>> arrayPopMulti(JsonCodec codec, String path, Long index);
 
     /**
      * Trims array specified by JSONPath in range
@@ -330,7 +330,7 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
      * @param end end index, inclusive
      * @return length of array
      */
-    Mono<Long> arrayTrim(String path, Mono<Long> start, Mono<Long> end);
+    Mono<Long> arrayTrim(String path, Long start, Long end);
 
     /**
      * Trims arrays specified by JSONPath in range
@@ -342,7 +342,7 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
      * @param end end index, inclusive
      * @return length of array
      */
-    Mono<List<Long>> arrayTrimMulti(String path, Mono<Long> start, Mono<Long> end);
+    Mono<List<Long>> arrayTrimMulti(String path, Long start, Long end);
 
     /**
      * Clears json container.
@@ -367,7 +367,7 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
      * @param delta increment value
      * @return the updated value
      */
-    <T extends Number> Mono<T> incrementAndGet(String path, Mono<T> delta);
+    <T extends Number> Mono<T> incrementAndGet(String path, T delta);
 
     /**
      * Increments the current values specified by JSONPath by <code>delta</code>.
@@ -377,7 +377,7 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
      * @param delta increment value
      * @return list of updated value
      */
-    <T extends Number> Mono<List<T>> incrementAndGetMulti(String path, Mono<T> delta);
+    <T extends Number> Mono<List<T>> incrementAndGetMulti(String path, T delta);
 
     /**
      * Merges object into element by the specified JSONPath.
