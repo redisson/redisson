@@ -12,7 +12,7 @@
     <packaging>jar</packaging>
 
     <properties>
-        <micronaut.version>4.6.0</micronaut.version>
+        <micronaut.version>4.7.0</micronaut.version>
         <main.basedir>${project.parent.parent.basedir}</main.basedir>
     </properties>
 
@@ -98,7 +98,7 @@
         <dependency>
             <groupId>io.micronaut.session</groupId>
             <artifactId>micronaut-session</artifactId>
-            <version>4.3.0</version>
+            <version>4.4.0</version>
             <optional>true</optional>
         </dependency>
 
@@ -141,7 +141,7 @@
         <dependency>
           <groupId>io.micronaut.test</groupId>
           <artifactId>micronaut-test-junit5</artifactId>
-          <version>4.4.0</version>
+          <version>4.5.0</version>
           <scope>test</scope>
         </dependency>
         <dependency>
