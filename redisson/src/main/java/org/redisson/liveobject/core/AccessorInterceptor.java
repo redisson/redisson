@@ -120,16 +120,11 @@ public class AccessorInterceptor {
 
                 removeIndex(liveMap, me, field);
                 storeIndex(field, me, liveObject.getLiveObjectId());
-                
-                Class<? extends Object> rEntity = liveObject.getClass().getSuperclass();
-                NamingScheme ns = commandExecutor.getObjectBuilder().getNamingScheme(rEntity);
 
                 if (commandExecutor instanceof CommandBatchService) {
-                    liveMap.fastPutAsync(fieldName, new RedissonReference(rEntity,
-                            ns.getName(rEntity, liveObject.getLiveObjectId())));
+                    liveMap.fastPutAsync(fieldName, liveObject);
                 } else {
-                    liveMap.fastPut(fieldName, new RedissonReference(rEntity,
-                            ns.getName(rEntity, liveObject.getLiveObjectId())));
+                    liveMap.fastPut(fieldName, liveObject);
                 }
 
                 return me;

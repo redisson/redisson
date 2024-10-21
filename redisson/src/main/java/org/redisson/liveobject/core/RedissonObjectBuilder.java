@@ -102,21 +102,11 @@ public class RedissonObjectBuilder {
     }
 
     public void storeAsync(RObject ar, String fieldName, RMap<String, Object> liveMap) {
-        Codec codec = ar.getCodec();
-        if (codec != null) {
-            codecProvider.registerCodec((Class) codec.getClass(), codec);
-        }
-        liveMap.fastPutAsync(fieldName,
-                new RedissonReference(ar.getClass(), ar.getName(), codec));
+        liveMap.fastPutAsync(fieldName, ar);
     }
-    
+
     public void store(RObject ar, String fieldName, RMap<String, Object> liveMap) {
-        Codec codec = ar.getCodec();
-        if (codec != null) {
-            codecProvider.registerCodec((Class) codec.getClass(), codec);
-        }
-        liveMap.fastPut(fieldName,
-                new RedissonReference(ar.getClass(), ar.getName(), codec));
+        liveMap.fastPut(fieldName, ar);
     }
     
     public RObject createObject(Object id, Class<?> clazz, Class<?> fieldType, String fieldName) {
