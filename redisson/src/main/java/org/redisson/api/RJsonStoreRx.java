@@ -784,7 +784,7 @@ public interface RJsonStoreRx<K, V> extends RExpirableRx {
      * @param key - map key
      * @return countdownlatch
      */
-    RCountDownLatch getCountDownLatch(K key);
+    RCountDownLatchRx getCountDownLatch(K key);
 
     /**
      * Returns <code>RPermitExpirableSemaphore</code> instance associated with key
@@ -792,7 +792,7 @@ public interface RJsonStoreRx<K, V> extends RExpirableRx {
      * @param key - map key
      * @return permitExpirableSemaphore
      */
-    RPermitExpirableSemaphore getPermitExpirableSemaphore(K key);
+    RPermitExpirableSemaphoreRx getPermitExpirableSemaphore(K key);
 
     /**
      * Returns <code>RSemaphore</code> instance associated with key
@@ -800,7 +800,7 @@ public interface RJsonStoreRx<K, V> extends RExpirableRx {
      * @param key - map key
      * @return semaphore
      */
-    RSemaphore getSemaphore(K key);
+    RSemaphoreRx getSemaphore(K key);
 
     /**
      * Returns <code>RLock</code> instance associated with key
@@ -808,7 +808,7 @@ public interface RJsonStoreRx<K, V> extends RExpirableRx {
      * @param key - map key
      * @return fairlock
      */
-    RLock getFairLock(K key);
+    RLockRx getFairLock(K key);
 
     /**
      * Returns <code>RReadWriteLock</code> instance associated with key
@@ -816,7 +816,7 @@ public interface RJsonStoreRx<K, V> extends RExpirableRx {
      * @param key - map key
      * @return readWriteLock
      */
-    RReadWriteLock getReadWriteLock(K key);
+    RReadWriteLockRx getReadWriteLock(K key);
 
     /**
      * Returns <code>RLock</code> instance associated with key
@@ -824,6 +824,6 @@ public interface RJsonStoreRx<K, V> extends RExpirableRx {
      * @param key - map key
      * @return lock
      */
-    RLock getLock(K key);
+    RLockRx getLock(K key);
 
 }

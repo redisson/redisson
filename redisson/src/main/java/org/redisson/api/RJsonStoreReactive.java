@@ -781,7 +781,7 @@ public interface RJsonStoreReactive<K, V> extends RExpirableReactive {
      * @param key - map key
      * @return countdownlatch
      */
-    RCountDownLatch getCountDownLatch(K key);
+    RCountDownLatchReactive getCountDownLatch(K key);
 
     /**
      * Returns <code>RPermitExpirableSemaphore</code> instance associated with key
@@ -789,7 +789,7 @@ public interface RJsonStoreReactive<K, V> extends RExpirableReactive {
      * @param key - map key
      * @return permitExpirableSemaphore
      */
-    RPermitExpirableSemaphore getPermitExpirableSemaphore(K key);
+    RPermitExpirableSemaphoreReactive getPermitExpirableSemaphore(K key);
 
     /**
      * Returns <code>RSemaphore</code> instance associated with key
@@ -797,7 +797,7 @@ public interface RJsonStoreReactive<K, V> extends RExpirableReactive {
      * @param key - map key
      * @return semaphore
      */
-    RSemaphore getSemaphore(K key);
+    RSemaphoreReactive getSemaphore(K key);
 
     /**
      * Returns <code>RLock</code> instance associated with key
@@ -805,7 +805,7 @@ public interface RJsonStoreReactive<K, V> extends RExpirableReactive {
      * @param key - map key
      * @return fairlock
      */
-    RLock getFairLock(K key);
+    RLockReactive getFairLock(K key);
 
     /**
      * Returns <code>RReadWriteLock</code> instance associated with key
@@ -813,7 +813,7 @@ public interface RJsonStoreReactive<K, V> extends RExpirableReactive {
      * @param key - map key
      * @return readWriteLock
      */
-    RReadWriteLock getReadWriteLock(K key);
+    RReadWriteLockReactive getReadWriteLock(K key);
 
     /**
      * Returns <code>RLock</code> instance associated with key
@@ -821,6 +821,6 @@ public interface RJsonStoreReactive<K, V> extends RExpirableReactive {
      * @param key - map key
      * @return lock
      */
-    RLock getLock(K key);
+    RLockReactive getLock(K key);
 
 }
