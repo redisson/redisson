@@ -31,6 +31,7 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
 import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.liveobject.misc.Introspectior;
+import org.redisson.liveobject.resolver.MapResolver;
 import org.redisson.liveobject.resolver.NamingScheme;
 
 import java.lang.reflect.Field;
@@ -56,9 +57,14 @@ public class AccessorInterceptor {
     private static final Pattern FIELD_PATTERN = Pattern.compile("^(get|set|is)");
 
     private final CommandAsyncExecutor commandExecutor;
+    private final Class<?> entityClass;
+    private final MapResolver mapResolver;
 
-    public AccessorInterceptor(CommandAsyncExecutor commandExecutor) {
+    public AccessorInterceptor(Class<?> entityClass, CommandAsyncExecutor commandExecutor,
+                               MapResolver mapResolver) {
+        this.entityClass = entityClass;
         this.commandExecutor = commandExecutor;
+        this.mapResolver = mapResolver;
     }
 
     @RuntimeType
@@ -67,7 +73,9 @@ public class AccessorInterceptor {
                             @SuperCall Callable<?> superMethod,
                             @AllArguments Object[] args,
                             @This Object me,
-                            @FieldValue("liveObjectLiveMap") RMap<String, Object> liveMap) throws Exception {
+                            @FieldProxy("liveObjectLiveMap") LiveObjectInterceptor.Setter mapSetter,
+                            @FieldProxy("liveObjectLiveMap") LiveObjectInterceptor.Getter mapGetter
+    ) throws Exception {
         if (isGetter(method, getREntityIdFieldName(me))) {
             return ((RLiveObject) me).getLiveObjectId();
         }
@@ -76,10 +84,13 @@ public class AccessorInterceptor {
             return null;
         }
 
+        Object id = ((RLiveObject) me).getLiveObjectId();
+        RMap<String, Object> liveMap = mapResolver.resolve(commandExecutor, entityClass, id, mapSetter, mapGetter);
+
         String fieldName = getFieldName(me.getClass().getSuperclass(), method);
         Field field = ClassUtils.getDeclaredField(me.getClass().getSuperclass(), fieldName);
         Class<?> fieldType = field.getType();
-        
+
         if (isGetter(method, fieldName)) {
             if (Modifier.isTransient(field.getModifiers())) {
                 return field.get(me);
@@ -93,7 +104,7 @@ public class AccessorInterceptor {
                     return ar;
                 }
             }
-            
+
             if (result != null && fieldType.isEnum()) {
                 if (result instanceof String) {
                     return Enum.valueOf((Class) fieldType, (String) result);
@@ -114,7 +125,7 @@ public class AccessorInterceptor {
             if (arg != null && ClassUtils.isAnnotationPresent(arg.getClass(), REntity.class)) {
                 throw new IllegalStateException("REntity object should be attached to Redisson first");
             }
-            
+
             if (arg instanceof RLiveObject) {
                 RLiveObject liveObject = (RLiveObject) arg;
 
@@ -129,11 +140,11 @@ public class AccessorInterceptor {
 
                 return me;
             }
-            
+
             if (!(arg instanceof RObject)
                     && (arg instanceof Collection || arg instanceof Map)
                     && TransformationMode.ANNOTATION_BASED
-                            .equals(ClassUtils.getAnnotation(me.getClass().getSuperclass(),
+                    .equals(ClassUtils.getAnnotation(me.getClass().getSuperclass(),
                             REntity.class).fieldTransformation())) {
                 RObject rObject = commandExecutor.getObjectBuilder().createObject(((RLiveObject) me).getLiveObjectId(), me.getClass().getSuperclass(), arg.getClass(), fieldName);
                 if (arg != null) {
@@ -151,7 +162,7 @@ public class AccessorInterceptor {
                     arg = rObject;
                 }
             }
-            
+
             if (arg instanceof RObject) {
                 if (commandExecutor instanceof CommandBatchService) {
                     commandExecutor.getObjectBuilder().storeAsync((RObject) arg, fieldName, liveMap);
@@ -185,7 +196,7 @@ public class AccessorInterceptor {
     }
 
     private static final Set<Class<?>> PRIMITIVE_CLASSES = new HashSet<>(Arrays.asList(
-                        byte.class, short.class, int.class, long.class, float.class, double.class));
+            byte.class, short.class, int.class, long.class, float.class, double.class));
 
     private void removeIndex(RMap<String, Object> liveMap, Object me, Field field) {
         if (field.getAnnotation(RIndex.class) == null) {

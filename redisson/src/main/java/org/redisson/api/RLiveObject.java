@@ -38,4 +38,6 @@ public interface RLiveObject extends RExpirable {
      */
     void setLiveObjectId(Object liveObjectId);
 
+    RMap getLiveObjectLiveMap();
+
 }

@@ -17,7 +17,6 @@ package org.redisson.liveobject.core;
 
 import net.bytebuddy.implementation.bind.annotation.*;
 import org.redisson.RedissonLiveObjectService;
-import org.redisson.RedissonMap;
 import org.redisson.RedissonObject;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLiveObject;
@@ -25,7 +24,7 @@ import org.redisson.api.RMap;
 import org.redisson.client.RedisException;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
-import org.redisson.liveobject.misc.ClassUtils;
+import org.redisson.liveobject.resolver.MapResolver;
 import org.redisson.liveobject.resolver.NamingScheme;
 
 import java.lang.reflect.InvocationTargetException;
@@ -49,25 +48,18 @@ public class LiveObjectInterceptor {
     }
 
     private final CommandAsyncExecutor commandExecutor;
-    private final Class<?> originalClass;
-    private final String idFieldName;
-    private final Class<?> idFieldType;
+    private final Class<?> entityClass;
     private final NamingScheme namingScheme;
     private final RedissonLiveObjectService service;
+    private final MapResolver mapResolver;
 
-    public LiveObjectInterceptor(CommandAsyncExecutor commandExecutor, RedissonLiveObjectService service, Class<?> entityClass, String idFieldName) {
+    public LiveObjectInterceptor(CommandAsyncExecutor commandExecutor, RedissonLiveObjectService service, Class<?> entityClass,
+                                 MapResolver mapResolver) {
         this.service = service;
+        this.mapResolver = mapResolver;
         this.commandExecutor = commandExecutor;
-        this.originalClass = entityClass;
-        this.idFieldName = idFieldName;
-
-        namingScheme = commandExecutor.getObjectBuilder().getNamingScheme(entityClass);
-
-        try {
-            this.idFieldType = ClassUtils.getDeclaredField(originalClass, idFieldName).getType();
-        } catch (Exception e) {
-            throw new IllegalArgumentException(e);
-        }
+        this.entityClass = entityClass;
+        this.namingScheme = commandExecutor.getObjectBuilder().getNamingScheme(entityClass);
     }
 
     @RuntimeType
@@ -86,34 +78,33 @@ public class LiveObjectInterceptor {
             if (args[0].getClass().isArray()) {
                 throw new UnsupportedOperationException("RId value cannot be an array.");
             }
-            //TODO: distributed locking maybe required.
-            String idKey = getMapKey(args[0]);
-            if (map != null) {
-                if (((RedissonObject) map).getRawName().equals(idKey)) {
-                    return null;
-                }
-                try {
-                    map.rename(getMapKey(args[0]));
-                } catch (RedisException e) {
-                    if (e.getMessage() == null || !e.getMessage().startsWith("ERR no such key")) {
-                        throw e;
+            if (idGetter.getValue() != null) {
+                mapResolver.remove(entityClass, idGetter.getValue());
+
+                String idKey = namingScheme.getName(entityClass, args[0]);
+                if (map != null) {
+                    if (((RedissonObject) map).getRawName().equals(idKey)) {
+                        return map;
                     }
-                    //key may already renamed by others.
+                    try {
+                        map.rename(idKey);
+                        idSetter.setValue(args[0]);
+                        return null;
+                    } catch (RedisException e) {
+                        if (e.getMessage() == null || !e.getMessage().startsWith("ERR no such key")) {
+                            throw e;
+                        }
+                        //key may already renamed by others.
+                    }
                 }
             }
 
-            RMap<Object, Object> liveMap = new RedissonMap<Object, Object>(namingScheme.getCodec(), commandExecutor,
-                                                    idKey, null, null, null);
-            mapSetter.setValue(liveMap);
-
+            idSetter.setValue(args[0]);
             return null;
         }
 
         if ("getLiveObjectId".equals(method.getName())) {
-            if (map == null) {
-                return null;
-            }
-            return namingScheme.resolveId(((RedissonObject) map).getRawName());
+            return id;
         }
 
         if ("delete".equals(method.getName())) {
@@ -127,8 +118,16 @@ public class LiveObjectInterceptor {
             Object idd = ((RLiveObject) me).getLiveObjectId();
             RFuture<Long> deleteFuture = service.delete(idd, me.getClass().getSuperclass(), namingScheme, ce);
             ce.execute();
-            
+
             return commandExecutor.get(deleteFuture.toCompletableFuture()) > 0;
+        }
+
+        if (map == null) {
+            map = mapResolver.resolve(commandExecutor, entityClass, id, mapSetter, mapGetter);
+        }
+
+        if ("getLiveObjectLiveMap".equals(method.getName())) {
+            return map;
         }
 
         try {
@@ -136,11 +135,6 @@ public class LiveObjectInterceptor {
         } catch (InvocationTargetException e) {
             throw e.getCause();
         }
-    }
-
-
-    private String getMapKey(Object id) {
-        return namingScheme.getName(originalClass, id);
     }
 
 }

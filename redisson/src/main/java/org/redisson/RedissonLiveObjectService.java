@@ -43,10 +43,14 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
 import org.redisson.liveobject.LiveObjectSearch;
 import org.redisson.liveobject.LiveObjectTemplate;
-import org.redisson.liveobject.core.*;
+import org.redisson.liveobject.core.AccessorInterceptor;
+import org.redisson.liveobject.core.FieldAccessorInterceptor;
+import org.redisson.liveobject.core.LiveObjectInterceptor;
+import org.redisson.liveobject.core.RMapInterceptor;
 import org.redisson.liveobject.misc.AdvBeanCopy;
 import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.liveobject.misc.Introspectior;
+import org.redisson.liveobject.resolver.MapResolver;
 import org.redisson.liveobject.resolver.NamingScheme;
 import org.redisson.liveobject.resolver.RIdResolver;
 
@@ -65,12 +69,14 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     private final ConcurrentMap<Class<?>, Class<?>> classCache;
     private final CommandAsyncExecutor commandExecutor;
     private final LiveObjectSearch seachEngine;
+    private final MapResolver mapResolver;
 
     public RedissonLiveObjectService(ConcurrentMap<Class<?>, Class<?>> classCache,
                                      CommandAsyncExecutor commandExecutor) {
         this.classCache = classCache;
         this.commandExecutor = commandExecutor;
         this.seachEngine = new LiveObjectSearch(commandExecutor);
+        this.mapResolver = new MapResolver();
     }
 
     private void addExpireListener(CommandAsyncExecutor commandExecutor) {
@@ -102,10 +108,10 @@ public class RedissonLiveObjectService implements RLiveObjectService {
             return Class.forName(className);
         } catch (ClassNotFoundException e) {
             return classCache.keySet()
-                             .stream()
-                             .filter(c -> c.getName().equals(className))
-                             .findAny()
-                             .orElse(null);
+                    .stream()
+                    .filter(c -> c.getName().equals(className))
+                    .findAny()
+                    .orElse(null);
         }
     }
 
@@ -122,7 +128,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 //    }
 
     private RMap<String, Object> getMap(Object proxied) {
-        return ClassUtils.getField(proxied, "liveObjectLiveMap");
+        return asLiveObject(proxied).getLiveObjectLiveMap();
     }
 
     private <T> Object generateId(Class<T> entityClass, String idFieldName) throws NoSuchFieldException {
@@ -270,7 +276,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 Object object = ClassUtils.getField(detachedObject, field.getName());
                 if (object == null
                         || object instanceof Collection
-                            || ClassUtils.isAnnotationPresent(object.getClass(), REntity.class)) {
+                        || ClassUtils.isAnnotationPresent(object.getClass(), REntity.class)) {
                     continue;
                 }
 
@@ -285,7 +291,12 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
         batchService.execute();
 
+        detached2Attached.values().forEach(attachedObject -> {
+            RLiveObject lo = asLiveObject(attachedObject);
+            mapResolver.remove(attachedObject.getClass().getSuperclass(), lo.getLiveObjectId());
+        });
         classCache.clear();
+
         List<T> attachedObjects = new ArrayList<>();
         for (Object attachedObject : detached2Attached.values()) {
             RLiveObject lo = asLiveObject(attachedObject);
@@ -414,7 +425,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         if (isLiveObject(instance)) {
             clazz = clazz.getSuperclass();
         }
-        
+
         RCascade annotation = ClassUtils.getAnnotation(clazz, fieldName, RCascade.class);
         if (annotation != null) {
             throw new IllegalArgumentException("RCascade annotation couldn't be defined for non-Redisson object '" + clazz + "' and field '" + fieldName + "'");
@@ -426,7 +437,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         if (isLiveObject(instance)) {
             clazz = clazz.getSuperclass();
         }
-        
+
         RCascade annotation = ClassUtils.getAnnotation(clazz, fieldName, RCascade.class);
         if (annotation != null && (Arrays.asList(annotation.value()).contains(type)
                 || Arrays.asList(annotation.value()).contains(RCascadeType.ALL))) {
@@ -434,7 +445,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         }
         return false;
     }
-    
+
     @Override
     public <T> T detach(T attachedObject) {
         addExpireListener(commandExecutor);
@@ -448,15 +459,15 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         T detached = instantiateDetachedObject((Class<T>) attachedObject.getClass().getSuperclass(), asLiveObject(attachedObject).getLiveObjectId());
         new BeanCopy(attachedObject, detached).declared(true).copy();
         alreadyDetached.put(getMap(attachedObject).getName(), detached);
-        
+
         for (Entry<String, Object> obj : getMap(attachedObject).entrySet()) {
             if (!checkCascade(attachedObject, RCascadeType.DETACH, obj.getKey())) {
                 continue;
             }
-            
+
             if (obj.getValue() instanceof RSortedSet) {
                 SortedSet<Object> redissonSet = (SortedSet<Object>) obj.getValue();
-                Set<Object> set = new TreeSet<Object>(redissonSet.comparator()); 
+                Set<Object> set = new TreeSet<Object>(redissonSet.comparator());
                 for (Object object : redissonSet) {
                     if (isLiveObject(object)) {
                         Object detachedObject = alreadyDetached.get(getMap(object).getName());
@@ -467,11 +478,11 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                     }
                     set.add(object);
                 }
-                
+
                 ClassUtils.setField(detached, obj.getKey(), set);
             } else if (obj.getValue() instanceof RDeque) {
                 Collection<Object> redissonDeque = (Collection<Object>) obj.getValue();
-                Deque<Object> deque = new LinkedList<Object>(); 
+                Deque<Object> deque = new LinkedList<Object>();
                 for (Object object : redissonDeque) {
                     if (isLiveObject(object)) {
                         Object detachedObject = alreadyDetached.get(getMap(object).getName());
@@ -482,11 +493,11 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                     }
                     deque.add(object);
                 }
-                
+
                 ClassUtils.setField(detached, obj.getKey(), deque);
             } else if (obj.getValue() instanceof RQueue) {
                 Collection<Object> redissonQueue = (Collection<Object>) obj.getValue();
-                Queue<Object> queue = new LinkedList<Object>(); 
+                Queue<Object> queue = new LinkedList<Object>();
                 for (Object object : redissonQueue) {
                     if (isLiveObject(object)) {
                         Object detachedObject = alreadyDetached.get(getMap(object).getName());
@@ -497,10 +508,10 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                     }
                     queue.add(object);
                 }
-                
+
                 ClassUtils.setField(detached, obj.getKey(), queue);
             } else if (obj.getValue() instanceof RSet) {
-                Set<Object> set = new HashSet<Object>(); 
+                Set<Object> set = new HashSet<Object>();
                 Collection<Object> redissonSet = (Collection<Object>) obj.getValue();
                 for (Object object : redissonSet) {
                     if (isLiveObject(object)) {
@@ -512,10 +523,10 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                     }
                     set.add(object);
                 }
-                
+
                 ClassUtils.setField(detached, obj.getKey(), set);
             } else if (obj.getValue() instanceof RList) {
-                List<Object> list = new ArrayList<Object>(); 
+                List<Object> list = new ArrayList<Object>();
                 Collection<Object> redissonList = (Collection<Object>) obj.getValue();
                 for (Object object : redissonList) {
                     if (isLiveObject(object)) {
@@ -536,12 +547,12 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 }
                 ClassUtils.setField(detached, obj.getKey(), detachedObject);
             } else if (obj.getValue() instanceof RMap) {
-                Map<Object, Object> map = new LinkedHashMap<Object, Object>(); 
+                Map<Object, Object> map = new LinkedHashMap<Object, Object>();
                 Map<Object, Object> redissonMap = (Map<Object, Object>) obj.getValue();
                 for (Entry<Object, Object> entry : redissonMap.entrySet()) {
                     Object key = entry.getKey();
                     Object value = entry.getValue();
-                    
+
                     if (isLiveObject(key)) {
                         Object detachedObject = alreadyDetached.get(getMap(key).getName());
                         if (detachedObject == null) {
@@ -549,7 +560,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                         }
                         key = detachedObject;
                     }
-                    
+
                     if (isLiveObject(value)) {
                         Object detachedObject = alreadyDetached.get(getMap(value).getName());
                         if (detachedObject == null) {
@@ -559,16 +570,16 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                     }
                     map.put(key, value);
                 }
-                
+
                 ClassUtils.setField(detached, obj.getKey(), map);
             } else {
                 validateAnnotation(detached, obj.getKey());
             }
         }
-        
+
         return detached;
     }
-    
+
     @Override
     public <T> void delete(T attachedObject) {
         addExpireListener(commandExecutor);
@@ -578,12 +589,12 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
     private <T> void delete(T attachedObject, Set<String> deleted) {
         validateAttached(attachedObject);
-        
+
         for (Entry<String, Object> obj : getMap(attachedObject).entrySet()) {
             if (!checkCascade(attachedObject, RCascadeType.DELETE, obj.getKey())) {
                 continue;
             }
-            
+
             if (obj.getValue() instanceof RSortedSet) {
                 deleteCollection(deleted, (Iterable<?>) obj.getValue());
                 ((RObject) obj.getValue()).delete();
@@ -611,7 +622,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
             } else {
                 validateAnnotation(attachedObject, obj.getKey());
             }
-            
+
         }
         asLiveObject(attachedObject).delete();
     }
@@ -651,7 +662,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         deleteCollections(id, entityClass, ce);
 
         RMap<String, Object> liveMap = new RedissonMap<>(namingScheme.getCodec(), commandExecutor,
-                                                mapName, null, null, null);
+                mapName, null, null, null);
         Map<String, ?> values = liveMap.getAll(fieldNames);
         for (String fieldName : fieldNames) {
             Object value = values.get(fieldName);
@@ -668,6 +679,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 idsMultimap.removeAsync(value, liveObjectId);
             }
         }
+        mapResolver.remove(entityClass, id);
         return new RedissonKeys(ce).deleteAsync(mapName);
     }
 
@@ -683,7 +695,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         TypeDescription.Generic n1 = TypeDescription.Generic.Builder.rawType(Number.class).build();
         for (InDefinedShape field : fields) {
             boolean isNumber = n1.accept(TypeDescription.Generic.Visitor.Assigner.INSTANCE)
-                                    .isAssignableFrom(field.getType().asErasure().asBoxed().asGenericType());
+                    .isAssignableFrom(field.getType().asErasure().asBoxed().asGenericType());
             String indexName = namingScheme.getIndexName(entityClass, field.getName());
             if (isNumber) {
                 RScoredSortedSetAsync<Object> set = new RedissonScoredSortedSet<>(namingScheme.getCodec(), ce, indexName, null);
@@ -779,8 +791,10 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     public void unregisterClass(Class<?> cls) {
         if (cls.isAssignableFrom(RLiveObject.class)) {
             classCache.remove(cls.getSuperclass());
+            mapResolver.remove(cls.getSuperclass());
         } else {
             classCache.remove(cls);
+            mapResolver.remove(cls);
         }
     }
 
@@ -840,11 +854,11 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
         FieldList<FieldDescription.InDefinedShape> fields = Introspectior.getFieldsWithAnnotation(entityClass, RIndex.class);
         fields = fields.filter(ElementMatchers.fieldType(ElementMatchers.hasSuperType(
-                                ElementMatchers.anyOf(Map.class, Collection.class, RObject.class))));
+                ElementMatchers.anyOf(Map.class, Collection.class, RObject.class))));
         for (InDefinedShape field : fields) {
             throw new IllegalArgumentException("RIndex annotation couldn't be defined for field '" + field.getName() + "' with type '" + field.getType() + "'");
         }
-        
+
         FieldList<FieldDescription.InDefinedShape> fieldsWithRIdAnnotation
                 = Introspectior.getFieldsWithAnnotation(entityClass, RId.class);
         if (fieldsWithRIdAnnotation.size() == 0) {
@@ -880,7 +894,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
             throw new IllegalArgumentException("The object supplied is must be a RLiveObject");
         }
     }
-    
+
     private <T> Class<? extends T> createProxy(Class<T> entityClass, CommandAsyncExecutor commandExecutor) {
         DynamicType.Builder<T> builder = new ByteBuddy()
                 .subclass(entityClass);
@@ -891,37 +905,32 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         }
 
         Class<? extends T> proxied = builder.method(ElementMatchers.isDeclaredBy(
-                ElementMatchers.anyOf(RLiveObject.class, RExpirable.class, RObject.class))
-                .and(ElementMatchers.isGetter().or(ElementMatchers.isSetter())
-                        .or(ElementMatchers.named("isPhantom"))
-                        .or(ElementMatchers.named("delete"))))
+                                ElementMatchers.anyOf(RLiveObject.class, RExpirable.class, RObject.class))
+                        .and(ElementMatchers.isGetter().or(ElementMatchers.isSetter())
+                                .or(ElementMatchers.named("isPhantom"))
+                                .or(ElementMatchers.named("delete"))))
                 .intercept(MethodDelegation.withDefaultConfiguration()
                         .withBinders(FieldProxy.Binder
                                 .install(LiveObjectInterceptor.Getter.class,
                                         LiveObjectInterceptor.Setter.class))
-                        .to(new LiveObjectInterceptor(commandExecutor, this, entityClass, getRIdFieldName(entityClass))))
-//                .intercept(MethodDelegation.to(
-//                                new LiveObjectInterceptor(redisson, codecProvider, entityClass,
-//                                        getRIdFieldName(entityClass)))
-//                        .appendParameterBinder(FieldProxy.Binder
-//                                .install(LiveObjectInterceptor.Getter.class,
-//                                        LiveObjectInterceptor.Setter.class)))
+                        .to(new LiveObjectInterceptor(commandExecutor, this, entityClass, mapResolver)))
                 .implement(RLiveObject.class)
+
                 .method(ElementMatchers.isAnnotatedWith(RFieldAccessor.class)
                         .and(ElementMatchers.named("get")
-                        .or(ElementMatchers.named("set"))))
+                                .or(ElementMatchers.named("set"))))
                 .intercept(MethodDelegation.to(FieldAccessorInterceptor.class))
-                
-                .method(ElementMatchers.isDeclaredBy(RExpirable.class)
-                        .or(ElementMatchers.isDeclaredBy(RExpirableAsync.class)))
-                .intercept(MethodDelegation.to(RExpirableInterceptor.class))
-                .implement(RExpirable.class)
-                
+
                 .method(ElementMatchers.isDeclaredBy(Map.class)
+                        .or(ElementMatchers.isDeclaredBy(RExpirable.class))
+                        .or(ElementMatchers.isDeclaredBy(RExpirableAsync.class))
                         .or(ElementMatchers.isDeclaredBy(ConcurrentMap.class))
                         .or(ElementMatchers.isDeclaredBy(RMapAsync.class))
                         .or(ElementMatchers.isDeclaredBy(RMap.class)))
-                .intercept(MethodDelegation.to(RMapInterceptor.class))
+                .intercept(MethodDelegation.withDefaultConfiguration()
+                        .withBinders(FieldProxy.Binder
+                                .install(LiveObjectInterceptor.Getter.class,
+                                        LiveObjectInterceptor.Setter.class)).to(new RMapInterceptor(commandExecutor, entityClass, mapResolver)))
                 .implement(RMap.class)
 
                 .method(ElementMatchers.not(ElementMatchers.isDeclaredBy(Object.class))
@@ -936,9 +945,13 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                                 .or(ElementMatchers.isSetter()))
                         .and(ElementMatchers.isPublic()
                                 .or(ElementMatchers.isProtected()))
-                        )
-                .intercept(MethodDelegation.to(new AccessorInterceptor(commandExecutor)))
-                
+                )
+                .intercept(MethodDelegation.withDefaultConfiguration()
+                        .withBinders(FieldProxy.Binder
+                                .install(LiveObjectInterceptor.Getter.class,
+                                        LiveObjectInterceptor.Setter.class))
+                        .to(new AccessorInterceptor(entityClass, commandExecutor, mapResolver)))
+
                 .make().load(entityClass.getClassLoader(),
                         ClassLoadingStrategy.Default.WRAPPER)
                 .getLoaded();
