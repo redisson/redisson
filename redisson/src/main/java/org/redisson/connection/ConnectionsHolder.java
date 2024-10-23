@@ -91,7 +91,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
 
     private T pollConnection(RedisCommand<?> command) {
         T c = freeConnections.poll();
-        if (c != null) {
+        if (c != null && changeUsage) {
             c.incUsage();
         }
         return c;
@@ -109,7 +109,9 @@ public class ConnectionsHolder<T extends RedisConnection> {
 
         connection.setLastUsageTime(System.nanoTime());
         freeConnections.add(connection);
-        connection.decUsage();
+        if (changeUsage) {
+            connection.decUsage();
+        }
     }
 
     public Queue<T> getAllConnections() {
