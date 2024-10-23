@@ -49,7 +49,7 @@ public class ReferenceCacheMap<K, V> extends AbstractCacheMap<K, V> {
     protected CachedValue<K, V> create(K key, V value, long ttl, long maxIdleTime) {
         return new ReferenceCachedValue<K, V>(key, value, ttl, maxIdleTime, queue, type);
     }
-    
+
     @Override
     protected boolean isFull(K key) {
         return true;
@@ -62,13 +62,15 @@ public class ReferenceCacheMap<K, V> extends AbstractCacheMap<K, V> {
             if (value == null) {
                 break;
             }
-            map.remove(value.getOwner().getKey(), value.getOwner());
+            if (map.remove(value.getOwner().getKey(), value.getOwner())) {
+                onValueRemove((CachedValue<K, V>) value.getOwner());
+            }
         }
         return super.removeExpiredEntries();
     }
-    
+
     @Override
     protected void onMapFull() {
     }
-    
+
 }

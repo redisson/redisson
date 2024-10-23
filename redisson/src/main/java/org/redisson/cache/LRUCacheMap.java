@@ -74,7 +74,7 @@ public class LRUCacheMap<K, V> extends AbstractCacheMap<K, V> {
 
     public LRUCacheMap(int size, long timeToLiveInMillis, long maxIdleInMillis) {
         super(size, timeToLiveInMillis, maxIdleInMillis);
-        
+
         for (int i = 0; i < Runtime.getRuntime().availableProcessors()*2; i++) {
             queues.add(new OrderedSet<>());
         }
@@ -89,13 +89,14 @@ public class LRUCacheMap<K, V> extends AbstractCacheMap<K, V> {
     private OrderedSet<CachedValue<K, V>> getQueue(CachedValue<K, V> value) {
         return queues.get(Math.abs(value.hashCode() % queues.size()));
     }
-    
+
     @Override
     protected void onValueRemove(CachedValue<K, V> value) {
         OrderedSet<CachedValue<K, V>> queue = getQueue(value);
         queue.remove(value);
+        super.onValueRemove(value);
     }
-    
+
     @Override
     protected void onValueRead(CachedValue<K, V> value) {
         OrderedSet<CachedValue<K, V>> queue = getQueue(value);
@@ -120,12 +121,14 @@ public class LRUCacheMap<K, V> extends AbstractCacheMap<K, V> {
             OrderedSet<CachedValue<K, V>> queue = queues.get(queueIndex);
             CachedValue<K, V> removedValue = queue.removeFirst();
             if (removedValue != null) {
-                map.remove(removedValue.getKey(), removedValue);
+                if (map.remove(removedValue.getKey(), removedValue)) {
+                    super.onValueRemove(removedValue);
+                }
                 return;
             }
         }
     }
-    
+
     @Override
     public void clear() {
         for (OrderedSet<CachedValue<K, V>> collection : queues) {

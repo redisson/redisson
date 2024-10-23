@@ -84,28 +84,29 @@ public class LFUCacheMap<K, V> extends AbstractCacheMap<K, V> {
     protected CachedValue<K, V> create(K key, V value, long ttl, long maxIdleTime) {
         return new LFUCachedValue<K, V>(idGenerator.incrementAndGet(), key, value, ttl, maxIdleTime);
     }
-    
+
     @Override
     protected void onValueCreate(CachedValue<K, V> value) {
         MapKey key = toKey((LFUCachedValue<K, V>) value);
         accessMap.put(key, (LFUCachedValue<K, V>) value);
     }
-    
+
     @Override
     protected void onValueRead(CachedValue<K, V> value) {
         addAccessCount((LFUCachedValue<K, V>) value, 1);
     }
-    
+
     private MapKey toKey(LFUCachedValue<K, V> value) {
         return new MapKey(value.accessCount, value);
     }
-    
+
     @Override
     protected void onValueRemove(CachedValue<K, V> value) {
         value.getLock().execute(() -> {
             MapKey key = toKey((LFUCachedValue<K, V>) value);
             accessMap.remove(key);
         });
+        super.onValueRemove(value);
     }
 
     private void addAccessCount(LFUCachedValue<K, V> value, long c) {
@@ -136,8 +137,10 @@ public class LFUCacheMap<K, V> extends AbstractCacheMap<K, V> {
         if (entry == null) {
             return;
         }
-        map.remove(entry.getValue().getKey(), entry.getValue());
-        
+        if (map.remove(entry.getValue().getKey(), entry.getValue())) {
+            super.onValueRemove(entry.getValue());
+        }
+
         if (entry.getValue().accessCount == 0) {
             return;
         }
@@ -154,5 +157,5 @@ public class LFUCacheMap<K, V> extends AbstractCacheMap<K, V> {
         accessMap.clear();
         super.clear();
     }
-    
+
 }
