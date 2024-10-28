@@ -525,6 +525,7 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
                 onValueRemove(entry);
                 result.set(true);
                 CachedValue<K, V> newEntry = create(key, newValue, timeToLiveInMillis, maxIdleInMillis);
+                onValueCreate(newEntry);
                 return newEntry;
             }
             return entry;
@@ -540,6 +541,7 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
                 onValueRemove(entry);
                 result.set(entry.getValue());
                 CachedValue<K, V> newEntry = create(key, value, timeToLiveInMillis, maxIdleInMillis);
+                onValueCreate(newEntry);
                 return newEntry;
             }
             return entry;
@@ -549,9 +551,19 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
 
     @Override
     public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) {
+        if (isFull(key)) {
+            if (!removeExpiredEntries()) {
+                onMapFull();
+            }
+        }
+
         CachedValue<K, V> v = map.computeIfAbsent(key, k -> {
             V value = mappingFunction.apply(k);
+            if (value == null) {
+                return null;
+            }
             CachedValue<K, V> entry = create(key, value, timeToLiveInMillis, maxIdleInMillis);
+            onValueCreate(entry);
             return entry;
         });
         if (v != null) {
@@ -569,6 +581,7 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
                     return null;
                 }
                 CachedValue<K, V> entry = create(key, value, timeToLiveInMillis, maxIdleInMillis);
+                onValueCreate(entry);
                 return entry;
             }
             return null;

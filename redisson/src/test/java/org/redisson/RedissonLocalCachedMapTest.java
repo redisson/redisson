@@ -336,6 +336,8 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         assertThat(s).hasSize(1);
         Collection<SimpleValue> s2 = map2.readAllValues();
         assertThat(s2).hasSize(1);
+        map1.destroy();
+        map2.destroy();
     }
 
 

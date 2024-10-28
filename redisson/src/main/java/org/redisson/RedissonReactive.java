@@ -1138,10 +1138,7 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public <K, V> RLocalCachedMapReactive<K, V> getLocalCachedMap(String name, LocalCachedMapOptions<K, V> options) {
-        RMap<K, V> map = new RedissonLocalCachedMap<>(commandExecutor, name,
-                                                        options, evictionScheduler, null, writeBehindService);
-        return ReactiveProxyBuilder.create(commandExecutor, map,
-                new RedissonMapReactive<>(map, commandExecutor), RLocalCachedMapReactive.class);
+        return getLocalCachedMap(name, null, options);
     }
 
     @Override

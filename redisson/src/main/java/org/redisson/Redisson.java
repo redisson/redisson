@@ -345,8 +345,7 @@ public final class Redisson implements RedissonClient {
 
     @Override
     public <K, V> RLocalCachedMap<K, V> getLocalCachedMap(String name, LocalCachedMapOptions<K, V> options) {
-        return new RedissonLocalCachedMap<K, V>(commandExecutor, name,
-                options, evictionScheduler, this, writeBehindService);
+        return getLocalCachedMap(name, null, options);
     }
 
     @Override
