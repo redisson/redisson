@@ -57,6 +57,7 @@ import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.Protocol;
 import org.redisson.config.TransportMode;
+import org.redisson.liveobject.resolver.MapResolver;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.RandomXoshiro256PlusPlus;
 import org.redisson.misc.RedisURI;
@@ -625,4 +626,11 @@ public final class ServiceManager {
     public Map<String, AtomicInteger> getAddersCounter() {
         return addersCounter;
     }
+
+    private final MapResolver mapResolver = new MapResolver(this);
+
+    public MapResolver getLiveObjectMapResolver() {
+        return mapResolver;
+    }
+
 }

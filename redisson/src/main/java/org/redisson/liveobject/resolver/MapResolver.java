@@ -18,6 +18,7 @@ package org.redisson.liveobject.resolver;
 import org.redisson.RedissonMap;
 import org.redisson.api.RMap;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.connection.ServiceManager;
 import org.redisson.liveobject.core.LiveObjectInterceptor;
 
 /**
@@ -27,7 +28,10 @@ import org.redisson.liveobject.core.LiveObjectInterceptor;
  */
 public final class MapResolver {
 
-    public MapResolver() {
+    private final ServiceManager serviceManager;
+
+    public MapResolver(ServiceManager serviceManager) {
+        this.serviceManager = serviceManager;
     }
 
     public void remove(Class<?> entityClass) {

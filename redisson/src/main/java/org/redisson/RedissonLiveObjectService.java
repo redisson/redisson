@@ -76,7 +76,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         this.classCache = classCache;
         this.commandExecutor = commandExecutor;
         this.seachEngine = new LiveObjectSearch(commandExecutor);
-        this.mapResolver = new MapResolver();
+        this.mapResolver = commandExecutor.getServiceManager().getLiveObjectMapResolver();
     }
 
     private void addExpireListener(CommandAsyncExecutor commandExecutor) {

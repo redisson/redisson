@@ -28,6 +28,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.codec.CompositeCodec;
+import org.redisson.command.BatchService;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.slf4j.Logger;
@@ -134,6 +135,10 @@ public abstract class LocalCacheListener {
 
         if (options.getSyncStrategy() != SyncStrategy.NONE) {
             syncListenerId = addMessageListener();
+
+            if (commandExecutor instanceof BatchService) {
+                return;
+            }
 
             String disabledKeysName = RedissonObject.suffixName(name, DISABLED_KEYS_SUFFIX);
             CompositeCodec localCacheCodec = new CompositeCodec(LocalCachedMessageCodec.INSTANCE, StringCodec.INSTANCE, StringCodec.INSTANCE);
