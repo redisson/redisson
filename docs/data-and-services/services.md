@@ -274,11 +274,11 @@ public class MyObject {
 }
 ```
 
-Please note: fields marked with `transient` keyword aren't stored in Redis.
+Please note: fields marked with `transient` keyword aren't stored in Redis or Valkey.
 
 To start use it you should use one of methods below:
 
-`RLiveObjectService.attach()` - attaches object to Redis. Discard all the field values already in the detached instance  
+`RLiveObjectService.attach()` - attaches object to Redis or Valkey. Discard all the field values already in the detached instance  
 `RLiveObjectService.merge()` - overrides current object state in Redis or Valkey with the given object state  
 `RLiveObjectService.persist()` - stores only new object  
 
@@ -288,11 +288,11 @@ Code example:
 RLiveObjectService service = redisson.getLiveObjectService();
 MyLiveObject myObject = new MyLiveObject();
 myObject1.setId("1");
-// current state of myObject is now persisted and attached to Redis
+// current state of myObject is now persisted and attached to Redis or Valkey
 myObject = service.persist(myObject);
 
 MyLiveObject myObject = new MyLiveObject("1");
-// current state of myObject is now cleared and attached to Redis
+// current state of myObject is now cleared and attached to Redis or Valkey
 myObject = service.attach(myObject);
 
 MyLiveObject myObject = new MyLiveObject();
@@ -335,13 +335,13 @@ List.class | RedissonList.class
 
 The conversion prefers the one nearer to the top of the table if a field type matches more than one entries. i.e. `LinkedList` implements `Deque`, `List`, `Queue`, it will be converted to a `RedissonDeque` because of this.
 
-Instances of these Redisson classes retains their states/values/entries in Redis or Valkey too, changes to them are directly reflected into Redis or Valkey without keeping values in local VM.
+Instances of these Redisson classes retains their states/values/entries in Redis or Valkey too, changes to them are directly reflected into database without keeping values in local VM.
 
 ### Search by Object properties
 
-Redisson provides comprehensive search engine for Live Object. To make a property participate in search it should be annotated with `@RIndex` annotation.  
+Redisson provides comprehensive search engine for RLO objects. To make a property participate in search it should be annotated with `@RIndex` annotation.  
 
-!!! note "Open-source version of search engine is slow" 
+!!! note "The open-source version of the search engine is not optimized!" 
     Use [Redisson PRO](https://redisson.pro) for **ultra-fast search engine**, **low JVM memory consumption during search process** and **search index partitiong in cluster**.
 
 Usage example:
@@ -366,14 +366,14 @@ public class MyObject {
 
 Different type of search conditions are available:
 
-`Conditions.and` - **AND** condition for collection of nested conditions  
-`Conditions.eq`  - **EQUALS** condition which restricts property to defined value  
-`Conditions.or`  - **OR** condition for collection of nested conditions  
-`Conditions.in`  - **IN** condition which restricts property to set of defined values  
-`Conditions.gt`  - **GREATER THAN** condition which restricts property to defined value  
-`Conditions.ge`  - **GREATER THAN ON EQUAL** condition which restricts property to defined value  
-`Conditions.lt`  - **LESS THAN** condition which restricts property to defined value  
-`Conditions.le`  - **LESS THAN ON EQUAL** condition which restricts property to defined value  
+`Conditions.and()` - **AND** condition for collection of nested conditions  
+`Conditions.eq()`  - **EQUALS** condition which restricts property to defined value  
+`Conditions.or()`  - **OR** condition for collection of nested conditions  
+`Conditions.in()`  - **IN** condition which restricts property to set of defined values  
+`Conditions.gt()`  - **GREATER THAN** condition which restricts property to defined value  
+`Conditions.ge()`  - **GREATER THAN ON EQUAL** condition which restricts property to defined value  
+`Conditions.lt()`  - **LESS THAN** condition which restricts property to defined value  
+`Conditions.le()`  - **LESS THAN ON EQUAL** condition which restricts property to defined value  
 
 Once object stored in Redis or Valkey we can run search:
 
@@ -391,6 +391,73 @@ Collection<MyObject> objects = liveObjectService.find(MyObject.class,
 ```
 
 Search index expires after `expireXXX()` method call only if the Redis or Valkey `notify-keyspace-events` setting contains the letters `Kx`.
+
+### Local Cache
+
+_This feature is available only in [Redisson PRO](https://redisson.pro) edition._
+
+RLO objects can be cached in local cache on the Redisson side.
+
+**local cache** - so called near cache used to speed up read operations and avoid network roundtrips. It caches JSON Store entries on Redisson side and executes read operations up to **45x faster** in comparison with regular implementation. Local cached instances with the same name are connected to the same pub/sub channel. This channel is used for exchanging of update/invalidate events between all instances. Local cache store doesn't use `hashCode()`/`equals()` methods of key object, instead it uses hash of serialized state.
+
+To make an RLO entity stored in local cache it should be annotated with `@RCache` annotation. 
+
+`@RCache` annotation settings:  
+
+* `storeCacheMiss` - defines whether to store a cache miss into the local cache. Default value is `false`.
+* `storeMode` - defines store mode of cache data. Default value is `LOCALCACHE_REDIS`. Follow options are available:  
+    * `LOCALCACHE` - store data in local cache only and use Redis or Valkey only for data update/invalidation.  
+    * `LOCALCACHE_REDIS` - store data in both Redis or Valkey and local cache.
+* `cacheProvider` - defines Cache provider used as local cache store. Default value is `REDISSON`. Follow options are available:  
+    * `REDISSON` - uses Redisson own implementation
+    * `CAFFEINE` - uses Caffeine implementation
+* `evictionPolicy` - defines local cache eviction policy. Default value is `NONE`. Follow options are available:
+    * `LFU` - counts how often an item was requested. Those that are used least often are discarded first.
+    * `LRU` - discards the least recently used items first
+    * `SOFT` - uses soft references, entries are removed by GC
+    * `WEAK` - uses weak references, entries are removed by GC
+    * `NONE` - no eviction
+* `cacheSize` - local cache size. If cache size is `0` then local cache is unbounded. If size is `-1` then local cache is always empty and doesn't store data. Default value is `0`.
+* `reconnectionStrategy` - defines strategy for load missed local cache updates after connection failure. Default value is `NONE`. Follow options are available:
+    * `CLEAR` - clear local cache if map instance has been disconnected for a while.
+	* `NONE` - no reconnection handling
+* `syncStrategy` - defines local cache synchronization strategy. Default value is `INVALIDATE`. Follow options are available:
+    * `INVALIDATE` - Default. Invalidate cache entry across all RLocalCachedJsonStore instances on map entry change
+    * `UPDATE` - Insert/update cache entry across all RLocalCachedJsonStore instances on map entry change
+    * `NONE` - No synchronizations on map changes
+* `timeToLive` - defines time to live for each entry in local cache
+* `maxIdle` - defines max idle time for each entry in local cache
+* `useTopicPattern` - defines whether to use a global topic pattern listener that applies to all local cache instances belonging to the same Redisson instance. Default value is `true`.
+
+Usage example:
+
+```java
+@REntity
+@RCache(cacheSize = 10, evictionPolicy = EvictionPolicy.LRU)
+public class MyObject {
+
+    @RId
+    private String id;
+
+    private String name;
+
+    private Integer counter;
+    
+}
+
+
+RLiveObjectService service = redisson.getLiveObjectService();
+
+MyObject obj = new MyObject();
+obj.setId("1");
+obj.setName("Simple name");
+
+// current state of myObject is now persisted and attached to Redis or Valkey
+myObject = service.persist(obj);
+
+// loaded from local cache
+String n = myObject.getName();
+```
 
 
 ### Advanced Usage

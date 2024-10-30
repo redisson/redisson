@@ -1,4 +1,4 @@
-# Redisson - Easy Redis Java client<br/>and Real-Time Data Platform
+# Redisson - Valkey & Redis Java client<br/>Complete Real-Time Data Platform
 
 High-performance async and lock-free Java client for Redis and Valkey based on [Netty](http://netty.io) framework.  
 

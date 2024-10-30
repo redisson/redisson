@@ -290,26 +290,11 @@ set.removeListener(listenerId);
 ## JSON object holder
 Java implementation of [RJsonBucket](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RJsonBucket.html) object stores data in JSON format using `JSON.*` commands. JSON data encoding/decoding handled by `JsonCodec` which is a required parameter. Available implementation is `org.redisson.codec.JacksonCodec` which is thread-safe. 
 
-Use [JSON Store](collections.md/#json-store) for key-value implementation and local cache.
-
-### Local cache
-
-Redisson provides JSON object holder implementation with local cache.
-
-**local cache** - so called near cache used to speed up read operations and avoid network roundtrips. It caches whole JSON object on Redisson side and executes read operations up to **45x faster** in comparison with common implementation. Local cache instances with the same name connected to the same pub/sub channel. This channel is used to exchange invalidate events between instances.
-
-|RedissonClient<br/>method name | Local cache | Ultra-fast<br/>read/write |
-| ------------- | :-----------: | :---------:|
-|getJsonBucket()<br/><sub><i>open-source version</i></sub> | ❌ | ❌ |
-|getJsonBucket()<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ❌ | ✔️ |
-|getLocalCachedJsonBucket()<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ✔️ | ✔️ |
+Use [JSON Store](collections.md/#json-store) for key-value implementation and local cache support.
 
 Code example:
 ```java
 RJsonBucket<AnyObject> bucket = redisson.getJsonBucket("anyObject", new JacksonCodec<>(AnyObject.class));
-// or local cached instance
-RLocalCachedJsonBucket<AnyObject> bucket = redisson.getLocalCachedJsonBucket("anyObject", new JacksonCodec<>(AnyObject.class));
-
 
 bucket.set(new AnyObject(1));
 AnyObject obj = bucket.get();
@@ -325,8 +310,6 @@ long aa = bucket.arrayAppend("$.obj.values", "t3", "t4");
 Code example of **[Async](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RJsonBucketAsync.html) interface** usage:
 ```java
 RJsonBucket<AnyObject> bucket = redisson.getJsonBucket("anyObject", new JacksonCodec<>(AnyObject.class));
-// or local cached instace
-RLocalCachedJsonBucket<AnyObject> bucket = redisson.getLocalCachedJsonBucket("anyObject", new JacksonCodec<>(AnyObject.class));
 
 RFuture<Void> future = bucket.setAsync(new AnyObject(1));
 RFuture<AnyObject> objfuture = bucket.getAsync();
@@ -343,9 +326,6 @@ Code example of **[Reactive](https://static.javadoc.io/org.redisson/redisson/lat
 ```java
 RedissonReactiveClient redisson = redissonClient.reactive();
 RJsonBucketReactive<AnyObject> bucket = redisson.getJsonBucket("anyObject", new JacksonCodec<>(AnyObject.class));
-// or local cached instance
-RLocalCachedJsonBucketReactive<AnyObject> bucket = redisson.getLocalCachedJsonBucket("anyObject", new JacksonCodec<>(AnyObject.class));
-
 
 Mono<Void> mono = bucket.set(new AnyObject(1));
 Mono<AnyObject> objMono = bucket.get();
@@ -362,8 +342,6 @@ Code example of **[RxJava3](https://static.javadoc.io/org.redisson/redisson/late
 ```java
 RedissonRxClient redisson = redissonClient.rxJava();
 RJsonBucketRx<AnyObject> bucket = redisson.getJsonBucket("anyObject", new JacksonCodec<>(AnyObject.class));
-// or local cached instance
-RLocalCachedJsonBucketRx<AnyObject> bucket = redisson.getLocalCachedJsonBucket("anyObject", new JacksonCodec<>(AnyObject.class));
 
 Completable rx = bucket.set(new AnyObject(1));
 Maybe<AnyObject> objRx = bucket.get();

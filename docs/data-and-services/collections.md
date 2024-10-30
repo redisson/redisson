@@ -667,15 +667,32 @@ multimap.destroy();
 
 _This feature is available only in [Redisson PRO](https://redisson.pro) edition._
 
-Distributed Java implementation of Redis or Valkey based Key Value store for JSON objects. This object is thread-safe. Allows to store JSON value mapped by key. Operations can be executed per key or group of keys. Value is stored/retrieved using `JSON.*` commands. Both key and value are POJO objects. 
+[RJsonStore](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RJsonStore.html) is a distributed Key Value store for JSON objects. Compatible with Redis or Valkey. This object is thread-safe. Allows to store JSON value mapped by key. Operations can be executed per key or group of keys. Value is stored/retrieved using `JSON.*` commands. Both key and value are POJO objects. 
 
 Allows to define `time to live` parameter per entry. Doesn't use an entry eviction task, entries are cleaned on Redis or Valkey side.
 
-Implements **Async**, **Reactive** and **RxJava3** interfaces.
+Code example of **[Async](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RJsonStoreAsync.html) interface** usage:
+
+```java
+RJsonStoreAsync<String, MyObject> store = redisson.getJsonStore("test", new JacksonCodec(MyObject.class));
+```
+
+Code example of **[Reactive](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RJsonStoreReactive.html) interface** usage:
+
+```java
+RedissonReactiveClient redisson = redissonClient.reactive();
+RJsonStoreReactive<AnyObject> bucket = redisson.getJsonStore("anyObject", new JacksonCodec<>(AnyObject.class));
+```
+
+Code example of **[RxJava3](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RJsonStoreRx.html) interface** usage:
+```java
+RedissonRxClient redisson = redissonClient.rxJava();
+RJsonStoreRx<AnyObject> bucket = redisson.getJsonStore("anyObject", new JacksonCodec<>(AnyObject.class));
+```
 
 Data write code example:
 ```java
-RJsonStore<String, MyObject> store = redisson.getJsonStore("test", StringCodec.INSTANCE, new JacksonCodec(MyObject.class));
+RJsonStore<String, MyObject> store = redisson.getJsonStore("test", new JacksonCodec(MyObject.class));
 
 MyObject t1 = new MyObject();
 t1.setName("name1");
@@ -705,7 +722,7 @@ store.setIfExists("1", t1);
 
 Data read code example:
 ```java
-RJsonStore<String, MyObject> store = redisson.getJsonStore("test", StringCodec.INSTANCE, new JacksonCodec(MyObject.class));
+RJsonStore<String, MyObject> store = redisson.getJsonStore("test", new JacksonCodec(MyObject.class));
 
 // multiple entries at once
 Map<String, MyObject> entries = store.get(Set.of("1", "2"));
@@ -717,7 +734,7 @@ MyObject value2 = store.get("2");
 
 Data deletion code example:
 ```java
-RJsonStore<String, MyObject> store = redisson.getJsonStore("test", StringCodec.INSTANCE, new JacksonCodec(MyObject.class));
+RJsonStore<String, MyObject> store = redisson.getJsonStore("test", new JacksonCodec(MyObject.class));
 
 // multiple entries at once
 long deleted = store.delete(Set.of("1", "2"));
@@ -727,7 +744,22 @@ boolean status = store.delete("1");
 boolean status = store.delete("2");
 ```
 
-For data searching index prefix should be defined in `<object_name>:` format. For example for object name "test" prefix is "test:".
+Keys access code examples:
+```java
+RJsonStore<String, MyObject> store = redisson.getJsonStore("test", new JacksonCodec(MyObject.class));
+
+// iterate keys
+Set<String> keys = store.keySet();
+
+// read all keys at once
+Set<String> keys = store.readAllKeySet();
+```
+
+### Search by Object properties
+
+For data searching, index prefix should be defined in `<object_name>:` format. For example for object name "test" prefix is "test:".
+
+`StringCodec` should be used as object codec to enable searching by field.
 
 Data search code example:
 ```java
@@ -756,17 +788,6 @@ SearchResult r = s.search("idx", "*", QueryOptions.defaults()
 // aggregation
 AggregationResult ar = s.aggregate("idx", "*", AggregationOptions.defaults()
                                                                  .withCursor().load("name"));
-```
-
-Keys access code examples:
-```java
-RJsonStore<String, MyObject> store = redisson.getJsonStore("test", StringCodec.INSTANCE, new JacksonCodec(MyObject.class));
-
-// iterate keys
-Set<String> keys = store.keySet();
-
-// read all keys at once
-Set<String> keys = store.readAllKeySet();
 ```
 
 ### Local Cache
@@ -910,54 +931,6 @@ long deleted = store.delete(Set.of("1", "2"));
 // or delete entry per call
 boolean status = store.delete("1");
 boolean status = store.delete("2");
-```
-
-For data searching index prefix should be defined in `<object_name>:` format. For example for object name "test" prefix is "test:".
-
-Data search code example:
-```java
-RSearch s = redisson.getSearch();
-s.createIndex("idx", IndexOptions.defaults()
-                        .on(IndexType.JSON)
-                        .prefix(Arrays.asList("test:")),
-                    FieldIndex.text("name"));
-
-LocalCachedJsonStoreOptions ops = LocalCachedJsonStoreOptions.name("test")
-                .keyCodec(StringCodec.INSTANCE)
-                .valueCodec(new JacksonCodec<>(MyObject.class));
-RLocalCachedJsonStore<String, MyObject> store = redisson.getLocalCachedJsonStore(ops);
-
-MyObject t1 = new MyObject();
-t1.setName("name1");
-MyObject t2 = new MyObject();
-t2.setName("name2");
-
-Map<String, MyObject> entries = new HashMap<>();
-entries.put("1", t1);
-entries.put("2", t2);
-store.set(entries);
-
-// search
-SearchResult r = s.search("idx", "*", QueryOptions.defaults()
-                                                  .returnAttributes(new ReturnAttribute("name")));
-
-// aggregation
-AggregationResult ar = s.aggregate("idx", "*", AggregationOptions.defaults()
-                                                                 .withCursor().load("name"));
-```
-
-Keys access code examples:
-```java
-LocalCachedJsonStoreOptions ops = LocalCachedJsonStoreOptions.name("test")
-                .keyCodec(StringCodec.INSTANCE)
-                .valueCodec(new JacksonCodec<>(MyObject.class));
-RLocalCachedJsonStore<String, MyObject> store = redisson.getLocalCachedJsonStore(ops);
-
-// iterate keys
-Set<String> keys = store.keySet();
-
-// read all keys at once
-Set<String> keys = store.readAllKeySet();
 ```
 
 ## Set
