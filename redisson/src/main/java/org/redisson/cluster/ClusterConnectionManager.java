@@ -89,6 +89,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
         Throwable lastException = null;
         List<String> failedMasters = new ArrayList<>();
+        boolean skipShardingDetection = false;
         for (String address : cfg.getNodeAddresses()) {
             RedisURI addr = new RedisURI(address);
             CompletionStage<RedisConnection> connectionFuture = connectToNode(cfg, addr, addr.getHost());
@@ -103,6 +104,20 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 clusterNodesCommand = RedisCommands.CLUSTER_NODES;
                 if (addr.isSsl()) {
                     clusterNodesCommand = RedisCommands.CLUSTER_NODES_SSL;
+                }
+
+                if (!skipShardingDetection) {
+                    if (cfg.getShardedSubscriptionMode() == ShardedSubscriptionMode.AUTO) {
+                        try {
+                            connection.sync(RedisCommands.PUBSUB_SHARDNUMSUB);
+                            subscribeService.setShardingSupported(true);
+                        } catch (Exception e) {
+                            // skip
+                        }
+                    } else if (cfg.getShardedSubscriptionMode() == ShardedSubscriptionMode.ON) {
+                        subscribeService.setShardingSupported(true);
+                    }
+                    skipShardingDetection = true;
                 }
 
                 List<ClusterNodeInfo> nodes = connection.sync(clusterNodesCommand);
@@ -172,11 +187,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             }
         }
 
-        if (cfg.getShardedSubscriptionMode() == ShardedSubscriptionMode.AUTO) {
-            subscribeService.detectSharding();
-        } else if (cfg.getShardedSubscriptionMode() == ShardedSubscriptionMode.ON) {
-            subscribeService.setShardingSupported(true);
-        }
         scheduleClusterChangeCheck(cfg);
     }
 

@@ -115,6 +115,18 @@ public class RedissonTest extends RedisDockerTest {
     }
 
     @Test
+    public void testLazyInitializationCluster() {
+        testInCluster(client -> {
+            Config config = client.getConfig();
+            config.setLazyInitialization(true);
+
+            RedissonClient redisson = Redisson.create(config);
+            redisson.getBucket("test").set(1);
+            redisson.shutdown();
+        });
+    }
+
+    @Test
     public void testLazyInitialization() {
         Config config = new Config();
         config.setLazyInitialization(true);
