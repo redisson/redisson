@@ -176,13 +176,14 @@ public class RedissonCache implements Cache {
     }
 
     public <T> CompletableFuture<T> retrieve(Object key, Supplier<CompletableFuture<T>> valueLoader) {
+        long threadId = Thread.currentThread().getId();
         return retrieve(key).thenCompose(v -> {
             if (v != null) {
                 return CompletableFuture.completedFuture((T) v);
             }
 
             RLock lock = map.getLock(key);
-            return lock.lockAsync().thenCompose(rr -> {
+            return lock.lockAsync(threadId).thenCompose(rr -> {
                 return map.getAsync(key)
                         .thenCompose(r -> {
                             if (r != null) {
@@ -204,7 +205,9 @@ public class RedissonCache implements Cache {
                                                 });
                             });
                         })
-                        .whenComplete((r1, e) -> lock.unlockAsync());
+                        .whenComplete((r1, e) -> {
+                            lock.unlockAsync(threadId);
+                        });
             });
         });
     }

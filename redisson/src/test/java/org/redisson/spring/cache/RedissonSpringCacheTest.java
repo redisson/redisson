@@ -18,13 +18,18 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Service;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -58,6 +63,13 @@ public class RedissonSpringCacheTest extends RedisDockerTest {
 
     @Service
     public static class SampleBean {
+
+        @Cacheable(cacheNames = "monoCache", sync = true)
+        public Mono<String> readMono() {
+            return Mono.delay(Duration.ofSeconds(1))
+                    .map(i -> "Hello world")
+                    .log();
+        }
 
         @CachePut(cacheNames = "testMap", key = "#p0")
         public SampleObject store(String key, SampleObject object) {
@@ -168,6 +180,28 @@ public class RedissonSpringCacheTest extends RedisDockerTest {
         SampleObject s = bean.read("object1");
         assertThat(s.getName()).isEqualTo("name1");
         assertThat(s.getValue()).isEqualTo("value1");
+    }
+
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testMono(Class<?> contextClass) throws InterruptedException {
+        AnnotationConfigApplicationContext context = contexts.get(contextClass);
+        SampleBean bean = context.getBean(SampleBean.class);
+
+        CacheManager cm = context.getBean(CacheManager.class);
+        System.out.println(cm);
+        ExecutorService e = Executors.newFixedThreadPool(2);
+        for (int t = 0; t < 2; t++) {
+            e.submit(() -> {
+                for (int i = 0; i < 5; i++) {
+                    Mono<String> m = bean.readMono();
+                    m.block();
+                }
+            });
+        }
+
+        e.shutdown();
+        assertThat(e.awaitTermination(3, TimeUnit.SECONDS)).isTrue();
     }
 
     @ParameterizedTest
