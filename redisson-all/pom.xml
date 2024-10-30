@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-parent</artifactId>
-        <version>3.37.1-SNAPSHOT</version>
+        <version>3.38.0</version>
         <relativePath>../</relativePath>
     </parent>
 
@@ -26,7 +26,7 @@
         <url>scm:git:git@github.com:mrniko/redisson.git</url>
         <connection>scm:git:git@github.com:mrniko/redisson.git</connection>
         <developerConnection>scm:git:git@github.com:mrniko/redisson.git</developerConnection>
-        <tag>redisson-parent-0.9.0</tag>
+        <tag>redisson-3.38.0</tag>
     </scm>
 
     <licenses>
