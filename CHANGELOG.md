@@ -3,6 +3,32 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
+### 30-Oct-2024 - 3.38.0 released
+
+Feature - [Local cache for Live Object Service](https://redisson.org/docs/data-and-services/services/#local-cache) support  
+Feature - [RClientSideCaching](https://redisson.org/docs/client-side-caching/) object added. Client side caching through RESP3 protocol  
+Feature - Tomcat 11 support  
+Feature - `RBatch.getSearch()` method added (thanks to @pfyod)  
+Feature - `RedissonClient.getMultiLock()` method added for locking on objects (thanks to @lyrric)  
+Feature - `RPatternTopic.removeListener()` accepts multiple ids  
+Feature - `LocalCachedMapOptions.useTopicPattern()` setting added  
+Feature - InetAddress and SocketAddress serialization added to Kryo5Codec
+
+__Breaking change - RLongAdder and RDoubleAdder topic channel name has been renamed__
+
+Improvement - timeToLive parameter renamed to keepAliveTime for RRateLimiter.`trySetRate()` and `setRate()` methods (thanks to @lyrric)  
+Improvement - Add check, The parameter timeToLive should be greater than or equal to rateInterval (thanks to @lyrric)  
+
+Fixed - `lazyInitialization=true` doesn't work in cluster mode (regression since 3.27.0)  
+Fixed - Spring Cache @Cacheable(sync) doesn't work with reactive types or completableFuture  
+Fixed - Pub/Sub connections randomly disconnecting (regression since 3.26.0) (thanks to @wjx)  
+Fixed - `RLiveObjectService.persist()` and `merge()` methods, when called with multiple arguments, return detached objects  
+Fixed - `RJsonBucketReactive` and `RJsonBucketRx` use Reactive Types as arguments  
+Fixed - `ClassNotFoundException` is thrown when a LiveObject expires  
+Fixed - Micronaut native image build  
+Fixed - Quarkus native image build  
+Fixed - `RSearch.info()` method throws an exception on infinity values (thanks to @iamtakingiteasy)  
+
 ### 02-Oct-2024 - 3.37.0 released
 
 Feature - `findCommon()` and `findCommonLength()` methods added to `RBucket` object  
