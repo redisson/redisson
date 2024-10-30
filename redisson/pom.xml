@@ -515,7 +515,7 @@
                         </excludes>
 
                         <trimStackTrace>true</trimStackTrace>
-                        <forkCount>5</forkCount>
+                        <forkCount>6</forkCount>
                         <reuseForks>false</reuseForks>
                         <argLine>${argLine} -javaagent:"${settings.localRepository}"/com/github/hazendaz/jmockit/jmockit/1.54.0/jmockit-1.54.0.jar</argLine>
                     </configuration>
