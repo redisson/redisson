@@ -273,19 +273,19 @@ public class RedissonPriorityQueue<V> extends BaseRedissonList<V> implements RPr
         return wrapLockedAsync(RedisCommands.LPOP, getRawName());
     }
 
-    protected <T> RFuture<V> wrapLockedAsync(RedisCommand<T> command, Object... params) {
+    protected final <T> RFuture<V> wrapLockedAsync(RedisCommand<T> command, Object... params) {
         return wrapLockedAsync(() -> {
             return commandExecutor.writeAsync(getRawName(), codec, command, params);
         });
     }
 
     protected final <T, R> RFuture<R> wrapLockedAsync(Supplier<RFuture<R>> callable) {
-        long threadId = Thread.currentThread().getId();
-        CompletionStage<R> f = lock.lockAsync(threadId).thenCompose(r -> {
+        long randomId = getServiceManager().generateValue();
+        CompletionStage<R> f = lock.lockAsync(randomId).thenCompose(r -> {
             RFuture<R> callback = callable.get();
             return callback.handle((value, ex) -> {
                 CompletableFuture<R> result = new CompletableFuture<>();
-                lock.unlockAsync(threadId)
+                lock.unlockAsync(randomId)
                         .whenComplete((r2, ex2) -> {
                             if (ex2 != null) {
                                 if (ex != null) {
