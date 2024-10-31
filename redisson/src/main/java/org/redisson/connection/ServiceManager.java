@@ -555,6 +555,10 @@ public final class ServiceManager {
 
     private final Random random = RandomXoshiro256PlusPlus.create();
 
+    public Long generateValue() {
+        return random.nextLong();
+    }
+
     public String generateId() {
         return ByteBufUtil.hexDump(generateIdArray());
     }
