@@ -3,6 +3,12 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
+### 31-Oct-2024 - 3.38.1 released
+
+Fixed - Kryo codec upgraded to 5.6.2 for JDK 8 compatibility (thanks to @Wujiaxuan007)  
+Fixed - pollAsync() and removeAsync() methods of RPriorityQueue and RPriorityDeque objects aren't guarded properly with lock  
+Fixed - Spring Cache `Cacheable(sync)` annotation loads value multiple times for reactive types or completableFuture
+
 ### 30-Oct-2024 - 3.38.0 released
 
 Feature - [Local cache for Live Object Service](https://redisson.org/docs/data-and-services/services/#local-cache) support  
