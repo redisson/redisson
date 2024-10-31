@@ -21,7 +21,7 @@ Improvement - Add check, The parameter timeToLive should be greater than or equa
 
 Fixed - `lazyInitialization=true` doesn't work in cluster mode (regression since 3.27.0)  
 Fixed - Spring Cache @Cacheable(sync) doesn't work with reactive types or completableFuture  
-Fixed - Pub/Sub connections randomly disconnecting (regression since 3.26.0) (thanks to @wjx)  
+Fixed - Pub/Sub connections randomly disconnecting (regression since 3.26.0) (thanks to @Wujiaxuan007)  
 Fixed - `RLiveObjectService.persist()` and `merge()` methods, when called with multiple arguments, return detached objects  
 Fixed - `RJsonBucketReactive` and `RJsonBucketRx` use Reactive Types as arguments  
 Fixed - `ClassNotFoundException` is thrown when a LiveObject expires  
