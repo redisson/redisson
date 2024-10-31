@@ -184,10 +184,10 @@ public class RedissonCache implements Cache {
             }
 
             ServiceManager sm = ((RedissonObject) map).getServiceManager();
-            long threadId = sm.generateValue();
+            long randomId = sm.generateValue();
 
             RLock lock = map.getLock(key);
-            return lock.lockAsync(threadId).thenCompose(rr -> {
+            return lock.lockAsync(randomId).thenCompose(rr -> {
                 return map.getAsync(key)
                         .thenCompose(r -> {
                             if (r != null) {
@@ -210,7 +210,7 @@ public class RedissonCache implements Cache {
                             });
                         })
                         .whenComplete((r1, e) -> {
-                            lock.unlockAsync(threadId);
+                            lock.unlockAsync(randomId);
                         });
             });
         });
