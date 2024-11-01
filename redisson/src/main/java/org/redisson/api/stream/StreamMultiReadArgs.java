@@ -33,15 +33,16 @@ public interface StreamMultiReadArgs {
     /**
      * Defines stream data size limit.
      *
-     * @param count - stream data size limit
+     * @param count stream data size limit
      * @return arguments object
      */
     StreamMultiReadArgs count(int count);
 
     /**
      * Defines time interval to wait for stream data availability.
+     * <code>0</code> is used to wait infinitely.
      *
-     * @param timeout - timeout duration
+     * @param timeout timeout duration
      * @return arguments object
      */
     StreamMultiReadArgs timeout(Duration timeout);
@@ -53,9 +54,9 @@ public interface StreamMultiReadArgs {
      * Read stream data from all defined streams
      * with ids greater than defined ids.
      *
-     * @param id1 - last stream id of current stream
-     * @param stream2 - name of 2nd stream
-     * @param id2 - last stream id of 2nd stream
+     * @param id1 last stream id of current stream
+     * @param stream2 name of 2nd stream
+     * @param id2 last stream id of 2nd stream
      * @return arguments object
      */
     static StreamMultiReadArgs greaterThan(StreamMessageId id1,
@@ -70,11 +71,11 @@ public interface StreamMultiReadArgs {
      * Read stream data from all defined streams
      * with ids greater than defined ids.
      *
-     * @param id1 - last stream id of current stream
-     * @param stream2 - name of 2nd stream
-     * @param id2 - last stream id of 2nd stream
-     * @param stream3 - name of 3rd stream
-     * @param id3 - last stream id of 3rd stream
+     * @param id1 last stream id of current stream
+     * @param stream2 name of 2nd stream
+     * @param id2 last stream id of 2nd stream
+     * @param stream3 name of 3rd stream
+     * @param id3 last stream id of 3rd stream
      * @return arguments object
      */
     static StreamMultiReadArgs greaterThan(StreamMessageId id1,
@@ -93,13 +94,13 @@ public interface StreamMultiReadArgs {
      * Read stream data from all defined streams
      * with ids greater than defined ids.
      *
-     * @param id1 - last stream id of current stream
-     * @param stream2 - name of 2nd stream
-     * @param id2 - last stream id of 2nd stream
-     * @param stream3 - name of 3rd stream
-     * @param id3 - last stream id of 3rd stream
-     * @param stream4 - name of 4th stream
-     * @param id4 - last stream id of 4th stream
+     * @param id1 last stream id of current stream
+     * @param stream2 name of 2nd stream
+     * @param id2 last stream id of 2nd stream
+     * @param stream3 name of 3rd stream
+     * @param id3 last stream id of 3rd stream
+     * @param stream4 name of 4th stream
+     * @param id4 last stream id of 4th stream
      * @return arguments object
      */
     static StreamMultiReadArgs greaterThan(StreamMessageId id1,
@@ -120,15 +121,15 @@ public interface StreamMultiReadArgs {
      * Read stream data from all defined streams
      * with ids greater than defined ids.
      *
-     * @param id1 - last stream id of current stream
-     * @param stream2 - name of 2nd stream
-     * @param id2 - last stream id of 2nd stream
-     * @param stream3 - name of 3rd stream
-     * @param id3 - last stream id of 3rd stream
-     * @param stream4 - name of 4th stream
-     * @param id4 - last stream id of 4th stream
-     * @param stream5 - name of 4th stream
-     * @param id5 - last stream id of 4th stream
+     * @param id1 last stream id of current stream
+     * @param stream2 name of 2nd stream
+     * @param id2 last stream id of 2nd stream
+     * @param stream3 name of 3rd stream
+     * @param id3 last stream id of 3rd stream
+     * @param stream4 name of 4th stream
+     * @param id4 last stream id of 4th stream
+     * @param stream5 name of 4th stream
+     * @param id5 last stream id of 4th stream
      * @return arguments object
      */
     static StreamMultiReadArgs greaterThan(StreamMessageId id1,
@@ -151,8 +152,8 @@ public interface StreamMultiReadArgs {
      * Read stream data from all defined streams
      * with ids greater than defined ids.
      *
-     * @param id1 - last stream id of current stream
-     * @param offsets - last stream id mapped by stream name
+     * @param id1 last stream id of current stream
+     * @param offsets last stream id mapped by stream name
      * @return arguments object
      */
     static StreamMultiReadArgs greaterThan(StreamMessageId id1, Map<String, StreamMessageId> offsets) {

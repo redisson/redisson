@@ -51,10 +51,10 @@ public interface StreamAddArgs<K, V> {
     /**
      * Defines entry to add
      *
-     * @param k1 - key to add
-     * @param v1 - value to add
-     * @param <K> - key type
-     * @param <V> - value type
+     * @param k1 key to add
+     * @param v1 value to add
+     * @param <K> key type
+     * @param <V> value type
      * @return arguments object
      */
     static <K, V> StreamAddArgs<K, V> entry(K k1, V v1) {
@@ -64,12 +64,12 @@ public interface StreamAddArgs<K, V> {
     /**
      * Defines entries to add
      *
-     * @param k1 - 1st key to add
-     * @param v1 - 1st value to add
-     * @param k2 - 2nd key to add
-     * @param v2 - 2nd value to add
-     * @param <K> - key type
-     * @param <V> - value type
+     * @param k1 1st key to add
+     * @param v1 1st value to add
+     * @param k2 2nd key to add
+     * @param v2 2nd value to add
+     * @param <K> key type
+     * @param <V> value type
      * @return arguments object
      */
     static <K, V> StreamAddArgs<K, V> entries(K k1, V v1, K k2, V v2) {
@@ -82,14 +82,14 @@ public interface StreamAddArgs<K, V> {
     /**
      * Defines entries to add
      *
-     * @param k1 - 1st key to add
-     * @param v1 - 1st value to add
-     * @param k2 - 2nd key to add
-     * @param v2 - 2nd value to add
-     * @param k3 - 3rd key to add
-     * @param v3 - 3rd value to add
-     * @param <K> - key type
-     * @param <V> - value type
+     * @param k1 1st key to add
+     * @param v1 1st value to add
+     * @param k2 2nd key to add
+     * @param v2 2nd value to add
+     * @param k3 3rd key to add
+     * @param v3 3rd value to add
+     * @param <K> key type
+     * @param <V> value type
      * @return arguments object
      */
     static <K, V> StreamAddArgs<K, V> entries(K k1, V v1, K k2, V v2, K k3, V v3) {
@@ -103,16 +103,16 @@ public interface StreamAddArgs<K, V> {
     /**
      * Defines entries to add
      *
-     * @param k1 - 1st key to add
-     * @param v1 - 1st value to add
-     * @param k2 - 2nd key to add
-     * @param v2 - 2nd value to add
-     * @param k3 - 3rd key to add
-     * @param v3 - 3rd value to add
-     * @param k4 - 4th key to add
-     * @param v4 - 4th key to add
-     * @param <K> - key type
-     * @param <V> - value type
+     * @param k1 1st key to add
+     * @param v1 1st value to add
+     * @param k2 2nd key to add
+     * @param v2 2nd value to add
+     * @param k3 3rd key to add
+     * @param v3 3rd value to add
+     * @param k4 4th key to add
+     * @param v4 4th key to add
+     * @param <K> key type
+     * @param <V> value type
      * @return arguments object
      */
     static <K, V> StreamAddArgs<K, V> entries(K k1, V v1, K k2, V v2, K k3, V v3, K k4, V v4) {
@@ -127,18 +127,18 @@ public interface StreamAddArgs<K, V> {
     /**
      * Defines entries to add
      *
-     * @param k1 - 1st key to add
-     * @param v1 - 1st value to add
-     * @param k2 - 2nd key to add
-     * @param v2 - 2nd value to add
-     * @param k3 - 3rd key to add
-     * @param v3 - 3rd value to add
-     * @param k4 - 4th key to add
-     * @param v4 - 4th key to add
-     * @param k5 - 5th key to add
-     * @param v5 - 5th key to add
-     * @param <K> - key type
-     * @param <V> - value type
+     * @param k1 1st key to add
+     * @param v1 1st value to add
+     * @param k2 2nd key to add
+     * @param v2 2nd value to add
+     * @param k3 3rd key to add
+     * @param v3 3rd value to add
+     * @param k4 4th key to add
+     * @param v4 4th key to add
+     * @param k5 5th key to add
+     * @param v5 5th key to add
+     * @param <K> key type
+     * @param <V> value type
      * @return arguments object
      */
     static <K, V> StreamAddArgs<K, V> entries(K k1, V v1, K k2, V v2, K k3, V v3, K k4, V v4, K k5, V v5) {
@@ -154,9 +154,9 @@ public interface StreamAddArgs<K, V> {
     /**
      * Defines entries to add
      *
-     * @param entries - entries map to add
-     * @param <K> - key type
-     * @param <V> - value type
+     * @param entries entries map to add
+     * @param <K> key type
+     * @param <V> value type
      * @return arguments object
      */
     static <K, V> StreamAddArgs<K, V> entries(Map<K, V> entries) {

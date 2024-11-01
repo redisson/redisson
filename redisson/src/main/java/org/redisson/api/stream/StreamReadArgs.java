@@ -37,6 +37,7 @@ public interface StreamReadArgs {
 
     /**
      * Defines time interval to wait for stream data availability.
+     * <code>0</code> is used to wait infinitely.
      *
      * @param timeout timeout duration
      * @return arguments object

@@ -40,15 +40,16 @@ public interface StreamMultiReadGroupArgs {
     /**
      * Defines stream data size limit.
      *
-     * @param count - stream data size limit
+     * @param count stream data size limit
      * @return arguments object
      */
     StreamMultiReadGroupArgs count(int count);
 
     /**
      * Defines time interval to wait for stream data availability.
+     * <code>0</code> is used to wait infinitely.
      *
-     * @param timeout - timeout duration
+     * @param timeout timeout duration
      * @return arguments object
      */
     StreamMultiReadGroupArgs timeout(Duration timeout);
@@ -57,9 +58,9 @@ public interface StreamMultiReadGroupArgs {
      * Defines to return messages of all Streams
      * with ids greater than defined message ids.
      *
-     * @param id1 - last stream id of current stream
-     * @param stream2 - name of 2nd stream
-     * @param id2 - last stream id of 2nd stream
+     * @param id1 last stream id of current stream
+     * @param stream2 name of 2nd stream
+     * @param id2 last stream id of 2nd stream
      * @return arguments object
      */
     static StreamMultiReadGroupArgs greaterThan(StreamMessageId id1,
@@ -71,11 +72,11 @@ public interface StreamMultiReadGroupArgs {
      * Defines to return messages of all Streams
      * with ids greater than defined message ids.
      *
-     * @param id1 - last stream id of current stream
-     * @param stream2 - name of 2nd stream
-     * @param id2 - last stream id of 2nd stream
-     * @param stream3 - name of 3rd stream
-     * @param id3 - last stream id of 3rd stream
+     * @param id1 last stream id of current stream
+     * @param stream2 name of 2nd stream
+     * @param id2 last stream id of 2nd stream
+     * @param stream3 name of 3rd stream
+     * @param id3 last stream id of 3rd stream
      * @return arguments object
      */
     static StreamMultiReadGroupArgs greaterThan(StreamMessageId id1,
@@ -91,13 +92,13 @@ public interface StreamMultiReadGroupArgs {
      * Defines to return messages of all Streams
      * with ids greater than defined message ids.
      *
-     * @param id1 - last stream id of current stream
-     * @param stream2 - name of 2nd stream
-     * @param id2 - last stream id of 2nd stream
-     * @param stream3 - name of 3rd stream
-     * @param id3 - last stream id of 3rd stream
-     * @param stream4 - name of 4th stream
-     * @param id4 - last stream id of 4th stream
+     * @param id1 last stream id of current stream
+     * @param stream2 name of 2nd stream
+     * @param id2 last stream id of 2nd stream
+     * @param stream3 name of 3rd stream
+     * @param id3 last stream id of 3rd stream
+     * @param stream4 name of 4th stream
+     * @param id4 last stream id of 4th stream
      * @return arguments object
      */
     static StreamMultiReadGroupArgs greaterThan(StreamMessageId id1,
@@ -115,15 +116,15 @@ public interface StreamMultiReadGroupArgs {
      * Defines to return messages of all Streams
      * with ids greater than defined message ids.
      *
-     * @param id1 - last stream id of current stream
-     * @param stream2 - name of 2nd stream
-     * @param id2 - last stream id of 2nd stream
-     * @param stream3 - name of 3rd stream
-     * @param id3 - last stream id of 3rd stream
-     * @param stream4 - name of 4th stream
-     * @param id4 - last stream id of 4th stream
-     * @param stream5 - name of 4th stream
-     * @param id5 - last stream id of 4th stream
+     * @param id1 last stream id of current stream
+     * @param stream2 name of 2nd stream
+     * @param id2 last stream id of 2nd stream
+     * @param stream3 name of 3rd stream
+     * @param id3 last stream id of 3rd stream
+     * @param stream4 name of 4th stream
+     * @param id4 last stream id of 4th stream
+     * @param stream5 name of 4th stream
+     * @param id5 last stream id of 4th stream
      * @return arguments object
      */
     static StreamMultiReadGroupArgs greaterThan(StreamMessageId id1,
@@ -143,8 +144,8 @@ public interface StreamMultiReadGroupArgs {
      * Defines to return messages of all Streams
      * with ids greater than defined message ids.
      *
-     * @param id - last stream id of current stream
-     * @param offsets - last stream id mapped by stream name
+     * @param id last stream id of current stream
+     * @param offsets last stream id mapped by stream name
      * @return arguments object
      */
     static StreamMultiReadGroupArgs greaterThan(StreamMessageId id, Map<String, StreamMessageId> offsets) {
