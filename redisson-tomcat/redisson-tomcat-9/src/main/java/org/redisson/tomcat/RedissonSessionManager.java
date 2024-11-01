@@ -233,8 +233,9 @@ public class RedissonSessionManager extends ManagerBase {
     @Override
     public void remove(Session session, boolean update) {
         super.remove(session, update);
-        
-        if (session.getIdInternal() != null) {
+
+        if (session.getIdInternal() != null
+                && !redisson.isShuttingDown()) {
             ((RedissonSession)session).delete();
         }
     }
