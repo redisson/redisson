@@ -17,9 +17,9 @@ Below is the libraries used by Redisson:
 | com.fasterxml.jackson.dataformat | jackson-databind | 2.7+ | **required** |
 | com.fasterxml.jackson.dataformat | jackson-annotations | 2.7+ | **required** |
 | com.fasterxml.jackson.dataformat | jackson-dataformat-yaml | 2.7+ | **required**  |
-| org.yaml | snakeyaml | 1.0+ | **required**  |
+| org.yaml | snakeyaml | 2.0+ | **required**  |
 | net.bytebuddy | byte-buddy | 1.6+ | _optional (used by LiveObject service)_ |
-| org.jodd | jodd-bean | 3.7+ | _optional (used by LiveObject service)_ |
+| org.jodd | jodd-util | 6.0+ | _optional (used by LiveObject service)_ |
 | javax.cache | cache-api | 1.1.1 | _optional (used by JCache implementation)_ |
 | io.projectreactor | reactor-core | 3.1+ | _optional (used by RedissonReactiveClient)_ |
 | io.reactivex.rxjava3 | rxjava | 3.0+ | _optional (used by RedissonRxClient)_ |
