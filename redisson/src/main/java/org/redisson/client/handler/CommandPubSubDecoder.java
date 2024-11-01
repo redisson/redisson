@@ -62,7 +62,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
     }
 
     public void addPubSubCommand(ChannelName channel, CommandData<Object, Object> data) {
-        String operation = data.getCommand().getName().toLowerCase();
+        String operation = data.getCommand().getName().toLowerCase(Locale.ENGLISH);
         commands.put(new PubSubKey(channel, operation), data);
     }
 
@@ -109,17 +109,17 @@ public class CommandPubSubDecoder extends CommandDecoder {
         cmds.remove(RedisCommands.UNSUBSCRIBE.getName());
 
         String cmd = null;
-        String e = error.toLowerCase();
+        String e = error.toLowerCase(Locale.ENGLISH);
         for (String value : cmds) {
-            if (e.contains(value.toLowerCase())) {
+            if (e.contains(value.toLowerCase(Locale.ENGLISH))) {
                 cmd = value;
                 break;
             }
         }
         if (cmd == null) {
-            if (e.contains(RedisCommands.UNSUBSCRIBE.getName().toLowerCase())) {
+            if (e.contains(RedisCommands.UNSUBSCRIBE.getName().toLowerCase(Locale.ENGLISH))) {
                 cmd = RedisCommands.UNSUBSCRIBE.getName();
-            } else if (e.contains(RedisCommands.SUBSCRIBE.getName().toLowerCase())) {
+            } else if (e.contains(RedisCommands.SUBSCRIBE.getName().toLowerCase(Locale.ENGLISH))) {
                 cmd = RedisCommands.SUBSCRIBE.getName();
             }
         }
@@ -154,7 +154,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
             RedisPubSubConnection pubSubConnection = RedisPubSubConnection.getFrom(channel);
             ChannelName channelName = ((Message) result).getChannel();
             if (result instanceof PubSubStatusMessage) {
-                String operation = ((PubSubStatusMessage) result).getType().name().toLowerCase();
+                String operation = ((PubSubStatusMessage) result).getType().name().toLowerCase(Locale.ENGLISH);
                 PubSubKey key = new PubSubKey(channelName, operation);
                 CommandData<Object, Object> d = commands.get(key);
                 if (SUBSCRIBE_COMMANDS.contains(d.getCommand().getName())) {

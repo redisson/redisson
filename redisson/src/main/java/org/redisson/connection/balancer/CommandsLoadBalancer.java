@@ -20,6 +20,7 @@ import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.misc.RedisURI;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -36,7 +37,7 @@ public class CommandsLoadBalancer extends RoundRobinLoadBalancer implements Load
 
     @Override
     public ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy, RedisCommand<?> redisCommand) {
-        if (commands.contains(redisCommand.getName().toLowerCase())) {
+        if (commands.contains(redisCommand.getName().toLowerCase(Locale.ENGLISH))) {
             return clientsCopy.stream()
                                 .filter(c -> address.equals(c.getClient().getAddr()))
                                 .findAny()
