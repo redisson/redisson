@@ -296,7 +296,7 @@ public class AccessorInterceptor {
 
     private String getFieldName(Class<?> clazz, Method method) {
         String fieldName = FIELD_PATTERN.matcher(method.getName()).replaceFirst("");
-        String propName = fieldName.substring(0, 1).toLowerCase() + fieldName.substring(1);
+        String propName = fieldName.substring(0, 1).toLowerCase(Locale.ENGLISH) + fieldName.substring(1);
         try {
             ClassUtils.getDeclaredField(clazz, propName);
             return propName;

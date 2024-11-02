@@ -65,7 +65,7 @@ public class CommandsLoadBalancer extends RoundRobinLoadBalancer implements Load
      */
     public void setCommands(List<String> commands) {
         this.commands = commands.stream()
-                                    .map(c -> c.toLowerCase())
+                                    .map(c -> c.toLowerCase(Locale.ENGLISH))
                                     .collect(Collectors.toSet());
     }
 }
