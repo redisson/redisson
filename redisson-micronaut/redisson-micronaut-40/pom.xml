@@ -98,7 +98,7 @@
         <dependency>
             <groupId>io.micronaut.session</groupId>
             <artifactId>micronaut-session</artifactId>
-            <version>4.4.0</version>
+            <version>4.5.0</version>
             <optional>true</optional>
         </dependency>
 
