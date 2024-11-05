@@ -150,6 +150,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         }
         listener.notifyInvalidate(new CacheValue(key, oldV));
         listener.notifyUpdate(newValue);
+        localCacheView.putCacheKey(key, cacheKey);
         return oldValue;
     }
 
