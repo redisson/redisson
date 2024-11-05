@@ -14,8 +14,8 @@ BLPOP|RBlockingQueue.<br/>take()<br/>poll()<br/>pollFromAny()<br/>takeAsync()<br
 BLMOVE|RBlockingDeque.<br/>move()<br/>moveAsync()| RBlockingDequeReactive.<br/>move()|RBlockingDequeRx.<br/>move()|
 BRPOP|RBlockingDeque.<br/>takeLast()<br/>takeLastAsync() | RBlockingDequeReactive.<br/>takeLast() | RBlockingDequeRx.<br/>takeLast() |
 BRPOPLPUSH|RBlockingQueue.<br/>pollLastAndOfferFirstTo()<br/>pollLastAndOfferFirstToAsync() | RBlockingQueueReactive.<br/>pollLastAndOfferFirstTo()| RBlockingQueueRx.<br/>pollLastAndOfferFirstTo()|
-CONFIG GET|RedisNode.<br/>setConfig()<br/>setConfigAsync() | - | - |
-CONFIG SET|RedisNode.<br/>getConfig()<br/>getConfigAsync() | - | - |
+CONFIG GET|RedisNode.<br/>getConfig()<br/>getConfigAsync() | - | - |
+CONFIG SET|RedisNode.<br/>setConfig()<br/>setConfigAsync() | - | - |
 COPY|RObject.<br/>copy()<br/>copyAsync() | RObjectReactive.<br/>copy() | RObjectRx.<br/>copy() |
 CLIENT SETNAME|Config.setClientName() | - | - |
 CLIENT REPLY|BatchOptions.skipResult() | - | - |

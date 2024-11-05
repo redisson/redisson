@@ -127,14 +127,14 @@ Completable sRx = buckets.set(map);
 
 ### Listeners
 
-Redisson allows to bind listeners per `RBucket` object.
+Redisson allows binding listeners per `RBucket` object. This requires the `notify-keyspace-events` setting to be enabled on Redis or Valkey side.
 
-|Listener class name|Event description |
-|:--:|:--:|
-|org.redisson.api.listener.TrackingListener|Data created/updated after read operation|
-|org.redisson.api.listener.SetObjectListener|Data created/updated|
-|org.redisson.api.ExpiredObjectListener|`RBucket` object expired|
-|org.redisson.api.DeletedObjectListener|`RBucket` object deleted|
+|Listener class name|Event description |Redis or Valkey<br/>`notify-keyspace-events` value|
+|:--:|:--:|:--:|
+|org.redisson.api.listener.TrackingListener|Data created/updated after read operation| - |
+|org.redisson.api.listener.SetObjectListener|Data created/updated|E$|
+|org.redisson.api.ExpiredObjectListener|`RBucket` object expired|Ex|
+|org.redisson.api.DeletedObjectListener|`RBucket` object deleted|Ex|
 
 Usage example:
 
@@ -261,14 +261,14 @@ sbc.write(contentToWrite);
 
 ### Listeners
 
-Redisson allows to bind listeners per `RBinaryStream` object.
+Redisson allows binding listeners per `RBinaryStream` object. This requires the `notify-keyspace-events` setting to be enabled on Redis or Valkey side.
 
-|Listener class name|Event description |
-|:--:|:--:|
-|org.redisson.api.listener.TrackingListener|Data created/updated after read operation|
-|org.redisson.api.listener.SetObjectListener|Data created/updated|
-|org.redisson.api.ExpiredObjectListener|`RBinaryStream` object expired|
-|org.redisson.api.DeletedObjectListener|`RBinaryStream` object deleted|
+|Listener class name|Event description |Redis or Valkey<br/>`notify-keyspace-events` value|
+|:--:|:--:|:--:|
+|org.redisson.api.listener.TrackingListener|Data created/updated after read operation|-|
+|org.redisson.api.listener.SetObjectListener|Data created/updated|E$|
+|org.redisson.api.ExpiredObjectListener|`RBinaryStream` object expired|Ex|
+|org.redisson.api.DeletedObjectListener|`RBinaryStream` object deleted|Ex|
 
 Usage example:
 

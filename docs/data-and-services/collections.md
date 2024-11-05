@@ -463,17 +463,17 @@ Usage of `RLocalCachedMap` and `RLocalCachedMapCache` objects boost Redis or Val
 
 ### Listeners
 
-Redisson allows to bind listeners per `RMap` object.
+Redisson allows binding listeners per `RMap` object. This requires the `notify-keyspace-events` setting to be enabled on Redis or Valkey side.
 
 `RMap` object allows to track follow events over the data.
 
-|Listener class name|Event description |
-|:--:|:--:|
-|org.redisson.api.listener.TrackingListener|Entry created/removed/updated after read operation|
-|org.redisson.api.listener.MapPutListener|Entry created/updated|
-|org.redisson.api.listener.MapRemoveListener|Entry removed|
-|org.redisson.api.ExpiredObjectListener|`RMap` object expired|
-|org.redisson.api.DeletedObjectListener|`RMap` object deleted|
+|Listener class name|Event description | Redis or Valkey<br/>`notify-keyspace-events` value|
+|:--:|:--:|:--:|
+|org.redisson.api.listener.TrackingListener|Entry created/removed/updated after read operation| - |
+|org.redisson.api.listener.MapPutListener|Entry created/updated|Eh|
+|org.redisson.api.listener.MapRemoveListener|Entry removed|Eh|
+|org.redisson.api.ExpiredObjectListener|`RMap` object expired|Ex|
+|org.redisson.api.DeletedObjectListener|`RMap` object deleted|Eg|
 
 Usage examples:
 ```java
@@ -1013,16 +1013,16 @@ Below is the list of all available Set implementations:
 
 ### Listeners
 
-Redisson allows to bind listeners per `RSet` object.
+Redisson allows binding listeners per `RSet` object. This requires the `notify-keyspace-events` setting to be enabled on Redis or Valkey side.
 
-|Listener class name|Event description |
-|:--:|:--:|
-|org.redisson.api.listener.TrackingListener|Element added/removed/updated after read operation|
-|org.redisson.api.ExpiredObjectListener|`RSet` object expired|
-|org.redisson.api.DeletedObjectListener|`RSet` object deleted|
-|org.redisson.api.listener.SetAddListener|Element added|
-|org.redisson.api.listener.SetRemoveListener|Element removed|
-|org.redisson.api.listener.SetRemoveRandomListener|Element randomly removed|
+|Listener class name|Event description | Valkey or Redis<br/>`notify-keyspace-events` value|
+|:--:|:--:|:--:|
+|org.redisson.api.listener.TrackingListener|Element added/removed/updated after read operation| -|
+|org.redisson.api.ExpiredObjectListener|`RSet` object expired| Ex|
+|org.redisson.api.DeletedObjectListener|`RSet` object deleted| Eg|
+|org.redisson.api.listener.SetAddListener|Element added| Es|
+|org.redisson.api.listener.SetRemoveListener|Element removed| Es|
+|org.redisson.api.listener.SetRemoveRandomListener|Element randomly removed|Es|
 
 Usage example:
 
@@ -1096,15 +1096,15 @@ ScoredEntry<String> e = set.pollFirstEntry();
 
 ### Listeners
 
-Redisson allows to bind listeners per `RScoredSortedSet` object.
+Redisson allows binding listeners per `RScoredSortedSet` object. This requires the `notify-keyspace-events` setting to be enabled on Redis or Valkey side.
 
-|Listener class name|Event description |
-|:--:|:--:|
-|org.redisson.api.listener.TrackingListener|Element created/removed/updated after read operation|
-|org.redisson.api.listener.ScoredSortedSetAddListener|Element created/updated|
-|org.redisson.api.listener.ScoredSortedSetRemoveListener|Element removed|
-|org.redisson.api.ExpiredObjectListener|`RScoredSortedSet` object expired|
-|org.redisson.api.DeletedObjectListener|`RScoredSortedSet` object deleted|
+|Listener class name|Event description | Valkey or Redis<br/>`notify-keyspace-events` value|
+|:--:|:--:|:--:|
+|org.redisson.api.listener.TrackingListener|Element created/removed/updated after read operation| - |
+|org.redisson.api.listener.ScoredSortedSetAddListener|Element created/updated|Ez|
+|org.redisson.api.listener.ScoredSortedSetRemoveListener|Element removed|Ez|
+|org.redisson.api.ExpiredObjectListener|`RScoredSortedSet` object expired|Ex|
+|org.redisson.api.DeletedObjectListener|`RScoredSortedSet` object deleted|Eg|
 
 Usage example:
 
@@ -1140,15 +1140,15 @@ set.range("d", true, "z", false);
 
 ### Listeners
 
-Redisson allows to bind listeners per `RLexSortedSet` object.
+Redisson allows binding listeners per `RLexSortedSet` object. This requires the `notify-keyspace-events` setting to be enabled on Redis or Valkey side.
 
-|Listener class name|Event description |
-|:--:|:--:|
-|org.redisson.api.listener.TrackingListener|Element created/removed/updated after read operation|
-|org.redisson.api.listener.ScoredSortedSetAddListener|Element created/updated|
-|org.redisson.api.listener.ScoredSortedSetRemoveListener|Element removed|
-|org.redisson.api.ExpiredObjectListener|`RScoredSortedSet` object expired|
-|org.redisson.api.DeletedObjectListener|`RScoredSortedSet` object deleted|
+|Listener class name|Event description | Valkey or Redis<br/>`notify-keyspace-events` value|
+|:--:|:--:|:--:|
+|org.redisson.api.listener.TrackingListener|Element created/removed/updated after read operation|-|
+|org.redisson.api.listener.ScoredSortedSetAddListener|Element created/updated|Ez|
+|org.redisson.api.listener.ScoredSortedSetRemoveListener|Element removed|Ez|
+|org.redisson.api.ExpiredObjectListener|`RScoredSortedSet` object expired|Ex|
+|org.redisson.api.DeletedObjectListener|`RScoredSortedSet` object deleted|Eg|
 
 Usage example:
 
@@ -1180,18 +1180,18 @@ list.remove(new SomeObject());
 
 ### Listeners
 
-Redisson allows to bind listeners per `RList` object.
+Redisson allows binding listeners per `RList` object. This requires the `notify-keyspace-events` setting to be enabled on Redis or Valkey side.
 
-|Listener class name|Event description |
-|:--:|:--:|
-|org.redisson.api.listener.TrackingListener|Element created/removed/updated after read operation|
-|org.redisson.api.listener.ListAddListener|Element created|
-|org.redisson.api.listener.ListInsertListener|Element inserted|
-|org.redisson.api.listener.ListSetListener|Element set/updated|
-|org.redisson.api.listener.ListRemoveListener|Element removed|
-|org.redisson.api.listener.ListTrimListener|List trimmed|
-|org.redisson.api.ExpiredObjectListener|`RList` object expired|
-|org.redisson.api.DeletedObjectListener|`RList` object deleted|
+|Listener class name|Event description | Valkey or Redis<br/>`notify-keyspace-events` value|
+|:--:|:--:|:--:|
+|org.redisson.api.listener.TrackingListener|Element created/removed/updated after read operation|-|
+|org.redisson.api.listener.ListAddListener|Element created|El|
+|org.redisson.api.listener.ListInsertListener|Element inserted|El|
+|org.redisson.api.listener.ListSetListener|Element set/updated|El|
+|org.redisson.api.listener.ListRemoveListener|Element removed|El|
+|org.redisson.api.listener.ListTrimListener|List trimmed|El|
+|org.redisson.api.ExpiredObjectListener|`RList` object expired|Ex|
+|org.redisson.api.DeletedObjectListener|`RList` object deleted|Eg|
 
 Usage example:
 
@@ -1225,15 +1225,15 @@ SomeObject someObj = queue.poll();
 
 ### Listeners
 
-Redisson allows to bind listeners per `RQueue` object.
+Redisson allows binding listeners per `RQueue` object. This requires the `notify-keyspace-events` setting to be enabled on Redis or Valkey side.
 
-|Listener class name|Event description |
-|:--:|:--:|
-|org.redisson.api.listener.TrackingListener|Element created/removed/updated after read operation|
-|org.redisson.api.listener.ListAddListener|Element created|
-|org.redisson.api.listener.ListRemoveListener|Element removed|
-|org.redisson.api.ExpiredObjectListener|`RQueue` object expired|
-|org.redisson.api.DeletedObjectListener|`RQueue` object deleted|
+|Listener class name|Event description | Valkey or Redis<br/>`notify-keyspace-events` value|
+|:--:|:--:|:--:|
+|org.redisson.api.listener.TrackingListener|Element created/removed/updated after read operation|-|
+|org.redisson.api.listener.ListAddListener|Element created|El|
+|org.redisson.api.listener.ListRemoveListener|Element removed|El|
+|org.redisson.api.ExpiredObjectListener|`RQueue` object expired|Ex|
+|org.redisson.api.DeletedObjectListener|`RQueue` object deleted|Eg|
 
 Usage example:
 
@@ -1266,15 +1266,15 @@ SomeObject someObj = queue.removeLast();
 
 ### Listeners
 
-Redisson allows to bind listeners per `RDeque` object.
+Redisson allows binding listeners per `RDeque` object. This requires the `notify-keyspace-events` setting to be enabled on Redis or Valkey side.
 
-|Listener class name|Event description |
-|:--:|:--:|
-|org.redisson.api.listener.TrackingListener|Element created/removed/updated after read operation|
-|org.redisson.api.listener.ListAddListener|Element created|
-|org.redisson.api.listener.ListRemoveListener|Element removed|
-|org.redisson.api.ExpiredObjectListener|`RDeque` object expired|
-|org.redisson.api.DeletedObjectListener|`RDeque` object deleted|
+|Listener class name|Event description | Valkey or Redis<br/>`notify-keyspace-events` value|
+|:--:|:--:|:--:|
+|org.redisson.api.listener.TrackingListener|Element created/removed/updated after read operation|-|
+|org.redisson.api.listener.ListAddListener|Element created|El|
+|org.redisson.api.listener.ListRemoveListener|Element removed|El|
+|org.redisson.api.ExpiredObjectListener|`RDeque` object expired|Ex|
+|org.redisson.api.DeletedObjectListener|`RDeque` object deleted|Eg|
 
 Usage example:
 
@@ -1631,20 +1631,20 @@ amountRx.doOnSuccess(res -> {
 
 ### Listeners
 
-Redisson allows to bind listeners per `RStream` object.
+Redisson allows binding listeners per `RStream` object. This requires the `notify-keyspace-events` setting to be enabled on Redis or Valkey side.
 
-|Listener class name|Event description |
-|:--:|:--:|
-|org.redisson.api.listener.TrackingListener|Element added/removed/updated after read operation|
-|org.redisson.api.ExpiredObjectListener|`RStream` object expired|
-|org.redisson.api.DeletedObjectListener|`RStream` object deleted|
-|org.redisson.api.listener.StreamAddListener|Element added|
-|org.redisson.api.listener.StreamRemoveListener|Element removed|
-|org.redisson.api.listener.StreamCreateGroupListener|Group created|
-|org.redisson.api.listener.StreamRemoveGroupListener|Group removed|
-|org.redisson.api.listener.StreamCreateConsumerListener|Consumer created|
-|org.redisson.api.listener.StreamRemoveConsumerListener|Consumer removed|
-|org.redisson.api.listener.StreamTrimListener|Stream trimmed|
+|Listener class name|Event description | Valkey or Redis<br/>`notify-keyspace-events` value|
+|:--:|:--:|:--:|
+|org.redisson.api.listener.TrackingListener|Element added/removed/updated after read operation|-|
+|org.redisson.api.ExpiredObjectListener|`RStream` object expired|Ex|
+|org.redisson.api.DeletedObjectListener|`RStream` object deleted|Eg|
+|org.redisson.api.listener.StreamAddListener|Element added|Et|
+|org.redisson.api.listener.StreamRemoveListener|Element removed|Et|
+|org.redisson.api.listener.StreamCreateGroupListener|Group created|Et|
+|org.redisson.api.listener.StreamRemoveGroupListener|Group removed|Et|
+|org.redisson.api.listener.StreamCreateConsumerListener|Consumer created|Et|
+|org.redisson.api.listener.StreamRemoveConsumerListener|Consumer removed|Et|
+|org.redisson.api.listener.StreamTrimListener|Stream trimmed|Et|
 
 Usage example:
 
@@ -1777,15 +1777,15 @@ addRx.doOnSuccess(res -> {
 
 ### Listeners
 
-Redisson allows to bind listeners per `RRingBuffer` object.
+Redisson allows binding listeners per `RRingBuffer` object. This requires the `notify-keyspace-events` setting to be enabled on Redis or Valkey side.
 
-|Listener class name|Event description |
-|:--:|:--:|
-|org.redisson.api.listener.TrackingListener|Element created/removed/updated after read operation|
-|org.redisson.api.listener.ListAddListener|Element created|
-|org.redisson.api.listener.ListRemoveListener|Element removed|
-|org.redisson.api.ExpiredObjectListener|`RRingBuffer` object expired|
-|org.redisson.api.DeletedObjectListener|`RRingBuffer` object deleted|
+|Listener class name|Event description | Valkey or Redis<br/>`notify-keyspace-events` value|
+|:--:|:--:|:--:|
+|org.redisson.api.listener.TrackingListener|Element created/removed/updated after read operation|-|
+|org.redisson.api.listener.ListAddListener|Element created|El|
+|org.redisson.api.listener.ListRemoveListener|Element removed|El|
+|org.redisson.api.ExpiredObjectListener|`RRingBuffer` object expired|Ex|
+|org.redisson.api.DeletedObjectListener|`RRingBuffer` object deleted|Eg|
 
 Usage example:
 
