@@ -1136,6 +1136,7 @@ public class RedissonRx implements RedissonRxClient {
                 .cacheProvider(LocalCachedMapOptions.CacheProvider.valueOf(params.getCacheProvider().toString()))
                 .cacheSize(params.getCacheSize())
                 .storeMode(LocalCachedMapOptions.StoreMode.valueOf(params.getStoreMode().toString()))
+                .readMode(LocalCachedMapOptions.ReadMode.valueOf(params.getReadMode().toString()))
                 .evictionPolicy(LocalCachedMapOptions.EvictionPolicy.valueOf(params.getEvictionPolicy().toString()))
                 .maxIdle(params.getMaxIdleInMillis())
                 .loader(params.getLoader())
