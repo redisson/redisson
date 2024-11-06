@@ -544,6 +544,32 @@ public class RedissonScheduledExecutorServiceTest extends RedisDockerTest {
         assertThat(redisson.getKeys().count()).isZero();
     }
 
+    @Test
+    public void testCancelAndInterruptSwallowedWithFixedDelay() throws InterruptedException, ExecutionException {
+        RScheduledExecutorService executor = redisson.getExecutorService("test");
+        RScheduledFuture<?> future = executor.scheduleWithFixedDelay(new SwallowingInterruptionTask("execution1", "cancel1"), 0, 1, TimeUnit.SECONDS);
+
+        Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+
+        assertThat(redisson.getAtomicLong("cancel1").get()).isZero();
+        assertThat(redisson.getAtomicLong("execution1").get()).isEqualTo(1);
+
+        cancel(future);
+
+        assertThat(redisson.getAtomicLong("cancel1").get()).isEqualTo(1);
+        assertThat(redisson.getAtomicLong("execution1").get()).isEqualTo(1);
+
+        Thread.sleep(TimeUnit.SECONDS.toMillis(6));
+
+        assertThat(executor.getTaskCount()).isZero();
+        assertThat(redisson.getAtomicLong("cancel1").get()).isEqualTo(1);
+        assertThat(redisson.getAtomicLong("execution1").get()).isEqualTo(1);
+
+        executor.delete();
+        redisson.getKeys().delete("execution1", "cancel1");
+        assertThat(redisson.getKeys().count()).isZero();
+    }
+
     private void cancel(ScheduledFuture<?> future1) throws InterruptedException, ExecutionException {
         assertThat(future1.cancel(true)).isTrue();
         try {
@@ -608,6 +634,31 @@ public class RedissonScheduledExecutorServiceTest extends RedisDockerTest {
         assertThat(redisson.getKeys().count()).isZero();
     }
 
+    @Test
+    public void testCancelAndInterruptSwallowedAtFixedRate() throws InterruptedException, ExecutionException {
+        RScheduledExecutorService executor = redisson.getExecutorService("test");
+        RScheduledFuture<?> future = executor.scheduleAtFixedRate(new SwallowingInterruptionTask("execution1", "cancel1"), 0, 6, TimeUnit.SECONDS);
+
+        Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+
+        assertThat(redisson.getAtomicLong("cancel1").get()).isZero();
+        assertThat(redisson.getAtomicLong("execution1").get()).isEqualTo(1);
+
+        cancel(future);
+
+        assertThat(redisson.getAtomicLong("cancel1").get()).isEqualTo(1);
+        assertThat(redisson.getAtomicLong("execution1").get()).isEqualTo(1);
+
+        Thread.sleep(TimeUnit.SECONDS.toMillis(6));
+
+        assertThat(executor.getTaskCount()).isZero();
+        assertThat(redisson.getAtomicLong("cancel1").get()).isEqualTo(1);
+        assertThat(redisson.getAtomicLong("execution1").get()).isEqualTo(1);
+
+        executor.delete();
+        redisson.getKeys().delete("execution1", "cancel1");
+        assertThat(redisson.getKeys().count()).isZero();
+    }
 
     @Test
     public void testMultipleTasksWithTimeShift() throws InterruptedException, ExecutionException {
