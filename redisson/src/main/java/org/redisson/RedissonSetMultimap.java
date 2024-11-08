@@ -16,9 +16,12 @@
 package org.redisson;
 
 import io.netty.buffer.ByteBuf;
+import org.redisson.api.ObjectListener;
 import org.redisson.api.RFuture;
 import org.redisson.api.RSet;
 import org.redisson.api.RSetMultimap;
+import org.redisson.api.listener.SetAddListener;
+import org.redisson.api.listener.SetRemoveListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
@@ -31,6 +34,7 @@ import org.redisson.misc.CompletableFutureWrapper;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 
 /**
  * @author Nikita Koksharov
@@ -135,7 +139,7 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
 
         String setName = getValuesName(keyHash);
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
-                "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); " +
+                "redis.call('hsetnx', KEYS[1], ARGV[1], ARGV[2]); " +
                 "return redis.call('sadd', KEYS[2], ARGV[3]); ",
             Arrays.<Object>asList(getRawName(), setName), keyState, keyHash, valueState);
     }
@@ -351,5 +355,61 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
                 "return members; ",
             Arrays.<Object>asList(getRawName(), setName), params.toArray());
     }
+
+    @Override
+    protected <T extends ObjectListener> int addListener(String name, T listener, BiConsumer<T, String> consumer) {
+        if (listener instanceof SetAddListener
+                || listener instanceof SetRemoveListener) {
+            String prefix = getValuesName("");
+            return addListener(name, listener, consumer, m -> m.startsWith(prefix));
+        }
+        return super.addListener(name, listener, consumer);
+    }
+
+    @Override
+    protected <T extends ObjectListener> RFuture<Integer> addListenerAsync(String name, T listener, BiConsumer<T, String> consumer) {
+        if (listener instanceof SetAddListener
+                || listener instanceof SetRemoveListener) {
+            String prefix = getValuesName("");
+            return addListenerAsync(name, listener, consumer, m -> m.startsWith(prefix));
+        }
+        return super.addListenerAsync(name, listener, consumer);
+    }
+
+    @Override
+    public int addListener(ObjectListener listener) {
+        if (listener instanceof SetAddListener) {
+            return addListener("__keyevent@*:sadd", (SetAddListener) listener, SetAddListener::onAdd);
+        }
+        if (listener instanceof SetRemoveListener) {
+            return addListener("__keyevent@*:srem", (SetRemoveListener) listener, SetRemoveListener::onRemove);
+        }
+
+        return super.addListener(listener);
+    }
+
+    @Override
+    public RFuture<Integer> addListenerAsync(ObjectListener listener) {
+        if (listener instanceof SetAddListener) {
+            return addListenerAsync("__keyevent@*:sadd", (SetAddListener) listener, SetAddListener::onAdd);
+        }
+        if (listener instanceof SetRemoveListener) {
+            return addListenerAsync("__keyevent@*:srem", (SetRemoveListener) listener, SetRemoveListener::onRemove);
+        }
+
+        return super.addListenerAsync(listener);
+    }
+
+    @Override
+    public void removeListener(int listenerId) {
+        removeListener(listenerId, "__keyevent@*:sadd", "__keyevent@*:srem");
+        super.removeListener(listenerId);
+    }
+
+    @Override
+    public RFuture<Void> removeListenerAsync(int listenerId) {
+        return removeListenerAsync(listenerId, "__keyevent@*:sadd", "__keyevent@*:srem");
+    }
+
 
 }

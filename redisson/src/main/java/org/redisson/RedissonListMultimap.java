@@ -16,9 +16,12 @@
 package org.redisson;
 
 import io.netty.buffer.ByteBuf;
+import org.redisson.api.ObjectListener;
 import org.redisson.api.RFuture;
 import org.redisson.api.RList;
 import org.redisson.api.RListMultimap;
+import org.redisson.api.listener.ListAddListener;
+import org.redisson.api.listener.ListRemoveListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
@@ -29,6 +32,7 @@ import org.redisson.misc.CompletableFutureWrapper;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 
 /**
  * @author Nikita Koksharov
@@ -154,7 +158,7 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
 
         String setName = getValuesName(keyHash);
         return commandExecutor.evalWriteNoRetryAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
-                "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); " +
+                "redis.call('hsetnx', KEYS[1], ARGV[1], ARGV[2]); " +
                 "redis.call('rpush', KEYS[2], ARGV[3]); " +
                 "return 1; ",
             Arrays.<Object>asList(getRawName(), setName), keyState, keyHash, valueState);
@@ -362,7 +366,62 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
 
     @Override
     RedissonMultiMapIterator<K, V, Entry<K, V>> entryIterator() {
-        return new RedissonListMultimapIterator<K, V, Map.Entry<K, V>>(this, commandExecutor, codec);
+        return new RedissonListMultimapIterator<>(this, commandExecutor, codec);
+    }
+
+    @Override
+    protected <T extends ObjectListener> int addListener(String name, T listener, BiConsumer<T, String> consumer) {
+        if (listener instanceof ListAddListener
+                || listener instanceof ListRemoveListener) {
+            String prefix = getValuesName("");
+            return addListener(name, listener, consumer, m -> m.startsWith(prefix));
+        }
+        return super.addListener(name, listener, consumer);
+    }
+
+    @Override
+    protected <T extends ObjectListener> RFuture<Integer> addListenerAsync(String name, T listener, BiConsumer<T, String> consumer) {
+        if (listener instanceof ListAddListener
+                || listener instanceof ListRemoveListener) {
+            String prefix = getValuesName("");
+            return addListenerAsync(name, listener, consumer, m -> m.startsWith(prefix));
+        }
+        return super.addListenerAsync(name, listener, consumer);
+    }
+
+    @Override
+    public int addListener(ObjectListener listener) {
+        if (listener instanceof ListAddListener) {
+            return addListener("__keyevent@*:rpush", (ListAddListener) listener, ListAddListener::onListAdd);
+        }
+        if (listener instanceof ListRemoveListener) {
+            return addListener("__keyevent@*:lrem", (ListRemoveListener) listener, ListRemoveListener::onListRemove);
+        }
+
+        return super.addListener(listener);
+    }
+
+    @Override
+    public RFuture<Integer> addListenerAsync(ObjectListener listener) {
+        if (listener instanceof ListAddListener) {
+            return addListenerAsync("__keyevent@*:rpush", (ListAddListener) listener, ListAddListener::onListAdd);
+        }
+        if (listener instanceof ListRemoveListener) {
+            return addListenerAsync("__keyevent@*:lrem", (ListRemoveListener) listener, ListRemoveListener::onListRemove);
+        }
+
+        return super.addListenerAsync(listener);
+    }
+
+    @Override
+    public void removeListener(int listenerId) {
+        removeListener(listenerId, "__keyevent@*:rpush", "__keyevent@*:lrem");
+        super.removeListener(listenerId);
+    }
+
+    @Override
+    public RFuture<Void> removeListenerAsync(int listenerId) {
+        return removeListenerAsync(listenerId, "__keyevent@*:rpush", "__keyevent@*:lrem");
     }
 
 }

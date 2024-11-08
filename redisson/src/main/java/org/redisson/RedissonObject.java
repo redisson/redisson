@@ -39,6 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -662,9 +663,15 @@ public abstract class RedissonObject implements RObject {
     }
 
     protected <T extends ObjectListener> int addListener(String name, T listener, BiConsumer<T, String> consumer) {
+        return addListener(name, listener, consumer, m -> m.equals(getRawName()));
+    }
+
+    protected final <T extends ObjectListener> int addListener(String name, T listener,
+                                                               BiConsumer<T, String> consumer,
+                                                               Function<String, Boolean> condition) {
         RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, name);
         int id = topic.addListener(String.class, (pattern, channel, msg) -> {
-            if (msg.equals(getRawName())) {
+            if (condition.apply(msg)) {
                 consumer.accept(listener, msg);
             }
         });
@@ -672,10 +679,17 @@ public abstract class RedissonObject implements RObject {
         return id;
     }
 
-    protected <T extends ObjectListener> RFuture<Integer> addListenerAsync(String name, T listener, BiConsumer<T, String> consumer) {
+    protected <T extends ObjectListener> RFuture<Integer> addListenerAsync(String name, T listener,
+                                                                           BiConsumer<T, String> consumer) {
+        return addListenerAsync(name, listener, consumer, m -> m.equals(getRawName()));
+    }
+
+    protected final <T extends ObjectListener> RFuture<Integer> addListenerAsync(String name, T listener,
+                                                                           BiConsumer<T, String> consumer,
+                                                                           Function<String, Boolean> condition) {
         RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, name);
         RFuture<Integer> f = topic.addListenerAsync(String.class, (pattern, channel, msg) -> {
-            if (msg.equals(getRawName())) {
+            if (condition.apply(msg)) {
                 consumer.accept(listener, msg);
             }
         });
