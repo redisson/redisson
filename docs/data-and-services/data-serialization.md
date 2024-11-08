@@ -14,6 +14,7 @@ Codec class name| Description
 `org.redisson.codec.MsgPackJacksonCodec`| [MsgPack](http://msgpack.org/) binary json codec  
 `org.redisson.codec.IonJacksonCodec`| [Amazon Ion](https://amzn.github.io/ion-docs/) codec  
 `org.redisson.codec.SerializationCodec`| JDK Serialization binary codec<br/>(**Android** compatible)
+`org.redisson.codec.ZStdCodec`| [ZStandard](https://github.com/luben/zstd-jni) compression codec.<br/> Uses `Kryo5Codec` for serialization by default  
 `org.redisson.codec.LZ4Codec`| [LZ4](https://github.com/jpountz/lz4-java) compression codec.<br/> Uses `Kryo5Codec` for serialization by default  
 `org.redisson.codec.LZ4CodecV2`| [LZ4 Apache Commons](https://github.com/apache/commons-compress) compression codec.<br/> Uses `Kryo5Codec` for serialization by default  
 `org.redisson.codec.SnappyCodecV2` | Snappy compression codec based on [snappy-java](https://github.com/xerial/snappy-java) project.<br/> Uses `Kryo5Codec` for serialization by default  

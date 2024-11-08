@@ -640,7 +640,8 @@ List<SimpleValue> oldValues = map.replaceValues(new SimpleKey("0"), newValues);
 
 List<SimpleValue> removedValues = map.removeAll(new SimpleKey("0"));
 ```
-### Multimap eviction
+
+### Eviction
 Multimap distributed object for Java with eviction support implemented by separated MultimapCache object. There are [RSetMultimapCache](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RSetMultimapCache.html) and [RListMultimapCache](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RListMultimapCache.html) objects for Set and List based Multimaps respectively.  
 
 Eviction task is started once per unique object name at the moment of getting Multimap instance. If instance isn't used and has expired entries it should be get again to start the eviction process. This leads to extra Redis or Valkey calls and eviction task per unique map object name. 
@@ -662,6 +663,50 @@ multimap.expireKey("2", 10, TimeUnit.MINUTES);
 // if object is not used anymore
 multimap.destroy();
 ```
+
+### Listeners
+
+Redisson allows binding listeners per `RSetMultimap` or `RListMultimap` object. This requires the `notify-keyspace-events` setting to be enabled on Redis or Valkey side.
+
+`RSetMultimap` listeners:
+
+|Listener class name|Event description | Valkey or Redis<br/>`notify-keyspace-events` value|
+|:--:|:--:|:--:|
+|org.redisson.api.ExpiredObjectListener|`RSetMultimap` object expired| Ex|
+|org.redisson.api.DeletedObjectListener|`RSetMultimap` object deleted| Eg|
+|org.redisson.api.listener.SetAddListener|Element added to entry| Es|
+|org.redisson.api.listener.SetRemoveListener|Element removed from entry| Es|
+|org.redisson.api.listener.MapPutListener|Entry created|Eh|
+|org.redisson.api.listener.MapRemoveListener|Entry removed|Eh|
+
+`RListMultimap` listeners:
+
+|Listener class name|Event description | Valkey or Redis<br/>`notify-keyspace-events` value|
+|:--:|:--:|:--:|
+|org.redisson.api.ExpiredObjectListener|`RListMultimap` object expired| Ex|
+|org.redisson.api.DeletedObjectListener|`RListMultimap` object deleted| Eg|
+|org.redisson.api.listener.ListAddListener|Element added to entry| Es|
+|org.redisson.api.listener.ListRemoveListener|Element removed from entry| Es|
+|org.redisson.api.listener.MapPutListener|Entry created|Eh|
+|org.redisson.api.listener.MapRemoveListener|Entry removed|Eh|
+
+Usage example:
+
+```java
+RListMultimap<Integer, Integer> lmap = redisson.getListMultimap("mymap");
+
+int listenerId = lmap.addListener(new MapPutListener() {
+     @Override
+     public void onPut(String name) {
+        // ...
+     }
+});
+
+// ...
+
+lmap.removeListener(listenerId);
+```
+
 
 ## JSON Store
 
