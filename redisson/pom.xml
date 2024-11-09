@@ -11,13 +11,13 @@
     <artifactId>redisson</artifactId>
 
     <name>Redisson</name>
-    <description>Easy Redis Java client and Real-Time Data Platform. Valkey compatible. Sync/Async/RxJava3/Reactive API. Client side caching. Over 50 Redis based Java objects and services: JCache API, Apache Tomcat, Hibernate, Spring, Set, Multimap, SortedSet, Map, List, Queue, Deque, Semaphore, Lock, AtomicLong, Map Reduce, Bloom filter, Scheduler, RPC</description>
+    <description>Valkey and Redis Java client. Complete Real-Time Data Platform. Sync/Async/RxJava/Reactive API. Over 50 Valkey and Redis based Java objects and services: JCache API, Apache Tomcat, Hibernate, Spring, Set, Multimap, SortedSet, Map, List, Queue, Deque, Semaphore, Lock, AtomicLong, Map Reduce, Bloom filter, Scheduler, RPC</description>
     <inceptionYear>2013</inceptionYear>
-    <url>http://redisson.org</url>
+    <url>https://redisson.pro</url>
 
     <organization>
        <name>Redisson</name>
-       <url>http://redisson.org/</url>
+       <url>https://redisson.pro/</url>
     </organization>
 
     <profiles>
