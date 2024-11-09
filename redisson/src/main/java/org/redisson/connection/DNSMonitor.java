@@ -109,7 +109,8 @@ public class DNSMonitor {
 
                 if (addresses.size() > 1) {
                     if (!printed) {
-                        log.warn("Use Proxy mode to utilize all ip addresses: {}", addresses);
+                        log.warn("Use Redisson PRO version (https://redisson.pro) with Proxy mode feature to utilize all ip addresses: {} resolved by: {}",
+                                addresses, entry.getKey());
                         printed = true;
                     }
                 }
