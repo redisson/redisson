@@ -65,16 +65,16 @@ public class ZStdCodec extends BaseCodec {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
             int size = buf.readInt();
-            ZstdInputStream s = new ZstdInputStream(new ByteBufInputStream(buf));
-            byte[] bytes = new byte[size];
-            s.read(bytes);
-            s.close();
+            ByteBuf out = ByteBufAllocator.DEFAULT.buffer(size);
 
-            ByteBuf in = Unpooled.wrappedBuffer(bytes);
             try {
-                return innerCodec.getValueDecoder().decode(in, state);
+                ZstdInputStream in = new ZstdInputStream(new ByteBufInputStream(buf));
+                out.writeBytes(in, size);
+                in.close();
+
+                return innerCodec.getValueDecoder().decode(out, state);
             } finally {
-                in.release();
+                out.release();
             }
         }
     };
@@ -88,12 +88,11 @@ public class ZStdCodec extends BaseCodec {
             ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
             ZstdOutputStream o = new ZstdOutputStream(new ByteBufOutputStream(out));
 
-            byte[] bytes = new byte[encoded.readableBytes()];
-            encoded.readBytes(bytes);
+            int size = encoded.readableBytes();
+            out.writeInt(size);
+            encoded.readBytes(o, size);
             encoded.release();
 
-            out.writeInt(bytes.length);
-            o.write(bytes);
             o.flush();
             o.close();
             return out;
