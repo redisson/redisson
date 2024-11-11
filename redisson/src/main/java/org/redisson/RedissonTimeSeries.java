@@ -15,9 +15,13 @@
  */
 package org.redisson;
 
+import org.redisson.api.ObjectListener;
 import org.redisson.api.RFuture;
 import org.redisson.api.RTimeSeries;
 import org.redisson.api.TimeSeriesEntry;
+import org.redisson.api.listener.ScoredSortedSetAddListener;
+import org.redisson.api.listener.ScoredSortedSetRemoveListener;
+import org.redisson.api.listener.TrackingListener;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
@@ -34,6 +38,7 @@ import org.redisson.misc.CompletableFutureWrapper;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -1040,6 +1045,51 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
                 this.timeoutSetName = getTimeoutSetName(newName);
             }
         });
+    }
+
+    @Override
+    public int addListener(ObjectListener listener) {
+        if (listener instanceof ScoredSortedSetAddListener) {
+            return addListener("__keyevent@*:zadd", (ScoredSortedSetAddListener) listener, ScoredSortedSetAddListener::onAdd);
+        }
+        if (listener instanceof ScoredSortedSetRemoveListener) {
+            return addListener("__keyevent@*:zrem", (ScoredSortedSetRemoveListener) listener, ScoredSortedSetRemoveListener::onRemove);
+        }
+        if (listener instanceof TrackingListener) {
+            return addTrackingListener((TrackingListener) listener);
+        }
+
+        return super.addListener(listener);
+    }
+
+    @Override
+    public RFuture<Integer> addListenerAsync(ObjectListener listener) {
+        if (listener instanceof ScoredSortedSetAddListener) {
+            return addListenerAsync("__keyevent@*:zadd", (ScoredSortedSetAddListener) listener, ScoredSortedSetAddListener::onAdd);
+        }
+        if (listener instanceof ScoredSortedSetRemoveListener) {
+            return addListenerAsync("__keyevent@*:zrem", (ScoredSortedSetRemoveListener) listener, ScoredSortedSetRemoveListener::onRemove);
+        }
+        if (listener instanceof TrackingListener) {
+            return addTrackingListenerAsync((TrackingListener) listener);
+        }
+
+        return super.addListenerAsync(listener);
+    }
+
+    @Override
+    public void removeListener(int listenerId) {
+        removeTrackingListener(listenerId);
+        removeListener(listenerId, "__keyevent@*:zadd", "__keyevent@*:zrem");
+        super.removeListener(listenerId);
+    }
+
+    @Override
+    public RFuture<Void> removeListenerAsync(int listenerId) {
+        RFuture<Void> f1 = removeTrackingListenerAsync(listenerId);
+        RFuture<Void> f2 = removeListenerAsync(listenerId,
+                "__keyevent@*:zadd", "__keyevent@*:zrem");
+        return new CompletableFutureWrapper<>(CompletableFuture.allOf(f1.toCompletableFuture(), f2.toCompletableFuture()));
     }
 
 }
