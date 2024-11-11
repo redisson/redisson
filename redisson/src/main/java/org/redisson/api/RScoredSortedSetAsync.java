@@ -1222,6 +1222,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @param listener object event listener
      * @return listener id
      */
+    @Override
     RFuture<Integer> addListenerAsync(ObjectListener listener);
 
 }

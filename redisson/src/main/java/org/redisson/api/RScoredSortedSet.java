@@ -1446,6 +1446,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * @param listener - object event listener
      * @return listener id
      */
+    @Override
     int addListener(ObjectListener listener);
 
 }
