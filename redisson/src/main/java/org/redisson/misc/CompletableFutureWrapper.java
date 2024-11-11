@@ -17,6 +17,7 @@ package org.redisson.misc;
 
 import org.redisson.api.RFuture;
 
+import java.util.List;
 import java.util.concurrent.*;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -50,6 +51,11 @@ public class CompletableFutureWrapper<V> implements RFuture<V> {
 
     public CompletableFutureWrapper(CompletableFuture<V> future) {
         this.future = future;
+        this.lastFuture = future;
+    }
+
+    public CompletableFutureWrapper(List<CompletableFuture<?>> futures) {
+        this.future = (CompletableFuture<V>) CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));;
         this.lastFuture = future;
     }
 
