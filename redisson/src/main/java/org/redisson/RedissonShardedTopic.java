@@ -66,7 +66,7 @@ public class RedissonShardedTopic extends RedissonTopic implements RShardedTopic
 
     @Override
     public RFuture<Long> publishAsync(Object message) {
-        String name = getName(message);
+        String name = getName();
         return commandExecutor.writeAsync(name, StringCodec.INSTANCE, RedisCommands.SPUBLISH, name, commandExecutor.encode(codec, message));
     }
 
@@ -82,6 +82,7 @@ public class RedissonShardedTopic extends RedissonTopic implements RShardedTopic
         return new CompletableFutureWrapper<>(f);
     }
 
+    @Override
     public RFuture<Void> removeAllListenersAsync() {
         CompletableFuture<Void> f = subscribeService.removeAllListenersAsync(PubSubType.SUNSUBSCRIBE, channelName);
         return new CompletableFutureWrapper<>(f);

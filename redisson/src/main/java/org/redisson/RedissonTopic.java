@@ -89,13 +89,9 @@ public class RedissonTopic implements RTopic {
         return name;
     }
 
-    protected String getName(Object o) {
-        return name;
-    }
-
     @Override
     public RFuture<Long> publishAsync(Object message) {
-        String name = getName(message);
+        String name = getName();
         return commandExecutor.writeAsync(name, StringCodec.INSTANCE, RedisCommands.PUBLISH, name, commandExecutor.encode(codec, message));
     }
 
