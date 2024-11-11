@@ -672,6 +672,8 @@ Tracing tracing = Tracing.newBuilder()
                          .addSpanHandler(zipkinSpanHandler)
                          .build();
 
+Config config = ... // Redisson PRO config object
+
 config.setTracingProvider(new BraveTracingProvider(tracing));
 ```
 
@@ -699,6 +701,8 @@ OpenTelemetrySdk openTelemetrySdk = OpenTelemetrySdk.builder()
                                          .build();
 
 io.opentelemetry.api.trace.Tracer otelTracer = openTelemetrySdk.getTracerProvider().get("io.micrometer.micrometer-tracing");
+
+Config config = ... // Redisson PRO config object
 
 config.setTracingProvider(new OtelTracingProvider(otelTracer, openTelemetrySdk.getPropagators()));
 ```

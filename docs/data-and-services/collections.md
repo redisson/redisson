@@ -2034,3 +2034,32 @@ rx.doOnSuccess(res -> {
    // ...
 }).subscribe();
 ```
+
+### Listeners
+
+Redisson allows binding listeners per `RTimeSeries` object. This requires the `notify-keyspace-events` setting to be enabled on Redis or Valkey side.
+
+|Listener class name|Event description | Valkey or Redis<br/>`notify-keyspace-events` value|
+|:--:|:--:|:--:|
+|org.redisson.api.listener.TrackingListener|Element created/removed/updated after read operation| - |
+|org.redisson.api.listener.ScoredSortedSetAddListener|Element created/updated|Ez|
+|org.redisson.api.listener.ScoredSortedSetRemoveListener|Element removed|Ez|
+|org.redisson.api.ExpiredObjectListener|`RTimeSeries` object expired|Ex|
+|org.redisson.api.DeletedObjectListener|`RTimeSeries` object deleted|Eg|
+
+Usage example:
+
+```java
+RTimeSeries<String> set = redisson.getTimeSeries("obj");
+
+int listenerId = set.addListener(new DeletedObjectListener() {
+     @Override
+     public void onDeleted(String name) {
+        // ...
+     }
+});
+
+// ...
+
+set.removeListener(listenerId);
+```

@@ -422,7 +422,7 @@ public class TransactionalBean {
 
 _This feature is available only in [Redisson PRO](https://redisson.pro) edition._
 
-Redisson implements Spring Cloud Stream integration based on the reliable Redis Stream structure for message delivery. To use Redis binder with Redisson you need to add [Spring Cloud Stream](https://spring.io/projects/spring-cloud-stream) Binder library in classpath:  
+Redisson implements Spring Cloud Stream integration based on the reliable Stream structure for message delivery. To use Redis or Valkey binder with Redisson you need to add [Spring Cloud Stream](https://spring.io/projects/spring-cloud-stream) Binder library in classpath:  
 
 Maven:
 ```xml
@@ -441,8 +441,8 @@ Compatible with Spring versions below.
 
 Spring Cloud Stream | Spring Cloud | Spring Boot
 -- | -- | --
-4.1.x | 2023.0.x | 3.0.x, 3.1.x, 3.2.x
-4.0.x | 2022.0.x | 3.0.x, 3.1.x, 3.2.x
+4.1.x | 2023.0.x | 3.0.x - 3.3.x
+4.0.x | 2022.0.x | 3.0.x - 3.3.x
 3.2.x | 2021.0.x | 2.6.x, 2.7.x (Starting with 2021.0.3 of Spring Cloud)
 3.1.x | 2020.0.x | 2.4.x, 2.5.x (Starting with 2020.0.3 of Spring Cloud)
 
@@ -488,7 +488,7 @@ spring.cloud.stream.bindings.feedSupplier-out-0.producer.useNativeEncoding=true
 
 ## Spring Data Redis
 
-Integrates Redisson with Spring Data Redis library. Implements Spring Data's `RedisConnectionFactory` and `ReactiveRedisConnectionFactory` interfaces and allows to interact with Redis through `RedisTemplate` or `ReactiveRedisTemplate` object.
+Integrates Redisson with Spring Data Redis library. Implements Spring Data's `RedisConnectionFactory` and `ReactiveRedisConnectionFactory` interfaces and allows to interact with Redis or Valkey through `RedisTemplate` or `ReactiveRedisTemplate` object.
 
 ### Usage
 1. Add `redisson-spring-data` dependency into your project:  
