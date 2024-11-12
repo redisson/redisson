@@ -252,14 +252,14 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     @Override
     public Cursor<byte[]> scan(ScanOptions options) {
-        return new ScanCursor<byte[]>(0, options) {
+        return new ScanCursor<byte[]>(Cursor.CursorId.initial(), options) {
 
             private RedisClient client;
             private Iterator<MasterSlaveEntry> entries = redisson.getConnectionManager().getEntrySet().iterator();
             private MasterSlaveEntry entry = entries.next();
             
             @Override
-            protected ScanIteration<byte[]> doScan(long cursorId, ScanOptions options) {
+            protected ScanIteration<byte[]> doScan(CursorId cursorId, ScanOptions options) {
                 if (isQueueing() || isPipelined()) {
                     throw new UnsupportedOperationException("'SSCAN' cannot be called in pipeline / transaction mode.");
                 }
@@ -269,10 +269,10 @@ public class RedissonConnection extends AbstractRedisConnection {
                 }
                 
                 List<Object> args = new ArrayList<Object>();
-                if (cursorId == 101010101010101010L) {
-                    cursorId = 0;
+                if (CursorId.of("101010101010101010").equals(cursorId)) {
+                    cursorId = CursorId.initial();
                 }
-                args.add(Long.toUnsignedString(cursorId));
+                args.add(cursorId);
                 if (options.getPattern() != null) {
                     args.add("MATCH");
                     args.add(options.getPattern());
@@ -286,7 +286,7 @@ public class RedissonConnection extends AbstractRedisConnection {
                 ListScanResult<byte[]> res = syncFuture(f);
                 String pos = res.getPos();
                 client = res.getRedisClient();
-                if ("0".equals(pos)) {
+                if (CursorId.isInitial(pos)) {
                     if (entries.hasNext()) {
                         pos = "101010101010101010";
                         entry = entries.next();
@@ -296,7 +296,7 @@ public class RedissonConnection extends AbstractRedisConnection {
                     }
                 }
                 
-                return new ScanIteration<byte[]>(Long.parseUnsignedLong(pos), res.getValues());
+                return new ScanIteration<byte[]>(CursorId.of(pos), res.getValues());
             }
         }.open();
     }

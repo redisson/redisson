@@ -389,7 +389,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
             private RedisClient client = getEntry(node);
             
             @Override
-            protected ScanIteration<byte[]> doScan(long cursorId, ScanOptions options) {
+            protected ScanIteration<byte[]> doScan(CursorId cursorId, ScanOptions options) {
                 if (isQueueing() || isPipelined()) {
                     throw new UnsupportedOperationException("'SSCAN' cannot be called in pipeline / transaction mode.");
                 }
@@ -399,7 +399,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
                 }
                 
                 List<Object> args = new ArrayList<Object>();
-                args.add(Long.toUnsignedString(cursorId));
+                args.add(cursorId);
                 if (options.getPattern() != null) {
                     args.add("MATCH");
                     args.add(options.getPattern());
@@ -413,11 +413,11 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
                 ListScanResult<byte[]> res = syncFuture(f);
                 String pos = res.getPos();
                 client = res.getRedisClient();
-                if ("0".equals(pos)) {
+                if (CursorId.isInitial(pos)) {
                     client = null;
                 }
                 
-                return new ScanIteration<byte[]>(Long.parseUnsignedLong(pos), res.getValues());
+                return new ScanIteration<byte[]>(CursorId.of(pos), res.getValues());
             }
         }.open();
     }
