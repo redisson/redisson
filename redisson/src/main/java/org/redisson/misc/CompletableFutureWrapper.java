@@ -55,7 +55,7 @@ public class CompletableFutureWrapper<V> implements RFuture<V> {
     }
 
     public CompletableFutureWrapper(List<CompletableFuture<?>> futures) {
-        this.future = (CompletableFuture<V>) CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));;
+        this.future = (CompletableFuture<V>) CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
         this.lastFuture = future;
     }
 
