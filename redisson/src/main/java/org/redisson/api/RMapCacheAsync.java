@@ -23,6 +23,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 /**
  * <p>Map-based cache with ability to set TTL for each entry via
@@ -252,6 +253,21 @@ public interface RMapCacheAsync<K, V> extends RMapAsync<K, V> {
      *         <code>false</code> if key already exists in the hash
      */
     RFuture<Boolean> fastPutIfAbsentAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
+
+    /**
+     * If the specified key is not already associated
+     * with a value, attempts to compute its value using the given mapping function and enters it into this map .
+     * <p>
+     * Stores value mapped by key with specified time to live.
+     * Entry expires after specified time to live.
+     *
+     * @param key - map key
+     * @param ttl - time to live for key\value entry.
+     *              If <code>0</code> then stores infinitely.
+     * @param mappingFunction the mapping function to compute a value
+     * @return current associated value
+     */
+    RFuture<V> computeIfAbsentAsync(K key, Duration ttl, Function<? super K, ? extends V> mappingFunction);
 
     /**
      * Use {@link #expireEntryAsync(Object, Duration, Duration)} instead.

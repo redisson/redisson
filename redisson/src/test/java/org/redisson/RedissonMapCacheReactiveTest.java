@@ -1,22 +1,18 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RLockReactive;
 import org.redisson.api.RMapCacheReactive;
 import org.redisson.api.RMapReactive;
+
+import java.io.Serializable;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonMapCacheReactiveTest extends BaseReactiveTest {
 
@@ -249,6 +245,20 @@ public class RedissonMapCacheReactiveTest extends BaseReactiveTest {
         sync(map.putAll(joinMap));
 
         assertThat(toIterable(map.keyIterator())).containsOnly(1, 2, 3, 4, 5, 6);
+    }
+
+    @Test
+    public void testComputeIfAbsent() {
+        RMapCacheReactive<Integer, String> map = redisson.getMapCache("simple");
+
+        map.computeIfAbsent(7, Duration.ofSeconds(1), new Function<Integer, String>() {
+            @Override
+            public String apply(Integer integer) {
+                return "1234";
+            }
+        }).block();
+
+        assertThat(map.get(7).block()).isEqualTo("1234");
     }
 
     @Test

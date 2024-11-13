@@ -142,7 +142,7 @@ public interface RMapCacheRx<K, V> extends RMapRx<K, V>, RDestroyable {
      * @param mappingFunction the mapping function to compute a value
      * @return current associated value
      */
-    Maybe<V> computeIfAbsentAsync(K key, Duration ttl, Function<? super K, ? extends V> mappingFunction);
+    Maybe<V> computeIfAbsent(K key, Duration ttl, Function<? super K, ? extends V> mappingFunction);
     /**
      * Stores value mapped by key with specified time to live.
      * Entry expires after specified time to live.

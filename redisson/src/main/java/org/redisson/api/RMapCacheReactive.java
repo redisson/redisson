@@ -140,7 +140,8 @@ public interface RMapCacheReactive<K, V> extends RMapReactive<K, V>, RDestroyabl
      * @param mappingFunction the mapping function to compute a value
      * @return current associated value
      */
-    Mono<V> computeIfAbsentAsync(K key, Duration ttl, Function<? super K, ? extends V> mappingFunction);
+    Mono<V> computeIfAbsent(K key, Duration ttl, Function<? super K, ? extends V> mappingFunction);
+
     /**
      * Stores value mapped by key with specified time to live.
      * Entry expires after specified time to live.
