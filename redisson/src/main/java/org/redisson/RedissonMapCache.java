@@ -146,7 +146,10 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             if (value == null) {
                 V newValue = mappingFunction.apply(key);
                 if (newValue != null) {
-                    fastPut(key, newValue, ttl.toMillis(), TimeUnit.MILLISECONDS);
+                    V r = putIfAbsent(key, newValue, ttl.toMillis(), TimeUnit.MILLISECONDS);
+                    if (r != null) {
+                        return r;
+                    }
                     return newValue;
                 }
                 return null;
@@ -177,7 +180,12 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         return CompletableFuture.supplyAsync(() -> mappingFunction.apply(key), getServiceManager().getExecutor())
                                 .thenCompose(newValue -> {
                                     if (newValue != null) {
-                                        return fastPutAsync(key, newValue, ttl.toMillis(), TimeUnit.MILLISECONDS).thenApply(rr -> newValue);
+                                        return putIfAbsentAsync(key, newValue, ttl.toMillis(), TimeUnit.MILLISECONDS).thenApply(rr -> {
+                                            if (rr != null) {
+                                                return rr;
+                                            }
+                                            return newValue;
+                                        });
                                     }
                                     return CompletableFuture.completedFuture(null);
                                 });
