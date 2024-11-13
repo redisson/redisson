@@ -306,7 +306,12 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                         return CompletableFuture.supplyAsync(() -> mappingFunction.apply(key), getServiceManager().getExecutor())
                                 .thenCompose(newValue -> {
                                     if (newValue != null) {
-                                        return fastPutAsync(key, newValue).thenApply(rr -> newValue);
+                                        return putIfAbsentAsync(key, newValue).thenApply(rr -> {
+                                            if (rr != null) {
+                                                return rr;
+                                            }
+                                            return newValue;
+                                        });
                                     }
                                     return CompletableFuture.completedFuture(null);
                                 });
@@ -337,7 +342,10 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             if (value == null) {
                 V newValue = mappingFunction.apply(key);
                 if (newValue != null) {
-                    fastPut(key, newValue);
+                    V r = putIfAbsent(key, newValue);
+                    if (r != null) {
+                        return r;
+                    }
                     return newValue;
                 }
                 return null;
@@ -368,9 +376,14 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                         return CompletableFuture.supplyAsync(() -> remappingFunction.apply(key, oldValue), getServiceManager().getExecutor())
                                 .thenCompose(newValue -> {
                                     if (newValue != null) {
-                                        return fastPutAsync(key, newValue).thenApply(rr -> newValue);
+                                        return fastPutIfExistsAsync(key, newValue).thenApply(rr -> {
+                                            if (!rr) {
+                                                return null;
+                                            }
+                                            return newValue;
+                                        });
                                     }
-                                    return fastRemoveAsync(key).thenApply(rr -> null);
+                                    return removeAsync(key, oldValue).thenApply(rr -> null);
                                 });
                     }).whenComplete((c, e) -> {
                         lock.unlockAsync(threadId);
@@ -397,10 +410,12 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
             V newValue = remappingFunction.apply(key, oldValue);
             if (newValue != null) {
-                fastPut(key, newValue);
-                return newValue;
+                if (fastPutIfExists(key, newValue)) {
+                    return newValue;
+                }
+                return null;
             }
-            fastRemove(key);
+            remove(key, oldValue);
             return null;
         } finally {
             lock.unlock();
