@@ -1,5 +1,13 @@
 [
 {
+  "name": "org.redisson.codec.JsonJacksonCodec",
+  "allDeclaredConstructors":true
+},
+{
+  "name": "org.redisson.codec.SnappyCodecV2",
+  "allDeclaredConstructors":true
+},
+{
   "name": "org.redisson.codec.Kryo5Codec",
   "allDeclaredConstructors":true
 },
