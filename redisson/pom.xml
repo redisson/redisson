@@ -203,7 +203,7 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-compress</artifactId>
-            <version>1.26.2</version>
+            <version>1.27.1</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
@@ -239,7 +239,7 @@
         <dependency>
             <groupId>org.xerial.snappy</groupId>
             <artifactId>snappy-java</artifactId>
-            <version>1.1.10.6</version>
+            <version>1.1.10.7</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
