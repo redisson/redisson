@@ -837,63 +837,63 @@
   "allPublicMethods":true
 },
 {
-  "name":"org.redisson.reactive.RedissonSetRx",
+  "name":"org.redisson.rx.RedissonSetRx",
   "allPublicMethods":true
 },
 {
-  "name":"org.redisson.reactive.RedissonBinaryStreamRx",
+  "name":"org.redisson.rx.RedissonBinaryStreamRx",
   "allPublicMethods":true
 },
 {
-  "name":"org.redisson.reactive.RedissonBlockingDequeRx",
+  "name":"org.redisson.rx.RedissonBlockingDequeRx",
   "allPublicMethods":true
 },
 {
-  "name":"org.redisson.reactive.RedissonBlockingQueueRx",
+  "name":"org.redisson.rx.RedissonBlockingQueueRx",
   "allPublicMethods":true
 },
 {
-  "name":"org.redisson.reactive.RedissonKeysRx",
+  "name":"org.redisson.rx.RedissonKeysRx",
   "allPublicMethods":true
 },
 {
-  "name":"org.redisson.reactive.RedissonLexSortedSetRx",
+  "name":"org.redisson.rx.RedissonLexSortedSetRx",
   "allPublicMethods":true
 },
 {
-  "name":"org.redisson.reactive.RedissonListMultimapRx",
+  "name":"org.redisson.rx.RedissonListMultimapRx",
   "allPublicMethods":true
 },
 {
-  "name":"org.redisson.reactive.RedissonListRx",
+  "name":"org.redisson.rx.RedissonListRx",
   "allPublicMethods":true
 },
 {
-  "name":"org.redisson.reactive.RedissonMapCacheRx",
+  "name":"org.redisson.rx.RedissonMapCacheRx",
   "allPublicMethods":true
 },
 {
-  "name":"org.redisson.reactive.RedissonMapRx",
+  "name":"org.redisson.rx.RedissonMapRx",
   "allPublicMethods":true
 },
 {
-  "name":"org.redisson.reactive.RedissonReadWriteLockRx",
+  "name":"org.redisson.rx.RedissonReadWriteLockRx",
   "allPublicMethods":true
 },
 {
-  "name":"org.redisson.reactive.RedissonReliableTopicRx",
+  "name":"org.redisson.rx.RedissonReliableTopicRx",
   "allPublicMethods":true
 },
 {
-  "name":"org.redisson.reactive.RedissonScoredSortedSetRx",
+  "name":"org.redisson.rx.RedissonScoredSortedSetRx",
   "allPublicMethods":true
 },
 {
-  "name":"org.redisson.reactive.RedissonSetCacheRx",
+  "name":"org.redisson.rx.RedissonSetCacheRx",
   "allPublicMethods":true
 },
 {
-  "name":"org.redisson.reactive.RedissonSetMultimapRx",
+  "name":"org.redisson.rx.RedissonSetMultimapRx",
   "allPublicMethods":true
 },
 {
@@ -901,11 +901,51 @@
   "allPublicMethods":true
 },
 {
-  "name":"org.redisson.reactive.RedissonTopicRx",
+  "name":"org.redisson.rx.RedissonTopicRx",
   "allPublicMethods":true
 },
 {
-  "name":"org.redisson.reactive.RedissonTransferQueueRx",
+  "name":"org.redisson.rx.RedissonTransferQueueRx",
+  "allPublicMethods":true
+},
+{
+  "name":"org.redisson.transaction.RedissonTransactionalSet",
+  "allPublicMethods":true
+},
+{
+  "name":"org.redisson.transaction.RedissonTransactionalBucket",
+  "allPublicMethods":true
+},
+{
+  "name":"org.redisson.transaction.RedissonTransactionalBuckets",
+  "allPublicMethods":true
+},
+{
+  "name":"org.redisson.transaction.RedissonTransactionalLocalCachedMap",
+  "allPublicMethods":true
+},
+{
+  "name":"org.redisson.transaction.RedissonTransactionalLock",
+  "allPublicMethods":true
+},
+{
+  "name":"org.redisson.transaction.RedissonTransactionalMap",
+  "allPublicMethods":true
+},
+{
+  "name":"org.redisson.transaction.RedissonTransactionalMapCache",
+  "allPublicMethods":true
+},
+{
+  "name":"org.redisson.transaction.RedissonTransactionalReadLock",
+  "allPublicMethods":true
+},
+{
+  "name":"org.redisson.transaction.RedissonTransactionalSetCache",
+  "allPublicMethods":true
+},
+{
+  "name":"org.redisson.transaction.RedissonTransactionalWriteLock",
   "allPublicMethods":true
 },
 {
