@@ -321,7 +321,7 @@ public abstract class RedissonObject implements RObject {
             String nn = mapName(newName);
             String oldName = getRawName();
             CompletionStage<Void> f = dumpAsync()
-                                       .thenCompose(val -> commandExecutor.writeAsync(nn, StringCodec.INSTANCE, RedisCommands.RESTORE, nn, 0, val))
+                                       .thenCompose(val -> commandExecutor.writeAsync(nn, StringCodec.INSTANCE, RedisCommands.RESTORE, nn, 0, val, "REPLACE"))
                                        .thenCompose(val -> {
                                            setName(newName);
                                            return deleteAsync(oldName).thenApply(r -> null);

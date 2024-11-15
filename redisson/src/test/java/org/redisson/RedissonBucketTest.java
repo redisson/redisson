@@ -126,6 +126,11 @@ public class RedissonBucketTest extends RedisDockerTest {
             b.rename("test347834");
             assertThat(b.getName()).isEqualTo("test347834");
 
+            RBucket<String> b2 = rc.getBucket("12324");
+            b2.set("111");
+
+            b.rename("12324");
+
             RBucket<String> bs = rc.getBucket(b.getName());
             assertThat(bs.get()).isEqualTo("123");
 
