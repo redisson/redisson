@@ -3,6 +3,29 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
+### 15-Nov-2024 - 3.39.0 released
+
+Feature - [partitioning](https://redisson.org/docs/data-and-services/publish-subscribe/#partitioning) implementation for `RTopic` object  
+Feature - [partitioning](https://redisson.org/docs/data-and-services/publish-subscribe/#partitioning_1) implementation for `RShardedTopic` object  
+Feature - [partitioning](https://redisson.org/docs/data-and-services/publish-subscribe/#partitioning_2) implementation for `RReliableTopic` object  
+Feature - [ZStandard](https://github.com/facebook/zstd) compression codec added (ZStdCodec)  
+Feature - ability to register [listeners](https://redisson.org/docs/data-and-services/collections/#listeners_1) for `RListMultimap` and `RSetMultimap` objects  
+Feature - ability to register [listeners](https://redisson.org/docs/data-and-services/collections/#listeners_10) for `RTimeSeries` object  
+
+Fixed - fixed possible race-condition in `RMapCache.computeIfAbsent()` method  
+Fixed - fixed possible race-condition in `computeIfAbsent()`, `computeIfPresent()` methods of RMap object  
+Fixed - `RMapCache.computeIfAbsentAsync()` method isn't implemented  
+Fixed - use CursorId in ScanIteration to avoid long overflow in Spring Data 3.3 implementation (thanks to @vlastikcz)  
+Fixed - unable to cancel a task created by `RExecutorService.scheduleAtFixedRate()` method (thanks to @zcxsythenew)  
+Fixed - potential LocalCache memory leak if useObjectAsCacheKey = true (thanks to @lehuuthanh5)  
+Fixed - EntryListener is not working on Turkish language Windows 10  
+Fixed - Redisson shutdown exception is thrown during background process of expired Tomcat sessions  
+Fixed - some methods of Reactive and RxJava API don't work in GraalVM native image  
+Fixed - `RTransactionRx` and `RTransactionReactive` don't work in GraalVM native image  
+Fixed - `JsonJacksonCodec` doesn't work in GraalVM native image  
+Fixed - NPE is thrown if `RExecutorService` task submitted in GraalVM native image  
+Fixed - `RObject.rename()` method does not replace an existing structure in cluster mode  
+
 ### 31-Oct-2024 - 3.38.1 released
 
 Fixed - Kryo codec upgraded to 5.6.2 for JDK 8 compatibility (thanks to @Wujiaxuan007)  
