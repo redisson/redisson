@@ -25,6 +25,8 @@ import java.util.Objects;
  */
 public final class HashValue {
 
+    public static final HashValue EMPTY = new HashValue(new long[0]);
+
     private final long[] value;
 
     public HashValue(long[] hash) {

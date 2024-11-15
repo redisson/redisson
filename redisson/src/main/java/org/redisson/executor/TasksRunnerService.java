@@ -16,6 +16,7 @@
 package org.redisson.executor;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import org.redisson.RedissonExecutorService;
 import org.redisson.RedissonShutdownException;
@@ -36,6 +37,8 @@ import org.redisson.misc.HashValue;
 import org.redisson.misc.Injector;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInput;
 import java.util.Arrays;
 import java.util.Date;
@@ -53,7 +56,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class TasksRunnerService implements RemoteExecutorService {
 
-    private static final Map<HashValue, Codec> CODECS = new LRUCacheMap<HashValue, Codec>(500, 0, 0);
+    private static final Map<HashValue, Codec> CODECS = new LRUCacheMap<>(500, 0, 0);
     
     private final Codec codec;
     private final String name;
@@ -268,6 +271,20 @@ public class TasksRunnerService implements RemoteExecutorService {
         });
         return future;
     }
+
+    private HashValue hash(ClassLoader classLoader, String className) throws IOException {
+        String classAsPath = className.replace('.', '/') + ".class";
+        InputStream classStream = classLoader.getResourceAsStream(classAsPath);
+        if (classStream == null) {
+            return HashValue.EMPTY;
+        }
+
+        ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
+        out.writeBytes(classStream, classStream.available());
+        HashValue hash = new HashValue(Hash.hash128(out));
+        out.release();
+        return hash;
+    }
     
     @SuppressWarnings("unchecked")
     private <T> T decode(TaskParameters params) {
@@ -277,10 +294,15 @@ public class TasksRunnerService implements RemoteExecutorService {
             HashValue hash = new HashValue(Hash.hash128(classBodyBuf));
             Codec classLoaderCodec = CODECS.get(hash);
             if (classLoaderCodec == null) {
-                RedissonClassLoader cl = new RedissonClassLoader(codec.getClassLoader());
-                cl.loadClass(params.getClassName(), params.getClassBody());
-                
-                classLoaderCodec = this.codec.getClass().getConstructor(ClassLoader.class).newInstance(cl);
+                HashValue v = hash(codec.getClassLoader(), params.getClassName());
+                if (v.equals(hash)) {
+                    classLoaderCodec = codec;
+                } else {
+                    RedissonClassLoader cl = new RedissonClassLoader(codec.getClassLoader());
+                    cl.loadClass(params.getClassName(), params.getClassBody());
+
+                    classLoaderCodec = this.codec.getClass().getConstructor(ClassLoader.class).newInstance(cl);
+                }
                 CODECS.put(hash, classLoaderCodec);
             }
             

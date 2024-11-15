@@ -632,6 +632,34 @@
   "allDeclaredMethods":true
 },
 {
+  "name":"org.redisson.remote.RemoteServiceRequest",
+  "allDeclaredFields":true
+},
+{
+  "name":"org.redisson.remote.RemoteServiceResponse",
+  "allDeclaredFields":true
+},
+{
+  "name":"org.redisson.executor.params.ScheduledCronExpressionParameters",
+  "allDeclaredFields":true
+},
+{
+  "name":"org.redisson.executor.params.ScheduledAtFixedRateParameters",
+  "allDeclaredFields":true
+},
+{
+  "name":"org.redisson.executor.params.ScheduledWithFixedDelayParameters",
+  "allDeclaredFields":true
+},
+{
+  "name":"org.redisson.executor.params.ScheduledParameters",
+  "allDeclaredFields":true
+},
+{
+  "name":"org.redisson.executor.params.TaskParameters",
+  "allDeclaredFields":true
+},
+{
   "name":"org.redisson.RedissonRingBuffer",
   "allDeclaredMethods":true
 },
@@ -905,7 +933,7 @@
   "allPublicMethods":true
 },
 {
-  "name":"org.redisson.reactive.RedissonTimeSeriesRx",
+  "name":"org.redisson.rx.RedissonTimeSeriesRx",
   "allPublicMethods":true
 },
 {
