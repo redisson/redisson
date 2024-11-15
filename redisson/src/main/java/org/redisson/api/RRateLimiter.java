@@ -57,7 +57,7 @@ public interface RRateLimiter extends RRateLimiterAsync, RExpirable {
      * @param mode rate mode
      * @param rate rate
      * @param rateInterval rate time interval
-     * @param keepAliveTime this is the maximum time that key will wait for new acquire before delete
+     * @param keepAliveTime this is the maximum time that the limiter will wait for a new acquisition before deletion
      * @return {@code true} if rate was set and {@code false}
      *         otherwise
      */
@@ -91,7 +91,7 @@ public interface RRateLimiter extends RRateLimiterAsync, RExpirable {
      * @param mode rate mode
      * @param rate rate
      * @param rateInterval rate time interval
-     * @param keepAliveTime this is the maximum time that key will wait for new acquire before delete
+     * @param keepAliveTime this is the maximum time that the limiter will wait for a new acquisition before deletion
      */
     void setRate(RateType mode, long rate, Duration rateInterval, Duration keepAliveTime);
 
