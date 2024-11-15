@@ -12,8 +12,8 @@ Feature - [ZStandard](https://github.com/facebook/zstd) compression codec added 
 Feature - ability to register [listeners](https://redisson.org/docs/data-and-services/collections/#listeners_1) for `RListMultimap` and `RSetMultimap` objects  
 Feature - ability to register [listeners](https://redisson.org/docs/data-and-services/collections/#listeners_10) for `RTimeSeries` object  
 
-Fixed - fixed possible race-condition in `RMapCache.computeIfAbsent()` method  
-Fixed - fixed possible race-condition in `computeIfAbsent()`, `computeIfPresent()` methods of RMap object  
+Fixed - possible race-condition in `RMapCache.computeIfAbsent()` method  
+Fixed - possible race-condition in `computeIfAbsent()`, `computeIfPresent()` methods of RMap object  
 Fixed - `RMapCache.computeIfAbsentAsync()` method isn't implemented  
 Fixed - use CursorId in ScanIteration to avoid long overflow in Spring Data 3.3 implementation (thanks to @vlastikcz)  
 Fixed - unable to cancel a task created by `RExecutorService.scheduleAtFixedRate()` method (thanks to @zcxsythenew)  
