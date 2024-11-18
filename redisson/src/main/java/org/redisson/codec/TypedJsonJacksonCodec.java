@@ -51,6 +51,9 @@ public class TypedJsonJacksonCodec extends JsonJacksonCodec {
             } catch (IOException e) {
                 out.release();
                 throw e;
+            } catch (Exception e) {
+                out.release();
+                throw new IOException(e);
             }
         }
     };
