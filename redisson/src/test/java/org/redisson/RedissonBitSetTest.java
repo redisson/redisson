@@ -91,6 +91,20 @@ public class RedissonBitSetTest extends RedisDockerTest {
         bs.clear();
         bs.set(0);
         assertThat(bs.length()).isEqualTo(1);
+        
+        // no exception happened, but return is unexpected.
+        bs.clear();
+        bs.set(0, 2);
+        bs.set(9);
+        bs.clear(9, 10);
+        assertThat(bs.length()).isEqualTo(2);
+        
+        // cause exception
+        bs.clear();
+        bs.set(7);
+        bs.set(9);
+        bs.clear(9, 10);
+        assertThat(bs.length()).isEqualTo(8);
     }
 
     @Test
