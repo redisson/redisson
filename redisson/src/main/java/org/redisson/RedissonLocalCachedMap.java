@@ -727,7 +727,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         params.add(map.size()*2);
         byte[][] hashes = new byte[map.size()][];
         int i = 0;
-        
+        Map<K, V> clonedMap = new HashMap<>();
         for (java.util.Map.Entry<? extends K, ? extends V> t : map.entrySet()) {
             ByteBuf mapKey = encodeMapKey(t.getKey());
             ByteBuf mapValue = encodeMapValue(t.getValue());
@@ -736,6 +736,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             CacheKey cacheKey = localCacheView.toCacheKey(mapKey);
             hashes[i] = cacheKey.getKeyHash();
             i++;
+            clonedMap.put(t.getKey(), t.getValue());
         }
 
         ByteBuf msgEncoded = null;
@@ -783,7 +784,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 params.toArray());
 
         CompletionStage<Void> f = future.thenApply(res -> {
-            cacheMap(map);
+            cacheMap(clonedMap);
             return null;
         });
         return new CompletableFutureWrapper<>(f);
