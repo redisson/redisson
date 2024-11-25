@@ -13,22 +13,22 @@ public class RedissonAtomicDoubleTest extends RedisDockerTest {
     @Test
     public void testLessThanSet() {
         RAtomicDouble al = redisson.getAtomicDouble("test");
-        al.lessThanSetAsync(0, 1);
+        assertThat(al.lessThanSet(0, 1)).isFalse();
         assertThat(al.get()).isEqualTo(0);
         
         al.set(12);
-        al.lessThanSet(13, 1);
+        assertThat(al.lessThanSet(13, 1)).isTrue();
         assertThat(al.get()).isEqualTo(1);
     }
     
     @Test
     public void testGreaterThanSet() {
         RAtomicDouble al = redisson.getAtomicDouble("test");
-        al.lessThanSetAsync(0, 1);
+        assertThat(al.lessThanSet(0, 1)).isFalse();
         assertThat(al.get()).isEqualTo(0);
         
         al.set(12);
-        al.greaterThanSet(11, 1);
+        assertThat(al.greaterThanSet(11, 1)).isTrue();
         assertThat(al.get()).isEqualTo(1);
     }
     

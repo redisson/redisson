@@ -113,8 +113,9 @@ public interface RAtomicDouble extends RExpirable, RAtomicDoubleAsync {
      *
      * @param less  compare value
      * @param value newValue
+     * @return true when the value update is successful
      */
-    void lessThanSet(double less, double value);
+    boolean lessThanSet(double less, double value);
     
     /**
      * Atomically sets the given value if current value is greater than
@@ -122,8 +123,9 @@ public interface RAtomicDouble extends RExpirable, RAtomicDoubleAsync {
      *
      * @param greater  compare value
      * @param value newValue
+     * @return true when the value update is successful
      */
-    void greaterThanSet(double greater, double value);
+    boolean greaterThanSet(double greater, double value);
 
     /**
      * Adds object event listener

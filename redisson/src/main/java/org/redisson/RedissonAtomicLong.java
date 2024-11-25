@@ -170,34 +170,38 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
     }
     
     @Override
-    public void lessThanSet(long less, long value) {
-        get(lessThanSetAsync(less, value));
+    public boolean lessThanSet(long less, long value) {
+        return get(lessThanSetAsync(less, value));
     }
     
     @Override
-    public RFuture<Void> lessThanSetAsync(long less, long value) {
-        return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
+    public RFuture<Boolean> lessThanSetAsync(long less, long value) {
+        return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
         "local currValue = redis.call('get', KEYS[1]); "
                 + "currValue = currValue == false and 0 or tonumber(currValue);"
                 + "if currValue < tonumber(ARGV[1]) then "
                     + "redis.call('set', KEYS[1], ARGV[2]); "
-                + "end ",
+                    + "return 1;"
+                + "end; "
+                + "return 0;",
                 Collections.<Object>singletonList(getRawName()), less, value);
     }
     
     @Override
-    public void greaterThanSet(long greater, long value) {
-        get(greaterThanSetAsync(greater, value));
+    public boolean greaterThanSet(long greater, long value) {
+        return get(greaterThanSetAsync(greater, value));
     }
     
     @Override
-    public RFuture<Void> greaterThanSetAsync(long greater, long value) {
-        return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
+    public RFuture<Boolean> greaterThanSetAsync(long greater, long value) {
+        return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local currValue = redis.call('get', KEYS[1]); "
                         + "currValue = currValue == false and 0 or tonumber(currValue);"
                         + "if currValue > tonumber(ARGV[1]) then "
                             + "redis.call('set', KEYS[1], ARGV[2]); "
-                        + "end ",
+                            + "return 1;"
+                        + "end; "
+                        + "return 0;",
                 Collections.<Object>singletonList(getRawName()), greater, value);
     }
     

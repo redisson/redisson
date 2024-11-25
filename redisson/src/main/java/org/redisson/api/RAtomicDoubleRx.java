@@ -117,8 +117,9 @@ public interface RAtomicDoubleRx extends RExpirableRx {
      *
      * @param less  compare value
      * @param value newValue
+     * @return true when the value update is successful
      */
-    Completable lessThanSet(double less, double value);
+    Single<Boolean> lessThanSet(double less, double value);
     
     /**
      * Atomically sets the given value if current value is greater than
@@ -126,7 +127,8 @@ public interface RAtomicDoubleRx extends RExpirableRx {
      *
      * @param greater  compare value
      * @param value newValue
+     * @return true when the value update is successful
      */
-    Completable greaterThanSet(double greater, double value);
+    Single<Boolean> greaterThanSet(double greater, double value);
 
 }
