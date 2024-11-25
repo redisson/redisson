@@ -119,6 +119,15 @@ public interface RMultimapRx<K, V> extends RExpirableRx {
     Single<Integer> keySize();
 
     /**
+     * Stores a collection of values with the same key, replacing any existing
+     * values for that key. Is faster by not returning the values.
+     *
+     * @param key - map key
+     * @param values - map values
+     */
+    Single<Void> fastReplaceValues(K key, Iterable<? extends V> values);
+
+    /**
      * Removes <code>keys</code> from map by one operation
      *
      * Works faster than <code>RMultimap.remove</code> but not returning

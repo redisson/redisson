@@ -423,6 +423,26 @@ public class RedissonListMultimapTest extends RedisDockerTest {
     }
 
     @Test
+    public void testFastReplaceValues() {
+        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("testFastReplace");
+
+        map.put(new SimpleKey("0"), new SimpleValue("1"));
+        map.put(new SimpleKey("3"), new SimpleValue("4"));
+
+        List<SimpleValue> values = Arrays.asList(new SimpleValue("11"), new SimpleValue("12"), new SimpleValue("12"));
+
+        map.fastReplaceValues(new SimpleKey("0"), values);
+
+        List<SimpleValue> allValues = map.getAll(new SimpleKey("0"));
+        assertThat(allValues).containsExactlyElementsOf(values);
+
+        map.fastReplaceValues(new SimpleKey("0"), Collections.emptyList());
+
+        List<SimpleValue> vals = map.getAll(new SimpleKey("0"));
+        assertThat(vals).isEmpty();
+    }
+
+    @Test
     public void testDistributedIterator() {
         RListMultimap<String, String> map = redisson.getListMultimap("set", StringCodec.INSTANCE);
 

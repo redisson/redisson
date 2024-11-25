@@ -128,6 +128,19 @@ public interface RMultimapAsync<K, V> extends RExpirableAsync {
     RFuture<Collection<V>> replaceValuesAsync(K key, Iterable<? extends V> values);
 
     /**
+     * Stores a collection of values with the same key, replacing any existing
+     * values for that key. Is faster than {@link #replaceValuesAsync(Object, Iterable)}
+     * by not returning the values.
+     *
+     * <p>If {@code values} is empty, this is equivalent to
+     * {@link #removeAllAsync(Object)}.
+     *
+     * @param key - map key
+     * @param values - map values
+     */
+    RFuture<Void> fastReplaceValuesAsync(K key, Iterable<? extends V> values);
+
+    /**
      * Removes all values associated with the key {@code key}.
      *
      * <p>Once this method returns, {@code key} will not be mapped to any values.
