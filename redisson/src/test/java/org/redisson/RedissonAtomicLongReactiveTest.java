@@ -2,10 +2,7 @@ package org.redisson;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.redisson.api.RAtomicLong;
 import org.redisson.api.RAtomicLongReactive;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonAtomicLongReactiveTest extends BaseReactiveTest {
     
