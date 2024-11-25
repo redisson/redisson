@@ -106,6 +106,24 @@ public interface RAtomicLong extends RExpirable, RAtomicLongAsync {
      * @param newValue the new value
      */
     void set(long newValue);
+    
+    /**
+     * Atomically sets the given value if current value is less than
+     * the special value
+     *
+     * @param less  compare value
+     * @param value newValue
+     */
+    void lessThanSet(long less, long value);
+    
+    /**
+     * Atomically sets the given value if current value is greater than
+     * the special value
+     *
+     * @param greater  compare value
+     * @param value newValue
+     */
+    void greaterThanSet(long greater, long value);
 
     /**
      * Adds object event listener

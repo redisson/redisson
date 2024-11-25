@@ -170,7 +170,39 @@ public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDo
     public RFuture<Void> setAsync(double newValue) {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.SET, getRawName(), BigDecimal.valueOf(newValue).toPlainString());
     }
-
+    
+    @Override
+    public void lessThanSet(double less, double value) {
+        get(lessThanSetAsync(less, value));
+    }
+    
+    @Override
+    public RFuture<Void> lessThanSetAsync(double less, double value) {
+        return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
+                "local currValue = redis.call('get', KEYS[1]); "
+                        + "currValue = currValue == false and 0 or tonumber(currValue);"
+                        + "if currValue < tonumber(ARGV[1]) then "
+                            + "redis.call('set', KEYS[1], ARGV[2]); "
+                        + "end ",
+                Collections.<Object>singletonList(getRawName()), less, value);
+    }
+    
+    @Override
+    public void greaterThanSet(double greater, double value) {
+        get(greaterThanSetAsync(greater, value));
+    }
+    
+    @Override
+    public RFuture<Void> greaterThanSetAsync(double greater, double value) {
+        return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
+                "local currValue = redis.call('get', KEYS[1]); "
+                        + "currValue = currValue == false and 0 or tonumber(currValue);"
+                        + "if currValue > tonumber(ARGV[1]) then "
+                            + "redis.call('set', KEYS[1], ARGV[2]); "
+                        + "end ",
+                Collections.<Object>singletonList(getRawName()), greater, value);
+    }
+    
     public String toString() {
         return Double.toString(get());
     }

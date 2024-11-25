@@ -2,13 +2,36 @@ package org.redisson;
 
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RAtomicDouble;
+import org.redisson.api.RAtomicLong;
 
 import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonAtomicDoubleTest extends RedisDockerTest {
-
+    
+    @Test
+    public void testLessThanSet() {
+        RAtomicDouble al = redisson.getAtomicDouble("test");
+        al.lessThanSetAsync(0, 1);
+        assertThat(al.get()).isEqualTo(0);
+        
+        al.set(12);
+        al.lessThanSet(13, 1);
+        assertThat(al.get()).isEqualTo(1);
+    }
+    
+    @Test
+    public void testGreaterThanSet() {
+        RAtomicDouble al = redisson.getAtomicDouble("test");
+        al.lessThanSetAsync(0, 1);
+        assertThat(al.get()).isEqualTo(0);
+        
+        al.set(12);
+        al.greaterThanSet(11, 1);
+        assertThat(al.get()).isEqualTo(1);
+    }
+    
     @Test
     public void testGetAndSet() {
         RAtomicDouble al = redisson.getAtomicDouble("test");

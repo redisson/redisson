@@ -2,10 +2,35 @@ package org.redisson;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.redisson.api.RAtomicLong;
 import org.redisson.api.RAtomicLongReactive;
 
-public class RedissonAtomicLongReactiveTest extends BaseReactiveTest {
+import static org.assertj.core.api.Assertions.assertThat;
 
+public class RedissonAtomicLongReactiveTest extends BaseReactiveTest {
+    
+    @Test
+    public void testLessThanSet() {
+        RAtomicLongReactive al = redisson.getAtomicLong("test");
+        sync(al.lessThanSet(0, 1));
+        Assertions.assertEquals(sync(al.get()).longValue(), 0L);
+        
+        sync(al.set(12));
+        sync(al.lessThanSet(13, 1));
+        Assertions.assertEquals(sync(al.get()).longValue(), 1L);
+    }
+    
+    @Test
+    public void testGreaterThanSet() {
+        RAtomicLongReactive al = redisson.getAtomicLong("test");
+        sync(al.greaterThanSet(0, 1));
+        Assertions.assertEquals(sync(al.get()).longValue(), 0L);
+        
+        sync(al.set(12));
+        sync(al.greaterThanSet(11, 1));
+        Assertions.assertEquals(sync(al.get()).longValue(), 1L);
+    }
+    
     @Test
     public void testCompareAndSet() {
         RAtomicLongReactive al = redisson.getAtomicLong("test");

@@ -168,7 +168,39 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
     public RFuture<Void> setAsync(long newValue) {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.SET, getRawName(), newValue);
     }
-
+    
+    @Override
+    public void lessThanSet(long less, long value) {
+        get(lessThanSetAsync(less, value));
+    }
+    
+    @Override
+    public RFuture<Void> lessThanSetAsync(long less, long value) {
+        return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
+        "local currValue = redis.call('get', KEYS[1]); "
+                + "currValue = currValue == false and 0 or tonumber(currValue);"
+                + "if currValue < tonumber(ARGV[1]) then "
+                    + "redis.call('set', KEYS[1], ARGV[2]); "
+                + "end ",
+                Collections.<Object>singletonList(getRawName()), less, value);
+    }
+    
+    @Override
+    public void greaterThanSet(long greater, long value) {
+        get(greaterThanSetAsync(greater, value));
+    }
+    
+    @Override
+    public RFuture<Void> greaterThanSetAsync(long greater, long value) {
+        return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
+                "local currValue = redis.call('get', KEYS[1]); "
+                        + "currValue = currValue == false and 0 or tonumber(currValue);"
+                        + "if currValue > tonumber(ARGV[1]) then "
+                            + "redis.call('set', KEYS[1], ARGV[2]); "
+                        + "end ",
+                Collections.<Object>singletonList(getRawName()), greater, value);
+    }
+    
     public String toString() {
         return Long.toString(get());
     }
