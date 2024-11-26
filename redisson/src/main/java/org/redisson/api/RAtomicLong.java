@@ -115,7 +115,7 @@ public interface RAtomicLong extends RExpirable, RAtomicLongAsync {
      * @param value newValue
      * @return true when the value update is successful
      */
-    boolean setIfLessThan(long less, long value);
+    boolean setIfLess(long less, long value);
     
     /**
      * Atomically sets the given value if current value is greater than
@@ -125,7 +125,7 @@ public interface RAtomicLong extends RExpirable, RAtomicLongAsync {
      * @param value newValue
      * @return true when the value update is successful
      */
-    boolean setIfGreaterThan(long greater, long value);
+    boolean setIfGreater(long greater, long value);
 
     /**
      * Adds object event listener

@@ -119,7 +119,7 @@ public interface RAtomicLongRx extends RExpirableRx {
      * @param value newValue
      * @return true when the value update is successful
      */
-    Single<Boolean> setIfLessThan(long less, long value);
+    Single<Boolean> setIfLess(long less, long value);
     
     /**
      * Atomically sets the given value if current value is greater than
@@ -129,6 +129,6 @@ public interface RAtomicLongRx extends RExpirableRx {
      * @param value newValue
      * @return true when the value update is successful
      */
-    Single<Boolean> setIfGreaterThan(long greater, long value);
+    Single<Boolean> setIfGreater(long greater, long value);
 
 }

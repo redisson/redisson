@@ -116,7 +116,7 @@ public interface RAtomicLongAsync extends RExpirableAsync {
      * @param value newValue
      * @return true when the value update is successful
      */
-    RFuture<Boolean> setIfLessThanAsync(long less, long value);
+    RFuture<Boolean> setIfLessAsync(long less, long value);
     
     /**
      * Atomically sets the given value if current value is greater than
@@ -126,7 +126,7 @@ public interface RAtomicLongAsync extends RExpirableAsync {
      * @param value newValue
      * @return true when the value update is successful
      */
-    RFuture<Boolean> setIfGreaterThanAsync(long greater, long value);
+    RFuture<Boolean> setIfGreaterAsync(long greater, long value);
 
     /**
      * Adds object event listener
