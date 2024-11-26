@@ -119,7 +119,7 @@ public interface RAtomicDoubleRx extends RExpirableRx {
      * @param value newValue
      * @return true when the value update is successful
      */
-    Single<Boolean> lessThanSet(double less, double value);
+    Single<Boolean> setIfLessThan(double less, double value);
     
     /**
      * Atomically sets the given value if current value is greater than
@@ -129,6 +129,6 @@ public interface RAtomicDoubleRx extends RExpirableRx {
      * @param value newValue
      * @return true when the value update is successful
      */
-    Single<Boolean> greaterThanSet(double greater, double value);
+    Single<Boolean> setIfGreaterThan(double greater, double value);
 
 }

@@ -9,24 +9,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class RedissonAtomicLongTest extends RedisDockerTest {
     
     @Test
-    public void testLessThanSet() {
+    public void testSetIfLessThan() {
         RAtomicLong al = redisson.getAtomicLong("test");
-        assertThat(al.lessThanSet(0, 1)).isFalse();
+        assertThat(al.setIfLessThan(0, 1)).isFalse();
         assertThat(al.get()).isEqualTo(0);
         
         al.set(12);
-        assertThat(al.lessThanSet(13, 1)).isTrue();
+        assertThat(al.setIfLessThan(13, 1)).isTrue();
         assertThat(al.get()).isEqualTo(1);
     }
     
     @Test
-    public void testGreaterThanSet() {
+    public void testSetIfGreaterThan() {
         RAtomicLong al = redisson.getAtomicLong("test");
-        assertThat(al.lessThanSet(0, 1)).isFalse();
+        assertThat(al.setIfLessThan(0, 1)).isFalse();
         assertThat(al.get()).isEqualTo(0);
         
         al.set(12);
-        assertThat(al.greaterThanSet(11, 1)).isTrue();
+        assertThat(al.setIfGreaterThan(11, 1)).isTrue();
         assertThat(al.get()).isEqualTo(1);
     }
     

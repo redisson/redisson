@@ -172,12 +172,12 @@ public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDo
     }
     
     @Override
-    public boolean lessThanSet(double less, double value) {
-        return get(lessThanSetAsync(less, value));
+    public boolean setIfLessThan(double less, double value) {
+        return get(setIfLessThanAsync(less, value));
     }
     
     @Override
-    public RFuture<Boolean> lessThanSetAsync(double less, double value) {
+    public RFuture<Boolean> setIfLessThanAsync(double less, double value) {
         return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local currValue = redis.call('get', KEYS[1]); "
                         + "currValue = currValue == false and 0 or tonumber(currValue);"
@@ -190,12 +190,12 @@ public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDo
     }
     
     @Override
-    public boolean greaterThanSet(double greater, double value) {
-        return get(greaterThanSetAsync(greater, value));
+    public boolean setIfGreaterThan(double greater, double value) {
+        return get(setIfGreaterThanAsync(greater, value));
     }
     
     @Override
-    public RFuture<Boolean> greaterThanSetAsync(double greater, double value) {
+    public RFuture<Boolean> setIfGreaterThanAsync(double greater, double value) {
         return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local currValue = redis.call('get', KEYS[1]); "
                         + "currValue = currValue == false and 0 or tonumber(currValue);"

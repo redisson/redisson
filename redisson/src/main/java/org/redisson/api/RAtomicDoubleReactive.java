@@ -118,7 +118,7 @@ public interface RAtomicDoubleReactive extends RExpirableReactive {
      * @param value newValue
      * @return true when the value update is successful
      */
-    Mono<Boolean> lessThanSet(double less, double value);
+    Mono<Boolean> setIfLessThan(double less, double value);
     
     /**
      * Atomically sets the given value if current value is greater than
@@ -128,6 +128,6 @@ public interface RAtomicDoubleReactive extends RExpirableReactive {
      * @param value newValue
      * @return true when the value update is successful
      */
-    Mono<Boolean> greaterThanSet(double greater, double value);
+    Mono<Boolean> setIfGreaterThan(double greater, double value);
 
 }

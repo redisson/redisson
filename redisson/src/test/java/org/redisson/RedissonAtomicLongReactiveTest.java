@@ -7,24 +7,24 @@ import org.redisson.api.RAtomicLongReactive;
 public class RedissonAtomicLongReactiveTest extends BaseReactiveTest {
     
     @Test
-    public void testLessThanSet() {
+    public void testSetIfLessThan() {
         RAtomicLongReactive al = redisson.getAtomicLong("test");
-        Assertions.assertFalse(sync(al.lessThanSet(0, 1)));
+        Assertions.assertFalse(sync(al.setIfLessThan(0, 1)));
         Assertions.assertEquals(sync(al.get()).longValue(), 0L);
         
         sync(al.set(12));
-        Assertions.assertTrue(sync(al.lessThanSet(13, 1)));
+        Assertions.assertTrue(sync(al.setIfLessThan(13, 1)));
         Assertions.assertEquals(sync(al.get()).longValue(), 1L);
     }
     
     @Test
-    public void testGreaterThanSet() {
+    public void testSetIfGreaterThan() {
         RAtomicLongReactive al = redisson.getAtomicLong("test");
-        Assertions.assertFalse(sync(al.greaterThanSet(0, 1)));
+        Assertions.assertFalse(sync(al.setIfGreaterThan(0, 1)));
         Assertions.assertEquals(sync(al.get()).longValue(), 0L);
         
         sync(al.set(12));
-        Assertions.assertTrue(sync(al.greaterThanSet(11, 1)));
+        Assertions.assertTrue(sync(al.setIfGreaterThan(11, 1)));
         Assertions.assertEquals(sync(al.get()).longValue(), 1L);
     }
     
