@@ -1167,6 +1167,16 @@ public class RedissonRx implements RedissonRxClient {
     }
 
     @Override
+    public <K, V> RLocalCachedMapCacheRx<K, V> getLocalCachedMapCache(String name, LocalCachedMapCacheOptions<K, V> options) {
+        throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Visit https://redisson.pro");
+    }
+
+    @Override
+    public <K, V> RLocalCachedMapCacheRx<K, V> getLocalCachedMapCache(String name, Codec codec, LocalCachedMapCacheOptions<K, V> options) {
+        throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Visit https://redisson.pro");
+    }
+
+    @Override
     public RTransactionRx createTransaction(TransactionOptions options) {
         return new RedissonTransactionRx(commandExecutor, options);
     }
