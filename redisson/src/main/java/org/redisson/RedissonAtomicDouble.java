@@ -170,7 +170,43 @@ public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDo
     public RFuture<Void> setAsync(double newValue) {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.SET, getRawName(), BigDecimal.valueOf(newValue).toPlainString());
     }
-
+    
+    @Override
+    public boolean setIfLess(double less, double value) {
+        return get(setIfLessAsync(less, value));
+    }
+    
+    @Override
+    public RFuture<Boolean> setIfLessAsync(double less, double value) {
+        return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "local currValue = redis.call('get', KEYS[1]); "
+                        + "currValue = currValue == false and 0 or tonumber(currValue);"
+                        + "if currValue < tonumber(ARGV[1]) then "
+                            + "redis.call('set', KEYS[1], ARGV[2]); "
+                            + "return 1;"
+                        + "end; "
+                        + "return 0;",
+                Collections.<Object>singletonList(getRawName()), less, value);
+    }
+    
+    @Override
+    public boolean setIfGreater(double greater, double value) {
+        return get(setIfGreaterAsync(greater, value));
+    }
+    
+    @Override
+    public RFuture<Boolean> setIfGreaterAsync(double greater, double value) {
+        return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "local currValue = redis.call('get', KEYS[1]); "
+                        + "currValue = currValue == false and 0 or tonumber(currValue);"
+                        + "if currValue > tonumber(ARGV[1]) then "
+                            + "redis.call('set', KEYS[1], ARGV[2]); "
+                            + "return 1;"
+                        + "end; "
+                        + "return 0;",
+                Collections.<Object>singletonList(getRawName()), greater, value);
+    }
+    
     public String toString() {
         return Double.toString(get());
     }

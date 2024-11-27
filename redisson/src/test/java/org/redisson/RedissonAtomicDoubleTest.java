@@ -8,7 +8,29 @@ import java.math.BigDecimal;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonAtomicDoubleTest extends RedisDockerTest {
-
+    
+    @Test
+    public void testSetIfLess() {
+        RAtomicDouble al = redisson.getAtomicDouble("test");
+        assertThat(al.setIfLess(0, 1)).isFalse();
+        assertThat(al.get()).isEqualTo(0);
+        
+        al.set(12);
+        assertThat(al.setIfLess(13, 1)).isTrue();
+        assertThat(al.get()).isEqualTo(1);
+    }
+    
+    @Test
+    public void testSetIfGreater() {
+        RAtomicDouble al = redisson.getAtomicDouble("test");
+        assertThat(al.setIfLess(0, 1)).isFalse();
+        assertThat(al.get()).isEqualTo(0);
+        
+        al.set(12);
+        assertThat(al.setIfGreater(11, 1)).isTrue();
+        assertThat(al.get()).isEqualTo(1);
+    }
+    
     @Test
     public void testGetAndSet() {
         RAtomicDouble al = redisson.getAtomicDouble("test");

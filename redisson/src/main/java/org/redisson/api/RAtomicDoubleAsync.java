@@ -107,6 +107,26 @@ public interface RAtomicDoubleAsync extends RExpirableAsync {
      * @return void
      */
     RFuture<Void> setAsync(double newValue);
+    
+    /**
+     * Atomically sets the given value if current value is less than
+     * the special value
+     *
+     * @param less  compare value
+     * @param value newValue
+     * @return true when the value update is successful
+     */
+    RFuture<Boolean> setIfLessAsync(double less, double value);
+    
+    /**
+     * Atomically sets the given value if current value is greater than
+     * the special value
+     *
+     * @param greater  compare value
+     * @param value newValue
+     * @return true when the value update is successful
+     */
+    RFuture<Boolean> setIfGreaterAsync(double greater, double value);
 
     /**
      * Adds object event listener
