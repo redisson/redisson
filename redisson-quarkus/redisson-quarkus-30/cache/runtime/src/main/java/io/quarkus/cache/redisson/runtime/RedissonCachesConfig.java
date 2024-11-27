@@ -31,7 +31,6 @@ import io.smallrye.config.ConfigMapping;
  *
  */
 @ConfigRoot(phase = RUN_TIME, name = "cache.redisson")
-@ConfigMapping
 public class RedissonCachesConfig {
 
     /**
