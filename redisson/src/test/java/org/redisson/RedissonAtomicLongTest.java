@@ -7,7 +7,29 @@ import org.redisson.api.RAtomicLong;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonAtomicLongTest extends RedisDockerTest {
-
+    
+    @Test
+    public void testSetIfLess() {
+        RAtomicLong al = redisson.getAtomicLong("test");
+        assertThat(al.setIfLess(0, 1)).isFalse();
+        assertThat(al.get()).isEqualTo(0);
+        
+        al.set(12);
+        assertThat(al.setIfLess(13, 1)).isTrue();
+        assertThat(al.get()).isEqualTo(1);
+    }
+    
+    @Test
+    public void testSetIfGreater() {
+        RAtomicLong al = redisson.getAtomicLong("test");
+        assertThat(al.setIfLess(0, 1)).isFalse();
+        assertThat(al.get()).isEqualTo(0);
+        
+        al.set(12);
+        assertThat(al.setIfGreater(11, 1)).isTrue();
+        assertThat(al.get()).isEqualTo(1);
+    }
+    
     @Test
     public void testGetAndSet() {
         RAtomicLong al = redisson.getAtomicLong("test");
