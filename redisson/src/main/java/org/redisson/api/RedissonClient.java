@@ -512,7 +512,32 @@ public interface RedissonClient {
      * @return ListMultimapCache object
      */
     <K, V> RListMultimapCache<K, V> getListMultimapCache(PlainOptions options);
-    
+
+    /**
+     * Returns local cached map cache instance by name.
+     * Configured by parameters of options-object.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param options - local map options
+     * @return LocalCachedMapCache object
+     */
+    <K, V> RLocalCachedMapCache<K, V> getLocalCachedMapCache(String name, LocalCachedMapCacheOptions<K, V> options);
+
+    /**
+     * Returns local cached map cache instance by name using provided codec.
+     * Configured by parameters of options-object.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for keys and values
+     * @param options - local map options
+     * @return LocalCachedMap object
+     */
+    <K, V> RLocalCachedMapCache<K, V> getLocalCachedMapCache(String name, Codec codec, LocalCachedMapCacheOptions<K, V> options);
+
     /**
      * Returns List based Multimap instance by name.
      * Supports key-entry eviction with a given TTL value.
