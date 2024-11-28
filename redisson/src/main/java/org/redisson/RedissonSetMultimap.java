@@ -316,6 +316,11 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
     }
 
     @Override
+    public void fastReplaceValues(final K key, final Iterable<? extends V> values) {
+        get(fastReplaceValuesAsync(key, values));
+    }
+
+    @Override
     Iterator<V> valuesIterator() {
         return new RedissonSetMultimapIterator<K, V, V>(RedissonSetMultimap.this, commandExecutor, codec) {
             @Override
@@ -353,6 +358,30 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
                   + "end; " +
                 "end; " +
                 "return members; ",
+            Arrays.<Object>asList(getRawName(), setName), params.toArray());
+    }
+
+    @Override
+    public RFuture<Void> fastReplaceValuesAsync(K key, Iterable<? extends V> values) {
+        List<Object> params = new ArrayList<Object>();
+        ByteBuf keyState = encodeMapKey(key);
+        params.add(keyState);
+        String keyHash = hash(keyState);
+        params.add(keyHash);
+        for (Object value : values) {
+            ByteBuf valueState = encodeMapValue(value);
+            params.add(valueState);
+        }
+
+        String setName = getValuesName(keyHash);
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
+                "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); " +
+                "redis.call('del', KEYS[2]); " +
+                "if #ARGV > 2 then " +
+                    "for i=3, #ARGV, 5000 do "
+                      + "redis.call('sadd', KEYS[2], unpack(ARGV, i, math.min(i+4999, table.getn(ARGV)))) "
+                  + "end; " +
+                "end; ",
             Arrays.<Object>asList(getRawName(), setName), params.toArray());
     }
 

@@ -8,7 +8,6 @@ import org.redisson.client.codec.StringCodec;
 import java.io.Serializable;
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -443,6 +442,26 @@ public class RedissonSetMultimapTest extends RedisDockerTest {
         Set<SimpleValue> vals = map.getAll(new SimpleKey("0"));
         assertThat(vals).isEmpty();
 
+    }
+
+    @Test
+    public void testFastReplaceValues() {
+        RSetMultimap<SimpleKey, SimpleValue> map = redisson.getSetMultimap("testFastReplace");
+
+        map.put(new SimpleKey("0"), new SimpleValue("1"));
+        map.put(new SimpleKey("3"), new SimpleValue("4"));
+
+        List<SimpleValue> values = Arrays.asList(new SimpleValue("11"), new SimpleValue("12"));
+
+        map.fastReplaceValues(new SimpleKey("0"), values);
+
+        Set<SimpleValue> allValues = map.getAll(new SimpleKey("0"));
+        assertThat(allValues).containsExactlyElementsOf(values);
+
+        map.fastReplaceValues(new SimpleKey("0"), Collections.emptyList());
+
+        Set<SimpleValue> vals = map.getAll(new SimpleKey("0"));
+        assertThat(vals).isEmpty();
     }
 
     @Test

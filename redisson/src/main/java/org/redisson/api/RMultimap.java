@@ -181,6 +181,19 @@ public interface RMultimap<K, V> extends RExpirable, RMultimapAsync<K, V> {
     Collection<V> replaceValues(K key, Iterable<? extends V> values);
 
     /**
+     * Stores a collection of values with the same key, replacing any existing
+     * values for that key. Is faster than {@link #replaceValues} by not returning
+     * the values.
+     *
+     * <p>If {@code values} is empty, this is equivalent to
+     * {@link #removeAll(Object) removeAll(key)}.
+     *
+     * @param key - map key
+     * @param values - map values
+     */
+    void fastReplaceValues(K key, Iterable<? extends V> values);
+
+    /**
      * Removes all values associated with the key {@code key}.
      *
      * <p>Once this method returns, {@code key} will not be mapped to any values
