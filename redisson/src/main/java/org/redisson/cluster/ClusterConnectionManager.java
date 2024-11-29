@@ -918,6 +918,18 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
                 RedisURI address = addresses.get(index);
 
+                if (addresses.size() > 1) {
+                    for (RedisURI addr : addresses) {
+                        for (ClusterPartition value : lastUri2Partition.values()) {
+                            if (value.getNodeId().equals(clusterNodeInfo.getNodeId())
+                                    && value.getMasterAddress().equals(addr)) {
+                                address = addr;
+                                break;
+                            }
+                        }
+                    }
+                }
+
                 if (addresses.size() == 1) {
                     if (!clusterNodeInfo.getAddress().equals(address)) {
                         log.debug("{} resolved to {}", clusterNodeInfo.getAddress(), address);
