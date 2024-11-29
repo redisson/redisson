@@ -2,6 +2,7 @@ package org.redisson;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.redisson.api.*;
@@ -103,6 +104,7 @@ public class RedissonMapReduceTest extends RedisDockerTest {
     
     @ParameterizedTest
     @MethodSource("mapClasses")
+    @Timeout(5)
     public void test(Class<?> mapClass) {
         RMap<String, String> map = getMap(mapClass);
         
