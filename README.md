@@ -81,6 +81,7 @@ High-performance async and lock-free Java client for Redis and Valkey based on [
 * 2000+ unit tests  
 
 ## Comparing solutions
+- [Redisson vs Spring Data Redis](https://redisson.org/articles/feature-comparison-redisson-vs-spring-data-redis.html)
 - [Redisson vs Jedis](https://redisson.org/feature-comparison-redisson-vs-jedis.html)
 - [Redisson vs Lettuce](https://redisson.org/feature-comparison-redisson-vs-lettuce.html)
 - [Redis vs Apache Ignite](https://redisson.org/feature-comparison-redis-vs-ignite.html)
