@@ -52,6 +52,7 @@ abstract class EvictionTask implements TimerTask {
         this.minDelay = executor.getServiceManager().getCfg().getMinCleanUpDelay();
         this.maxDelay = executor.getServiceManager().getCfg().getMaxCleanUpDelay();
         this.keysLimit = executor.getServiceManager().getCfg().getCleanUpKeysAmount();
+        this.delay = minDelay;
     }
 
     public void schedule() {
