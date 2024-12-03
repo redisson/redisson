@@ -8,7 +8,7 @@ Code example:
 RTopic topic = redisson.getTopic("myTopic");
 int listenerId = topic.addListener(SomeObject.class, new MessageListener<SomeObject>() {
     @Override
-    public void onMessage(String channel, SomeObject message) {
+    public void onMessage(CharSequence channel, SomeObject message) {
         //...
     }
 });
@@ -23,7 +23,7 @@ Code example of **[Async](https://static.javadoc.io/org.redisson/redisson/latest
 RTopicAsync topic = redisson.getTopic("myTopic");
 RFuture<Integer> listenerFuture = topic.addListenerAsync(SomeObject.class, new MessageListener<SomeObject>() {
     @Override
-    public void onMessage(String channel, SomeObject message) {
+    public void onMessage(CharSequence channel, SomeObject message) {
         //...
     }
 });
@@ -39,7 +39,7 @@ RedissonReactiveClient redisson = redissonClient.reactive();
 RTopicReactive topic = redisson.getTopic("myTopic");
 Mono<Integer> listenerMono = topic.addListener(SomeObject.class, new MessageListener<SomeObject>() {
     @Override
-    public void onMessage(String channel, SomeObject message) {
+    public void onMessage(CharSequence channel, SomeObject message) {
         //...
     }
 });
@@ -55,7 +55,7 @@ RedissonRxClient redisson = redissonClient.rxJava();
 RTopicRx topic = redisson.getTopic("myTopic");
 Single<Integer> listenerMono = topic.addListener(SomeObject.class, new MessageListener<SomeObject>() {
     @Override
-    public void onMessage(String channel, SomeObject message) {
+    public void onMessage(CharSequence channel, SomeObject message) {
         //...
     }
 });
@@ -63,6 +63,39 @@ Single<Integer> listenerMono = topic.addListener(SomeObject.class, new MessageLi
 // in other thread or JVM
 RTopicRx topic = redisson.getTopic("myTopic");
 Single<Long> publishMono = topic.publish(new SomeObject());
+```
+
+### Partitioning
+
+_This feature is available only in [Redisson PRO](https://redisson.pro) edition._
+
+Although each Topic instance is cluster-compatible, it can be connected only to a single Redis or Valkey node which owns the topic name. That may cause the following issues:
+
+* CPU overload on a single node. 
+* Overload of network or data traffic to a single node.
+* Interruptions during failover.
+
+Topic partitioning allows to resolve the issues above by connecting to each node and sharding messages between them. Partitions amount is defined through the global [topicSlots](../configuration.md) setting or per instance through `ClusteredTopicOptions.slots()` setting, which overrides the global setting.
+
+Slots definition per instance:
+```java
+RClusteredTopic topic = redisson.getClusteredTopic(ClusteredTopicOptions.name("myTopic").slots(15));
+```
+
+Usage example:
+
+```java
+RClusteredTopic topic = redisson.getClusteredTopic("myTopic");
+int listenerId = topic.addListener(MyObject.class, new MessageListener<MyObject>() {
+    @Override
+    public void onMessage(CharSequence channel, MyObject message) {
+        //...
+    }
+});
+
+// in other thread or JVM
+RClusteredTopic topic = redisson.getClusteredTopic("myTopic");
+long clientsReceivedMessage = topic.publish(new MyObject());
 ```
 
 ## Topic pattern
@@ -82,7 +115,7 @@ Code example:
 RPatternTopic patternTopic = redisson.getPatternTopic("topic*");
 int listenerId = patternTopic.addListener(Message.class, new PatternMessageListener<Message>() {
     @Override
-    public void onMessage(String pattern, String channel, Message msg) {
+    public void onMessage(CharSequence pattern, CharSequence channel, Message msg) {
         //...
     }
 });
@@ -93,7 +126,7 @@ Code example of **[Async](https://static.javadoc.io/org.redisson/redisson/latest
 RPatternTopicAsync patternTopic = redisson.getPatternTopic("topic*");
 RFuture<Integer> listenerFuture = patternTopic.addListenerAsync(Message.class, new PatternMessageListener<Message>() {
     @Override
-    public void onMessage(String pattern, String channel, Message msg) {
+    public void onMessage(CharSequence pattern, CharSequence channel, Message msg) {
         //...
     }
 });
@@ -105,7 +138,7 @@ RedissonReactiveClient redisson = redissonClient.reactive();
 RTopicReactive patternTopic = redisson.getPatternTopic("topic*");
 Mono<Integer> listenerMono = patternTopic.addListener(Message.class, new PatternMessageListener<Message>() {
     @Override
-    public void onMessage(String pattern, String channel, Message msg) {
+    public void onMessage(CharSequence pattern, CharSequence channel, Message msg) {
         //...
     }
 });
@@ -117,7 +150,7 @@ RedissonRxClient redisson = redissonClient.rxJava();
 RTopicRx patternTopic = redisson.getPatternTopic("topic*");
 Single<Integer> listenerSingle = patternTopic.addListener(Message.class, new PatternMessageListener<Message>() {
     @Override
-    public void onMessage(String pattern, String channel, Message msg) {
+    public void onMessage(CharSequence pattern, CharSequence channel, Message msg) {
         //...
     }
 });
@@ -133,7 +166,7 @@ Code example:
 RShardedTopic topic = redisson.getShardedTopic("myTopic");
 int listenerId = topic.addListener(SomeObject.class, new MessageListener<SomeObject>() {
     @Override
-    public void onMessage(String channel, SomeObject message) {
+    public void onMessage(CharSequence channel, SomeObject message) {
         //...
     }
 });
@@ -148,7 +181,7 @@ Code example of **[Async](https://static.javadoc.io/org.redisson/redisson/latest
 RShardedTopicAsync topic = redisson.getShardedTopic("myTopic");
 RFuture<Integer> listenerFuture = topic.addListenerAsync(SomeObject.class, new MessageListener<SomeObject>() {
     @Override
-    public void onMessage(String channel, SomeObject message) {
+    public void onMessage(CharSequence channel, SomeObject message) {
         //...
     }
 });
@@ -164,7 +197,7 @@ RedissonReactiveClient redisson = redissonClient.reactive();
 RShardedTopicReactive topic = redisson.getShardedTopic("myTopic");
 Mono<Integer> listenerMono = topic.addListener(SomeObject.class, new MessageListener<SomeObject>() {
     @Override
-    public void onMessage(String channel, SomeObject message) {
+    public void onMessage(CharSequence channel, SomeObject message) {
         //...
     }
 });
@@ -180,7 +213,7 @@ RedissonRxClient redisson = redissonClient.rxJava();
 RShardedTopicRx topic = redisson.getShardedTopic("myTopic");
 Single<Integer> listenerMono = topic.addListener(SomeObject.class, new MessageListener<SomeObject>() {
     @Override
-    public void onMessage(String channel, SomeObject message) {
+    public void onMessage(CharSequence channel, SomeObject message) {
         //...
     }
 });
@@ -189,6 +222,40 @@ Single<Integer> listenerMono = topic.addListener(SomeObject.class, new MessageLi
 RShardedTopicRx topic = redisson.getShardedTopic("myTopic");
 Single<Long> publishMono = topic.publish(new SomeObject());
 ```
+
+### Partitioning
+
+_This feature is available only in [Redisson PRO](https://redisson.pro) edition._
+
+Although each ShardedTopic instance is cluster-compatible, it can be connected only to a single Redis or Valkey node which owns the topic name. That may cause the following issues:
+
+* CPU overload on a single node. 
+* Overload of network or data traffic to a single node.
+* Interruptions during failover.
+
+ShardedTopic partitioning allows to resolve the issues above by connecting to each node and sharding messages between them. Partitions amount is defined through the global [topicSlots](../configuration.md) setting or per instance through `ClusteredTopicOptions.slots()` setting, which overrides the global setting.
+
+Slots definition per instance:
+```java
+RClusteredTopic topic = redisson.getClusteredTopic(ClusteredTopicOptions.name("myTopic").slots(15));
+```
+
+Usage example:
+
+```java
+RClusteredTopic topic = redisson.getClusteredTopic("myTopic");
+int listenerId = topic.addListener(MyObject.class, new MessageListener<MyObject>() {
+    @Override
+    public void onMessage(CharSequence channel, MyObject message) {
+        //...
+    }
+});
+
+// in other thread or JVM
+RClusteredTopic topic = redisson.getClusteredTopic("myTopic");
+long clientsReceivedMessage = topic.publish(new MyObject());
+```
+
 
 ## Reliable Topic
 Java implementation of Redis or Valkey based [RReliableTopic](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RReliableTopic.html) object implements Publish / Subscribe mechanism with reliable delivery of messages. In case of Redis or Valkey connection interruption all missed messages are delivered after reconnection to Redis. Message considered as delivered when it was received by Redisson and submited for processing by topic listeners.
@@ -259,4 +326,38 @@ Single<String> listenerRx = topic.addListener(SomeObject.class, new MessageListe
 // in other thread or JVM
 RReliableTopicRx topic = redisson.getReliableTopic("anyTopic");
 Single<Long> publisRx = topic.publish(new SomeObject());
+```
+
+### Partitioning
+
+_This feature is available only in [Redisson PRO](https://redisson.pro) edition._
+
+Although each ReliableTopic instance is cluster-compatible, it can be connected only to a single Redis or Valkey node which owns the topic name. That may cause the following issues:
+
+* CPU overload on a single node. 
+* Overload of network or data traffic to a single node.
+* Interruptions during failover.
+
+ReliableTopic partitioning allows to resolve the issues above by connecting to each node and sharding messages between them. Partitions amount is defined through the global [topicSlots](../configuration.md) setting or per instance through `ClusteredTopicOptions.slots()` setting, which overrides the global setting.
+
+Slots definition per instance:
+```java
+RClusteredReliableTopic topic 
+    = redisson.getClusteredReliableTopic(ClusteredTopicOptions.name("myTopic").slots(15));
+```
+
+Usage example:
+
+```java
+RClusteredReliableTopic topic = redisson.getClusteredReliableTopic("myTopic");
+int listenerId = topic.addListener(MyObject.class, new MessageListener<MyObject>() {
+    @Override
+    public void onMessage(CharSequence channel, MyObject message) {
+        //...
+    }
+});
+
+// in other thread or JVM
+RClusteredReliableTopic topic = redisson.getClusteredReliableTopic("myTopic");
+long clientsReceivedMessage = topic.publish(new MyObject());
 ```

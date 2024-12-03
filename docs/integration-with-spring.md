@@ -160,6 +160,7 @@ spring:
 - `RedissonReactiveClient`  
 - `RedisTemplate`  
 - `ReactiveRedisTemplate`  
+- `ReactiveRedisOperations`  
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
@@ -488,7 +489,7 @@ spring.cloud.stream.bindings.feedSupplier-out-0.producer.useNativeEncoding=true
 
 ## Spring Data Redis
 
-Integrates Redisson with Spring Data Redis library. Implements Spring Data's `RedisConnectionFactory` and `ReactiveRedisConnectionFactory` interfaces and allows to interact with Redis or Valkey through `RedisTemplate` or `ReactiveRedisTemplate` object.
+Integrates Redisson with Spring Data Redis library. Implements Spring Data's `RedisConnectionFactory` and `ReactiveRedisConnectionFactory` interfaces and allows to interact with Redis or Valkey through `RedisTemplate`, `ReactiveRedisTemplate` or `ReactiveRedisOperations` object.
 
 ### Usage
 1. Add `redisson-spring-data` dependency into your project:  

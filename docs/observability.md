@@ -440,17 +440,17 @@ Base name: `redisson.redis.<host>:<port>`
 * `connections.total` - A Counter of the number of total connections in pool  
 <br/>
 
-* `operations.total` - A Meter of the number of total executed operations  
-* `operations.total-failed` - A Meter of the number of total failed operations  
-* `operations.total-successful` - A Meter of the number of total successful operations
-* `operations.latency` - A Histogram of the number of operations latency in milliseconds
-* `operations.retry-attempt` - A Histogram of the number of operations retry attempts
-<br/>
-
 * `publish-subscribe-connections.active` - A Counter of the number of active publish subscribe connections  
 * `publish-subscribe-connections.free` - A Counter of the number of free publish subscribe connections  
 * `publish-subscribe-connections.max-pool-size` - A Counter of the number of maximum publish subscribe connection pool size  
 * `publish-subscribe-connections.total` - A Counter of the number of total publish subscribe connections in pool  
+<br/>
+
+* `operations.total` - A Meter of the number of total executed operations  
+* `operations.total-failed` - A Meter of the number of total failed operations  
+* `operations.total-successful` - A Meter of the number of total successful operations  
+* `operations.latency` - A Histogram of the number of operations latency in milliseconds  
+* `operations.retry-attempt` - A Histogram of the number of operations retry attempts  
 
 **Metrics per RRemoteService object**
 
@@ -479,8 +479,8 @@ Base name: `redisson.executor-service.<name>`
 
 Base name: `redisson.map.<name>`
 
-* `hits` - A Meter of the number of get requests for data contained in cache  
-* `misses` - A Meter of the number of get requests for data not contained in cache  
+* `hits` - A Meter of the number of get requests for data contained in the cache  
+* `misses` - A Meter of the number of get requests for data not contained in the cache  
 * `puts` - A Meter of the number of puts to the cache  
 * `removals` - A Meter of the number of removals from the cache  
 
@@ -488,8 +488,8 @@ Base name: `redisson.map.<name>`
 
 Base name: `redisson.map-cache.<name>`
 
-* `hits` - A Meter of the number of get requests for data contained in cache  
-* `misses` - A Meter of the number of get requests for data not contained in cache  
+* `hits` - A Meter of the number of get requests for data contained in the cache  
+* `misses` - A Meter of the number of get requests for data not contained in the cache  
 * `puts` - A Meter of the number of puts to the cache  
 * `removals` - A Meter of the number of removals from the cache  
 
@@ -497,8 +497,8 @@ Base name: `redisson.map-cache.<name>`
 
 Base name: `redisson.map-cache-v2.<name>`
 
-* `hits` - A Meter of the number of get requests for data contained in cache  
-* `misses` - A Meter of the number of get requests for data not contained in cache  
+* `hits` - A Meter of the number of get requests for data contained in the cache  
+* `misses` - A Meter of the number of get requests for data not contained in the cache  
 * `puts` - A Meter of the number of puts to the cache  
 * `removals` - A Meter of the number of removals from the cache  
 
@@ -506,8 +506,8 @@ Base name: `redisson.map-cache-v2.<name>`
 
 Base name: `redisson.map-cache-native.<name>`
 
-* `hits` - A Meter of the number of get requests for data contained in cache  
-* `misses` - A Meter of the number of get requests for data not contained in cache  
+* `hits` - A Meter of the number of get requests for data contained in the cache  
+* `misses` - A Meter of the number of get requests for data not contained in the cache  
 * `puts` - A Meter of the number of puts to the cache  
 * `removals` - A Meter of the number of removals from the cache  
 
@@ -515,8 +515,8 @@ Base name: `redisson.map-cache-native.<name>`
 
 Base name: `redisson.clustered-map-cache.<name>`
 
-* `hits` - A Meter of the number of get requests for data contained in cache  
-* `misses` - A Meter of the number of get requests for data not contained in cache  
+* `hits` - A Meter of the number of get requests for data contained in the cache  
+* `misses` - A Meter of the number of get requests for data not contained in the cache  
 * `puts` - A Meter of the number of puts to the cache  
 * `removals` - A Meter of the number of removals from the cache  
 
@@ -524,8 +524,8 @@ Base name: `redisson.clustered-map-cache.<name>`
 
 Base name: `redisson.clustered-map-cache-native.<name>`
 
-* `hits` - A Meter of the number of get requests for data contained in cache  
-* `misses` - A Meter of the number of get requests for data not contained in cache  
+* `hits` - A Meter of the number of get requests for data contained in the cache  
+* `misses` - A Meter of the number of get requests for data not contained in the cache  
 * `puts` - A Meter of the number of puts to the cache  
 * `removals` - A Meter of the number of removals from the cache  
 
@@ -534,105 +534,157 @@ Base name: `redisson.clustered-map-cache-native.<name>`
 
 Base name: `redisson.local-cached-map.<name>`
 
-* `hits` - A Meter of the number of get requests for data contained in cache  
-* `misses` - A Meter of the number of get requests for data not contained in cache  
+* `hits` - A Meter of the number of get requests for data contained in the cache  
+* `misses` - A Meter of the number of get requests for data not contained in the cache  
 * `puts` - A Meter of the number of puts to the cache  
 * `removals` - A Meter of the number of removals from the cache  
 <br/>
 
-* `local-cache.hits` - A Meter of the number of get requests for data contained in local cache  
-* `local-cache.misses` - A Meter of the number of get requests for data contained in local cache  
-* `local-cache.evictions` - A Meter of the number of evictions for data contained in local cache  
+* `local-cache.hits` - A Meter of the number of get requests for data contained in the local cache  
+* `local-cache.misses` - A Meter of the number of get requests for data contained in the local cache  
+* `local-cache.evictions` - A Meter of the number of evictions for data contained in the local cache  
 * `local-cache.size` - A Gauge of the number of local cache size  
 
 **Metrics per RClusteredLocalCachedMap object**
 
 Base name: `redisson.clustered-local-cached-map.<name>`
 
-* `hits` - A Meter of the number of get requests for data contained in cache  
-* `misses` - A Meter of the number of get requests for data not contained in cache  
+* `hits` - A Meter of the number of get requests for data contained in the cache  
+* `misses` - A Meter of the number of get requests for data not contained in the cache  
 * `puts` - A Meter of the number of puts to the cache  
 * `removals` - A Meter of the number of removals from the cache  
 <br/>
 
-* `local-cache.hits` - A Meter of the number of get requests for data contained in local cache  
-* `local-cache.misses` - A Meter of the number of get requests for data contained in local cache  
-* `local-cache.evictions` - A Meter of the number of evictions for data contained in local cache  
+* `local-cache.hits` - A Meter of the number of get requests for data contained in the local cache  
+* `local-cache.misses` - A Meter of the number of get requests for data contained in the local cache  
+* `local-cache.evictions` - A Meter of the number of evictions for data contained in the local cache  
 * `local-cache.size` - A Gauge of the number of local cache size  
 
 **Metrics per RLocalCachedMapCache object**
 
 Base name: `redisson.local-cached-map-cache.<name>`
 
-* `hits` - A Meter of the number of get requests for data contained in cache  
-* `misses` - A Meter of the number of get requests for data not contained in cache  
+* `hits` - A Meter of the number of get requests for data contained in the cache  
+* `misses` - A Meter of the number of get requests for data not contained in the cache  
 * `puts` - A Meter of the number of puts to the cache  
 * `removals` - A Meter of the number of removals from the cache  
 <br/>
 
-* `local-cache.hits` - A Meter of the number of get requests for data contained in local cache  
-* `local-cache.misses` - A Meter of the number of get requests for data contained in local cache  
-* `local-cache.evictions` - A Meter of the number of evictions for data contained in local cache  
+* `local-cache.hits` - A Meter of the number of get requests for data contained in the local cache  
+* `local-cache.misses` - A Meter of the number of get requests for data contained in the local cache  
+* `local-cache.evictions` - A Meter of the number of evictions for data contained in the local cache  
 * `local-cache.size` - A Gauge of the number of local cache size  
 
 **Metrics per RLocalCachedMapCacheV2 object**
 
 Base name: `redisson.local-cached-map-cache-v2.<name>`
 
-* `hits` - A Meter of the number of get requests for data contained in cache  
-* `misses` - A Meter of the number of get requests for data not contained in cache  
+* `hits` - A Meter of the number of get requests for data contained in the cache  
+* `misses` - A Meter of the number of get requests for data not contained in the cache  
 * `puts` - A Meter of the number of puts to the cache  
 * `removals` - A Meter of the number of removals from the cache  
 <br/>
 
-* `local-cache.hits` - A Meter of the number of get requests for data contained in local cache  
-* `local-cache.misses` - A Meter of the number of get requests for data contained in local cache  
-* `local-cache.evictions` - A Meter of the number of evictions for data contained in local cache  
+* `local-cache.hits` - A Meter of the number of get requests for data contained in the local cache  
+* `local-cache.misses` - A Meter of the number of get requests for data contained in the local cache  
+* `local-cache.evictions` - A Meter of the number of evictions for data contained in the local cache  
 * `local-cache.size` - A Gauge of the number of local cache size  
 
 **Metrics per RLocalCachedMapCacheNative object**
 
 Base name: `redisson.local-cached-map-cache-native.<name>`
 
-* `hits` - A Meter of the number of get requests for data contained in cache  
-* `misses` - A Meter of the number of get requests for data not contained in cache  
+* `hits` - A Meter of the number of get requests for data contained in the cache  
+* `misses` - A Meter of the number of get requests for data not contained in the cache  
 * `puts` - A Meter of the number of puts to the cache  
 * `removals` - A Meter of the number of removals from the cache  
 <br/>
 
-* `local-cache.hits` - A Meter of the number of get requests for data contained in local cache  
-* `local-cache.misses` - A Meter of the number of get requests for data contained in local cache  
-* `local-cache.evictions` - A Meter of the number of evictions for data contained in local cache  
+* `local-cache.hits` - A Meter of the number of get requests for data contained in the local cache  
+* `local-cache.misses` - A Meter of the number of get requests for data contained in the local cache  
+* `local-cache.evictions` - A Meter of the number of evictions for data contained in the local cache  
 * `local-cache.size` - A Gauge of the number of local cache size  
 
 **Metrics per RClusteredLocalCachedMapCache object**
 
 Base name: `redisson.clustered-local-cached-map-cache.<name>`
 
-* `hits` - A Meter of the number of get requests for data contained in cache  
-* `misses` - A Meter of the number of get requests for data not contained in cache  
+* `hits` - A Meter of the number of get requests for data contained in the cache  
+* `misses` - A Meter of the number of get requests for data not contained in the cache  
 * `puts` - A Meter of the number of puts to the cache  
 * `removals` - A Meter of the number of removals from the cache  
 <br/>
 
-* `local-cache.hits` - A Meter of the number of get requests for data contained in local cache  
-* `local-cache.misses` - A Meter of the number of get requests for data contained in local cache  
-* `local-cache.evictions` - A Meter of the number of evictions for data contained in local cache  
-* `local-cache.size` - A Gauge of the number of local cache size  
+* `local-cache.hits` - A Meter of the number of get requests for data contained in the local cache  
+* `local-cache.misses` - A Meter of the number of get requests for data contained in the local cache  
+* `local-cache.evictions` - A Meter of the number of evictions for data contained in the local cache  
+* `local-cache.size` - A Gauge of the number of the local cache size  
+
+**Metrics per RJsonStore object**
+
+Base name: `redisson.jsonstore.<name>`
+
+* `hits` - A Meter of the number of get requests for data contained in the cache  
+* `misses` - A Meter of the number of get requests for data not contained in the cache  
+* `puts` - A Meter of the number of puts to the cache  
+* `removals` - A Meter of the number of removals from the cache  
+
+**Metrics per RLocalCachedJsonStore object**
+
+Base name: `redisson.local-cached-jsonstore.<name>`
+
+* `hits` - A Meter of the number of get requests for data contained in the cache  
+* `misses` - A Meter of the number of get requests for data not contained in the cache  
+* `puts` - A Meter of the number of puts to the cache  
+* `removals` - A Meter of the number of removals from the cache  
+<br/>
+
+* `local-cache.hits` - A Meter of the number of get requests for data contained in the local cache  
+* `local-cache.misses` - A Meter of the number of get requests for data contained in the local cache  
+* `local-cache.evictions` - A Meter of the number of evictions for data contained in the local cache  
+* `local-cache.size` - A Gauge of the number of the local cache size  
 
 **Metrics per RTopic object**
 
 Base name: `redisson.topic.<name>`
 
-* `messages-sent` - A Meter of the number of messages sent for topic  
-* `messages-received` - A Meter of the number of messages received for topic  
+* `messages-sent` - A Meter of the number of messages sent for the topic  
+* `messages-received` - A Meter of the number of messages received for the topic  
+
+**Metrics per RClusteredTopic object**
+
+Base name: `redisson.clustered-topic.<name>`
+
+* `messages-sent` - A Meter of the number of messages sent for the topic  
+* `messages-received` - A Meter of the number of messages received for the topic  
+
+**Metrics per RReliableTopic object**
+
+Base name: `redisson.reliable-topic.<name>`
+
+* `messages-sent` - A Meter of the number of messages sent for the topic  
+* `messages-received` - A Meter of the number of messages received for the topic  
+
+**Metrics per RClusteredReliableTopic object**
+
+Base name: `redisson.clustered-reliable-topic.<name>`
+
+* `messages-sent` - A Meter of the number of messages sent for the topic  
+* `messages-received` - A Meter of the number of messages received for the topic  
+
+**Metrics per RShardedTopic object**
+
+Base name: `redisson.sharded-topic.<name>`
+
+* `messages-sent` - A Meter of the number of messages sent for the topic  
+* `messages-received` - A Meter of the number of messages received for the topic  
 
 **Metrics per RBucket object**
 
 Base name: `redisson.bucket.<name>`
 
-* `gets` - A Meter of the number of get operations executed for bucket object
-* `sets` - A Meter of the number of set operations executed for bucket object
+* `gets` - A Meter of the number of get operations executed for the object
+* `sets` - A Meter of the number of set operations executed for the object
 
 **Metrics per JCache object**
 

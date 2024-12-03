@@ -5,7 +5,7 @@ Config config = new Config();
 config.setTransportMode(TransportMode.EPOLL);
 config.useClusterServers()
        // use "rediss://" for SSL connection
-      .addNodeAddress("perredis://127.0.0.1:7181");
+      .addNodeAddress("redis://127.0.0.1:7181");
 
 RedissonClient redisson = Redisson.create(config);
 ```
@@ -256,7 +256,7 @@ Compatible with:
 
 * [Redis Cluster](https://redis.io/docs/latest/operate/oss_and_stack/reference/cluster-spec/)
 * [Valkey Cluster](https://valkey.io/topics/cluster-spec/)
-* [AWS ElastiCache Cluster](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/WhatIs.html#WhatIs.Clusters)  
+* [AWS ElastiCache Cluster](https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/designing-elasticache-cluster.html)  
 * [Amazon MemoryDB](https://aws.amazon.com/memorydb)  
 * [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/)  
 
@@ -274,7 +274,6 @@ config.useClusterServers()
 RedissonClient redisson = Redisson.create(config);
 ```
 ### Cluster settings
-Documentation covering Redis server cluster configuration is [here](https://redis.io/topics/cluster-tutorial).  
 Cluster connection mode is activated by the following line:  
 
 `ClusterServersConfig clusterConfig = config.useClusterServers();`  
@@ -293,6 +292,13 @@ Add a Redis or Valkey cluster node or endpoint address in `host:port` format. Re
 Default value: `1000`
 
 Scan interval in milliseconds. Applied to Redis or Valkey clusters topology scans.
+
+**topicSlots**
+Default value: `9`
+
+Partitions amount used for topic partitioning. Applied to `RClusteredTopic` and `RClusteredReliableTopic` objects.
+
+_This setting is available only in [Redisson PRO](https://redisson.pro) edition._
 
 **slots**
 Default value: `231`
@@ -592,7 +598,7 @@ With Replicated mode the role of each node is polled to determine if a failover 
 
 Compatible with:
 
-* [AWS ElastiCache](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Replication.html) (non-clustered)
+* [AWS ElastiCache](https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/Replication.html) (non-clustered)
 * [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/) (non-clustered)
 * [Google Cloud Memorystore for Redis High availability](https://cloud.google.com/memorystore/docs/redis/high-availability)
 
@@ -1701,6 +1707,8 @@ transportMode: "NIO"
 
 ## Proxy mode
 
+_This feature is available only in [Redisson PRO](https://redisson.pro) edition._
+
 Proxy mode supports single or multiple Redis or Valkey databases (including synced with active-active replication) used for read/write operations. Each Redis or Valkey hostname might be resolved to more than one IP address. 
 
 Depending on value of [proxyMode](#proxy-mode) setting there are two modes:  
@@ -1716,8 +1724,6 @@ Compatible with:
 * [Azure Redis Cache active-active replication](https://learn.microsoft.com/en-us/azure/azure-cache-for-redis/cache-how-to-active-geo-replication)  
 * [Redis Enterprise Multiple Active Proxy](https://docs.redis.com/latest/rs/databases/configure/proxy-policy/#about-multiple-active-proxy-support)  
 * [Redis Enterprise Active-Active databases](https://docs.redis.com/latest/rs/databases/active-active/get-started/)  
-
-_This feature is available only in [Redisson PRO](https://redisson.pro) edition._
 
 Programmatic config example:  
 ```java
@@ -1981,15 +1987,15 @@ transportMode: "NIO"
 
 ## Multi cluster mode
 
+_This feature is available only in [Redisson PRO](https://redisson.pro) edition._
+
 Supports multiple Redis or Valkey Cluster setups with active-passive data replication relationship. Replication of the primary Cluster with secondary Redis Cluster is managed by `replicationMode` setting.
 
 Cluster with all available master nodes becomes the primary. Master nodes availability scan interval is defined by `scanInterval` setting.
 
 Compatible with:
 
-* [AWS Redis Global Datastore](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Redis-Global-Datastore.html).
-
-_This feature is available only in [Redisson PRO](https://redisson.pro) edition._
+* [AWS Elasticache Global Datastore](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Redis-Global-Datastore.html).
 
 Programmatic config example:  
 ```java
@@ -2317,11 +2323,11 @@ transportMode: "NIO"
 
 ## Multi Sentinel mode
 
+_This feature is available only in [Redisson PRO](https://redisson.pro) edition._
+
 Supports multiple Redis or Valkey Sentinel setups with active-passive data replication.  
 
 Replication of primary Sentinel deployment with secondary Sentinel deployments is managed by `replicationMode` setting. First sentinel host belongs to the active Sentinel setup and others to Passive Sentinel Setups.
-
-_This feature is available only in [Redisson PRO](https://redisson.pro) edition._
 
 Programmatic config example:  
 ```java
