@@ -11,6 +11,7 @@ Feature - Spring Boot upgraded to 3.4.0
 Feature - `setIfLess()` and `setIfGreater()` methods added to `RAtomicDouble` and `RAtomicLong` objects (thanks to @seakider)  
 Feature - `RMultimap.fastReplaceValues()` method added (thanks to @davidreis97)  
 
+Fixed - IPV6 uris with braces are parsed incorrectly
 Fixed - minCleanUpDelay setting isn't applied during the first run of the EvictionTask  
 Fixed - master node shouldn't be changed on new ip addition for AWS Serverless endpoint  
 Fixed - Quarkus native build requires Snappy library  
