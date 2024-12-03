@@ -3,6 +3,21 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
+### 03-Dec-2024 - 3.40.0 released
+
+Feature - metrics added to `RClusteredTopic`, `RReliableTopic`, `RClusteredReliableTopic`, `RShardedTopic`, `RJsonStore` and `RLocalCachedJsonStore` objects  
+Feature - Spring Data Redis 3.4.x module added  
+Feature - Spring Boot upgraded to 3.4.0  
+Feature - `setIfLess()` and `setIfGreater()` methods added to `RAtomicDouble` and `RAtomicLong` objects (thanks to @seakider)  
+Feature - `RMultimap.fastReplaceValues()` method added (thanks to @davidreis97)  
+
+Fixed - minCleanUpDelay setting isn't applied during the first run of the EvictionTask  
+Fixed - master node shouldn't be changed on new ip addition for AWS Serverless endpoint  
+Fixed - Quarkus native build requires Snappy library  
+Fixed - Quarkus 3.14+ compatibility  
+Fixed - `RBitSet.length()` method returns unexpected value and caused RedisException in some case (thanks to @seakider)  
+Fixed - `TypedJsonJacksonCodec` doesn't catch Exception (thanks to @lyrric)  
+
 ### 15-Nov-2024 - 3.39.0 released
 
 Feature - [partitioning](https://redisson.org/docs/data-and-services/publish-subscribe/#partitioning) implementation for `RTopic` object  
