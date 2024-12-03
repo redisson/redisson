@@ -83,7 +83,7 @@ public final class RedisURI {
         if (ipV6Host.contains("@")) {
             ipV6Host = ipV6Host.split("@")[1];
         }
-        if (ipV6Host.contains(":")) {
+        if (ipV6Host.contains(":") && !ipV6Host.startsWith("[")) {
             urlHost = urlHost.replace(ipV6Host, "[" + ipV6Host + "]");
         }
         return urlHost;
