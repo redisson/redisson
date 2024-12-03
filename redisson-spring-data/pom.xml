@@ -113,7 +113,7 @@
                 <version>3.6.11</version>
       		<scope>test</scope>
       	</dependency>
-
+<!--
       	<dependency>
       		<groupId>redis.clients</groupId>
       		<artifactId>jedis</artifactId>
@@ -127,7 +127,7 @@
        		<version>6.3.2.RELEASE</version>
             <scope>test</scope>
        	</dependency>
-
+-->
     </dependencies>
 
 </project>
