@@ -445,7 +445,7 @@ public final class RedisClient {
 
     @Override
     public String toString() {
-        return "[addr=" + uri + "]";
+        return "[addr=" + uri + "," + resolvedAddr + "]";
     }
 
 }
