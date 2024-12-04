@@ -1,5 +1,11 @@
 package org.redisson;
 
+import io.netty.channel.socket.DatagramChannel;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.resolver.AddressResolverGroup;
+import io.netty.resolver.dns.DnsServerAddressStreamProvider;
+import io.netty.resolver.dns.DnsServerAddresses;
+import io.netty.util.internal.SocketUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
@@ -20,13 +26,17 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.cluster.ClusterNodeInfo;
 import org.redisson.config.Config;
 import org.redisson.config.SubscriptionMode;
+import org.redisson.connection.SequentialDnsAddressResolverFactory;
 import org.redisson.connection.balancer.RandomLoadBalancer;
 import org.redisson.misc.RedisURI;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.ContainerState;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.startupcheck.MinimumDurationRunningStartupCheckStrategy;
 
 import java.io.Serializable;
+import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
@@ -847,6 +857,61 @@ public class RedissonTopicTest extends RedisDockerTest {
         redis.stop();
     }
 
+    @Test
+    public void testHostnameChange() throws Exception {
+        GenericContainer<?> redis = createRedis();
+        redis.start();
+
+        SimpleDnsServer s = new SimpleDnsServer();
+
+        Config config = new Config();
+        config.setAddressResolverGroupFactory(new SequentialDnsAddressResolverFactory() {
+            @Override
+            public AddressResolverGroup<InetSocketAddress> create(Class<? extends DatagramChannel> channelType, Class<? extends SocketChannel> socketChannelType, DnsServerAddressStreamProvider nameServerProvider) {
+                return super.create(channelType, socketChannelType, hostname ->
+                                            DnsServerAddresses.singleton(SocketUtils.socketAddress("127.0.0.1", 55)).stream());
+            }
+        });
+        config.useSingleServer()
+                .setDnsMonitoringInterval(1000)
+                .setAddress("redis://simplehost:" + redis.getFirstMappedPort());
+        RedissonClient redisson = Redisson.create(config);
+
+        RTopic topic = redisson.getTopic("topic");
+
+        Logger logger = LoggerFactory.getLogger("out");
+
+        for (int i = 0; i < 10; i++) {
+
+            Set<String> messages = new HashSet<>();
+            topic.addListener(String.class, new MessageListener<String>() {
+                @Override
+                public void onMessage(CharSequence channel, String msg) {
+                    messages.add(msg);
+                }
+            });
+
+            if (i == 1) {
+                s.updateIP("127.0.0.2");
+            }
+
+            for (int j = 0; j < 60; j++) {
+                topic.publish("test" + j);
+                Thread.sleep(100);
+            }
+
+            assertThat(messages.size()).isEqualTo(60);
+
+            topic.removeAllListeners();
+
+            logger.info("step1 " + i);
+        }
+
+        redisson.shutdown();
+        s.stop();
+        redis.stop();
+    }
+
 
 //    @Test
     public void testReattachInSentinelLong() throws Exception {
@@ -961,6 +1026,7 @@ public class RedissonTopicTest extends RedisDockerTest {
             final AtomicInteger subscriptions = new AtomicInteger();
 
             RedissonClient redisson = Redisson.create(config);
+
             RTopic topic = redisson.getTopic("topic");
             topic.addListener(new StatusListener() {
 
@@ -988,7 +1054,7 @@ public class RedissonTopicTest extends RedisDockerTest {
                 TimeUnit.SECONDS.sleep(20);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
-            }
+                }
 
             nodes.forEach(n -> n.start());
 

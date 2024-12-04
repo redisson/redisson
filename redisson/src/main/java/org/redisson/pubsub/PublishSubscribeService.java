@@ -669,6 +669,10 @@ public class PublishSubscribeService {
     CompletableFuture<Void> unsubscribeLocked(PubSubType topicType, ChannelName channelName, PubSubConnectionEntry ce) {
         remove(channelName, ce);
 
+        if (connectionManager.getServiceManager().isShuttingDown()) {
+            return CompletableFuture.completedFuture(null);
+        }
+
         CompletableFuture<Void> result = new CompletableFuture<>();
         BaseRedisPubSubListener listener = new BaseRedisPubSubListener() {
 
@@ -699,11 +703,13 @@ public class PublishSubscribeService {
         name2PubSubConnection.remove(new PubSubKey(channelName, entry.getEntry()));
 
         ClientConnectionsEntry e = entry.getEntry().getEntry(entry.getConnection().getRedisClient());
-        Tuple<ChannelName, ClientConnectionsEntry> key = new Tuple<>(channelName, e);
-        key2connection.remove(key);
-        if (e.getTrackedConnectionsHolder().decUsage() == 0) {
-            e.getTrackedConnectionsHolder().reset();
-            trackedEntries.remove(entry);
+        if (e != null) {
+            Tuple<ChannelName, ClientConnectionsEntry> key = new Tuple<>(channelName, e);
+            key2connection.remove(key);
+            if (e.getTrackedConnectionsHolder().decUsage() == 0) {
+                e.getTrackedConnectionsHolder().reset();
+                trackedEntries.remove(entry);
+            }
         }
 
         name2entry.computeIfPresent(channelName, (name, entries) -> {
@@ -830,6 +836,10 @@ public class PublishSubscribeService {
             }
 
             subscribeCodecFuture.whenComplete((subscribeCodec, e) -> {
+                if (e != null) {
+                    log.error(e.getMessage(), e);
+                    return;
+                }
                 if (subscribeCodec == null) {
                     return;
                 }

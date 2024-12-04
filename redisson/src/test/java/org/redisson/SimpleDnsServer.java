@@ -11,8 +11,8 @@ import java.net.InetAddress;
 
 public class SimpleDnsServer {
 
-    EventLoopGroup group = new NioEventLoopGroup();
-    private Channel channel;
+    private final EventLoopGroup group = new NioEventLoopGroup();
+    private final Channel channel;
     private String ip = "127.0.0.1";
 
     public SimpleDnsServer() throws InterruptedException {
@@ -28,7 +28,7 @@ public class SimpleDnsServer {
                         }
                     });
 
-            ChannelFuture future = bootstrap.bind(55).sync(); // Bind to port 53 for DNS
+            ChannelFuture future = bootstrap.bind(55).sync();
             channel = future.channel();
     }
 
@@ -47,9 +47,6 @@ public class SimpleDnsServer {
             DefaultDnsQuestion question = query.recordAt(DnsSection.QUESTION);
             String requestedDomain = question.name();
 
-//            System.out.println("Received DNS query for: " + requestedDomain + " " + query);
-
-            // Create a response with a dummy IP address
             DatagramDnsResponse response = new DatagramDnsResponse(query.recipient(), query.sender(), query.id());
             response.addRecord(DnsSection.QUESTION, question);
             response.addRecord(DnsSection.ANSWER, new DefaultDnsRawRecord(question.name(), DnsRecordType.A, 0,
