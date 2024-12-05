@@ -24,7 +24,7 @@ import org.redisson.config.*;
  */
 public class SingleConnectionManager extends MasterSlaveConnectionManager {
 
-    public SingleConnectionManager(SingleServerConfig cfg, Config configCopy) {
+    SingleConnectionManager(SingleServerConfig cfg, Config configCopy) {
         super(create(cfg), configCopy);
     }
 

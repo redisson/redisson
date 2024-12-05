@@ -60,7 +60,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     private String scheme;
     private SentinelServersConfig cfg;
 
-    public SentinelConnectionManager(SentinelServersConfig cfg, Config configCopy) {
+    SentinelConnectionManager(SentinelServersConfig cfg, Config configCopy) {
         super(cfg, configCopy);
         this.serviceManager.setNatMapper(cfg.getNatMapper());
 

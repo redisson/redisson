@@ -19,6 +19,7 @@ import io.netty.buffer.ByteBuf;
 import org.redisson.api.NodeType;
 import org.redisson.client.RedisClient;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.config.*;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.misc.RedisURI;
 import org.redisson.pubsub.PublishSubscribeService;
@@ -74,5 +75,29 @@ public interface ConnectionManager {
 
     CommandAsyncExecutor createCommandExecutor(RedissonObjectBuilder objectBuilder,
                                                RedissonObjectBuilder.ReferenceType referenceType);
+
+    static ConnectionManager create(Config configCopy) {
+        BaseConfig<?> cfg = ConfigSupport.getConfig(configCopy);
+        ConnectionManager cm = null;
+        if (cfg instanceof MasterSlaveServersConfig) {
+            cm = new MasterSlaveConnectionManager((MasterSlaveServersConfig) cfg, configCopy);
+        } else if (cfg instanceof SingleServerConfig) {
+            cm = new SingleConnectionManager((SingleServerConfig) cfg, configCopy);
+        } else if (cfg instanceof SentinelServersConfig) {
+            cm = new SentinelConnectionManager((SentinelServersConfig) cfg, configCopy);
+        } else if (cfg instanceof ClusterServersConfig) {
+            cm = new ClusterConnectionManager((ClusterServersConfig) cfg, configCopy);
+        } else if (cfg instanceof ReplicatedServersConfig) {
+            cm = new ReplicatedConnectionManager((ReplicatedServersConfig) cfg, configCopy);
+        }
+
+        if (cm == null) {
+            throw new IllegalArgumentException("server(s) address(es) not defined!");
+        }
+        if (!configCopy.isLazyInitialization()) {
+            cm.connect();
+        }
+        return cm;
+    }
 
 }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.cluster;
+package org.redisson.connection;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.util.Timeout;
@@ -23,10 +23,11 @@ import org.redisson.client.*;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
+import org.redisson.cluster.ClusterNodeInfo;
 import org.redisson.cluster.ClusterNodeInfo.Flag;
+import org.redisson.cluster.ClusterPartition;
 import org.redisson.cluster.ClusterPartition.Type;
 import org.redisson.config.*;
-import org.redisson.connection.*;
 import org.redisson.misc.RedisURI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +67,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     private ClusterServersConfig cfg;
 
-    public ClusterConnectionManager(ClusterServersConfig cfg, Config configCopy) {
+    ClusterConnectionManager(ClusterServersConfig cfg, Config configCopy) {
         super(cfg, configCopy);
         this.serviceManager.setNatMapper(cfg.getNatMapper());
     }

@@ -64,7 +64,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     private boolean lastAttempt;
 
-    public MasterSlaveConnectionManager(BaseMasterSlaveServersConfig<?> cfg, Config configCopy) {
+    MasterSlaveConnectionManager(BaseMasterSlaveServersConfig<?> cfg, Config configCopy) {
         if (cfg instanceof MasterSlaveServersConfig) {
             this.config = (MasterSlaveServersConfig) cfg;
             if (this.config.getSlaveAddresses().isEmpty()

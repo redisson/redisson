@@ -65,7 +65,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
 
     private ReplicatedServersConfig cfg;
 
-    public ReplicatedConnectionManager(ReplicatedServersConfig cfg, Config configCopy) {
+    ReplicatedConnectionManager(ReplicatedServersConfig cfg, Config configCopy) {
         super(cfg, configCopy);
     }
 

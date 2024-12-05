@@ -32,9 +32,9 @@ import org.redisson.api.RedissonNodeInitializer;
 import org.redisson.client.FailedNodeDetector;
 import org.redisson.client.NettyHook;
 import org.redisson.client.codec.Codec;
-import org.redisson.cluster.ClusterConnectionManager;
 import org.redisson.codec.ReferenceCodecProvider;
-import org.redisson.connection.*;
+import org.redisson.connection.AddressResolverGroupFactory;
+import org.redisson.connection.ConnectionListener;
 import org.redisson.connection.balancer.LoadBalancer;
 
 import javax.net.ssl.KeyManagerFactory;
@@ -188,34 +188,25 @@ public class ConfigSupport {
         return yamlMapper.writeValueAsString(config);
     }
 
-    public static ConnectionManager createConnectionManager(Config configCopy) {
-        ConnectionManager cm = null;
+    public static BaseConfig<?> getConfig(Config configCopy) {
         if (configCopy.getMasterSlaveServersConfig() != null) {
             validate(configCopy.getMasterSlaveServersConfig());
-            cm = new MasterSlaveConnectionManager(configCopy.getMasterSlaveServersConfig(), configCopy);
+            return configCopy.getMasterSlaveServersConfig();
         } else if (configCopy.getSingleServerConfig() != null) {
             validate(configCopy.getSingleServerConfig());
-            cm = new SingleConnectionManager(configCopy.getSingleServerConfig(), configCopy);
+            return configCopy.getSingleServerConfig();
         } else if (configCopy.getSentinelServersConfig() != null) {
             validate(configCopy.getSentinelServersConfig());
-            cm = new SentinelConnectionManager(configCopy.getSentinelServersConfig(), configCopy);
+            return configCopy.getSentinelServersConfig();
         } else if (configCopy.getClusterServersConfig() != null) {
             validate(configCopy.getClusterServersConfig());
-            cm = new ClusterConnectionManager(configCopy.getClusterServersConfig(), configCopy);
+            return configCopy.getClusterServersConfig();
         } else if (configCopy.getReplicatedServersConfig() != null) {
             validate(configCopy.getReplicatedServersConfig());
-            cm = new ReplicatedConnectionManager(configCopy.getReplicatedServersConfig(), configCopy);
-        } else if (configCopy.getConnectionManager() != null) {
-            cm = configCopy.getConnectionManager();
+            return configCopy.getReplicatedServersConfig();
         }
 
-        if (cm == null) {
-            throw new IllegalArgumentException("server(s) address(es) not defined!");
-        }
-        if (!configCopy.isLazyInitialization()) {
-            cm.connect();
-        }
-        return cm;
+        throw new IllegalArgumentException("server(s) address(es) not defined!");
     }
 
     private static void validate(SingleServerConfig config) {

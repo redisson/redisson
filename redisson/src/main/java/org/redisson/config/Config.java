@@ -150,10 +150,6 @@ public class Config {
         if (oldConf.getReplicatedServersConfig() != null) {
             setReplicatedServersConfig(new ReplicatedServersConfig(oldConf.getReplicatedServersConfig()));
         }
-        if (oldConf.getConnectionManager() != null) {
-            useCustomServers(oldConf.getConnectionManager());
-        }
-
     }
 
     public NettyHook getNettyHook() {
@@ -268,29 +264,6 @@ public class Config {
 
     protected void setReplicatedServersConfig(ReplicatedServersConfig replicatedServersConfig) {
         this.replicatedServersConfig = replicatedServersConfig;
-    }
-
-    /**
-     * Returns the connection manager if supplied via
-     * {@link #useCustomServers(ConnectionManager)}
-     * 
-     * @return ConnectionManager
-     */
-    @Deprecated
-    ConnectionManager getConnectionManager() {
-        return connectionManager;
-    }
-
-    /**
-     * This is an extension point to supply custom connection manager.
-     * 
-     * @see ReplicatedConnectionManager on how to implement a connection
-     *      manager.
-     * @param connectionManager for supply
-     */
-    @Deprecated
-    public void useCustomServers(ConnectionManager connectionManager) {
-        this.connectionManager = connectionManager;
     }
 
     /**
