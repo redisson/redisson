@@ -23,7 +23,6 @@ import org.redisson.api.options.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.JsonCodec;
 import org.redisson.config.Config;
-import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
@@ -46,20 +45,6 @@ public class RedissonRx implements RedissonRxClient {
     protected final EvictionScheduler evictionScheduler;
     protected final CommandRxExecutor commandExecutor;
     protected final ConnectionManager connectionManager;
-
-    @Deprecated
-    protected RedissonRx(Config config) {
-        Config configCopy = new Config(config);
-
-        connectionManager = ConfigSupport.createConnectionManager(configCopy);
-        RedissonObjectBuilder objectBuilder = null;
-        if (connectionManager.getServiceManager().getCfg().isReferenceEnabled()) {
-            objectBuilder = new RedissonObjectBuilder(this);
-        }
-        commandExecutor = new CommandRxService(connectionManager, objectBuilder);
-        evictionScheduler = new EvictionScheduler(commandExecutor);
-        writeBehindService = new WriteBehindService(commandExecutor);
-    }
 
     protected RedissonRx(ConnectionManager connectionManager, EvictionScheduler evictionScheduler, WriteBehindService writeBehindService) {
         this.connectionManager = connectionManager;

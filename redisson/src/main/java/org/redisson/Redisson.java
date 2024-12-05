@@ -127,7 +127,8 @@ public final class Redisson implements RedissonClient {
      */
     @Deprecated
     public static RedissonRxClient createRx(Config config) {
-        return new RedissonRx(config);
+        RedissonClient redisson = create(config);
+        return redisson.rxJava();
     }
 
     @Override
@@ -150,7 +151,8 @@ public final class Redisson implements RedissonClient {
      */
     @Deprecated
     public static RedissonReactiveClient createReactive(Config config) {
-        return new RedissonReactive(config);
+        RedissonClient redisson = create(config);
+        return redisson.reactive();
     }
 
     @Override
