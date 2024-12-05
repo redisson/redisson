@@ -68,6 +68,10 @@ public final class RedisURI {
                     password = URLDecoder.decode(details[1], StandardCharsets.UTF_8.toString());
                 }
             }
+            if (url.getHost().isEmpty()) {
+                throw new IllegalArgumentException("Redis host can't be parsed");
+            }
+
             host = url.getHost();
             port = url.getPort();
             ssl = uri.startsWith("rediss://");
