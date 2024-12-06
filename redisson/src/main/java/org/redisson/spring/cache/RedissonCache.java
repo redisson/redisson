@@ -113,7 +113,6 @@ public class RedissonCache implements Cache {
             } else {
                 value = map.get(key);
             }
-
             if (value == null) {
                 addCacheMiss();
             } else {
