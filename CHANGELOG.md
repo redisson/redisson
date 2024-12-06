@@ -3,6 +3,14 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
+### 06-Dec-2024 - 3.40.1 released
+
+Improvement - Netty pending tasks amount report in timeout exceptions  
+
+Fixed - Redis or Valkey hostname parsing  
+Fixed - `NoClassDefFoundError` is thrown during run with Spring Boot 3.4.0 in GraalVM native mode  
+Fixed - `RTopic` and `RShardedTopic` fail to resubscribe after node's DNS record change (regression since 3.27.0)  
+
 ### 03-Dec-2024 - 3.40.0 released
 
 Feature - metrics added to `RClusteredTopic`, `RReliableTopic`, `RClusteredReliableTopic`, `RShardedTopic`, `RJsonStore` and `RLocalCachedJsonStore` objects  
