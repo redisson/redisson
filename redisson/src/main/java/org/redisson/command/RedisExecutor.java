@@ -742,7 +742,7 @@ public class RedisExecutor<V, R> {
         return connectionFuture;
     }
 
-    private static final Map<ClassLoader, Map<Codec, Codec>> CODECS = new LRUCacheMap<>(25, 0, 0);
+    private static final Map<ClassLoader, Map<Codec, Codec>> CODECS = new LRUCacheMap<>(100, 0, 0);
 
     protected final Codec getCodec(Codec codec) {
         if (codec == null) {
