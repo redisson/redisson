@@ -506,6 +506,46 @@ public class RedissonTest extends RedisDockerTest {
 
     }
 
+//    @Test
+    public void testNettyThreadsAmount() throws Exception {
+        Config config = redisson.getConfig();
+        config.setCodec(new SlowCodec());
+        config.setReferenceEnabled(false);
+        config.setThreads(32);
+        config.setNettyThreads(20);
+        RedissonClient redisson = Redisson.create(config);
+
+        CountDownLatch latch = new CountDownLatch(16);
+        AtomicBoolean hasErrors = new AtomicBoolean();
+        for (int i = 0; i < 16; i++) {
+            Thread t = new Thread() {
+                public void run() {
+                    for (int i = 0; i < 10; i++) {
+                        try {
+                            redisson.getBucket("123").set("1");
+                            redisson.getBucket("123").get();
+                            if (hasErrors.get()) {
+                                latch.countDown();
+                                return;
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            hasErrors.set(true);
+                        }
+
+                    }
+                    latch.countDown();
+                };
+            };
+            t.start();
+        }
+
+        assertThat(latch.await(60, TimeUnit.SECONDS)).isTrue();
+        assertThat(hasErrors).isFalse();
+
+        redisson.shutdown();
+    }
+
     @Test
     public void testReconnection() {
         Config config = redisson.getConfig();
