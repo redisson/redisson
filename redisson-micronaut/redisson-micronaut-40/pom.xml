@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-micronaut</artifactId>
-        <version>3.40.1-SNAPSHOT</version>
+        <version>3.40.1</version>
         <relativePath>../</relativePath>
     </parent>
 
