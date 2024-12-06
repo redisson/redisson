@@ -15,13 +15,17 @@
  */
 package org.redisson.spring.cache;
 
+import org.redisson.RedissonNode;
 import org.redisson.RedissonObject;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
 import org.redisson.client.RedisException;
+import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.connection.ServiceManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.cache.Cache;
 import org.springframework.cache.support.SimpleValueWrapper;
 
@@ -39,6 +43,8 @@ import java.util.function.Supplier;
  *
  */
 public class RedissonCache implements Cache {
+
+    private static final Logger log = LoggerFactory.getLogger(RedissonCache.class);
 
     private RMapCache<Object, Object> mapCache;
 
@@ -79,39 +85,48 @@ public class RedissonCache implements Cache {
 
     @Override
     public ValueWrapper get(Object key) {
-        Object value;
-        if (mapCache != null && config.getMaxIdleTime() == 0 && config.getMaxSize() == 0) {
-            value = mapCache.getWithTTLOnly(key);
-        } else {
-            value = map.get(key);
-        }
+        Object value = null;
+        try {
+            if (mapCache != null && config.getMaxIdleTime() == 0 && config.getMaxSize() == 0) {
+                value = mapCache.getWithTTLOnly(key);
+            } else {
+                value = map.get(key);
+            }
 
-        if (value == null) {
-            addCacheMiss();
-        } else {
-            addCacheHit();
+            if (value == null) {
+                addCacheMiss();
+            } else {
+                addCacheHit();
+            }
+        } catch (WriteRedisConnectionException  ex) {
+            log.warn("Redis connection issue during 'get' operation for key '{}': {}", key, ex.getMessage(), ex);
         }
         return toValueWrapper(value);
     }
 
+    @Override
     public <T> T get(Object key, Class<T> type) {
-        Object value;
-        if (mapCache != null && config.getMaxIdleTime() == 0 && config.getMaxSize() == 0) {
-            value = mapCache.getWithTTLOnly(key);
-        } else {
-            value = map.get(key);
-        }
+        Object value = null;
+        try {
+            if (mapCache != null && config.getMaxIdleTime() == 0 && config.getMaxSize() == 0) {
+                value = mapCache.getWithTTLOnly(key);
+            } else {
+                value = map.get(key);
+            }
 
-        if (value == null) {
-            addCacheMiss();
-        } else {
-            addCacheHit();
-            if (value.getClass().getName().equals(NullValue.class.getName())) {
-                return null;
+            if (value == null) {
+                addCacheMiss();
+            } else {
+                addCacheHit();
+                if (value.getClass().getName().equals(NullValue.class.getName())) {
+                    return null;
+                }
+                if (type != null && !type.isInstance(value)) {
+                    throw new IllegalStateException("Cached value is not of required type [" + type.getName() + "]: " + value);
+                }
             }
-            if (type != null && !type.isInstance(value)) {
-                throw new IllegalStateException("Cached value is not of required type [" + type.getName() + "]: " + value);
-            }
+        } catch (WriteRedisConnectionException ex) {
+            log.warn("Redis connection issue during 'get' operation for key '{}' and type '{}': {}", key, type != null ? type.getName() : "null", ex.getMessage(), ex);
         }
         return (T) fromStoreValue(value);
     }
