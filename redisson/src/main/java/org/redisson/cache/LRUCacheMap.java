@@ -30,80 +30,38 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class LRUCacheMap<K, V> extends AbstractCacheMap<K, V> {
 
-    static class OrderedSet<V> {
-
-        final Queue<V> queue = new ConcurrentLinkedQueue<>();
-        final Set<V> set = Collections.newSetFromMap(new ConcurrentHashMap<>());
-
-        void add(V element) {
-            if (set.add(element)) {
-                queue.add(element);
-            }
-        }
-
-        boolean remove(V element) {
-            if (set.remove(element)) {
-                queue.remove(element);
-                return true;
-            }
-            return false;
-        }
-
-        V removeFirst() {
-            while (true) {
-                V v = queue.poll();
-                if (v != null) {
-                    if (set.remove(v)) {
-                        return v;
-                    }
-                } else {
-                    return v;
-                }
-            }
-        }
-
-        void clear() {
-            set.clear();
-            queue.clear();
-        }
-
-    }
-
     private final AtomicLong index = new AtomicLong();
-    private final List<OrderedSet<CachedValue<K, V>>> queues = new ArrayList<>();
+    private final List<FastRemovalQueue<CachedValue<K, V>>> queues = new ArrayList<>();
 
     public LRUCacheMap(int size, long timeToLiveInMillis, long maxIdleInMillis) {
         super(size, timeToLiveInMillis, maxIdleInMillis);
 
         for (int i = 0; i < Runtime.getRuntime().availableProcessors()*2; i++) {
-            queues.add(new OrderedSet<>());
+            queues.add(new FastRemovalQueue<>());
         }
     }
 
     @Override
     protected void onValueCreate(CachedValue<K, V> value) {
-        OrderedSet<CachedValue<K, V>> queue = getQueue(value);
+        FastRemovalQueue<CachedValue<K, V>> queue = getQueue(value);
         queue.add(value);
     }
 
-    private OrderedSet<CachedValue<K, V>> getQueue(CachedValue<K, V> value) {
+    private FastRemovalQueue<CachedValue<K, V>> getQueue(CachedValue<K, V> value) {
         return queues.get(Math.abs(value.hashCode() % queues.size()));
     }
 
     @Override
     protected void onValueRemove(CachedValue<K, V> value) {
-        OrderedSet<CachedValue<K, V>> queue = getQueue(value);
+        FastRemovalQueue<CachedValue<K, V>> queue = getQueue(value);
         queue.remove(value);
         super.onValueRemove(value);
     }
 
     @Override
     protected void onValueRead(CachedValue<K, V> value) {
-        OrderedSet<CachedValue<K, V>> queue = getQueue(value);
-        // move value to the tail of the queue
-        if (queue.remove(value)) {
-            queue.add(value);
-        }
+        FastRemovalQueue<CachedValue<K, V>> queue = getQueue(value);
+        queue.moveToTail(value);
     }
 
     @Override
@@ -118,8 +76,8 @@ public class LRUCacheMap<K, V> extends AbstractCacheMap<K, V> {
                 startIndex = queueIndex;
             }
 
-            OrderedSet<CachedValue<K, V>> queue = queues.get(queueIndex);
-            CachedValue<K, V> removedValue = queue.removeFirst();
+            FastRemovalQueue<CachedValue<K, V>> queue = queues.get(queueIndex);
+            CachedValue<K, V> removedValue = queue.poll();
             if (removedValue != null) {
                 if (map.remove(removedValue.getKey(), removedValue)) {
                     super.onValueRemove(removedValue);
@@ -131,7 +89,7 @@ public class LRUCacheMap<K, V> extends AbstractCacheMap<K, V> {
 
     @Override
     public void clear() {
-        for (OrderedSet<CachedValue<K, V>> collection : queues) {
+        for (FastRemovalQueue<CachedValue<K, V>> collection : queues) {
             collection.clear();
         }
         super.clear();
