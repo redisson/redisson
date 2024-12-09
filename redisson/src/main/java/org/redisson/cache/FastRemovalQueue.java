@@ -61,7 +61,7 @@ public final class FastRemovalQueue<E> {
         private Node<E> next;
         private boolean deleted;
 
-        public Node(E value) {
+        Node(E value) {
             this.value = value;
         }
 
@@ -79,7 +79,7 @@ public final class FastRemovalQueue<E> {
         private Node<E> head;
         private Node<E> tail;
 
-        public DoublyLinkedList() {
+        DoublyLinkedList() {
         }
 
         public void clear() {
