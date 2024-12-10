@@ -15,10 +15,6 @@
  */
 package org.redisson.cache;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
-
 /**
  * LRU (least recently used) cache.
  * 
@@ -29,68 +25,41 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class LRUCacheMap<K, V> extends AbstractCacheMap<K, V> {
 
-    private final AtomicLong index = new AtomicLong();
-    private final List<FastRemovalQueue<CachedValue<K, V>>> queues = new ArrayList<>();
+    private final FastRemovalQueue<CachedValue<K, V>> queue = new FastRemovalQueue<>();
 
     public LRUCacheMap(int size, long timeToLiveInMillis, long maxIdleInMillis) {
         super(size, timeToLiveInMillis, maxIdleInMillis);
-
-        for (int i = 0; i < Runtime.getRuntime().availableProcessors()*2; i++) {
-            queues.add(new FastRemovalQueue<>());
-        }
     }
 
     @Override
     protected void onValueCreate(CachedValue<K, V> value) {
-        FastRemovalQueue<CachedValue<K, V>> queue = getQueue(value);
         queue.add(value);
-    }
-
-    private FastRemovalQueue<CachedValue<K, V>> getQueue(CachedValue<K, V> value) {
-        return queues.get(Math.abs(value.hashCode() % queues.size()));
     }
 
     @Override
     protected void onValueRemove(CachedValue<K, V> value) {
-        FastRemovalQueue<CachedValue<K, V>> queue = getQueue(value);
         queue.remove(value);
         super.onValueRemove(value);
     }
 
     @Override
     protected void onValueRead(CachedValue<K, V> value) {
-        FastRemovalQueue<CachedValue<K, V>> queue = getQueue(value);
         queue.moveToTail(value);
     }
 
     @Override
     protected void onMapFull() {
-        int startIndex = -1;
-        while (true) {
-            int queueIndex = (int) Math.abs(index.incrementAndGet() % queues.size());
-            if (queueIndex == startIndex) {
-                return;
-            }
-            if (startIndex == -1) {
-                startIndex = queueIndex;
-            }
-
-            FastRemovalQueue<CachedValue<K, V>> queue = queues.get(queueIndex);
-            CachedValue<K, V> removedValue = queue.poll();
-            if (removedValue != null) {
-                if (map.remove(removedValue.getKey(), removedValue)) {
-                    super.onValueRemove(removedValue);
-                }
-                return;
+        CachedValue<K, V> removedValue = queue.poll();
+        if (removedValue != null) {
+            if (map.remove(removedValue.getKey(), removedValue)) {
+                super.onValueRemove(removedValue);
             }
         }
     }
 
     @Override
     public void clear() {
-        for (FastRemovalQueue<CachedValue<K, V>> collection : queues) {
-            collection.clear();
-        }
+        queue.clear();
         super.clear();
     }
 
