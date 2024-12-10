@@ -11,9 +11,9 @@ public class SpinLockTest {
     public void test() throws InterruptedException {
         SpinLock l = new SpinLock();
         CountDownLatch latch = new CountDownLatch(1);
-        l.execute(() -> {
+        l.executeInterruptibly(() -> {
             try {
-                l.execute(() -> {
+                l.executeInterruptibly(() -> {
                     latch.countDown();
                 });
             } catch (InterruptedException e) {

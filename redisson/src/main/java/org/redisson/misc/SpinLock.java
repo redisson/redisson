@@ -16,6 +16,7 @@
 package org.redisson.misc;
 
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 /**
  *
@@ -29,6 +30,16 @@ public final class SpinLock {
     private final int spinLimit = 7000;
     private int nestedLevel;
 
+    private final boolean reentrant;
+
+    public SpinLock() {
+        this(true);
+    }
+
+    public SpinLock(boolean reentrant) {
+        this.reentrant = reentrant;
+    }
+
     private void lockInterruptibly() throws InterruptedException {
         int spins = 0;
         while (true) {
@@ -36,7 +47,8 @@ public final class SpinLock {
                 throw new InterruptedException();
             }
 
-            if (acquired.get() == Thread.currentThread()) {
+            if (reentrant
+                    && acquired.get() == Thread.currentThread()) {
                 nestedLevel++;
                 return;
             } else if (acquired.get() == null
@@ -60,7 +72,35 @@ public final class SpinLock {
         }
     }
 
-    public void execute(Runnable r) throws InterruptedException {
+    public void execute(Runnable r) {
+        try {
+            lockInterruptibly();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return;
+        }
+        try {
+            r.run();
+        } finally {
+            unlock();
+        }
+    }
+
+    public <T> T execute(Supplier<T> r) {
+        try {
+            lockInterruptibly();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return null;
+        }
+        try {
+            return r.get();
+        } finally {
+            unlock();
+        }
+    }
+
+    public void executeInterruptibly(Runnable r) throws InterruptedException {
         lockInterruptibly();
         try {
             r.run();

@@ -56,6 +56,10 @@ public final class FastRemovalQueue<E> {
         return false;
     }
 
+    public int size() {
+        return index.size();
+    }
+
     public E poll() {
         Node<E> node = list.removeFirst();
         if (node != null) {
@@ -122,7 +126,7 @@ public final class FastRemovalQueue<E> {
         }
 
         public boolean remove(Node<E> node) {
-            return lock.execute(() -> {
+            Boolean r = lock.execute(() -> {
                 if (node.isDeleted()) {
                     return false;
                 }
@@ -131,6 +135,7 @@ public final class FastRemovalQueue<E> {
                 node.setDeleted();
                 return true;
             });
+            return Boolean.TRUE.equals(r);
         }
 
         private void removeNode(Node<E> node) {
@@ -152,6 +157,10 @@ public final class FastRemovalQueue<E> {
 
         public void moveToTail(Node<E> node) {
             lock.execute(() -> {
+                if (node.isDeleted()) {
+                    return;
+                }
+
                 removeNode(node);
 
                 node.prev = null;

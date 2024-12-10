@@ -80,7 +80,7 @@ public class CommandsQueue extends ChannelDuplexHandler {
                 }
             });
 
-            lock.execute(() -> {
+            lock.executeInterruptibly(() -> {
                 try {
                     queue.add(holder);
                     ctx.writeAndFlush(data, holder.getChannelPromise());
