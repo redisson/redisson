@@ -81,7 +81,11 @@ public class PropertiesConvertor {
     }
 
     private static final Set<String> LIST_NODES = new HashSet<>(
-                            Arrays.asList("node-addresses", "nodeaddresses", "slave-addresses", "slaveaddresses", "addresses"));
+            Arrays.asList(
+                    "node-addresses", "nodeaddresses",
+                    "slave-addresses", "slaveaddresses",
+                    "sentinel-addresses", "sentineladdresses",
+                    "addresses"));
 
     private static final Set<String> CLASS_PROPERTIES = new HashSet<>(
             Arrays.asList("codec",
