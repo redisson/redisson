@@ -13,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.cache;
-
-import org.redisson.misc.WrappedLock;
+package org.redisson.misc;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

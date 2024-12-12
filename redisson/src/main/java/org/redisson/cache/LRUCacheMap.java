@@ -15,6 +15,8 @@
  */
 package org.redisson.cache;
 
+import org.redisson.misc.FastRemovalQueue;
+
 /**
  * LRU (least recently used) cache.
  * 

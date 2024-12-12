@@ -1,7 +1,6 @@
 package org.redisson.misc;
 
 import org.junit.jupiter.api.Test;
-import org.redisson.cache.FastRemovalQueue;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
