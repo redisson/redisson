@@ -21,7 +21,7 @@
         <dependency>
             <groupId>org.springframework.data</groupId>
             <artifactId>spring-data-redis</artifactId>
-            <version>3.2.3</version>
+            <version>3.4.1</version>
         </dependency>
 
         <dependency>
