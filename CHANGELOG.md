@@ -3,6 +3,13 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
+### 12-Dec-2024 - 3.40.2 released
+
+Improvement - optimization LRUCacheMap speed by up to 200x  
+
+Fixed - Quarkus config parsing with sentinel nodes (thanks to @blacksails)  
+Fixed - starvation of pub/sub connections may cause a memory leak  
+
 ### 06-Dec-2024 - 3.40.1 released
 
 Improvement - Netty pending tasks amount report in timeout exceptions  
