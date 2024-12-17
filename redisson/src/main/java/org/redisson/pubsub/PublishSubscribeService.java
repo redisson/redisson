@@ -154,6 +154,13 @@ public class PublishSubscribeService {
         return 0;
     }
 
+    public int countAllListeners() {
+        return name2entry.keySet()
+                .stream()
+                .mapToInt(this::countListeners)
+                .sum();
+    }
+
     public boolean hasEntry(ChannelName channelName) {
         return name2entry.containsKey(channelName);
     }
