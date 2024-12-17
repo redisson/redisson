@@ -910,7 +910,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     @Override
     public RFuture<Long> getLeaseTimeAsync(String permitId) {
         byte[] id = ByteBufUtil.decodeHexDump(permitId);
-        CompletionStage<Long> f = commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
+        CompletionStage<Long> f = commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
                 "local expiredIds = redis.call('zrangebyscore', KEYS[2], 0, ARGV[3], 'limit', 0, -1); " +
                         "if #expiredIds > 0 then " +
                             "redis.call('zrem', KEYS[2], unpack(expiredIds)); " +
@@ -926,7 +926,8 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                         "end;" +
                         "return 0;",
                 Arrays.asList(getRawName(), timeoutName, channelName),
-                id, nonExpirableTimeout, System.currentTimeMillis(), getSubscribeService().getPublishCommand()).handle((res, e) -> {
+                id, nonExpirableTimeout, System.currentTimeMillis(), getSubscribeService().getPublishCommand());
+        f = f.handle((res, e) -> {
             if (e != null) {
                 throw new CompletionException(e);
             }
