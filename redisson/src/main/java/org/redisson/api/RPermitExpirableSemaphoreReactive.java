@@ -217,4 +217,13 @@ public interface RPermitExpirableSemaphoreReactive extends RExpirableReactive {
      */
     Mono<Boolean> updateLeaseTime(String permitId, long leaseTime, TimeUnit unit);
     
+    /**
+     * Returns lease time of the permitId
+     *
+     * @param permitId permit id
+     * @return return lease time in millis, use -1 to make it permanent
+     * @throws IllegalArgumentException if permit id doesn't exist or has already been released.
+     */
+    Mono<Long> getLeaseTime(String permitId);
+    
 }

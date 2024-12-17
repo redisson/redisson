@@ -553,4 +553,24 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
         assertThat(released).isEqualTo(0);
         assertThat(s.availablePermits()).isEqualTo(10);
     }
+    
+    @Test
+    public void testGetLeaseTime() throws InterruptedException {
+        RPermitExpirableSemaphore semaphore = redisson.getPermitExpirableSemaphore("test");
+        semaphore.trySetPermits(1);
+        
+        Assertions.assertThrows(RedisException.class, () -> semaphore.getLeaseTime("1234"));
+        
+        String permitId = semaphore.acquire();
+        Assertions.assertEquals(-1, semaphore.getLeaseTime(permitId));
+        
+        semaphore.release(permitId);
+        permitId = semaphore.acquire(1100, TimeUnit.MILLISECONDS);
+        assertThat(permitId).isNotNull();
+        Thread.sleep(100);
+        assertThat(semaphore.getLeaseTime(permitId)).isLessThanOrEqualTo(1000);
+        Awaitility.await().atMost(Duration.ofMillis(1100)).untilAsserted(() -> {
+            assertThat(semaphore.availablePermits()).isEqualTo(1);
+        });
+    }
 }
