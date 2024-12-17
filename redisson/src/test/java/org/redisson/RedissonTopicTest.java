@@ -408,6 +408,23 @@ public class RedissonTopicTest extends RedisDockerTest {
         latch.await();
         topic.removeAllListeners();
     }
+
+    @Test
+    public void testLambdaOptimizationByJVM() {
+        RTopic topic = redisson.getTopic("topic");
+
+        try (var pool = Executors.newFixedThreadPool(2)) {
+            for (int i = 0; i < 50; i++) {
+                pool.submit(() -> {
+                    MessageListener<Object> listener = (a, b) -> {};
+                    int listenerId = topic.addListener(Object.class, listener);
+                    topic.removeListener(listenerId);
+                });
+            }
+        }
+
+        assertThat(topic.countListeners()).isZero();
+    }
     
     @Test
     public void testInnerPublish() throws InterruptedException {

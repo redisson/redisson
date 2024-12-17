@@ -42,32 +42,6 @@ public class PubSubMessageListener<V> implements RedisPubSubListener<Object> {
         this.name = name;
     }
 
-    @Override
-    @SuppressWarnings("AvoidInlineConditionals")
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((listener == null) ? 0 : listener.hashCode());
-        return result;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        PubSubMessageListener other = (PubSubMessageListener) obj;
-        if (listener == null) {
-            if (other.listener != null)
-                return false;
-        } else if (!listener.equals(other.listener))
-            return false;
-        return true;
-    }
-    
     public MessageListener<V> getListener() {
         return listener;
     }

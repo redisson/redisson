@@ -19,7 +19,6 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import org.redisson.PubSubMessageListener;
 import org.redisson.PubSubPatternMessageListener;
-import org.redisson.PubSubStatusListener;
 import org.redisson.client.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
@@ -137,25 +136,7 @@ public class PubSubConnectionEntry {
     }
 
     private boolean hasId(RedisPubSubListener<?> listener, int listenerId) {
-        if (System.identityHashCode(listener) == listenerId) {
-            return true;
-        }
-
-        if (listener instanceof PubSubStatusListener) {
-            PubSubStatusListener pubSubStatusListener = (PubSubStatusListener) listener;
-            if (System.identityHashCode(pubSubStatusListener.getListener()) == listenerId) {
-                return true;
-            }
-        }
-
-        if (listener instanceof PubSubMessageListener) {
-            PubSubMessageListener pubSubStatusListener = (PubSubMessageListener) listener;
-            if (System.identityHashCode(pubSubStatusListener.getListener()) == listenerId) {
-                return true;
-            }
-        }
-
-        return false;
+        return System.identityHashCode(listener) == listenerId;
     }
 
     public void removeListener(ChannelName channelName, RedisPubSubListener<?> listener) {
