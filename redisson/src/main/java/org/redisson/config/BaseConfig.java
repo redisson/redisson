@@ -702,7 +702,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * Defines SSL verification mode.
+     * Defines SSL verification mode, which prevents man-in-the-middle attacks.
      *
      * <p>
      * Default is <code>SslVerificationMode.STRICT</code>
