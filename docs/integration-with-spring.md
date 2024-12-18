@@ -442,6 +442,7 @@ Compatible with Spring versions below.
 
 Spring Cloud Stream | Spring Cloud | Spring Boot
 -- | -- | --
+4.2.x | 2024.0.x | 3.4.x
 4.1.x | 2023.0.x | 3.0.x - 3.3.x
 4.0.x | 2022.0.x | 3.0.x - 3.3.x
 3.2.x | 2021.0.x | 2.6.x, 2.7.x (Starting with 2021.0.3 of Spring Cloud)

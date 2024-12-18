@@ -451,11 +451,17 @@ Default value: `null`
 Defines array of allowed SSL protocols.  
 Example values: `TLSv1.3`, `TLSv1.2`, `TLSv1.1`, `TLSv1`
 
-**sslEnableEndpointIdentification**
-Default value: `true`
+**sslVerificationMode**
 
-Enables SSL endpoint identification during handshaking, which prevents
-man-in-the-middle attacks.
+Default value: `STRICT`
+
+Defines SSL verification mode, which prevents man-in-the-middle attacks.
+
+Available values:  
+
+* `NONE` - No SSL certificate verification  
+* `CA_ONLY` - Validate the certificate chain but ignore hostname verification  
+* `STRICT` - Complete validation of the certificate chain and hostname  
 
 **sslProvider**
 Default value: `JDK`
@@ -783,11 +789,18 @@ Default value: `null`
 Defines array of allowed SSL protocols.  
 Example values: `TLSv1.3`, `TLSv1.2`, `TLSv1.1`, `TLSv1`
 
-**sslEnableEndpointIdentification**
-Default value: `true`
+**sslVerificationMode**
 
-Enables SSL endpoint identification during handshaking, which prevents man-in-the-middle attacks.
+Default value: `STRICT`
 
+Defines SSL verification mode, which prevents man-in-the-middle attacks.
+
+Available values:  
+
+* `NONE` - No SSL certificate verification  
+* `CA_ONLY` - Validate the certificate chain but ignore hostname verification  
+* `STRICT` - Complete validation of the certificate chain and hostname  
+
 **sslProvider**
 Default value: `JDK`
 
@@ -1006,11 +1019,18 @@ Default value: `null`
 Defines array of allowed SSL protocols.  
 Example values: `TLSv1.3`, `TLSv1.2`, `TLSv1.1`, `TLSv1`
 
-**sslEnableEndpointIdentification**
-Default value: `true`
+**sslVerificationMode**
 
-Enables SSL endpoint identification during handshaking, which prevents man-in-the-middle attacks.
+Default value: `STRICT`
 
+Defines SSL verification mode, which prevents man-in-the-middle attacks.
+
+Available values:  
+
+* `NONE` - No SSL certificate verification  
+* `CA_ONLY` - Validate the certificate chain but ignore hostname verification  
+* `STRICT` - Complete validation of the certificate chain and hostname  
+
 **sslProvider**
 Default value: `JDK`
 
@@ -1311,11 +1331,18 @@ Default value: `null`
 Defines array of allowed SSL protocols.  
 Example values: `TLSv1.3`, `TLSv1.2`, `TLSv1.1`, `TLSv1`
 
-**sslEnableEndpointIdentification**
-Default value: `true`
+**sslVerificationMode**
 
-Enables SSL endpoint identification during handshaking, which prevents man-in-the-middle attacks.
+Default value: `STRICT`
 
+Defines SSL verification mode, which prevents man-in-the-middle attacks.
+
+Available values:  
+
+* `NONE` - No SSL certificate verification  
+* `CA_ONLY` - Validate the certificate chain but ignore hostname verification  
+* `STRICT` - Complete validation of the certificate chain and hostname  
+
 **sslProvider**
 Default value: `JDK`
 
@@ -1607,11 +1634,18 @@ Default value: `null`
 Defines array of allowed SSL protocols.  
 Example values: `TLSv1.3`, `TLSv1.2`, `TLSv1.1`, `TLSv1`
 
-**sslEnableEndpointIdentification**
-Default value: `true`
+**sslVerificationMode**
 
-Enables SSL endpoint identification during handshaking, which prevents man-in-the-middle attacks.
+Default value: `STRICT`
 
+Defines SSL verification mode, which prevents man-in-the-middle attacks.
+
+Available values:  
+
+* `NONE` - No SSL certificate verification  
+* `CA_ONLY` - Validate the certificate chain but ignore hostname verification  
+* `STRICT` - Complete validation of the certificate chain and hostname  
+
 **sslProvider**
 Default value: `JDK`
 
@@ -1882,11 +1916,18 @@ Default value: `null`
 Defines array of allowed SSL protocols.  
 Example values: `TLSv1.3`, `TLSv1.2`, `TLSv1.1`, `TLSv1`
 
-**sslEnableEndpointIdentification**
-Default value: `true`
+**sslVerificationMode**
 
-Enables SSL endpoint identification during handshaking, which prevents man-in-the-middle attacks.
+Default value: `STRICT`
 
+Defines SSL verification mode, which prevents man-in-the-middle attacks.
+
+Available values:  
+
+* `NONE` - No SSL certificate verification  
+* `CA_ONLY` - Validate the certificate chain but ignore hostname verification  
+* `STRICT` - Complete validation of the certificate chain and hostname  
+
 **sslProvider**
 Default value: `JDK`
 
@@ -2207,11 +2248,18 @@ Default value: `null`
 Defines array of allowed SSL protocols.  
 Example values: `TLSv1.3`, `TLSv1.2`, `TLSv1.1`, `TLSv1`
 
-**sslEnableEndpointIdentification**
-Default value: `true`
+**sslVerificationMode**
 
-Enables SSL endpoint identification during handshaking, which prevents man-in-the-middle attacks.
+Default value: `STRICT`
 
+Defines SSL verification mode, which prevents man-in-the-middle attacks.
+
+Available values:  
+
+* `NONE` - No SSL certificate verification  
+* `CA_ONLY` - Validate the certificate chain but ignore hostname verification  
+* `STRICT` - Complete validation of the certificate chain and hostname  
+
 **sslProvider**
 Default value: `JDK`
 
@@ -2542,11 +2590,18 @@ Default value: `null`
 Defines array of allowed SSL protocols.  
 Example values: `TLSv1.3`, `TLSv1.2`, `TLSv1.1`, `TLSv1`
 
-**sslEnableEndpointIdentification**
-Default value: `true`
+**sslVerificationMode**
 
-Enables SSL endpoint identification during handshaking, which prevents man-in-the-middle attacks.
+Default value: `STRICT`
 
+Defines SSL verification mode, which prevents man-in-the-middle attacks.
+
+Available values:  
+
+* `NONE` - No SSL certificate verification  
+* `CA_ONLY` - Validate the certificate chain but ignore hostname verification  
+* `STRICT` - Complete validation of the certificate chain and hostname  
+
 **sslProvider**
 Default value: `JDK`
 

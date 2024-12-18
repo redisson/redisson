@@ -73,9 +73,16 @@ Although each Topic instance is cluster-compatible, it can be connected only to 
 
 * CPU overload on a single node. 
 * Overload of network or data traffic to a single node.
-* Interruptions during failover.
+* Full interruption of the message flow during failover.
 
-Topic partitioning allows to resolve the issues above by connecting to each node and sharding messages between them. Partitions amount is defined through the global [topicSlots](../configuration.md) setting or per instance through `ClusteredTopicOptions.slots()` setting, which overrides the global setting.
+Topic partitioning addresses these challenges by enabling connections to all nodes in cluster and distributing messages effectively. It brings the following benefits:
+
+* Increases throughput of the topic.
+* Minimizes interruptions during failover.
+* Lowers CPU and network load on Valkey or Redis nodes.
+* Scales the message flow to multiple Valkey or Redis nodes.
+
+Partitions amount is defined through the global [topicSlots](../configuration.md) setting or per instance through `ClusteredTopicOptions.slots()` setting, which overrides the global setting.
 
 Slots definition per instance:
 ```java
@@ -233,7 +240,14 @@ Although each ShardedTopic instance is cluster-compatible, it can be connected o
 * Overload of network or data traffic to a single node.
 * Interruptions during failover.
 
-ShardedTopic partitioning allows to resolve the issues above by connecting to each node and sharding messages between them. Partitions amount is defined through the global [topicSlots](../configuration.md) setting or per instance through `ClusteredTopicOptions.slots()` setting, which overrides the global setting.
+ShardedTopic partitioning addresses these challenges by enabling connections to all nodes in cluster and distributing messages effectively. It brings the following benefits:
+
+* Increases throughput of the topic.
+* Minimizes interruptions during failover.
+* Lowers CPU and network load on Valkey or Redis nodes.
+* Scales the message flow to multiple Valkey or Redis nodes.
+
+Partitions amount is defined through the global [topicSlots](../configuration.md) setting or per instance through `ClusteredTopicOptions.slots()` setting, which overrides the global setting.
 
 Slots definition per instance:
 ```java
@@ -338,7 +352,14 @@ Although each ReliableTopic instance is cluster-compatible, it can be connected 
 * Overload of network or data traffic to a single node.
 * Interruptions during failover.
 
-ReliableTopic partitioning allows to resolve the issues above by connecting to each node and sharding messages between them. Partitions amount is defined through the global [topicSlots](../configuration.md) setting or per instance through `ClusteredTopicOptions.slots()` setting, which overrides the global setting.
+ReliableTopic partitioning addresses these challenges by enabling connections to all nodes in cluster and distributing messages effectively. It brings the following benefits:
+
+* Increases throughput of the topic.
+* Minimizes interruptions during failover.
+* Lowers CPU and network load on Valkey or Redis nodes.
+* Scales the message flow to multiple Valkey or Redis nodes.
+
+Partitions amount is defined through the global [topicSlots](../configuration.md) setting or per instance through `ClusteredTopicOptions.slots()` setting, which overrides the global setting.
 
 Slots definition per instance:
 ```java

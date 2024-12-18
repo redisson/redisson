@@ -417,7 +417,7 @@ The following metrics are available:
 * `redisson.license.active-instances` - A Gauge of the number of active Redisson PRO clients  
 * `redisson.executor-pool-size` - A Gauge of the number of executor threads pool size  
 * `redisson.netty-pool-size` - A Gauge of the number of netty threads pool size  
-* `netty.eventexecutor.tasks.pending` - Number of pending tasks in Netty event executor
+* `redisson.netty-tasks-pending` - A Gauge of pending tasks in Netty event executor
 
 **Metrics per Redis or Valkey node**
 
