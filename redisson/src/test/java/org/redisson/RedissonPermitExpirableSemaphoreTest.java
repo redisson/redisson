@@ -1,6 +1,5 @@
 package org.redisson;
 
-import net.bytebuddy.utility.RandomString;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
