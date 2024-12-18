@@ -906,6 +906,45 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     public boolean updateLeaseTime(String permitId, long leaseTime, TimeUnit unit) {
         return get(updateLeaseTimeAsync(permitId, leaseTime, unit));
     }
+    
+    @Override
+    public RFuture<Long> getLeaseTimeAsync(String permitId) {
+        byte[] id = ByteBufUtil.decodeHexDump(permitId);
+        CompletionStage<Long> f = commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
+                "local expiredIds = redis.call('zrangebyscore', KEYS[2], 0, ARGV[3], 'limit', 0, -1); " +
+                        "if #expiredIds > 0 then " +
+                            "redis.call('zrem', KEYS[2], unpack(expiredIds)); " +
+                            "local value = redis.call('incrby', KEYS[1], #expiredIds); " +
+                            "if tonumber(value) > 0 then " +
+                                "redis.call(ARGV[4], KEYS[3], value); " +
+                            "end;" +
+                        "end; " +
+                        
+                        "local value = redis.call('zscore', KEYS[2], ARGV[1]); " +
+                        "if (value ~= false) then " +
+                            "return tonumber(value) == tonumber(ARGV[2]) and -1 or tonumber(value) - tonumber(ARGV[3]);" +
+                        "end;" +
+                        "return 0;",
+                Arrays.asList(getRawName(), timeoutName, channelName),
+                id, nonExpirableTimeout, System.currentTimeMillis(), getSubscribeService().getPublishCommand());
+        f = f.handle((res, e) -> {
+            if (e != null) {
+                throw new CompletionException(e);
+            }
+            
+            if (res == 0) {
+                throw new CompletionException(new IllegalArgumentException("Permit with id " + permitId + " has already been released or doesn't exist"));
+            }
+            return res;
+            
+        });
+        return new CompletableFutureWrapper<>(f);
+    }
+    
+    @Override
+    public long getLeaseTime(String permitId) {
+        return get(getLeaseTimeAsync(permitId));
+    }
 
     private static boolean hasOnlyNearestTimeout(List<String> ids) {
         return ids.size() == 1 && ids.get(0).startsWith(":");

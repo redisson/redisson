@@ -227,4 +227,13 @@ public interface RPermitExpirableSemaphore extends RExpirable, RPermitExpirableS
      */
     boolean updateLeaseTime(String permitId, long leaseTime, TimeUnit unit);
     
+    /**
+     * Returns lease time of the permitId
+     *
+     * @param permitId permit id
+     * @return lease time in millis or -1 if no lease time specified
+     * @throws IllegalArgumentException if permit id doesn't exist or has already been released.
+     */
+    long getLeaseTime(String permitId);
+    
 }
