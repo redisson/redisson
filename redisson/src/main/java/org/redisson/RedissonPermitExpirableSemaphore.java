@@ -736,12 +736,10 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 throw new CompletionException(e);
             }
 
-//            if (res == permitsIds.size()) {
-//                return null;
-//            }
-            if (res != 0) {
+            if (res == permitsIds.size()) {
                 return null;
             }
+
             throw new CompletionException(new IllegalArgumentException("Permits with ids " + permitsIds + " have already been released or don't exist"));
         });
         return new CompletableFutureWrapper<>(f);
