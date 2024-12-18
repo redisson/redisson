@@ -657,6 +657,12 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         }
 
         return commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
+                "for i = 4, #ARGV, 1 do " +
+                            "local expire = redis.call('zscore', KEYS[3], ARGV[i]);" +
+                            "if expire== false or tonumber(expire) <= tonumber(ARGV[2]) then " +
+                                "return 0;" +
+                            "end; " +
+                       "end; " +
                 "local expiredIds = redis.call('zrangebyscore', KEYS[3], 0, ARGV[2], 'limit', 0, -1); " +
                 "if #expiredIds > 0 then " +
                     "redis.call('zrem', KEYS[3], unpack(expiredIds)); " +
@@ -670,9 +676,6 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                     "table.insert(keys, ARGV[i]); " +
                 "end; " +
                 "local removed = redis.call('zrem', KEYS[3], unpack(keys)); " +
-                "if tonumber(removed) == 0 then " +
-                    "return 0;" +
-                "end; " +
                 "redis.call('incrby', KEYS[1], removed); " +
                 "redis.call(ARGV[3], KEYS[2], removed); " +
                 "return removed;",
@@ -733,7 +736,10 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 throw new CompletionException(e);
             }
 
-            if (res == permitsIds.size()) {
+//            if (res == permitsIds.size()) {
+//                return null;
+//            }
+            if (res != 0) {
                 return null;
             }
             throw new CompletionException(new IllegalArgumentException("Permits with ids " + permitsIds + " have already been released or don't exist"));
@@ -931,7 +937,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             if (e != null) {
                 throw new CompletionException(e);
             }
-            
+
             if (res == 0) {
                 throw new CompletionException(new IllegalArgumentException("Permit with id " + permitId + " has already been released or doesn't exist"));
             }
