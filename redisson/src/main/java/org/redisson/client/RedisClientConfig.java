@@ -63,7 +63,7 @@ public class RedisClientConfig {
     private boolean tcpNoDelay;
     
     private String sslHostname;
-    private boolean sslEnableEndpointIdentification = true;
+    private SslVerificationMode sslVerificationMode = SslVerificationMode.STRICT;
     private SslProvider sslProvider = SslProvider.JDK;
     private String sslKeystoreType;
     private URL sslTruststore;
@@ -108,7 +108,6 @@ public class RedisClientConfig {
         this.pingConnectionInterval = config.pingConnectionInterval;
         this.keepAlive = config.keepAlive;
         this.tcpNoDelay = config.tcpNoDelay;
-        this.sslEnableEndpointIdentification = config.sslEnableEndpointIdentification;
         this.sslProvider = config.sslProvider;
         this.sslTruststore = config.sslTruststore;
         this.sslTruststorePassword = config.sslTruststorePassword;
@@ -131,6 +130,7 @@ public class RedisClientConfig {
         this.tcpUserTimeout = config.tcpUserTimeout;
         this.protocol = config.protocol;
         this.sslKeystoreType = config.sslKeystoreType;
+        this.sslVerificationMode = config.sslVerificationMode;
     }
 
     public NettyHook getNettyHook() {
@@ -260,12 +260,18 @@ public class RedisClientConfig {
         this.sslTruststorePassword = sslTruststorePassword;
         return this;
     }
-    
+
+    @Deprecated
     public boolean isSslEnableEndpointIdentification() {
-        return sslEnableEndpointIdentification;
+        return this.sslVerificationMode == SslVerificationMode.STRICT;
     }
+    @Deprecated
     public RedisClientConfig setSslEnableEndpointIdentification(boolean enableEndpointIdentification) {
-        this.sslEnableEndpointIdentification = enableEndpointIdentification;
+        if (enableEndpointIdentification) {
+            this.sslVerificationMode = SslVerificationMode.STRICT;
+        } else {
+            this.sslVerificationMode = SslVerificationMode.NONE;
+        }
         return this;
     }
 
@@ -475,6 +481,14 @@ public class RedisClientConfig {
 
     public RedisClientConfig setSslKeystoreType(String sslKeystoreType) {
         this.sslKeystoreType = sslKeystoreType;
+        return this;
+    }
+
+    public SslVerificationMode getSslVerificationMode() {
+        return sslVerificationMode;
+    }
+    public RedisClientConfig setSslVerificationMode(SslVerificationMode sslVerificationMode) {
+        this.sslVerificationMode = sslVerificationMode;
         return this;
     }
 }

@@ -317,6 +317,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         c.setCredentialsResolver(cfg.getCredentialsResolver());
         c.setCommandMapper(cfg.getCommandMapper());
         c.setSubscriptionTimeout(cfg.getSubscriptionTimeout());
+        c.setSslVerificationMode(cfg.getSslVerificationMode());
 
         return c;
     }
@@ -355,7 +356,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 .setConnectTimeout(timeout)
                 .setCommandTimeout(commandTimeout)
                 .setSslHostname(sslHostname)
-                .setSslEnableEndpointIdentification(config.isSslEnableEndpointIdentification())
+                .setSslVerificationMode(config.getSslVerificationMode())
                 .setSslProvider(config.getSslProvider())
                 .setSslKeystoreType(config.getSslKeystoreType())
                 .setSslTruststore(config.getSslTruststore())

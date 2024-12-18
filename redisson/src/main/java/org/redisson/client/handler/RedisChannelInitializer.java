@@ -31,6 +31,7 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnection;
 import org.redisson.config.SslProvider;
+import org.redisson.config.SslVerificationMode;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLEngine;
@@ -172,8 +173,11 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
         }
         
         SSLParameters sslParams = new SSLParameters();
-        if (config.isSslEnableEndpointIdentification()) {
+
+        if (config.getSslVerificationMode() == SslVerificationMode.STRICT) {
             sslParams.setEndpointIdentificationAlgorithm("HTTPS");
+        } else if (config.getSslVerificationMode() == SslVerificationMode.CA_ONLY) {
+            sslParams.setEndpointIdentificationAlgorithm("");
         } else {
             if (config.getSslTruststore() == null) {
                 sslContextBuilder.trustManager(InsecureTrustManagerFactory.INSTANCE);
@@ -185,7 +189,7 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
         if (hostname == null || NetUtil.createByteArrayFromIpAddressString(hostname) != null) {
             hostname = config.getAddress().getHost();
         }
-        
+
         SSLEngine sslEngine = sslContext.newEngine(ch.alloc(), hostname, config.getAddress().getPort());
         sslEngine.setSSLParameters(sslParams);
         

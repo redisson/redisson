@@ -82,7 +82,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
      */
     private String clientName;
 
-    private boolean sslEnableEndpointIdentification = true;
+    private SslVerificationMode sslVerificationMode = SslVerificationMode.STRICT;
 
     private String sslKeystoreType;
 
@@ -156,6 +156,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
         setNameMapper(config.getNameMapper());
         setCredentialsResolver(config.getCredentialsResolver());
         setCommandMapper(config.getCommandMapper());
+        setSslVerificationMode(config.getSslVerificationMode());
         setSubscriptionTimeout(config.getSubscriptionTimeout());
     }
 
@@ -337,20 +338,24 @@ public class BaseConfig<T extends BaseConfig<T>> {
         return idleConnectionTimeout;
     }
 
+    @Deprecated
     public boolean isSslEnableEndpointIdentification() {
-        return sslEnableEndpointIdentification;
+        return this.sslVerificationMode == SslVerificationMode.STRICT;
     }
 
     /**
-     * Enables SSL endpoint identification.
-     * <p>
-     * Default is <code>true</code>
+     * Use {@link #setSslVerificationMode(SslVerificationMode)} instead.
      * 
      * @param sslEnableEndpointIdentification boolean value
      * @return config
      */
+    @Deprecated
     public T setSslEnableEndpointIdentification(boolean sslEnableEndpointIdentification) {
-        this.sslEnableEndpointIdentification = sslEnableEndpointIdentification;
+        if (sslEnableEndpointIdentification) {
+            this.sslVerificationMode = SslVerificationMode.STRICT;
+        } else {
+            this.sslVerificationMode = SslVerificationMode.NONE;
+        }
         return (T) this;
     }
 
@@ -637,9 +642,9 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * @param sslCiphers ciphers
      * @return config
      */
-    public BaseConfig<T> setSslCiphers(String[] sslCiphers) {
+    public T setSslCiphers(String[] sslCiphers) {
         this.sslCiphers = sslCiphers;
-        return this;
+        return (T) this;
     }
 
     public TrustManagerFactory getSslTrustManagerFactory() {
@@ -654,9 +659,9 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * @param trustManagerFactory trust manager value
      * @return config
      */
-    public BaseConfig<T> setSslTrustManagerFactory(TrustManagerFactory trustManagerFactory) {
+    public T setSslTrustManagerFactory(TrustManagerFactory trustManagerFactory) {
         this.sslTrustManagerFactory = trustManagerFactory;
-        return this;
+        return (T) this;
     }
 
     public KeyManagerFactory getSslKeyManagerFactory() {
@@ -687,8 +692,27 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * @param commandMapper Redis command name mapper object
      * @return config
      */
-    public BaseConfig<T> setCommandMapper(CommandMapper commandMapper) {
+    public T setCommandMapper(CommandMapper commandMapper) {
         this.commandMapper = commandMapper;
-        return this;
+        return (T) this;
     }
+
+    public SslVerificationMode getSslVerificationMode() {
+        return sslVerificationMode;
+    }
+
+    /**
+     * Defines SSL verification mode.
+     *
+     * <p>
+     * Default is <code>SslVerificationMode.STRICT</code>
+     *
+     * @param sslVerificationMode
+     * @return
+     */
+    public T setSslVerificationMode(SslVerificationMode sslVerificationMode) {
+        this.sslVerificationMode = sslVerificationMode;
+        return (T) this;
+    }
+
 }
