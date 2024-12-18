@@ -1,5 +1,6 @@
 package org.redisson;
 
+import net.bytebuddy.utility.RandomString;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -576,6 +577,14 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
         List<String> permitsIdsSecondPart = permitsIds.subList(2, 4);
         permitsIdsSecondPart.addAll(permitsIdsFirstPart);
         Assertions.assertThrows(RedisException.class, () -> s.release(permitsIdsSecondPart));
+        assertThat(s.availablePermits()).isEqualTo(4);
+
+        Assertions.assertThrows(RedisException.class, () -> s.release(List.of("1234")));
+        assertThat(s.availablePermits()).isEqualTo(4);
+
+        List<String> permitsIdsThirdPart = permitsIds.subList(4, 6);
+        permitsIdsThirdPart.add("4567");
+        Assertions.assertThrows(RedisException.class, () -> s.release(permitsIdsThirdPart));
         assertThat(s.availablePermits()).isEqualTo(4);
     }
     
