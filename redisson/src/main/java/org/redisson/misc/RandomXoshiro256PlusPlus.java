@@ -46,7 +46,9 @@ public final class RandomXoshiro256PlusPlus extends Random {
     private static final long serialVersionUID = -2837799889588687855L;
 
     public static Random create() {
-        byte[] seed = SecureRandom.getSeed(32);
+        SecureRandom secureRandom = new SecureRandom();
+        byte[] seed = new byte[32];
+        secureRandom.nextBytes(seed);
         ByteBuffer bbw = ByteBuffer.wrap(seed);
         return new RandomXoshiro256PlusPlus(bbw.getLong(), bbw.getLong(), bbw.getLong(), bbw.getLong());
     }
