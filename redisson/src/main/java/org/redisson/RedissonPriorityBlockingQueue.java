@@ -217,7 +217,7 @@ public class RedissonPriorityBlockingQueue<V> extends RedissonPriorityQueue<V> i
             throw new NullPointerException();
         }
 
-        return commandExecutor.evalWriteAsync(getRawName(), codec, new RedisCommand<Object>("EVAL", new ListDrainToDecoder(c)),
+        return commandExecutor.evalWriteNoRetryAsync(getRawName(), codec, new RedisCommand<Object>("EVAL", new ListDrainToDecoder(c)),
               "local vals = redis.call('lrange', KEYS[1], 0, -1); " +
               "redis.call('ltrim', KEYS[1], -1, 0); " +
               "return vals", Collections.<Object>singletonList(getRawName()));
@@ -242,7 +242,7 @@ public class RedissonPriorityBlockingQueue<V> extends RedissonPriorityQueue<V> i
         if (c == null) {
             throw new NullPointerException();
         }
-        return commandExecutor.evalWriteAsync(getRawName(), codec, new RedisCommand<Object>("EVAL", new ListDrainToDecoder(c)),
+        return commandExecutor.evalWriteNoRetryAsync(getRawName(), codec, new RedisCommand<Object>("EVAL", new ListDrainToDecoder(c)),
                 "local elemNum = math.min(ARGV[1], redis.call('llen', KEYS[1])) - 1;" +
                         "local vals = redis.call('lrange', KEYS[1], 0, elemNum); " +
                         "redis.call('ltrim', KEYS[1], elemNum + 1, -1); " +
