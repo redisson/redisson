@@ -90,5 +90,12 @@ public class TaskParameters implements Serializable {
     public void setRequestId(String requestId) {
         this.requestId = requestId;
     }
-    
+
+    @Override
+    public String toString() {
+        return "TaskParameters{" +
+                "className='" + className + '\'' +
+                ", requestId='" + requestId + '\'' +
+                '}';
+    }
 }

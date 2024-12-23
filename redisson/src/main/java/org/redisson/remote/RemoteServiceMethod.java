@@ -40,5 +40,12 @@ public class RemoteServiceMethod {
     public Method getMethod() {
         return method;
     }
-    
+
+    @Override
+    public String toString() {
+        return "RemoteServiceMethod{" +
+                "bean=" + bean +
+                ", method=" + method +
+                '}';
+    }
 }
