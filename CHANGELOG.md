@@ -3,6 +3,16 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
+### 23-Dec-2024 - 3.41.0 released
+
+Feature - `RPermitExpirableSemaphore.getLeaseTime()` method added (thanks to @seakider)  
+Feature - `sslVerificationMode` setting added  
+
+Fixed - `RPermitExpirableSemaphore.release(java.util.List)` shouldn't release permits if one of them doesn't exist (thanks to @seakider)  
+Fixed - `RTopic` listeners leak if they are defined as a lambda  
+Fixed - `RPriorityBlockingQueue.draintTo()` method shouldn't resend command on response timeout  
+Fixed - `RandomXoshiro256PlusPlus` might block Redisson initialization  
+
 ### 12-Dec-2024 - 3.40.2 released
 
 Improvement - optimization LRUCacheMap speed by up to 200x  
