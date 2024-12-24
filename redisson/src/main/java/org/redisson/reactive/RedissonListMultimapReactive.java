@@ -45,7 +45,7 @@ public class RedissonListMultimapReactive<K, V> {
 
     public RListReactive<V> get(K key) {
         RList<V> list = ((RListMultimap<K, V>) instance).get(key);
-        return ReactiveProxyBuilder.create(commandExecutor, instance, 
+        return ReactiveProxyBuilder.create(commandExecutor, list,
                 new RedissonListReactive<V>(instance.getCodec(), commandExecutor, list.getName()), RListReactive.class);
     }
 
