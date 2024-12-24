@@ -31,7 +31,7 @@ import org.redisson.client.protocol.convertor.DoubleReplayConvertor;
 import org.redisson.client.protocol.convertor.VoidReplayConvertor;
 import org.redisson.client.protocol.decoder.*;
 import org.redisson.command.BatchPromise;
-import org.redisson.command.CommandAsyncService;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.misc.CompletableFutureWrapper;
@@ -64,14 +64,14 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private boolean closed;
     protected final Redisson redisson;
-    
-    CommandAsyncService executorService;
+
+    CommandAsyncExecutor executorService;
     private RedissonSubscription subscription;
     
     public RedissonConnection(RedissonClient redisson) {
         super();
         this.redisson = (Redisson) redisson;
-        executorService = (CommandAsyncService) this.redisson.getCommandExecutor();
+        executorService = this.redisson.getCommandExecutor();
     }
 
     @Override
@@ -1502,7 +1502,7 @@ public class RedissonConnection extends AbstractRedisConnection {
     }
 
     protected void resetConnection() {
-        executorService = (CommandAsyncService) this.redisson.getCommandExecutor();
+        executorService = this.redisson.getCommandExecutor();
         index = -1;
         indexToRemove.clear();
     }

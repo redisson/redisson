@@ -15,7 +15,35 @@
  */
 package org.redisson.spring.data.connection;
 
-import static org.redisson.client.protocol.RedisCommands.LRANGE;
+import org.redisson.Redisson;
+import org.redisson.api.BatchOptions;
+import org.redisson.api.BatchOptions.ExecutionMode;
+import org.redisson.api.BatchResult;
+import org.redisson.api.RFuture;
+import org.redisson.api.RedissonClient;
+import org.redisson.client.RedisClient;
+import org.redisson.client.codec.*;
+import org.redisson.client.protocol.RedisCommand;
+import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.RedisStrictCommand;
+import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
+import org.redisson.client.protocol.convertor.DoubleReplayConvertor;
+import org.redisson.client.protocol.convertor.VoidReplayConvertor;
+import org.redisson.client.protocol.decoder.*;
+import org.redisson.command.BatchPromise;
+import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.command.CommandBatchService;
+import org.redisson.connection.MasterSlaveEntry;
+import org.redisson.misc.CompletableFutureWrapper;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
+import org.springframework.data.redis.RedisSystemException;
+import org.springframework.data.redis.connection.*;
+import org.springframework.data.redis.core.*;
+import org.springframework.data.redis.core.types.Expiration;
+import org.springframework.data.redis.core.types.RedisClientInfo;
+import org.springframework.util.Assert;
+import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -25,51 +53,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-import org.redisson.Redisson;
-import org.redisson.api.BatchOptions;
-import org.redisson.api.BatchOptions.ExecutionMode;
-import org.redisson.api.BatchResult;
-import org.redisson.api.RFuture;
-import org.redisson.api.RedissonClient;
-import org.redisson.client.RedisClient;
-import org.redisson.client.codec.ByteArrayCodec;
-import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.DoubleCodec;
-import org.redisson.client.codec.LongCodec;
-import org.redisson.client.codec.StringCodec;
-import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.RedisStrictCommand;
-import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
-import org.redisson.client.protocol.convertor.DoubleReplayConvertor;
-import org.redisson.client.protocol.convertor.VoidReplayConvertor;
-import org.redisson.client.protocol.decoder.*;
-import org.redisson.command.BatchPromise;
-import org.redisson.command.CommandAsyncService;
-import org.redisson.command.CommandBatchService;
-import org.redisson.connection.MasterSlaveEntry;
-import org.redisson.misc.CompletableFutureWrapper;
-import org.springframework.dao.DataAccessException;
-import org.springframework.dao.InvalidDataAccessApiUsageException;
-import org.springframework.data.redis.RedisSystemException;
-import org.springframework.data.redis.connection.AbstractRedisConnection;
-import org.springframework.data.redis.connection.DataType;
-import org.springframework.data.redis.connection.MessageListener;
-import org.springframework.data.redis.connection.RedisNode;
-import org.springframework.data.redis.connection.RedisPipelineException;
-import org.springframework.data.redis.connection.RedisSubscribedConnectionException;
-import org.springframework.data.redis.connection.ReturnType;
-import org.springframework.data.redis.connection.SortParameters;
-import org.springframework.data.redis.connection.Subscription;
-import org.springframework.data.redis.core.Cursor;
-import org.springframework.data.redis.core.KeyBoundCursor;
-import org.springframework.data.redis.core.ScanCursor;
-import org.springframework.data.redis.core.ScanIteration;
-import org.springframework.data.redis.core.ScanOptions;
-import org.springframework.data.redis.core.types.Expiration;
-import org.springframework.data.redis.core.types.RedisClientInfo;
-import org.springframework.util.Assert;
-import org.springframework.util.ReflectionUtils;
+import static org.redisson.client.protocol.RedisCommands.LRANGE;
 
 /**
  * Redisson connection
@@ -82,13 +66,13 @@ public class RedissonConnection extends AbstractRedisConnection {
     private boolean closed;
     protected final Redisson redisson;
     
-    CommandAsyncService executorService;
+    CommandAsyncExecutor executorService;
     private RedissonSubscription subscription;
     
     public RedissonConnection(RedissonClient redisson) {
         super();
         this.redisson = (Redisson) redisson;
-        executorService = (CommandAsyncService) this.redisson.getCommandExecutor();
+        executorService = this.redisson.getCommandExecutor();
     }
 
     @Override
@@ -1545,7 +1529,7 @@ public class RedissonConnection extends AbstractRedisConnection {
     }
 
     protected void resetConnection() {
-        executorService = (CommandAsyncService) this.redisson.getCommandExecutor();
+        executorService = this.redisson.getCommandExecutor();
         index = -1;
         indexToRemove.clear();
     }
