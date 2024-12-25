@@ -38,7 +38,7 @@ public class RedissonListMultimapRx<K, V> {
 
     public RListRx<V> get(K key) {
         RedissonList<V> list = (RedissonList<V>) instance.get(key);
-        return RxProxyBuilder.create(commandExecutor, instance, 
+        return RxProxyBuilder.create(commandExecutor, list,
                 new RedissonListRx<V>(list), RListRx.class);
     }
 
