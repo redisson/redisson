@@ -16,7 +16,6 @@
 package org.redisson.executor;
 
 import org.redisson.api.RScheduledFuture;
-import org.redisson.misc.CompletableFutureWrapper;
 
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
@@ -27,16 +26,14 @@ import java.util.concurrent.TimeUnit;
  *
  * @param <V> value type
  */
-public class RedissonScheduledFuture<V> extends CompletableFutureWrapper<V> implements RScheduledFuture<V> {
+public class RedissonScheduledFuture<V> extends RedissonExecutorFuture<V> implements RScheduledFuture<V> {
 
     private final long scheduledExecutionTime;
-    private final String taskId;
     private final RemotePromise<V> promise;
 
     public RedissonScheduledFuture(RemotePromise<V> promise, long scheduledExecutionTime) {
         super(promise);
         this.scheduledExecutionTime = scheduledExecutionTime;
-        this.taskId = promise.getRequestId();
         this.promise = promise;
     }
 
@@ -66,9 +63,4 @@ public class RedissonScheduledFuture<V> extends CompletableFutureWrapper<V> impl
         return unit.convert(scheduledExecutionTime - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
     }
     
-    @Override
-    public String getTaskId() {
-        return taskId;
-    }
-
 }
