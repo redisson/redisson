@@ -50,7 +50,6 @@ public class ProxyBuilder {
                 Method instanceMethod = getMethod(method, instance, implementation);
 
                 if (instanceMethod.getName().endsWith("Async")) {
-                    instanceMethod.setAccessible(true);
                     Callable<RFuture<Object>> callable = () -> (RFuture<Object>) instanceMethod.invoke(instance, args);
                     return commandExecutor.execute(callable, method);
                 }
