@@ -18,7 +18,7 @@ package org.redisson.executor;
 import org.redisson.api.RExecutorFuture;
 
 import java.lang.ref.ReferenceQueue;
-import java.lang.ref.WeakReference;
+import java.lang.ref.SoftReference;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -26,7 +26,7 @@ import java.util.concurrent.CompletableFuture;
  * @author Nikita Koksharov
  *
  */
-public class RedissonExecutorFutureReference extends WeakReference<RExecutorFuture<?>> {
+public class RedissonExecutorFutureReference extends SoftReference<RExecutorFuture<?>> {
 
     private final CompletableFuture<?> promise;
     private final String requestId;
