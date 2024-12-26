@@ -5,18 +5,19 @@ import mockit.Mock;
 import mockit.MockUp;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.*;
-import org.redisson.RedisDockerTest;
-import org.redisson.Redisson;
-import org.redisson.RedissonNode;
+import org.redisson.*;
 import org.redisson.api.*;
 import org.redisson.api.annotation.RInject;
 import org.redisson.api.executor.TaskFinishedListener;
 import org.redisson.api.executor.TaskStartedListener;
+import org.redisson.api.listener.MessageListener;
+import org.redisson.client.codec.LongCodec;
 import org.redisson.config.Config;
 import org.redisson.config.RedissonNodeConfig;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
@@ -668,6 +669,29 @@ public class RedissonExecutorServiceTest extends RedisDockerTest {
                 }
             });
         });
+    }
+
+    @Test
+    public void testTaskDelay4TaskService() throws IllegalAccessException, NoSuchFieldException, InterruptedException {
+        RScheduledExecutorService test = redisson.getExecutorService("test");
+        Field field = RedissonExecutorService.class.getDeclaredField("schedulerChannelName");
+        field.setAccessible(true);
+        String topicName = (String) field.get(test);
+        RedissonTopic topic = RedissonTopic.createRaw(LongCodec.INSTANCE, ((Redisson) redisson).getCommandExecutor(), topicName);
+
+        AtomicInteger counter = new AtomicInteger();
+
+        topic.addListener(Long.class, new MessageListener<Long>() {
+            @Override
+            public void onMessage(CharSequence channel, Long msg) {
+                counter.incrementAndGet();
+            }
+        });
+
+        test.submitAsync(new DelayedTask(10000, "test-counter"));
+        Thread.sleep(2000);
+
+        assertThat(counter.get()).isGreaterThan(0);
     }
 
 }
