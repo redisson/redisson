@@ -32,7 +32,7 @@ import org.redisson.command.CommandAsyncExecutor;
  *
  * @param <V> value
  */
-public class RedissonHyperLogLog<V> extends RedissonExpirable implements RHyperLogLog<V> {
+public final class RedissonHyperLogLog<V> extends RedissonExpirable implements RHyperLogLog<V> {
 
     public RedissonHyperLogLog(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);

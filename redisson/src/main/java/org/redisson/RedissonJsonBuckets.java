@@ -30,12 +30,12 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class RedissonJsonBuckets implements RJsonBuckets {
+public final class RedissonJsonBuckets implements RJsonBuckets {
     
     protected final JsonCodec codec;
     protected final CommandAsyncExecutor commandExecutor;
     
-    public RedissonJsonBuckets(JsonCodec codec, CommandAsyncExecutor commandExecutor) {
+    RedissonJsonBuckets(JsonCodec codec, CommandAsyncExecutor commandExecutor) {
         this.codec = codec;
         this.commandExecutor = commandExecutor;
     }

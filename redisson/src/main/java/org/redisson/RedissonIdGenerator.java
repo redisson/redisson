@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Nikita Koksharov
  *
  */
-public class RedissonIdGenerator extends RedissonExpirable implements RIdGenerator {
+public final class RedissonIdGenerator extends RedissonExpirable implements RIdGenerator {
 
     final Logger log = LoggerFactory.getLogger(getClass());
 

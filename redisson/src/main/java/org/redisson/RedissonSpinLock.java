@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit;
  *
  * @author Danila Varatyntsev
  */
-public class RedissonSpinLock extends RedissonBaseLock {
+public final class RedissonSpinLock extends RedissonBaseLock {
 
     protected long internalLockLeaseTime;
 
@@ -48,7 +48,7 @@ public class RedissonSpinLock extends RedissonBaseLock {
 
     final CommandAsyncExecutor commandExecutor;
 
-    public RedissonSpinLock(CommandAsyncExecutor commandExecutor, String name,
+    RedissonSpinLock(CommandAsyncExecutor commandExecutor, String name,
                             LockOptions.BackOff backOff) {
         super(commandExecutor, name);
         this.commandExecutor = commandExecutor;

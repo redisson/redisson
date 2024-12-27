@@ -37,9 +37,9 @@ import java.util.concurrent.TimeUnit;
  * @author Nikita Koksharov
  *
  */
-public class RedissonRateLimiter extends RedissonExpirable implements RRateLimiter {
+public final class RedissonRateLimiter extends RedissonExpirable implements RRateLimiter {
 
-    public RedissonRateLimiter(CommandAsyncExecutor commandExecutor, String name) {
+    RedissonRateLimiter(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
     }
 

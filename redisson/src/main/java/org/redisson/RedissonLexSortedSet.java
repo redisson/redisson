@@ -36,7 +36,7 @@ import org.redisson.misc.CompletableFutureWrapper;
  * @author Nikita Koksharov
  *
  */
-public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implements RLexSortedSet {
+public final class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implements RLexSortedSet {
 
     public RedissonLexSortedSet(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(StringCodec.INSTANCE, commandExecutor, name, redisson);

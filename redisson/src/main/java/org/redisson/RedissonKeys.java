@@ -60,7 +60,7 @@ import java.util.stream.StreamSupport;
  * @author Nikita Koksharov
  *
  */
-public class RedissonKeys implements RKeys {
+public final class RedissonKeys implements RKeys {
 
     private final CommandAsyncExecutor commandExecutor;
 
