@@ -1,5 +1,5 @@
 ## Topic
-Java implementation of Redis or Valkey based [RTopic](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RTopic.html) object implements Publish / Subscribe mechanism. It allows to subscribe on events published with multiple instances of `RTopic` object with the same name. 
+Java [RTopic](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RTopic.html) object implements Publish / Subscribe mechanism based on [Redis Pub/Sub](https://redis.io/docs/latest/develop/interact/pubsub/) or [Valkey Pub/Sub](https://valkey.io/topics/pubsub/). It allows to subscribe on events published with multiple instances of `RTopic` object with the same name. 
 
 Listeners are re-subscribed automatically after reconnection or failover. All messages sent during absence of connection are lost. Use [Reliable Topic](#reliable-topic) for reliable delivery.
 
@@ -164,7 +164,7 @@ Single<Integer> listenerSingle = patternTopic.addListener(Message.class, new Pat
 ```
 
 ## Sharded topic
-Java implementation of Redis or Valkey based [RShardedTopic](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RShardedTopic.html) object implements Sharded Publish / Subscribe mechanism. It allows to subscribe on events published with multiple instances of `RShardedTopic` object with the same name. Subscribe/publish operations are executed only on Redis or Valkey node in Cluster which is bounded to specific topic name. Published messages via `RShardedTopic` aren't broadcasted across all nodes as for `RTopic` object. Which reduces network bandwidth and Redis or Valkey load.
+Java implementation of Redis or Valkey based [RShardedTopic](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RShardedTopic.html) object implements Sharded Publish / Subscribe mechanism. It allows to subscribe on events published with multiple instances of `RShardedTopic` object with the same name. Subscribe/publish operations are executed only on Redis or Valkey node in Cluster which is bounded to specific topic name. Published messages via `RShardedTopic` aren't broadcasted across all nodes as for `RTopic` object. Which reduces network bandwidth usage between Redis and Valkey nodes and their CPU load, as well as their CPU load.
 
 Listeners are re-subscribed automatically after reconnection to a server or failover. All messages sent during absence of connection are lost. Use [Reliable Topic](#reliable-topic) for reliable delivery.
 
@@ -238,7 +238,7 @@ Although each ShardedTopic instance is cluster-compatible, it can be connected o
 
 * CPU overload on a single node. 
 * Overload of network or data traffic to a single node.
-* Interruptions during failover.
+* Full interruption of the message flow during failover.
 
 ShardedTopic partitioning addresses these challenges by enabling connections to all nodes in cluster and distributing messages effectively. It brings the following benefits:
 
@@ -350,7 +350,7 @@ Although each ReliableTopic instance is cluster-compatible, it can be connected 
 
 * CPU overload on a single node. 
 * Overload of network or data traffic to a single node.
-* Interruptions during failover.
+* Full interruption of the message flow during failover.
 
 ReliableTopic partitioning addresses these challenges by enabling connections to all nodes in cluster and distributing messages effectively. It brings the following benefits:
 

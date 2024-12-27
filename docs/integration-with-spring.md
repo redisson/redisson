@@ -2,7 +2,7 @@
 
 Integrates Redisson with Spring Boot library. Depends on [Spring Data Redis](#spring-data-redis) module.
 
-Supports Spring Boot 1.3.x - 3.3.x
+Supports Spring Boot 1.3.x - 3.4.x
 
 ### Usage
 
@@ -38,7 +38,7 @@ For Gradle, you can downgrade to `redisson-spring-data-27` this way:
 
 ```groovy
 implementation ("org.redisson:redisson-spring-boot-starter:xVERSIONx") {
-   exclude group: 'org.redisson', module: 'redisson-spring-data-33'
+   exclude group: 'org.redisson', module: 'redisson-spring-data-34'
 }
 implementation "org.redisson:redisson-spring-data-27:xVERSIONx"
 ```
@@ -234,12 +234,12 @@ Ensure you have Spring Session library in your classpath, add it if necessary:
 <dependency>
     <groupId>org.springframework.session</groupId>
     <artifactId>spring-session-core</artifactId>
-    <version>3.2.1</version>
+    <version>3.4.1</version>
 </dependency>
 
 <dependency>
    <groupId>org.redisson</groupId>
-   <artifactId>redisson-spring-data-33</artifactId>
+   <artifactId>redisson-spring-data-34</artifactId>
    <version>xVERSIONx</version>
 </dependency>
 ```
@@ -247,9 +247,9 @@ Ensure you have Spring Session library in your classpath, add it if necessary:
 **Gradle**
 
 ```gradle
-compile 'org.springframework.session:spring-session-core:3.2.1'
+compile 'org.springframework.session:spring-session-core:3.4.1'
 
-compile 'org.redisson:redisson-spring-data-33:xVERSIONx'
+compile 'org.redisson:redisson-spring-data-34:xVERSIONx'
 ```  
 
 ### Spring Http Session configuration
@@ -308,20 +308,20 @@ Maven:
 ```
 Gradle:
 ```gradle
-compile 'org.springframework.session:spring-session-data-redis:3.2.1'  
+compile 'org.springframework.session:spring-session-data-redis:3.4.1'  
 ```
 2. Add Redisson Spring Data Redis library in classpath:  
 Maven:
 ```xml
 <dependency>
    <groupId>org.redisson</groupId>
-   <artifactId>redisson-spring-data-33</artifactId>
+   <artifactId>redisson-spring-data-34</artifactId>
    <version>xVERSIONx</version>
 </dependency>
 ```
 Gradle:
 ```gradle
-compile 'org.redisson:redisson-spring-data-33:xVERSIONx'  
+compile 'org.redisson:redisson-spring-data-34:xVERSIONx'  
 ``` 
 3. Define follow properties in spring-boot settings  
 ```
@@ -528,6 +528,8 @@ Maven:
     <artifactId>redisson-spring-data-32</artifactId>
     <!-- for Spring Data Redis v.3.3.x -->
     <artifactId>redisson-spring-data-33</artifactId>
+    <!-- for Spring Data Redis v.3.4.x -->
+    <artifactId>redisson-spring-data-34</artifactId>
     <version>xVERSIONx</version>
 </dependency>
 ```
@@ -563,6 +565,8 @@ compile 'org.redisson:redisson-spring-data-31:xVERSIONx'
 compile 'org.redisson:redisson-spring-data-32:xVERSIONx'
 // for Spring Data Redis v.3.3.x
 compile 'org.redisson:redisson-spring-data-33:xVERSIONx'
+// for Spring Data Redis v.3.4.x
+compile 'org.redisson:redisson-spring-data-34:xVERSIONx'
 ```
 2. Register `RedissonConnectionFactory` in Spring context:  
 ```java

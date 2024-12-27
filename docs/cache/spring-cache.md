@@ -193,7 +193,7 @@ public static class Application {
         LocalCachedMapOptions options = LocalCachedMapOptions.defaults()
             .evictionPolicy(EvictionPolicy.LFU)
             .timeToLive(48, TimeUnit.MINUTES)
-            .maxIdle(24, TimeUnit.MINUTES);
+            .maxIdle(24, TimeUnit.MINUTES)
             .cacheSize(1000);
  
         // create "testMap" Redis or Valkey cache with ttl = 24 minutes and maxIdleTime = 12 minutes
