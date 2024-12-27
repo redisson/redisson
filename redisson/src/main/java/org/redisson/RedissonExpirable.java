@@ -36,12 +36,12 @@ import org.redisson.command.CommandAsyncExecutor;
  */
 abstract class RedissonExpirable extends RedissonObject implements RExpirable {
 
-    RedissonExpirable(CommandAsyncExecutor connectionManager, String name) {
-        super(connectionManager, name);
+    RedissonExpirable(CommandAsyncExecutor commandAsyncExecutor, String name) {
+        super(commandAsyncExecutor, name);
     }
 
-    RedissonExpirable(Codec codec, CommandAsyncExecutor connectionManager, String name) {
-        super(codec, connectionManager, name);
+    RedissonExpirable(Codec codec, CommandAsyncExecutor commandAsyncExecutor, String name) {
+        super(codec, commandAsyncExecutor, name);
     }
 
     @Override
