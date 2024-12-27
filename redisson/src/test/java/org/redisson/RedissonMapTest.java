@@ -1,11 +1,16 @@
 package org.redisson;
 
 import org.assertj.core.api.Assertions;
+import org.awaitility.Awaitility;
+import org.awaitility.Durations;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.MapOptions;
 import org.redisson.api.MapOptions.WriteMode;
 import org.redisson.api.RMap;
+import org.redisson.api.map.MapLoader;
+import org.redisson.api.map.MapWriter;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.LongCodec;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -15,6 +20,60 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonMapTest extends BaseMapTest {
+
+    @Test
+    public void testAddAndGetMapWriter() {
+        Map<Long, Long> storage = new HashMap<>();
+        storage.put(1L, 1L);
+        storage.put(2L, 2L);
+        storage.put(3L, 3L);
+
+        RMap<Long, Long> map = getWriteBehindAsyncTestMap("test", storage);
+
+        map.addAndGet(1L, 10L);
+        Awaitility.waitAtMost(Durations.TWO_SECONDS).until(() -> storage.get(1L).equals(10L));
+    }
+
+    protected <K, V> MapWriter<K, V> createMapWriter(Map<K, V> map) {
+        return new MapWriter<K, V>() {
+
+            @Override
+            public void write(Map<K, V> values) {
+                map.putAll(values);
+                System.out.println("map " + map);
+            }
+
+            @Override
+            public void delete(Collection<K> keys) {
+                for (K key : keys) {
+                    map.remove(key);
+                }
+                System.out.println("delete " + keys + " map " + map);
+            }
+
+        };
+    }
+
+    protected <K, V> MapLoader<K, V> createMapLoader(Map<K, V> map) {
+        return new MapLoader<K, V>() {
+            @Override
+            public V load(K key) {
+                return map.get(key);
+            }
+
+            @Override
+            public Iterable<K> loadAllKeys() {
+                return map.keySet();
+            }
+        };
+    }
+
+    protected <K, V> RMap<K, V> getWriteBehindTestMap2(String name, Map<K, V> map) {
+        MapOptions<K, V> options = MapOptions.<K, V>defaults()
+                .writer(createMapWriter(map))
+                .writeMode(WriteMode.WRITE_BEHIND);
+        return redisson.getMap(name, LongCodec.INSTANCE, options);
+    }
 
         @Override
     protected <K, V> RMap<K, V> getMap(String name) {

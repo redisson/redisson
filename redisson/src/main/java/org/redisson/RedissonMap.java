@@ -1442,12 +1442,9 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             return future;
         }
 
-        return mapWriterFuture(future, new MapWriterTask.Add() {
-            @Override
-            public Map<K, V> getMap() {
-                return Collections.singletonMap(key, commandExecutor.getNow(future.toCompletableFuture()));
-            }
-        });
+        CompletionStage<V> f = future.thenCompose(res ->
+                                        mapWriterFuture(future, new MapWriterTask.Add(key, res)));
+        return new CompletableFutureWrapper<>(f);
     }
 
     protected RFuture<V> addAndGetOperationAsync(K key, Number value) {
