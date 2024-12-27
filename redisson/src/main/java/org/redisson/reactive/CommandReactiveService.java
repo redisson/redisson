@@ -38,7 +38,7 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
         super(executor, trackChanges);
     }
 
-    public CommandReactiveService(ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder) {
+    CommandReactiveService(ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder) {
         super(connectionManager, objectBuilder, RedissonObjectBuilder.ReferenceType.REACTIVE);
     }
 

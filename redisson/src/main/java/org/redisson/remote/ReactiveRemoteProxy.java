@@ -42,7 +42,7 @@ public class ReactiveRemoteProxy extends AsyncRemoteProxy {
         if (commandExecutor instanceof CommandReactiveExecutor) {
             return commandExecutor;
         }
-        return new CommandReactiveService(commandExecutor.getConnectionManager(), commandExecutor.getObjectBuilder());
+        return CommandReactiveExecutor.create(commandExecutor.getConnectionManager(), commandExecutor.getObjectBuilder());
     }
 
     @Override

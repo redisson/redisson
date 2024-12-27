@@ -41,7 +41,7 @@ import java.util.List;
  * @author Nikita Koksharov
  *
  */
-public class RedissonReactive implements RedissonReactiveClient {
+public final class RedissonReactive implements RedissonReactiveClient {
 
     protected final WriteBehindService writeBehindService;
     protected final EvictionScheduler evictionScheduler;
@@ -55,7 +55,7 @@ public class RedissonReactive implements RedissonReactiveClient {
         if (connectionManager.getServiceManager().getCfg().isReferenceEnabled()) {
             objectBuilder = new RedissonObjectBuilder(this);
         }
-        commandExecutor = new CommandReactiveService(connectionManager, objectBuilder);
+        commandExecutor = CommandReactiveExecutor.create(connectionManager, objectBuilder);
         this.evictionScheduler = evictionScheduler;
         this.writeBehindService = writeBehindService;
     }
