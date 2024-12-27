@@ -251,7 +251,7 @@ public class TasksRunnerService implements RemoteExecutorService {
                     + "local v = redis.call('zrange', KEYS[2], 0, 0); "
                     // if new task added to queue head then publish its startTime 
                     // to all scheduler workers 
-                    + "if v[1] == ARGV[2] then "
+                    + "if v[1] == scheduledName then "
                         + "redis.call('publish', KEYS[3], startTime); "
                     + "end;"
                     + "return retryInterval; "
