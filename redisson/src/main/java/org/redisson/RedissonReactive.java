@@ -43,13 +43,13 @@ import java.util.List;
  */
 public final class RedissonReactive implements RedissonReactiveClient {
 
-    protected final WriteBehindService writeBehindService;
-    protected final EvictionScheduler evictionScheduler;
-    protected final CommandReactiveExecutor commandExecutor;
-    protected final ConnectionManager connectionManager;
+    private final WriteBehindService writeBehindService;
+    private final EvictionScheduler evictionScheduler;
+    private final CommandReactiveExecutor commandExecutor;
+    private final ConnectionManager connectionManager;
 
-    protected RedissonReactive(ConnectionManager connectionManager, EvictionScheduler evictionScheduler,
-                               WriteBehindService writeBehindService) {
+    RedissonReactive(ConnectionManager connectionManager, EvictionScheduler evictionScheduler,
+                     WriteBehindService writeBehindService) {
         this.connectionManager = connectionManager;
         RedissonObjectBuilder objectBuilder = null;
         if (connectionManager.getServiceManager().getCfg().isReferenceEnabled()) {
