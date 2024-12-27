@@ -69,7 +69,7 @@ public class CommandReactiveBatchService extends CommandReactiveService implemen
     }
     
     @Override
-    public <V, R> RFuture<R> async(boolean readOnlyMode, NodeSource nodeSource,
+    protected <V, R> RFuture<R> async(boolean readOnlyMode, NodeSource nodeSource,
                                         Codec codec, RedisCommand<V> command, Object[] params, boolean ignoreRedirect, boolean noRetry) {
         return batchService.async(readOnlyMode, nodeSource, codec, command, params, ignoreRedirect, noRetry);
     }

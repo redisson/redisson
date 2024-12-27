@@ -133,9 +133,6 @@ public interface CommandAsyncExecutor {
 
     <T, R> RFuture<R> readRandomAsync(RedisClient client, Codec codec, RedisCommand<T> command, Object... params);
 
-    <V, R> RFuture<R> async(boolean readOnlyMode, NodeSource source, Codec codec,
-                            RedisCommand<V> command, Object[] params, boolean ignoreRedirect, boolean noRetry);
-
     <V> RFuture<V> pollFromAnyAsync(String name, Codec codec, RedisCommand<?> command, long secondsTimeout, String... queueNames);
 
     ByteBuf encode(Codec codec, Object value);
