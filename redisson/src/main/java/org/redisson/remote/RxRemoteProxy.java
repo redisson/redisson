@@ -45,7 +45,7 @@ public class RxRemoteProxy extends AsyncRemoteProxy {
         if (commandExecutor instanceof CommandRxExecutor) {
             return commandExecutor;
         }
-        return new CommandRxService(commandExecutor.getConnectionManager(), commandExecutor.getObjectBuilder());
+        return CommandRxExecutor.create(commandExecutor.getConnectionManager(), commandExecutor.getObjectBuilder());
     }
 
     @Override

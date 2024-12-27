@@ -42,7 +42,7 @@ public class CommandRxBatchService extends CommandRxService implements BatchServ
 
     private final CommandBatchService batchService;
 
-    public CommandRxBatchService(ConnectionManager connectionManager, CommandAsyncExecutor executor, BatchOptions options) {
+    CommandRxBatchService(ConnectionManager connectionManager, CommandAsyncExecutor executor, BatchOptions options) {
         super(connectionManager, executor.getObjectBuilder());
         batchService = new CommandBatchService(executor, options, RedissonObjectBuilder.ReferenceType.RXJAVA);
     }

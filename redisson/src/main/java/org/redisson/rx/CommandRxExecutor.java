@@ -19,6 +19,8 @@ import io.reactivex.rxjava3.core.Flowable;
 import org.redisson.api.RFuture;
 import org.redisson.api.options.ObjectParams;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.connection.ConnectionManager;
+import org.redisson.liveobject.core.RedissonObjectBuilder;
 
 import java.util.concurrent.Callable;
 
@@ -33,5 +35,9 @@ public interface CommandRxExecutor extends CommandAsyncExecutor {
 
     @Override
     CommandRxExecutor copy(ObjectParams objectParams);
+
+    static CommandRxExecutor create(ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder) {
+        return new CommandRxService(connectionManager, objectBuilder);
+    }
 
 }

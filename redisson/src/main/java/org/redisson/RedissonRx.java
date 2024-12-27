@@ -39,7 +39,7 @@ import java.util.Collection;
  * @author Nikita Koksharov
  *
  */
-public class RedissonRx implements RedissonRxClient {
+public final class RedissonRx implements RedissonRxClient {
 
     protected final WriteBehindService writeBehindService;
     protected final EvictionScheduler evictionScheduler;
@@ -52,7 +52,7 @@ public class RedissonRx implements RedissonRxClient {
         if (connectionManager.getServiceManager().getCfg().isReferenceEnabled()) {
             objectBuilder = new RedissonObjectBuilder(this);
         }
-        commandExecutor = new CommandRxService(connectionManager, objectBuilder);
+        commandExecutor = CommandRxExecutor.create(connectionManager, objectBuilder);
         this.evictionScheduler = evictionScheduler;
         this.writeBehindService = writeBehindService;
     }

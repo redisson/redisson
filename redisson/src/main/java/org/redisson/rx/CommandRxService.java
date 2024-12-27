@@ -39,7 +39,7 @@ public class CommandRxService extends CommandAsyncService implements CommandRxEx
         super(executor, trackChanges);
     }
 
-    public CommandRxService(ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder) {
+    CommandRxService(ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder) {
         super(connectionManager, objectBuilder, RedissonObjectBuilder.ReferenceType.RXJAVA);
     }
 
