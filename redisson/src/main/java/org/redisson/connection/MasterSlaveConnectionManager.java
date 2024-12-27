@@ -20,7 +20,6 @@ import org.redisson.api.NodeType;
 import org.redisson.client.*;
 import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.command.CommandAsyncService;
 import org.redisson.config.*;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.misc.RedisURI;

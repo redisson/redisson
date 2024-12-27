@@ -24,7 +24,6 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.executor.RemotePromise;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.rx.CommandRxExecutor;
-import org.redisson.rx.CommandRxService;
 
 import java.util.Arrays;
 import java.util.List;

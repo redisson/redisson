@@ -26,7 +26,6 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
-import org.redisson.connection.NodeSource;
 import org.redisson.connection.ServiceManager;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
 

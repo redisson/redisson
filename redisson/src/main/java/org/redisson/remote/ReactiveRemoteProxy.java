@@ -20,7 +20,6 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.executor.RemotePromise;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.reactive.CommandReactiveExecutor;
-import org.redisson.reactive.CommandReactiveService;
 import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
