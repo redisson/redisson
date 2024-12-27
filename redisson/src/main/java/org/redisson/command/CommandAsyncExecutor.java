@@ -48,7 +48,7 @@ public interface CommandAsyncExecutor {
     CommandAsyncExecutor copy(boolean trackChanges);
 
     RedissonObjectBuilder getObjectBuilder();
-    
+
     ConnectionManager getConnectionManager();
 
     ServiceManager getServiceManager();
@@ -62,7 +62,7 @@ public interface CommandAsyncExecutor {
     <V> V get(RFuture<V> future);
 
     <V> V get(CompletableFuture<V> future);
-    
+
     <V> V getInterrupted(RFuture<V> future) throws InterruptedException;
 
     <V> V getInterrupted(CompletableFuture<V> future) throws InterruptedException;
@@ -70,7 +70,7 @@ public interface CommandAsyncExecutor {
     <T, R> RFuture<R> writeAsync(RedisClient client, Codec codec, RedisCommand<T> command, Object... params);
 
     <T, R> RFuture<R> writeAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object... params);
-    
+
     <T, R> RFuture<R> writeAsync(byte[] key, Codec codec, RedisCommand<T> command, Object... params);
 
     <T, R> RFuture<R> writeAsync(ByteBuf key, Codec codec, RedisCommand<T> command, Object... params);
@@ -167,5 +167,10 @@ public interface CommandAsyncExecutor {
     boolean isTrackChanges();
 
     CommandBatchService createCommandBatchService(BatchOptions options);
+
+    static CommandAsyncExecutor create(ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder,
+                                       RedissonObjectBuilder.ReferenceType referenceType) {
+        return new CommandAsyncService(connectionManager, objectBuilder, referenceType);
+    }
 
 }

@@ -568,6 +568,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public CommandAsyncExecutor createCommandExecutor(RedissonObjectBuilder objectBuilder, RedissonObjectBuilder.ReferenceType referenceType) {
-        return new CommandAsyncService(this, objectBuilder, referenceType);
+        return CommandAsyncExecutor.create(this, objectBuilder, referenceType);
     }
 }

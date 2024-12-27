@@ -124,7 +124,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         this.trackChanges = false;
     }
 
-    public CommandAsyncService(ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder,
+    protected CommandAsyncService(ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder,
                                RedissonObjectBuilder.ReferenceType referenceType) {
         this.connectionManager = connectionManager;
         this.objectBuilder = objectBuilder;
