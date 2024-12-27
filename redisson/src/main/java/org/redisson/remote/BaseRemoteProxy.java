@@ -201,7 +201,7 @@ public abstract class BaseRemoteProxy {
                 List<Result> list = entry.getResponses().get(key);
                 if (list == null) {
                     pollResponse();
-                    return null;
+                    return entry;
                 }
 
                 Result res = list.remove(0);

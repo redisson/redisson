@@ -17,6 +17,7 @@ import reactor.core.publisher.Mono;
 import java.io.IOException;
 import java.io.NotSerializableException;
 import java.io.Serializable;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -918,5 +919,19 @@ public class RedissonRemoteServiceTest extends RedisDockerTest {
 
         r1.shutdown();
         r2.shutdown();
+    }
+    
+    @Test
+    public void testDelayMethod() throws InterruptedException {
+        RedissonClient client = createInstance();
+        RRemoteService r1 = client.getRemoteService();
+        r1.register(RemoteInterface.class, new RemoteImpl());
+        
+        RemoteInvocationOptions options = RemoteInvocationOptions.defaults().noAck().expectResultWithin(1, TimeUnit.SECONDS);
+        Assertions.assertThrows(RemoteServiceTimeoutException.class, () -> r1.get(RemoteInterface.class, options).timeoutMethod());
+        
+        RFuture<Void> future = r1.get(RemoteInterfaceAsync.class, options).timeoutMethod();
+        Thread.sleep(3000);
+        assertThat(future.isDone()).isEqualTo(true);
     }
 }
