@@ -260,7 +260,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
                                   + "local v = redis.call('zrange', KEYS[2], 0, 0); "
                                   // if new task added to queue head then publish its startTime 
                                   // to all scheduler workers 
-                                  + "if v[1] == expiredTaskIds[i] then "
+                                  + "if v[1] == scheduledName then "
                                       + "redis.call('publish', KEYS[3], startTime); "
                                   + "end;"
                                     
