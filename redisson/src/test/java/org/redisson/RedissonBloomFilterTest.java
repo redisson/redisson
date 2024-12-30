@@ -111,14 +111,6 @@ public class RedissonBloomFilterTest extends RedisDockerTest {
     }
 
     @Test
-    public void testNotInitializedOnContains() {
-        Assertions.assertThrows(RedisException.class, () -> {
-            RBloomFilter<String> filter = redisson.getBloomFilter("filter");
-            filter.contains("32");
-        });
-    }
-
-    @Test
     public void testNotInitializedOnAdd() {
         Assertions.assertThrows(RedisException.class, () -> {
             RBloomFilter<String> filter = redisson.getBloomFilter("filter");
@@ -193,5 +185,18 @@ public class RedissonBloomFilterTest extends RedisDockerTest {
         RBloomFilter<String> newFilter = redisson.getBloomFilter("new_filter");
         assertThat(newFilter.count()).isEqualTo(1);
         assertThat(newFilter.contains("123")).isTrue();
+    }
+
+    @Test
+    public void testContainsException() {
+        RBloomFilter<String> f1 = redisson.getBloomFilter("filter");
+        assertThat(f1.contains("1")).isFalse();
+        f1.tryInit(100, 0.03);
+
+        RBloomFilter<String> f2 = redisson.getBloomFilter("filter");
+        f2.delete();
+        f2.tryInit(200, 0.03);
+
+        assertThat(f1.contains("1")).isFalse();
     }
 }

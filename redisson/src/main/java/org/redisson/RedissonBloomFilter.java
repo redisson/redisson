@@ -171,12 +171,20 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
 
     @Override
     public RFuture<Long> containsAsync(Collection<T> objects) {
-        CompletionStage<Void> future = CompletableFuture.completedFuture(null);
+        CompletionStage<Long> f = CompletableFuture.completedFuture(null);
         if (size == 0) {
-            future = readConfigAsync();
+            f = readConfigAsync().handle((r, e) -> {
+                if (e instanceof IllegalArgumentException) {
+                    return 0L;
+                }
+                return null;
+            });
         }
 
-        CompletionStage<Long> f = future.thenCompose(r -> {
+        f = f.thenCompose(r -> {
+                if (r != null) {
+                    return CompletableFuture.completedFuture(r);
+                }
                 List<Long> allIndexes = index(objects);
 
                 List<Object> params = new ArrayList<>();
@@ -188,7 +196,9 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
                 return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
                           "local size = redis.call('hget', KEYS[1], 'size');" +
                                 "local hashIterations = redis.call('hget', KEYS[1], 'hashIterations');" +
-                                "assert(size == ARGV[1] and hashIterations == ARGV[2], 'Bloom filter config has been changed')" +
+                                "if size ~= ARGV[1] or hashIterations ~= ARGV[2] then " +
+                                    "return 0;" +
+                                "end;" +
 
                                 "local k = 0;" +
                                 "local c = 0;" +
