@@ -116,7 +116,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
             if (e != null) {
                 if (entry.getNodeType() == NodeType.SLAVE) {
                     FailedNodeDetector detector = entry.getClient().getConfig().getFailedNodeDetector();
-                    detector.onConnectFailed();
+                    detector.onConnectFailed(e);
                     if (detector.isNodeFailed()) {
                         log.error("Redis node {} has been marked as failed according to the detection logic defined in {}",
                                         entry.getClient().getAddr(), detector);

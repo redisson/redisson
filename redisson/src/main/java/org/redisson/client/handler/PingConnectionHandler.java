@@ -98,7 +98,7 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
 
                     log.debug("channel: {} closed due to PING response timeout set in {} ms", ctx.channel(), config.getPingConnectionInterval());
                     ctx.channel().close();
-                    connection.getRedisClient().getConfig().getFailedNodeDetector().onPingFailed();
+                    connection.getRedisClient().getConfig().getFailedNodeDetector().onPingFailed(cause);
                 } else {
                     connection.getRedisClient().getConfig().getFailedNodeDetector().onPingSuccessful();
                     sendPing(ctx);

@@ -66,6 +66,10 @@ public class FailedCommandsDetector implements FailedNodeDetector {
     }
 
     @Override
+    public void onConnectFailed(Throwable cause) {
+    }
+
+    @Override
     public void onConnectSuccessful() {
     }
 
@@ -79,6 +83,10 @@ public class FailedCommandsDetector implements FailedNodeDetector {
 
     @Override
     public void onPingFailed() {
+    }
+
+    @Override
+    public void onPingFailed(Throwable cause) {
     }
 
     @Override

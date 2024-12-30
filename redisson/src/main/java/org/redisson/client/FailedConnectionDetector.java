@@ -51,6 +51,10 @@ public class FailedConnectionDetector implements FailedNodeDetector {
 
     @Override
     public void onConnectFailed() {
+    }
+
+    @Override
+    public void onConnectFailed(Throwable cause) {
         firstFailTime.compareAndSet(0, System.currentTimeMillis());
     }
 
@@ -70,6 +74,10 @@ public class FailedConnectionDetector implements FailedNodeDetector {
 
     @Override
     public void onPingFailed() {
+    }
+
+    @Override
+    public void onPingFailed(Throwable cause) {
         firstFailTime.compareAndSet(0, System.currentTimeMillis());
     }
 

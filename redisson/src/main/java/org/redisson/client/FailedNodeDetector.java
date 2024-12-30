@@ -26,11 +26,21 @@ public interface FailedNodeDetector {
 
     void onConnectSuccessful();
 
+    @Deprecated
     void onConnectFailed();
+
+    default void onConnectFailed(Throwable cause) {
+        onConnectFailed();
+    }
 
     void onPingSuccessful();
 
+    @Deprecated
     void onPingFailed();
+
+    default void onPingFailed(Throwable cause) {
+        onPingFailed();
+    }
 
     void onCommandSuccessful();
 
