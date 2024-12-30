@@ -191,10 +191,8 @@ public class PublishSubscribeService {
 
         MasterSlaveEntry entry = getEntry(channelName);
         if (entry == null) {
-            RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node for name: " + channelName + " hasn't been discovered yet. Check cluster slots coverage using CLUSTER NODES command. Increase value of retryAttempts and/or retryInterval settings.");
-            CompletableFuture<Collection<PubSubConnectionEntry>> promise = new CompletableFuture<>();
-            promise.completeExceptionally(ex);
-            return promise;
+            int slot = connectionManager.calcSlot(channelName.getName());
+            return connectionManager.getServiceManager().createNodeNotFoundFuture(channelName.toString(), slot);
         }
 
         CompletableFuture<PubSubConnectionEntry> f = subscribe(PubSubType.PSUBSCRIBE, codec, channelName, entry, null, listeners);
@@ -383,10 +381,8 @@ public class PublishSubscribeService {
 
         MasterSlaveEntry entry = getEntry(channelName);
         if (entry == null) {
-            RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node for name: " + channelName + " hasn't been discovered yet. Check cluster slots coverage using CLUSTER NODES command. Increase value of retryAttempts and/or retryInterval settings.");
-            CompletableFuture<List<PubSubConnectionEntry>> promise = new CompletableFuture<>();
-            promise.completeExceptionally(ex);
-            return promise;
+            int slot = connectionManager.calcSlot(channelName.getName());
+            return connectionManager.getServiceManager().createNodeNotFoundFuture(channelName.toString(), slot);
         }
         CompletableFuture<PubSubConnectionEntry> f = subscribe(PubSubType.SUBSCRIBE, codec, channelName, entry, null, listeners);
         return f.thenApply(res -> Collections.singletonList(res));
@@ -395,10 +391,8 @@ public class PublishSubscribeService {
     public CompletableFuture<PubSubConnectionEntry> ssubscribe(Codec codec, ChannelName channelName, RedisPubSubListener<?>... listeners) {
         MasterSlaveEntry entry = getEntry(channelName);
         if (entry == null) {
-            RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node for name: " + channelName + " hasn't been discovered yet. Check cluster slots coverage using CLUSTER NODES command. Increase value of retryAttempts and/or retryInterval settings.");
-            CompletableFuture<PubSubConnectionEntry> promise = new CompletableFuture<>();
-            promise.completeExceptionally(ex);
-            return promise;
+            int slot = connectionManager.calcSlot(channelName.getName());
+            return connectionManager.getServiceManager().createNodeNotFoundFuture(channelName.toString(), slot);
         }
         return subscribe(PubSubType.SSUBSCRIBE, codec, channelName, entry, null, listeners);
     }
@@ -432,10 +426,8 @@ public class PublishSubscribeService {
                                                               AsyncSemaphore semaphore, RedisPubSubListener<?>... listeners) {
         MasterSlaveEntry entry = getEntry(new ChannelName(channelName));
         if (entry == null) {
-            CompletableFuture<PubSubConnectionEntry> promise = new CompletableFuture<>();
-            RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node for name: " + channelName + " hasn't been discovered yet. Check cluster slots coverage using CLUSTER NODES command. Increase value of retryAttempts and/or retryInterval settings.");
-            promise.completeExceptionally(ex);
-            return promise;
+            int slot = connectionManager.calcSlot(channelName);
+            return connectionManager.getServiceManager().createNodeNotFoundFuture(channelName, slot);
         }
 
         PubSubType type;

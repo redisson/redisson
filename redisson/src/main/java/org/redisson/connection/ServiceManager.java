@@ -371,15 +371,30 @@ public final class ServiceManager {
         shutdownLatch.set(true);
     }
 
+    private volatile String lastClusterNodes;
+
+    public void setLastClusterNodes(String lastClusterNodes) {
+        this.lastClusterNodes = lastClusterNodes;
+    }
+
+    public <T> CompletableFuture<T> createNodeNotFoundFuture(String channelName, int slot) {
+        RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node for name: " + channelName + " slot: " + slot
+                + " hasn't been discovered yet. Check cluster slots coverage using CLUSTER NODES command. " +
+                "Increase value of retryAttempts and/or retryInterval settings. Last cluster nodes topology: " + lastClusterNodes);
+        CompletableFuture<T> promise = new CompletableFuture<>();
+        promise.completeExceptionally(ex);
+        return promise;
+    }
+
     public RedisNodeNotFoundException createNodeNotFoundException(NodeSource source) {
         RedisNodeNotFoundException ex;
         if (cfg.isClusterConfig()
                 && source.getSlot() != null
                     && source.getAddr() == null
                         && source.getRedisClient() == null) {
-            ex = new RedisNodeNotFoundException("Node for slot: " + source.getSlot() + " hasn't been discovered yet. Check cluster slots coverage using CLUSTER NODES command. Increase value of retryAttempts and/or retryInterval settings.");
+            ex = new RedisNodeNotFoundException("Node for slot: " + source.getSlot() + " hasn't been discovered yet. Increase value of retryAttempts and/or retryInterval settings. Last cluster nodes topology: " + lastClusterNodes);
         } else {
-            ex = new RedisNodeNotFoundException("Node: " + source + " hasn't been discovered yet. Increase value of retryAttempts and/or retryInterval settings.");
+            ex = new RedisNodeNotFoundException("Node: " + source + " hasn't been discovered yet. Increase value of retryAttempts and/or retryInterval settings. Last cluster nodes topology: " + lastClusterNodes);
         }
         return ex;
     }
