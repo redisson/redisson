@@ -90,7 +90,6 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
                         && (future.cancel(false) || cause(future) != null)) {
 
                 Throwable cause = cause(future);
-
                 if (!(cause instanceof RedisRetryException)) {
                     if (!future.isCancelled()) {
                         log.error("Unable to send PING command over channel: {}", ctx.channel(), cause);
@@ -98,11 +97,10 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
 
                     log.debug("channel: {} closed due to PING response timeout set in {} ms", ctx.channel(), config.getPingConnectionInterval());
                     ctx.channel().close();
-                    connection.getRedisClient().getConfig().getFailedNodeDetector().onPingFailed(cause);
                 } else {
-                    connection.getRedisClient().getConfig().getFailedNodeDetector().onPingSuccessful();
                     sendPing(ctx);
                 }
+                connection.getRedisClient().getConfig().getFailedNodeDetector().onPingFailed(cause);
             } else {
                 connection.getRedisClient().getConfig().getFailedNodeDetector().onPingSuccessful();
                 sendPing(ctx);
