@@ -32,6 +32,7 @@ import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.reactive.CommandReactiveExecutor;
 import org.springframework.data.redis.connection.ReactiveServerCommands;
 import org.springframework.data.redis.connection.RedisServerCommands;
+import org.springframework.data.redis.connection.convert.StringToRedisClientInfoConverter;
 import org.springframework.data.redis.core.types.RedisClientInfo;
 
 import reactor.core.publisher.Flux;
@@ -193,9 +194,12 @@ public class RedissonReactiveServerCommands extends RedissonBaseReactive impleme
         throw new UnsupportedOperationException();
     }
 
+    private static final StringToRedisClientInfoConverter CONVERTER = new StringToRedisClientInfoConverter();
+
     @Override
     public Flux<RedisClientInfo> getClientList() {
-        throw new UnsupportedOperationException();
+        Mono<List<String>> m = read(null, StringCodec.INSTANCE, RedisCommands.CLIENT_LIST);
+        return m.flatMapMany(s -> Flux.fromIterable(CONVERTER.convert(s.toArray(new String[s.size()]))));
     }
 
 }

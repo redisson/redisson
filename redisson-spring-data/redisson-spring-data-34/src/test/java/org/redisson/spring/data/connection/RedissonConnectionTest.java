@@ -13,6 +13,7 @@ import org.springframework.data.redis.connection.RedisZSetCommands;
 import org.springframework.data.redis.connection.zset.Tuple;
 import org.springframework.data.redis.core.*;
 import org.springframework.data.redis.core.types.Expiration;
+import org.springframework.data.redis.core.types.RedisClientInfo;
 
 import java.nio.ByteBuffer;
 import java.time.Duration;
@@ -263,6 +264,12 @@ public class RedissonConnectionTest extends BaseConnectionTest {
 
         byte[] f = connection.hRandField("map".getBytes());
         assertThat((Object) f).isIn("key1".getBytes(), "key2".getBytes(), "key3".getBytes());
+    }
+
+    @Test
+    public void testGetClientList() {
+        List<RedisClientInfo> info = connection.getClientList();
+        assertThat(info.size()).isGreaterThan(10);
     }
     
 }
