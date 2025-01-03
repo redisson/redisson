@@ -70,7 +70,7 @@ public class CommandRxBatchService extends CommandRxService implements BatchServ
     }
     
     @Override
-    protected <V, R> RFuture<R> async(boolean readOnlyMode, NodeSource nodeSource,
+    public <V, R> RFuture<R> async(boolean readOnlyMode, NodeSource nodeSource,
             Codec codec, RedisCommand<V> command, Object[] params, boolean ignoreRedirect, boolean noRetry) {
         return batchService.async(readOnlyMode, nodeSource, codec, command, params, ignoreRedirect, noRetry);
     }
