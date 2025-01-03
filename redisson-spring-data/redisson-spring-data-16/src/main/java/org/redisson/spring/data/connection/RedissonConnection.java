@@ -1711,7 +1711,7 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     @Override
     public List<RedisClientInfo> getClientList() {
-        return read(null,StringCodec.INSTANCE, RedisCommands.CLIENT_LIST);
+        return read(null, StringCodec.INSTANCE, RedisCommands.CLIENT_LIST);
     }
 
     @Override
