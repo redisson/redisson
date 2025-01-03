@@ -1738,7 +1738,7 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     @Override
     public List<RedisClientInfo> getClientList() {
-        throw new UnsupportedOperationException();
+        return read(null, StringCodec.INSTANCE, RedisCommands.CLIENT_LIST);
     }
 
     @Override

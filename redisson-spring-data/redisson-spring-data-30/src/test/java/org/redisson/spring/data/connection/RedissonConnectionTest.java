@@ -15,6 +15,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.SetOperations;
 import org.springframework.data.redis.core.types.Expiration;
+import org.springframework.data.redis.core.types.RedisClientInfo;
 
 import java.util.List;
 import java.util.Map;
@@ -137,6 +138,12 @@ public class RedissonConnectionTest extends BaseConnectionTest {
 
         byte[] f = connection.hRandField("map".getBytes());
         assertThat((Object) f).isIn("key1".getBytes(), "key2".getBytes(), "key3".getBytes());
+    }
+
+    @Test
+    public void testGetClientList() {
+        List<RedisClientInfo> info = connection.getClientList();
+        assertThat(info.size()).isGreaterThan(10);
     }
     
 }

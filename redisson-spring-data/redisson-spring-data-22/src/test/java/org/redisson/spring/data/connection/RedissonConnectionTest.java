@@ -6,6 +6,9 @@ import org.springframework.data.redis.connection.RedisZSetCommands;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.types.Expiration;
+import org.springframework.data.redis.core.types.RedisClientInfo;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -64,5 +67,10 @@ public class RedissonConnectionTest extends BaseConnectionTest {
         assertThat(t.next().getValue()).isEqualTo("value2".getBytes());
     }
 
-    
+    @Test
+    public void testGetClientList() {
+        List<RedisClientInfo> info = connection.getClientList();
+        assertThat(info.size()).isGreaterThan(10);
+    }
+
 }
