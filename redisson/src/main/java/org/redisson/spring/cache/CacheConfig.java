@@ -15,11 +15,15 @@
  */
 package org.redisson.spring.cache;
 
+import org.redisson.api.map.event.MapEntryListener;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -35,6 +39,8 @@ public class CacheConfig {
     private long maxIdleTime;
     
     private int maxSize;
+    
+    private final List<MapEntryListener> listeners = new ArrayList<>();
 
     /**
      * Creates config object with
@@ -103,6 +109,24 @@ public class CacheConfig {
         this.maxIdleTime = maxIdleTime;
     }
 
+    /**
+     * listener will invoke if one of the ttl,maxIdleTime,maxSize is set
+     * listener Is one of the following implementations:
+     * EntryCreatedListener
+     * EntryExpiredListener
+     * EntryRemovedListener
+     * EntryUpdatedListener
+     *
+     * @param listener listener
+     */
+    public void addListener(MapEntryListener listener) {
+        listeners.add(listener);
+    }
+    
+    protected List<MapEntryListener> getListeners() {
+        return listeners;
+    }
+    
     /**
      * Read config objects stored in JSON format from <code>String</code>
      *

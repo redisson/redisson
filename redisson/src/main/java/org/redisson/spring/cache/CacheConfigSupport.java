@@ -15,16 +15,20 @@
  */
 package org.redisson.spring.cache;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.redisson.api.map.event.MapEntryListener;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.net.URL;
 import java.util.Map;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 /**
  * 
@@ -33,9 +37,20 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
  */
 public class CacheConfigSupport {
 
-    ObjectMapper jsonMapper = new ObjectMapper();
-    ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
-
+    ObjectMapper jsonMapper = createMapper(null);
+    ObjectMapper yamlMapper = createMapper(new YAMLFactory());
+    
+    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "class")
+    public static class ClassMixIn {
+    }
+    
+    private ObjectMapper createMapper(JsonFactory mapping) {
+        ObjectMapper mapper = new ObjectMapper(mapping);
+        mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        mapper.addMixIn(MapEntryListener.class, ClassMixIn.class);
+        return mapper;
+    }
+    
     public Map<String, CacheConfig> fromJSON(String content) throws IOException {
         return jsonMapper.readValue(content, new TypeReference<Map<String, CacheConfig>>() {});
     }
