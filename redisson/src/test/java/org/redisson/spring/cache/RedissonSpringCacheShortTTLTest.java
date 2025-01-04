@@ -5,7 +5,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.redisson.RedisDockerTest;
+import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
+import org.redisson.api.map.event.EntryEvent;
+import org.redisson.api.map.event.EntryExpiredListener;
+import org.redisson.config.Config;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
@@ -23,6 +27,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -94,13 +99,15 @@ public class RedissonSpringCacheShortTTLTest extends RedisDockerTest {
 
         @Bean(destroyMethod = "shutdown")
         RedissonClient redisson() {
-            return createInstance();
+            return createRedisson();
         }
 
         @Bean
         CacheManager cacheManager(RedissonClient redissonClient) throws IOException {
             Map<String, CacheConfig> config = new HashMap<String, CacheConfig>();
-            config.put("testMap", new CacheConfig(1 * 1000, 1 * 1000));
+            CacheConfig cacheConfig = new CacheConfig(1 * 1000, 1 * 1000);
+            cacheConfig.addListener(new SimpleExpireListener());
+            config.put("testMap", cacheConfig);
             return new RedissonSpringCacheManager(redissonClient, config);
         }
 
@@ -113,7 +120,7 @@ public class RedissonSpringCacheShortTTLTest extends RedisDockerTest {
 
         @Bean(destroyMethod = "shutdown")
         RedissonClient redisson() {
-            return createInstance();
+            return createRedisson();
         }
 
         @Bean
@@ -122,8 +129,28 @@ public class RedissonSpringCacheShortTTLTest extends RedisDockerTest {
         }
 
     }
-
+    
+    public static class SimpleExpireListener implements EntryExpiredListener<String, RedissonSpringCacheTest.SampleObject> {
+        @Override
+        public void onExpired(EntryEvent<String, RedissonSpringCacheTest.SampleObject> event) {
+            counter.computeIfAbsent(event.getKey(), k -> {
+                AtomicInteger ac = new AtomicInteger();
+                ac.incrementAndGet();
+                return ac;
+            });
+        }
+    }
+    
+    private static RedissonClient createRedisson() {
+        Config config = createConfig();
+        // fix evict time
+        config.setMinCleanUpDelay(1);
+        config.setMaxCleanUpDelay(1);
+        return Redisson.create(config);
+    }
+    
     private static Map<Class<?>, AnnotationConfigApplicationContext> contexts;
+    private static final Map<String, AtomicInteger> counter = new HashMap<>();
 
     public static List<Class<?>> data() {
         return Arrays.asList(Application.class, JsonConfigApplication.class);
@@ -164,6 +191,17 @@ public class RedissonSpringCacheShortTTLTest extends RedisDockerTest {
         Assertions.assertThrows(IllegalStateException.class, () -> {
             bean.read("object1");
         });
+    }
+    
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testListener(Class<?> contextClass) throws InterruptedException {
+        AnnotationConfigApplicationContext context = contexts.get(contextClass);
+        SampleBean bean = context.getBean(SampleBean.class);
+        bean.store(contextClass.getName(), new SampleObject("name1", "value1"));
+        
+        Thread.sleep(5000);
+        assertThat(counter.get(contextClass.getName()).get()).isEqualTo(1);
     }
 
 }
