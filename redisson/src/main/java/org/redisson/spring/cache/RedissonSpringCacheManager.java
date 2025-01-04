@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
 import org.redisson.api.RedissonClient;
+import org.redisson.api.map.event.MapEntryListener;
 import org.redisson.client.codec.Codec;
 import org.springframework.beans.factory.BeanDefinitionStoreException;
 import org.springframework.beans.factory.InitializingBean;
@@ -269,6 +270,9 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
             cache = oldCache;
         } else {
             map.setMaxSize(config.getMaxSize());
+            for (MapEntryListener listener : config.getListeners()) {
+                map.addListener(listener);
+            }
         }
         return cache;
     }
