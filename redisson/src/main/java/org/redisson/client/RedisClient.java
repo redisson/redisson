@@ -67,10 +67,10 @@ public final class RedisClient {
     private InetSocketAddress resolvedAddr;
     private final ChannelGroup channels;
 
-    private ExecutorService executor;
+    private final ExecutorService executor;
     private final long commandTimeout;
-    private Timer timer;
-    private RedisClientConfig config;
+    private final Timer timer;
+    private final RedisClientConfig config;
 
     private boolean hasOwnTimer;
     private boolean hasOwnExecutor;
