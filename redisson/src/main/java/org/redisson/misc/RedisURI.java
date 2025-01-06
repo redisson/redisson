@@ -32,12 +32,19 @@ import java.util.Objects;
  */
 public final class RedisURI {
 
+    public static final String REDIS_PROTOCOL= "redis://";
+    public static final String REDIS_SSL_PROTOCOL = "rediss://";
+
     private final boolean ssl;
     private final String host;
     private final int port;
     private String username;
     private String password;
     private int hashCode;
+
+    public static boolean isValid(String url) {
+        return url.startsWith(REDIS_PROTOCOL) || url.startsWith(REDIS_SSL_PROTOCOL);
+    }
 
     public RedisURI(String scheme, String host, int port) {
         this.ssl = "rediss".equals(scheme);
@@ -47,7 +54,7 @@ public final class RedisURI {
     }
 
     public RedisURI(String uri) {
-        if (!uri.startsWith("redis://") && !uri.startsWith("rediss://")) {
+        if (!isValid(uri)) {
             throw new IllegalArgumentException("Redis url should start with redis:// or rediss:// (for SSL connection)");
         }
 

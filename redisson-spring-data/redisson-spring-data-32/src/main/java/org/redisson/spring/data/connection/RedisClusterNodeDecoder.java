@@ -71,7 +71,7 @@ public class RedisClusterNodeDecoder implements Decoder<List<RedisClusterNode>> 
                     continue;
                 }
 
-                address = new RedisURI("redis://" + addr);
+                address = new RedisURI(RedisURI.REDIS_PROTOCOL + addr);
                 address = serviceManager.toURI("redis", address.getHost(), String.valueOf(address.getPort()));
             }
 

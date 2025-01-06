@@ -9,12 +9,13 @@ import org.redisson.cluster.ClusterNodeInfo;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import org.redisson.misc.RedisURI;
 
 public class ClusterNodesDecoderTest {
 
     @Test
     public void testIPs() throws IOException {
-        ClusterNodesDecoder decoder = new ClusterNodesDecoder(false);
+        ClusterNodesDecoder decoder = new ClusterNodesDecoder(RedisURI.REDIS_PROTOCOL);
         ByteBuf buf = Unpooled.buffer();
         
         String info = "7af253f8c20a3b3fbd481801bd361ec6643c6f0b 192.168.234.129:7001@17001 master - 0 1478865073260 8 connected 5461-10922\n" +
@@ -34,7 +35,7 @@ public class ClusterNodesDecoderTest {
     
     @Test
     public void testHostnames() throws IOException {
-        ClusterNodesDecoder decoder = new ClusterNodesDecoder(false);
+        ClusterNodesDecoder decoder = new ClusterNodesDecoder(RedisURI.REDIS_PROTOCOL);
         ByteBuf buf = Unpooled.buffer();
 
         String info = "7af253f8c20a3b3fbd481801bd361ec6643c6f0b 192.168.234.129:7001@17001,hostname1 master - 0 1478865073260 8 connected 5461-10922\n" +

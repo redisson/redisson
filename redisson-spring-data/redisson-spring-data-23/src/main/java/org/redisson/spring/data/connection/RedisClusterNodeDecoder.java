@@ -62,7 +62,7 @@ public class RedisClusterNodeDecoder implements Decoder<List<RedisClusterNode>> 
             RedisURI address = null;
             if (!flags.contains(Flag.NOADDR)) {
                 String addr = params[1].split("@")[0];
-                address = new RedisURI("redis://" + addr);
+                address = new RedisURI(RedisURI.REDIS_PROTOCOL + addr);
             }
 
             String masterId = params[3];

@@ -34,11 +34,11 @@ import java.util.List;
  */
 public class ClusterNodesDecoder implements Decoder<List<ClusterNodeInfo>> {
 
-    private final boolean ssl;
+    private final String protocol;
     
-    public ClusterNodesDecoder(boolean ssl) {
+    public ClusterNodesDecoder(String protocol) {
         super();
-        this.ssl = ssl;
+        this.protocol = protocol;
     }
 
     @Override
@@ -97,11 +97,6 @@ public class ClusterNodesDecoder implements Decoder<List<ClusterNodeInfo>> {
     }
 
     private String createUri(String[] params) {
-        String protocol = "redis://";
-        if (ssl) {
-            protocol = "rediss://";
-        }
-
         String[] parts = params[1].split(",");
         String addr = parts[0].split("@")[0];
         String name = addr.substring(0, addr.lastIndexOf(":"));

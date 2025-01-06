@@ -150,7 +150,7 @@ public class RedisClientConfig {
     }
 
     public RedisClientConfig setAddress(String host, int port) {
-        this.address = new RedisURI("redis://" + host + ":" + port);
+        this.address = new RedisURI(RedisURI.REDIS_PROTOCOL + host + ":" + port);
         return this;
     }
     public RedisClientConfig setAddress(String address) {

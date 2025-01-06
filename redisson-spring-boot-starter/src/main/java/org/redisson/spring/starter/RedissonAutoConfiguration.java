@@ -20,6 +20,7 @@ import org.redisson.api.RedissonClient;
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.api.RedissonRxClient;
 import org.redisson.config.*;
+import org.redisson.misc.RedisURI;
 import org.redisson.spring.data.connection.RedissonConnectionFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,9 +69,6 @@ import java.util.List;
 @AutoConfigureBefore(RedisAutoConfiguration.class)
 @EnableConfigurationProperties({RedissonProperties.class, RedisProperties.class})
 public class RedissonAutoConfiguration {
-
-    private static final String REDIS_PROTOCOL_PREFIX = "redis://";
-    private static final String REDISS_PROTOCOL_PREFIX = "rediss://";
 
     @Autowired(required = false)
     private List<RedissonAutoConfigurationCustomizer> redissonAutoConfigurationCustomizers;
@@ -358,12 +356,12 @@ public class RedissonAutoConfiguration {
     }
 
     private String getPrefix() {
-        String prefix = REDIS_PROTOCOL_PREFIX;
+        String prefix = RedisURI.REDIS_PROTOCOL;
         Method isSSLMethod = ReflectionUtils.findMethod(RedisProperties.class, "isSsl");
         Method getSSLMethod = ReflectionUtils.findMethod(RedisProperties.class, "getSsl");
         if (isSSLMethod != null) {
             if ((Boolean) ReflectionUtils.invokeMethod(isSSLMethod, redisProperties)) {
-                prefix = REDISS_PROTOCOL_PREFIX;
+                prefix = RedisURI.REDIS_SSL_PROTOCOL;
             }
         } else if (getSSLMethod != null) {
             Object ss = ReflectionUtils.invokeMethod(getSSLMethod, redisProperties);
@@ -371,7 +369,7 @@ public class RedissonAutoConfiguration {
                 Method isEnabledMethod = ReflectionUtils.findMethod(ss.getClass(), "isEnabled");
                 Boolean enabled = (Boolean) ReflectionUtils.invokeMethod(isEnabledMethod, ss);
                 if (enabled) {
-                    prefix = REDISS_PROTOCOL_PREFIX;
+                    prefix = RedisURI.REDIS_SSL_PROTOCOL;
                 }
             }
         }
@@ -395,7 +393,7 @@ public class RedissonAutoConfiguration {
     private String[] convert(String prefix, List<String> nodesObject) {
         List<String> nodes = new ArrayList<>(nodesObject.size());
         for (String node : nodesObject) {
-            if (!node.startsWith(REDIS_PROTOCOL_PREFIX) && !node.startsWith(REDISS_PROTOCOL_PREFIX)) {
+            if (!RedisURI.isValid(node)) {
                 nodes.add(prefix + node);
             } else {
                 nodes.add(node);
